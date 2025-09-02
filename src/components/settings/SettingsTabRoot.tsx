@@ -10,8 +10,7 @@ import { ChatSection } from './sections/ChatSection'
 import { EtcSection } from './sections/EtcSection'
 import { LanguageSection } from './sections/LanguageSection'
 import { McpSection } from './sections/McpSection'
-import { ModelsSection } from './sections/ModelsSection'
-import { ProvidersSection } from './sections/ProvidersSection'
+import { ProvidersAndModelsSection } from './sections/ProvidersAndModelsSection'
 import { RAGSection } from './sections/RAGSection'
 import { TemplateSection } from './sections/TemplateSection'
 
@@ -42,8 +41,7 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
       </ObsidianSetting>
       <ChatSection />
       <AssistantsSection app={app} />
-      <ProvidersSection app={app} plugin={plugin} />
-      <ModelsSection app={app} plugin={plugin} />
+      <ProvidersAndModelsSection app={app} plugin={plugin} />
       <RAGSection app={app} plugin={plugin} />
       <McpSection app={app} plugin={plugin} />
       <TemplateSection app={app} />
