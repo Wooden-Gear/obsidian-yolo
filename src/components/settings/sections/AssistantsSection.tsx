@@ -10,7 +10,7 @@ import { ObsidianSetting } from '../../common/ObsidianSetting';
 import { ObsidianTextArea } from '../../common/ObsidianTextArea';
 import { ObsidianTextInput } from '../../common/ObsidianTextInput';
 import { ObsidianToggle } from '../../common/ObsidianToggle';
-import { ConfirmModal } from '../../../settings/ConfirmModal';
+import { ConfirmModal } from '../../modals/ConfirmModal';
 
 type AssistantItemProps = {
   assistant: Assistant;
