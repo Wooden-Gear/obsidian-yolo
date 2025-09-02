@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+import { useLanguage } from '../../../contexts/language-context';
 import { useSettings } from '../../../contexts/settings-context';
 import { Assistant } from '../../../types/assistant.types';
 import { ObsidianButton } from '../../common/ObsidianButton';
@@ -243,6 +244,7 @@ interface AssistantsSectionProps {
 
 export function AssistantsSection({ app }: AssistantsSectionProps) {
   const { settings, setSettings } = useSettings();
+  const { t } = useLanguage();
   const assistants = settings.assistants || [];
 
   const handleAddAssistant = async () => {
@@ -397,7 +399,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
         alignItems: 'center',
         marginBottom: '16px'
       }}>
-        <div>Custom Assistants</div>
+        <div>{t('settings.assistants.title')}</div>
         <button
           onClick={handleAddAssistant}
           aria-label="Add new assistant"

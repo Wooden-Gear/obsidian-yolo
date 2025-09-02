@@ -2,6 +2,7 @@ import {
   RECOMMENDED_MODELS_FOR_APPLY,
   RECOMMENDED_MODELS_FOR_CHAT,
 } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
@@ -11,13 +12,14 @@ import { ObsidianToggle } from '../../common/ObsidianToggle'
 
 export function ChatSection() {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">Chat</div>
+      <div className="smtcmp-settings-header">{t('settings.chat.title')}</div>
 
       <ObsidianSetting
-        name="Chat model"
+        name={t('settings.chat.defaultModel')}
         desc="Choose the model you want to use for chat."
       >
         <ObsidianDropdown
@@ -40,7 +42,7 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Apply model"
+        name={t('settings.chat.applyModel')}
         desc="Choose the model you want to use for apply feature."
       >
         <ObsidianDropdown
@@ -63,7 +65,7 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="System prompt"
+        name={t('settings.chat.systemPrompt')}
         desc="This prompt will be added to the beginning of every chat."
         className="smtcmp-settings-textarea-header"
       />
@@ -81,7 +83,7 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Include current file"
+        name={t('settings.chat.includeCurrentFile')}
         desc="Automatically include the content of your current file in chats."
       >
         <ObsidianToggle
@@ -99,7 +101,7 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Enable tools"
+        name={t('settings.chat.enableTools')}
         desc="Allow the AI to use MCP tools."
       >
         <ObsidianToggle
@@ -117,7 +119,7 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Max auto tool requests"
+        name={t('settings.chat.maxAutoIterations')}
         desc="Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens."
       >
         <ObsidianTextInput

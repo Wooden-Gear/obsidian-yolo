@@ -2,6 +2,7 @@ import { App, PluginSettingTab } from 'obsidian'
 import { Root, createRoot } from 'react-dom/client'
 
 import { SettingsTabRoot } from '../components/settings/SettingsTabRoot'
+import { PluginProvider } from '../contexts/plugin-context'
 import { SettingsProvider } from '../contexts/settings-context'
 import SmartComposerPlugin from '../main'
 
@@ -20,15 +21,17 @@ export class SmartComposerSettingTab extends PluginSettingTab {
 
     this.root = createRoot(containerEl)
     this.root.render(
-      <SettingsProvider
-        settings={this.plugin.settings}
-        setSettings={(newSettings) => this.plugin.setSettings(newSettings)}
-        addSettingsChangeListener={(listener) =>
-          this.plugin.addSettingsChangeListener(listener)
-        }
-      >
-        <SettingsTabRoot app={this.app} plugin={this.plugin} />
-      </SettingsProvider>,
+      <PluginProvider plugin={this.plugin}>
+        <SettingsProvider
+          settings={this.plugin.settings}
+          setSettings={(newSettings) => this.plugin.setSettings(newSettings)}
+          addSettingsChangeListener={(listener) =>
+            this.plugin.addSettingsChangeListener(listener)
+          }
+        >
+          <SettingsTabRoot app={this.app} plugin={this.plugin} />
+        </SettingsProvider>
+      </PluginProvider>,
     )
   }
 

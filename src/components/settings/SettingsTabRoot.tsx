@@ -1,12 +1,14 @@
 import { App } from 'obsidian'
 
 import SmartComposerPlugin from '../../main'
+import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 
 import { AssistantsSection } from './sections/AssistantsSection'
 import { ChatSection } from './sections/ChatSection'
 import { EtcSection } from './sections/EtcSection'
+import { LanguageSection } from './sections/LanguageSection'
 import { McpSection } from './sections/McpSection'
 import { ModelsSection } from './sections/ModelsSection'
 import { ProvidersSection } from './sections/ProvidersSection'
@@ -18,17 +20,20 @@ type SettingsTabRootProps = {
   plugin: SmartComposerPlugin
 }
 
-export function SettingsTabRoot({ app, plugin }: SettingsTabRootProps) {
+function SettingsContent({ app, plugin }: SettingsTabRootProps) {
+  const { t } = useLanguage()
+
   return (
     <>
+      <LanguageSection />
       <ObsidianSetting
-        name="Support Smart Composer"
-        desc="If you find Smart Composer valuable, consider supporting its development!"
+        name={t('settings.supportSmartComposer.name')}
+        desc={t('settings.supportSmartComposer.desc')}
         heading
         className="smtcmp-settings-support-smart-composer"
       >
         <ObsidianButton
-          text="Buy Me a Coffee"
+          text={t('settings.supportSmartComposer.buyMeACoffee')}
           onClick={() =>
             window.open('https://www.buymeacoffee.com/kevin.on', '_blank')
           }
@@ -44,5 +49,13 @@ export function SettingsTabRoot({ app, plugin }: SettingsTabRootProps) {
       <TemplateSection app={app} />
       <EtcSection app={app} plugin={plugin} />
     </>
+  )
+}
+
+export function SettingsTabRoot({ app, plugin }: SettingsTabRootProps) {
+  return (
+    <LanguageProvider>
+      <SettingsContent app={app} plugin={plugin} />
+    </LanguageProvider>
   )
 }

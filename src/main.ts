@@ -10,6 +10,7 @@ import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
 import { migrateToJsonDatabase } from './database/json/migrateToJsonDatabase'
+import { createTranslationFunction } from './i18n'
 import {
   SmartComposerSettings,
   smartComposerSettingsSchema,
@@ -29,6 +30,10 @@ export default class SmartComposerPlugin extends Plugin {
   private ragEngineInitPromise: Promise<RAGEngine> | null = null
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
 
+  get t() {
+    return createTranslationFunction(this.settings.language || 'en')
+  }
+
   async onload() {
     await this.loadSettings()
 
@@ -36,20 +41,20 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
 
     // This creates an icon in the left ribbon.
-    this.addRibbonIcon('wand-sparkles', 'Open smart composer', () =>
+    this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () =>
       this.openChatView(),
     )
 
     // This adds a simple command that can be triggered anywhere
     this.addCommand({
       id: 'open-new-chat',
-      name: 'Open chat',
+      name: this.t('commands.openChat'),
       callback: () => this.openChatView(true),
     })
 
     this.addCommand({
       id: 'add-selection-to-chat',
-      name: 'Add selection to chat',
+      name: this.t('commands.addSelectionToChat'),
       editorCallback: (editor: Editor, view: MarkdownView) => {
         this.addSelectionToChat(editor, view)
       },
@@ -57,9 +62,9 @@ export default class SmartComposerPlugin extends Plugin {
 
     this.addCommand({
       id: 'rebuild-vault-index',
-      name: 'Rebuild entire vault index',
+      name: this.t('commands.rebuildVaultIndex'),
       callback: async () => {
-        const notice = new Notice('Rebuilding vault index...', 0)
+        const notice = new Notice(this.t('notices.rebuildingIndex'), 0)
         try {
           const ragEngine = await this.getRAGEngine()
           await ragEngine.updateVaultIndex(
@@ -78,10 +83,10 @@ export default class SmartComposerPlugin extends Plugin {
               }
             },
           )
-          notice.setMessage('Rebuilding vault index complete')
+          notice.setMessage(this.t('notices.rebuildComplete'))
         } catch (error) {
           console.error(error)
-          notice.setMessage('Rebuilding vault index failed')
+          notice.setMessage(this.t('notices.rebuildFailed'))
         } finally {
           this.registerTimeout(() => {
             notice.hide()
@@ -92,9 +97,9 @@ export default class SmartComposerPlugin extends Plugin {
 
     this.addCommand({
       id: 'update-vault-index',
-      name: 'Update index for modified files',
+      name: this.t('commands.updateVaultIndex'),
       callback: async () => {
-        const notice = new Notice('Updating vault index...', 0)
+        const notice = new Notice(this.t('notices.updatingIndex'), 0)
         try {
           const ragEngine = await this.getRAGEngine()
           await ragEngine.updateVaultIndex(
@@ -113,10 +118,10 @@ export default class SmartComposerPlugin extends Plugin {
               }
             },
           )
-          notice.setMessage('Vault index updated')
+          notice.setMessage(this.t('notices.indexUpdated'))
         } catch (error) {
           console.error(error)
-          notice.setMessage('Vault index update failed')
+          notice.setMessage(this.t('notices.indexUpdateFailed'))
         } finally {
           this.registerTimeout(() => {
             notice.hide()

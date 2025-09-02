@@ -44,6 +44,10 @@ describe('parseSmartComposerSettings', () => {
         enableTools: true,
         maxAutoIterations: 1,
       },
+
+      assistants: [],
+      currentAssistantId: undefined,
+      language: 'en',
     })
   })
 })
