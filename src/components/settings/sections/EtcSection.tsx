@@ -1,5 +1,6 @@
 import { App, Notice } from 'obsidian'
 
+import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import SmartComposerPlugin from '../../../main'
 import { smartComposerSettingsSchema } from '../../../settings/schema/setting.types'
@@ -14,30 +15,30 @@ type EtcSectionProps = {
 
 export function EtcSection({ app }: EtcSectionProps) {
   const { setSettings } = useSettings()
+  const { t } = useLanguage()
 
   const handleResetSettings = () => {
     new ConfirmModal(app, {
-      title: 'Reset settings',
-      message:
-        'Are you sure you want to reset all settings to default values? This cannot be undone.',
-      ctaText: 'Reset',
+      title: t('settings.etc.resetSettings'),
+      message: t('settings.etc.resetSettingsConfirm'),
+      ctaText: t('settings.etc.reset'),
       onConfirm: async () => {
         const defaultSettings = smartComposerSettingsSchema.parse({})
         await setSettings(defaultSettings)
-        new Notice('Settings have been reset to defaults')
+        new Notice(t('settings.etc.resetSettingsSuccess'))
       },
     }).open()
   }
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">Etc</div>
+      <div className="smtcmp-settings-header">{t('settings.etc.title')}</div>
 
       <ObsidianSetting
-        name="Reset settings"
-        desc="Reset all settings to default values"
+        name={t('settings.etc.resetSettings')}
+        desc={t('settings.etc.resetSettingsDesc')}
       >
-        <ObsidianButton text="Reset" warning onClick={handleResetSettings} />
+        <ObsidianButton text={t('settings.etc.reset')} warning onClick={handleResetSettings} />
       </ObsidianSetting>
     </div>
   )

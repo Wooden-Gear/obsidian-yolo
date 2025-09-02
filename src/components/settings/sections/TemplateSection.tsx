@@ -59,11 +59,11 @@ export function TemplateSection({ app }: TemplateSectionProps) {
 
   const handleDelete = useCallback(
     (template: TemplateMetadata) => {
-      const message = `Are you sure you want to delete template "${template.name}"?`
+      const message = `${t('settings.templates.deleteTemplateConfirm')} "${template.name}"?`
       new ConfirmModal(app, {
-        title: 'Delete Template',
+        title: t('settings.templates.deleteTemplate'),
         message: message,
-        ctaText: 'Delete',
+        ctaText: t('common.delete'),
         onConfirm: async () => {
           try {
             await templateManager.deleteTemplate(template.id)
@@ -75,7 +75,7 @@ export function TemplateSection({ app }: TemplateSectionProps) {
         },
       }).open()
     },
-    [templateManager, fetchTemplateList, app],
+    [templateManager, fetchTemplateList, app, t],
   )
 
   useEffect(() => {
@@ -87,25 +87,21 @@ export function TemplateSection({ app }: TemplateSectionProps) {
       <div className="smtcmp-settings-header">{t('settings.templates.title')}</div>
 
       <div className="smtcmp-settings-desc smtcmp-settings-callout">
-        <strong>How to use:</strong> Create templates with reusable content that
-        you can quickly insert into your chat. Type <code>/template-name</code>{' '}
-        in the chat input to trigger template insertion. You can also drag and
-        select text in the chat input to reveal a &quot;Create template&quot;
-        button for quick template creation.
+        <strong>How to use:</strong> {t('settings.templates.howToUse')}
       </div>
 
       <div className="smtcmp-settings-sub-header-container">
-        <div className="smtcmp-settings-sub-header">Saved Templates</div>
-        <ObsidianButton text="Add Prompt Template" onClick={handleCreate} />
+        <div className="smtcmp-settings-sub-header">{t('settings.templates.savedTemplates')}</div>
+        <ObsidianButton text={t('settings.templates.addTemplate')} onClick={handleCreate} />
       </div>
 
       <div className="smtcmp-templates-container">
         <div className="smtcmp-templates-header">
-          <div>Name</div>
-          <div>Actions</div>
+          <div>{t('settings.templates.name')}</div>
+          <div>{t('settings.templates.actions')}</div>
         </div>
         {isLoading ? (
-          <div className="smtcmp-templates-empty">Loading templates...</div>
+          <div className="smtcmp-templates-empty">{t('settings.templates.loading')}</div>
         ) : templateList.length > 0 ? (
           templateList.map((template) => (
             <TemplateItem
@@ -120,7 +116,7 @@ export function TemplateSection({ app }: TemplateSectionProps) {
             />
           ))
         ) : (
-          <div className="smtcmp-templates-empty">No templates found</div>
+          <div className="smtcmp-templates-empty">{t('settings.templates.noTemplates')}</div>
         )}
       </div>
     </div>
@@ -136,6 +132,8 @@ function TemplateItem({
   onEdit: () => void
   onDelete: () => void
 }) {
+  const { t } = useLanguage()
+  
   return (
     <div className="smtcmp-template">
       <div className="smtcmp-template-row">
@@ -143,14 +141,14 @@ function TemplateItem({
         <div className="smtcmp-template-actions">
           <button
             className="clickable-icon"
-            aria-label="Edit Template"
+            aria-label={t('settings.templates.editTemplate')}
             onClick={onEdit}
           >
             <Edit size={16} />
           </button>
           <button
             className="clickable-icon"
-            aria-label="Delete Template"
+            aria-label={t('settings.templates.deleteTemplate')}
             onClick={onDelete}
           >
             <Trash2 size={16} />

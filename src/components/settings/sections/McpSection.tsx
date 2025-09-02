@@ -63,35 +63,31 @@ export function McpSection({ app, plugin }: McpSectionProps) {
       <div className="smtcmp-settings-header">{t('settings.mcp.title')}</div>
 
       <div className="smtcmp-settings-desc smtcmp-settings-callout">
-        <strong>Warning:</strong> When using tools, the tool response is passed
-        to the language model (LLM). If the tool result contains a large amount
-        of content, this can significantly increase LLM usage and associated
-        costs. Please be mindful when enabling or using tools that may return
-        long outputs.
+        <strong>Warning:</strong> {t('settings.mcp.warning')}
       </div>
 
       {mcpManager?.disabled ? (
         <div className="smtcmp-settings-sub-header-container">
           <div className="smtcmp-settings-sub-header">
-            MCP is not supported on mobile devices
+            {t('settings.mcp.notSupportedOnMobile')}
           </div>
         </div>
       ) : (
         <>
           <div className="smtcmp-settings-sub-header-container">
-            <div className="smtcmp-settings-sub-header">MCP Servers</div>
+            <div className="smtcmp-settings-sub-header">{t('settings.mcp.mcpServers')}</div>
             <ObsidianButton
-              text="Add MCP Server"
+              text={t('settings.mcp.addServer')}
               onClick={() => new AddMcpServerModal(app, plugin).open()}
             />
           </div>
 
           <div className="smtcmp-mcp-servers-container">
             <div className="smtcmp-mcp-servers-header">
-              <div>Server</div>
-              <div>Status</div>
-              <div>Enabled</div>
-              <div>Actions</div>
+              <div>{t('settings.mcp.server')}</div>
+              <div>{t('settings.mcp.status')}</div>
+              <div>{t('settings.mcp.enabled')}</div>
+              <div>{t('settings.mcp.actions')}</div>
             </div>
             {mcpServers.length > 0 ? (
               mcpServers.map((server) => (
@@ -104,7 +100,7 @@ export function McpSection({ app, plugin }: McpSectionProps) {
               ))
             ) : (
               <div className="smtcmp-mcp-servers-empty">
-                No MCP servers found
+                {t('settings.mcp.noServersFound')}
               </div>
             )}
           </div>
@@ -124,6 +120,7 @@ function McpServerComponent({
   plugin: SmartComposerPlugin
 }) {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
   const [isOpen, setIsOpen] = useState(false)
 
   const handleEdit = useCallback(() => {
@@ -131,11 +128,11 @@ function McpServerComponent({
   }, [server.name, app, plugin])
 
   const handleDelete = useCallback(() => {
-    const message = `Are you sure you want to delete MCP server "${server.name}"?`
+    const message = `${t('settings.mcp.deleteServerConfirm')} "${server.name}"?`
     new ConfirmModal(app, {
-      title: 'Delete MCP Server',
+      title: t('settings.mcp.deleteServer'),
       message: message,
-      ctaText: 'Delete',
+      ctaText: t('settings.mcp.delete'),
       onConfirm: async () => {
         await setSettings({
           ...settings,
@@ -146,7 +143,7 @@ function McpServerComponent({
         })
       },
     }).open()
-  }, [server.name, settings, setSettings, app])
+  }, [server.name, settings, setSettings, app, t])
 
   const handleToggleEnabled = useCallback(
     (enabled: boolean) => {
@@ -180,21 +177,21 @@ function McpServerComponent({
           <button
             onClick={handleEdit}
             className="clickable-icon"
-            aria-label="Edit"
+            aria-label={t('settings.mcp.edit')}
           >
             <Edit size={16} />
           </button>
           <button
             onClick={handleDelete}
             className="clickable-icon"
-            aria-label="Delete"
+            aria-label={t('settings.mcp.delete')}
           >
             <Trash2 size={16} />
           </button>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="clickable-icon"
-            aria-label={isOpen ? 'Collapse' : 'Expand'}
+            aria-label={isOpen ? t('settings.mcp.collapse') : t('settings.mcp.expand')}
           >
             {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -206,6 +203,8 @@ function McpServerComponent({
 }
 
 function ExpandedServerInfo({ server }: { server: McpServerState }) {
+  const { t } = useLanguage()
+  
   if (
     server.status === McpServerStatus.Disconnected ||
     server.status === McpServerStatus.Connecting
@@ -217,7 +216,7 @@ function ExpandedServerInfo({ server }: { server: McpServerState }) {
     <div className="smtcmp-server-expanded-info">
       {server.status === McpServerStatus.Connected && (
         <div>
-          <div className="smtcmp-server-expanded-info-header">Tools</div>
+          <div className="smtcmp-server-expanded-info-header">{t('settings.mcp.tools')}</div>
           <div className="smtcmp-server-tools-container">
             {server.tools.map((tool) => (
               <McpToolComponent key={tool.name} tool={tool} server={server} />
@@ -227,7 +226,7 @@ function ExpandedServerInfo({ server }: { server: McpServerState }) {
       )}
       {server.status === McpServerStatus.Error && (
         <div>
-          <div className="smtcmp-server-expanded-info-header">Error</div>
+          <div className="smtcmp-server-expanded-info-header">{t('settings.mcp.error')}</div>
           <div className="smtcmp-server-error-message">
             {server.error.message}
           </div>
@@ -238,25 +237,26 @@ function ExpandedServerInfo({ server }: { server: McpServerState }) {
 }
 
 function McpServerStatusBadge({ status }: { status: McpServerStatus }) {
+  const { t } = useLanguage()
   const statusConfig = {
     [McpServerStatus.Connected]: {
       icon: <Check size={16} />,
-      label: 'Connected',
+      label: t('settings.mcp.connected'),
       statusClass: 'smtcmp-mcp-server-status-badge--connected',
     },
     [McpServerStatus.Connecting]: {
       icon: <Loader2 size={16} className="spinner" />,
-      label: 'Connecting...',
+      label: t('settings.mcp.connecting'),
       statusClass: 'smtcmp-mcp-server-status-badge--connecting',
     },
     [McpServerStatus.Error]: {
       icon: <X size={16} />,
-      label: 'Error',
+      label: t('settings.mcp.error'),
       statusClass: 'smtcmp-mcp-server-status-badge--error',
     },
     [McpServerStatus.Disconnected]: {
       icon: <CircleMinus size={16} />,
-      label: 'Disconnected',
+      label: t('settings.mcp.disconnected'),
       statusClass: 'smtcmp-mcp-server-status-badge--disconnected',
     },
   }
@@ -279,6 +279,7 @@ function McpToolComponent({
   server: McpServerState
 }) {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
 
   const toolOption = server.config.toolOptions[tool.name]
   const disabled = toolOption?.disabled ?? false
@@ -335,14 +336,14 @@ function McpToolComponent({
         <div className="smtcmp-mcp-tool-description">{tool.description}</div>
       </div>
       <div className="smtcmp-mcp-tool-toggle">
-        <span className="smtcmp-mcp-tool-toggle-label">Enabled</span>
+        <span className="smtcmp-mcp-tool-toggle-label">{t('settings.mcp.enabled')}</span>
         <ObsidianToggle
           value={!disabled}
           onChange={(value) => handleToggleEnabled(value)}
         />
       </div>
       <div className="smtcmp-mcp-tool-toggle">
-        <span className="smtcmp-mcp-tool-toggle-label">Auto-execute</span>
+        <span className="smtcmp-mcp-tool-toggle-label">{t('settings.mcp.autoExecute')}</span>
         <ObsidianToggle
           value={allowAutoExecution}
           onChange={(value) => handleToggleAutoExecution(value)}

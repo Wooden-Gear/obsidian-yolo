@@ -29,7 +29,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
 
       <ObsidianSetting
         name={t('settings.rag.embeddingModel')}
-        desc="Choose the model you want to use for embeddings"
+        desc={t('settings.rag.embeddingModelDesc')}
       >
         <ObsidianDropdown
           value={settings.embeddingModelId}
@@ -49,11 +49,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Include patterns"
-        desc="Specify glob patterns to include files in indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to include all files. Requires 'Rebuild entire vault index' after changes."
+        name={t('settings.rag.includePatterns')}
+        desc={t('settings.rag.includePatternsDesc')}
       >
         <ObsidianButton
-          text="Test patterns"
+          text={t('settings.rag.testPatterns')}
           onClick={async () => {
             const patterns = settings.ragOptions.includePatterns
             const includedFiles = await findFilesMatchingPatterns(
@@ -85,11 +85,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Exclude patterns"
-        desc="Specify glob patterns to exclude files from indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to exclude nothing. Requires 'Rebuild entire vault index' after changes."
+        name={t('settings.rag.excludePatterns')}
+        desc={t('settings.rag.excludePatternsDesc')}
       >
         <ObsidianButton
-          text="Test patterns"
+          text={t('settings.rag.testPatterns')}
           onClick={async () => {
             const patterns = settings.ragOptions.excludePatterns
             const excludedFiles = await findFilesMatchingPatterns(
@@ -121,8 +121,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Chunk size"
-        desc="Set the chunk size for text splitting. After changing this, please re-index the vault using the 'Rebuild entire vault index' command."
+        name={t('settings.rag.chunkSize')}
+        desc={t('settings.rag.chunkSizeDesc')}
       >
         <ObsidianTextInput
           value={String(settings.ragOptions.chunkSize)}
@@ -143,8 +143,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Threshold tokens"
-        desc="Maximum number of tokens before switching to RAG. If the total tokens from mentioned files exceed this, RAG will be used instead of including all file contents."
+        name={t('settings.rag.thresholdTokens')}
+        desc={t('settings.rag.thresholdTokensDesc')}
       >
         <ObsidianTextInput
           value={String(settings.ragOptions.thresholdTokens)}
@@ -165,8 +165,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Minimum similarity"
-        desc="Minimum similarity score for RAG results. Higher values return more relevant but potentially fewer results."
+        name={t('settings.rag.minSimilarity')}
+        desc={t('settings.rag.minSimilarityDesc')}
       >
         <ObsidianTextInput
           value={String(settings.ragOptions.minSimilarity)}
@@ -193,8 +193,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Limit"
-        desc="Maximum number of RAG results to include in the prompt. Higher values provide more context but increase token usage."
+        name={t('settings.rag.limit')}
+        desc={t('settings.rag.limitDesc')}
       >
         <ObsidianTextInput
           value={String(settings.ragOptions.limit)}
@@ -214,9 +214,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name="Manage Embedding Database">
+      <ObsidianSetting name={t('settings.rag.manageEmbeddingDatabase')}>
         <ObsidianButton
-          text="Manage"
+          text={t('settings.rag.manage')}
           onClick={async () => {
             new EmbeddingDbManageModal(app, plugin).open()
           }}

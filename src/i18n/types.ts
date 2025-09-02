@@ -86,26 +86,73 @@ export interface TranslationKeys {
     rag: {
       title: string
       embeddingModel: string
+      embeddingModelDesc: string
       chunkSize: string
+      chunkSizeDesc: string
       thresholdTokens: string
+      thresholdTokensDesc: string
       minSimilarity: string
+      minSimilarityDesc: string
       limit: string
+      limitDesc: string
       includePatterns: string
+      includePatternsDesc: string
       excludePatterns: string
+      excludePatternsDesc: string
+      testPatterns: string
+      manageEmbeddingDatabase: string
+      manage: string
       rebuildIndex: string
     }
     mcp: {
       title: string
       desc: string
+      warning: string
+      notSupportedOnMobile: string
+      mcpServers: string
       addServer: string
       serverName: string
       command: string
+      server: string
+      status: string
+      enabled: string
+      actions: string
+      noServersFound: string
+      tools: string
+      error: string
+      connected: string
+      connecting: string
+      disconnected: string
+      autoExecute: string
+      deleteServer: string
+      deleteServerConfirm: string
+      edit: string
+      delete: string
+      expand: string
+      collapse: string
     }
     templates: {
       title: string
       desc: string
+      howToUse: string
+      savedTemplates: string
       addTemplate: string
       templateName: string
+      noTemplates: string
+      loading: string
+      deleteTemplate: string
+      deleteTemplateConfirm: string
+      editTemplate: string
+      name: string
+      actions: string
+    }
+    etc: {
+      title: string
+      resetSettings: string
+      resetSettingsDesc: string
+      resetSettingsConfirm: string
+      resetSettingsSuccess: string
+      reset: string
     }
     language: {
       title: string
