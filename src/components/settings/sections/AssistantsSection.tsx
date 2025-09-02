@@ -419,12 +419,12 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
           }}
         >
           <Plus size={16} />
-          Add Assistant
+          {t('settings.assistants.addAssistant')}
         </button>
       </div>
       
       <ObsidianSetting
-        desc="Create custom assistants with dedicated system prompts for different tasks. Each assistant has its own behavior and capabilities."
+        desc={t('settings.assistants.desc')}
       />
 
       {assistants.length === 0 ? (
@@ -437,7 +437,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
           color: 'var(--text-muted)',
           fontSize: '15px'
         }}>
-          <p style={{ margin: 0 }}>No custom assistants yet. Click the "Add Assistant" button above to create your first assistant.</p>
+          <p style={{ margin: 0 }}>{t('settings.assistants.noAssistants')} {t('settings.assistants.createFirstAssistant')}</p>
         </div>
       ) : (
         <div className="smtcmp-assistants-list" style={{

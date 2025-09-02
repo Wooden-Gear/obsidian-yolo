@@ -1,6 +1,7 @@
 import { App } from 'obsidian'
 import React from 'react'
 
+import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 
 import { ChatModelsSubSection } from './models/ChatModelsSubSection'
@@ -12,9 +13,11 @@ type ModelsSectionProps = {
 }
 
 export function ModelsSection({ app, plugin }: ModelsSectionProps) {
+  const { t } = useLanguage()
+  
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">Models</div>
+      <div className="smtcmp-settings-header">{t('settings.models.title')}</div>
       <ChatModelsSubSection app={app} plugin={plugin} />
       <EmbeddingModelsSubSection app={app} plugin={plugin} />
     </div>

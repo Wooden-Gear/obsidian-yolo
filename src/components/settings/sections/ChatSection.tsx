@@ -20,7 +20,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.defaultModel')}
-        desc="Choose the model you want to use for chat."
+        desc={t('settings.chat.defaultModelDesc')}
       >
         <ObsidianDropdown
           value={settings.chatModelId}
@@ -43,7 +43,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.applyModel')}
-        desc="Choose the model you want to use for apply feature."
+        desc={t('settings.chat.applyModelDesc')}
       >
         <ObsidianDropdown
           value={settings.applyModelId}
@@ -66,7 +66,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.systemPrompt')}
-        desc="This prompt will be added to the beginning of every chat."
+        desc={t('settings.chat.systemPromptDesc')}
         className="smtcmp-settings-textarea-header"
       />
 
@@ -84,7 +84,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.includeCurrentFile')}
-        desc="Automatically include the content of your current file in chats."
+        desc={t('settings.chat.includeCurrentFileDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.includeCurrentFileContent}
@@ -102,7 +102,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.enableTools')}
-        desc="Allow the AI to use MCP tools."
+        desc={t('settings.chat.enableToolsDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.enableTools}
@@ -120,7 +120,7 @@ export function ChatSection() {
 
       <ObsidianSetting
         name={t('settings.chat.maxAutoIterations')}
-        desc="Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens."
+        desc={t('settings.chat.maxAutoIterationsDesc')}
       >
         <ObsidianTextInput
           value={settings.chatOptions.maxAutoIterations.toString()}

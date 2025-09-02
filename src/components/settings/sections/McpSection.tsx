@@ -11,6 +11,7 @@ import {
 import { App } from 'obsidian'
 import { useCallback, useEffect, useState } from 'react'
 
+import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { McpManager } from '../../../core/mcp/mcpManager'
 import SmartComposerPlugin from '../../../main'
@@ -33,6 +34,7 @@ type McpSectionProps = {
 }
 
 export function McpSection({ app, plugin }: McpSectionProps) {
+  const { t } = useLanguage()
   const [mcpManager, setMcpManager] = useState<McpManager | null>(null)
   const [mcpServers, setMcpServers] = useState<McpServerState[]>([])
 
@@ -58,7 +60,7 @@ export function McpSection({ app, plugin }: McpSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">MCP (Model Context Pool)</div>
+      <div className="smtcmp-settings-header">{t('settings.mcp.title')}</div>
 
       <div className="smtcmp-settings-desc smtcmp-settings-callout">
         <strong>Warning:</strong> When using tools, the tool response is passed

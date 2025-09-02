@@ -1,6 +1,7 @@
 import { App } from 'obsidian'
 
 import { RECOMMENDED_MODELS_FOR_EMBEDDING } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import SmartComposerPlugin from '../../../main'
 import { findFilesMatchingPatterns } from '../../../utils/glob-utils'
@@ -20,13 +21,14 @@ type RAGSectionProps = {
 
 export function RAGSection({ app, plugin }: RAGSectionProps) {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">RAG</div>
+      <div className="smtcmp-settings-header">{t('settings.rag.title')}</div>
 
       <ObsidianSetting
-        name="Embedding model"
+        name={t('settings.rag.embeddingModel')}
         desc="Choose the model you want to use for embeddings"
       >
         <ObsidianDropdown

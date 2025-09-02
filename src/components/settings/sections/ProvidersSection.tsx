@@ -3,6 +3,7 @@ import { App } from 'obsidian'
 import React from 'react'
 
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { getEmbeddingModelClient } from '../../../core/rag/embedding'
 import SmartComposerPlugin from '../../../main'
@@ -20,6 +21,7 @@ type ProvidersSectionProps = {
 
 export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
 
   const handleDeleteProvider = async (provider: LLMProvider) => {
     // Get associated models
@@ -79,17 +81,17 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">Providers</div>
+      <div className="smtcmp-settings-header">{t('settings.providers.title')}</div>
 
       <div className="smtcmp-settings-desc">
-        <span>Enter your API keys for the providers you want to use</span>
+        <span>{t('settings.providers.desc')}</span>
         <br />
         <a
           href="https://github.com/glowingjade/obsidian-smart-composer/wiki/1.2-Initial-Setup#getting-your-api-key"
           target="_blank"
           rel="noopener noreferrer"
         >
-          How to obtain API keys
+          {t('settings.providers.howToGetApiKeys')}
         </a>
       </div>
 

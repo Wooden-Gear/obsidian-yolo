@@ -39,26 +39,42 @@ export interface TranslationKeys {
     chat: {
       title: string
       defaultModel: string
+      defaultModelDesc: string
       applyModel: string
+      applyModelDesc: string
       systemPrompt: string
+      systemPromptDesc: string
       includeCurrentFile: string
+      includeCurrentFileDesc: string
       enableTools: string
+      enableToolsDesc: string
       maxAutoIterations: string
+      maxAutoIterationsDesc: string
     }
     assistants: {
       title: string
+      desc: string
       addAssistant: string
       editAssistant: string
       deleteAssistant: string
       name: string
       systemPrompt: string
       model: string
+      noAssistants: string
+      createFirstAssistant: string
     }
     providers: {
       title: string
+      desc: string
+      howToGetApiKeys: string
       addProvider: string
       editProvider: string
       deleteProvider: string
+      deleteConfirm: string
+      deleteWarning: string
+      chatModels: string
+      embeddingModels: string
+      embeddingsWillBeDeleted: string
     }
     models: {
       title: string
@@ -80,12 +96,14 @@ export interface TranslationKeys {
     }
     mcp: {
       title: string
+      desc: string
       addServer: string
       serverName: string
       command: string
     }
     templates: {
       title: string
+      desc: string
       addTemplate: string
       templateName: string
     }

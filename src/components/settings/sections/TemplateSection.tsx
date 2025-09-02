@@ -2,6 +2,7 @@ import { Edit, Trash2 } from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { useLanguage } from '../../../contexts/language-context'
 import { TemplateManager } from '../../../database/json/template/TemplateManager'
 import { TemplateMetadata } from '../../../database/json/template/types'
 import { ObsidianButton } from '../../common/ObsidianButton'
@@ -16,6 +17,7 @@ type TemplateSectionProps = {
 }
 
 export function TemplateSection({ app }: TemplateSectionProps) {
+  const { t } = useLanguage()
   const templateManager = useMemo(() => new TemplateManager(app), [app])
 
   const [templateList, setTemplateList] = useState<TemplateMetadata[]>([])
@@ -82,7 +84,7 @@ export function TemplateSection({ app }: TemplateSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">Prompt Templates</div>
+      <div className="smtcmp-settings-header">{t('settings.templates.title')}</div>
 
       <div className="smtcmp-settings-desc smtcmp-settings-callout">
         <strong>How to use:</strong> Create templates with reusable content that
