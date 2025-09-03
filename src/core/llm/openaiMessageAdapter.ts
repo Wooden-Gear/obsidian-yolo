@@ -167,6 +167,7 @@ export class OpenAIMessageAdapter {
         finish_reason: choice.finish_reason,
         message: {
           content: choice.message.content,
+          reasoning: (choice.message as any).reasoning_content || undefined,
           role: choice.message.role,
           tool_calls: choice.message.tool_calls,
         },
@@ -188,6 +189,7 @@ export class OpenAIMessageAdapter {
         finish_reason: choice.finish_reason ?? null,
         delta: {
           content: choice.delta.content ?? null,
+          reasoning: (choice.delta as any).reasoning_content || undefined,
           role: choice.delta.role,
           tool_calls: choice.delta.tool_calls,
         },

@@ -1,5 +1,6 @@
 # 更好的对话功能
-- [ ] 模型ID修改：为了支持多个同名模型，计划给模型名加上「前缀」，例如oneapi渠道的gemini-2.5-flash模型实际id会是oneapi/gemini-2.5-flash；
+- [x] 模型ID修改：为了支持多个同名模型，计划给模型名加上「前缀」，例如oneapi渠道的gemini-2.5-flash模型实际id会是oneapi/gemini-2.5-flash；
+- [ ] 支持推理模型的思维过程显示
 - [ ] 更复杂、全面的模型参数设计，如给每一个模型自定义reasoning effort；可参考rikka hub的模型属性设置，每一个模型都可以自定义「输入模态」（纯文字还是文字+图像）和「能力」（如工具、推理）
 
 # 更好的RAG功能
