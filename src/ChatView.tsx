@@ -10,6 +10,7 @@ import { ChatViewProvider } from './contexts/chat-view-context'
 import { DarkModeProvider } from './contexts/dark-mode-context'
 import { DatabaseProvider } from './contexts/database-context'
 import { DialogContainerProvider } from './contexts/dialog-container-context'
+import { LanguageProvider } from './contexts/language-context'
 import { McpProvider } from './contexts/mcp-context'
 import { PluginProvider } from './contexts/plugin-context'
 import { RAGProvider } from './contexts/rag-context'
@@ -72,17 +73,18 @@ export class ChatView extends ItemView {
     this.root.render(
       <ChatViewProvider chatView={this}>
         <PluginProvider plugin={this.plugin}>
-          <AppProvider app={this.app}>
-            <SettingsProvider
-              settings={this.plugin.settings}
-              setSettings={(newSettings) =>
-                this.plugin.setSettings(newSettings)
-              }
-              addSettingsChangeListener={(listener) =>
-                this.plugin.addSettingsChangeListener(listener)
-              }
-            >
-              <DarkModeProvider>
+          <LanguageProvider>
+            <AppProvider app={this.app}>
+              <SettingsProvider
+                settings={this.plugin.settings}
+                setSettings={(newSettings) =>
+                  this.plugin.setSettings(newSettings)
+                }
+                addSettingsChangeListener={(listener) =>
+                  this.plugin.addSettingsChangeListener(listener)
+                }
+              >
+                <DarkModeProvider>
                 <DatabaseProvider
                   getDatabaseManager={() => this.plugin.getDbManager()}
                 >
@@ -107,9 +109,10 @@ export class ChatView extends ItemView {
                     </McpProvider>
                   </RAGProvider>
                 </DatabaseProvider>
-              </DarkModeProvider>
-            </SettingsProvider>
-          </AppProvider>
+                </DarkModeProvider>
+              </SettingsProvider>
+            </AppProvider>
+          </LanguageProvider>
         </PluginProvider>
       </ChatViewProvider>,
     )

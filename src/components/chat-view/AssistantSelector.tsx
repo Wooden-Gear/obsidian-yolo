@@ -2,11 +2,13 @@ import * as Popover from '@radix-ui/react-popover'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
+import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
 import { Assistant } from '../../types/assistant.types'
 
 export function AssistantSelector() {
   const { settings, setSettings } = useSettings()
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   
   // Get assistant list and currently selected assistant
@@ -14,19 +16,7 @@ export function AssistantSelector() {
   const currentAssistantId = settings.currentAssistantId
   
   // Get the current assistant object
-  const currentAssistant = assistants.find(a => a.id === currentAssistantId) || 
-                          (assistants.length > 0 ? assistants.find(a => a.isDefault) || assistants[0] : null)
-
-  // When no assistant is selected but assistants are available, automatically select the default or first assistant
-  useEffect(() => {
-    if (!currentAssistantId && assistants.length > 0) {
-      const defaultAssistant = assistants.find(a => a.isDefault) || assistants[0]
-      setSettings({
-        ...settings,
-        currentAssistantId: defaultAssistant.id
-      })
-    }
-  }, [currentAssistantId, assistants, settings, setSettings])
+  const currentAssistant = assistants.find(a => a.id === currentAssistantId)
 
   // Handler function for selecting an assistant
   const handleSelectAssistant = async (assistant: Assistant) => {
@@ -37,13 +27,13 @@ export function AssistantSelector() {
     setOpen(false)
   }
 
-  // If there are no assistants, display a placeholder
-  if (assistants.length === 0) {
-    return (
-      <div className="smtcmp-assistant-selector smtcmp-assistant-selector-empty">
-        <span className="smtcmp-assistant-selector-placeholder">No assistants available</span>
-      </div>
-    )
+  // Handler function for selecting "no assistant"
+  const handleSelectNoAssistant = async () => {
+    await setSettings({
+      ...settings,
+      currentAssistantId: undefined
+    })
+    setOpen(false)
   }
 
   return (
@@ -51,7 +41,7 @@ export function AssistantSelector() {
       <Popover.Trigger asChild>
         <button className="smtcmp-assistant-selector-button">
           <div className="smtcmp-assistant-selector-current">
-            {currentAssistant ? currentAssistant.name : 'Select Assistant'}
+            {currentAssistant ? currentAssistant.name : t('settings.assistants.noAssistant')}
           </div>
           <div className="smtcmp-assistant-selector-icon">
             {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
@@ -62,6 +52,19 @@ export function AssistantSelector() {
       <Popover.Portal>
         <Popover.Content className="smtcmp-popover smtcmp-assistant-selector-content">
           <ul className="smtcmp-assistant-selector-list">
+            {/* "No Assistant" option */}
+            <li
+              className={`smtcmp-assistant-selector-item ${
+                !currentAssistantId ? 'selected' : ''
+              }`}
+              onClick={handleSelectNoAssistant}
+            >
+              <div className="smtcmp-assistant-selector-item-name">
+                {t('settings.assistants.noAssistant')}
+              </div>
+            </li>
+            
+            {/* Available assistants */}
             {assistants.map((assistant) => (
               <li
                 key={assistant.id}

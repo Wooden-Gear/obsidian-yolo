@@ -58,10 +58,14 @@ export interface TranslationKeys {
       editAssistant: string
       deleteAssistant: string
       name: string
+      description: string
       systemPrompt: string
-      model: string
+      isDefault: string
+      actions: string
       noAssistants: string
-      createFirstAssistant: string
+      setAsDefault: string
+      noAssistant: string
+      selectAssistant: string
     }
     providers: {
       title: string

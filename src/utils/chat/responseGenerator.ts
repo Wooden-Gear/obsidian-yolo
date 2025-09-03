@@ -144,13 +144,15 @@ export class ResponseGenerator {
   private async streamSingleResponse(): Promise<{
     toolCallRequests: ToolCallRequest[]
   }> {
-    const requestMessages = await this.promptGenerator.generateRequestMessages({
-      messages: [...this.receivedMessages, ...this.responseMessages],
-    })
-
     const availableTools = this.enableTools
       ? await this.mcpManager.listAvailableTools()
       : []
+    const hasTools = availableTools.length > 0
+
+    const requestMessages = await this.promptGenerator.generateRequestMessages({
+      messages: [...this.receivedMessages, ...this.responseMessages],
+      hasTools,
+    })
 
     // Set tools to undefined when no tools are available since some providers
     // reject empty tools arrays.

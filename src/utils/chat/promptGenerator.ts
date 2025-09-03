@@ -49,8 +49,10 @@ export class PromptGenerator {
 
   public async generateRequestMessages({
     messages,
+    hasTools = false,
   }: {
     messages: ChatMessage[]
+    hasTools?: boolean
   }): Promise<RequestMessage[]> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
@@ -88,7 +90,7 @@ export class PromptGenerator {
     }
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
-    const systemMessage = this.getSystemMessage(shouldUseRAG)
+    const systemMessage = this.getSystemMessage(shouldUseRAG, hasTools)
 
     const customInstructionMessage = this.getCustomInstructionMessage()
 
@@ -410,26 +412,32 @@ ${await this.getWebsiteContent(url)}
     }
   }
 
-  private getSystemMessage(shouldUseRAG: boolean): RequestMessage {
+  private getSystemMessage(shouldUseRAG: boolean, hasTools: boolean = false): RequestMessage {
     const modelPromptLevel = this.getModelPromptLevel()
+    
+    // When both RAG and tools are available, prioritize based on context
+    const useRAGPrompt = shouldUseRAG && !hasTools
+    
     const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has${modelPromptLevel == PromptLevel.Default ? `, particularly about editing and organizing markdown files in Obsidian` : ''}.
 
-1. Please keep your response as concise as possible. Avoid being verbose.
+1. Format your response in markdown.
 
-2. Do not lie or make up facts.
+${hasTools ? `
+2. You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
 
-3. Format your response in markdown.
+3. When using tools, explain what you're doing and why.
+` : ''}
 
 ${
   modelPromptLevel == PromptLevel.Default
-    ? `4. Respond in the same language as the user's message.
+    ? `${hasTools ? '4' : '2'}. Respond in the same language as the user's message.
 
-5. When writing out new markdown blocks, also wrap them with <smtcmp_block> tags. For example:
+${hasTools ? '5' : '2'}. When writing out new markdown blocks, also wrap them with <smtcmp_block> tags. For example:
 <smtcmp_block language="markdown">
 {{ content }}
 </smtcmp_block>
 
-6. When providing markdown blocks for an existing file, add the filename and language attributes to the <smtcmp_block> tags. Restate the relevant section or heading, so the user knows which part of the file you are editing. For example:
+${hasTools ? '6' : '3'}. When providing markdown blocks for an existing file, add the filename and language attributes to the <smtcmp_block> tags. Restate the relevant section or heading, so the user knows which part of the file you are editing. For example:
 <smtcmp_block filename="path/to/file.md" language="markdown">
 ## Section Title
 ...
@@ -437,7 +445,7 @@ ${
 ...
 </smtcmp_block>
 
-7. When the user is asking for edits to their markdown, please provide a simplified version of the markdown block emphasizing only the changes. Use comments to show where unchanged content has been skipped. Wrap the markdown block with <smtcmp_block> tags. Add filename and language attributes to the <smtcmp_block> tags. For example:
+${hasTools ? '7' : '4'}. When the user is asking for edits to their markdown, please provide a simplified version of the markdown block emphasizing only the changes. Use comments to show where unchanged content has been skipped. Wrap the markdown block with <smtcmp_block> tags. Add filename and language attributes to the <smtcmp_block> tags. For example:
 <smtcmp_block filename="path/to/file.md" language="markdown">
 <!-- ... existing content ... -->
 {{ edit_1 }}
@@ -456,11 +464,17 @@ The user has full access to the file, so they prefer seeing only the changes in 
 
 2. Format your response in markdown.
 
+${hasTools ? `
+3. You have access to tools, but prioritize using the provided markdown content from the vault first before using tools.
+
+4. When using tools, explain what you're doing and why the vault content wasn't sufficient.
+` : ''}
+
 ${
   modelPromptLevel == PromptLevel.Default
-    ? `3. Respond in the same language as the user's message.
+    ? `${hasTools ? '5' : '3'}. Respond in the same language as the user's message.
 
-4. When referencing markdown blocks in your answer, keep the following guidelines in mind:
+${hasTools ? '6' : '4'}. When referencing markdown blocks in your answer, keep the following guidelines in mind:
 
   a. Never include line numbers in the output markdown.
 
@@ -481,7 +495,7 @@ ${
 
     return {
       role: 'system',
-      content: shouldUseRAG ? systemPromptRAG : systemPrompt,
+      content: useRAGPrompt ? systemPromptRAG : systemPrompt,
     }
   }
 
@@ -492,9 +506,10 @@ ${
     // Get currently selected assistant
     const currentAssistantId = this.settings.currentAssistantId
     const assistants = this.settings.assistants || []
+    // Only use assistant if explicitly selected (currentAssistantId is not undefined)
     const currentAssistant = currentAssistantId 
       ? assistants.find(a => a.id === currentAssistantId)
-      : assistants.find(a => a.isDefault) || (assistants.length > 0 ? assistants[0] : null)
+      : null
     
     // If there's no custom prompt and no selected assistant, return null
     if (!customInstruction && !currentAssistant) {
