@@ -60,10 +60,8 @@ export interface TranslationKeys {
       name: string
       description: string
       systemPrompt: string
-      isDefault: string
       actions: string
       noAssistants: string
-      setAsDefault: string
       noAssistant: string
       selectAssistant: string
     }

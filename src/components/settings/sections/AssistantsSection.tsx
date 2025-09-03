@@ -1,51 +1,33 @@
 import { App } from 'obsidian';
 import { Plus, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 import { useLanguage } from '../../../contexts/language-context';
 import { useSettings } from '../../../contexts/settings-context';
 import { Assistant } from '../../../types/assistant.types';
-import { ObsidianButton } from '../../common/ObsidianButton';
 import { ObsidianSetting } from '../../common/ObsidianSetting';
 import { ObsidianTextArea } from '../../common/ObsidianTextArea';
 import { ObsidianTextInput } from '../../common/ObsidianTextInput';
-import { ObsidianToggle } from '../../common/ObsidianToggle';
 import { ConfirmModal } from '../../modals/ConfirmModal';
 
 type AssistantItemProps = {
   assistant: Assistant;
   onUpdate: (updatedAssistant: Assistant) => void;
   onDelete: (id: string) => void;
-  isDefault: boolean;
-  onSetDefault: (id: string) => void;
 };
 
 function AssistantItem({
   assistant,
   onUpdate,
   onDelete,
-  isDefault,
-  onSetDefault,
 }: AssistantItemProps) {
-  // Track expanded state
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Handle delete click
   const handleDeleteClick = (event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent event bubbling to header
+    event.stopPropagation();
     onDelete(assistant.id);
   };
-  
-  // Handle setting as default assistant
-  const handleSetAsDefault = (event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent event bubbling to header
-    if (!isDefault) { // Only allow setting as default when not already default
-      onSetDefault(assistant.id);
-    }
-  };
 
-  // Handle expand/collapse
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
@@ -54,9 +36,9 @@ function AssistantItem({
     <div className="smtcmp-assistant-item" style={{
       border: '1px solid var(--background-modifier-border)',
       borderRadius: '8px',
-      margin: '12px 0',
+      margin: '4px 0',
       overflow: 'hidden',
-      backgroundColor: isDefault ? 'var(--background-secondary-alt)' : 'var(--background-secondary)',
+      backgroundColor: 'var(--background-secondary)',
       transition: 'all 0.2s ease'
     }}>
       <div
@@ -89,25 +71,14 @@ function AssistantItem({
             alignItems: 'center',
             gap: '8px'
           }}>
-            <span style={{
-              fontWeight: 'bold',
-              fontSize: '16px'
-            }}>{assistant.name}</span>
-            
-            {isDefault && (
-              <span className="smtcmp-default-badge" style={{ 
-                fontSize: '12px', 
-                backgroundColor: 'var(--interactive-accent)', 
-                color: 'var(--text-on-accent)',
-                padding: '2px 6px',
-                borderRadius: '4px'
-              }}>
-                Default
-              </span>
-            )}
+            <div className="smtcmp-assistant-name" style={{
+              fontWeight: '500',
+              fontSize: '14px',
+              color: 'var(--text-normal)'
+            }}>
+              {assistant.name}
+            </div>
           </div>
-          
-
         </div>
         
         <div className="smtcmp-assistant-actions" style={{
@@ -115,37 +86,6 @@ function AssistantItem({
           alignItems: 'center',
           gap: '8px'
         }}>
-          {!isDefault && (
-            <button
-              className="smtcmp-set-default-btn"
-              aria-label={`Set ${assistant.name} as default assistant`}
-              onClick={handleSetAsDefault}
-              style={{ 
-                fontSize: '13px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                color: 'var(--interactive-accent)',
-                borderRadius: '4px',
-                transition: 'background-color 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--interactive-accent-hover)';
-                e.currentTarget.style.color = 'var(--text-on-accent)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--interactive-accent)';
-              }}
-            >
-              Set as Default
-            </button>
-          )}
-          
           <button 
             className="smtcmp-delete-assistant-btn" 
             aria-label={`Delete assistant ${assistant.name}`}
@@ -217,8 +157,6 @@ function AssistantItem({
             />
           </div>
 
-
-
           <ObsidianSetting
             name="System Prompt"
             desc="This prompt will be added to the beginning of every chat."
@@ -249,39 +187,25 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
 
   const handleAddAssistant = async () => {
     const newAssistant: Assistant = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       name: `New Assistant ${assistants.length + 1}`,
       description: '',
       systemPrompt: '',
-      isDefault: assistants.length === 0,
     };
 
-    let newAssistantsList = [...assistants, newAssistant];
-    let newCurrentAssistantId = settings.currentAssistantId;
-
-    if (newAssistant.isDefault) {
-      newCurrentAssistantId = newAssistant.id;
-      newAssistantsList = newAssistantsList.map(a => 
-        a.id === newAssistant.id ? newAssistant : { ...a, isDefault: false }
-      );
-    }
+    const newAssistantsList = [...assistants, newAssistant];
 
     await setSettings({
       ...settings,
       assistants: newAssistantsList,
-      currentAssistantId: newCurrentAssistantId,
     });
   };
 
   const handleUpdateAssistant = async (updatedAssistant: Assistant) => {
-    let newAssistantsList = assistants.map((assistant: Assistant) => // Explicit type
+    const newAssistantsList = assistants.map((assistant: Assistant) =>
       assistant.id === updatedAssistant.id ? updatedAssistant : assistant
     );
-    if (updatedAssistant.isDefault) {
-        newAssistantsList = newAssistantsList.map((a: Assistant) => // Explicit type
-            a.id === updatedAssistant.id ? a : {...a, isDefault: false}
-        );
-    }
+    
     await setSettings({
       ...settings,
       assistants: newAssistantsList,
@@ -292,10 +216,8 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     const assistantToDelete = assistants.find((a) => a.id === id);
     if (!assistantToDelete) return;
 
-    // Track confirmation status
     let confirmed = false;
     
-    // Create confirmation dialog
     const modal = new ConfirmModal(
       app,
       {
@@ -310,85 +232,22 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     
     modal.onClose = async () => {
       if (confirmed) {
-        // First filter out the assistant to be deleted
         const updatedAssistants = assistants.filter((a) => a.id !== id);
         
-        // Determine new current assistant ID
         let newCurrentAssistantId = settings.currentAssistantId;
         if (id === settings.currentAssistantId) {
-          // If the deleted assistant is currently selected, choose the first available assistant
           newCurrentAssistantId = updatedAssistants.length > 0 ? updatedAssistants[0].id : undefined;
         }
         
-        // Handle default assistant logic
-        let finalAssistants = [...updatedAssistants];
-        
-        // Check if there's still a default assistant
-        const hasDefault = finalAssistants.some(a => a.isDefault);
-        
-        // If no default assistant and list is not empty, set the first one as default
-        if (!hasDefault && finalAssistants.length > 0) {
-          finalAssistants = finalAssistants.map((a, index) => ({
-            ...a,
-            isDefault: index === 0 // Only set the first one as default
-          }));
-          
-          // If no assistant is currently selected, select the default assistant
-          if (!newCurrentAssistantId) {
-            newCurrentAssistantId = finalAssistants[0].id;
-          }
-        }
-        
-        // Update settings in one go to avoid flickering from multiple renders
         await setSettings({
           ...settings,
-          assistants: finalAssistants,
+          assistants: updatedAssistants,
           currentAssistantId: newCurrentAssistantId,
         });
       }
     };
     
-    // Open confirmation dialog
     modal.open();
-  };
-
-  // Flag to prevent duplicate clicks
-  const [isSettingDefault, setIsSettingDefault] = useState(false);
-
-  const handleSetDefault = async (id: string) => {
-    // Skip if already processing
-    if (isSettingDefault) return;
-    
-    // Set processing flag
-    setIsSettingDefault(true);
-    
-    try {
-      // Check if already the default assistant
-      const targetAssistant = assistants.find(a => a.id === id);
-      if (targetAssistant && targetAssistant.isDefault) {
-        // If already default, do nothing
-        setIsSettingDefault(false);
-        return;
-      }
-      
-      // Ensure only one assistant is set as default
-      const updatedAssistants = assistants.map((assistant: Assistant) => ({
-        ...assistant,
-        isDefault: assistant.id === id
-      }));
-      
-      // Also update the currently selected assistant
-      await setSettings({
-        ...settings,
-        assistants: updatedAssistants,
-        currentAssistantId: id,
-      });
-    } catch (error) {
-      console.error('Error setting default assistant:', error);
-    } finally {
-      // Reset processing flag
-      setIsSettingDefault(false);
-    }
   };
 
   return (
@@ -437,7 +296,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
           color: 'var(--text-muted)',
           fontSize: '15px'
         }}>
-          <p style={{ margin: 0 }}>{t('settings.assistants.noAssistants')} {t('settings.assistants.createFirstAssistant')}</p>
+          <p style={{ margin: 0 }}>{t('settings.assistants.noAssistants')}</p>
         </div>
       ) : (
         <div className="smtcmp-assistants-list" style={{
@@ -451,8 +310,6 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
               assistant={assistant}
               onUpdate={handleUpdateAssistant}
               onDelete={handleDeleteAssistant}
-              isDefault={assistant.isDefault || false}
-              onSetDefault={handleSetDefault}
             />
           ))}
         </div>

@@ -198,20 +198,32 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
           return (
             <div key={provider.id} className="smtcmp-provider-section">
-              <div className="smtcmp-provider-header">
-                <button
-                  className="smtcmp-provider-expand-btn"
-                  onClick={() => toggleProvider(provider.id)}
-                >
+              <div 
+                className="smtcmp-provider-header"
+                onClick={() => toggleProvider(provider.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleProvider(provider.id);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="smtcmp-provider-expand-btn">
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
+                </div>
                 
                 <div className="smtcmp-provider-info">
                   <span className="smtcmp-provider-id">{provider.id}</span>
                   <span className="smtcmp-provider-type">{PROVIDER_TYPES_INFO[provider.type].label}</span>
                   <span 
                     className="smtcmp-provider-api-key"
-                    onClick={() => new EditProviderModal(app, plugin, provider).open()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      new EditProviderModal(app, plugin, provider).open();
+                    }}
                   >
                     {provider.apiKey ? '••••••••' : 'Set API key'}
                   </span>
@@ -219,13 +231,19 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
                 <div className="smtcmp-provider-actions">
                   <button
-                    onClick={() => new EditProviderModal(app, plugin, provider).open()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      new EditProviderModal(app, plugin, provider).open();
+                    }}
                     className="clickable-icon"
                   >
                     <Settings />
                   </button>
                   <button
-                    onClick={() => handleDeleteProvider(provider)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteProvider(provider);
+                    }}
                     className="clickable-icon"
                   >
                     <Trash2 />
