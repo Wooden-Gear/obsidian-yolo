@@ -374,16 +374,38 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         },
       ] as const
 
-      const response = await providerClient.generateResponse(model, {
+      // Stream response and progressively insert into editor
+      const stream = await providerClient.streamResponse(model, {
         model: model.model,
         messages: requestMessages as unknown as any,
-        stream: false,
+        stream: true,
       })
 
-      const content = response.choices?.[0]?.message?.content ?? ''
-      if (content && content.trim().length > 0) {
-        const insertPos = editor.getCursor()
-        editor.replaceRange(content, insertPos)
+      const insertStart = editor.getCursor()
+      let insertedText = ''
+      let prevEnd = insertStart
+
+      const calcEndPos = (start: { line: number; ch: number }, text: string) => {
+        const parts = text.split('\n')
+        const lineDelta = parts.length - 1
+        const endLine = start.line + lineDelta
+        const endCh = lineDelta === 0 ? start.ch + parts[0].length : parts[parts.length - 1].length
+        return { line: endLine, ch: endCh }
+      }
+
+      for await (const chunk of stream) {
+        const delta = chunk?.choices?.[0]?.delta
+        const piece = delta?.content ?? ''
+        if (!piece) continue
+
+        insertedText += piece
+        const newEnd = calcEndPos(insertStart, insertedText)
+        // Replace the previously inserted range with the new accumulated text
+        editor.replaceRange(insertedText, insertStart, prevEnd)
+        prevEnd = newEnd
+      }
+
+      if (insertedText.trim().length > 0) {
         notice.setMessage('AI continuation inserted.')
       } else {
         notice.setMessage('No continuation generated.')
