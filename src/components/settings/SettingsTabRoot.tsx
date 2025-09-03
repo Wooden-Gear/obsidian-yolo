@@ -15,6 +15,7 @@ import { McpSection } from './sections/McpSection'
 import { ProvidersAndModelsSection } from './sections/ProvidersAndModelsSection'
 import { RAGSection } from './sections/RAGSection'
 import { TemplateSection } from './sections/TemplateSection'
+import { ContinuationSection } from './sections/ContinuationSection'
 
 type SettingsTabRootProps = {
   app: App
@@ -47,6 +48,7 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
       <RAGSection app={app} plugin={plugin} />
       <McpSection app={app} plugin={plugin} />
       <TemplateSection app={app} />
+      <ContinuationSection app={app} />
       <EtcSection app={app} plugin={plugin} />
     </>
   )

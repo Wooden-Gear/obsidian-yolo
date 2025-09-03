@@ -178,6 +178,13 @@ export interface TranslationKeys {
       name: string
       actions: string
     }
+    continuation: {
+      title: string
+      modelSource: string
+      modelSourceDesc: string
+      fixedModel: string
+      fixedModelDesc: string
+    }
     etc: {
       title: string
       resetSettings: string

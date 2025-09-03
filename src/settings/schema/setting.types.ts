@@ -88,7 +88,22 @@ export const smartComposerSettingsSchema = z.object({
       enableTools: true,
       maxAutoIterations: 1,
     }),
-    
+  
+  // Continuation (续写) options
+  continuationOptions: z
+    .object({
+      // whether to use current sidebar chat model
+      useCurrentModel: z.boolean(),
+      // fixed model id when not using current model
+      fixedModelId: z.string(),
+    })
+    .catch({
+      useCurrentModel: true,
+      fixedModelId:
+        DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
+        DEFAULT_CHAT_MODELS[0].id,
+    }),
+  
   // Assistant list
   assistants: z.array(assistantSchema).catch([]),
   

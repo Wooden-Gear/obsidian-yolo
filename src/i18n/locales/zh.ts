@@ -175,6 +175,13 @@ export const zh: TranslationKeys = {
       name: '名称',
       actions: '操作',
     },
+    continuation: {
+      title: '续写',
+      modelSource: '使用侧边栏当前模型',
+      modelSourceDesc: '开启后，续写将使用聊天侧边栏当前选择的模型；关闭后，可在下方选择一个固定的模型用于续写。',
+      fixedModel: '续写的固定模型',
+      fixedModelDesc: '当不使用当前聊天模型时，选择一个用于续写功能的特定模型。',
+    },
     etc: {
       title: '其他',
       resetSettings: '重置设置',

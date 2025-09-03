@@ -7,12 +7,14 @@ type ObsidianDropdownProps = {
   value: string
   options: Record<string, string>
   onChange: (value: string) => void
+  disabled?: boolean
 }
 
 export function ObsidianDropdown({
   value,
   options,
   onChange,
+  disabled = false,
 }: ObsidianDropdownProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
@@ -56,7 +58,8 @@ export function ObsidianDropdown({
     dropdownComponent.selectEl.empty()
     dropdownComponent.addOptions(options)
     dropdownComponent.setValue(value)
-  }, [dropdownComponent, options, value])
+    dropdownComponent.selectEl.disabled = !!disabled
+  }, [dropdownComponent, options, value, disabled])
 
   return <div ref={containerRef} />
 }

@@ -353,9 +353,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           ? headText.slice(-MAX_CONTEXT_CHARS)
           : headText
 
+      const continuationModelId = this.settings.continuationOptions?.useCurrentModel
+        ? this.settings.chatModelId
+        : this.settings.continuationOptions.fixedModelId
+
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
-        modelId: this.settings.chatModelId,
+        modelId: continuationModelId,
       })
 
       const requestMessages = [

@@ -175,6 +175,13 @@ export const en: TranslationKeys = {
       name: 'Name',
       actions: 'Actions',
     },
+    continuation: {
+      title: 'Continuation',
+      modelSource: 'Use current chat model',
+      modelSourceDesc: 'If enabled, continuation uses the model currently selected in the chat sidebar. If disabled, you can select a fixed model below.',
+      fixedModel: 'Fixed model for continuation',
+      fixedModelDesc: 'Choose a specific model for the continuation feature when not using the current chat model.',
+    },
     etc: {
       title: 'Etc',
       resetSettings: 'Reset settings',
