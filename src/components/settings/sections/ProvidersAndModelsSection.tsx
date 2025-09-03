@@ -281,7 +281,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                                       <Settings />
                                     </button>
                                   )}
-                                  {!DEFAULT_CHAT_MODELS.some(v => v.id === model.id) && (
+                                  {!DEFAULT_CHAT_MODELS.some(v => v.id === model.id && v.providerId === model.providerId) && (
                                     <>
                                       <button
                                         onClick={() => new EditChatModelModal(app, plugin, model).open()}
@@ -342,7 +342,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               <td>{model.dimension}</td>
                               <td>
                                 <div className="smtcmp-settings-actions">
-                                  {!DEFAULT_EMBEDDING_MODELS.some(v => v.id === model.id) && (
+                                  {!DEFAULT_EMBEDDING_MODELS.some(v => v.id === model.id && v.providerId === model.providerId) && (
                                     <>
                                       <button
                                         onClick={() => new EditEmbeddingModelModal(app, plugin, model).open()}
