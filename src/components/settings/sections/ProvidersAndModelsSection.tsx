@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Settings, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Settings, Trash2, Edit } from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import React, { useState } from 'react'
 
@@ -17,6 +17,8 @@ import {
 } from '../modals/ProviderFormModal'
 import { AddChatModelModal } from '../modals/AddChatModelModal'
 import { AddEmbeddingModelModal } from '../modals/AddEmbeddingModelModal'
+import { EditChatModelModal } from '../modals/EditChatModelModal'
+import { EditEmbeddingModelModal } from '../modals/EditEmbeddingModelModal'
 import {
   ChatModelSettingsModal,
   hasChatModelSettings,
@@ -282,12 +284,21 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                                     </button>
                                   )}
                                   {!DEFAULT_CHAT_MODELS.some(v => v.id === model.id) && (
-                                    <button
-                                      onClick={() => handleDeleteChatModel(model.id)}
-                                      className="clickable-icon"
-                                    >
-                                      <Trash2 />
-                                    </button>
+                                    <>
+                                      <button
+                                        onClick={() => new EditChatModelModal(app, plugin, model).open()}
+                                        className="clickable-icon"
+                                        title="Edit model"
+                                      >
+                                        <Edit />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteChatModel(model.id)}
+                                        className="clickable-icon"
+                                      >
+                                        <Trash2 />
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </td>
@@ -334,12 +345,21 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               <td>
                                 <div className="smtcmp-settings-actions">
                                   {!DEFAULT_EMBEDDING_MODELS.some(v => v.id === model.id) && (
-                                    <button
-                                      onClick={() => handleDeleteEmbeddingModel(model.id)}
-                                      className="clickable-icon"
-                                    >
-                                      <Trash2 />
-                                    </button>
+                                    <>
+                                      <button
+                                        onClick={() => new EditEmbeddingModelModal(app, plugin, model).open()}
+                                        className="clickable-icon"
+                                        title="Edit model"
+                                      >
+                                        <Edit />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteEmbeddingModel(model.id)}
+                                        className="clickable-icon"
+                                      >
+                                        <Trash2 />
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </td>

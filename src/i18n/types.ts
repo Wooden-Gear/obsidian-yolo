@@ -94,6 +94,10 @@ export interface TranslationKeys {
       addEmbeddingModel: string
       addCustomChatModel: string
       addCustomEmbeddingModel: string
+      editChatModel: string
+      editEmbeddingModel: string
+      editCustomChatModel: string
+      editCustomEmbeddingModel: string
       modelId: string
       modelIdDesc: string
       modelIdPlaceholder: string
@@ -103,6 +107,9 @@ export interface TranslationKeys {
       promptLevelDesc: string
       promptLevelDefault: string
       promptLevelSimple: string
+      dimension: string
+      dimensionDesc: string
+      dimensionPlaceholder: string
       noChatModelsConfigured: string
       noEmbeddingModelsConfigured: string
     }
