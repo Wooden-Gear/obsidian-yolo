@@ -7,6 +7,7 @@ import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { PromptLevel } from '../../../types/prompt-level.types'
 import { LLMProvider } from '../../../types/provider.types'
+import { generateModelId } from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
@@ -51,7 +52,14 @@ function AddChatModelModalComponent({
   })
 
   const handleSubmit = async () => {
-    if (plugin.settings.chatModels.some((p) => p.id === formData.id)) {
+    // Generate model ID with provider prefix
+    const modelIdWithPrefix = generateModelId(formData.providerId, formData.id)
+    const modelDataWithPrefix = {
+      ...formData,
+      id: modelIdWithPrefix,
+    }
+
+    if (plugin.settings.chatModels.some((p) => p.id === modelIdWithPrefix)) {
       new Notice('Model with this ID already exists. Try a different ID.')
       return
     }
@@ -65,7 +73,7 @@ function AddChatModelModalComponent({
       return
     }
 
-    const validationResult = chatModelSchema.safeParse(formData)
+    const validationResult = chatModelSchema.safeParse(modelDataWithPrefix)
     if (!validationResult.success) {
       new Notice(validationResult.error.issues.map((v) => v.message).join('\n'))
       return
@@ -73,7 +81,7 @@ function AddChatModelModalComponent({
 
     await plugin.setSettings({
       ...plugin.settings,
-      chatModels: [...plugin.settings.chatModels, formData],
+      chatModels: [...plugin.settings.chatModels, modelDataWithPrefix],
     })
 
     onClose()
