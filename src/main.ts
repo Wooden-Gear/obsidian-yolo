@@ -5,6 +5,7 @@ import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
+import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
 import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
@@ -134,6 +135,20 @@ export default class SmartComposerPlugin extends Plugin {
     this.addSettingTab(new SmartComposerSettingTab(this.app, this))
 
     void this.migrateToJsonStorage()
+
+    // Editor context menu: AI Continue Writing
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, editor) => {
+        menu.addItem((item) =>
+          item
+            .setTitle('AI Continue Writing')
+            .setIcon('wand-sparkles')
+            .onClick(async () => {
+              await this.handleContinueWriting(editor)
+            }),
+        )
+      }),
+    )
   }
 
   onunload() {
@@ -317,6 +332,63 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   private registerTimeout(callback: () => void, timeout: number): void {
     const timeoutId = setTimeout(callback, timeout)
     this.timeoutIds.push(timeoutId)
+  }
+
+  private async handleContinueWriting(editor: Editor) {
+    try {
+      const notice = new Notice('Generating continuation...', 0)
+      const cursor = editor.getCursor()
+      const headText = editor.getRange({ line: 0, ch: 0 }, cursor)
+
+      if (!headText || headText.trim().length === 0) {
+        notice.setMessage('No preceding content to continue.')
+        this.registerTimeout(() => notice.hide(), 1000)
+        return
+      }
+
+      // Truncate context to avoid exceeding model limits (simple char-based cap)
+      const MAX_CONTEXT_CHARS = 8000
+      const context =
+        headText.length > MAX_CONTEXT_CHARS
+          ? headText.slice(-MAX_CONTEXT_CHARS)
+          : headText
+
+      const { providerClient, model } = getChatModelClient({
+        settings: this.settings,
+        modelId: this.settings.chatModelId,
+      })
+
+      const requestMessages = [
+        {
+          role: 'system',
+          content:
+            'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+        },
+        {
+          role: 'user',
+          content: `Context (up to recent portion):\n\n${context}\n\nContinue writing from here.`,
+        },
+      ] as const
+
+      const response = await providerClient.generateResponse(model, {
+        model: model.model,
+        messages: requestMessages as unknown as any,
+        stream: false,
+      })
+
+      const content = response.choices?.[0]?.message?.content ?? ''
+      if (content && content.trim().length > 0) {
+        const insertPos = editor.getCursor()
+        editor.replaceRange(content, insertPos)
+        notice.setMessage('AI continuation inserted.')
+      } else {
+        notice.setMessage('No continuation generated.')
+      }
+      this.registerTimeout(() => notice.hide(), 1200)
+    } catch (error) {
+      console.error(error)
+      new Notice('Failed to generate continuation.')
+    }
   }
 
   private async migrateToJsonStorage() {
