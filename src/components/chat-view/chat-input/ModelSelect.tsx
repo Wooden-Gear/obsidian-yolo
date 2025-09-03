@@ -32,30 +32,56 @@ export function ModelSelect() {
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="smtcmp-popover">
-          <ul>
-            {settings.chatModels
-              .filter(({ enable }) => enable ?? true)
-              .map((chatModelOption) => {
-                const provider = settings.providers.find(p => p.id === chatModelOption.providerId)
-                const displayName = getModelDisplayNameWithProvider(chatModelOption.id, provider?.id)
-                return (
-                  <DropdownMenu.Item
-                    key={chatModelOption.id}
-                    onSelect={() => {
-                      setSettings({
-                        ...settings,
-                        chatModelId: chatModelOption.id,
-                      })
-                    }}
-                    asChild
-                  >
-                    <li>{displayName}</li>
-                  </DropdownMenu.Item>
+          <ul className="smtcmp-model-select-list">
+            {(() => {
+              const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
+              const providerOrder = settings.providers.map(p => p.id)
+              const providerIdsInModels = Array.from(new Set(enabledModels.map(m => m.providerId)))
+              const orderedProviderIds = [
+                ...providerOrder.filter(id => providerIdsInModels.includes(id)),
+                ...providerIdsInModels.filter(id => !providerOrder.includes(id)),
+              ]
+
+              return orderedProviderIds.flatMap((pid, groupIndex) => {
+                const groupModels = enabledModels.filter(m => m.providerId === pid)
+                if (groupModels.length === 0) return []
+
+                const groupHeader = (
+                  <DropdownMenu.Label key={`label-${pid}`} className="smtcmp-popover-group-label">
+                    {pid}
+                  </DropdownMenu.Label>
                 )
-              })}
+
+                const items = groupModels.map((chatModelOption) => {
+                  const provider = settings.providers.find(p => p.id === chatModelOption.providerId)
+                  const displayName = getModelDisplayNameWithProvider(chatModelOption.id, provider?.id)
+                  return (
+                    <DropdownMenu.Item
+                      key={chatModelOption.id}
+                      onSelect={() => {
+                        setSettings({
+                          ...settings,
+                          chatModelId: chatModelOption.id,
+                        })
+                      }}
+                      asChild
+                    >
+                      <li>{displayName}</li>
+                    </DropdownMenu.Item>
+                  )
+                })
+
+                return [
+                  groupHeader,
+                  ...items,
+                  ...(groupIndex < orderedProviderIds.length - 1 ? [<DropdownMenu.Separator key={`sep-${pid}`} className="smtcmp-popover-group-separator" />] : []),
+                ]
+              })
+            })()}
           </ul>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   )
 }
+
