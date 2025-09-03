@@ -2,6 +2,7 @@ import { App, Notice } from 'obsidian'
 import { useState } from 'react'
 
 import { DEFAULT_PROVIDERS } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { PromptLevel } from '../../../types/prompt-level.types'
@@ -25,8 +26,9 @@ export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProp
       Component: AddChatModelModalComponent,
       props: { plugin, provider },
       options: {
-        title: 'Add Custom Chat Model',
+        title: 'Add Custom Chat Model', // Will be translated in component
       },
+      plugin: plugin,
     })
   }
 }
@@ -36,6 +38,7 @@ function AddChatModelModalComponent({
   onClose,
   provider,
 }: AddChatModelModalComponentProps) {
+  const { t } = useLanguage()
   const selectedProvider: LLMProvider | undefined = provider ?? plugin.settings.providers[0]
   const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
   const initialProviderType = selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
@@ -79,13 +82,13 @@ function AddChatModelModalComponent({
   return (
     <>
       <ObsidianSetting
-        name="ID"
-        desc="Choose an ID to identify this model in your settings. This is just for your reference."
+        name={t('settings.models.modelId')}
+        desc={t('settings.models.modelIdDesc')}
         required
       >
         <ObsidianTextInput
           value={formData.id}
-          placeholder="my-custom-model"
+          placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, id: value }))
           }
@@ -94,10 +97,10 @@ function AddChatModelModalComponent({
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 
-      <ObsidianSetting name="Model Name" required>
+      <ObsidianSetting name={t('settings.models.modelName')} required>
         <ObsidianTextInput
           value={formData.model}
-          placeholder="Enter the model name"
+          placeholder={t('settings.models.modelNamePlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, model: value }))
           }
@@ -105,15 +108,15 @@ function AddChatModelModalComponent({
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Prompt Level"
-        desc={`Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.`}
+        name={t('settings.models.promptLevel')}
+        desc={t('settings.models.promptLevelDesc')}
         required
       >
         <ObsidianDropdown
           value={(formData.promptLevel ?? PromptLevel.Default).toString()}
           options={{
-            [PromptLevel.Default]: 'default',
-            [PromptLevel.Simple]: 'simple',
+            [PromptLevel.Default]: t('settings.models.promptLevelDefault'),
+            [PromptLevel.Simple]: t('settings.models.promptLevelSimple'),
           }}
           onChange={(value: string) =>
             setFormData((prev) => ({
@@ -125,8 +128,8 @@ function AddChatModelModalComponent({
       </ObsidianSetting>
 
       <ObsidianSetting>
-        <ObsidianButton text="Add" onClick={handleSubmit} cta />
-        <ObsidianButton text="Cancel" onClick={onClose} />
+        <ObsidianButton text={t('common.add')} onClick={handleSubmit} cta />
+        <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
   )

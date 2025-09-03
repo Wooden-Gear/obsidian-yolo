@@ -2,6 +2,8 @@ import { App } from 'obsidian'
 
 import SmartComposerPlugin from '../../main'
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
+import { PluginProvider } from '../../contexts/plugin-context'
+import { SettingsProvider } from '../../contexts/settings-context'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 
@@ -52,8 +54,16 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
 
 export function SettingsTabRoot({ app, plugin }: SettingsTabRootProps) {
   return (
-    <LanguageProvider>
-      <SettingsContent app={app} plugin={plugin} />
-    </LanguageProvider>
+    <PluginProvider plugin={plugin}>
+      <LanguageProvider>
+        <SettingsProvider
+          settings={plugin.settings}
+          setSettings={plugin.setSettings.bind(plugin)}
+          addSettingsChangeListener={plugin.addSettingsChangeListener.bind(plugin)}
+        >
+          <SettingsContent app={app} plugin={plugin} />
+        </SettingsProvider>
+      </LanguageProvider>
+    </PluginProvider>
   )
 }

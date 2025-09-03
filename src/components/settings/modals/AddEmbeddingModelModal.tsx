@@ -2,6 +2,7 @@ import { App, Notice } from 'obsidian'
 import { useState } from 'react'
 
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import { getProviderClient } from '../../../core/llm/manager'
 import { supportedDimensionsForIndex } from '../../../database/schema'
 import SmartComposerPlugin from '../../../main'
@@ -29,8 +30,9 @@ export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalCom
       Component: AddEmbeddingModelModalComponent,
       props: { plugin, provider },
       options: {
-        title: 'Add Custom Embedding Model',
+        title: 'Add Custom Embedding Model', // Will be translated in component
       },
+      plugin: plugin,
     })
   }
 }
@@ -40,6 +42,7 @@ function AddEmbeddingModelModalComponent({
   onClose,
   provider,
 }: AddEmbeddingModelModalComponentProps) {
+  const { t } = useLanguage()
   const firstEmbeddingCapable = plugin.settings.providers.find(
     (p) => PROVIDER_TYPES_INFO[p.type].supportEmbedding,
   )
@@ -132,8 +135,8 @@ function AddEmbeddingModelModalComponent({
   return (
     <>
       <ObsidianSetting
-        name="ID"
-        desc="Choose an ID to identify this model in your settings. This is just for your reference."
+        name={t('settings.models.modelId')}
+        desc={t('settings.models.modelIdDesc')}
         required
       >
         <ObsidianTextInput
@@ -147,10 +150,10 @@ function AddEmbeddingModelModalComponent({
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 
-      <ObsidianSetting name="Model Name" required>
+      <ObsidianSetting name={t('settings.models.modelName')} required>
         <ObsidianTextInput
           value={formData.model}
-          placeholder="Enter the model name"
+          placeholder={t('settings.models.modelNamePlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, model: value }))
           }
@@ -158,8 +161,8 @@ function AddEmbeddingModelModalComponent({
       </ObsidianSetting>
 
       <ObsidianSetting>
-        <ObsidianButton text="Add" onClick={handleSubmit} cta />
-        <ObsidianButton text="Cancel" onClick={onClose} />
+        <ObsidianButton text={t('common.add')} onClick={handleSubmit} cta />
+        <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
   )

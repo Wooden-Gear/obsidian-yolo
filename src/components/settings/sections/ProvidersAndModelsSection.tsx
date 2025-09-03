@@ -29,8 +29,9 @@ type ProvidersAndModelsSectionProps = {
 
 export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSectionProps) {
   const { settings, setSettings } = useSettings()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
+  
 
   const toggleProvider = (providerId: string) => {
     const newExpanded = new Set(expandedProviders)
@@ -237,7 +238,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                   {/* Chat Models Section */}
                   <div className="smtcmp-models-subsection">
                     <div className="smtcmp-models-subsection-header">
-                      <span>Chat Models</span>
+                      <span>{t('settings.models.chatModels')}</span>
                       <button 
                         className="smtcmp-add-model-btn"
                         onClick={() => {
@@ -245,7 +246,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                           modal.open()
                         }}
                       >
-                        + Add Chat Model
+                        + {t('settings.models.addChatModel')}
                       </button>
                     </div>
                     
@@ -295,14 +296,14 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         </tbody>
                       </table>
                     ) : (
-                      <div className="smtcmp-no-models">No chat models configured</div>
+                      <div className="smtcmp-no-models">{t('settings.models.noChatModelsConfigured')}</div>
                     )}
                   </div>
 
                   {/* Embedding Models Section */}
                   <div className="smtcmp-models-subsection">
                     <div className="smtcmp-models-subsection-header">
-                      <span>Embedding Models</span>
+                      <span>{t('settings.models.embeddingModels')}</span>
                       <button 
                         className="smtcmp-add-model-btn"
                         onClick={() => {
@@ -310,7 +311,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                           modal.open()
                         }}
                       >
-                        + Add Embedding Model
+                        + {t('settings.models.addEmbeddingModel')}
                       </button>
                     </div>
                     
@@ -347,7 +348,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         </tbody>
                       </table>
                     ) : (
-                      <div className="smtcmp-no-models">No embedding models configured</div>
+                      <div className="smtcmp-no-models">{t('settings.models.noEmbeddingModelsConfigured')}</div>
                     )}
                   </div>
                 </div>
@@ -360,7 +361,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
           className="smtcmp-add-provider-btn"
           onClick={() => new AddProviderModal(app, plugin).open()}
         >
-          Add Custom Provider
+          {t('settings.providers.addCustomProvider')}
         </button>
       </div>
     </div>

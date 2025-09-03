@@ -69,12 +69,22 @@ export interface TranslationKeys {
       howToGetApiKeys: string
       addProvider: string
       editProvider: string
+      editProviderTitle: string
       deleteProvider: string
       deleteConfirm: string
       deleteWarning: string
       chatModels: string
       embeddingModels: string
       embeddingsWillBeDeleted: string
+      addCustomProvider: string
+      apiKey: string
+      apiKeyDesc: string
+      apiKeyPlaceholder: string
+      baseUrl: string
+      baseUrlDesc: string
+      baseUrlPlaceholder: string
+      noStainlessHeaders: string
+      noStainlessHeadersDesc: string
     }
     models: {
       title: string
@@ -82,6 +92,19 @@ export interface TranslationKeys {
       embeddingModels: string
       addChatModel: string
       addEmbeddingModel: string
+      addCustomChatModel: string
+      addCustomEmbeddingModel: string
+      modelId: string
+      modelIdDesc: string
+      modelIdPlaceholder: string
+      modelName: string
+      modelNamePlaceholder: string
+      promptLevel: string
+      promptLevelDesc: string
+      promptLevelDefault: string
+      promptLevelSimple: string
+      noChatModelsConfigured: string
+      noEmbeddingModelsConfigured: string
     }
     rag: {
       title: string

@@ -2,6 +2,7 @@ import { App, Notice } from 'obsidian'
 import { useState } from 'react'
 
 import { PROVIDER_TYPES_INFO } from '../../../constants'
+import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { LLMProvider, llmProviderSchema } from '../../../types/provider.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
@@ -24,8 +25,9 @@ export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
       Component: ProviderFormComponent,
       props: { plugin, provider: null },
       options: {
-        title: 'Add Custom Provider',
+        title: 'Add Custom Provider', // Will be translated in component
       },
+      plugin: plugin,
     })
   }
 }
@@ -37,8 +39,9 @@ export class EditProviderModal extends ReactModal<ProviderFormComponentProps> {
       Component: ProviderFormComponent,
       props: { plugin, provider },
       options: {
-        title: `Edit Provider: ${provider.id}`,
+        title: `Edit Provider: ${provider.id}`, // Will be translated in component
       },
+      plugin: plugin,
     })
   }
 }
@@ -48,6 +51,10 @@ function ProviderFormComponent({
   provider,
   onClose,
 }: ProviderFormComponentProps) {
+  const { t } = useLanguage()
+  
+  // Debug: log translation function
+  console.log('Translation test:', t('common.save'), t('settings.providers.apiKey'))
   const [formData, setFormData] = useState<LLMProvider>(
     provider
       ? { ...provider }
@@ -157,13 +164,13 @@ function ProviderFormComponent({
       )}
 
       <ObsidianSetting
-        name="API Key"
-        desc="(leave blank if not required)"
+        name={t('settings.providers.apiKey')}
+        desc={t('settings.providers.apiKeyDesc')}
         required={providerTypeInfo.requireApiKey}
       >
         <ObsidianTextInput
           value={formData.apiKey ?? ''}
-          placeholder="Enter your API Key"
+          placeholder={t('settings.providers.apiKeyPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, apiKey: value }))
           }
@@ -171,13 +178,13 @@ function ProviderFormComponent({
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="Base URL"
-        desc="(leave blank if using default)"
+        name={t('settings.providers.baseUrl')}
+        desc={t('settings.providers.baseUrlDesc')}
         required={providerTypeInfo.requireBaseUrl}
       >
         <ObsidianTextInput
           value={formData.baseUrl ?? ''}
-          placeholder="Enter base URL"
+          placeholder={t('settings.providers.baseUrlPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, baseUrl: value }))
           }
@@ -238,11 +245,11 @@ function ProviderFormComponent({
 
       <ObsidianSetting>
         <ObsidianButton
-          text={provider ? 'Save' : 'Add'}
+          text={provider ? t('common.save') : t('common.add')}
           onClick={handleSubmit}
           cta
         />
-        <ObsidianButton text="Cancel" onClick={onClose} />
+        <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
   )
