@@ -5,6 +5,7 @@ import { DEFAULT_PROVIDERS } from '../../../constants'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { PromptLevel } from '../../../types/prompt-level.types'
+import { LLMProvider } from '../../../types/provider.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
@@ -14,14 +15,15 @@ import { ReactModal } from '../../common/ReactModal'
 type AddChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
   onClose: () => void
+  provider?: LLMProvider
 }
 
 export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin) {
+  constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
     super({
       app: app,
       Component: AddChatModelModalComponent,
-      props: { plugin },
+      props: { plugin, provider },
       options: {
         title: 'Add Custom Chat Model',
       },
@@ -32,10 +34,14 @@ export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProp
 function AddChatModelModalComponent({
   plugin,
   onClose,
+  provider,
 }: AddChatModelModalComponentProps) {
+  const selectedProvider: LLMProvider | undefined = provider ?? plugin.settings.providers[0]
+  const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
+  const initialProviderType = selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
   const [formData, setFormData] = useState<ChatModel>({
-    providerId: DEFAULT_PROVIDERS[0].id,
-    providerType: DEFAULT_PROVIDERS[0].type,
+    providerId: initialProviderId,
+    providerType: initialProviderType,
     id: '',
     model: '',
     promptLevel: PromptLevel.Default,
@@ -86,31 +92,7 @@ function AddChatModelModalComponent({
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name="Provider ID" required>
-        <ObsidianDropdown
-          value={formData.providerId}
-          options={Object.fromEntries(
-            plugin.settings.providers.map((provider) => [
-              provider.id,
-              provider.id,
-            ]),
-          )}
-          onChange={(value: string) => {
-            const provider = plugin.settings.providers.find(
-              (p) => p.id === value,
-            )
-            if (!provider) {
-              new Notice(`Provider with ID ${value} not found`)
-              return
-            }
-            setFormData((prev) => ({
-              ...prev,
-              providerId: value,
-              providerType: provider.type,
-            }))
-          }}
-        />
-      </ObsidianSetting>
+      {/* Provider is derived from the current group context; field removed intentionally */}
 
       <ObsidianSetting name="Model Name" required>
         <ObsidianTextInput

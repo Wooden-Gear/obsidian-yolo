@@ -9,8 +9,8 @@ import {
   EmbeddingModel,
   embeddingModelSchema,
 } from '../../../types/embedding-model.types'
+import { LLMProvider } from '../../../types/provider.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
@@ -19,14 +19,15 @@ import { ConfirmModal } from '../../modals/ConfirmModal'
 type AddEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
   onClose: () => void
+  provider?: LLMProvider
 }
 
 export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin) {
+  constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
     super({
       app: app,
       Component: AddEmbeddingModelModalComponent,
-      props: { plugin },
+      props: { plugin, provider },
       options: {
         title: 'Add Custom Embedding Model',
       },
@@ -37,10 +38,18 @@ export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalCom
 function AddEmbeddingModelModalComponent({
   plugin,
   onClose,
+  provider,
 }: AddEmbeddingModelModalComponentProps) {
+  const firstEmbeddingCapable = plugin.settings.providers.find(
+    (p) => PROVIDER_TYPES_INFO[p.type].supportEmbedding,
+  )
+  const selectedProvider: LLMProvider | undefined =
+    provider ?? firstEmbeddingCapable ?? plugin.settings.providers[0]
+  const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
+  const initialProviderType = selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
   const [formData, setFormData] = useState<Omit<EmbeddingModel, 'dimension'>>({
-    providerId: DEFAULT_PROVIDERS[0].id,
-    providerType: DEFAULT_PROVIDERS[0].type,
+    providerId: initialProviderId,
+    providerType: initialProviderType,
     id: '',
     model: '',
   })
@@ -136,33 +145,7 @@ function AddEmbeddingModelModalComponent({
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name="Provider ID" required>
-        <ObsidianDropdown
-          value={formData.providerId}
-          options={Object.fromEntries(
-            plugin.settings.providers
-              .filter(
-                (provider) =>
-                  PROVIDER_TYPES_INFO[provider.type].supportEmbedding,
-              )
-              .map((provider) => [provider.id, provider.id]),
-          )}
-          onChange={(value: string) => {
-            const provider = plugin.settings.providers.find(
-              (p) => p.id === value,
-            )
-            if (!provider) {
-              new Notice(`Provider with ID ${value} not found`)
-              return
-            }
-            setFormData((prev) => ({
-              ...prev,
-              providerId: value,
-              providerType: provider.type,
-            }))
-          }}
-        />
-      </ObsidianSetting>
+      {/* Provider is derived from the current group context; field removed intentionally */}
 
       <ObsidianSetting name="Model Name" required>
         <ObsidianTextInput

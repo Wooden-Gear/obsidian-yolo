@@ -241,8 +241,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                       <button 
                         className="smtcmp-add-model-btn"
                         onClick={() => {
-                          const modal = new AddChatModelModal(app, plugin)
-                          // Pre-select this provider
+                          const modal = new AddChatModelModal(app, plugin, provider)
                           modal.open()
                         }}
                       >
@@ -307,7 +306,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                       <button 
                         className="smtcmp-add-model-btn"
                         onClick={() => {
-                          const modal = new AddEmbeddingModelModal(app, plugin)
+                          const modal = new AddEmbeddingModelModal(app, plugin, provider)
                           modal.open()
                         }}
                       >
