@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 
 import { useSettings } from '../../../contexts/settings-context'
-import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
+import { getModelDisplayNameWithProvider, getModelDisplayName } from '../../../utils/model-id-utils'
 
 export function ModelSelect() {
   const { settings, setSettings } = useSettings()
@@ -53,8 +53,7 @@ export function ModelSelect() {
                 )
 
                 const items = groupModels.map((chatModelOption) => {
-                  const provider = settings.providers.find(p => p.id === chatModelOption.providerId)
-                  const displayName = getModelDisplayNameWithProvider(chatModelOption.id, provider?.id)
+                  const displayName = getModelDisplayName(chatModelOption.id)
                   return (
                     <DropdownMenu.Item
                       key={chatModelOption.id}
