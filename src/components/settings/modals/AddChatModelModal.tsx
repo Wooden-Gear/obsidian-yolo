@@ -5,11 +5,9 @@ import { DEFAULT_PROVIDERS } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
-import { PromptLevel } from '../../../types/prompt-level.types'
 import { LLMProvider } from '../../../types/provider.types'
 import { generateModelId } from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
@@ -48,7 +46,6 @@ function AddChatModelModalComponent({
     providerType: initialProviderType,
     id: '',
     model: '',
-    promptLevel: PromptLevel.Default,
   })
 
   const handleSubmit = async () => {
@@ -115,26 +112,6 @@ function AddChatModelModalComponent({
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.models.promptLevel')}
-        desc={t('settings.models.promptLevelDesc')}
-        required
-      >
-        <ObsidianDropdown
-          value={(formData.promptLevel ?? PromptLevel.Default).toString()}
-          options={{
-            [PromptLevel.Default]: t('settings.models.promptLevelDefault'),
-            [PromptLevel.Simple]: t('settings.models.promptLevelSimple'),
-          }}
-          onChange={(value: string) =>
-            setFormData((prev) => ({
-              ...prev,
-              promptLevel: Number(value) as PromptLevel,
-            }))
-          }
-        />
-      </ObsidianSetting>
-
       <ObsidianSetting>
         <ObsidianButton text={t('common.add')} onClick={handleSubmit} cta />
         <ObsidianButton text={t('common.cancel')} onClick={onClose} />
@@ -142,3 +119,4 @@ function AddChatModelModalComponent({
     </>
   )
 }
+

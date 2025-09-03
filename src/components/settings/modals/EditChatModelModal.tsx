@@ -3,10 +3,8 @@ import { App, Notice } from 'obsidian'
 
 import SmartComposerPlugin from '../../../main'
 import { ChatModel } from '../../../types/chat-model.types'
-import { PromptLevel } from '../../../types/prompt-level.types'
 import { useLanguage } from '../../../contexts/language-context'
 import { ObsidianButton } from '../../common/ObsidianButton'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
@@ -48,11 +46,9 @@ function EditChatModelModalComponent({
   const [formData, setFormData] = useState<{
     id: string
     model: string
-    promptLevel: PromptLevel
   }>({
     id: model.id,
     model: model.model,
-    promptLevel: model.promptLevel || PromptLevel.Default,
   })
 
   const handleSubmit = async () => {
@@ -82,7 +78,6 @@ function EditChatModelModalComponent({
         ...chatModels[modelIndex],
         id: formData.id,
         model: formData.model,
-        promptLevel: formData.promptLevel,
       }
 
       await plugin.setSettings({
@@ -124,25 +119,7 @@ function EditChatModelModalComponent({
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.models.promptLevel')}
-        desc={t('settings.models.promptLevelDesc')}
-        required
-      >
-        <ObsidianDropdown
-          value={formData.promptLevel.toString()}
-          options={{
-            [PromptLevel.Default]: t('settings.models.promptLevelDefault'),
-            [PromptLevel.Simple]: t('settings.models.promptLevelSimple'),
-          }}
-          onChange={(value: string) =>
-            setFormData((prev) => ({
-              ...prev,
-              promptLevel: Number(value) as PromptLevel,
-            }))
-          }
-        />
-      </ObsidianSetting>
+      
 
       <ObsidianSetting>
         <ObsidianButton text={t('common.save')} onClick={handleSubmit} cta />

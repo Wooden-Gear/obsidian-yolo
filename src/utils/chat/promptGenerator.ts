@@ -607,9 +607,8 @@ ${transcript.map((t) => `${t.offset}: ${t.text}`).join('\n')}`
   }
 
   private getModelPromptLevel(): PromptLevel {
-    const chatModel = this.settings.chatModels.find(
-      (model) => model.id === this.settings.chatModelId,
-    )
-    return chatModel?.promptLevel ?? PromptLevel.Default
+    // Simplify prompt level design: always use Default
+    // This also ensures backward compatibility (any saved Simple will be treated as Default)
+    return PromptLevel.Default
   }
 }
