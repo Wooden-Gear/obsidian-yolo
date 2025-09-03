@@ -224,14 +224,12 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                   >
                     <Settings />
                   </button>
-                  {!DEFAULT_PROVIDERS.some((v) => v.id === provider.id) && (
-                    <button
-                      onClick={() => handleDeleteProvider(provider)}
-                      className="clickable-icon"
-                    >
-                      <Trash2 />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDeleteProvider(provider)}
+                    className="clickable-icon"
+                  >
+                    <Trash2 />
+                  </button>
                 </div>
               </div>
 
