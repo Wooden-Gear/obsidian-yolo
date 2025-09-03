@@ -181,6 +181,10 @@ export const zh: TranslationKeys = {
       modelSourceDesc: '开启后，续写将使用聊天侧边栏当前选择的模型；关闭后，可在下方选择一个固定的模型用于续写。',
       fixedModel: '续写的固定模型',
       fixedModelDesc: '当不使用当前聊天模型时，选择一个用于续写功能的特定模型。',
+      keywordTrigger: '启用关键词触发',
+      keywordTriggerDesc: '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
+      triggerKeyword: '触发关键词',
+      triggerKeywordDesc: '当光标前的文本等于该关键词时触发续写（默认：两个空格）',
     },
     etc: {
       title: '其他',

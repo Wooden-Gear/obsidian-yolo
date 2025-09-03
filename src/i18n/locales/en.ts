@@ -181,6 +181,10 @@ export const en: TranslationKeys = {
       modelSourceDesc: 'If enabled, continuation uses the model currently selected in the chat sidebar. If disabled, you can select a fixed model below.',
       fixedModel: 'Fixed model for continuation',
       fixedModelDesc: 'Choose a specific model for the continuation feature when not using the current chat model.',
+      keywordTrigger: 'Enable keyword trigger',
+      keywordTriggerDesc: 'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
+      triggerKeyword: 'Trigger keyword',
+      triggerKeywordDesc: 'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
     },
     etc: {
       title: 'Etc',

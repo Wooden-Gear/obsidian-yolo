@@ -184,6 +184,10 @@ export interface TranslationKeys {
       modelSourceDesc: string
       fixedModel: string
       fixedModelDesc: string
+      keywordTrigger: string
+      keywordTriggerDesc: string
+      triggerKeyword: string
+      triggerKeywordDesc: string
     }
     etc: {
       title: string

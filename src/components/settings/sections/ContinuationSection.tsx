@@ -7,6 +7,7 @@ import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
+import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 
 type ContinuationSectionProps = {
   app: App
@@ -73,6 +74,43 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               continuationOptions: {
                 ...settings.continuationOptions,
                 fixedModelId: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.continuation.keywordTrigger')}
+        desc={t('settings.continuation.keywordTriggerDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableKeywordTrigger}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                enableKeywordTrigger: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.continuation.triggerKeyword')}
+        desc={t('settings.continuation.triggerKeywordDesc')}
+      >
+        <ObsidianTextInput
+          value={settings.continuationOptions.triggerKeyword}
+          placeholder={'  '}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                triggerKeyword: value,
               },
             })
           }}

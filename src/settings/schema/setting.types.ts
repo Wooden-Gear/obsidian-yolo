@@ -96,12 +96,18 @@ export const smartComposerSettingsSchema = z.object({
       useCurrentModel: z.boolean(),
       // fixed model id when not using current model
       fixedModelId: z.string(),
+      // enable keyword trigger for continuation
+      enableKeywordTrigger: z.boolean(),
+      // the keyword to trigger continuation, default to double space
+      triggerKeyword: z.string(),
     })
     .catch({
       useCurrentModel: true,
       fixedModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
+      enableKeywordTrigger: true,
+      triggerKeyword: '  ',
     }),
   
   // Assistant list

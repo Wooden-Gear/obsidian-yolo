@@ -30,6 +30,8 @@ export default class SmartComposerPlugin extends Plugin {
   private dbManagerInitPromise: Promise<DatabaseManager> | null = null
   private ragEngineInitPromise: Promise<RAGEngine> | null = null
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
+  private isContinuationInProgress = false
+  private continuationTriggerKeyword = '  '
 
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
@@ -37,6 +39,15 @@ export default class SmartComposerPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings()
+    // initialize keyword from settings
+    this.continuationTriggerKeyword =
+      this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+
+    // keep keyword in sync with settings changes
+    this.addSettingsChangeListener((newSettings) => {
+      this.continuationTriggerKeyword =
+        newSettings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+    })
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
@@ -147,6 +158,38 @@ export default class SmartComposerPlugin extends Plugin {
               await this.handleContinueWriting(editor)
             }),
         )
+      }),
+    )
+
+    // Keyword trigger for continuation
+    this.registerEvent(
+      this.app.workspace.on('editor-change', (editor) => {
+        try {
+          if (this.isContinuationInProgress) return
+          if (!editor) return
+          if (!this.settings.continuationOptions?.enableKeywordTrigger) return
+          const selection = editor.getSelection()
+          if (selection && selection.length > 0) return
+          const cursor = editor.getCursor()
+          const keyword =
+            this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+          if (!keyword || keyword.length === 0) return
+          const keyLen = keyword.length
+          const start = { line: cursor.line, ch: Math.max(0, cursor.ch - keyLen) }
+          const before = editor.getRange(start, cursor)
+          if (before === keyword) {
+            // Mark in-progress first to suppress re-entrancy from subsequent editor-change
+            this.isContinuationInProgress = true
+            // Remove the trigger keyword before starting streaming continuation
+            editor.replaceRange('', start, cursor)
+            // Defer continuation to next tick to avoid interfering with current input transaction
+            setTimeout(() => {
+              void this.handleContinueWriting(editor)
+            }, 0)
+          }
+        } catch (err) {
+          console.error('Keyword trigger error:', err)
+        }
       }),
     )
   }
@@ -374,6 +417,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         },
       ] as const
 
+      // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
+      this.isContinuationInProgress = true
+
       // Stream response and progressively insert into editor
       const stream = await providerClient.streamResponse(model, {
         model: model.model,
@@ -414,6 +460,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     } catch (error) {
       console.error(error)
       new Notice('Failed to generate continuation.')
+    } finally {
+      this.isContinuationInProgress = false
     }
   }
 
