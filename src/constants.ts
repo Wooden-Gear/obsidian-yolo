@@ -189,32 +189,8 @@ export const DEFAULT_PROVIDERS: readonly LLMProvider[] = [
     id: PROVIDER_TYPES_INFO.deepseek.defaultProviderId,
   },
   {
-    type: 'perplexity',
-    id: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-  },
-  {
-    type: 'groq',
-    id: PROVIDER_TYPES_INFO.groq.defaultProviderId,
-  },
-  {
-    type: 'mistral',
-    id: PROVIDER_TYPES_INFO.mistral.defaultProviderId,
-  },
-  {
     type: 'openrouter',
     id: PROVIDER_TYPES_INFO.openrouter.defaultProviderId,
-  },
-  {
-    type: 'ollama',
-    id: PROVIDER_TYPES_INFO.ollama.defaultProviderId,
-  },
-  {
-    type: 'lm-studio',
-    id: PROVIDER_TYPES_INFO['lm-studio'].defaultProviderId,
-  },
-  {
-    type: 'morph',
-    id: PROVIDER_TYPES_INFO.morph.defaultProviderId,
   },
 ]
 
@@ -364,57 +340,6 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'deepseek-reasoner',
     model: 'deepseek-reasoner',
   },
-  {
-    providerType: 'perplexity',
-    providerId: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-    id: 'sonar',
-    model: 'sonar',
-    web_search_options: {
-      search_context_size: 'low',
-    },
-  },
-  {
-    providerType: 'perplexity',
-    providerId: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-    id: 'sonar-pro',
-    model: 'sonar',
-    web_search_options: {
-      search_context_size: 'low',
-    },
-  },
-  {
-    providerType: 'perplexity',
-    providerId: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-    id: 'sonar-deep-research',
-    model: 'sonar-deep-research',
-    web_search_options: {
-      search_context_size: 'low',
-    },
-  },
-  {
-    providerType: 'perplexity',
-    providerId: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-    id: 'sonar-reasoning',
-    model: 'sonar',
-    web_search_options: {
-      search_context_size: 'low',
-    },
-  },
-  {
-    providerType: 'perplexity',
-    providerId: PROVIDER_TYPES_INFO.perplexity.defaultProviderId,
-    id: 'sonar-reasoning-pro',
-    model: 'sonar',
-    web_search_options: {
-      search_context_size: 'low',
-    },
-  },
-  {
-    providerType: 'morph',
-    providerId: PROVIDER_TYPES_INFO.morph.defaultProviderId,
-    id: 'morph-v0',
-    model: 'morph-v0',
-  },
 ]
 
 /**
@@ -443,27 +368,6 @@ export const DEFAULT_EMBEDDING_MODELS: readonly EmbeddingModel[] = [
     id: 'gemini/text-embedding-004',
     model: 'text-embedding-004',
     dimension: 768,
-  },
-  {
-    providerType: 'ollama',
-    providerId: PROVIDER_TYPES_INFO.ollama.defaultProviderId,
-    id: 'ollama/nomic-embed-text',
-    model: 'nomic-embed-text',
-    dimension: 768,
-  },
-  {
-    providerType: 'ollama',
-    providerId: PROVIDER_TYPES_INFO.ollama.defaultProviderId,
-    id: 'ollama/mxbai-embed-large',
-    model: 'mxbai-embed-large',
-    dimension: 1024,
-  },
-  {
-    providerType: 'ollama',
-    providerId: PROVIDER_TYPES_INFO.ollama.defaultProviderId,
-    id: 'ollama/bge-m3',
-    model: 'bge-m3',
-    dimension: 1024,
   },
 ]
 
