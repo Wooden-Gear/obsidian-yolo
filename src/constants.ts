@@ -8,7 +8,7 @@ export const APPLY_VIEW_TYPE = 'smtcmp-apply-view'
 export const PGLITE_DB_PATH = '.smtcmp_vector_db.tar.gz'
 
 // Default model ids
-export const DEFAULT_CHAT_MODEL_ID = 'claude-sonnet-4.0'
+export const DEFAULT_CHAT_MODEL_ID = 'gpt-5'
 export const DEFAULT_APPLY_MODEL_ID = 'gpt-4.1-mini'
 
 // Recommended model ids
@@ -205,84 +205,98 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     providerId: PROVIDER_TYPES_INFO.anthropic.defaultProviderId,
     id: 'claude-sonnet-4.0',
     model: 'claude-sonnet-4-0',
+    enable: false,
   },
   {
     providerType: 'anthropic',
     providerId: PROVIDER_TYPES_INFO.anthropic.defaultProviderId,
     id: 'claude-opus-4.1',
     model: 'claude-opus-4-1',
+    enable: false,
   },
   {
     providerType: 'anthropic',
     providerId: PROVIDER_TYPES_INFO.anthropic.defaultProviderId,
     id: 'claude-3.7-sonnet',
     model: 'claude-3-7-sonnet-latest',
+    enable: false,
   },
   {
     providerType: 'anthropic',
     providerId: PROVIDER_TYPES_INFO.anthropic.defaultProviderId,
     id: 'claude-3.5-sonnet',
     model: 'claude-3-5-sonnet-latest',
+    enable: false,
   },
   {
     providerType: 'anthropic',
     providerId: PROVIDER_TYPES_INFO.anthropic.defaultProviderId,
     id: 'claude-3.5-haiku',
     model: 'claude-3-5-haiku-latest',
+    enable: false,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-5',
     model: 'gpt-5',
+    enable: true,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-5-mini',
     model: 'gpt-5-mini',
+    enable: false,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-5-nano',
     model: 'gpt-5-nano',
+    enable: false,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-4.1',
     model: 'gpt-4.1',
+    enable: true,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-4.1-mini',
     model: 'gpt-4.1-mini',
+    enable: true,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-4.1-nano',
     model: 'gpt-4.1-nano',
+    enable: true,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-4o',
     model: 'gpt-4o',
+    enable: false,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'gpt-4o-mini',
     model: 'gpt-4o-mini',
+    enable: false,
   },
   {
     providerType: 'openai',
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'o4-mini',
     model: 'o4-mini',
+    enable: false,
     reasoning: {
       enabled: true,
       reasoning_effort: 'medium',
@@ -293,6 +307,7 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     providerId: PROVIDER_TYPES_INFO.openai.defaultProviderId,
     id: 'o3',
     model: 'o3',
+    enable: false,
     reasoning: {
       enabled: true,
       reasoning_effort: 'medium',
@@ -303,42 +318,49 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     providerId: PROVIDER_TYPES_INFO.gemini.defaultProviderId,
     id: 'gemini-2.5-pro',
     model: 'gemini-2.5-pro',
+    enable: false,
   },
   {
     providerType: 'gemini',
     providerId: PROVIDER_TYPES_INFO.gemini.defaultProviderId,
     id: 'gemini-2.5-flash',
     model: 'gemini-2.5-flash',
+    enable: false,
   },
   {
     providerType: 'gemini',
     providerId: PROVIDER_TYPES_INFO.gemini.defaultProviderId,
     id: 'gemini-2.5-flash-lite',
     model: 'gemini-2.5-flash-lite',
+    enable: false,
   },
   {
     providerType: 'gemini',
     providerId: PROVIDER_TYPES_INFO.gemini.defaultProviderId,
     id: 'gemini-2.0-flash',
     model: 'gemini-2.0-flash',
+    enable: false,
   },
   {
     providerType: 'gemini',
     providerId: PROVIDER_TYPES_INFO.gemini.defaultProviderId,
     id: 'gemini-2.0-flash-lite',
     model: 'gemini-2.0-flash-lite',
+    enable: false,
   },
   {
     providerType: 'deepseek',
     providerId: PROVIDER_TYPES_INFO.deepseek.defaultProviderId,
     id: 'deepseek-chat',
     model: 'deepseek-chat',
+    enable: false,
   },
   {
     providerType: 'deepseek',
     providerId: PROVIDER_TYPES_INFO.deepseek.defaultProviderId,
     id: 'deepseek-reasoner',
     model: 'deepseek-reasoner',
+    enable: false,
   },
 ]
 
