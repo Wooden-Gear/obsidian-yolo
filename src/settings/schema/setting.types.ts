@@ -100,6 +100,10 @@ export const smartComposerSettingsSchema = z.object({
       enableKeywordTrigger: z.boolean(),
       // the keyword to trigger continuation, default to double space
       triggerKeyword: z.string(),
+      // enable keyword trigger for opening floating panel (custom continue panel)
+      enableFloatingPanelKeywordTrigger: z.boolean().optional(),
+      // the keyword to trigger floating panel
+      floatingPanelTriggerKeyword: z.string().optional(),
     })
     .catch({
       useCurrentModel: true,
@@ -108,6 +112,8 @@ export const smartComposerSettingsSchema = z.object({
         DEFAULT_CHAT_MODELS[0].id,
       enableKeywordTrigger: true,
       triggerKeyword: '  ',
+      enableFloatingPanelKeywordTrigger: false,
+      floatingPanelTriggerKeyword: '',
     }),
   
   // Assistant list

@@ -50,6 +50,8 @@ describe('parseSmartComposerSettings', () => {
         fixedModelId: 'openai/gpt-4.1-mini',
         enableKeywordTrigger: true,
         triggerKeyword: '  ',
+        enableFloatingPanelKeywordTrigger: false,
+        floatingPanelTriggerKeyword: '',
       },
 
       assistants: [],

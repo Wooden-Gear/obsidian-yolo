@@ -10,6 +10,7 @@ type ObsidianTextAreaProps = {
   onChange: (value: string) => void
   style?: CSSProperties
   autoFocus?: boolean
+  onKeyDown?: (ev: KeyboardEvent) => void
 }
 
 export function ObsidianTextArea({
@@ -18,6 +19,7 @@ export function ObsidianTextArea({
   onChange,
   style,
   autoFocus,
+  onKeyDown,
 }: ObsidianTextAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
@@ -80,6 +82,17 @@ export function ObsidianTextArea({
       } catch {}
     }
   }, [textAreaComponent, autoFocus])
+
+  // Keydown handler binding
+  useEffect(() => {
+    if (!textAreaComponent || !onKeyDown) return
+    const el = textAreaComponent.inputEl
+    const handler = (e: KeyboardEvent) => onKeyDown(e)
+    el.addEventListener('keydown', handler)
+    return () => {
+      el.removeEventListener('keydown', handler)
+    }
+  }, [textAreaComponent, onKeyDown])
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 }

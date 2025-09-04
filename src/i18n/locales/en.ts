@@ -184,10 +184,14 @@ export const en: TranslationKeys = {
       modelSourceDesc: 'If enabled, continuation uses the model currently selected in the chat sidebar. If disabled, you can select a fixed model below.',
       fixedModel: 'Fixed model for continuation',
       fixedModelDesc: 'Choose a specific model for the continuation feature when not using the current chat model.',
-      keywordTrigger: 'Enable keyword trigger',
+      keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc: 'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
       triggerKeyword: 'Trigger keyword',
       triggerKeywordDesc: 'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
+      floatingPanelKeywordTrigger: 'Enable keyword trigger for custom floating panel',
+      floatingPanelKeywordTriggerDesc: 'Open the "Custom Continue" floating panel when the specified keyword is detected in the editor.',
+      floatingPanelTriggerKeyword: 'Floating panel trigger keyword',
+      floatingPanelTriggerKeywordDesc: 'Open the "Custom Continue" floating panel when the text immediately before the cursor equals this keyword.',
     },
     etc: {
       title: 'Etc',
@@ -217,7 +221,7 @@ export const en: TranslationKeys = {
     reasoning: 'Reasoning',
     annotations: 'Annotations',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”.',
+    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”. Press Enter to confirm, Shift+Enter for a new line, Esc to close.',
   },
 
   notices: {

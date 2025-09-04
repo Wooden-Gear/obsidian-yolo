@@ -116,6 +116,43 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
           }}
         />
       </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.continuation.floatingPanelKeywordTrigger')}
+        desc={t('settings.continuation.floatingPanelKeywordTriggerDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableFloatingPanelKeywordTrigger ?? false}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                enableFloatingPanelKeywordTrigger: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.continuation.floatingPanelTriggerKeyword')}
+        desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
+      >
+        <ObsidianTextInput
+          value={settings.continuationOptions.floatingPanelTriggerKeyword ?? ''}
+          placeholder={''}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                floatingPanelTriggerKeyword: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
     </div>
   )
 }

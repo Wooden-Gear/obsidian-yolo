@@ -191,6 +191,10 @@ export interface TranslationKeys {
       keywordTriggerDesc: string
       triggerKeyword: string
       triggerKeywordDesc: string
+      floatingPanelKeywordTrigger: string
+      floatingPanelKeywordTriggerDesc: string
+      floatingPanelTriggerKeyword: string
+      floatingPanelTriggerKeywordDesc: string
     }
     etc: {
       title: string

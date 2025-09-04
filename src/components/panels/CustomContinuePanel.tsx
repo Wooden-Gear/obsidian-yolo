@@ -23,6 +23,21 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
     await plugin.continueWriting(editor, instruction.trim().length > 0 ? instruction : undefined)
   }
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      // Enter 作为确定
+      void handleConfirm()
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onClose()
+      return
+    }
+    // Shift+Enter 默认换行，保持原行为（不拦截）
+  }
+
   return (
     <>
       {/* 输入区占满剩余空间 */}
@@ -31,8 +46,9 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
           value={instruction}
           placeholder={t('chat.customContinuePromptPlaceholder') ?? ''}
           onChange={(v) => setInstruction(v)}
-          style={{ width: '100%', height: '100%', minHeight: '160px' }}
+          style={{ width: '100%', height: '100%', minHeight: '160px', resize: 'none' }}
           autoFocus
+          onKeyDown={handleKeyDown}
         />
       </div>
 

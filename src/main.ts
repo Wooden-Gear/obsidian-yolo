@@ -201,16 +201,48 @@ export default class SmartComposerPlugin extends Plugin {
       }),
     )
 
-    // Keyword trigger for continuation
+    // Keyword triggers: floating panel (custom continue) and inline continuation
     this.registerEvent(
       this.app.workspace.on('editor-change', (editor) => {
         try {
           if (this.isContinuationInProgress) return
           if (!editor) return
-          if (!this.settings.continuationOptions?.enableKeywordTrigger) return
           const selection = editor.getSelection()
           if (selection && selection.length > 0) return
           const cursor = editor.getCursor()
+
+          // 1) Floating panel trigger (optional)
+          const enablePanel =
+            this.settings.continuationOptions?.enableFloatingPanelKeywordTrigger ?? false
+          const panelKeyword = this.settings.continuationOptions?.floatingPanelTriggerKeyword ?? ''
+          if (enablePanel && panelKeyword && panelKeyword.length > 0) {
+            const klen = panelKeyword.length
+            const start = { line: cursor.line, ch: Math.max(0, cursor.ch - klen) }
+            const before = editor.getRange(start, cursor)
+            if (before === panelKeyword) {
+              // remove keyword and open panel near caret
+              editor.replaceRange('', start, cursor)
+              try {
+                const cm: any = (editor as any).cm
+                let position: { x: number; y: number } | undefined
+                if (cm?.state) {
+                  const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
+                  const pos: number = lineFrom + cursor.ch
+                  const rect = cm.coordsAtPos(pos)
+                  if (rect) {
+                    position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
+                  }
+                }
+                new CustomContinuePanel({ plugin: this, editor, position }).open()
+              } catch {
+                new CustomContinuePanel({ plugin: this, editor }).open()
+              }
+              return
+            }
+          }
+
+          // 2) Continuation trigger (inline)
+          if (!this.settings.continuationOptions?.enableKeywordTrigger) return
           const keyword =
             this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
           if (!keyword || keyword.length === 0) return
