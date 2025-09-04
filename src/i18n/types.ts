@@ -195,6 +195,8 @@ export interface TranslationKeys {
       floatingPanelKeywordTriggerDesc: string
       floatingPanelTriggerKeyword: string
       floatingPanelTriggerKeywordDesc: string
+      defaultSystemPrompt: string
+      defaultSystemPromptDesc: string
     }
     etc: {
       title: string

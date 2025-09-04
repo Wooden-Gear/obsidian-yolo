@@ -492,11 +492,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ? `\n\nInstruction: ${userInstruction}`
         : ''
 
+      const systemPrompt =
+        this.settings.continuationOptions?.defaultSystemPrompt?.trim() &&
+        (this.settings.continuationOptions.defaultSystemPrompt as string).trim().length > 0
+          ? (this.settings.continuationOptions.defaultSystemPrompt as string).trim()
+          : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
+
       const requestMessages = [
         {
           role: 'system',
-          content:
-            'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+          content: systemPrompt,
         },
         {
           role: 'user',

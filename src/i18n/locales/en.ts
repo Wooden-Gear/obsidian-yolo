@@ -192,6 +192,8 @@ export const en: TranslationKeys = {
       floatingPanelKeywordTriggerDesc: 'Open the "Custom Continue" floating panel when the specified keyword is detected in the editor.',
       floatingPanelTriggerKeyword: 'Floating panel trigger keyword',
       floatingPanelTriggerKeywordDesc: 'Open the "Custom Continue" floating panel when the text immediately before the cursor equals this keyword.',
+      defaultSystemPrompt: 'Default continuation system prompt',
+      defaultSystemPromptDesc: 'This prompt will be used as the system message for continuation. Leave empty to use the built-in default.',
     },
     etc: {
       title: 'Etc',

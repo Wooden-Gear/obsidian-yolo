@@ -96,6 +96,8 @@ export const smartComposerSettingsSchema = z.object({
       useCurrentModel: z.boolean(),
       // fixed model id when not using current model
       fixedModelId: z.string(),
+      // default system prompt for continuation
+      defaultSystemPrompt: z.string().optional(),
       // enable keyword trigger for continuation
       enableKeywordTrigger: z.boolean(),
       // the keyword to trigger continuation, default to double space
@@ -110,6 +112,8 @@ export const smartComposerSettingsSchema = z.object({
       fixedModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
+      defaultSystemPrompt:
+        'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
       enableKeywordTrigger: true,
       triggerKeyword: '  ',
       enableFloatingPanelKeywordTrigger: false,

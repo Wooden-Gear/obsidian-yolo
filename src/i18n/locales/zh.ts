@@ -192,6 +192,8 @@ export const zh: TranslationKeys = {
       floatingPanelKeywordTriggerDesc: '在编辑器中检测到指定关键词时打开“自定义续写”的悬浮面板。',
       floatingPanelTriggerKeyword: '悬浮框触发关键词',
       floatingPanelTriggerKeywordDesc: '当光标前的文本等于该关键词时打开“自定义续写”悬浮面板。',
+      defaultSystemPrompt: '默认续写系统提示词',
+      defaultSystemPromptDesc: '此提示将作为系统提示用于 AI 续写。留空则使用内置默认值。',
     },
     etc: {
       title: '其他',
