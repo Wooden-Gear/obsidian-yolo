@@ -6,6 +6,8 @@ export const zh: TranslationKeys = {
     addSelectionToChat: '添加选中内容到聊天',
     rebuildVaultIndex: '重建整个库索引',
     updateVaultIndex: '更新修改文件的索引',
+    continueWriting: 'AI续写',
+    continueWritingSelected: 'AI续写（选中段落）',
   },
 
   common: {

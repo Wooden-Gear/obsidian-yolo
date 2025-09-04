@@ -150,9 +150,22 @@ export default class SmartComposerPlugin extends Plugin {
     // Editor context menu: AI Continue Writing
     this.registerEvent(
       this.app.workspace.on('editor-menu', (menu, editor) => {
+        const hasSelection = (() => {
+          try {
+            const sel = editor?.getSelection?.()
+            return !!sel && sel.trim().length > 0
+          } catch {
+            return false
+          }
+        })()
+
+        const title = hasSelection
+          ? this.t('commands.continueWritingSelected')
+          : this.t('commands.continueWriting')
+
         menu.addItem((item) =>
           item
-            .setTitle('AI Continue Writing')
+            .setTitle(title)
             .setIcon('wand-sparkles')
             .onClick(async () => {
               await this.handleContinueWriting(editor)
@@ -381,9 +394,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
+      const selected = editor.getSelection()
       const headText = editor.getRange({ line: 0, ch: 0 }, cursor)
 
-      if (!headText || headText.trim().length === 0) {
+      // Prefer selected text as context when available; otherwise use preceding content
+      const hasSelection = !!selected && selected.trim().length > 0
+      const baseContext = hasSelection ? selected : headText
+
+      if (!baseContext || baseContext.trim().length === 0) {
         notice.setMessage('No preceding content to continue.')
         this.registerTimeout(() => notice.hide(), 1000)
         return
@@ -392,9 +410,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       // Truncate context to avoid exceeding model limits (simple char-based cap)
       const MAX_CONTEXT_CHARS = 8000
       const context =
-        headText.length > MAX_CONTEXT_CHARS
-          ? headText.slice(-MAX_CONTEXT_CHARS)
-          : headText
+        baseContext.length > MAX_CONTEXT_CHARS
+          ? baseContext.slice(-MAX_CONTEXT_CHARS)
+          : baseContext
 
       const continuationModelId = this.settings.continuationOptions?.useCurrentModel
         ? this.settings.chatModelId
@@ -427,7 +445,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         stream: true,
       })
 
-      const insertStart = editor.getCursor()
+      // Insert at current cursor by default; if a selection exists, insert at selection end
+      let insertStart = editor.getCursor()
+      if (hasSelection) {
+        const endPos = editor.getCursor('to')
+        editor.setCursor(endPos)
+        insertStart = endPos
+      }
       let insertedText = ''
       let prevEnd = insertStart
 

@@ -6,6 +6,8 @@ export const en: TranslationKeys = {
     addSelectionToChat: 'Add selection to chat',
     rebuildVaultIndex: 'Rebuild entire vault index',
     updateVaultIndex: 'Update index for modified files',
+    continueWriting: 'AI Continue Writing',
+    continueWritingSelected: 'AI Continue Writing (selection)',
   },
 
   common: {

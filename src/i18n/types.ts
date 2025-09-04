@@ -7,6 +7,8 @@ export interface TranslationKeys {
     addSelectionToChat: string
     rebuildVaultIndex: string
     updateVaultIndex: string
+    continueWriting: string
+    continueWritingSelected: string
   }
   
   // UI Common
