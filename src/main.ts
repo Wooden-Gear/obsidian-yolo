@@ -701,7 +701,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
       return
     }
-    new Notice('Reloading "smart-composer" due to migration', 1000)
+    new Notice('Reloading "next-composer" due to migration', 1000)
     leaves[0].detach()
     await this.activateChatView()
   }

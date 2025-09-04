@@ -31,10 +31,10 @@ export const en: TranslationKeys = {
   },
 
   settings: {
-    title: 'Smart Composer Settings',
+    title: 'Next Composer Settings',
     supportSmartComposer: {
-      name: 'Support Smart Composer',
-      desc: 'If you find Smart Composer valuable, consider supporting its development!',
+      name: 'Support Next Composer',
+      desc: 'If you find Next Composer valuable, consider supporting its development!',
       buyMeACoffee: 'Buy Me a Coffee',
     },
     chat: {
@@ -237,7 +237,7 @@ export const en: TranslationKeys = {
     indexUpdateFailed: 'Vault index update failed',
     migrationComplete: 'Migration to JSON storage completed successfully',
     migrationFailed: 'Failed to migrate to JSON storage. Please check the console for details.',
-    reloadingPlugin: 'Reloading "smart-composer" due to migration',
+    reloadingPlugin: 'Reloading "next-composer" due to migration',
     settingsInvalid: 'Invalid settings',
   },
 

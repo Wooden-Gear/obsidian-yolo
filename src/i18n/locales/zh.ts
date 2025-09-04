@@ -31,10 +31,10 @@ export const zh: TranslationKeys = {
   },
 
   settings: {
-    title: 'Smart Composer 设置',
+    title: 'Next Composer 设置',
     supportSmartComposer: {
-      name: '支持 Smart Composer',
-      desc: '如果你觉得 Smart Composer 有价值，请考虑支持它的开发！',
+      name: '支持 Next Composer',
+      desc: '如果你觉得 Next Composer 有价值，请考虑支持它的开发！',
       buyMeACoffee: '请我喝杯咖啡',
     },
     chat: {
@@ -237,7 +237,7 @@ export const zh: TranslationKeys = {
     indexUpdateFailed: '库索引更新失败',
     migrationComplete: 'JSON 存储迁移成功完成',
     migrationFailed: 'JSON 存储迁移失败。请查看控制台了解详情。',
-    reloadingPlugin: '由于迁移，正在重新加载 "smart-composer"',
+    reloadingPlugin: '由于迁移，正在重新加载 "next-composer"',
     settingsInvalid: '设置无效',
   },
 

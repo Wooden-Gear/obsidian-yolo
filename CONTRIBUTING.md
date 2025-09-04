@@ -1,6 +1,6 @@
-# Contributing to Obsidian Smart Composer
+# Contributing to Obsidian Next Composer
 
-We welcome contributions to Obsidian Smart Composer! This document will guide you through the process of contributing to the project.
+We welcome contributions to Obsidian Next Composer! This document will guide you through the process of contributing to the project.
 
 ## Development Workflow
 
@@ -79,7 +79,7 @@ This process ensures a clean and organized migration history.
 
 When debugging database-related issues in Obsidian's developer console, you can use the "Store as global variable" feature to interact with the database directly:
 
-1. Look for the console message "Smart composer database initialized." 
+1. Look for the console message "Next composer database initialized." 
 2. Right-click on this DatabaseManager object and select "Store as global variable" (it will be stored as `tempN`)
 3. You can then run SQL queries directly using the stored variable. For example:
 
