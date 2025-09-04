@@ -8,6 +8,7 @@ export const en: TranslationKeys = {
     updateVaultIndex: 'Update index for modified files',
     continueWriting: 'AI Continue Writing',
     continueWritingSelected: 'AI Continue Writing (selection)',
+    customContinueWriting: 'AI Custom Continue',
   },
 
   common: {
@@ -204,17 +205,19 @@ export const en: TranslationKeys = {
 
   chat: {
     placeholder: 'Ask anything about your vault...',
-    sendMessage: 'Send Message',
-    newChat: 'New Chat',
-    vaultSearch: 'Vault Search',
-    selectModel: 'Select Model',
-    uploadImage: 'Upload Image',
-    addContext: 'Add Context',
-    applyChanges: 'Apply Changes',
-    copyMessage: 'Copy Message',
+    sendMessage: 'Send message',
+    newChat: 'New chat',
+    vaultSearch: 'Vault search',
+    selectModel: 'Select model',
+    uploadImage: 'Upload image',
+    addContext: 'Add context',
+    applyChanges: 'Apply changes',
+    copyMessage: 'Copy message',
     regenerate: 'Regenerate',
     reasoning: 'Reasoning',
     annotations: 'Annotations',
+    customContinuePromptLabel: 'Continuation instruction',
+    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”.',
   },
 
   notices: {

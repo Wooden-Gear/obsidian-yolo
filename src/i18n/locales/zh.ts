@@ -8,6 +8,7 @@ export const zh: TranslationKeys = {
     updateVaultIndex: '更新修改文件的索引',
     continueWriting: 'AI续写',
     continueWritingSelected: 'AI续写（选中段落）',
+    customContinueWriting: '自定义续写',
   },
 
   common: {
@@ -215,6 +216,8 @@ export const zh: TranslationKeys = {
     regenerate: '重新生成',
     reasoning: '推理过程',
     annotations: '注释',
+    customContinuePromptLabel: '续写指令',
+    customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。',
   },
 
   notices: {

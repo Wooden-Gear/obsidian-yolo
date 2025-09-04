@@ -9,6 +9,7 @@ export interface TranslationKeys {
     updateVaultIndex: string
     continueWriting: string
     continueWritingSelected: string
+    customContinueWriting: string
   }
   
   // UI Common
@@ -219,6 +220,8 @@ export interface TranslationKeys {
     regenerate: string
     reasoning: string
     annotations: string
+    customContinuePromptLabel?: string
+    customContinuePromptPlaceholder?: string
   }
 
   // Notices and Messages

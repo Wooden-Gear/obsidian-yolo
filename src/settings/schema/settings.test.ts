@@ -45,6 +45,13 @@ describe('parseSmartComposerSettings', () => {
         maxAutoIterations: 1,
       },
 
+      continuationOptions: {
+        useCurrentModel: true,
+        fixedModelId: 'openai/gpt-4.1-mini',
+        enableKeywordTrigger: true,
+        triggerKeyword: '  ',
+      },
+
       assistants: [],
       currentAssistantId: undefined,
       language: 'en',

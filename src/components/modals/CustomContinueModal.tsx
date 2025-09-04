@@ -1,0 +1,55 @@
+import React, { useState } from 'react'
+import { App, Editor } from 'obsidian'
+
+import { useLanguage } from '../../contexts/language-context'
+import { usePlugin } from '../../contexts/plugin-context'
+import { ObsidianButton } from '../common/ObsidianButton'
+import { ObsidianSetting } from '../common/ObsidianSetting'
+import { ObsidianTextArea } from '../common/ObsidianTextArea'
+import { ReactModal } from '../common/ReactModal'
+
+export type CustomContinueModalProps = {
+  editor: Editor
+  onClose: () => void
+}
+
+function CustomContinueComponent({ editor, onClose }: CustomContinueModalProps) {
+  const plugin = usePlugin()
+  const { t } = useLanguage()
+  const [instruction, setInstruction] = useState('')
+
+  const handleConfirm = async () => {
+    onClose()
+    await plugin.continueWriting(editor, instruction.trim().length > 0 ? instruction : undefined)
+  }
+
+  return (
+    <>
+      <div style={{ width: '100%', marginBottom: 12 }}>
+        <ObsidianTextArea
+          value={instruction}
+          placeholder={t('chat.customContinuePromptPlaceholder') ?? ''}
+          onChange={(v) => setInstruction(v)}
+          style={{ width: '100%', minHeight: '160px' }}
+        />
+      </div>
+
+      <ObsidianSetting>
+        <ObsidianButton text={t('common.confirm')} onClick={handleConfirm} cta />
+        <ObsidianButton text={t('common.cancel')} onClick={onClose} />
+      </ObsidianSetting>
+    </>
+  )
+}
+
+export class CustomContinueModal extends ReactModal<CustomContinueModalProps> {
+  constructor({ app, plugin, editor }: { app: App; plugin: any; editor: Editor }) {
+    super({
+      app,
+      Component: CustomContinueComponent,
+      props: { editor },
+      options: { title: plugin.t('commands.customContinueWriting') },
+      plugin,
+    })
+  }
+}

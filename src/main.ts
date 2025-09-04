@@ -12,6 +12,8 @@ import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
 import { migrateToJsonDatabase } from './database/json/migrateToJsonDatabase'
 import { createTranslationFunction } from './i18n'
+import { CustomContinueModal } from './components/modals/CustomContinueModal'
+import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
 import {
   SmartComposerSettings,
   smartComposerSettingsSchema,
@@ -169,6 +171,31 @@ export default class SmartComposerPlugin extends Plugin {
             .setIcon('wand-sparkles')
             .onClick(async () => {
               await this.handleContinueWriting(editor)
+            }),
+        )
+
+        // Custom continuation via floating panel
+        menu.addItem((item) =>
+          item
+            .setTitle(this.t('commands.customContinueWriting'))
+            .setIcon('wand-sparkles')
+            .onClick(() => {
+              try {
+                const cm: any = (editor as any).cm
+                const cursor = editor.getCursor('to')
+                let position: { x: number; y: number } | undefined
+                if (cm?.state) {
+                  const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
+                  const pos: number = lineFrom + cursor.ch
+                  const rect = cm.coordsAtPos(pos)
+                  if (rect) {
+                    position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
+                  }
+                }
+                new CustomContinuePanel({ plugin: this, editor, position }).open()
+              } catch {
+                new CustomContinuePanel({ plugin: this, editor }).open()
+              }
             }),
         )
       }),
@@ -390,7 +417,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.timeoutIds.push(timeoutId)
   }
 
-  private async handleContinueWriting(editor: Editor) {
+  // Public wrapper for use in React modal
+  async continueWriting(editor: Editor, customPrompt?: string) {
+    return this.handleContinueWriting(editor, customPrompt)
+  }
+
+  private async handleContinueWriting(editor: Editor, customPrompt?: string) {
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
@@ -423,6 +455,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         modelId: continuationModelId,
       })
 
+      const userInstruction = (customPrompt ?? '').trim()
+      const instructionSuffix = userInstruction
+        ? `\n\nInstruction: ${userInstruction}`
+        : ''
+
       const requestMessages = [
         {
           role: 'system',
@@ -431,7 +468,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         },
         {
           role: 'user',
-          content: `Context (up to recent portion):\n\n${context}\n\nContinue writing from here.`,
+          content: `Context (up to recent portion):\n\n${context}\n\nContinue writing from here.${instructionSuffix}`,
         },
       ] as const
 

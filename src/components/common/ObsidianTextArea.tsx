@@ -1,5 +1,6 @@
 import { TextAreaComponent } from 'obsidian'
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import { useObsidianSetting } from './ObsidianSetting'
 
@@ -7,12 +8,14 @@ type ObsidianTextAreaProps = {
   value: string
   placeholder?: string
   onChange: (value: string) => void
+  style?: CSSProperties
 }
 
 export function ObsidianTextArea({
   value,
   placeholder,
   onChange,
+  style,
 }: ObsidianTextAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
@@ -56,5 +59,11 @@ export function ObsidianTextArea({
     textAreaComponent.setValue(value)
   }, [textAreaComponent, value, placeholder])
 
-  return <div ref={containerRef} />
+  // Apply inline styles to the underlying textarea element if provided
+  useEffect(() => {
+    if (!textAreaComponent) return
+    if (style) Object.assign(textAreaComponent.inputEl.style, style as any)
+  }, [textAreaComponent, style])
+
+  return <div ref={containerRef} style={{ width: '100%' }} />
 }
