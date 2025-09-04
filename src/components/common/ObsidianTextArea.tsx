@@ -9,6 +9,7 @@ type ObsidianTextAreaProps = {
   placeholder?: string
   onChange: (value: string) => void
   style?: CSSProperties
+  autoFocus?: boolean
 }
 
 export function ObsidianTextArea({
@@ -16,6 +17,7 @@ export function ObsidianTextArea({
   placeholder,
   onChange,
   style,
+  autoFocus,
 }: ObsidianTextAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
@@ -65,5 +67,19 @@ export function ObsidianTextArea({
     if (style) Object.assign(textAreaComponent.inputEl.style, style as any)
   }, [textAreaComponent, style])
 
-  return <div ref={containerRef} style={{ width: '100%' }} />
+  // Auto focus when required
+  useEffect(() => {
+    if (!textAreaComponent) return
+    if (autoFocus) {
+      textAreaComponent.inputEl.focus()
+      // move caret to end
+      const el = textAreaComponent.inputEl
+      const len = el.value.length
+      try {
+        el.setSelectionRange(len, len)
+      } catch {}
+    }
+  }, [textAreaComponent, autoFocus])
+
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 }

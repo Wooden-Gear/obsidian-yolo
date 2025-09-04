@@ -11,6 +11,7 @@ export type FloatingPanelOptions = {
   height?: number
   closeOnEscape?: boolean
   closeOnOutsideClick?: boolean
+  minimal?: boolean
 }
 
 type FloatingPanelProps<T> = {
@@ -55,8 +56,14 @@ export class ReactFloatingPanel<T> {
       const [pos, setPos] = useState<{ x: number; y: number }>(
         options?.initialPosition ?? { x: window.innerWidth / 2 - 180, y: window.innerHeight / 2 - 120 },
       )
+      const [size, setSize] = useState<{ width: number; height?: number }>({
+        width: options?.width ?? 360,
+        height: options?.height,
+      })
       const [dragging, setDragging] = useState(false)
       const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+      const [resizing, setResizing] = useState(false)
+      const resizeStart = useRef<{ x: number; y: number; width: number; height: number | undefined } | null>(null)
       const panelRef = useRef<HTMLDivElement>(null)
 
       useEffect(() => {
@@ -67,20 +74,22 @@ export class ReactFloatingPanel<T> {
           document.addEventListener('keydown', onKeyDown as any)
           return () => document.removeEventListener('keydown', onKeyDown as any)
         }
-      }, [])
+      }, [onClose])
 
+      // Close on outside click
       useEffect(() => {
-        function onMouseDown(e: MouseEvent) {
-          if (!panelRef.current) return
-          if (!panelRef.current.contains(e.target as Node) && (options?.closeOnOutsideClick ?? true)) {
+        if (!(options?.closeOnOutsideClick ?? true)) return
+        const onMouseDown = (e: MouseEvent) => {
+          const el = panelRef.current
+          if (el && !el.contains(e.target as Node)) {
             onClose()
           }
         }
-        if (options?.closeOnOutsideClick ?? true) {
-          document.addEventListener('mousedown', onMouseDown)
-          return () => document.removeEventListener('mousedown', onMouseDown)
-        }
-      }, [])
+        document.addEventListener('mousedown', onMouseDown)
+        return () => document.removeEventListener('mousedown', onMouseDown)
+      }, [onClose])
+
+      
 
       const onHeaderPointerDown = (e: React.PointerEvent) => {
         setDragging(true)
@@ -97,6 +106,35 @@ export class ReactFloatingPanel<T> {
         ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
       }
 
+      // Resize from bottom-right corner
+      const onResizePointerDown = (e: React.PointerEvent) => {
+        setResizing(true)
+        const rect = panelRef.current?.getBoundingClientRect()
+        resizeStart.current = {
+          x: e.clientX,
+          y: e.clientY,
+          width: rect ? rect.width : size.width,
+          height: rect ? rect.height : size.height,
+        }
+        ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+        e.preventDefault()
+      }
+      const onResizePointerMove = (e: React.PointerEvent) => {
+        if (!resizing || !resizeStart.current) return
+        const dx = e.clientX - resizeStart.current.x
+        const dy = e.clientY - resizeStart.current.y
+        const minW = 280
+        const minH = 160
+        const nextW = Math.max(minW, Math.round(resizeStart.current.width + dx))
+        const nextH = Math.max(minH, Math.round((resizeStart.current.height ?? minH) + dy))
+        setSize({ width: nextW, height: nextH })
+      }
+      const onResizePointerUp = (e: React.PointerEvent) => {
+        setResizing(false)
+        resizeStart.current = null
+        ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
+      }
+
       return (
         <PluginProvider plugin={this.plugin}>
           <LanguageProvider>
@@ -107,49 +145,81 @@ export class ReactFloatingPanel<T> {
                 position: 'fixed',
                 top: pos.y,
                 left: pos.x,
-                width: options?.width ?? 360,
+                width: size.width,
                 maxWidth: '92vw',
                 background: 'var(--background-primary)',
                 color: 'var(--text-normal)',
                 boxShadow: 'var(--shadow-s)',
                 border: '1px solid var(--background-modifier-border)',
                 borderRadius: 8,
+                height: size.height,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <div
-                className="smtcmp-floating-panel-header"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  cursor: 'move',
-                  userSelect: 'none',
-                  borderBottom: '1px solid var(--background-modifier-border)',
-                  background: 'var(--background-secondary)',
-                }}
-                onPointerDown={onHeaderPointerDown}
-                onPointerMove={onHeaderPointerMove}
-                onPointerUp={onHeaderPointerUp}
-              >
-                <div style={{ fontWeight: 600 }}>{options?.title ?? ''}</div>
-                <button
-                  aria-label="Close"
-                  className="clickable-icon"
-                  onClick={onClose}
+              {/* Minimal headerless mode: add a thin drag handle on top */}
+              {options?.minimal ? (
+                <div
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 8, cursor: 'move' }}
+                  onPointerDown={onHeaderPointerDown}
+                  onPointerMove={onHeaderPointerMove}
+                  onPointerUp={onHeaderPointerUp}
+                />
+              ) : (
+                <div
+                  className="smtcmp-floating-panel-header"
                   style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    cursor: 'move',
+                    userSelect: 'none',
+                    borderBottom: '1px solid var(--background-modifier-border)',
+                    background: 'var(--background-secondary)',
                   }}
+                  onPointerDown={onHeaderPointerDown}
+                  onPointerMove={onHeaderPointerMove}
+                  onPointerUp={onHeaderPointerUp}
                 >
-                  ✕
-                </button>
-              </div>
-              <div className="smtcmp-floating-panel-body" style={{ padding: 12 }}>
+                  <div style={{ fontWeight: 600 }}>{options?.title ?? ''}</div>
+                  <button
+                    aria-label="Close"
+                    className="clickable-icon"
+                    onClick={onClose}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              <div className="smtcmp-floating-panel-body" style={{ padding: 12, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <this.Component {...(this.props as T)} onClose={onClose} />
               </div>
+
+              {/* Resize handle */}
+              <div
+                onPointerDown={onResizePointerDown}
+                onPointerMove={onResizePointerMove}
+                onPointerUp={onResizePointerUp}
+                style={{
+                  position: 'absolute',
+                  width: 14,
+                  height: 14,
+                  right: 6,
+                  bottom: 6,
+                  cursor: 'nwse-resize',
+                  borderRight: '2px solid var(--background-modifier-border)',
+                  borderBottom: '2px solid var(--background-modifier-border)',
+                }}
+                aria-label="Resize"
+              />
             </div>
           </LanguageProvider>
         </PluginProvider>

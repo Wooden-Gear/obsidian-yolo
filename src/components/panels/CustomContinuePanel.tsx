@@ -25,15 +25,18 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
 
   return (
     <>
-      <div style={{ width: '100%', marginBottom: 12 }}>
+      {/* 输入区占满剩余空间 */}
+      <div style={{ width: '100%', flex: 1, minHeight: 0, display: 'flex' }}>
         <ObsidianTextArea
           value={instruction}
           placeholder={t('chat.customContinuePromptPlaceholder') ?? ''}
           onChange={(v) => setInstruction(v)}
-          style={{ width: '100%', minHeight: '160px' }}
+          style={{ width: '100%', height: '100%', minHeight: '160px' }}
+          autoFocus
         />
       </div>
 
+      {/* 底部轻量工具条 */}
       <ObsidianSetting>
         <ObsidianButton text={t('common.confirm')} onClick={handleConfirm} cta />
         <ObsidianButton text={t('common.cancel')} onClick={onClose} />
@@ -56,6 +59,8 @@ export class CustomContinuePanel {
         closeOnEscape: true,
         closeOnOutsideClick: true,
         width: 420,
+        height: 260,
+        minimal: true,
       },
     })
   }
