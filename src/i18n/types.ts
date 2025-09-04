@@ -10,6 +10,7 @@ export interface TranslationKeys {
     continueWriting: string
     continueWritingSelected: string
     customContinueWriting: string
+    customRewrite: string
   }
   
   // UI Common
@@ -228,6 +229,7 @@ export interface TranslationKeys {
     annotations: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
+    customRewritePromptPlaceholder?: string
   }
 
   // Notices and Messages

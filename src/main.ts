@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian'
 
-import { ApplyView } from './ApplyView'
+import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
@@ -14,13 +14,14 @@ import { migrateToJsonDatabase } from './database/json/migrateToJsonDatabase'
 import { createTranslationFunction } from './i18n'
 import { CustomContinueModal } from './components/modals/CustomContinueModal'
 import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
+import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import {
   SmartComposerSettings,
   smartComposerSettingsSchema,
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
-import { getMentionableBlockData } from './utils/obsidian'
+import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
 
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
@@ -37,6 +38,92 @@ export default class SmartComposerPlugin extends Plugin {
 
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
+  }
+
+  private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
+    const selected = editor.getSelection()
+    if (!selected || selected.trim().length === 0) {
+      new Notice('请先选择要改写的文本。')
+      return
+    }
+
+    const notice = new Notice('正在生成改写...', 0)
+    try {
+      const { providerClient, model } = getChatModelClient({
+        settings: this.settings,
+        modelId: this.settings.applyModelId,
+      })
+
+      const systemPrompt =
+        'You are an intelligent assistant that rewrites ONLY the provided markdown text according to the instruction. Preserve the original meaning, structure, and any markdown (links, emphasis, code) unless explicitly told otherwise. Output ONLY the rewritten text without code fences or extra explanations.'
+
+      const instruction = (customPrompt ?? '').trim()
+      const requestMessages = [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
+        },
+      ] as const
+
+      const response = await providerClient.generateResponse(model, {
+        model: model.model,
+        messages: requestMessages as unknown as any,
+        stream: false,
+        prediction: {
+          type: 'content',
+          content: [
+            { type: 'text', text: selected },
+            { type: 'text', text: instruction },
+          ],
+        },
+      })
+
+      const stripFences = (s: string) => {
+        const lines = (s ?? '').split('\n')
+        if (lines.length > 0 && lines[0].startsWith('```')) lines.shift()
+        if (lines.length > 0 && lines[lines.length - 1].startsWith('```')) lines.pop()
+        return lines.join('\n')
+      }
+
+      const rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+      if (!rewritten) {
+        notice.setMessage('未生成改写内容。')
+        this.registerTimeout(() => notice.hide(), 1200)
+        return
+      }
+
+      // Open ApplyView with a preview diff and let user choose; ApplyView will close back to doc
+      const activeFile = this.app.workspace.getActiveFile()
+      if (!activeFile) {
+        notice.setMessage('未找到当前文件。')
+        this.registerTimeout(() => notice.hide(), 1200)
+        return
+      }
+
+      const from = editor.getCursor('from')
+      const head = editor.getRange({ line: 0, ch: 0 }, from)
+      const originalContent = await readTFileContent(activeFile, this.app.vault)
+      const tail = originalContent.slice(head.length + selected.length)
+      const newContent = head + rewritten + tail
+
+      await this.app.workspace.getLeaf(true).setViewState({
+        type: APPLY_VIEW_TYPE,
+        active: true,
+        state: {
+          file: activeFile,
+          originalContent,
+          newContent,
+        } satisfies ApplyViewState,
+      })
+
+      notice.setMessage('改写结果已生成。')
+      this.registerTimeout(() => notice.hide(), 1200)
+    } catch (error) {
+      console.error(error)
+      notice.setMessage('改写失败。')
+      this.registerTimeout(() => notice.hide(), 1200)
+    }
   }
 
   async onload() {
@@ -143,7 +230,6 @@ export default class SmartComposerPlugin extends Plugin {
         }
       },
     })
-
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new SmartComposerSettingTab(this.app, this))
 
@@ -198,6 +284,33 @@ export default class SmartComposerPlugin extends Plugin {
               }
             }),
         )
+
+        // Custom rewrite via floating panel (only when there is a selection)
+        if (hasSelection) {
+          menu.addItem((item) =>
+            item
+              .setTitle(this.t('commands.customRewrite'))
+              .setIcon('wand-sparkles')
+              .onClick(() => {
+                try {
+                  const cm: any = (editor as any).cm
+                  const cursor = editor.getCursor('to')
+                  let position: { x: number; y: number } | undefined
+                  if (cm?.state) {
+                    const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
+                    const pos: number = lineFrom + cursor.ch
+                    const rect = cm.coordsAtPos(pos)
+                    if (rect) {
+                      position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
+                    }
+                  }
+                  new CustomRewritePanel({ plugin: this, editor, position }).open()
+                } catch {
+                  new CustomRewritePanel({ plugin: this, editor }).open()
+                }
+              }),
+          )
+        }
       }),
     )
 
@@ -452,6 +565,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   // Public wrapper for use in React modal
   async continueWriting(editor: Editor, customPrompt?: string) {
     return this.handleContinueWriting(editor, customPrompt)
+  }
+
+  // Public wrapper for use in React panel
+  async customRewrite(editor: Editor, customPrompt?: string) {
+    return this.handleCustomRewrite(editor, customPrompt)
   }
 
   private async handleContinueWriting(editor: Editor, customPrompt?: string) {

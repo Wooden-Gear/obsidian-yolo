@@ -1,4 +1,3 @@
-import { CheckIcon, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { getIcon } from 'obsidian'
 import {
   forwardRef,
@@ -63,104 +62,49 @@ export default function ApplyViewRoot({
     scrollToDiffBlock(currentDiffIndex + 1)
   }, [currentDiffIndex, scrollToDiffBlock])
 
-  const handleAccept = async () => {
-    const newContent = diff
-      .map((diffBlock) => {
-        if (diffBlock.type === 'modified') {
-          return diffBlock.modifiedValue
-        } else {
-          return diffBlock.value
-        }
-      })
-      .join('\n')
+  const applyContentAndClose = async (newContent: string) => {
     await app.vault.modify(state.file, newContent)
     close()
   }
 
-  const handleReject = async () => {
-    close()
-  }
-
   const acceptCurrentBlock = (index: number) => {
-    setDiff((prevDiff) => {
-      const currentPart = prevDiff[index]
-
-      if (currentPart.type === 'unchanged') {
-        // Should not happen
-        return prevDiff
-      }
-
-      if (!currentPart.originalValue) {
-        return [...prevDiff.slice(0, index), ...prevDiff.slice(index + 1)]
-      }
-
-      const newPart: DiffBlock =
-        currentPart.type === 'modified'
-          ? {
-              type: 'unchanged',
-              value: currentPart.originalValue,
-            }
-          : currentPart
-
-      return [
-        ...prevDiff.slice(0, index),
-        newPart,
-        ...prevDiff.slice(index + 1),
-      ]
-    })
+    // Immediately apply: keep current (original) for all blocks
+    const newContent = diff
+      .map((block) => {
+        if (block.type === 'unchanged') return block.value
+        return block.originalValue ?? ''
+      })
+      .join('\n')
+    void applyContentAndClose(newContent)
   }
 
   const acceptIncomingBlock = (index: number) => {
-    setDiff((prevDiff) => {
-      const currentPart = prevDiff[index]
-
-      if (currentPart.type === 'unchanged') {
-        // Should not happen
-        return prevDiff
-      }
-
-      if (!currentPart.modifiedValue) {
-        return [...prevDiff.slice(0, index), ...prevDiff.slice(index + 1)]
-      }
-
-      const newPart: DiffBlock =
-        currentPart.type === 'modified'
-          ? {
-              type: 'unchanged',
-              value: currentPart.modifiedValue,
-            }
-          : currentPart
-
-      return [
-        ...prevDiff.slice(0, index),
-        newPart,
-        ...prevDiff.slice(index + 1),
-      ]
-    })
+    // Immediately apply: accept incoming for the chosen block, keep others as current
+    const newContent = diff
+      .map((block, i) => {
+        if (block.type === 'unchanged') return block.value
+        const original = block.originalValue ?? ''
+        const incoming = block.modifiedValue ?? ''
+        if (i === index) return incoming || original
+        // keep others as current (no change)
+        return original
+      })
+      .join('\n')
+    void applyContentAndClose(newContent)
   }
 
   const acceptBothBlocks = (index: number) => {
-    setDiff((prevDiff) => {
-      const currentPart = prevDiff[index]
-
-      if (currentPart.type === 'unchanged') {
-        // Should not happen
-        return prevDiff
-      }
-
-      const newPart: DiffBlock = {
-        type: 'unchanged',
-        value: [currentPart.originalValue, currentPart.modifiedValue]
-          .filter(Boolean)
-          .join('\n'),
-      }
-
-      return [
-        ...prevDiff.slice(0, index),
-        newPart,
-        ...prevDiff.slice(index + 1),
-      ]
-    })
+    // Immediately apply: for the chosen block, merge both; others keep current
+    const newContent = diff
+      .map((block, i) => {
+        if (block.type === 'unchanged') return block.value
+        const original = block.originalValue ?? ''
+        const incoming = block.modifiedValue ?? ''
+        if (i === index) return [original, incoming].filter(Boolean).join('\n')
+        return original
+      })
+      .join('\n')
+    void applyContentAndClose(newContent)
   }
 
   const updateCurrentDiffFromScroll = useCallback(() => {
@@ -212,47 +156,6 @@ export default function ApplyViewRoot({
         <div className="view-header-title-container mod-at-start">
           <div className="view-header-title">
             Applying: {state?.file?.name ?? ''}
-          </div>
-          <div className="view-actions">
-            <div className="smtcmp-diff-navigation">
-              <button
-                className="clickable-icon"
-                onClick={handlePrevDiff}
-                disabled={currentDiffIndex <= 0}
-                aria-label="Previous diff"
-              >
-                <ChevronUp size={14} />
-              </button>
-              <span>
-                {modifiedBlockIndices.length > 0
-                  ? `${currentDiffIndex + 1} of ${modifiedBlockIndices.length}`
-                  : '0 of 0'}
-              </span>
-              <button
-                className="clickable-icon"
-                onClick={handleNextDiff}
-                disabled={currentDiffIndex >= modifiedBlockIndices.length - 1}
-                aria-label="Next diff"
-              >
-                <ChevronDown size={14} />
-              </button>
-            </div>
-            <button
-              className="clickable-icon view-action"
-              aria-label="Accept changes"
-              onClick={handleAccept}
-            >
-              {acceptIcon && <CheckIcon size={14} />}
-              Accept
-            </button>
-            <button
-              className="clickable-icon view-action"
-              aria-label="Cancel apply"
-              onClick={handleReject}
-            >
-              {rejectIcon && <X size={14} />}
-              Cancel
-            </button>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ export const en: TranslationKeys = {
     continueWriting: 'AI Continue Writing',
     continueWritingSelected: 'AI Continue Writing (selection)',
     customContinueWriting: 'AI Custom Continue',
+    customRewrite: 'AI Custom Rewrite',
   },
 
   common: {
@@ -224,6 +225,7 @@ export const en: TranslationKeys = {
     annotations: 'Annotations',
     customContinuePromptLabel: 'Continuation instruction',
     customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”. Press Enter to confirm, Shift+Enter for a new line, Esc to close.',
+    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., “Make it concise and active voice; keep markdown structure”. Press Enter to confirm, Shift+Enter for a new line, Esc to close.',
   },
 
   notices: {

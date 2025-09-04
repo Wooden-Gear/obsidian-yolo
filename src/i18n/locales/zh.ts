@@ -9,6 +9,7 @@ export const zh: TranslationKeys = {
     continueWriting: 'AI续写',
     continueWritingSelected: 'AI续写（选中段落）',
     customContinueWriting: '自定义续写',
+    customRewrite: '自定义改写',
   },
 
   common: {
@@ -224,6 +225,7 @@ export const zh: TranslationKeys = {
     annotations: '注释',
     customContinuePromptLabel: '续写指令',
     customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按回车确认，Shift+回车换行，Esc 关闭。',
+    customRewritePromptPlaceholder: '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按回车确认，Shift+回车换行，Esc 关闭。',
   },
 
   notices: {
