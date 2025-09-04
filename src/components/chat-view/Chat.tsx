@@ -59,18 +59,23 @@ import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
 
 // Add an empty line here
-const getNewInputMessage = (app: App): ChatUserMessage => {
+const getNewInputMessage = (
+  app: App,
+  includeCurrentFile: boolean,
+): ChatUserMessage => {
   return {
     role: 'user',
     content: null,
     promptContent: null,
     id: uuidv4(),
-    mentionables: [
-      {
-        type: 'current-file',
-        file: app.workspace.getActiveFile(),
-      },
-    ],
+    mentionables: includeCurrentFile
+      ? [
+          {
+            type: 'current-file',
+            file: app.workspace.getActiveFile(),
+          },
+        ]
+      : [],
   }
 }
 
@@ -102,7 +107,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }, [getRAGEngine, app, settings])
 
   const [inputMessage, setInputMessage] = useState<ChatUserMessage>(() => {
-    const newMessage = getNewInputMessage(app)
+    const newMessage = getNewInputMessage(
+      app,
+      settings.chatOptions.includeCurrentFileContent,
+    )
     if (props.selectedBlock) {
       newMessage.mentionables = [
         ...newMessage.mentionables,
@@ -170,7 +178,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
       setCurrentConversationId(conversationId)
       setChatMessages(conversation)
-      const newInputMessage = getNewInputMessage(app)
+      const newInputMessage = getNewInputMessage(
+        app,
+        settings.chatOptions.includeCurrentFileContent,
+      )
       setInputMessage(newInputMessage)
       setFocusedMessageId(newInputMessage.id)
       setQueryProgress({
@@ -185,7 +196,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const handleNewChat = (selectedBlock?: MentionableBlockData) => {
     setCurrentConversationId(uuidv4())
     setChatMessages([])
-    const newInputMessage = getNewInputMessage(app)
+    const newInputMessage = getNewInputMessage(
+      app,
+      settings.chatOptions.includeCurrentFileContent,
+    )
     if (selectedBlock) {
       const mentionableBlock: MentionableBlock = {
         type: 'block',
@@ -450,6 +464,34 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   // Updates the currentFile of the focused message (input or chat history)
   // This happens when active file changes or focused message changes
   const handleActiveLeafChange = useCallback(() => {
+    // If the setting is disabled, remove any existing current-file mentionable
+    if (!settings.chatOptions.includeCurrentFileContent) {
+      if (!focusedMessageId) return
+      if (inputMessage.id === focusedMessageId) {
+        setInputMessage((prevInputMessage) => ({
+          ...prevInputMessage,
+          mentionables: prevInputMessage.mentionables.filter(
+            (m) => m.type !== 'current-file',
+          ),
+        }))
+      } else {
+        setChatMessages((prevChatHistory) =>
+          prevChatHistory.map((message) =>
+            message.id === focusedMessageId && message.role === 'user'
+              ? {
+                  ...message,
+                  mentionables: message.mentionables.filter(
+                    (m) => m.type !== 'current-file',
+                  ),
+                }
+              : message,
+          ),
+        )
+      }
+      return
+    }
+
+    // Setting enabled: keep the current-file mentionable updated
     const activeFile = app.workspace.getActiveFile()
     if (!activeFile) return
 
@@ -465,7 +507,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         mentionables: [
           mentionable,
           ...prevInputMessage.mentionables.filter(
-            (mentionable) => mentionable.type !== 'current-file',
+            (m) => m.type !== 'current-file',
           ),
         ],
       }))
@@ -477,16 +519,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 ...message,
                 mentionables: [
                   mentionable,
-                  ...message.mentionables.filter(
-                    (mentionable) => mentionable.type !== 'current-file',
-                  ),
+                  ...message.mentionables.filter((m) => m.type !== 'current-file'),
                 ],
               }
             : message,
         ),
       )
     }
-  }, [app.workspace, focusedMessageId, inputMessage.id])
+  }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent])
 
   useEffect(() => {
     app.workspace.on('active-leaf-change', handleActiveLeafChange)
@@ -494,6 +534,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       app.workspace.off('active-leaf-change', handleActiveLeafChange)
     }
   }, [app.workspace, handleActiveLeafChange])
+
+  // React to toggle changes immediately by syncing the current-file mentionable
+  useEffect(() => {
+    handleActiveLeafChange()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.chatOptions.includeCurrentFileContent])
 
   useImperativeHandle(ref, () => ({
     openNewChat: (selectedBlock?: MentionableBlockData) =>
@@ -719,7 +765,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             inputChatMessages: [...chatMessages, { ...inputMessage, content }],
             useVaultSearch,
           })
-          setInputMessage(getNewInputMessage(app))
+          setInputMessage(
+            getNewInputMessage(
+              app,
+              settings.chatOptions.includeCurrentFileContent,
+            ),
+          )
         }}
         onFocus={() => {
           setFocusedMessageId(inputMessage.id)
