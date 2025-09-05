@@ -104,6 +104,10 @@ export class VectorManager {
     updateProgress?: (indexProgress: IndexProgress) => void,
   ): Promise<void> {
     let filesToIndex: TFile[]
+    let newFilesCount = 0
+    let updatedFilesCount = 0
+    let removedFilesCount = 0
+    
     if (options.reindexAll) {
       filesToIndex = await this.getFilesToIndex({
         embeddingModel: embeddingModel,
@@ -112,13 +116,31 @@ export class VectorManager {
         reindexAll: true,
       })
       await this.repository.clearAllVectors(embeddingModel)
+      newFilesCount = filesToIndex.length // 全量重建时都算新文件
     } else {
       await this.deleteVectorsForDeletedFiles(embeddingModel)
-      filesToIndex = await this.getFilesToIndex({
+      
+      // 获取需要索引的文件，并分类统计
+      const allFilesToCheck = await this.getFilesToIndex({
         embeddingModel: embeddingModel,
         excludePatterns: options.excludePatterns,
         includePatterns: options.includePatterns,
       })
+      
+      // 分类文件：新文件 vs 更新文件
+      for (const file of allFilesToCheck) {
+        const existingChunks = await this.repository.getVectorsByFilePath(
+          file.path,
+          embeddingModel,
+        )
+        if (existingChunks.length === 0) {
+          newFilesCount++
+        } else {
+          updatedFilesCount++
+        }
+      }
+      
+      filesToIndex = allFilesToCheck
       await this.repository.deleteVectorsForMultipleFiles(
         filesToIndex.map((file) => file.path),
         embeddingModel,
@@ -127,6 +149,58 @@ export class VectorManager {
 
     if (filesToIndex.length === 0) {
       return
+    }
+    
+    // 按文件夹分组文件
+    const folderGroups: { [folder: string]: TFile[] } = {}
+    for (const file of filesToIndex) {
+      const folderPath = file.path.includes('/') 
+        ? file.path.substring(0, file.path.lastIndexOf('/'))
+        : ''
+      if (!folderGroups[folderPath]) {
+        folderGroups[folderPath] = []
+      }
+      folderGroups[folderPath].push(file)
+    }
+    
+    // 工具方法：返回当前文件夹及其向上的所有父级（不含根空字符串）
+    const getSelfAndAncestors = (folderPath: string): string[] => {
+      if (!folderPath) return []
+      const parts = folderPath.split('/')
+      const list: string[] = []
+      for (let i = parts.length; i >= 1; i--) {
+        list.push(parts.slice(0, i).join('/'))
+      }
+      return list
+    }
+
+    // 初始化文件夹进度
+    const folderProgress: { [folder: string]: { 
+      completedFiles: number
+      totalFiles: number
+      completedChunks: number
+      totalChunks: number
+    }} = {}
+    
+    for (const folder in folderGroups) {
+      // 自身初始化
+      folderProgress[folder] = {
+        completedFiles: 0,
+        totalFiles: folderGroups[folder].length,
+        completedChunks: 0,
+        totalChunks: 0, // 将在处理时更新
+      }
+      // 确保父级节点存在（用于汇总显示）
+      for (const anc of getSelfAndAncestors(folder).slice(1)) {
+        if (!folderProgress[anc]) {
+          folderProgress[anc] = {
+            completedFiles: 0,
+            totalFiles: 0,
+            completedChunks: 0,
+            totalChunks: 0,
+          }
+        }
+      }
     }
 
     const textSplitter = RecursiveCharacterTextSplitter.fromLanguage(
@@ -142,41 +216,73 @@ export class VectorManager {
     )
 
     const failedFiles: { path: string; error: string }[] = []
-    const contentChunks = (
-      await Promise.all(
-        filesToIndex.map(async (file) => {
-          try {
-            const fileContent = await this.app.vault.cachedRead(file)
-            // Remove null bytes from the content
-            // eslint-disable-next-line no-control-regex
-            const sanitizedContent = fileContent.replace(/\x00/g, '')
+    let completedFilesCount = 0
+    
+    // 处理文件并生成chunks
+    const contentChunks: Omit<InsertEmbedding, 'model' | 'dimension'>[] = []
+    
+    for (const file of filesToIndex) {
+      const currentFolder = file.path.includes('/') 
+        ? file.path.substring(0, file.path.lastIndexOf('/'))
+        : ''
+      
+      // 更新当前处理的文件和文件夹
+      updateProgress?.({
+        completedChunks: 0,
+        totalChunks: 0, // 将在后面更新
+        totalFiles: filesToIndex.length,
+        completedFiles: completedFilesCount,
+        currentFile: file.path,
+        currentFolder: currentFolder,
+        folderProgress: folderProgress,
+        newFilesCount,
+        updatedFilesCount,
+        removedFilesCount,
+      })
+      
+      try {
+        const fileContent = await this.app.vault.cachedRead(file)
+        // Remove null bytes from the content
+        // eslint-disable-next-line no-control-regex
+        const sanitizedContent = fileContent.replace(/\x00/g, '')
 
-            const fileDocuments = await textSplitter.createDocuments([
-              sanitizedContent,
-            ])
-            return fileDocuments.map(
-              (chunk): Omit<InsertEmbedding, 'model' | 'dimension'> => {
-                return {
-                  path: file.path,
-                  mtime: file.stat.mtime,
-                  content: chunk.pageContent,
-                  metadata: {
-                    startLine: chunk.metadata.loc.lines.from as number,
-                    endLine: chunk.metadata.loc.lines.to as number,
-                  },
-                }
-              },
-            )
-          } catch (error) {
-            failedFiles.push({
+        const fileDocuments = await textSplitter.createDocuments([
+          sanitizedContent,
+        ])
+        
+        const fileChunks = fileDocuments.map(
+          (chunk): Omit<InsertEmbedding, 'model' | 'dimension'> => {
+            return {
               path: file.path,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            })
-            return [] // Return empty array for failed files
+              mtime: file.stat.mtime,
+              content: chunk.pageContent,
+              metadata: {
+                startLine: chunk.metadata.loc.lines.from as number,
+                endLine: chunk.metadata.loc.lines.to as number,
+              },
+            }
+          },
+        )
+        
+        contentChunks.push(...fileChunks)
+        
+        // 更新文件夹进度（自身 + 父级聚合）
+        folderProgress[currentFolder].completedFiles++
+        folderProgress[currentFolder].totalChunks += fileChunks.length
+        for (const anc of getSelfAndAncestors(currentFolder).slice(1)) {
+          if (folderProgress[anc]) {
+            folderProgress[anc].totalChunks += fileChunks.length
           }
-        }),
-      )
-    ).flat()
+        }
+        completedFilesCount++
+        
+      } catch (error) {
+        failedFiles.push({
+          path: file.path,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
 
     if (failedFiles.length > 0) {
       const errorDetails =
@@ -200,10 +306,16 @@ export class VectorManager {
       throw new Error('All files failed to process. Stopping indexing process.')
     }
 
+    // 初始进度更新，包含文件夹信息
     updateProgress?.({
       completedChunks: 0,
       totalChunks: contentChunks.length,
       totalFiles: filesToIndex.length,
+      completedFiles: completedFilesCount,
+      folderProgress: folderProgress,
+      newFilesCount,
+      updatedFilesCount,
+      removedFilesCount,
     })
 
     let completedChunks = 0
@@ -242,6 +354,11 @@ export class VectorManager {
                     completedChunks,
                     totalChunks: contentChunks.length,
                     totalFiles: filesToIndex.length,
+                    completedFiles: completedFilesCount,
+                    folderProgress: folderProgress,
+                    newFilesCount,
+                    updatedFilesCount,
+                    removedFilesCount,
                   })
 
                   return {
@@ -268,6 +385,11 @@ export class VectorManager {
                         completedChunks,
                         totalChunks: contentChunks.length,
                         totalFiles: filesToIndex.length,
+                        completedFiles: completedFilesCount,
+                        folderProgress: folderProgress,
+                        newFilesCount,
+                        updatedFilesCount,
+                        removedFilesCount,
                         waitingForRateLimit: true,
                       })
                       return true
@@ -298,6 +420,36 @@ export class VectorManager {
           )
         }
         await this.repository.insertVectors(validEmbeddingChunks)
+        
+        // 更新文件夹的 chunk 完成进度（全局 completedChunks 已在获取 embedding 时逐个增加）
+        // 更新每个文件夹的 chunk 完成进度
+        for (const chunk of validEmbeddingChunks) {
+          const folderPath = chunk.path.includes('/') 
+            ? chunk.path.substring(0, chunk.path.lastIndexOf('/'))
+            : ''
+          const lineage = getSelfAndAncestors(folderPath)
+          if (folderProgress[folderPath]) {
+            folderProgress[folderPath].completedChunks++
+          }
+          for (const anc of lineage.slice(1)) {
+            if (folderProgress[anc]) {
+              folderProgress[anc].completedChunks++
+            }
+          }
+        }
+        
+        // 更新进度
+        updateProgress?.({
+          completedChunks,
+          totalChunks: contentChunks.length,
+          totalFiles: filesToIndex.length,
+          completedFiles: completedFilesCount,
+          folderProgress: folderProgress,
+          newFilesCount,
+          updatedFilesCount,
+          removedFilesCount,
+          waitingForRateLimit: false,
+        })
       }
     } catch (error) {
       if (

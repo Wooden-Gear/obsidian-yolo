@@ -27,6 +27,22 @@ export type IndexProgress = {
   totalChunks: number
   totalFiles: number
   waitingForRateLimit?: boolean
+  // 文件夹级别的进度信息（可选，向后兼容）
+  currentFolder?: string
+  currentFile?: string
+  completedFiles?: number
+  folderProgress?: {
+    [folderPath: string]: {
+      completedFiles: number
+      totalFiles: number
+      completedChunks: number
+      totalChunks: number
+    }
+  }
+  // 文件分类统计
+  newFilesCount?: number
+  updatedFilesCount?: number
+  removedFilesCount?: number
 }
 
 // TODO: Update style

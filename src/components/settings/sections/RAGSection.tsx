@@ -1,5 +1,6 @@
 import { App } from 'obsidian'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 import { RECOMMENDED_MODELS_FOR_EMBEDDING } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
@@ -15,6 +16,9 @@ import { ExcludedFilesModal } from '../modals/ExcludedFilesModal'
 import { IncludedFilesModal } from '../modals/IncludedFilesModal'
 import { FolderSelectionList } from '../inputs/FolderSelectionList'
 import { includePatternsToFolderPaths, folderPathsToIncludePatterns } from '../../../utils/rag-utils'
+import { RAGIndexProgress } from '../RAGIndexProgress'
+import { IndexProgress } from '../../chat-view/QueryProgress'
+import '../RAGIndexProgress.css'
 
 type RAGSectionProps = {
   app: App
@@ -24,6 +28,26 @@ type RAGSectionProps = {
 export function RAGSection({ app, plugin }: RAGSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
+  const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null)
+  const [isIndexing, setIsIndexing] = useState(false)
+  const [isProgressOpen, setIsProgressOpen] = useState(false)
+  const headerPercent = useMemo(() => {
+    if (indexProgress && indexProgress.totalChunks > 0) {
+      const pct = Math.round((indexProgress.completedChunks / indexProgress.totalChunks) * 100)
+      return Math.max(0, Math.min(100, pct))
+    }
+    try {
+      const raw = localStorage.getItem('smtcmp_rag_last_progress')
+      if (!raw) return null
+      const p = JSON.parse(raw)
+      if (p && typeof p.totalChunks === 'number' && p.totalChunks > 0) {
+        const pct = Math.round((p.completedChunks / p.totalChunks) * 100)
+        return Math.max(0, Math.min(100, pct))
+      }
+    } catch {}
+    return null
+  }, [indexProgress, isIndexing])
+  
   const includeFolders = useMemo(
     () => includePatternsToFolderPaths(settings.ragOptions.includePatterns),
     [settings.ragOptions.includePatterns],
@@ -33,6 +57,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
     () => includePatternsToFolderPaths(settings.ragOptions.excludePatterns),
     [settings.ragOptions.excludePatterns],
   )
+
+  // 处理索引进度更新
+  const handleIndexProgress = useCallback((progress: IndexProgress) => {
+    setIndexProgress(progress)
+  }, [])
 
   // Minimal conflict detection (exclude overrides include)
   const conflictInfo = useMemo(() => {
@@ -282,13 +311,121 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting name={t('settings.rag.manageEmbeddingDatabase')}>
-        <ObsidianButton
-          text={t('settings.rag.manage')}
-          onClick={async () => {
-            new EmbeddingDbManageModal(app, plugin).open()
-          }}
-        />
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <ObsidianButton
+            text={t('settings.rag.manage')}
+            onClick={async () => {
+              new EmbeddingDbManageModal(app, plugin).open()
+            }}
+          />
+          <ObsidianButton
+            text="重建索引"
+            disabled={isIndexing}
+            onClick={async () => {
+              setIsIndexing(true)
+              setIndexProgress(null)
+              try {
+                const ragEngine = await plugin.getRAGEngine()
+                await ragEngine.updateVaultIndex(
+                  { reindexAll: true },
+                  (queryProgress) => {
+                    if (queryProgress.type === 'indexing') {
+                      handleIndexProgress(queryProgress.indexProgress)
+                    }
+                  }
+                )
+                // 显示完成通知
+                plugin.app.workspace.trigger('notice', '索引重建完成')
+              } catch (error) {
+                console.error('Failed to rebuild index:', error)
+                plugin.app.workspace.trigger('notice', '索引重建失败')
+              } finally {
+                setIsIndexing(false)
+                // 清除进度显示
+                setTimeout(() => setIndexProgress(null), 3000)
+              }
+            }}
+          />
+          <ObsidianButton
+            text="更新索引"
+            disabled={isIndexing}
+            onClick={async () => {
+              setIsIndexing(true)
+              setIndexProgress(null)
+              try {
+                const ragEngine = await plugin.getRAGEngine()
+                await ragEngine.updateVaultIndex(
+                  { reindexAll: false },
+                  (queryProgress) => {
+                    if (queryProgress.type === 'indexing') {
+                      handleIndexProgress(queryProgress.indexProgress)
+                    }
+                  }
+                )
+                // 显示完成通知
+                plugin.app.workspace.trigger('notice', '索引更新完成')
+              } catch (error) {
+                console.error('Failed to update index:', error)
+                plugin.app.workspace.trigger('notice', '索引更新失败')
+              } finally {
+                setIsIndexing(false)
+                // 清除进度显示
+                setTimeout(() => setIndexProgress(null), 3000)
+              }
+            }}
+          />
+        </div>
       </ObsidianSetting>
+
+      {/* 折叠：RAG 索引进度（复用 Provider 折叠样式） */}
+      <div className="smtcmp-provider-section">
+        <div
+          className="smtcmp-provider-header"
+          onClick={() => setIsProgressOpen((v) => !v)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setIsProgressOpen((v) => !v)
+            }
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="smtcmp-provider-expand-btn">
+            {isProgressOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </div>
+
+          <div className="smtcmp-provider-info">
+            <span className="smtcmp-provider-id">RAG 索引进度</span>
+            {headerPercent !== null ? (
+              <span className="smtcmp-provider-type">{headerPercent}%</span>
+            ) : (
+              <span className="smtcmp-provider-type">{isIndexing ? '进行中' : '未开始'}</span>
+            )}
+          </div>
+        </div>
+
+        {isProgressOpen && (
+          <div className="smtcmp-provider-models">
+            <RAGIndexProgress 
+              progress={indexProgress} 
+              isIndexing={isIndexing}
+              getMarkdownFilesInFolder={(folderPath: string) => {
+                const files = plugin.app.vault.getMarkdownFiles()
+                const paths = files.map((f) => f.path)
+                if (folderPath === '') {
+                  // 根目录：只返回位于根的文件（无斜杠）
+                  return paths.filter((p) => !p.includes('/'))
+                }
+                const prefix = folderPath + '/'
+                // 仅返回该文件夹的直接子文件（非递归）
+                return paths.filter((p) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'))
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
