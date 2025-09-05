@@ -37,7 +37,7 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
         <ObsidianButton
           text={t('settings.supportSmartComposer.buyMeACoffee')}
           onClick={() =>
-            window.open('https://www.buymeacoffee.com/kevin.on', '_blank')
+            window.open('https://afdian.com/a/lapis0x0', '_blank')
           }
           cta
         />

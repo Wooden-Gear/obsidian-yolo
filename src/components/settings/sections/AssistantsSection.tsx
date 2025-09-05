@@ -22,6 +22,7 @@ function AssistantItem({
   onDelete,
 }: AssistantItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useLanguage();
 
   const handleDeleteClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -88,7 +89,7 @@ function AssistantItem({
         }}>
           <button 
             className="smtcmp-delete-assistant-btn" 
-            aria-label={`Delete assistant ${assistant.name}`}
+            aria-label={`${t('settings.assistants.deleteAssistantAria', 'Delete assistant')} ${assistant.name}`}
             onClick={handleDeleteClick}
             style={{ 
               display: 'flex', 
@@ -149,17 +150,17 @@ function AssistantItem({
             <label style={{
               fontWeight: 'bold',
               fontSize: '14px'
-            }}>Name</label>
+            }}>{t('settings.assistants.name', 'Name')}</label>
             <ObsidianTextInput
               value={assistant.name}
               onChange={(value) => onUpdate({ ...assistant, name: value })}
-              placeholder="Enter assistant name"
+              placeholder={t('settings.assistants.namePlaceholder', 'Enter assistant name')}
             />
           </div>
 
           <ObsidianSetting
-            name="System Prompt"
-            desc="This prompt will be added to the beginning of every chat."
+            name={t('settings.assistants.systemPrompt', 'System Prompt')}
+            desc={t('settings.assistants.systemPromptDesc', 'This prompt will be added to the beginning of every chat.')}
             className="smtcmp-settings-textarea-header"
           />
           
@@ -167,7 +168,7 @@ function AssistantItem({
             <ObsidianTextArea
               value={assistant.systemPrompt || ''}
               onChange={(value) => onUpdate({ ...assistant, systemPrompt: value })}
-              placeholder="Enter system prompt to define assistant's behavior and capabilities"
+              placeholder={t('settings.assistants.systemPromptPlaceholder', "Enter system prompt to define assistant's behavior and capabilities")}
             />
           </ObsidianSetting>
         </div>
@@ -188,7 +189,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
   const handleAddAssistant = async () => {
     const newAssistant: Assistant = {
       id: crypto.randomUUID(),
-      name: `New Assistant ${assistants.length + 1}`,
+      name: `${t('settings.assistants.defaultAssistantName', 'New Assistant')} ${assistants.length + 1}`,
       description: '',
       systemPrompt: '',
     };
@@ -221,9 +222,9 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     const modal = new ConfirmModal(
       app,
       {
-        title: `Confirm Delete Assistant`,
-        message: `Are you sure you want to delete assistant "${assistantToDelete.name}"? This action cannot be undone.`,
-        ctaText: 'Delete',
+        title: t('settings.assistants.deleteConfirmTitle', 'Confirm Delete Assistant'),
+        message: `${t('settings.assistants.deleteConfirmMessagePrefix', 'Are you sure you want to delete assistant')} "${assistantToDelete.name}"${t('settings.assistants.deleteConfirmMessageSuffix', '? This action cannot be undone.')}`,
+        ctaText: t('common.delete'),
         onConfirm: () => {
           confirmed = true;
         }
@@ -261,7 +262,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
         <div>{t('settings.assistants.title')}</div>
         <button
           onClick={handleAddAssistant}
-          aria-label="Add new assistant"
+          aria-label={t('settings.assistants.addAssistantAria', 'Add new assistant')}
           style={{
             display: 'flex',
             alignItems: 'center',

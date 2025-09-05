@@ -60,15 +60,27 @@ export interface TranslationKeys {
       title: string
       desc: string
       addAssistant: string
-      editAssistant: string
-      deleteAssistant: string
-      name: string
-      description: string
-      systemPrompt: string
-      actions: string
       noAssistants: string
-      noAssistant: string
-      selectAssistant: string
+      // existing optional keys in locales
+      editAssistant?: string
+      deleteAssistant?: string
+      noAssistant?: string
+      selectAssistant?: string
+      name?: string
+      description?: string
+      systemPrompt?: string
+      actions?: string
+      // new optional helpers
+      namePlaceholder?: string
+      systemPromptDesc?: string
+      systemPromptPlaceholder?: string
+      defaultAssistantName?: string
+      // Confirm modal & aria
+      deleteConfirmTitle?: string
+      deleteConfirmMessagePrefix?: string
+      deleteConfirmMessageSuffix?: string
+      addAssistantAria?: string
+      deleteAssistantAria?: string
     }
     providers: {
       title: string
