@@ -252,6 +252,8 @@ export interface TranslationKeys {
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
     customRewritePromptPlaceholder?: string
+    showMore?: string
+    showLess?: string
   }
 
   // Notices and Messages
