@@ -1,6 +1,10 @@
 <h1 align="center">Next Composer</h1>
 
 <p align="center">
+  <b>English</b> | <a href="./README_zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="./DOC/DOC_en/01-basic-introduction.md">Documentation</a>
   ·
   <a href="https://github.com/Lapis0x0/obsidian-next-composer/issues">Report Bug</a>
