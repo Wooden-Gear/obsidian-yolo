@@ -1,4 +1,5 @@
-import { Editor, MarkdownView, Notice, Plugin } from 'obsidian'
+import { Editor, MarkdownView, Notice, Plugin, TAbstractFile } from 'obsidian'
+import { minimatch } from 'minimatch'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
@@ -35,6 +36,8 @@ export default class SmartComposerPlugin extends Plugin {
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
   private isContinuationInProgress = false
   private continuationTriggerKeyword = '  '
+  private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
+  private isAutoUpdating = false
 
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
@@ -160,6 +163,15 @@ export default class SmartComposerPlugin extends Plugin {
         this.addSelectionToChat(editor, view)
       },
     })
+    
+    // Auto update: listen to vault file changes and schedule incremental index updates
+    this.registerEvent(this.app.vault.on('create', (file) => this.onVaultFileChanged(file)))
+    this.registerEvent(this.app.vault.on('modify', (file) => this.onVaultFileChanged(file)))
+    this.registerEvent(this.app.vault.on('delete', (file) => this.onVaultFileChanged(file)))
+    this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
+      this.onVaultFileChanged(file)
+      if (oldPath) this.onVaultPathChanged(oldPath)
+    }))
 
     this.addCommand({
       id: 'rebuild-vault-index',
@@ -399,6 +411,10 @@ export default class SmartComposerPlugin extends Plugin {
     // McpManager cleanup
     this.mcpManager?.cleanup()
     this.mcpManager = null
+    if (this.autoUpdateTimer) {
+      clearTimeout(this.autoUpdateTimer)
+      this.autoUpdateTimer = null
+    }
   }
 
   async loadSettings() {
@@ -560,6 +576,64 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   private registerTimeout(callback: () => void, timeout: number): void {
     const timeoutId = setTimeout(callback, timeout)
     this.timeoutIds.push(timeoutId)
+  }
+
+  // ===== Auto Update helpers =====
+  private onVaultFileChanged(file: TAbstractFile) {
+    try {
+      if (!('path' in file) || typeof (file as any).path !== 'string') return
+      this.onVaultPathChanged((file as any).path as string)
+    } catch {}
+  }
+
+  private onVaultPathChanged(path: string) {
+    if (!this.settings?.ragOptions?.autoUpdateEnabled) return
+    if (!this.isPathSelectedByIncludeExclude(path)) return
+    // Check minimal interval
+    const intervalMs = (this.settings.ragOptions.autoUpdateIntervalHours ?? 24) * 60 * 60 * 1000
+    const last = this.settings.ragOptions.lastAutoUpdateAt ?? 0
+    const now = Date.now()
+    if (now - last < intervalMs) {
+      // Still within cool-down; no action
+      return
+    }
+    // Debounce multiple changes within a short window
+    if (this.autoUpdateTimer) clearTimeout(this.autoUpdateTimer)
+    this.autoUpdateTimer = setTimeout(() => void this.runAutoUpdate(), 3000)
+  }
+
+  private isPathSelectedByIncludeExclude(path: string): boolean {
+    const { includePatterns = [], excludePatterns = [] } = this.settings?.ragOptions ?? {}
+    // Exclude has priority
+    if (excludePatterns.some((p) => minimatch(path, p))) return false
+    if (!includePatterns || includePatterns.length === 0) return true
+    return includePatterns.some((p) => minimatch(path, p))
+  }
+
+  private async runAutoUpdate() {
+    if (this.isAutoUpdating) return
+    this.isAutoUpdating = true
+    try {
+      const ragEngine = await this.getRAGEngine()
+      await ragEngine.updateVaultIndex(
+        { reindexAll: false },
+        undefined,
+      )
+      await this.setSettings({
+        ...this.settings,
+        ragOptions: {
+          ...this.settings.ragOptions,
+          lastAutoUpdateAt: Date.now(),
+        },
+      })
+      new Notice('索引已自动更新')
+    } catch (e) {
+      console.error('Auto update index failed:', e)
+      new Notice('自动更新索引失败')
+    } finally {
+      this.isAutoUpdating = false
+      this.autoUpdateTimer = null
+    }
   }
 
   // Public wrapper for use in React modal

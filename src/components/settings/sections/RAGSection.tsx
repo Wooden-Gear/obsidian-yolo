@@ -11,6 +11,7 @@ import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
+import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { EmbeddingDbManageModal } from '../modals/EmbeddingDbManageModal'
 import { ExcludedFilesModal } from '../modals/ExcludedFilesModal'
 import { IncludedFilesModal } from '../modals/IncludedFilesModal'
@@ -310,6 +311,87 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         />
       </ObsidianSetting>
 
+      {/* 自动更新索引（参考通用开关样式） */}
+      <ObsidianSetting
+        name="自动更新索引"
+        desc="当包含模式下的文件夹内容有变化时，按设定的最小间隔自动执行增量更新；默认每日一次。"
+      >
+        <ObsidianToggle
+          value={!!settings.ragOptions.autoUpdateEnabled}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              ragOptions: {
+                ...settings.ragOptions,
+                autoUpdateEnabled: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name="最小间隔(小时)"
+        desc="到达该间隔才会触发自动更新；用于避免频繁重建。"
+      >
+        <ObsidianTextInput
+          value={String(settings.ragOptions.autoUpdateIntervalHours ?? 24)}
+          placeholder="24"
+          onChange={async (v) => {
+            const n = parseInt(v, 10)
+            if (!isNaN(n) && n > 0) {
+              await setSettings({
+                ...settings,
+                ragOptions: {
+                  ...settings.ragOptions,
+                  autoUpdateIntervalHours: n,
+                },
+              })
+            }
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name="立即更新索引"
+        desc="手动执行一次增量更新，并记录最近更新时间。"
+      >
+        <ObsidianButton
+          text="立即更新"
+          disabled={isIndexing}
+          onClick={async () => {
+            setIsIndexing(true)
+            setIndexProgress(null)
+            try {
+              const ragEngine = await plugin.getRAGEngine()
+              await ragEngine.updateVaultIndex(
+                { reindexAll: false },
+                (queryProgress) => {
+                  if (queryProgress.type === 'indexing') {
+                    handleIndexProgress(queryProgress.indexProgress)
+                  }
+                }
+              )
+              // 记录更新时间
+              await plugin.setSettings({
+                ...plugin.settings,
+                ragOptions: {
+                  ...plugin.settings.ragOptions,
+                  lastAutoUpdateAt: Date.now(),
+                },
+              })
+              plugin.app.workspace.trigger('notice', '索引更新完成')
+            } catch (error) {
+              console.error('Failed to update index:', error)
+              plugin.app.workspace.trigger('notice', '索引更新失败')
+            } finally {
+              setIsIndexing(false)
+              setTimeout(() => setIndexProgress(null), 3000)
+            }
+          }}
+        />
+      </ObsidianSetting>
+
       <ObsidianSetting name={t('settings.rag.manageEmbeddingDatabase')}>
         <div style={{ display: 'flex', gap: '8px' }}>
           <ObsidianButton
@@ -334,42 +416,19 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                     }
                   }
                 )
-                // 显示完成通知
                 plugin.app.workspace.trigger('notice', '索引重建完成')
+                await plugin.setSettings({
+                  ...plugin.settings,
+                  ragOptions: {
+                    ...plugin.settings.ragOptions,
+                    lastAutoUpdateAt: Date.now(),
+                  },
+                })
               } catch (error) {
                 console.error('Failed to rebuild index:', error)
                 plugin.app.workspace.trigger('notice', '索引重建失败')
               } finally {
                 setIsIndexing(false)
-                // 清除进度显示
-                setTimeout(() => setIndexProgress(null), 3000)
-              }
-            }}
-          />
-          <ObsidianButton
-            text="更新索引"
-            disabled={isIndexing}
-            onClick={async () => {
-              setIsIndexing(true)
-              setIndexProgress(null)
-              try {
-                const ragEngine = await plugin.getRAGEngine()
-                await ragEngine.updateVaultIndex(
-                  { reindexAll: false },
-                  (queryProgress) => {
-                    if (queryProgress.type === 'indexing') {
-                      handleIndexProgress(queryProgress.indexProgress)
-                    }
-                  }
-                )
-                // 显示完成通知
-                plugin.app.workspace.trigger('notice', '索引更新完成')
-              } catch (error) {
-                console.error('Failed to update index:', error)
-                plugin.app.workspace.trigger('notice', '索引更新失败')
-              } finally {
-                setIsIndexing(false)
-                // 清除进度显示
                 setTimeout(() => setIndexProgress(null), 3000)
               }
             }}

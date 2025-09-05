@@ -22,6 +22,10 @@ const ragOptionsSchema = z.object({
   limit: z.number().catch(10),
   excludePatterns: z.array(z.string()).catch([]),
   includePatterns: z.array(z.string()).catch([]),
+  // auto update options
+  autoUpdateEnabled: z.boolean().catch(false),
+  autoUpdateIntervalHours: z.number().catch(24),
+  lastAutoUpdateAt: z.number().catch(0),
 })
 
 /**
@@ -65,6 +69,9 @@ export const smartComposerSettingsSchema = z.object({
     limit: 10,
     excludePatterns: [],
     includePatterns: [],
+    autoUpdateEnabled: false,
+    autoUpdateIntervalHours: 24,
+    lastAutoUpdateAt: 0,
   }),
 
   // MCP configuration
