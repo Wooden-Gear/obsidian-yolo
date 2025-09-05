@@ -21,6 +21,7 @@
 
 ## New Features
 
+*   **i18n Internationalization**: Added multi-language support to the project, making it easy to switch between different languages.
 *   **Custom Assistants (Agents)**: You can freely set different assistants' system prompts and save them to adapt to different writing scenarios.
 *   **Optimized Provider and Model Settings**: We've restructured the provider and model settings interface to be more centralized and easier to manage, solving the overly complex and scattered issues in the original version.
 *   **More Powerful RAG Features**: Now you can more conveniently select specific folders to include or exclude for RAG (Retrieval Augmented Generation), and the embedding database supports automatic updates over time.
