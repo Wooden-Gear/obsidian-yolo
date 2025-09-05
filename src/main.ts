@@ -38,9 +38,24 @@ export default class SmartComposerPlugin extends Plugin {
   private continuationTriggerKeyword = '  '
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
+  private activeAbortControllers: Set<AbortController> = new Set()
 
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
+  }
+
+  private cancelAllAiTasks() {
+    if (this.activeAbortControllers.size === 0) {
+      this.isContinuationInProgress = false
+      return
+    }
+    for (const controller of Array.from(this.activeAbortControllers)) {
+      try {
+        controller.abort()
+      } catch {}
+    }
+    this.activeAbortControllers.clear()
+    this.isContinuationInProgress = false
   }
 
   private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
@@ -51,6 +66,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     const notice = new Notice('正在生成改写...', 0)
+    let controller: AbortController | null = null
     try {
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -69,6 +85,9 @@ export default class SmartComposerPlugin extends Plugin {
         },
       ] as const
 
+      controller = new AbortController()
+      this.activeAbortControllers.add(controller)
+
       const response = await providerClient.generateResponse(model, {
         model: model.model,
         messages: requestMessages as unknown as any,
@@ -80,7 +99,7 @@ export default class SmartComposerPlugin extends Plugin {
             { type: 'text', text: instruction },
           ],
         },
-      })
+      }, { signal: controller.signal })
 
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
@@ -123,9 +142,16 @@ export default class SmartComposerPlugin extends Plugin {
       notice.setMessage('改写结果已生成。')
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
-      console.error(error)
-      notice.setMessage('改写失败。')
-      this.registerTimeout(() => notice.hide(), 1200)
+      if ((error as any)?.name === 'AbortError') {
+        notice.setMessage('已取消生成。')
+        this.registerTimeout(() => notice.hide(), 1000)
+      } else {
+        console.error(error)
+        notice.setMessage('改写失败。')
+        this.registerTimeout(() => notice.hide(), 1200)
+      }
+    } finally {
+      if (controller) this.activeAbortControllers.delete(controller)
     }
   }
 
@@ -154,6 +180,14 @@ export default class SmartComposerPlugin extends Plugin {
       id: 'open-new-chat',
       name: this.t('commands.openChat'),
       callback: () => this.openChatView(true),
+    })
+
+    // Global ESC to cancel any ongoing AI continuation/rewrite
+    this.registerDomEvent(document, 'keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Do not prevent default so other ESC behaviors (close modals, etc.) still work
+        this.cancelAllAiTasks()
+      }
     })
 
     this.addCommand({
@@ -415,6 +449,8 @@ export default class SmartComposerPlugin extends Plugin {
       clearTimeout(this.autoUpdateTimer)
       this.autoUpdateTimer = null
     }
+    // Ensure all in-flight requests are aborted on unload
+    this.cancelAllAiTasks()
   }
 
   async loadSettings() {
@@ -647,6 +683,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   private async handleContinueWriting(editor: Editor, customPrompt?: string) {
+    let controller: AbortController | null = null
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
@@ -705,11 +742,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.isContinuationInProgress = true
 
       // Stream response and progressively insert into editor
+      controller = new AbortController()
+      this.activeAbortControllers.add(controller)
+
       const stream = await providerClient.streamResponse(model, {
         model: model.model,
         messages: requestMessages as unknown as any,
         stream: true,
-      })
+      }, { signal: controller.signal })
 
       // Insert at current cursor by default; if a selection exists, insert at selection end
       let insertStart = editor.getCursor()
@@ -748,10 +788,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
-      console.error(error)
-      new Notice('Failed to generate continuation.')
+      if ((error as any)?.name === 'AbortError') {
+        const n = new Notice('已取消生成。')
+        this.registerTimeout(() => n.hide(), 1000)
+      } else {
+        console.error(error)
+        new Notice('Failed to generate continuation.')
+      }
     } finally {
       this.isContinuationInProgress = false
+      if (controller) this.activeAbortControllers.delete(controller)
     }
   }
 
