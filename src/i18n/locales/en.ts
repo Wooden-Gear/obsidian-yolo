@@ -32,10 +32,10 @@ export const en: TranslationKeys = {
   },
 
   settings: {
-    title: 'Next Composer Settings',
+    title: 'YOLO Settings',
     supportSmartComposer: {
-      name: 'Support Next Composer',
-      desc: 'If you find Next Composer valuable, consider supporting its development!',
+      name: 'Support YOLO',
+      desc: 'If you find YOLO valuable, consider supporting its development!',
       buyMeACoffee: 'Buy Me a Coffee',
     },
     chat: {

@@ -11,7 +11,7 @@ export class InstallerUpdateRequiredModal extends ReactModal<
       Component: InstallerUpdateRequiredModalComponent,
       props: {},
       options: {
-        title: 'Next Composer Requires Obsidian Update',
+        title: 'YOLO Requires Obsidian Update',
       },
     })
   }
@@ -21,10 +21,10 @@ function InstallerUpdateRequiredModalComponent() {
   return (
     <div>
       <div>
-        Next Composer requires a newer version of the Obsidian installer.
+        YOLO requires a newer version of the Obsidian installer.
         Please note that this is different from Obsidian&apos;s in-app updates.
         You must manually download the latest version of Obsidian to continue
-        using Next Composer.
+        using YOLO.
       </div>
       <div>
         <div className="modal-button-container">
