@@ -693,11 +693,17 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       // Prefer selected text as context when available; otherwise use preceding content
       const hasSelection = !!selected && selected.trim().length > 0
       const baseContext = hasSelection ? selected : headText
+      const fallbackInstruction = (customPrompt ?? '').trim()
+      const fileTitleCandidate = this.app.workspace.getActiveFile()?.basename?.trim() ?? ''
 
       if (!baseContext || baseContext.trim().length === 0) {
-        notice.setMessage('No preceding content to continue.')
-        this.registerTimeout(() => notice.hide(), 1000)
-        return
+        // 没有前文时，如果既没有自定义指令也没有文件标题，则提示无法续写；
+        // 否则允许基于标题或自定义指令开始写作
+        if (!fallbackInstruction && !fileTitleCandidate) {
+          notice.setMessage('No preceding content to continue.')
+          this.registerTimeout(() => notice.hide(), 1000)
+          return
+        }
       }
 
       // Truncate context to avoid exceeding model limits (simple char-based cap)
@@ -727,6 +733,17 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           ? (this.settings.continuationOptions.defaultSystemPrompt as string).trim()
           : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
 
+      const activeFileForTitle = this.app.workspace.getActiveFile()
+      const fileTitle = activeFileForTitle?.basename?.trim() ?? ''
+      const titleLine = fileTitle ? `File title: ${fileTitle}\n\n` : ''
+      const hasContext = (baseContext ?? '').trim().length > 0
+      const contextSection = hasContext
+        ? `Context (up to recent portion):\n\n${context}\n\n`
+        : ''
+      const continueText = hasContext
+        ? 'Continue writing from here.'
+        : 'Start writing this document.'
+
       const requestMessages = [
         {
           role: 'system',
@@ -734,7 +751,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         },
         {
           role: 'user',
-          content: `Context (up to recent portion):\n\n${context}\n\nContinue writing from here.${instructionSuffix}`,
+          content: `${titleLine}${contextSection}${continueText}${instructionSuffix}`,
         },
       ] as const
 
