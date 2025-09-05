@@ -1,4 +1,5 @@
 import { App } from 'obsidian'
+import React, { useMemo } from 'react'
 
 import { RECOMMENDED_MODELS_FOR_EMBEDDING } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
@@ -13,6 +14,8 @@ import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { EmbeddingDbManageModal } from '../modals/EmbeddingDbManageModal'
 import { ExcludedFilesModal } from '../modals/ExcludedFilesModal'
 import { IncludedFilesModal } from '../modals/IncludedFilesModal'
+import { FolderSelectionList } from '../inputs/FolderSelectionList'
+import { includePatternsToFolderPaths, folderPathsToIncludePatterns } from '../../../utils/rag-utils'
 
 type RAGSectionProps = {
   app: App
@@ -22,6 +25,10 @@ type RAGSectionProps = {
 export function RAGSection({ app, plugin }: RAGSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
+  const includeFolders = useMemo(
+    () => includePatternsToFolderPaths(settings.ragOptions.includePatterns),
+    [settings.ragOptions.includePatterns],
+  )
 
   return (
     <div className="smtcmp-settings-section">
@@ -65,14 +72,13 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={settings.ragOptions.includePatterns.join('\n')}
-          onChange={async (value: string) => {
-            const patterns = value
-              .split('\n')
-              .map((p: string) => p.trim())
-              .filter((p: string) => p.length > 0)
+      <ObsidianSetting>
+        <FolderSelectionList
+          app={app}
+          vault={plugin.app.vault}
+          value={includeFolders}
+          onChange={async (folders: string[]) => {
+            const patterns = folderPathsToIncludePatterns(folders)
             await setSettings({
               ...settings,
               ragOptions: {
@@ -104,11 +110,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       <ObsidianSetting className="smtcmp-settings-textarea">
         <ObsidianTextArea
           value={settings.ragOptions.excludePatterns.join('\n')}
-          onChange={async (value) => {
+          onChange={async (value: string) => {
             const patterns = value
               .split('\n')
-              .map((p) => p.trim())
-              .filter((p) => p.length > 0)
+              .map((p: string) => p.trim())
+              .filter((p: string) => p.length > 0)
             await setSettings({
               ...settings,
               ragOptions: {
