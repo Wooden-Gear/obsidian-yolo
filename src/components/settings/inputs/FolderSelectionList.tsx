@@ -38,11 +38,30 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
 
   const items = useMemo(() => value.map(normalize), [value])
 
+  const absorbByParent = (list: string[]): string[] => {
+    // Keep shortest ancestors; remove descendants covered by any kept parent
+    const sorted = [...list]
+      .map((p) => p.replace(/^\/+/, '').replace(/\/+$/, ''))
+      .sort((a, b) => a.length - b.length)
+    const kept: string[] = []
+    const isAncestor = (parent: string, child: string) => {
+      if (parent === '') return true
+      if (parent === child) return true
+      return child.startsWith(parent + '/')
+    }
+    for (const cand of sorted) {
+      if (kept.some((k) => isAncestor(k, cand))) continue
+      kept.push(cand)
+    }
+    return kept
+  }
+
   const handleAdd = () => {
     new FolderPickerModal(app, vault, items, (picked) => {
       const np = normalize(picked)
       if (items.includes(np)) return
-      onChange([...items, np])
+      const next = absorbByParent([...items, np])
+      onChange(next)
     }).open()
   }
 

@@ -2127,3 +2127,33 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
 }
+
+/* Folder Picker: flatten rows and remove container visuals */
+.smtcmp-folder-picker .smtcmp-provider-header {
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.smtcmp-folder-picker .smtcmp-provider-header:hover {
+  background-color: var(--background-modifier-hover) !important;
+}
+
+.smtcmp-folder-picker .smtcmp-provider-header * {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.smtcmp-folder-picker [role="button"]:focus,
+.smtcmp-folder-picker [role="button"]:focus-visible,
+.smtcmp-folder-picker [role="button"]:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.smtcmp-folder-picker .smtcmp-provider-expand-btn {
+  cursor: pointer;
+}
