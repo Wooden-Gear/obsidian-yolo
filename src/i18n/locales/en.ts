@@ -257,8 +257,8 @@ export const en: TranslationKeys = {
     reasoning: 'Reasoning',
     annotations: 'Annotations',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”. Press Enter to confirm, Shift+Enter for a new line, Esc to close.',
-    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., “Make it concise and active voice; keep markdown structure”. Press Enter to confirm, Shift+Enter for a new line, Esc to close.',
+    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”. Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., “Make it concise and active voice; keep markdown structure”. Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
   },
 
   notices: {

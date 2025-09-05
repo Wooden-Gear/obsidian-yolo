@@ -177,8 +177,8 @@ function AddChatModelModalComponent({
 
       {/* Auto-fetched models dropdown */}
       <ObsidianSetting
-        name={loadingModels ? t('common.loading') : '可用模型（自动获取）'}
-        desc={loadError ? `获取模型失败：${loadError}` : undefined}
+        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
+        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : undefined}
       >
         <ObsidianDropdown
           value={formData.model || ''}

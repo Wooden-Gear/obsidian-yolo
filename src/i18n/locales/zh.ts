@@ -116,6 +116,8 @@ export const zh: TranslationKeys = {
       modelIdPlaceholder: 'my-custom-model',
       modelName: '模型名称',
       modelNamePlaceholder: '输入模型名称',
+      availableModelsAuto: '可用模型（自动获取）',
+      fetchModelsFailed: '获取模型失败',
       promptLevel: '提示级别',
       promptLevelDesc: '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
       promptLevelDefault: '默认',
@@ -256,8 +258,8 @@ export const zh: TranslationKeys = {
     reasoning: '推理过程',
     annotations: '注释',
     customContinuePromptLabel: '续写指令',
-    customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按回车确认，Shift+回车换行，Esc 关闭。',
-    customRewritePromptPlaceholder: '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按回车确认，Shift+回车换行，Esc 关闭。',
+    customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按 Shift+回车 确认，回车换行，Esc 关闭。',
+    customRewritePromptPlaceholder: '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',
   },
 
   notices: {

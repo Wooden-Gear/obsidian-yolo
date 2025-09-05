@@ -24,9 +24,9 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault()
-      // Enter 作为确定
+      // Shift+Enter 作为确定
       void handleConfirm()
       return
     }
@@ -35,7 +35,7 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
       onClose()
       return
     }
-    // Shift+Enter 默认换行，保持原行为（不拦截）
+    // Enter 默认换行，保持原行为（不拦截）
   }
 
   return (
