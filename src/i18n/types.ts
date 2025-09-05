@@ -55,6 +55,8 @@ export interface TranslationKeys {
       enableToolsDesc: string
       maxAutoIterations: string
       maxAutoIterationsDesc: string
+      maxContextMessages: string
+      maxContextMessagesDesc: string
     }
     assistants: {
       title: string
@@ -81,6 +83,7 @@ export interface TranslationKeys {
       deleteConfirmMessageSuffix?: string
       addAssistantAria?: string
       deleteAssistantAria?: string
+      maxContextMessagesDesc?: string
     }
     providers: {
       title: string

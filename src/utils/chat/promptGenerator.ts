@@ -35,7 +35,7 @@ export class PromptGenerator {
   private getRagEngine: () => Promise<RAGEngine>
   private app: App
   private settings: SmartComposerSettings
-  private MAX_CONTEXT_MESSAGES = 20
+  private MAX_CONTEXT_MESSAGES = 32
 
   constructor(
     getRagEngine: () => Promise<RAGEngine>,
@@ -120,9 +120,29 @@ export class PromptGenerator {
   }: {
     messages: ChatMessage[]
   }): RequestMessage[] {
-    // Get the last MAX_CONTEXT_MESSAGES messages and parse them into request messages
+    // Determine max context messages with priority:
+    // 1) current assistant's override (if selected and defined)
+    // 2) global settings.chatOptions.maxContextMessages
+    // 3) class default (32)
+    const currentAssistantId = this.settings.currentAssistantId
+    const assistants = this.settings.assistants || []
+    const currentAssistant = currentAssistantId
+      ? assistants.find((a) => a.id === currentAssistantId)
+      : null
+
+    const assistantOverride =
+      typeof currentAssistant?.maxContextMessages === 'number'
+        ? currentAssistant?.maxContextMessages
+        : undefined
+
+    const maxContext = Math.max(
+      0,
+      assistantOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
+    )
+
+    // Get the last N messages and parse them into request messages
     const requestMessages: RequestMessage[] = messages
-      .slice(-this.MAX_CONTEXT_MESSAGES)
+      .slice(-maxContext)
       .flatMap((message): RequestMessage[] => {
         if (message.role === 'user') {
           // We assume that all user messages have been compiled

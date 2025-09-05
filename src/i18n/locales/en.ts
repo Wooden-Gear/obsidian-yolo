@@ -52,6 +52,8 @@ export const en: TranslationKeys = {
       enableToolsDesc: 'Allow the AI to use MCP tools.',
       maxAutoIterations: 'Max auto tool requests',
       maxAutoIterationsDesc: 'Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens.',
+      maxContextMessages: 'Max context messages',
+      maxContextMessagesDesc: 'Number of previous chat messages to include in each request (0 to include none). 32 is recommended (about 16 user-assistant turns).',
     },
     assistants: {
       title: 'Assistants',
@@ -72,6 +74,7 @@ export const en: TranslationKeys = {
       addAssistantAria: 'Add new assistant',
       deleteAssistantAria: 'Delete assistant',
       actions: 'Actions',
+      maxContextMessagesDesc: 'If set, this assistant will use this number of previous chat messages, overriding the global default.',
       noAssistants: 'No assistants available',
       noAssistant: 'Default',
       selectAssistant: 'Select Assistant',

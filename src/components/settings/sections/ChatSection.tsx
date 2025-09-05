@@ -139,6 +139,28 @@ export function ChatSection() {
           }}
         />
       </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.chat.maxContextMessages')}
+        desc={t('settings.chat.maxContextMessagesDesc')}
+      >
+        <ObsidianTextInput
+          value={(settings.chatOptions.maxContextMessages ?? 32).toString()}
+          onChange={async (value) => {
+            const parsedValue = parseInt(value)
+            if (isNaN(parsedValue) || parsedValue < 0) {
+              return
+            }
+            await setSettings({
+              ...settings,
+              chatOptions: {
+                ...settings.chatOptions,
+                maxContextMessages: parsedValue,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
     </div>
   )
 }

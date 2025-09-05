@@ -89,11 +89,13 @@ export const smartComposerSettingsSchema = z.object({
       includeCurrentFileContent: z.boolean(),
       enableTools: z.boolean(),
       maxAutoIterations: z.number(),
+      maxContextMessages: z.number(),
     })
     .catch({
       includeCurrentFileContent: true,
       enableTools: true,
       maxAutoIterations: 1,
+      maxContextMessages: 32,
     }),
   
   // Continuation (续写) options
