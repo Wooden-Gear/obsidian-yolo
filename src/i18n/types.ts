@@ -122,6 +122,9 @@ export interface TranslationKeys {
       modelIdPlaceholder: string
       modelName: string
       modelNamePlaceholder: string
+      // auto-fetched models helper labels
+      availableModelsAuto?: string
+      fetchModelsFailed?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string

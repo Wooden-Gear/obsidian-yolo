@@ -116,6 +116,8 @@ export const en: TranslationKeys = {
       modelIdPlaceholder: 'my-custom-model',
       modelName: 'Model Name',
       modelNamePlaceholder: 'Enter the model name',
+      availableModelsAuto: 'Available models (auto-fetched)',
+      fetchModelsFailed: 'Failed to fetch models',
       promptLevel: 'Prompt Level',
       promptLevelDesc: 'Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.',
       promptLevelDefault: 'default',
