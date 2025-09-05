@@ -147,6 +147,18 @@ export const zh: TranslationKeys = {
       conflictParentExclude: '以下包含的文件夹位于已排除的上级之下，最终将被排除：',
       conflictChildExclude: '以下排除的子文件夹位于包含文件夹之下（局部排除将生效）：',
       conflictRule: '当包含与排除重叠时，以排除为准。',
+      // Auto update
+      autoUpdate: '自动更新索引',
+      autoUpdateDesc:
+        '当包含模式下的文件夹内容有变化时，按设定的最小间隔自动执行增量更新；默认每日一次。',
+      autoUpdateInterval: '最小间隔(小时)',
+      autoUpdateIntervalDesc: '到达该间隔才会触发自动更新；用于避免频繁重建。',
+      manualUpdateNow: '立即更新',
+      manualUpdateNowDesc: '手动执行一次增量更新，并记录最近更新时间。',
+      // Index progress header/status
+      indexProgressTitle: 'RAG 索引进度',
+      indexing: '进行中',
+      notStarted: '未开始',
     },
     mcp: {
       title: '模型上下文协议 (MCP)',

@@ -626,10 +626,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           lastAutoUpdateAt: Date.now(),
         },
       })
-      new Notice('索引已自动更新')
+      new Notice(this.t('notices.indexUpdated'))
     } catch (e) {
       console.error('Auto update index failed:', e)
-      new Notice('自动更新索引失败')
+      new Notice(this.t('notices.indexUpdateFailed'))
     } finally {
       this.isAutoUpdating = false
       this.autoUpdateTimer = null

@@ -147,6 +147,17 @@ export const en: TranslationKeys = {
       conflictParentExclude: 'The following included folders are under excluded parents and will be excluded:',
       conflictChildExclude: 'The following excluded subfolders are under included folders (partial exclusion applies):',
       conflictRule: 'When include and exclude overlap, exclusion takes precedence.',
+      // Auto update
+      autoUpdate: 'Auto update index',
+      autoUpdateDesc: 'When files within the included folders change, perform incremental updates automatically based on the minimum interval; default once per day.',
+      autoUpdateInterval: 'Minimum interval (hours)',
+      autoUpdateIntervalDesc: 'Only trigger auto update after this interval to avoid frequent re-indexing.',
+      manualUpdateNow: 'Update Now',
+      manualUpdateNowDesc: 'Run an incremental update immediately and record the last updated time.',
+      // Index progress header/status
+      indexProgressTitle: 'RAG Index Progress',
+      indexing: 'In progress',
+      notStarted: 'Not started',
     },
     mcp: {
       title: 'Model Context Protocol (MCP)',

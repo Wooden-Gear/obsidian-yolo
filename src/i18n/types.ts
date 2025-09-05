@@ -150,6 +150,17 @@ export interface TranslationKeys {
       conflictParentExclude?: string
       conflictChildExclude?: string
       conflictRule?: string
+      // Auto update additions
+      autoUpdate?: string
+      autoUpdateDesc?: string
+      autoUpdateInterval?: string
+      autoUpdateIntervalDesc?: string
+      manualUpdateNow?: string
+      manualUpdateNowDesc?: string
+      // Index progress header/status
+      indexProgressTitle?: string
+      indexing?: string
+      notStarted?: string
     }
     mcp: {
       title: string

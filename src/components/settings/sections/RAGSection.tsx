@@ -1,4 +1,4 @@
-import { App } from 'obsidian'
+import { App, Notice } from 'obsidian'
 import React, { useMemo, useState, useCallback } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -311,10 +311,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         />
       </ObsidianSetting>
 
-      {/* 自动更新索引（参考通用开关样式） */}
       <ObsidianSetting
-        name="自动更新索引"
-        desc="当包含模式下的文件夹内容有变化时，按设定的最小间隔自动执行增量更新；默认每日一次。"
+        name={t('settings.rag.autoUpdate', '自动更新索引')}
+        desc={t('settings.rag.autoUpdateDesc', '当包含模式下的文件夹内容有变化时，按设定的最小间隔自动执行增量更新；默认每日一次。')}
       >
         <ObsidianToggle
           value={!!settings.ragOptions.autoUpdateEnabled}
@@ -331,8 +330,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="最小间隔(小时)"
-        desc="到达该间隔才会触发自动更新；用于避免频繁重建。"
+        name={t('settings.rag.autoUpdateInterval', '最小间隔(小时)')}
+        desc={t('settings.rag.autoUpdateIntervalDesc', '到达该间隔才会触发自动更新；用于避免频繁重建。')}
       >
         <ObsidianTextInput
           value={String(settings.ragOptions.autoUpdateIntervalHours ?? 24)}
@@ -353,11 +352,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name="立即更新索引"
-        desc="手动执行一次增量更新，并记录最近更新时间。"
+        name={t('settings.rag.manualUpdateNow', '立即更新索引')}
+        desc={t('settings.rag.manualUpdateNowDesc', '手动执行一次增量更新，并记录最近更新时间。')}
       >
         <ObsidianButton
-          text="立即更新"
+          text={t('settings.rag.manualUpdateNow', '立即更新')}
           disabled={isIndexing}
           onClick={async () => {
             setIsIndexing(true)
@@ -380,10 +379,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   lastAutoUpdateAt: Date.now(),
                 },
               })
-              plugin.app.workspace.trigger('notice', '索引更新完成')
+              // i18n notice
+              new Notice(t('notices.indexUpdated'))
             } catch (error) {
               console.error('Failed to update index:', error)
-              plugin.app.workspace.trigger('notice', '索引更新失败')
+              new Notice(t('notices.indexUpdateFailed'))
             } finally {
               setIsIndexing(false)
               setTimeout(() => setIndexProgress(null), 3000)
@@ -401,7 +401,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             }}
           />
           <ObsidianButton
-            text="重建索引"
+            text={t('settings.rag.rebuildIndex', '重建索引')}
             disabled={isIndexing}
             onClick={async () => {
               setIsIndexing(true)
@@ -416,7 +416,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                     }
                   }
                 )
-                plugin.app.workspace.trigger('notice', '索引重建完成')
+                new Notice(t('notices.rebuildComplete'))
                 await plugin.setSettings({
                   ...plugin.settings,
                   ragOptions: {
@@ -426,7 +426,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 })
               } catch (error) {
                 console.error('Failed to rebuild index:', error)
-                plugin.app.workspace.trigger('notice', '索引重建失败')
+                new Notice(t('notices.rebuildFailed'))
               } finally {
                 setIsIndexing(false)
                 setTimeout(() => setIndexProgress(null), 3000)
@@ -456,11 +456,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           </div>
 
           <div className="smtcmp-provider-info">
-            <span className="smtcmp-provider-id">RAG 索引进度</span>
+            <span className="smtcmp-provider-id">{t('settings.rag.indexProgressTitle', 'RAG Index Progress')}</span>
             {headerPercent !== null ? (
               <span className="smtcmp-provider-type">{headerPercent}%</span>
             ) : (
-              <span className="smtcmp-provider-type">{isIndexing ? '进行中' : '未开始'}</span>
+              <span className="smtcmp-provider-type">{isIndexing ? t('settings.rag.indexing', 'In progress') : t('settings.rag.notStarted', 'Not started')}</span>
             )}
           </div>
         </div>
