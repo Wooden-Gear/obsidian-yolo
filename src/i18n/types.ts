@@ -20,6 +20,7 @@ export interface TranslationKeys {
     delete: string
     edit: string
     add: string
+    clear: string
     remove: string
     confirm: string
     close: string
@@ -139,6 +140,16 @@ export interface TranslationKeys {
       manageEmbeddingDatabase: string
       manage: string
       rebuildIndex: string
+      // UI additions
+      selectedFolders?: string
+      excludedFolders?: string
+      selectFoldersPlaceholder?: string
+      selectExcludeFoldersPlaceholder?: string
+      conflictNoteDefaultInclude?: string
+      conflictExact?: string
+      conflictParentExclude?: string
+      conflictChildExclude?: string
+      conflictRule?: string
     }
     mcp: {
       title: string

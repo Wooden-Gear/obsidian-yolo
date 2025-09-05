@@ -48,6 +48,8 @@ describe('parseSmartComposerSettings', () => {
       continuationOptions: {
         useCurrentModel: true,
         fixedModelId: 'openai/gpt-4.1-mini',
+        defaultSystemPrompt:
+          'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
         enableKeywordTrigger: true,
         triggerKeyword: '  ',
         enableFloatingPanelKeywordTrigger: false,

@@ -9,7 +9,6 @@ import { findFilesMatchingPatterns } from '../../../utils/glob-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { EmbeddingDbManageModal } from '../modals/EmbeddingDbManageModal'
 import { ExcludedFilesModal } from '../modals/ExcludedFilesModal'
@@ -29,6 +28,30 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
     () => includePatternsToFolderPaths(settings.ragOptions.includePatterns),
     [settings.ragOptions.includePatterns],
   )
+
+  const excludeFolders = useMemo(
+    () => includePatternsToFolderPaths(settings.ragOptions.excludePatterns),
+    [settings.ragOptions.excludePatterns],
+  )
+
+  // Minimal conflict detection (exclude overrides include)
+  const conflictInfo = useMemo(() => {
+    const inc = includeFolders
+    const exc = excludeFolders
+    const isParentOrSame = (parent: string, child: string) => {
+      if (parent === '') return true // root covers all
+      if (child === parent) return true
+      return child.startsWith(parent + '/')
+    }
+    const exactConflicts = inc.filter((f) => exc.includes(f))
+    const includeUnderExcluded = inc
+      .filter((f) => exc.some((e) => isParentOrSame(e, f)))
+      .filter((f) => !exactConflicts.includes(f))
+    const excludeWithinIncluded = exc
+      .filter((e) => inc.some((f) => isParentOrSame(f, e)))
+      .filter((e) => !exactConflicts.includes(e))
+    return { exactConflicts, includeUnderExcluded, excludeWithinIncluded }
+  }, [includeFolders, excludeFolders])
 
   return (
     <div className="smtcmp-settings-section">
@@ -76,6 +99,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         <FolderSelectionList
           app={app}
           vault={plugin.app.vault}
+          title={t('settings.rag.selectedFolders', '已选择的文件夹')}
           value={includeFolders}
           onChange={async (folders: string[]) => {
             const patterns = folderPathsToIncludePatterns(folders)
@@ -107,14 +131,15 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={settings.ragOptions.excludePatterns.join('\n')}
-          onChange={async (value: string) => {
-            const patterns = value
-              .split('\n')
-              .map((p: string) => p.trim())
-              .filter((p: string) => p.length > 0)
+      <ObsidianSetting>
+        <FolderSelectionList
+          app={app}
+          vault={plugin.app.vault}
+          title={t('settings.rag.excludedFolders', '已排除的文件夹')}
+          placeholder={t('settings.rag.selectExcludeFoldersPlaceholder', '点击此处选择要排除的文件夹（留空则不排除）')}
+          value={excludeFolders}
+          onChange={async (folders: string[]) => {
+            const patterns = folderPathsToIncludePatterns(folders)
             await setSettings({
               ...settings,
               ragOptions: {
@@ -125,6 +150,42 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           }}
         />
       </ObsidianSetting>
+
+      {(includeFolders.length === 0 || conflictInfo.exactConflicts.length > 0 || conflictInfo.includeUnderExcluded.length > 0 || conflictInfo.excludeWithinIncluded.length > 0) && (
+        <div style={{ margin: '4px 0 8px 0', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.4 }}>
+          {includeFolders.length === 0 && (
+            <div>
+              {t('settings.rag.conflictNoteDefaultInclude', '提示：当前未选择包含文件夹，默认包含全部。若设置了排除文件夹，则排除将优先生效。')}
+            </div>
+          )}
+          {conflictInfo.exactConflicts.length > 0 && (
+            <div>
+              {t('settings.rag.conflictExact', '以下文件夹同时被包含与排除，最终将被排除：')}
+              {' '}
+              {conflictInfo.exactConflicts.map((f) => (f === '' ? '/' : f)).join(', ')}
+            </div>
+          )}
+          {conflictInfo.includeUnderExcluded.length > 0 && (
+            <div>
+              {t('settings.rag.conflictParentExclude', '以下包含的文件夹位于已排除的上级之下，最终将被排除：')}
+              {' '}
+              {conflictInfo.includeUnderExcluded.map((f) => (f === '' ? '/' : f)).join(', ')}
+            </div>
+          )}
+          {conflictInfo.excludeWithinIncluded.length > 0 && (
+            <div>
+              {t('settings.rag.conflictChildExclude', '以下排除的子文件夹位于包含文件夹之下（局部排除将生效）：')}
+              {' '}
+              {conflictInfo.excludeWithinIncluded.map((f) => (f === '' ? '/' : f)).join(', ')}
+            </div>
+          )}
+          <div>
+            {t('settings.rag.conflictRule', '当包含与排除重叠时，以排除为准。')}
+          </div>
+        </div>
+      )}
+
+      
 
       <ObsidianSetting
         name={t('settings.rag.chunkSize')}

@@ -2,19 +2,23 @@ import React, { useMemo, useRef, useState } from 'react'
 import { App, Vault } from 'obsidian'
 
 import { FolderPickerModal } from '../modals/FolderPickerModal'
+import { useLanguage } from '../../../contexts/language-context'
 
 export type FolderSelectionListProps = {
   app: App
   vault: Vault
   value: string[]
   onChange: (folders: string[]) => void
+  title?: string
+  placeholder?: string
 }
 
 /**
  * A minimal folder selection list with add/remove and drag-and-drop reordering.
  * Style aims to resemble Obsidian's file list while keeping zero external deps.
  */
-export function FolderSelectionList({ app, vault, value, onChange }: FolderSelectionListProps) {
+export function FolderSelectionList({ app, vault, value, onChange, title, placeholder }: FolderSelectionListProps) {
+  const { t } = useLanguage()
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const overIndexRef = useRef<number | null>(null)
 
@@ -100,11 +104,13 @@ export function FolderSelectionList({ app, vault, value, onChange }: FolderSelec
           marginBottom: '8px',
         }}
       >
-        <div style={{ fontWeight: 600, opacity: 0.8 }}>已选择的文件夹</div>
+        <div style={{ fontWeight: 600, opacity: 0.8 }}>
+          {title ?? t('settings.rag.selectedFolders', '已选择的文件夹')}
+        </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
-            aria-label="添加"
-            title="添加"
+            aria-label={t('common.add', '添加')}
+            title={t('common.add', '添加')}
             onClick={() => handleAdd()}
             style={{
               border: '1px solid var(--background-modifier-border)',
@@ -121,8 +127,8 @@ export function FolderSelectionList({ app, vault, value, onChange }: FolderSelec
             +
           </button>
           <button
-            aria-label="清空"
-            title="清空"
+            aria-label={t('common.clear', '清空')}
+            title={t('common.clear', '清空')}
             onClick={() => handleClear()}
             style={{
               border: '1px solid var(--background-modifier-border)',
@@ -136,7 +142,7 @@ export function FolderSelectionList({ app, vault, value, onChange }: FolderSelec
               cursor: 'pointer',
             }}
           >
-            清空
+            {t('common.clear', '清空')}
           </button>
         </div>
       </div>
@@ -152,7 +158,9 @@ export function FolderSelectionList({ app, vault, value, onChange }: FolderSelec
         }}
       >
         {items.length === 0 ? (
-          <div style={{ opacity: 0.7 }}>点击此处选择文件夹（留空则默认包含全部）</div>
+          <div style={{ opacity: 0.7 }}>
+            {placeholder ?? t('settings.rag.selectFoldersPlaceholder', '点击此处选择文件夹（留空则默认包含全部）')}
+          </div>
         ) : (
           <div
             style={{
@@ -185,7 +193,7 @@ export function FolderSelectionList({ app, vault, value, onChange }: FolderSelec
                 <span style={{ fontFamily: 'var(--font-monospace)', fontSize: '12px' }}>{p === '' ? '/' : p}</span>
                 <span
                   role="button"
-                  aria-label="移除"
+                  aria-label={t('common.remove', '移除')}
                   tabIndex={0}
                   onClick={(e) => {
                     e.stopPropagation()
