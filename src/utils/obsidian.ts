@@ -67,11 +67,18 @@ export function getOpenFiles(app: App): TFile[] {
 }
 
 export function calculateFileDistance(
-  file1: TFile | TFolder,
-  file2: TFile | TFolder,
+  file1: TFile | TFolder | { path: string },
+  file2: TFile | TFolder | { path: string },
 ): number | null {
-  const path1 = file1.path.split('/')
-  const path2 = file2.path.split('/')
+  // Prefer runtime type checks against Obsidian types when available
+  const getPath = (f: TFile | TFolder | { path: string }): string => {
+    if (f instanceof TFile || f instanceof TFolder) return f.path
+    if (f && typeof (f as any).path === 'string') return (f as any).path
+    throw new Error('Invalid argument: expected TFile/TFolder or object with path')
+  }
+
+  const path1 = getPath(file1).split('/')
+  const path2 = getPath(file2).split('/')
 
   // Check if files are in different top-level folders
   if (path1[0] !== path2[0]) {

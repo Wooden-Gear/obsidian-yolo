@@ -1,4 +1,4 @@
-import { TAbstractFile, TFile, TFolder, Vault } from 'obsidian'
+import { TFile, TFolder, Vault } from 'obsidian'
 
 /**
  * List all folder paths in the vault (relative paths like "", "Folder", "Folder/Sub").
@@ -16,7 +16,7 @@ export function listAllFolderPaths(vault: Vault): string[] {
 
   try {
     // Prefer using Obsidian API to get all loaded files (includes folders)
-    const all = vault.getAllLoadedFiles?.() as TAbstractFile[] | undefined
+    const all = vault.getAllLoadedFiles?.()
     if (all && Array.isArray(all)) {
       for (const f of all) {
         if (f instanceof TFolder) {

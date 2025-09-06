@@ -555,7 +555,7 @@ Please report this issue to the developer if it persists.`,
         }
         return null
       }),
-    ).then((files) => files.filter(Boolean) as TFile[])
+    ).then((files) => files.filter((f): f is TFile => f !== null))
 
     return filesToIndex
   }
