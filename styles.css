@@ -446,6 +446,22 @@
   background: var(--background-modifier-hover);
 }
 
+/* Chat mode dropdown: render divider as a thin line instead of a block item */
+.smtcmp-popover ul li.smtcmp-divider {
+  padding: 0;
+  margin: var(--size-2-1) 8px;
+  min-height: 0;
+  height: 1px;
+  background-color: var(--background-modifier-border);
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Make selected item more obvious only inside chat mode dropdown */
+.smtcmp-chat-mode-dropdown-content ul li.selected {
+  font-weight: var(--font-medium);
+}
+
 .smtcmp-popover li {
   z-index: 1000;
   max-height: 300px;

@@ -456,6 +456,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Ensure local learningMode state is turned off if the feature is disabled in settings
+  useEffect(() => {
+    const enabledInSettings = settings.chatOptions.enableLearningMode ?? false
+    if (!enabledInSettings && learningMode) {
+      setLearningMode(false)
+    }
+  }, [settings.chatOptions.enableLearningMode, learningMode])
+
   useEffect(() => {
     const updateConversationAsync = async () => {
       try {
@@ -657,6 +665,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               mode={chatMode}
               onChange={setChatMode}
               showBruteOption={settings.chatOptions.enableBruteMode ?? false}
+              showLearningOption={settings.chatOptions.enableLearningMode ?? false}
               learningEnabled={learningMode}
               onToggleLearning={setLearningMode}
             >

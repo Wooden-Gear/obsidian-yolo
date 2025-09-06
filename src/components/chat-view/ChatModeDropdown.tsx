@@ -1,11 +1,13 @@
 import * as Popover from '@radix-ui/react-popover'
 import React, { useCallback, useEffect, useState } from 'react'
+import { Check } from 'lucide-react'
 import { useLanguage } from '../../contexts/language-context'
 
 export function ChatModeDropdown({
   mode,
   onChange,
   showBruteOption = true,
+  showLearningOption = true,
   learningEnabled,
   onToggleLearning,
   children,
@@ -13,43 +15,59 @@ export function ChatModeDropdown({
   mode: 'rag' | 'brute'
   onChange: (m: 'rag' | 'brute') => void
   showBruteOption?: boolean
+  showLearningOption?: boolean
   learningEnabled: boolean
   onToggleLearning: (enabled: boolean) => void
   children: React.ReactNode
 }) {
   const { t } = useLanguage()
+  type ModeKey = 'rag' | 'brute'
+  type ModeItem = { key: ModeKey; label: string }
+  const modeItems: ModeItem[] = [
+    { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
+    ...(showBruteOption
+      ? ([{ key: 'brute', label: t('chat.modeBrute') ?? 'Brute' }] as ModeItem[])
+      : []),
+  ]
+
+  const getIndexByMode = (m: ModeKey) => {
+    const idx = modeItems.findIndex((mi) => mi.key === m)
+    return idx >= 0 ? idx : 0
+  }
+
   const [open, setOpen] = useState(false)
-  const [focusedIndex, setFocusedIndex] = useState<number>(
-    mode === 'rag' ? 0 : 1,
-  )
+  const [focusedIndex, setFocusedIndex] = useState<number>(getIndexByMode(mode))
 
   useEffect(() => {
-    setFocusedIndex(mode === 'rag' ? 0 : 1)
-  }, [mode])
+    setFocusedIndex(getIndexByMode(mode))
+    // include showBruteOption since it changes the available items
+  }, [mode, showBruteOption])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowUp') {
         setFocusedIndex(Math.max(0, focusedIndex - 1))
       } else if (e.key === 'ArrowDown') {
-        setFocusedIndex(Math.min(1, focusedIndex + 1))
+        setFocusedIndex(Math.min(modeItems.length - 1, focusedIndex + 1))
       } else if (e.key === 'Enter') {
-        onChange(focusedIndex === 0 ? 'rag' : 'brute')
-        setOpen(false)
+        const idx = Math.max(0, Math.min(modeItems.length - 1, focusedIndex))
+        onChange(modeItems[idx].key)
       }
     },
-    [focusedIndex, onChange],
+    [focusedIndex, onChange, modeItems.length],
   )
 
-  const modeItems = [
-    { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
-    ...(showBruteOption ? [{ key: 'brute', label: t('chat.modeBrute') ?? 'Brute' }] : []),
-  ] as const
+  const triggerAriaLabel = `${t('chat.modeTitle') ?? 'Chat mode'}: ${
+    modeItems.find((m) => m.key === mode)?.label ?? ''
+  }${learningEnabled ? `, ${t('chat.modeLearning') ?? 'Learning mode'} ON` : ''}`
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button className="clickable-icon" aria-label={t('chat.modeTitle') ?? 'Chat mode'}>
+        <button
+          className="clickable-icon"
+          aria-label={triggerAriaLabel}
+        >
           {children}
         </button>
       </Popover.Trigger>
@@ -67,27 +85,37 @@ export function ChatModeDropdown({
                   (mode === item.key ? 'selected ' : '') +
                   (focusedIndex === index ? 'focused' : '')
                 }
+                role="menuitemradio"
+                aria-checked={mode === item.key}
                 onMouseEnter={() => setFocusedIndex(index)}
                 onClick={() => {
                   onChange(item.key as 'rag' | 'brute')
-                  setOpen(false)
                 }}
               >
-                {item.label}
+                <span className="smtcmp-popover-item-icon" aria-hidden="true">
+                  {mode === item.key ? <Check size={14} /> : null}
+                </span>
+                <span>{item.label}</span>
               </li>
             ))}
-            <li className="smtcmp-divider" aria-hidden="true" />
-            <li
-              onClick={() => {
-                onToggleLearning(!learningEnabled)
-                setOpen(false)
-              }}
-              className={learningEnabled ? 'selected' : ''}
-              aria-checked={learningEnabled}
-              role="menuitemcheckbox"
-            >
-              {t('chat.modeLearning') ?? 'Learning mode'}
-            </li>
+            {showLearningOption && (
+              <>
+                <li className="smtcmp-divider" aria-hidden="true" />
+                <li
+                  onClick={() => {
+                    onToggleLearning(!learningEnabled)
+                  }}
+                  className={learningEnabled ? 'selected' : ''}
+                  aria-checked={learningEnabled}
+                  role="menuitemcheckbox"
+                >
+                  <span className="smtcmp-popover-item-icon" aria-hidden="true">
+                    {learningEnabled ? <Check size={14} /> : null}
+                  </span>
+                  <span>{t('chat.modeLearning') ?? 'Learning mode'}</span>
+                </li>
+              </>
+            )}
           </ul>
         </Popover.Content>
       </Popover.Portal>
