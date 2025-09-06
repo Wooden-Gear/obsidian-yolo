@@ -47,6 +47,7 @@ import { PromptGenerator } from '../../utils/chat/promptGenerator'
 import { readTFileContent } from '../../utils/obsidian'
 import { ErrorModal } from '../modals/ErrorModal'
 import { TemplateSectionModal } from '../modals/TemplateSectionModal'
+import { ChatModeDropdown } from './ChatModeDropdown'
 
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
 import { AssistantSelector } from './AssistantSelector'
@@ -139,6 +140,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [queryProgress, setQueryProgress] = useState<QueryProgressState>({
     type: 'idle',
   })
+  const [chatMode, setChatMode] = useState<'rag' | 'brute'>('rag')
 
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
@@ -252,6 +254,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               await promptGenerator.compileUserMessagePrompt({
                 message,
                 useVaultSearch,
+                chatMode,
                 onQueryProgressChange: setQueryProgress,
               })
             return {
@@ -265,6 +268,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             const { promptContent, similaritySearchResults } =
               await promptGenerator.compileUserMessagePrompt({
                 message,
+                chatMode,
               })
             return {
               ...message,
@@ -644,15 +648,21 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             >
               <History size={18} />
             </ChatListDropdown>
-            <button
-              onClick={() => {
-                new TemplateSectionModal(app).open()
-              }}
-              className="clickable-icon"
-              aria-label="Prompt Templates"
-            >
-              <Book size={18} />
-            </button>
+            {settings.chatOptions.enableBruteMode ? (
+              <ChatModeDropdown mode={chatMode} onChange={setChatMode}>
+                <Book size={18} />
+              </ChatModeDropdown>
+            ) : (
+              <button
+                onClick={() => {
+                  new TemplateSectionModal(app).open()
+                }}
+                className="clickable-icon"
+                aria-label="Prompt Templates"
+              >
+                <Book size={18} />
+              </button>
+            )}
           </div>
         </div>
       </div>

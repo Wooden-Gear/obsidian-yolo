@@ -51,6 +51,8 @@ export interface TranslationKeys {
       systemPromptDesc: string
       includeCurrentFile: string
       includeCurrentFileDesc: string
+      enableBruteMode?: string
+      enableBruteModeDesc?: string
       enableTools: string
       enableToolsDesc: string
       maxAutoIterations: string
@@ -267,6 +269,9 @@ export interface TranslationKeys {
     regenerate: string
     reasoning: string
     annotations: string
+    modeTitle?: string
+    modeRAG?: string
+    modeBrute?: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
     customRewritePromptPlaceholder?: string

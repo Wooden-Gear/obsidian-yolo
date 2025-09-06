@@ -101,6 +101,24 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
+        name={t('settings.chat.enableBruteMode')}
+        desc={t('settings.chat.enableBruteModeDesc')}
+      >
+        <ObsidianToggle
+          value={settings.chatOptions.enableBruteMode ?? false}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              chatOptions: {
+                ...settings.chatOptions,
+                enableBruteMode: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
         name={t('settings.chat.enableTools')}
         desc={t('settings.chat.enableToolsDesc')}
       >

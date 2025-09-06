@@ -44,6 +44,7 @@ describe('parseSmartComposerSettings', () => {
 
       chatOptions: {
         includeCurrentFileContent: true,
+        enableBruteMode: false,
         enableTools: true,
         maxAutoIterations: 1,
         maxContextMessages: 32,

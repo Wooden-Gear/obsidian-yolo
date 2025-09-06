@@ -269,10 +269,12 @@ ${message.annotations
     message,
     useVaultSearch,
     onQueryProgressChange,
+    chatMode,
   }: {
     message: ChatUserMessage
     useVaultSearch?: boolean
     onQueryProgressChange?: (queryProgress: QueryProgressState) => void
+    chatMode?: 'rag' | 'brute'
   }): Promise<{
     promptContent: ChatUserMessage['promptContent']
     shouldUseRAG: boolean
@@ -324,7 +326,8 @@ ${message.annotations
         }
         return false
       }
-      const shouldUseRAG = useVaultSearch || (await exceedsTokenThreshold())
+      const isBrute = chatMode === 'brute'
+      const shouldUseRAG = isBrute ? false : useVaultSearch || (await exceedsTokenThreshold())
 
       let filePrompt: string
       if (shouldUseRAG) {

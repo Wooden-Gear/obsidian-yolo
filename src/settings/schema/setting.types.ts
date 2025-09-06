@@ -87,12 +87,14 @@ export const smartComposerSettingsSchema = z.object({
   chatOptions: z
     .object({
       includeCurrentFileContent: z.boolean(),
+      enableBruteMode: z.boolean().optional(),
       enableTools: z.boolean(),
       maxAutoIterations: z.number(),
       maxContextMessages: z.number(),
     })
     .catch({
       includeCurrentFileContent: true,
+      enableBruteMode: false,
       enableTools: true,
       maxAutoIterations: 1,
       maxContextMessages: 32,
