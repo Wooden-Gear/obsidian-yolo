@@ -3,6 +3,7 @@ import { App, TFile, htmlToMarkdown, requestUrl } from 'obsidian'
 import { editorStateToPlainText } from '../../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import { QueryProgressState } from '../../components/chat-view/QueryProgress'
 import { RAGEngine } from '../../core/rag/ragEngine'
+import { DEFAULT_LEARNING_MODE_PROMPT } from '../../constants'
 import { SelectEmbedding } from '../../database/schema'
 import { SmartComposerSettings } from '../../settings/schema/setting.types'
 import {
@@ -50,9 +51,13 @@ export class PromptGenerator {
   public async generateRequestMessages({
     messages,
     hasTools = false,
+    chatMode,
+    learningMode,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
+    chatMode?: 'rag' | 'brute'
+    learningMode?: boolean
   }): Promise<RequestMessage[]> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
@@ -66,6 +71,7 @@ export class PromptGenerator {
           const { promptContent, similaritySearchResults } =
             await this.compileUserMessagePrompt({
               message,
+              chatMode,
             })
           return {
             ...message,
@@ -93,6 +99,7 @@ export class PromptGenerator {
     const systemMessage = this.getSystemMessage(shouldUseRAG, hasTools)
 
     const customInstructionMessage = this.getCustomInstructionMessage()
+    const learningModeMessage = learningMode ? this.getLearningModeMessage() : null
 
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
@@ -105,6 +112,7 @@ export class PromptGenerator {
     const requestMessages: RequestMessage[] = [
       systemMessage,
       ...(customInstructionMessage ? [customInstructionMessage] : []),
+      ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
       ...this.getChatHistoryMessages({ messages: compiledMessages }),
       ...(shouldUseRAG && this.getModelPromptLevel() == PromptLevel.Default
@@ -588,6 +596,16 @@ ${fileContent}
 <smtcmp_block filename="path/to/file.md" language="markdown" startLine="200" endLine="310"></smtcmp_block>
 
 When writing out new markdown blocks, remember not to include "line_number|" at the beginning of each line.`,
+    }
+  }
+
+  private getLearningModeMessage(): RequestMessage {
+    const custom = (this.settings.chatOptions as any)?.learningModePrompt
+    const defaultContent = DEFAULT_LEARNING_MODE_PROMPT
+    const content = custom && `${custom}`.trim().length > 0 ? custom : defaultContent
+    return {
+      role: 'user',
+      content,
     }
   }
 

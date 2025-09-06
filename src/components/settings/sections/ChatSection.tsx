@@ -7,6 +7,7 @@ import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
+import { DEFAULT_LEARNING_MODE_PROMPT } from '../../../constants'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 
@@ -117,6 +118,52 @@ export function ChatSection() {
           }}
         />
       </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.chat.learningMode')}
+        desc={t('settings.chat.learningModeDesc')}
+      >
+        <ObsidianToggle
+          value={settings.chatOptions.enableLearningMode ?? false}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              chatOptions: {
+                ...settings.chatOptions,
+                enableLearningMode: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      {settings.chatOptions.enableLearningMode && (
+        <>
+          <ObsidianSetting
+            name={t('settings.chat.learningModePrompt')}
+            desc={t('settings.chat.learningModePromptDesc')}
+            className="smtcmp-settings-textarea-header"
+          />
+          <ObsidianSetting className="smtcmp-settings-textarea">
+            <ObsidianTextArea
+              value={
+                (settings.chatOptions.learningModePrompt ?? '').trim().length > 0
+                  ? settings.chatOptions.learningModePrompt!
+                  : DEFAULT_LEARNING_MODE_PROMPT
+              }
+              onChange={async (value: string) => {
+                await setSettings({
+                  ...settings,
+                  chatOptions: {
+                    ...settings.chatOptions,
+                    learningModePrompt: value,
+                  },
+                })
+              }}
+            />
+          </ObsidianSetting>
+        </>
+      )}
 
       <ObsidianSetting
         name={t('settings.chat.enableTools')}

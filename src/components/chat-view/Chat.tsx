@@ -141,6 +141,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     type: 'idle',
   })
   const [chatMode, setChatMode] = useState<'rag' | 'brute'>('rag')
+  const [learningMode, setLearningMode] = useState<boolean>(
+    settings.chatOptions.enableLearningMode ?? false,
+  )
 
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
@@ -158,6 +161,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setChatMessages,
     autoScrollToBottom,
     promptGenerator,
+    chatMode,
+    learningMode,
   })
 
   const registerChatUserInputRef = (
@@ -648,11 +653,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             >
               <History size={18} />
             </ChatListDropdown>
-            {settings.chatOptions.enableBruteMode && (
-              <ChatModeDropdown mode={chatMode} onChange={setChatMode}>
-                <Book size={18} />
-              </ChatModeDropdown>
-            )}
+            <ChatModeDropdown
+              mode={chatMode}
+              onChange={setChatMode}
+              showBruteOption={settings.chatOptions.enableBruteMode ?? false}
+              learningEnabled={learningMode}
+              onToggleLearning={setLearningMode}
+            >
+              <Book size={18} />
+            </ChatModeDropdown>
           </div>
         </div>
       </div>

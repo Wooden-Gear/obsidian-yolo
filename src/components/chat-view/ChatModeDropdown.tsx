@@ -5,10 +5,16 @@ import { useLanguage } from '../../contexts/language-context'
 export function ChatModeDropdown({
   mode,
   onChange,
+  showBruteOption = true,
+  learningEnabled,
+  onToggleLearning,
   children,
 }: {
   mode: 'rag' | 'brute'
   onChange: (m: 'rag' | 'brute') => void
+  showBruteOption?: boolean
+  learningEnabled: boolean
+  onToggleLearning: (enabled: boolean) => void
   children: React.ReactNode
 }) {
   const { t } = useLanguage()
@@ -35,6 +41,11 @@ export function ChatModeDropdown({
     [focusedIndex, onChange],
   )
 
+  const modeItems = [
+    { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
+    ...(showBruteOption ? [{ key: 'brute', label: t('chat.modeBrute') ?? 'Brute' }] : []),
+  ] as const
+
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
@@ -49,10 +60,7 @@ export function ChatModeDropdown({
           onKeyDown={handleKeyDown}
         >
           <ul>
-            {[
-              { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
-              { key: 'brute', label: t('chat.modeBrute') ?? 'Brute' },
-            ].map((item, index) => (
+            {modeItems.map((item, index) => (
               <li
                 key={item.key}
                 className={
@@ -68,10 +76,21 @@ export function ChatModeDropdown({
                 {item.label}
               </li>
             ))}
+            <li className="smtcmp-divider" aria-hidden="true" />
+            <li
+              onClick={() => {
+                onToggleLearning(!learningEnabled)
+                setOpen(false)
+              }}
+              className={learningEnabled ? 'selected' : ''}
+              aria-checked={learningEnabled}
+              role="menuitemcheckbox"
+            >
+              {t('chat.modeLearning') ?? 'Learning mode'}
+            </li>
           </ul>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
   )
 }
-

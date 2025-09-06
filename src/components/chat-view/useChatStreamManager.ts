@@ -21,6 +21,8 @@ type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   autoScrollToBottom: () => void
   promptGenerator: PromptGenerator
+  chatMode: 'rag' | 'brute'
+  learningMode: boolean
 }
 
 export type UseChatStreamManager = {
@@ -36,6 +38,8 @@ export function useChatStreamManager({
   setChatMessages,
   autoScrollToBottom,
   promptGenerator,
+  chatMode,
+  learningMode,
 }: UseChatStreamManagerParams): UseChatStreamManager {
   const app = useApp()
   const { settings, setSettings } = useSettings()
@@ -116,6 +120,8 @@ export function useChatStreamManager({
           promptGenerator,
           mcpManager,
           abortSignal: abortController.signal,
+          chatMode,
+          learningMode,
         })
 
         unsubscribeResponseGenerator = responseGenerator.subscribe(

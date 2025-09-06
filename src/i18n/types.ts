@@ -53,6 +53,10 @@ export interface TranslationKeys {
       includeCurrentFileDesc: string
       enableBruteMode?: string
       enableBruteModeDesc?: string
+      learningMode?: string
+      learningModeDesc?: string
+      learningModePrompt?: string
+      learningModePromptDesc?: string
       enableTools: string
       enableToolsDesc: string
       maxAutoIterations: string
@@ -272,6 +276,7 @@ export interface TranslationKeys {
     modeTitle?: string
     modeRAG?: string
     modeBrute?: string
+    modeLearning?: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
     customRewritePromptPlaceholder?: string
