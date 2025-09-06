@@ -34,14 +34,7 @@ function AssistantItem({
   };
 
   return (
-    <div className="smtcmp-assistant-item" style={{
-      border: '1px solid var(--background-modifier-border)',
-      borderRadius: '8px',
-      margin: '4px 0',
-      overflow: 'hidden',
-      backgroundColor: 'var(--background-secondary)',
-      transition: 'all 0.2s ease'
-    }}>
+    <div className={`smtcmp-assistant-item${isExpanded ? ' expanded' : ''}`}>
       <div
         className="smtcmp-assistant-header"
         onClick={handleToggleExpand}
@@ -52,78 +45,25 @@ function AssistantItem({
         }}
         aria-expanded={isExpanded}
         aria-controls={`assistant-details-${assistant.id}`}
-        style={{
-          padding: '12px 16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          cursor: 'pointer',
-          borderBottom: isExpanded ? '1px solid var(--background-modifier-border)' : 'none'
-        }}
       >
-        <div className="smtcmp-assistant-header-info" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-          flex: 1
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <div className="smtcmp-assistant-name" style={{
-              fontWeight: '500',
-              fontSize: '14px',
-              color: 'var(--text-normal)'
-            }}>
+        <div className="smtcmp-assistant-header-info">
+          <div className="smtcmp-assistant-header-info-row">
+            <div className="smtcmp-assistant-name">
               {assistant.name}
             </div>
           </div>
         </div>
         
-        <div className="smtcmp-assistant-actions" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+        <div className="smtcmp-assistant-actions">
           <button 
             className="smtcmp-delete-assistant-btn" 
             aria-label={`${t('settings.assistants.deleteAssistantAria', 'Delete assistant')} ${assistant.name}`}
             onClick={handleDeleteClick}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px',
-              color: 'var(--text-muted)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--background-modifier-error)';
-              e.currentTarget.style.color = 'var(--text-error)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-muted)';
-            }}
           >
             <Trash2 size={16} />
           </button>
           
-          <span style={{
-            transform: `rotate(${isExpanded ? '180deg' : '0deg'})`,
-            transition: 'transform 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '24px',
-            height: '24px'
-          }}>
+          <span className="smtcmp-assistant-expand-icon">
             ▼
           </span>
         </div>
@@ -133,24 +73,9 @@ function AssistantItem({
         <div 
           className="smtcmp-assistant-details"
           id={`assistant-details-${assistant.id}`}
-          style={{
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            backgroundColor: 'var(--background-primary-alt)',
-            borderRadius: '0 0 8px 8px'
-          }}
         >
-          <div className="smtcmp-assistant-field" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}>
-            <label style={{
-              fontWeight: 'bold',
-              fontSize: '14px'
-            }}>{t('settings.assistants.name', 'Name')}</label>
+          <div className="smtcmp-assistant-field">
+            <label className="smtcmp-assistant-field-label">{t('settings.assistants.name', 'Name')}</label>
             <ObsidianTextInput
               value={assistant.name}
               onChange={(value) => onUpdate({ ...assistant, name: value })}
@@ -272,30 +197,12 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '16px'
-      }}>
+      <div className="smtcmp-settings-header-row">
         <div>{t('settings.assistants.title')}</div>
         <button
           onClick={handleAddAssistant}
           aria-label={t('settings.assistants.addAssistantAria', 'Add new assistant')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            borderRadius: '4px',
-            backgroundColor: 'var(--interactive-accent)',
-            color: 'var(--text-on-accent)',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 'medium',
-            transition: 'background-color 0.2s ease'
-          }}
+          className="smtcmp-add-assistant-btn"
         >
           <Plus size={16} />
           {t('settings.assistants.addAssistant')}
@@ -307,23 +214,11 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
       />
 
       {assistants.length === 0 ? (
-        <div className="smtcmp-no-assistants" style={{
-          padding: '24px',
-          textAlign: 'center',
-          backgroundColor: 'var(--background-secondary)',
-          borderRadius: '8px',
-          border: '1px dashed var(--background-modifier-border)',
-          color: 'var(--text-muted)',
-          fontSize: '15px'
-        }}>
-          <p style={{ margin: 0 }}>{t('settings.assistants.noAssistants')}</p>
+        <div className="smtcmp-no-assistants">
+          <p className="smtcmp-no-assistants-text">{t('settings.assistants.noAssistants')}</p>
         </div>
       ) : (
-        <div className="smtcmp-assistants-list" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
+        <div className="smtcmp-assistants-list">
           {assistants.map((assistant: Assistant) => (
             <AssistantItem
               key={assistant.id}

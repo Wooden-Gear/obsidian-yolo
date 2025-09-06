@@ -538,11 +538,11 @@ export function useMenuAnchorRef(
         if (className != null) {
           containerDiv.className = className
         }
+        // Add default menu styling via class to avoid inline styles
+        containerDiv.classList.add('smtcmp-typeahead-menu')
         containerDiv.setAttribute('aria-label', 'Typeahead menu')
         containerDiv.setAttribute('id', 'typeahead-menu')
         containerDiv.setAttribute('role', 'listbox')
-        containerDiv.style.display = 'block'
-        containerDiv.style.position = 'absolute'
         parent.append(containerDiv)
       }
       anchorElementRef.current = containerDiv

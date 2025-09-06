@@ -41,12 +41,6 @@ export class ReactFloatingPanel<T> {
 
     this.container = document.createElement('div')
     this.container.className = 'smtcmp-floating-panel-container'
-    Object.assign(this.container.style, {
-      position: 'fixed',
-      zIndex: '9999',
-      top: '0px',
-      left: '0px',
-    })
     document.body.appendChild(this.container)
 
     this.root = createRoot(this.container)
@@ -141,27 +135,12 @@ export class ReactFloatingPanel<T> {
             <div
               ref={panelRef}
               className="smtcmp-floating-panel"
-              style={{
-                position: 'fixed',
-                top: pos.y,
-                left: pos.x,
-                width: size.width,
-                maxWidth: '92vw',
-                background: 'var(--background-primary)',
-                color: 'var(--text-normal)',
-                boxShadow: 'var(--shadow-s)',
-                border: '1px solid var(--background-modifier-border)',
-                borderRadius: 8,
-                height: size.height,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+              style={{ top: pos.y, left: pos.x, width: size.width, height: size.height }}
             >
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
                 <div
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 8, cursor: 'move' }}
+                  className="smtcmp-floating-panel-drag-handle"
                   onPointerDown={onHeaderPointerDown}
                   onPointerMove={onHeaderPointerMove}
                   onPointerUp={onHeaderPointerUp}
@@ -169,37 +148,21 @@ export class ReactFloatingPanel<T> {
               ) : (
                 <div
                   className="smtcmp-floating-panel-header"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 10px',
-                    cursor: 'move',
-                    userSelect: 'none',
-                    borderBottom: '1px solid var(--background-modifier-border)',
-                    background: 'var(--background-secondary)',
-                  }}
                   onPointerDown={onHeaderPointerDown}
                   onPointerMove={onHeaderPointerMove}
                   onPointerUp={onHeaderPointerUp}
                 >
-                  <div style={{ fontWeight: 600 }}>{options?.title ?? ''}</div>
+                  <div className="smtcmp-floating-panel-title">{options?.title ?? ''}</div>
                   <button
                     aria-label="Close"
-                    className="clickable-icon"
+                    className="clickable-icon smtcmp-floating-panel-close"
                     onClick={onClose}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                    }}
                   >
                     ✕
                   </button>
                 </div>
               )}
-              <div className="smtcmp-floating-panel-body" style={{ padding: 12, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="smtcmp-floating-panel-body">
                 <this.Component {...(this.props as T)} onClose={onClose} />
               </div>
 
@@ -208,16 +171,7 @@ export class ReactFloatingPanel<T> {
                 onPointerDown={onResizePointerDown}
                 onPointerMove={onResizePointerMove}
                 onPointerUp={onResizePointerUp}
-                style={{
-                  position: 'absolute',
-                  width: 14,
-                  height: 14,
-                  right: 6,
-                  bottom: 6,
-                  cursor: 'nwse-resize',
-                  borderRight: '2px solid var(--background-modifier-border)',
-                  borderBottom: '2px solid var(--background-modifier-border)',
-                }}
+                className="smtcmp-floating-panel-resize-handle"
                 aria-label="Resize"
               />
             </div>

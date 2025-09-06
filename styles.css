@@ -2157,3 +2157,264 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-folder-picker .smtcmp-provider-expand-btn {
   cursor: pointer;
 }
+
+/* ===== Added for review fixes: move inline styles to CSS ===== */
+
+/* Wide modal (instead of setting width via JS) */
+.smtcmp-modal--wide {
+  width: 720px;
+}
+
+/* Typeahead menu container (avoid inline display/position) */
+.smtcmp-typeahead-menu {
+  position: absolute;
+  display: block;
+}
+
+/* ApplyView: diff content width */
+.smtcmp-diff-block-content {
+  width: 100%;
+}
+
+/* Assistants Section */
+.smtcmp-settings-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.smtcmp-add-assistant-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.smtcmp-no-assistants {
+  padding: 24px;
+  text-align: center;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px dashed var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.smtcmp-no-assistants-text { margin: 0; }
+
+.smtcmp-assistants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.smtcmp-assistant-item {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  margin: 4px 0;
+  overflow: hidden;
+  background: var(--background-secondary);
+  transition: all 0.2s ease;
+}
+.smtcmp-assistant-item.expanded .smtcmp-assistant-header {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.smtcmp-assistant-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.smtcmp-assistant-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.smtcmp-assistant-header-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.smtcmp-assistant-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-normal);
+}
+.smtcmp-assistant-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.smtcmp-delete-assistant-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+.smtcmp-delete-assistant-btn:hover {
+  background-color: var(--background-modifier-error);
+  color: var(--text-error);
+}
+.smtcmp-assistant-expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+.smtcmp-assistant-item.expanded .smtcmp-assistant-expand-icon { transform: rotate(180deg); }
+
+.smtcmp-assistant-details {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--background-primary-alt);
+  border-radius: 0 0 8px 8px;
+}
+.smtcmp-assistant-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.smtcmp-assistant-field-label {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Floating Panel */
+.smtcmp-floating-panel-container {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+}
+
+.smtcmp-floating-panel {
+  position: fixed;
+  max-width: 92vw;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-s);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.smtcmp-floating-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  cursor: move;
+  user-select: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+.smtcmp-floating-panel-title { font-weight: 600; }
+.smtcmp-floating-panel-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.smtcmp-floating-panel-body {
+  padding: 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.smtcmp-floating-panel-drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: move;
+}
+.smtcmp-floating-panel-resize-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: 6px;
+  bottom: 6px;
+  cursor: nwse-resize;
+  border-right: 2px solid var(--background-modifier-border);
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+/* Textarea container and inputs */
+.smtcmp-textarea-container { width: 100%; height: 100%; }
+.smtcmp-instruction-editor-container { width: 100%; flex: 1; min-height: 0; display: flex; }
+.smtcmp-instruction-textarea { width: 100%; height: 100%; min-height: 160px; resize: none; }
+.smtcmp-modal-input-container { width: 100%; margin-bottom: 12px; }
+.smtcmp-prewrap { white-space: pre-wrap; }
+.smtcmp-display-contents { display: contents; }
+
+/* Folder selection list */
+.smtcmp-folder-selection { width: 100%; }
+.smtcmp-folder-selection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.smtcmp-folder-selection-title { font-weight: 600; opacity: 0.8; }
+.smtcmp-folder-selection-actions { display: flex; gap: 6px; }
+.smtcmp-folder-selection-btn {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  padding: 0 6px;
+  height: 20px;
+  line-height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.smtcmp-folder-selection-picker {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  padding: 6px 8px;
+  min-height: 32px;
+  position: relative;
+}
+.smtcmp-folder-selection-empty { opacity: 0.7; }
+.smtcmp-folder-selection-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.smtcmp-folder-selection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  background: var(--background-secondary);
+  cursor: grab;
+  user-select: none;
+}
+.smtcmp-folder-selection-chip-handle { opacity: 0.5; font-size: 12px; }
+.smtcmp-folder-selection-chip-path { font-family: var(--font-monospace); font-size: 12px; }
+.smtcmp-folder-selection-chip-remove { cursor: pointer; color: var(--text-muted); font-size: 12px; line-height: 1; user-select: none; }

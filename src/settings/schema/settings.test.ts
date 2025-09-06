@@ -33,6 +33,9 @@ describe('parseSmartComposerSettings', () => {
         limit: 10,
         excludePatterns: [],
         includePatterns: [],
+        autoUpdateEnabled: false,
+        autoUpdateIntervalHours: 24,
+        lastAutoUpdateAt: 0,
       },
 
       mcp: {
@@ -43,6 +46,7 @@ describe('parseSmartComposerSettings', () => {
         includeCurrentFileContent: true,
         enableTools: true,
         maxAutoIterations: 1,
+        maxContextMessages: 32,
       },
 
       continuationOptions: {
@@ -57,7 +61,6 @@ describe('parseSmartComposerSettings', () => {
       },
 
       assistants: [],
-      currentAssistantId: undefined,
       language: 'en',
     })
   })

@@ -45,7 +45,7 @@ function ConfirmModalComponent({
 }: ConfirmModalComponentProps) {
   return (
     <div>
-      <div style={{ whiteSpace: 'pre-wrap' }}>{message}</div>
+      <div className="smtcmp-prewrap">{message}</div>
       <div className="modal-button-container">
         <button
           className="mod-warning"

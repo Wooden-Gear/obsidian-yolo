@@ -204,7 +204,7 @@ const DiffBlockView = forwardRef<
   if (part.type === 'unchanged') {
     return (
       <div className="smtcmp-diff-block">
-        <div style={{ width: '100%' }}>{part.value}</div>
+        <div className="smtcmp-diff-block-content">{part.value}</div>
       </div>
     )
   } else if (part.type === 'modified') {
@@ -212,12 +212,12 @@ const DiffBlockView = forwardRef<
       <div className="smtcmp-diff-block-container" ref={ref}>
         {part.originalValue && part.originalValue.length > 0 && (
           <div className="smtcmp-diff-block removed">
-            <div style={{ width: '100%' }}>{part.originalValue}</div>
+            <div className="smtcmp-diff-block-content">{part.originalValue}</div>
           </div>
         )}
         {part.modifiedValue && part.modifiedValue.length > 0 && (
           <div className="smtcmp-diff-block added">
-            <div style={{ width: '100%' }}>{part.modifiedValue}</div>
+            <div className="smtcmp-diff-block-content">{part.modifiedValue}</div>
           </div>
         )}
         <div className="smtcmp-diff-block-actions">

@@ -41,12 +41,12 @@ function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
   return (
     <>
       {/* 输入区占满剩余空间 */}
-      <div style={{ width: '100%', flex: 1, minHeight: 0, display: 'flex' }}>
+      <div className="smtcmp-instruction-editor-container">
         <ObsidianTextArea
           value={instruction}
           placeholder={t('chat.customRewritePromptPlaceholder') ?? ''}
           onChange={(v) => setInstruction(v)}
-          style={{ width: '100%', height: '100%', minHeight: '160px', resize: 'none' }}
+          inputClassName="smtcmp-instruction-textarea"
           autoFocus
           onKeyDown={handleKeyDown}
         />

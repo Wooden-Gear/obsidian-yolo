@@ -50,5 +50,5 @@ export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
     toggleComponent.setValue(value)
   }, [toggleComponent, value])
 
-  return <div ref={containerRef} style={{ display: 'contents' }} />
+  return <div ref={containerRef} className="smtcmp-display-contents" />
 }

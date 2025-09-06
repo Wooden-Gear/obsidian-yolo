@@ -114,34 +114,17 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
   }
 
   return (
-    <div className="smtcmp-folder-selection" style={{ width: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '8px',
-        }}
-      >
-        <div style={{ fontWeight: 600, opacity: 0.8 }}>
+    <div className="smtcmp-folder-selection">
+      <div className="smtcmp-folder-selection-toolbar">
+        <div className="smtcmp-folder-selection-title">
           {title ?? t('settings.rag.selectedFolders', '已选择的文件夹')}
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div className="smtcmp-folder-selection-actions">
           <button
             aria-label={t('common.add', '添加')}
             title={t('common.add', '添加')}
             onClick={() => handleAdd()}
-            style={{
-              border: '1px solid var(--background-modifier-border)',
-              borderRadius: '0px',
-              background: 'var(--background-primary)',
-              color: 'var(--text-muted)',
-              padding: '0 6px',
-              height: '20px',
-              lineHeight: '20px',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
+            className="smtcmp-folder-selection-btn"
           >
             +
           </button>
@@ -149,45 +132,20 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
             aria-label={t('common.clear', '清空')}
             title={t('common.clear', '清空')}
             onClick={() => handleClear()}
-            style={{
-              border: '1px solid var(--background-modifier-border)',
-              borderRadius: '0px',
-              background: 'var(--background-primary)',
-              color: 'var(--text-muted)',
-              padding: '0 6px',
-              height: '20px',
-              lineHeight: '20px',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
+            className="smtcmp-folder-selection-btn"
           >
             {t('common.clear', '清空')}
           </button>
         </div>
       </div>
 
-      <div
-        onClick={onContainerClick}
-        style={{
-          border: '1px solid var(--background-modifier-border)',
-          borderRadius: '0px',
-          padding: '6px 8px',
-          minHeight: '32px',
-          position: 'relative',
-        }}
-      >
+      <div onClick={onContainerClick} className="smtcmp-folder-selection-picker">
         {items.length === 0 ? (
-          <div style={{ opacity: 0.7 }}>
+          <div className="smtcmp-folder-selection-empty">
             {placeholder ?? t('settings.rag.selectFoldersPlaceholder', '点击此处选择文件夹（留空则默认包含全部）')}
           </div>
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '6px',
-            }}
-          >
+          <div className="smtcmp-folder-selection-list">
             {items.map((p, idx) => (
               <div
                 key={`${p}__${idx}`}
@@ -196,20 +154,10 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
                 onDragOver={onDragOver(idx)}
                 onDrop={onDrop(idx)}
                 onDragEnd={onDragEnd}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '2px 6px',
-                  border: '1px solid var(--background-modifier-border)',
-                  borderRadius: '0px',
-                  background: dragIndex === idx ? 'var(--background-secondary)' : 'var(--background-secondary)',
-                  cursor: 'grab',
-                  userSelect: 'none',
-                }}
+                className="smtcmp-folder-selection-chip"
               >
-                <span style={{ opacity: 0.5, fontSize: '12px' }}>⋮⋮</span>
-                <span style={{ fontFamily: 'var(--font-monospace)', fontSize: '12px' }}>{p === '' ? '/' : p}</span>
+                <span className="smtcmp-folder-selection-chip-handle">⋮⋮</span>
+                <span className="smtcmp-folder-selection-chip-path">{p === '' ? '/' : p}</span>
                 <span
                   role="button"
                   aria-label={t('common.remove', '移除')}
@@ -225,13 +173,7 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
                       handleRemove(idx)
                     }
                   }}
-                  style={{
-                    cursor: 'pointer',
-                    color: 'var(--text-muted)',
-                    fontSize: '12px',
-                    lineHeight: 1,
-                    userSelect: 'none',
-                  }}
+                  className="smtcmp-folder-selection-chip-remove"
                 >
                   ×
                 </span>

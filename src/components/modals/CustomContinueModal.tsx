@@ -25,12 +25,12 @@ function CustomContinueComponent({ editor, onClose }: CustomContinueModalProps) 
 
   return (
     <>
-      <div style={{ width: '100%', marginBottom: 12 }}>
+      <div className="smtcmp-modal-input-container">
         <ObsidianTextArea
           value={instruction}
           placeholder={t('chat.customContinuePromptPlaceholder') ?? ''}
           onChange={(v) => setInstruction(v)}
-          style={{ width: '100%', minHeight: '160px' }}
+          inputClassName="smtcmp-instruction-textarea"
         />
       </div>
 

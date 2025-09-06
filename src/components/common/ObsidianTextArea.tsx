@@ -1,6 +1,5 @@
 import { TextAreaComponent } from 'obsidian'
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 
 import { useObsidianSetting } from './ObsidianSetting'
 
@@ -8,7 +7,8 @@ type ObsidianTextAreaProps = {
   value: string
   placeholder?: string
   onChange: (value: string) => void
-  style?: CSSProperties
+  containerClassName?: string
+  inputClassName?: string
   autoFocus?: boolean
   onKeyDown?: (ev: KeyboardEvent) => void
 }
@@ -17,7 +17,8 @@ export function ObsidianTextArea({
   value,
   placeholder,
   onChange,
-  style,
+  containerClassName,
+  inputClassName,
   autoFocus,
   onKeyDown,
 }: ObsidianTextAreaProps) {
@@ -63,11 +64,11 @@ export function ObsidianTextArea({
     textAreaComponent.setValue(value)
   }, [textAreaComponent, value, placeholder])
 
-  // Apply inline styles to the underlying textarea element if provided
+  // Apply input class for theming instead of inline styles
   useEffect(() => {
     if (!textAreaComponent) return
-    if (style) Object.assign(textAreaComponent.inputEl.style, style as any)
-  }, [textAreaComponent, style])
+    if (inputClassName) textAreaComponent.inputEl.classList.add(inputClassName)
+  }, [textAreaComponent, inputClassName])
 
   // Auto focus when required
   useEffect(() => {
@@ -94,5 +95,5 @@ export function ObsidianTextArea({
     }
   }, [textAreaComponent, onKeyDown])
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+  return <div ref={containerRef} className={`smtcmp-textarea-container${containerClassName ? ' ' + containerClassName : ''}`} />
 }

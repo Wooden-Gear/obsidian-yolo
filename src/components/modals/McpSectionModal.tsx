@@ -20,7 +20,7 @@ export class McpSectionModal extends ReactModal<McpSectionComponentProps> {
         plugin,
       },
     })
-    this.modalEl.style.width = '720px'
+    this.modalEl.classList.add('smtcmp-modal--wide')
   }
 }
 
