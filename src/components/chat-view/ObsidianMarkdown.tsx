@@ -26,7 +26,8 @@ const ObsidianMarkdown = memo(function ObsidianMarkdown({
 
   const renderMarkdown = useCallback(async () => {
     if (containerRef.current) {
-      containerRef.current.innerHTML = ''
+      // Use safe DOM API to clear existing children instead of assigning innerHTML
+      containerRef.current.replaceChildren()
       await MarkdownRenderer.render(
         app,
         content,
