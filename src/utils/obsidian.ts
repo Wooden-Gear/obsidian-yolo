@@ -71,9 +71,12 @@ export function calculateFileDistance(
   file2: TFile | TFolder | { path: string },
 ): number | null {
   // Prefer runtime type checks against Obsidian types when available
+  const hasStringPath = (obj: unknown): obj is { path: string } =>
+    typeof obj === 'object' && obj !== null && 'path' in obj && typeof (obj as Record<string, unknown>).path === 'string'
+
   const getPath = (f: TFile | TFolder | { path: string }): string => {
     if (f instanceof TFile || f instanceof TFolder) return f.path
-    if (f && typeof (f as any).path === 'string') return (f as any).path
+    if (hasStringPath(f)) return f.path
     throw new Error('Invalid argument: expected TFile/TFolder or object with path')
   }
 

@@ -97,8 +97,18 @@ describe('migrateFrom11To12', () => {
     const result = migrateFrom11To12(inputData)
 
     // Should not double-prefix already prefixed IDs
-    const customModel = (result.chatModels as any[]).find((m: any) => m.id === 'custom-openai/gpt-4')
+    type ModelLite = { id: string }
+    const isModelLite = (m: unknown): m is ModelLite => {
+      if (typeof m !== 'object' || m === null) return false
+      const rec = m as Record<string, unknown>
+      return typeof rec.id === 'string'
+    }
+    const chatModels = Array.isArray(result.chatModels)
+      ? result.chatModels.filter(isModelLite)
+      : ([] as ModelLite[])
+    const customModel = chatModels.find((m) => m.id === 'custom-openai/gpt-4')
     expect(customModel).toBeDefined()
+    if (!customModel) throw new Error('customModel not found')
     expect(customModel.id).toBe('custom-openai/gpt-4')
     expect(result.chatModelId).toBe('custom-openai/gpt-4')
     expect(result.applyModelId).toBe('custom-openai/gpt-4')
@@ -146,8 +156,17 @@ describe('migrateFrom11To12', () => {
     const result = migrateFrom11To12(inputData)
 
     // Should create different prefixed IDs for same model name from different providers
-    const oneapiModel = (result.chatModels as any[]).find((m: any) => m.providerId === 'oneapi')
-    const vertexModel = (result.chatModels as any[]).find((m: any) => m.providerId === 'vertex')
+    type ModelWithProvider = { id: string; providerId: string }
+    const isModelWithProvider = (m: unknown): m is ModelWithProvider => {
+      if (typeof m !== 'object' || m === null) return false
+      const rec = m as Record<string, unknown>
+      return typeof rec.id === 'string' && typeof rec.providerId === 'string'
+    }
+    const chatModels = Array.isArray(result.chatModels)
+      ? result.chatModels.filter(isModelWithProvider)
+      : ([] as ModelWithProvider[])
+    const oneapiModel = chatModels.find((m) => m.providerId === 'oneapi')
+    const vertexModel = chatModels.find((m) => m.providerId === 'vertex')
     
     expect(oneapiModel?.id).toBe('oneapi/gemini-2.5-flash')
     expect(vertexModel?.id).toBe('vertex/gemini-2.5-flash')
