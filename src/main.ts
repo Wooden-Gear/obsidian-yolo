@@ -11,7 +11,6 @@ import { McpManager } from './core/mcp/mcpManager'
 import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
-import { migrateToJsonDatabase } from './database/json/migrateToJsonDatabase'
 import { createTranslationFunction } from './i18n'
 import { CustomContinueModal } from './components/modals/CustomContinueModal'
 import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
@@ -279,7 +278,7 @@ export default class SmartComposerPlugin extends Plugin {
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new SmartComposerSettingTab(this.app, this))
 
-    void this.migrateToJsonStorage()
+    // removed templates JSON migration
 
     // Editor context menu: AI Continue Writing
     this.registerEvent(
@@ -818,20 +817,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     }
   }
 
-  private async migrateToJsonStorage() {
-    try {
-      const dbManager = await this.getDbManager()
-      await migrateToJsonDatabase(this.app, dbManager, async () => {
-        await this.reloadChatView()
-        console.log('Migration to JSON storage completed successfully')
-      })
-    } catch (error) {
-      console.error('Failed to migrate to JSON storage:', error)
-      new Notice(
-        'Failed to migrate to JSON storage. Please check the console for details.',
-      )
-    }
-  }
+  // removed migrateToJsonStorage (templates)
 
   private async reloadChatView() {
     const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)

@@ -26,8 +26,7 @@ import OnEnterPlugin from './plugins/on-enter/OnEnterPlugin'
 import OnMutationPlugin, {
   NodeMutations,
 } from './plugins/on-mutation/OnMutationPlugin'
-import CreateTemplatePopoverPlugin from './plugins/template/CreateTemplatePopoverPlugin'
-import TemplatePlugin from './plugins/template/TemplatePlugin'
+// templates feature removed
 
 export type LexicalContentEditableProps = {
   editorRef: RefObject<LexicalEditor>
@@ -43,9 +42,7 @@ export type LexicalContentEditableProps = {
     onEnter?: {
       onVaultChat: () => void
     }
-    templatePopover?: {
-      anchorElement: HTMLElement | null
-    }
+    // templates feature removed
   }
 }
 
@@ -141,14 +138,7 @@ export default function LexicalContentEditable({
       <AutoLinkMentionPlugin />
       <ImagePastePlugin onCreateImageMentionables={onCreateImageMentionables} />
       <DragDropPaste onCreateImageMentionables={onCreateImageMentionables} />
-      <TemplatePlugin />
-      {plugins?.templatePopover && (
-        <CreateTemplatePopoverPlugin
-          app={app}
-          anchorElement={plugins.templatePopover.anchorElement}
-          contentEditableElement={contentEditableRef.current}
-        />
-      )}
+      {/* templates feature removed */}
     </LexicalComposer>
   )
 }

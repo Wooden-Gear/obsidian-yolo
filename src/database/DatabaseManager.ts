@@ -6,7 +6,6 @@ import { PGLITE_DB_PATH } from '../constants'
 
 import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
-import { LegacyTemplateManager } from './modules/template/TemplateManager'
 import { VectorManager } from './modules/vector/VectorManager'
 
 export class DatabaseManager {
@@ -17,10 +16,7 @@ export class DatabaseManager {
   // WeakMap to prevent circular references
   private static managers = new WeakMap<
     DatabaseManager,
-    {
-      templateManager?: LegacyTemplateManager
-      vectorManager?: VectorManager
-    }
+    { vectorManager?: VectorManager }
   >()
 
   constructor(app: App, dbPath: string) {
@@ -38,10 +34,7 @@ export class DatabaseManager {
     await dbManager.save()
 
     // WeakMap setup
-    const managers = {
-      vectorManager: new VectorManager(app, dbManager.db),
-      templateManager: new LegacyTemplateManager(app, dbManager.db),
-    }
+    const managers = { vectorManager: new VectorManager(app, dbManager.db) }
 
     // save, vacuum callback setup
     const saveCallback = dbManager.save.bind(dbManager) as () => Promise<void>
@@ -51,8 +44,6 @@ export class DatabaseManager {
 
     managers.vectorManager.setSaveCallback(saveCallback)
     managers.vectorManager.setVacuumCallback(vacuumCallback)
-    managers.templateManager.setSaveCallback(saveCallback)
-    managers.templateManager.setVacuumCallback(vacuumCallback)
 
     DatabaseManager.managers.set(dbManager, managers)
 
@@ -78,18 +69,7 @@ export class DatabaseManager {
     return managers.vectorManager
   }
 
-  getTemplateManager(): LegacyTemplateManager {
-    const managers = DatabaseManager.managers.get(this) ?? {}
-    if (!managers.templateManager) {
-      if (this.db) {
-        managers.templateManager = new LegacyTemplateManager(this.app, this.db)
-        DatabaseManager.managers.set(this, managers)
-      } else {
-        throw new Error('Database is not initialized')
-      }
-    }
-    return managers.templateManager
-  }
+  // removed template manager
 
   // vacuum the database to release unused space
   async vacuum() {

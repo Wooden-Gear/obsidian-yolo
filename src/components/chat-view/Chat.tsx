@@ -46,7 +46,7 @@ import { groupAssistantAndToolMessages } from '../../utils/chat/message-groups'
 import { PromptGenerator } from '../../utils/chat/promptGenerator'
 import { readTFileContent } from '../../utils/obsidian'
 import { ErrorModal } from '../modals/ErrorModal'
-import { TemplateSectionModal } from '../modals/TemplateSectionModal'
+// removed Prompt Templates feature
 import { ChatModeDropdown } from './ChatModeDropdown'
 
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
@@ -648,20 +648,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             >
               <History size={18} />
             </ChatListDropdown>
-            {settings.chatOptions.enableBruteMode ? (
+            {settings.chatOptions.enableBruteMode && (
               <ChatModeDropdown mode={chatMode} onChange={setChatMode}>
                 <Book size={18} />
               </ChatModeDropdown>
-            ) : (
-              <button
-                onClick={() => {
-                  new TemplateSectionModal(app).open()
-                }}
-                className="clickable-icon"
-                aria-label="Prompt Templates"
-              >
-                <Book size={18} />
-              </button>
             )}
           </div>
         </div>
