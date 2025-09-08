@@ -111,6 +111,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
     })
   }
 
+  // hover 态通过 CSS :hover 处理
   const [hovered, setHovered] = useState<string | null>(null)
 
   const renderNode = (node: Node, depth: number) => {
@@ -124,15 +125,10 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
     return (
       <li key={node.path}>
         <div
-          className="smtcmp-provider-header"
-          style={{
-            paddingLeft: 8 + depth * 12,
-            cursor: isDisabled ? 'not-allowed' : 'pointer',
-            backgroundColor: hovered === node.path ? 'var(--background-modifier-hover)' : 'transparent',
-            borderRadius: 0,
-            boxShadow: 'none',
-            border: 0,
-          }}
+          className={
+            `smtcmp-provider-header smtcmp-folder-row smtcmp-indent-folder smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}` +
+            (isDisabled ? ' is-disabled' : '')
+          }
           onMouseEnter={() => setHovered(node.path)}
           onMouseLeave={() => setHovered((h) => (h === node.path ? null : h))}
           onClick={() => {
@@ -152,36 +148,25 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
           }}
         >
           <div
-            className="smtcmp-provider-expand-btn"
-            style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
+            className={`smtcmp-provider-expand-btn ${hasChildren ? '' : 'no-children'}`}
             onClick={(e) => {
               e.stopPropagation()
               if (hasChildren) toggle(node.path)
             }}
           >
-            {hasChildren ? (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <span style={{ display: 'inline-block', width: 16 }} />}
+            {hasChildren ? (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <span className="smtcmp-icon-placeholder" />}
           </div>
           <div className="smtcmp-provider-info">
             <span
+              className="smtcmp-folder-name"
               title={isSelected ? '已选择' : (isCoveredByAncestor ? '已被父级覆盖' : (node.path === '' ? '/' : node.path))}
-              style={{
-                outline: 'none',
-                boxShadow: 'none',
-                border: 'none',
-                background: 'transparent',
-                padding: 0,
-                textAlign: 'left',
-                color: isDisabled ? 'var(--text-faint)' : 'var(--text-normal)',
-                borderRadius: 0,
-                pointerEvents: 'none',
-              }}
             >
               {node.name}
             </span>
           </div>
         </div>
         {hasChildren && isOpen && (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className="smtcmp-list-reset">
             {node.children.map((c) => renderNode(c, depth + 1))}
           </ul>
         )}
@@ -190,7 +175,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
   }
 
   return (
-    <div className="smtcmp-folder-picker" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className="smtcmp-folder-picker">
       <input
         type="text"
         placeholder="搜索文件夹..."
@@ -199,17 +184,17 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
         className="svelte-obsidian-text-input"
       />
 
-      <div style={{ maxHeight: '300px', overflow: 'auto' }}>
+      <div className="smtcmp-scroll-panel">
         {filteredRoots.length === 0 ? (
-          <div style={{ padding: '8px', opacity: 0.7 }}>未找到匹配的文件夹</div>
+          <div className="smtcmp-folder-empty">未找到匹配的文件夹</div>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className="smtcmp-list-reset">
             {filteredRoots.map((n) => renderNode(n, 0))}
           </ul>
         )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+      <div className="smtcmp-actions-right-gap-8">
         <button onClick={onClose} className="mod-cancel">关闭</button>
       </div>
     </div>

@@ -182,7 +182,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       {(includeFolders.length === 0 || conflictInfo.exactConflicts.length > 0 || conflictInfo.includeUnderExcluded.length > 0 || conflictInfo.excludeWithinIncluded.length > 0) && (
-        <div style={{ margin: '4px 0 8px 0', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.4 }}>
+        <div className="smtcmp-muted-note">
           {includeFolders.length === 0 && (
             <div>
               {t('settings.rag.conflictNoteDefaultInclude', '提示：当前未选择包含文件夹，默认包含全部。若设置了排除文件夹，则排除将优先生效。')}
@@ -393,7 +393,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       </ObsidianSetting>
 
       <ObsidianSetting name={t('settings.rag.manageEmbeddingDatabase')}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="smtcmp-flex-row-gap-8">
           <ObsidianButton
             text={t('settings.rag.manage')}
             onClick={async () => {
@@ -439,7 +439,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       {/* 折叠：RAG 索引进度（复用 Provider 折叠样式） */}
       <div className="smtcmp-provider-section">
         <div
-          className="smtcmp-provider-header"
+          className="smtcmp-provider-header smtcmp-clickable"
           onClick={() => setIsProgressOpen((v) => !v)}
           role="button"
           tabIndex={0}
@@ -449,7 +449,6 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
               setIsProgressOpen((v) => !v)
             }
           }}
-          style={{ cursor: 'pointer' }}
         >
           <div className="smtcmp-provider-expand-btn">
             {isProgressOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}

@@ -11,9 +11,9 @@ export function ConversationModeSelector({
   const { t } = useLanguage()
 
   return (
-    <div className="smtcmp-chat-mode-selector" style={{ display: 'flex', gap: 6 }}>
-      <span style={{ fontSize: '12px', opacity: 0.8 }}>{t('chat.modeTitle') ?? 'Chat Mode'}</span>
-      <div className="smtcmp-chat-mode-selector-buttons" style={{ display: 'flex', gap: 4 }}>
+    <div className="smtcmp-chat-mode-selector">
+      <span className="smtcmp-chat-mode-label">{t('chat.modeTitle') ?? 'Chat Mode'}</span>
+      <div className="smtcmp-chat-mode-selector-buttons">
         <button
           className={`clickable-icon ${mode === 'rag' ? 'is-active' : ''}`}
           onClick={() => onChange('rag')}
@@ -34,4 +34,3 @@ export function ConversationModeSelector({
     </div>
   )
 }
-

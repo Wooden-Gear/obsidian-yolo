@@ -313,11 +313,11 @@ function StatusIcon({ status }: { status: ToolCallResponseStatus }) {
     case ToolCallResponseStatus.Rejected:
     case ToolCallResponseStatus.Aborted:
     case ToolCallResponseStatus.Error:
-      return <X size={16} style={{ color: 'var(--text-error)' }} />
+      return <X size={16} className="smtcmp-icon-error" />
     case ToolCallResponseStatus.Running:
       return <Loader2 size={16} className="spinner" />
     case ToolCallResponseStatus.Success:
-      return <Check size={16} style={{ color: 'var(--text-success)' }} />
+      return <Check size={16} className="smtcmp-icon-success" />
     default:
       return null
   }

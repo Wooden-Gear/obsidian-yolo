@@ -199,7 +199,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
           return (
             <div key={provider.id} className="smtcmp-provider-section">
               <div 
-                className="smtcmp-provider-header"
+                className="smtcmp-provider-header smtcmp-clickable"
                 onClick={() => toggleProvider(provider.id)}
                 role="button"
                 tabIndex={0}
@@ -209,7 +209,6 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                     toggleProvider(provider.id);
                   }
                 }}
-                style={{ cursor: 'pointer' }}
               >
                 <div className="smtcmp-provider-expand-btn">
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}

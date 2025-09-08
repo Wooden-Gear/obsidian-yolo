@@ -19,7 +19,7 @@ export function ImageUploadButton({
         accept="image/*"
         multiple
         onChange={handleFileChange}
-        style={{ display: 'none' }}
+        hidden
       />
       <div className="smtcmp-chat-user-input-submit-button-icons">
         <ImageIcon size={12} />

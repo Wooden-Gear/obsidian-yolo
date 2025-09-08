@@ -78,7 +78,7 @@ export default function MarkdownReferenceBlock({
               {filename}
             </div>
           )}
-          <div className="smtcmp-code-block-header-button-container" style={{ display: 'flex', gap: 8 }}>
+          <div className="smtcmp-code-block-header-button-container smtcmp-code-block-header-button-container--spaced">
             {canCollapse && (
               <button
                 className="clickable-icon smtcmp-code-block-header-button"

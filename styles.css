@@ -1523,6 +1523,149 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
+/* ============== Shared utility & overrides (audit fixes) ============== */
+
+/* Typeahead menu container positioned via CSS variables */
+.smtcmp-typeahead-menu {
+  position: absolute;
+  top: var(--smtcmp-top, 0);
+  left: var(--smtcmp-left, 0);
+  width: var(--smtcmp-width, auto);
+  height: var(--smtcmp-height, auto);
+  z-index: 1000;
+}
+
+/* Conversation mode selector */
+.smtcmp-chat-mode-selector {
+  display: flex;
+  gap: 6px;
+}
+.smtcmp-chat-mode-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.smtcmp-chat-mode-selector-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+/* Code block header button container spacing variant */
+.smtcmp-code-block-header-button-container--spaced {
+  gap: 8px;
+}
+
+/* Status icons */
+.smtcmp-icon-error {
+  color: var(--text-error);
+}
+.smtcmp-icon-success {
+  color: var(--text-success);
+}
+
+/* Muted small text/note */
+.smtcmp-muted-note {
+  margin: 4px 0 8px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.smtcmp-text-faint-small {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+/* Simple flex helpers */
+.smtcmp-flex-row-gap-8 {
+  display: flex;
+  gap: 8px;
+}
+.smtcmp-actions-right-gap-8 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.smtcmp-clickable { cursor: pointer; }
+
+/* List reset & scroll panel */
+.smtcmp-list-reset {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.smtcmp-scroll-panel {
+  max-height: 300px;
+  overflow: auto;
+}
+
+/* Folder picker */
+.smtcmp-folder-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.smtcmp-folder-empty {
+  padding: 8px;
+  opacity: 0.7;
+}
+.smtcmp-folder-row {
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: none;
+  border: 0;
+}
+.smtcmp-folder-row.is-disabled {
+  cursor: not-allowed;
+}
+.smtcmp-folder-row:not(.is-disabled):hover {
+  background-color: var(--background-modifier-hover);
+}
+.smtcmp-icon-placeholder {
+  display: inline-block;
+  width: 16px;
+}
+.smtcmp-provider-expand-btn.no-children {
+  visibility: hidden;
+}
+.smtcmp-folder-name {
+  outline: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: var(--text-normal);
+  border-radius: 0;
+  pointer-events: none;
+}
+.smtcmp-folder-row.is-disabled .smtcmp-folder-name {
+  color: var(--text-faint);
+}
+
+/* Indent helpers using CSS variables for depth */
+.smtcmp-depth { --smtcmp-depth: 0; }
+.smtcmp-depth-0 { --smtcmp-depth: 0; }
+.smtcmp-depth-1 { --smtcmp-depth: 1; }
+.smtcmp-depth-2 { --smtcmp-depth: 2; }
+.smtcmp-depth-3 { --smtcmp-depth: 3; }
+.smtcmp-depth-4 { --smtcmp-depth: 4; }
+.smtcmp-depth-5 { --smtcmp-depth: 5; }
+.smtcmp-depth-6 { --smtcmp-depth: 6; }
+.smtcmp-depth-7 { --smtcmp-depth: 7; }
+.smtcmp-depth-8 { --smtcmp-depth: 8; }
+.smtcmp-depth-9 { --smtcmp-depth: 9; }
+.smtcmp-depth-10 { --smtcmp-depth: 10; }
+
+/* Folder picker row indent (base 8px + depth*12px) */
+.smtcmp-indent-folder {
+  padding-left: calc(8px + var(--smtcmp-depth) * 12px);
+}
+
+/* RAG index list indent (base 16px + depth*12px) */
+.smtcmp-indent-list {
+  margin-left: calc(16px + var(--smtcmp-depth) * 12px);
+}
+
 .smtcmp-toolcall-container {
   display: flex;
   flex-direction: column;

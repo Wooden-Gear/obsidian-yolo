@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, TAbstractFile } from 'obsidian'
+import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
 import { minimatch } from 'minimatch'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
@@ -616,8 +616,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   // ===== Auto Update helpers =====
   private onVaultFileChanged(file: TAbstractFile) {
     try {
-      if (!('path' in file) || typeof (file as any).path !== 'string') return
-      this.onVaultPathChanged((file as any).path as string)
+      // 使用严格类型判断，避免通过 any 访问 path
+      if (file instanceof TFile || file instanceof TFolder) {
+        this.onVaultPathChanged(file.path)
+      }
     } catch {}
   }
 

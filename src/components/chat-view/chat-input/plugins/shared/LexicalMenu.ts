@@ -487,7 +487,11 @@ export function useMenuAnchorRef(
   const [editor] = useLexicalComposerContext()
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
   const positionMenu = useCallback(() => {
-    anchorElementRef.current.style.top = anchorElementRef.current.style.bottom
+    // 清除上一次定位（避免闪烁）；通过 CSS 变量驱动定位
+    anchorElementRef.current.style.removeProperty('--smtcmp-top')
+    anchorElementRef.current.style.removeProperty('--smtcmp-left')
+    anchorElementRef.current.style.removeProperty('--smtcmp-width')
+    anchorElementRef.current.style.removeProperty('--smtcmp-height')
     const rootElement = editor.getRootElement()
     const containerDiv = anchorElementRef.current
 
@@ -495,17 +499,20 @@ export function useMenuAnchorRef(
     if (rootElement !== null && resolution !== null) {
       const { left, top, width, height } = resolution.getRect()
       const anchorHeight = anchorElementRef.current.offsetHeight // use to position under anchor
-      containerDiv.style.top = `${
-        top +
-        anchorHeight +
-        3 +
-        (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-      }px`
-      containerDiv.style.left = `${left + window.pageXOffset}px`
-      containerDiv.style.height = `${height}px`
-      containerDiv.style.width = `${width}px`
+      containerDiv.style.setProperty(
+        '--smtcmp-top',
+        `${
+          top +
+          anchorHeight +
+          3 +
+          (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+        }px`,
+      )
+      containerDiv.style.setProperty('--smtcmp-left', `${left + window.pageXOffset}px`)
+      containerDiv.style.setProperty('--smtcmp-height', `${height}px`)
+      containerDiv.style.setProperty('--smtcmp-width', `${width}px`)
       if (menuEle !== null) {
-        menuEle.style.top = `${top}`
+        // 保留 menuEle 默认布局，通过容器定位
         const menuRect = menuEle.getBoundingClientRect()
         const menuHeight = menuRect.height
         const menuWidth = menuRect.width
@@ -513,9 +520,10 @@ export function useMenuAnchorRef(
         const rootElementRect = rootElement.getBoundingClientRect()
 
         if (left + menuWidth > rootElementRect.right) {
-          containerDiv.style.left = `${
-            rootElementRect.right - menuWidth + window.pageXOffset
-          }px`
+          containerDiv.style.setProperty(
+            '--smtcmp-left',
+            `${rootElementRect.right - menuWidth + window.pageXOffset}px`,
+          )
         }
         if (
           // If it exceeds the window height, it should always be displayed above, but the original code checks if it doesn't exceed the editor's top as well. So I modified it.
@@ -525,12 +533,15 @@ export function useMenuAnchorRef(
           top + menuHeight >
           window.innerHeight
         ) {
-          containerDiv.style.top = `${
-            top -
-            menuHeight -
-            height +
-            (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-          }px`
+          containerDiv.style.setProperty(
+            '--smtcmp-top',
+            `${
+              top -
+              menuHeight -
+              height +
+              (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+            }px`,
+          )
         }
       }
 
@@ -538,7 +549,7 @@ export function useMenuAnchorRef(
         if (className != null) {
           containerDiv.className = className
         }
-        // Add default menu styling via class to avoid inline styles
+        // 使用类名提供默认样式，通过 CSS 变量控制定位与尺寸
         containerDiv.classList.add('smtcmp-typeahead-menu')
         containerDiv.setAttribute('aria-label', 'Typeahead menu')
         containerDiv.setAttribute('id', 'typeahead-menu')

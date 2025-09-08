@@ -140,8 +140,7 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
     return (
       <div key={node.path}>
         <div
-          className="smtcmp-provider-header"
-          style={{ paddingLeft: depth > 0 ? 16 + depth * 12 : undefined }}
+          className={`smtcmp-provider-header ${depth > 0 ? `smtcmp-indent-folder smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}` : ''}`}
           onClick={() => {
             setExpanded((prev) => {
               const next = new Set(prev)
@@ -182,7 +181,7 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
 
             {/* 当前层级文件 */}
             {files.length > 0 ? (
-              <ul className="smtcmp-rag-progress-folder-files" style={{ marginLeft: 16 + depth * 12 }}>
+              <ul className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}>
                 {files.map((f) => (
                   <li key={f} title={f}>
                     {f.split('/').pop()}
@@ -190,8 +189,8 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
                 ))}
               </ul>
             ) : node.children.length === 0 ? (
-              <div className="smtcmp-rag-progress-folder-files" style={{ listStyle: 'none', paddingLeft: 0, marginLeft: 16 + depth * 12 }}>
-                <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>暂无 Markdown 文件（仅当前层级）</span>
+              <div className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}>
+                <span className="smtcmp-text-faint-small">暂无 Markdown 文件（仅当前层级）</span>
               </div>
             ) : null}
           </div>
@@ -205,7 +204,7 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
       {/* 文件夹进度列表（复用 Provider 行样式） */}
       {noProgressYet ? (
         isIndexing ? (
-          <div className="smtcmp-rag-progress-folders-list" style={{ color: 'var(--text-faint)', fontSize: 12 }}>
+          <div className="smtcmp-rag-progress-folders-list smtcmp-text-faint-small">
             正在准备索引进度...
           </div>
         ) : null
