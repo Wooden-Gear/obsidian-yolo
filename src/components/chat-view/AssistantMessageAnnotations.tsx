@@ -35,11 +35,7 @@ const AssistantMessageAnnotations = memo(function AssistantMessageAnnotations({
             {annotations.map((annotation, index) => {
               return (
                 <div key={annotation.url_citation.url}>
-                  <span
-                    style={{
-                      wordBreak: 'break-all',
-                    }}
-                  >
+                  <span className="smtcmp-url-citation-text">
                     [{index + 1}]{' '}
                     <a
                       href={annotation.url_citation.url}

@@ -104,10 +104,7 @@ export default function LexicalContentEditable({
       <RichTextPlugin
         contentEditable={
           <ContentEditable
-            className="obsidian-default-textarea"
-            style={{
-              background: 'transparent',
-            }}
+            className="obsidian-default-textarea smtcmp-content-editable"
             onFocus={onFocus}
             ref={contentEditableRef}
           />

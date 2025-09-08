@@ -2577,3 +2577,63 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-folder-selection-chip-handle { opacity: 0.5; font-size: 12px; }
 .smtcmp-folder-selection-chip-path { font-family: var(--font-monospace); font-size: 12px; }
 .smtcmp-folder-selection-chip-remove { cursor: pointer; color: var(--text-muted); font-size: 12px; line-height: 1; user-select: none; }
+
+/* Fix for inline styles - Using data attributes for positioning */
+.smtcmp-floating-panel {
+  position: fixed;
+  top: calc(var(--smtcmp-top, 0) * 1px);
+  left: calc(var(--smtcmp-left, 0) * 1px);
+  width: calc(var(--smtcmp-width, 300) * 1px);
+  height: calc(var(--smtcmp-height, 200) * 1px);
+}
+
+.smtcmp-floating-panel[data-smtcmp-top] {
+  top: calc(attr(data-smtcmp-top number) * 1px);
+}
+
+.smtcmp-floating-panel[data-smtcmp-left] {
+  left: calc(attr(data-smtcmp-left number) * 1px);
+}
+
+.smtcmp-floating-panel[data-smtcmp-width] {
+  width: calc(attr(data-smtcmp-width number) * 1px);
+}
+
+.smtcmp-floating-panel[data-smtcmp-height] {
+  height: calc(attr(data-smtcmp-height number) * 1px);
+}
+
+/* LexicalMenu positioning using data attributes */
+.smtcmp-typeahead-menu {
+  position: fixed;
+  top: calc(attr(data-smtcmp-top number, 0) * 1px);
+  left: calc(attr(data-smtcmp-left number, 0) * 1px);
+  width: calc(attr(data-smtcmp-width number, auto) * 1px);
+  height: calc(attr(data-smtcmp-height number, auto) * 1px);
+}
+
+.smtcmp-typeahead-menu.smtcmp-menu-above {
+  transform: translateY(-100%);
+}
+
+.smtcmp-typeahead-menu.smtcmp-menu-right-align {
+  transform: translateX(-100%);
+}
+
+/* Other component styles */
+.smtcmp-similarity-results-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.smtcmp-url-citation-text {
+  word-break: break-all;
+}
+
+.smtcmp-content-editable {
+  background: transparent;
+}
+
+.smtcmp-fixed-position {
+  position: fixed;
+}

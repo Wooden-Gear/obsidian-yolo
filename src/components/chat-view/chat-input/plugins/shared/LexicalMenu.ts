@@ -487,30 +487,30 @@ export function useMenuAnchorRef(
   const [editor] = useLexicalComposerContext()
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
   const positionMenu = useCallback(() => {
-    // 清除上一次定位（避免闪烁）；通过 CSS 变量驱动定位
-    anchorElementRef.current.style.removeProperty('--smtcmp-top')
-    anchorElementRef.current.style.removeProperty('--smtcmp-left')
-    anchorElementRef.current.style.removeProperty('--smtcmp-width')
-    anchorElementRef.current.style.removeProperty('--smtcmp-height')
-    const rootElement = editor.getRootElement()
+    // 清除上一次定位（避免闪烁）；通过数据属性驱动定位
     const containerDiv = anchorElementRef.current
-
+    containerDiv.removeAttribute('data-smtcmp-top')
+    containerDiv.removeAttribute('data-smtcmp-left')
+    containerDiv.removeAttribute('data-smtcmp-width')
+    containerDiv.removeAttribute('data-smtcmp-height')
+    containerDiv.classList.remove('smtcmp-menu-above', 'smtcmp-menu-right-align')
+    
+    const rootElement = editor.getRootElement()
     const menuEle = containerDiv.firstChild as HTMLElement
+    
     if (rootElement !== null && resolution !== null) {
       const { left, top, width, height } = resolution.getRect()
       const anchorHeight = anchorElementRef.current.offsetHeight // use to position under anchor
-      containerDiv.style.setProperty(
-        '--smtcmp-top',
-        `${
-          top +
-          anchorHeight +
-          3 +
-          (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-        }px`,
-      )
-      containerDiv.style.setProperty('--smtcmp-left', `${left + window.pageXOffset}px`)
-      containerDiv.style.setProperty('--smtcmp-height', `${height}px`)
-      containerDiv.style.setProperty('--smtcmp-width', `${width}px`)
+      const calculatedTop = top + anchorHeight + 3 + 
+        (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+      const calculatedLeft = left + window.pageXOffset
+      
+      // 使用数据属性存储位置信息
+      containerDiv.setAttribute('data-smtcmp-top', calculatedTop.toString())
+      containerDiv.setAttribute('data-smtcmp-left', calculatedLeft.toString())
+      containerDiv.setAttribute('data-smtcmp-width', width.toString())
+      containerDiv.setAttribute('data-smtcmp-height', height.toString())
+      
       if (menuEle !== null) {
         // 保留 menuEle 默认布局，通过容器定位
         const menuRect = menuEle.getBoundingClientRect()
@@ -519,29 +519,19 @@ export function useMenuAnchorRef(
 
         const rootElementRect = rootElement.getBoundingClientRect()
 
+        // 右对齐检查
         if (left + menuWidth > rootElementRect.right) {
-          containerDiv.style.setProperty(
-            '--smtcmp-left',
-            `${rootElementRect.right - menuWidth + window.pageXOffset}px`,
-          )
+          const rightAlignLeft = rootElementRect.right - menuWidth + window.pageXOffset
+          containerDiv.setAttribute('data-smtcmp-left', rightAlignLeft.toString())
+          containerDiv.classList.add('smtcmp-menu-right-align')
         }
-        if (
-          // If it exceeds the window height, it should always be displayed above, but the original code checks if it doesn't exceed the editor's top as well. So I modified it.
-          // (top + menuHeight > window.innerHeight ||
-          //   top + menuHeight > rootElementRect.bottom) &&
-          // top - rootElementRect.top > menuHeight + height
-          top + menuHeight >
-          window.innerHeight
-        ) {
-          containerDiv.style.setProperty(
-            '--smtcmp-top',
-            `${
-              top -
-              menuHeight -
-              height +
-              (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-            }px`,
-          )
+        
+        // 向上显示检查
+        if (top + menuHeight > window.innerHeight) {
+          const topAlignTop = top - menuHeight - height + 
+            (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
+          containerDiv.setAttribute('data-smtcmp-top', topAlignTop.toString())
+          containerDiv.classList.add('smtcmp-menu-above')
         }
       }
 

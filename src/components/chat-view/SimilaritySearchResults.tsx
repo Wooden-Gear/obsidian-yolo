@@ -54,12 +54,7 @@ export default function SimilaritySearchResults({
         <div>Show Referenced Documents ({similaritySearchResults.length})</div>
       </div>
       {isOpen && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
+        <div className="smtcmp-similarity-results-container">
           {similaritySearchResults.map((chunk) => (
             <SimiliartySearchItem key={chunk.id} chunk={chunk} />
           ))}
