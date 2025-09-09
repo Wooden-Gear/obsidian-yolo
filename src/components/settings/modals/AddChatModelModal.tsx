@@ -6,7 +6,7 @@ import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { LLMProvider } from '../../../types/provider.types'
-import { generateModelId, detectReasoningTypeFromModelId } from '../../../utils/model-id-utils'
+import { generateModelId, detectReasoningTypeFromModelId, ensureUniqueModelId } from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
@@ -125,8 +125,10 @@ function AddChatModelModalComponent({
       return
     }
 
-    // Generate internal unique id with provider prefix from API model id
-    const modelIdWithPrefix = generateModelId(formData.providerId, formData.model)
+    // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
+    const baseInternalId = generateModelId(formData.providerId, formData.model)
+    const existingIds = plugin.settings.chatModels.map(m => m.id)
+    const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
     // Compose reasoning/thinking fields based on selection ONLY (provider-agnostic)
     const reasoningPatch: Partial<ChatModel> = {}
     if (reasoningType === 'openai') {
@@ -149,10 +151,7 @@ function AddChatModelModalComponent({
         : formData.model,
     }
 
-    if (plugin.settings.chatModels.some((p) => p.id === modelIdWithPrefix)) {
-      new Notice('Model with this ID already exists. Try a different ID.')
-      return
-    }
+    // Allow duplicates of the same calling ID by uniquifying internal id; no blocking here
 
     if (
       !plugin.settings.providers.some(

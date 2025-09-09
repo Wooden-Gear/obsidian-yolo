@@ -116,3 +116,14 @@ export function detectReasoningTypeFromModelId(
 
   return 'none'
 }
+
+/**
+ * Ensure a unique model internal id among existing ids by appending a short numeric suffix.
+ * Example: base "prov/gemini-2.5-flash" -> "prov/gemini-2.5-flash-2", "...-3", ...
+ */
+export function ensureUniqueModelId(existingIds: string[], baseId: string): string {
+  if (!existingIds.includes(baseId)) return baseId
+  let i = 2
+  while (existingIds.includes(`${baseId}-${i}`)) i++
+  return `${baseId}-${i}`
+}

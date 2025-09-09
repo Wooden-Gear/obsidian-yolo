@@ -13,10 +13,10 @@ export function ModelSelect() {
   const getCurrentModelDisplay = () => {
     const currentModel = settings.chatModels.find(m => m.id === settings.chatModelId)
     if (currentModel) {
-      // 优先显示调用ID(model)，其次 name，再次回退到内部 id
+      // 优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
       const provider = settings.providers.find(p => p.id === currentModel.providerId)
-      const display = currentModel.model || currentModel.name || currentModel.id
-      // 使用 provider 展示后缀，但不改变主显示为调用ID
+      const display = currentModel.name || currentModel.model || currentModel.id
+      // 使用 provider 展示后缀
       const suffix = provider?.id ? ` (${provider.id})` : ''
       return `${display}${suffix}`
     }
@@ -57,8 +57,8 @@ export function ModelSelect() {
                 )
 
                 const items = groupModels.map((chatModelOption) => {
-                  // 列表项名称：优先显示调用ID(model)，其次 name，最后回退内部 id；不再仅从 id 解析
-                  const displayName = chatModelOption.model || chatModelOption.name || getModelDisplayName(chatModelOption.id)
+                  // 列表项名称：优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
+                  const displayName = chatModelOption.name || chatModelOption.model || getModelDisplayName(chatModelOption.id)
                   return (
                     <DropdownMenu.Item
                       key={chatModelOption.id}

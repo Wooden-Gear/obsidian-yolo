@@ -271,7 +271,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                       <table className="smtcmp-models-table">
                         <thead>
                           <tr>
-                            <th>Model ID</th>
+                            <th>{t('settings.models.modelName')}</th>
                             <th>Model (calling ID)</th>
                             <th>Enable</th>
                             <th>Actions</th>
@@ -280,8 +280,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         <tbody>
                           {chatModels.map((model) => (
                             <tr key={model.id}>
-                              <td>{model.id}</td>
-                              <td>{model.model || model.name || model.id}</td>
+                              <td title={model.id}>{model.name || model.model || model.id}</td>
+                              <td>{model.model || model.id}</td>
                               <td>
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}

@@ -9,7 +9,7 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
-import { generateModelId, detectReasoningTypeFromModelId } from '../../../utils/model-id-utils'
+import { generateModelId, detectReasoningTypeFromModelId, ensureUniqueModelId } from '../../../utils/model-id-utils'
 
 interface EditChatModelModalComponentProps {
   plugin: SmartComposerPlugin
@@ -85,13 +85,9 @@ function EditChatModelModalComponent({
       }
 
       // Compute new internal id from provider + API model id (calling ID)
-      const newInternalId = generateModelId(model.providerId, formData.model)
-
-      // Check duplicate id if changed
-      if (newInternalId !== model.id && chatModels.some(m => m.id === newInternalId)) {
-        new Notice('Model ID already exists')
-        return
-      }
+      const baseInternalId = generateModelId(model.providerId, formData.model)
+      const existingIds = chatModels.map(m => m.id).filter(id => id !== model.id)
+      const newInternalId = ensureUniqueModelId(existingIds, baseInternalId)
 
       // Compose reasoning/thinking fields based on selection and provider
       const updatedModel = {
