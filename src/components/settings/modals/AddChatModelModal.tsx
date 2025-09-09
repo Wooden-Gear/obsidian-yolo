@@ -179,6 +179,31 @@ function AddChatModelModalComponent({
 
   return (
     <>
+      {/* Available models dropdown (moved above modelId) */}
+      <ObsidianSetting
+        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
+        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : undefined}
+      >
+        <ObsidianDropdown
+          value={formData.model || ''}
+          options={Object.fromEntries(availableModels.map((m) => [m, m]))}
+          onChange={(value: string) => {
+            // When a model is selected, set API model id; if display name empty, prefill with the same
+            setFormData((prev) => ({
+              ...prev,
+              model: value,
+              name: prev.name && prev.name.trim().length > 0 ? prev.name : value,
+            }))
+            if (autoDetectReasoning) {
+              const detected = detectReasoningTypeFromModelId(value)
+              setReasoningType(detected)
+            }
+          }}
+          disabled={loadingModels || availableModels.length === 0}
+        />
+      </ObsidianSetting>
+
+      {/* Model calling ID */}
       <ObsidianSetting
         name={t('settings.models.modelId')}
         desc={t('settings.models.modelIdDesc')}
@@ -194,6 +219,17 @@ function AddChatModelModalComponent({
               setReasoningType(detected)
             }
           }}
+        />
+      </ObsidianSetting>
+
+      {/* Display name (moved right below modelId) */}
+      <ObsidianSetting name={t('settings.models.modelName')}>
+        <ObsidianTextInput
+          value={formData.name ?? ''}
+          placeholder={t('settings.models.modelNamePlaceholder')}
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
         />
       </ObsidianSetting>
 
@@ -243,41 +279,7 @@ function AddChatModelModalComponent({
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 
-      <ObsidianSetting name={t('settings.models.modelName')}>
-        <ObsidianTextInput
-          value={formData.name ?? ''}
-          placeholder={t('settings.models.modelNamePlaceholder')}
-          onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, name: value }))
-          }
-        />
-      </ObsidianSetting>
-
-      {/* Auto-fetched models dropdown */}
-      <ObsidianSetting
-        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
-        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : undefined}
-      >
-        <ObsidianDropdown
-          value={formData.model || ''}
-          options={Object.fromEntries(
-            availableModels.map((m) => [m, m])
-          )}
-          onChange={(value: string) => {
-            // When a model is selected, set API model id; if display name empty, prefill with the same
-            setFormData((prev) => ({
-              ...prev,
-              model: value,
-              name: (prev.name && prev.name.trim().length > 0) ? prev.name : value,
-            }))
-            if (autoDetectReasoning) {
-              const detected = detectReasoningTypeFromModelId(value)
-              setReasoningType(detected)
-            }
-          }}
-          disabled={loadingModels || availableModels.length === 0}
-        />
-      </ObsidianSetting>
+      
 
       <ObsidianSetting>
         <ObsidianButton text={t('common.add')} onClick={handleSubmit} cta />

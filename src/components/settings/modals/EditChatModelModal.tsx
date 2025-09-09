@@ -160,6 +160,17 @@ function EditChatModelModalComponent({
         />
       </ObsidianSetting>
 
+      {/* Display name (move right below modelId) */}
+      <ObsidianSetting name={t('settings.models.modelName')}>
+        <ObsidianTextInput
+          value={formData.name}
+          placeholder={t('settings.models.modelNamePlaceholder')}
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+        />
+      </ObsidianSetting>
+
       {/* Reasoning type */}
       <ObsidianSetting name={t('settings.models.reasoningType')}>
         <ObsidianDropdown
@@ -203,16 +214,6 @@ function EditChatModelModalComponent({
           />
         </ObsidianSetting>
       )}
-
-      <ObsidianSetting name={t('settings.models.modelName')}>
-        <ObsidianTextInput
-          value={formData.name}
-          placeholder={t('settings.models.modelNamePlaceholder')}
-          onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, name: value }))
-          }
-        />
-      </ObsidianSetting>
 
       
 
