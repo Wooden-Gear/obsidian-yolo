@@ -9,7 +9,7 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
-import { generateModelId } from '../../../utils/model-id-utils'
+import { generateModelId, detectReasoningTypeFromModelId } from '../../../utils/model-id-utils'
 
 interface EditChatModelModalComponentProps {
   plugin: SmartComposerPlugin
@@ -59,6 +59,8 @@ function EditChatModelModalComponent({
     if ((model as any).thinking?.enabled) return 'gemini'
     return 'none'
   })
+  // If user changes dropdown manually, disable auto detection
+  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>(
     ((model as any).reasoning?.reasoning_effort as any) || 'medium',
   )
@@ -148,9 +150,13 @@ function EditChatModelModalComponent({
         <ObsidianTextInput
           value={formData.model}
           placeholder={t('settings.models.modelIdPlaceholder')}
-          onChange={(value: string) =>
+          onChange={(value: string) => {
             setFormData((prev) => ({ ...prev, model: value }))
-          }
+            if (autoDetectReasoning) {
+              const detected = detectReasoningTypeFromModelId(value)
+              setReasoningType(detected)
+            }
+          }}
         />
       </ObsidianSetting>
 
@@ -163,7 +169,10 @@ function EditChatModelModalComponent({
             openai: t('settings.models.reasoningTypeOpenAI'),
             gemini: t('settings.models.reasoningTypeGemini'),
           }}
-          onChange={(v: string) => setReasoningType(v as any)}
+          onChange={(v: string) => {
+            setReasoningType(v as any)
+            setAutoDetectReasoning(false)
+          }}
         />
       </ObsidianSetting>
 

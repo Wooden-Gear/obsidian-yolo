@@ -6,7 +6,7 @@ import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { LLMProvider } from '../../../types/provider.types'
-import { generateModelId } from '../../../utils/model-id-utils'
+import { generateModelId, detectReasoningTypeFromModelId } from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
@@ -55,11 +55,9 @@ function AddChatModelModalComponent({
   const [loadingModels, setLoadingModels] = useState<boolean>(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   // Reasoning type selection: none | openai | gemini
-  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => {
-    if (initialProviderType === 'openai' || initialProviderType === 'openai-compatible') return 'none'
-    if (initialProviderType === 'gemini') return 'none'
-    return 'none'
-  })
+  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => 'none')
+  // When user manually changes reasoning type, stop auto-detection
+  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
   const [geminiBudget, setGeminiBudget] = useState<string>('2048')
 
@@ -129,15 +127,11 @@ function AddChatModelModalComponent({
 
     // Generate internal unique id with provider prefix from API model id
     const modelIdWithPrefix = generateModelId(formData.providerId, formData.model)
-    // Compose reasoning/thinking fields based on selection and provider
-    const isOpenAIProvider = formData.providerType === 'openai' || formData.providerType === 'openai-compatible'
-    const isGeminiProvider = formData.providerType === 'gemini'
-
+    // Compose reasoning/thinking fields based on selection ONLY (provider-agnostic)
     const reasoningPatch: Partial<ChatModel> = {}
-    if (isOpenAIProvider && reasoningType === 'openai') {
+    if (reasoningType === 'openai') {
       ;(reasoningPatch as any).reasoning = { enabled: true, reasoning_effort: openaiEffort }
-    }
-    if (isGeminiProvider && reasoningType === 'gemini') {
+    } else if (reasoningType === 'gemini') {
       const budget = parseInt(geminiBudget, 10)
       if (Number.isNaN(budget)) {
         new Notice(t('common.error'))
@@ -193,9 +187,13 @@ function AddChatModelModalComponent({
         <ObsidianTextInput
           value={formData.model}
           placeholder={t('settings.models.modelIdPlaceholder')}
-          onChange={(value: string) =>
+          onChange={(value: string) => {
             setFormData((prev) => ({ ...prev, model: value }))
-          }
+            if (autoDetectReasoning) {
+              const detected = detectReasoningTypeFromModelId(value)
+              setReasoningType(detected)
+            }
+          }}
         />
       </ObsidianSetting>
 
@@ -208,7 +206,10 @@ function AddChatModelModalComponent({
             openai: t('settings.models.reasoningTypeOpenAI'),
             gemini: t('settings.models.reasoningTypeGemini'),
           }}
-          onChange={(v: string) => setReasoningType(v as any)}
+          onChange={(v: string) => {
+            setReasoningType(v as any)
+            setAutoDetectReasoning(false)
+          }}
         />
       </ObsidianSetting>
 
@@ -269,6 +270,10 @@ function AddChatModelModalComponent({
               model: value,
               name: (prev.name && prev.name.trim().length > 0) ? prev.name : value,
             }))
+            if (autoDetectReasoning) {
+              const detected = detectReasoningTypeFromModelId(value)
+              setReasoningType(detected)
+            }
           }}
           disabled={loadingModels || availableModels.length === 0}
         />

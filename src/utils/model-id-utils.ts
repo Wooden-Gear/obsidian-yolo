@@ -90,3 +90,29 @@ export function migrateModelId(oldModelId: string, providerId: string): string {
   }
   return generateModelId(providerId, oldModelId)
 }
+
+/**
+ * Detect reasoning type based on model id keywords.
+ * Returns 'openai' when the id looks like GPT/o-series; 'gemini' when it contains 'gemini'; otherwise 'none'.
+ */
+export function detectReasoningTypeFromModelId(
+  modelIdOrName: string,
+): 'openai' | 'gemini' | 'none' {
+  const s = (modelIdOrName || '').toLowerCase()
+  if (!s) return 'none'
+
+  // Prefer explicit gemini match
+  if (s.includes('gemini')) return 'gemini'
+
+  // Common OpenAI patterns: gpt*, o1/o3/o4 (including variants like o4mini), gpt5
+  if (
+    s.includes('gpt') ||
+    s.includes('o1') || s.includes('o3') || s.includes('o4') ||
+    s.includes('gpt5') ||
+    s.includes('gpt-5')
+  ) {
+    return 'openai'
+  }
+
+  return 'none'
+}
