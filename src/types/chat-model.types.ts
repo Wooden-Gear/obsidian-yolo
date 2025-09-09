@@ -66,6 +66,19 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
   z.object({
     providerType: z.literal('openrouter'),
     ...baseChatModelSchema.shape,
+    // Allow users to configure reasoning/thinking even via aggregators
+    reasoning: z
+      .object({
+        enabled: z.boolean(),
+        reasoning_effort: z.string().optional(),
+      })
+      .optional(),
+    thinking: z
+      .object({
+        enabled: z.boolean(),
+        thinking_budget: z.number(),
+      })
+      .optional(),
   }),
   z.object({
     providerType: z.literal('ollama'),
@@ -103,6 +116,19 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
   z.object({
     providerType: z.literal('openai-compatible'),
     ...baseChatModelSchema.shape,
+    // Same here: keep user freedom to configure across any provider
+    reasoning: z
+      .object({
+        enabled: z.boolean(),
+        reasoning_effort: z.string().optional(),
+      })
+      .optional(),
+    thinking: z
+      .object({
+        enabled: z.boolean(),
+        thinking_budget: z.number(),
+      })
+      .optional(),
   }),
 ])
 

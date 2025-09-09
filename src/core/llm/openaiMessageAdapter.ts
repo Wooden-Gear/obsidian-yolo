@@ -81,7 +81,8 @@ export class OpenAIMessageAdapter {
   }):
     | ChatCompletionCreateParamsStreaming
     | ChatCompletionCreateParamsNonStreaming {
-    return {
+    // Build base params per OpenAI spec
+    const base: any = {
       model: request.model,
       tools: request.tools,
       tool_choice: request.tool_choice,
@@ -106,6 +107,17 @@ export class OpenAIMessageAdapter {
         },
       }),
     }
+
+    // Pass-through vendor-specific reasoning/thinking fields for compatible gateways
+    const reqAny = request as any
+    if (reqAny.thinking) {
+      base.thinking = reqAny.thinking // e.g., { budget_tokens: number }
+    }
+    if (reqAny.thinking_config || reqAny.thinkingConfig) {
+      base.thinking_config = reqAny.thinking_config || reqAny.thinkingConfig // e.g., { thinking_budget: number }
+    }
+
+    return base
   }
 
   protected parseRequestMessage(

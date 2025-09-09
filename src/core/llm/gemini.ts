@@ -1,15 +1,4 @@
-import {
-  Content,
-  EnhancedGenerateContentResponse,
-  FunctionCallPart,
-  Tool as GeminiTool,
-  GenerateContentResult,
-  GenerateContentStreamResult,
-  GoogleGenerativeAI,
-  Part,
-  Schema,
-  SchemaType,
-} from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import { v4 as uuidv4 } from 'uuid'
 
 import { ChatModel } from '../../types/chat-model.types'
@@ -50,7 +39,7 @@ import {
 export class GeminiProvider extends BaseLLMProvider<
   Extract<LLMProvider, { type: 'gemini' }>
 > {
-  private client: GoogleGenerativeAI
+  private client: GoogleGenAI
   private apiKey: string
 
   constructor(provider: Extract<LLMProvider, { type: 'gemini' }>) {
@@ -59,7 +48,7 @@ export class GeminiProvider extends BaseLLMProvider<
       throw new Error('Gemini does not support custom base URL')
     }
 
-    this.client = new GoogleGenerativeAI(provider.apiKey ?? '')
+    this.client = new GoogleGenAI({ apiKey: provider.apiKey ?? '' })
     this.apiKey = provider.apiKey ?? ''
   }
 
@@ -85,41 +74,30 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      // NOTE: '@google/generative-ai' SDK does not support thinking/thinkingConfig yet.
-      // Passing unknown fields may cause invalid_argument errors. So we omit it for now.
-      const geminiModel = this.client.getGenerativeModel({
+      const config: any = {
+        maxOutputTokens: request.max_tokens,
+        temperature: request.temperature,
+      }
+      if ((model as any).thinking?.enabled) {
+        const budget = (model as any).thinking.thinking_budget
+        config.thinkingConfig = { thinkingBudget: budget }
+      }
+
+      const result: any = await this.client.models.generateContent({
         model: request.model,
-        generationConfig: {
-          maxOutputTokens: request.max_tokens,
-          temperature: request.temperature,
-          topP: request.top_p,
-          presencePenalty: request.presence_penalty,
-          frequencyPenalty: request.frequency_penalty,
+        contents: request.messages
+          .map((message) => GeminiProvider.parseRequestMessage(message))
+          .filter((m) => m !== null),
+        config: {
+          ...config,
+          ...(request.tools && request.tools.length > 0
+            ? { tools: request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)) }
+            : {}),
         },
-        systemInstruction: systemInstruction,
       })
 
-      const result = await geminiModel.generateContent(
-        {
-          systemInstruction: systemInstruction,
-          contents: request.messages
-            .map((message) => GeminiProvider.parseRequestMessage(message))
-            .filter((m): m is Content => m !== null),
-          tools: request.tools?.map((tool) =>
-            GeminiProvider.parseRequestTool(tool),
-          ),
-        },
-        {
-          signal: options?.signal,
-        },
-      )
-
-      const messageId = crypto.randomUUID() // Gemini does not return a message id
-      return GeminiProvider.parseNonStreamingResponse(
-        result,
-        request.model,
-        messageId,
-      )
+      const messageId = crypto.randomUUID()
+      return GeminiProvider.parseNonStreamingResponse(result, request.model, messageId)
     } catch (error) {
       const isInvalidApiKey =
         error.message?.includes('API_KEY_INVALID') ||
@@ -158,35 +136,30 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      const geminiModel = this.client.getGenerativeModel({
+      const config: any = {
+        maxOutputTokens: request.max_tokens,
+        temperature: request.temperature,
+      }
+      if ((model as any).thinking?.enabled) {
+        const budget = (model as any).thinking.thinking_budget
+        config.thinkingConfig = { thinkingBudget: budget }
+      }
+
+      const stream = await this.client.models.generateContentStream({
         model: request.model,
-        generationConfig: {
-          maxOutputTokens: request.max_tokens,
-          temperature: request.temperature,
-          topP: request.top_p,
-          presencePenalty: request.presence_penalty,
-          frequencyPenalty: request.frequency_penalty,
+        contents: request.messages
+          .map((message) => GeminiProvider.parseRequestMessage(message))
+          .filter((m) => m !== null),
+        config: {
+          ...config,
+          ...(request.tools && request.tools.length > 0
+            ? { tools: request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)) }
+            : {}),
         },
-        systemInstruction: systemInstruction,
       })
 
-      const stream = await geminiModel.generateContentStream(
-        {
-          systemInstruction: systemInstruction,
-          contents: request.messages
-            .map((message) => GeminiProvider.parseRequestMessage(message))
-            .filter((m): m is Content => m !== null),
-          tools: request.tools?.map((tool) =>
-            GeminiProvider.parseRequestTool(tool),
-          ),
-        },
-        {
-          signal: options?.signal,
-        },
-      )
-
-      const messageId = crypto.randomUUID() // Gemini does not return a message id
-      return this.streamResponseGenerator(stream, request.model, messageId)
+      const messageId = crypto.randomUUID()
+      return this.streamResponseGenerator(stream as any, request.model, messageId)
     } catch (error) {
       const isInvalidApiKey =
         error.message?.includes('API_KEY_INVALID') ||
@@ -204,22 +177,22 @@ export class GeminiProvider extends BaseLLMProvider<
   }
 
   private async *streamResponseGenerator(
-    stream: GenerateContentStreamResult,
+    stream: AsyncIterable<any>,
     model: string,
     messageId: string,
   ): AsyncIterable<LLMResponseStreaming> {
-    for await (const chunk of stream.stream) {
-      yield GeminiProvider.parseStreamingResponseChunk(chunk, model, messageId)
+    for await (const chunk of stream as any) {
+      yield GeminiProvider.parseStreamingResponseChunk(chunk as any, model, messageId)
     }
   }
 
-  static parseRequestMessage(message: RequestMessage): Content | null {
+  static parseRequestMessage(message: RequestMessage): any | null {
     switch (message.role) {
       case 'system':
         // System messages should be extracted and handled separately
         return null
       case 'user': {
-        const contentParts: Part[] = Array.isArray(message.content)
+        const contentParts: any[] = Array.isArray(message.content)
           ? message.content.map((part) => {
               switch (part.type) {
                 case 'text':
@@ -247,9 +220,9 @@ export class GeminiProvider extends BaseLLMProvider<
         }
       }
       case 'assistant': {
-        const contentParts: Part[] = [
+        const contentParts: any[] = [
           ...(message.content === '' ? [] : [{ text: message.content }]),
-          ...(message.tool_calls?.map((toolCall): FunctionCallPart => {
+          ...(message.tool_calls?.map((toolCall): any => {
             try {
               const args = JSON.parse(toolCall.arguments ?? '{}')
               return {
@@ -296,7 +269,7 @@ export class GeminiProvider extends BaseLLMProvider<
   }
 
   static parseNonStreamingResponse(
-    response: GenerateContentResult,
+    response: any,
     model: string,
     messageId: string,
   ): LLMResponseNonStreaming {
@@ -304,12 +277,11 @@ export class GeminiProvider extends BaseLLMProvider<
       id: messageId,
       choices: [
         {
-          finish_reason:
-            response.response.candidates?.[0]?.finishReason ?? null,
+          finish_reason: (response.response?.candidates?.[0]?.finishReason ?? null) as any,
           message: {
-            content: response.response.text(),
+            content: (response.text ?? response.response?.text?.()) as string,
             role: 'assistant',
-            tool_calls: response.response.functionCalls()?.map((f) => ({
+            tool_calls: (response.functionCalls ?? response.response?.functionCalls?.())?.map((f: any) => ({
               id: uuidv4(),
               type: 'function',
               function: {
@@ -323,19 +295,18 @@ export class GeminiProvider extends BaseLLMProvider<
       created: Date.now(),
       model: model,
       object: 'chat.completion',
-      usage: response.response.usageMetadata
+      usage: (response.response?.usageMetadata ?? response.usageMetadata)
         ? {
-            prompt_tokens: response.response.usageMetadata.promptTokenCount,
-            completion_tokens:
-              response.response.usageMetadata.candidatesTokenCount,
-            total_tokens: response.response.usageMetadata.totalTokenCount,
+            prompt_tokens: (response.response?.usageMetadata?.promptTokenCount ?? response.usageMetadata?.promptTokenCount) as number,
+            completion_tokens: (response.response?.usageMetadata?.candidatesTokenCount ?? response.usageMetadata?.candidatesTokenCount) as number,
+            total_tokens: (response.response?.usageMetadata?.totalTokenCount ?? response.usageMetadata?.totalTokenCount) as number,
           }
         : undefined,
     }
   }
 
   static parseStreamingResponseChunk(
-    chunk: EnhancedGenerateContentResponse,
+    chunk: any,
     model: string,
     messageId: string,
   ): LLMResponseStreaming {
@@ -343,10 +314,10 @@ export class GeminiProvider extends BaseLLMProvider<
       id: messageId,
       choices: [
         {
-          finish_reason: chunk.candidates?.[0]?.finishReason ?? null,
+          finish_reason: (chunk.candidates?.[0]?.finishReason ?? null) as any,
           delta: {
-            content: chunk.text(),
-            tool_calls: chunk.functionCalls()?.map((f, index) => ({
+            content: (typeof chunk.text === 'function' ? chunk.text() : chunk.text) ?? '',
+            tool_calls: (typeof chunk.functionCalls === 'function' ? chunk.functionCalls() : chunk.functionCalls)?.map((f: any, index: number) => ({
               index,
               id: uuidv4(),
               type: 'function',
@@ -394,23 +365,20 @@ export class GeminiProvider extends BaseLLMProvider<
     )
   }
 
-  private static parseRequestTool(tool: RequestTool): GeminiTool {
-    // Gemini does not support additionalProperties field in JSON schema, so we need to clean it
+  private static parseRequestTool(tool: RequestTool): any {
+    // Remove additionalProperties for compatibility
     const cleanedParameters = this.removeAdditionalProperties(
       tool.function.parameters,
-    ) as Record<string, unknown>
+    ) as Record<string, any>
 
     return {
       functionDeclarations: [
         {
           name: tool.function.name,
           description: tool.function.description,
-          parameters: {
-            type: SchemaType.OBJECT,
-            properties: (cleanedParameters.properties ?? {}) as Record<
-              string,
-              Schema
-            >,
+          parametersJsonSchema: {
+            type: 'object',
+            properties: cleanedParameters.properties ?? {},
           },
         },
       ],
@@ -442,10 +410,13 @@ export class GeminiProvider extends BaseLLMProvider<
     }
 
     try {
-      const response = await this.client
-        .getGenerativeModel({ model: model })
-        .embedContent(text)
-      return response.embedding.values
+      const res: any = await this.client.models.embedContent({
+        model,
+        contents: text,
+      })
+      // Support both shapes
+      const values = res.embedding?.values ?? res.embeddings?.[0]?.values
+      return values as number[]
     } catch (error) {
       if (error.status === 429) {
         throw new LLMRateLimitExceededException(

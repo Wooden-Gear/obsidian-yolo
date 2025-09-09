@@ -55,8 +55,8 @@ function EditChatModelModalComponent({
 
   // Reasoning UI states
   const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => {
-    if ((model.providerType === 'openai' || model.providerType === 'openai-compatible') && (model as any).reasoning?.enabled) return 'openai'
-    if (model.providerType === 'gemini' && (model as any).thinking?.enabled) return 'gemini'
+    if ((model as any).reasoning?.enabled) return 'openai'
+    if ((model as any).thinking?.enabled) return 'gemini'
     return 'none'
   })
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>(
