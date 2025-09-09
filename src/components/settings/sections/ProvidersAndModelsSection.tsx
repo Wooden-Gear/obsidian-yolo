@@ -100,18 +100,11 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       return
     }
 
-    const message = `Are you sure you want to delete model "${modelId}"?`
-    new ConfirmModal(app, {
-      title: 'Delete Chat Model',
-      message: message,
-      ctaText: 'Delete',
-      onConfirm: async () => {
-        await setSettings({
-          ...settings,
-          chatModels: settings.chatModels.filter((v) => v.id !== modelId),
-        })
-      },
-    }).open()
+    // Delete immediately without confirmation
+    await setSettings({
+      ...settings,
+      chatModels: settings.chatModels.filter((v) => v.id !== modelId),
+    })
   }
 
   const handleDeleteEmbeddingModel = async (modelId: string) => {
