@@ -234,6 +234,25 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 getMentionableKey(serializeMentionable(m)) ===
                 displayedMentionableKey
               }
+              onToggleVisibility={() => {
+                // Toggle current-file visibility locally without changing global settings
+                if (m.type !== 'current-file') return
+                const activeFile = app.workspace.getActiveFile() ?? null
+                const targetKey = getMentionableKey(serializeMentionable(m))
+                setMentionables(
+                  mentionables.map((item) => {
+                    const key = getMentionableKey(serializeMentionable(item))
+                    if (key !== targetKey) return item
+                    if (item.type !== 'current-file') return item
+                    // if currently visible (file not null), hide by setting file to null
+                    // if currently hidden (file null), restore with current active file
+                    return {
+                      type: 'current-file',
+                      file: item.file ? null : activeFile,
+                    }
+                  }),
+                )
+              }}
             />
           ))}
         </div>

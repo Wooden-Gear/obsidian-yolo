@@ -46,7 +46,7 @@ export const en: TranslationKeys = {
       applyModelDesc: 'Choose the model you want to use for apply feature.',
       systemPrompt: 'System prompt',
       systemPromptDesc: 'This prompt will be added to the beginning of every chat.',
-      includeCurrentFile: 'Include current file',
+      includeCurrentFile: 'Auto-include current page',
       includeCurrentFileDesc: 'Automatically include the content of your current file in chats.',
       enableBruteMode: 'Enable Brute Mode',
       enableBruteModeDesc: 'Show chat mode switch in chat view to include entire folders verbatim (may exceed token limits).',

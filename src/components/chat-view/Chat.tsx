@@ -519,28 +519,38 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
     if (!focusedMessageId) return
     if (inputMessage.id === focusedMessageId) {
-      setInputMessage((prevInputMessage) => ({
-        ...prevInputMessage,
-        mentionables: [
-          mentionable,
-          ...prevInputMessage.mentionables.filter(
-            (m) => m.type !== 'current-file',
-          ),
-        ],
-      }))
+      setInputMessage((prevInputMessage) => {
+        const existing = prevInputMessage.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+        // Preserve temporary hidden state (file === null)
+        const nextMentionable: MentionableCurrentFile = existing && existing.file === null
+          ? { type: 'current-file', file: null }
+          : mentionable
+        return {
+          ...prevInputMessage,
+          mentionables: [
+            nextMentionable,
+            ...prevInputMessage.mentionables.filter((m) => m.type !== 'current-file'),
+          ],
+        }
+      })
     } else {
       setChatMessages((prevChatHistory) =>
-        prevChatHistory.map((message) =>
-          message.id === focusedMessageId && message.role === 'user'
-            ? {
-                ...message,
-                mentionables: [
-                  mentionable,
-                  ...message.mentionables.filter((m) => m.type !== 'current-file'),
-                ],
-              }
-            : message,
-        ),
+        prevChatHistory.map((message) => {
+          if (message.id === focusedMessageId && message.role === 'user') {
+            const existing = message.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+            const nextMentionable: MentionableCurrentFile = existing && existing.file === null
+              ? { type: 'current-file', file: null }
+              : mentionable
+            return {
+              ...message,
+              mentionables: [
+                nextMentionable,
+                ...message.mentionables.filter((m) => m.type !== 'current-file'),
+              ],
+            }
+          }
+          return message
+        }),
       )
     }
   }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent])

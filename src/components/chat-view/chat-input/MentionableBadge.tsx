@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Eye, EyeOff, X } from 'lucide-react'
 import { PropsWithChildren, useCallback } from 'react'
 
-import { useSettings } from '../../../contexts/settings-context'
+import { useApp } from '../../../contexts/app-context'
 import {
   Mentionable,
   MentionableBlock,
@@ -100,7 +100,6 @@ function FolderBadge({
 }
 
 function VaultBadge({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   mentionable,
   onDelete,
   onClick,
@@ -132,31 +131,26 @@ function CurrentFileBadge({
   onDelete,
   onClick,
   isFocused,
+  onToggleVisibility,
 }: {
   mentionable: MentionableCurrentFile
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  onToggleVisibility: () => void
 }) {
-  const { settings, setSettings } = useSettings()
+  const app = useApp()
 
   const handleCurrentFileToggle = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      setSettings({
-        ...settings,
-        chatOptions: {
-          ...settings.chatOptions,
-          includeCurrentFileContent:
-            !settings.chatOptions.includeCurrentFileContent,
-        },
-      })
+      onToggleVisibility()
     },
-    [settings, setSettings],
+    [onToggleVisibility],
   )
 
   const Icon = getMentionableIcon(mentionable)
-  return mentionable.file ? (
+  return (
     <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
@@ -167,18 +161,16 @@ function CurrentFileBadge({
         )}
         <span
           className={clsx(
-            !settings.chatOptions.includeCurrentFileContent &&
-              'smtcmp-excluded-content',
+            !mentionable.file && 'smtcmp-excluded-content',
           )}
         >
-          {mentionable.file.name}
+          {mentionable.file?.name ?? app.workspace.getActiveFile()?.name ?? 'Current File'}
         </span>
       </div>
       <div
         className={clsx(
           'smtcmp-chat-user-input-file-badge-name-suffix',
-          !settings.chatOptions.includeCurrentFileContent &&
-            'smtcmp-excluded-content',
+          !mentionable.file && 'smtcmp-excluded-content',
         )}
       >
         {' (Current File)'}
@@ -187,14 +179,14 @@ function CurrentFileBadge({
         className="smtcmp-chat-user-input-file-badge-eye"
         onClick={handleCurrentFileToggle}
       >
-        {settings.chatOptions.includeCurrentFileContent ? (
+        {mentionable.file ? (
           <Eye size={12} />
         ) : (
           <EyeOff size={12} />
         )}
       </div>
     </BadgeBase>
-  ) : null
+  )
 }
 
 function BlockBadge({
@@ -286,11 +278,13 @@ export default function MentionableBadge({
   onDelete,
   onClick,
   isFocused = false,
+  onToggleVisibility,
 }: {
   mentionable: Mentionable
   onDelete: () => void
   onClick: () => void
   isFocused?: boolean
+  onToggleVisibility?: () => void
 }) {
   switch (mentionable.type) {
     case 'file':
@@ -327,6 +321,7 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
+          onToggleVisibility={() => onToggleVisibility && onToggleVisibility()}
         />
       )
     case 'block':

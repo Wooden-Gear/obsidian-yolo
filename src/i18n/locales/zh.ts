@@ -46,7 +46,7 @@ export const zh: TranslationKeys = {
       applyModelDesc: '选择你想用于应用功能的模型。',
       systemPrompt: '系统提示',
       systemPromptDesc: '此提示将添加到每次聊天的开始。',
-      includeCurrentFile: '包含当前文件',
+      includeCurrentFile: '自动添加当前页面文件',
       includeCurrentFileDesc: '自动在聊天中包含当前文件的内容。',
       enableBruteMode: '暴力模式',
       enableBruteModeDesc: '在聊天页右上显示“对话模式”开关，可选择直接拼接整个文件夹（可能导致超长上下文与高额费用）。',
