@@ -2,6 +2,7 @@ import { App, Notice } from 'obsidian'
 import { useEffect, useState } from 'react'
 
 import { DEFAULT_PROVIDERS } from '../../../constants'
+import { GoogleGenAI } from '@google/genai'
 import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
@@ -64,48 +65,59 @@ function AddChatModelModalComponent({
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
-      // Only attempt for providers that follow OpenAI-compatible /v1/models
-      const isOpenAIStyle =
-        selectedProvider.type === 'openai' ||
-        selectedProvider.type === 'openai-compatible'
-
-      if (!isOpenAIStyle) return
-
       setLoadingModels(true)
       setLoadError(null)
       try {
-        const base = ((): string => {
-          // default OpenAI base when not provided
-          const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
-          if (cleaned && cleaned.length > 0) return cleaned
-          if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
-          return '' // no base => skip
-        })()
+        if (selectedProvider.type === 'openai' || selectedProvider.type === 'openai-compatible') {
+          const base = ((): string => {
+            // default OpenAI base when not provided
+            const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
+            if (cleaned && cleaned.length > 0) return cleaned
+            if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
+            return '' // no base => skip
+          })()
 
-        if (!base) {
-          setLoadingModels(false)
+          if (base) {
+            const url = `${base}/models`
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: {
+                ...(selectedProvider.apiKey
+                  ? { Authorization: `Bearer ${selectedProvider.apiKey}` }
+                  : {}),
+              },
+            })
+            if (!res.ok) {
+              throw new Error(`Failed to fetch models: ${res.status}`)
+            }
+            const json = await res.json()
+            const data: string[] = Array.isArray(json?.data)
+              ? json.data
+                  .map((v: any) => (typeof v?.id === 'string' ? v.id : null))
+                  .filter((v: string | null): v is string => !!v)
+              : []
+            setAvailableModels(data)
+            return
+          }
+        }
+
+        if (selectedProvider.type === 'gemini') {
+          const ai = new GoogleGenAI({ apiKey: selectedProvider.apiKey ?? '' })
+          const pager = await ai.models.list()
+          const names: string[] = []
+          for await (const m of pager as any) {
+            const raw = (m?.name || m?.model || '') as string
+            if (!raw) continue
+            // Normalize like "models/gemini-2.5-pro" -> "gemini-2.5-pro"
+            const norm = raw.includes('/') ? raw.split('/').pop()! : raw
+            // Only keep gemini text/chat models
+            if (norm.toLowerCase().includes('gemini')) names.push(norm)
+          }
+          // De-dup and sort for UX
+          const unique = Array.from(new Set(names)).sort()
+          setAvailableModels(unique)
           return
         }
-
-        const url = `${base}/models`
-        const res = await fetch(url, {
-          method: 'GET',
-          headers: {
-            ...(selectedProvider.apiKey
-              ? { Authorization: `Bearer ${selectedProvider.apiKey}` }
-              : {}),
-          },
-        })
-        if (!res.ok) {
-          throw new Error(`Failed to fetch models: ${res.status}`)
-        }
-        const json = await res.json()
-        const data: string[] = Array.isArray(json?.data)
-          ? json.data
-              .map((v: any) => (typeof v?.id === 'string' ? v.id : null))
-              .filter((v: string | null): v is string => !!v)
-          : []
-        setAvailableModels(data)
       } catch (err: any) {
         console.error('Failed to auto fetch models', err)
         setLoadError(err?.message ?? 'unknown error')

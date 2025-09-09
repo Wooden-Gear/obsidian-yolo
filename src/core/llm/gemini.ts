@@ -81,6 +81,9 @@ export class GeminiProvider extends BaseLLMProvider<
       if ((model as any).thinking?.enabled) {
         const budget = (model as any).thinking.thinking_budget
         config.thinkingConfig = { thinkingBudget: budget }
+        if (/2\.5/.test(request.model)) {
+          ;(config.thinkingConfig as any).includeThoughts = true
+        }
       }
 
       const result: any = await this.client.models.generateContent({
@@ -143,6 +146,9 @@ export class GeminiProvider extends BaseLLMProvider<
       if ((model as any).thinking?.enabled) {
         const budget = (model as any).thinking.thinking_budget
         config.thinkingConfig = { thinkingBudget: budget }
+        if (/2\.5/.test(request.model)) {
+          ;(config.thinkingConfig as any).includeThoughts = true
+        }
       }
 
       const stream = await this.client.models.generateContentStream({
@@ -171,7 +177,33 @@ export class GeminiProvider extends BaseLLMProvider<
           error as Error,
         )
       }
-
+      // Fallback: some networks/proxies can break streaming ("protocol error: unexpected EOF").
+      // Try non-streaming once and adapt it into a single-chunk async iterable.
+      const shouldFallback =
+        /protocol error|unexpected EOF/i.test(String((error as any)?.message ?? ''))
+      if (shouldFallback) {
+        const nonStream = await this.generateResponse(model, request as any, options)
+        async function* singleChunk(resp: LLMResponseNonStreaming): AsyncIterable<LLMResponseStreaming> {
+          yield {
+            id: resp.id,
+            created: resp.created,
+            model: resp.model,
+            object: 'chat.completion.chunk',
+            choices: [
+              {
+                finish_reason: resp.choices[0]?.finish_reason ?? null,
+                delta: {
+                  content: resp.choices[0]?.message?.content ?? '',
+                  reasoning: resp.choices[0]?.message?.reasoning ?? undefined,
+                  tool_calls: undefined,
+                },
+              },
+            ],
+            usage: resp.usage,
+          }
+        }
+        return singleChunk(nonStream)
+      }
       throw error
     }
   }
@@ -273,6 +305,17 @@ export class GeminiProvider extends BaseLLMProvider<
     model: string,
     messageId: string,
   ): LLMResponseNonStreaming {
+    // Extract thought summaries if present
+    let reasoningText: string | undefined
+    try {
+      const parts = response?.response?.candidates?.[0]?.content?.parts ?? []
+      if (Array.isArray(parts) && parts.length > 0) {
+        const thoughtPieces = parts
+          .filter((p: any) => p?.thought && typeof p?.text === 'string')
+          .map((p: any) => p.text)
+        reasoningText = thoughtPieces.length > 0 ? thoughtPieces.join('') : undefined
+      }
+    } catch {}
     return {
       id: messageId,
       choices: [
@@ -280,6 +323,7 @@ export class GeminiProvider extends BaseLLMProvider<
           finish_reason: (response.response?.candidates?.[0]?.finishReason ?? null) as any,
           message: {
             content: (response.text ?? response.response?.text?.()) as string,
+            reasoning: reasoningText ?? null,
             role: 'assistant',
             tool_calls: (response.functionCalls ?? response.response?.functionCalls?.())?.map((f: any) => ({
               id: uuidv4(),
@@ -310,13 +354,27 @@ export class GeminiProvider extends BaseLLMProvider<
     model: string,
     messageId: string,
   ): LLMResponseStreaming {
+    // Separate answer text and thought summaries if present in parts
+    let contentPiece = ''
+    let reasoningPiece = ''
+    try {
+      const parts = chunk?.candidates?.[0]?.content?.parts ?? []
+      if (Array.isArray(parts) && parts.length > 0) {
+        for (const p of parts) {
+          if (!p?.text) continue
+          if (p?.thought) reasoningPiece += p.text
+          else contentPiece += p.text
+        }
+      }
+    } catch {}
     return {
       id: messageId,
       choices: [
         {
           finish_reason: (chunk.candidates?.[0]?.finishReason ?? null) as any,
           delta: {
-            content: (typeof chunk.text === 'function' ? chunk.text() : chunk.text) ?? '',
+            content: ((contentPiece || (typeof chunk.text === 'function' ? chunk.text() : chunk.text)) ?? ''),
+            reasoning: reasoningPiece || undefined,
             tool_calls: (typeof chunk.functionCalls === 'function' ? chunk.functionCalls() : chunk.functionCalls)?.map((f: any, index: number) => ({
               index,
               id: uuidv4(),

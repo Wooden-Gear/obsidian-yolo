@@ -51,9 +51,16 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest = {
+    const formattedRequest: any = {
       ...request,
       messages: formatMessages(request.messages),
+    }
+    // Inject Gemini thinking config for OpenAI-compatible gateways if user selected Gemini reasoning
+    if ((model as any).thinking?.enabled) {
+      const budget = (model as any).thinking.thinking_budget
+      // Use both snake_case and camelCase to maximize compatibility
+      formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
+      formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
     }
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
@@ -73,9 +80,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest = {
+    const formattedRequest: any = {
       ...request,
       messages: formatMessages(request.messages),
+    }
+    if ((model as any).thinking?.enabled) {
+      const budget = (model as any).thinking.thinking_budget
+      formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
+      formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
     }
     return this.adapter.streamResponse(this.client, formattedRequest, options)
   }
