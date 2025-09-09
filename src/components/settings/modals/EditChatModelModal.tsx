@@ -7,6 +7,7 @@ import { useLanguage } from '../../../contexts/language-context'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
 import { generateModelId } from '../../../utils/model-id-utils'
 
@@ -52,6 +53,19 @@ function EditChatModelModalComponent({
     name: model.name ?? '',
   })
 
+  // Reasoning UI states
+  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => {
+    if ((model.providerType === 'openai' || model.providerType === 'openai-compatible') && (model as any).reasoning?.enabled) return 'openai'
+    if (model.providerType === 'gemini' && (model as any).thinking?.enabled) return 'gemini'
+    return 'none'
+  })
+  const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>(
+    ((model as any).reasoning?.reasoning_effort as any) || 'medium',
+  )
+  const [geminiBudget, setGeminiBudget] = useState<string>(
+    `${(model as any).thinking?.thinking_budget ?? 2048}`,
+  )
+
   const handleSubmit = async () => {
     if (!formData.model.trim()) {
       new Notice(t('common.error'))
@@ -77,13 +91,33 @@ function EditChatModelModalComponent({
         return
       }
 
-      // Update the model
-      chatModels[modelIndex] = {
+      // Compose reasoning/thinking fields based on selection and provider
+      const updatedModel = {
         ...chatModels[modelIndex],
         id: newInternalId,
         model: formData.model,
         name: formData.name && formData.name.trim().length > 0 ? formData.name : undefined,
+      } as any
+
+      // Apply according to selected reasoningType only (not limited by providerType)
+      if (reasoningType === 'openai') {
+        updatedModel.reasoning = { enabled: true, reasoning_effort: openaiEffort }
+        delete updatedModel.thinking
+      } else if (reasoningType === 'gemini') {
+        const budget = parseInt(geminiBudget, 10)
+        if (Number.isNaN(budget)) {
+          new Notice(t('common.error'))
+          return
+        }
+        updatedModel.thinking = { enabled: true, thinking_budget: budget }
+        delete updatedModel.reasoning
+      } else {
+        delete updatedModel.reasoning
+        delete updatedModel.thinking
       }
+
+      // Update the model
+      chatModels[modelIndex] = updatedModel
 
       // Update references if current selection points to the old id
       const nextSettings = { ...settings, chatModels }
@@ -119,6 +153,47 @@ function EditChatModelModalComponent({
           }
         />
       </ObsidianSetting>
+
+      {/* Reasoning type */}
+      <ObsidianSetting name={t('settings.models.reasoningType')}>
+        <ObsidianDropdown
+          value={reasoningType}
+          options={{
+            none: t('settings.models.reasoningTypeNone'),
+            openai: t('settings.models.reasoningTypeOpenAI'),
+            gemini: t('settings.models.reasoningTypeGemini'),
+          }}
+          onChange={(v: string) => setReasoningType(v as any)}
+        />
+      </ObsidianSetting>
+
+      {/* OpenAI reasoning options */}
+      {(reasoningType === 'openai') && (
+        <ObsidianSetting
+          name={t('settings.models.openaiReasoningEffort')}
+          desc={t('settings.models.openaiReasoningEffortDesc')}
+        >
+          <ObsidianDropdown
+            value={openaiEffort}
+            options={{ minimal: 'minimal', low: 'low', medium: 'medium', high: 'high' }}
+            onChange={(v: string) => setOpenaiEffort(v as any)}
+          />
+        </ObsidianSetting>
+      )}
+
+      {/* Gemini thinking options */}
+      {(reasoningType === 'gemini') && (
+        <ObsidianSetting
+          name={t('settings.models.geminiThinkingBudget')}
+          desc={t('settings.models.geminiThinkingBudgetDesc')}
+        >
+          <ObsidianTextInput
+            value={geminiBudget}
+            placeholder={t('settings.models.geminiThinkingBudgetPlaceholder')}
+            onChange={(v: string) => setGeminiBudget(v)}
+          />
+        </ObsidianSetting>
+      )}
 
       <ObsidianSetting name={t('settings.models.modelName')}>
         <ObsidianTextInput

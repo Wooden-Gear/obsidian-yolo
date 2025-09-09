@@ -54,6 +54,14 @@ function AddChatModelModalComponent({
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [loadingModels, setLoadingModels] = useState<boolean>(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Reasoning type selection: none | openai | gemini
+  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => {
+    if (initialProviderType === 'openai' || initialProviderType === 'openai-compatible') return 'none'
+    if (initialProviderType === 'gemini') return 'none'
+    return 'none'
+  })
+  const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
+  const [geminiBudget, setGeminiBudget] = useState<string>('2048')
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -121,8 +129,26 @@ function AddChatModelModalComponent({
 
     // Generate internal unique id with provider prefix from API model id
     const modelIdWithPrefix = generateModelId(formData.providerId, formData.model)
+    // Compose reasoning/thinking fields based on selection and provider
+    const isOpenAIProvider = formData.providerType === 'openai' || formData.providerType === 'openai-compatible'
+    const isGeminiProvider = formData.providerType === 'gemini'
+
+    const reasoningPatch: Partial<ChatModel> = {}
+    if (isOpenAIProvider && reasoningType === 'openai') {
+      ;(reasoningPatch as any).reasoning = { enabled: true, reasoning_effort: openaiEffort }
+    }
+    if (isGeminiProvider && reasoningType === 'gemini') {
+      const budget = parseInt(geminiBudget, 10)
+      if (Number.isNaN(budget)) {
+        new Notice(t('common.error'))
+        return
+      }
+      ;(reasoningPatch as any).thinking = { enabled: true, thinking_budget: budget }
+    }
+
     const modelDataWithPrefix: ChatModel = {
       ...formData,
+      ...(reasoningPatch as any),
       id: modelIdWithPrefix,
       name: (formData.name && formData.name.trim().length > 0)
         ? formData.name
@@ -172,6 +198,47 @@ function AddChatModelModalComponent({
           }
         />
       </ObsidianSetting>
+
+      {/* Reasoning type */}
+      <ObsidianSetting name={t('settings.models.reasoningType')}>
+        <ObsidianDropdown
+          value={reasoningType}
+          options={{
+            none: t('settings.models.reasoningTypeNone'),
+            openai: t('settings.models.reasoningTypeOpenAI'),
+            gemini: t('settings.models.reasoningTypeGemini'),
+          }}
+          onChange={(v: string) => setReasoningType(v as any)}
+        />
+      </ObsidianSetting>
+
+      {/* OpenAI reasoning options */}
+      {(reasoningType === 'openai') && (
+        <ObsidianSetting
+          name={t('settings.models.openaiReasoningEffort')}
+          desc={t('settings.models.openaiReasoningEffortDesc')}
+        >
+          <ObsidianDropdown
+            value={openaiEffort}
+            options={{ minimal: 'minimal', low: 'low', medium: 'medium', high: 'high' }}
+            onChange={(v: string) => setOpenaiEffort(v as any)}
+          />
+        </ObsidianSetting>
+      )}
+
+      {/* Gemini thinking options */}
+      {(reasoningType === 'gemini') && (
+        <ObsidianSetting
+          name={t('settings.models.geminiThinkingBudget')}
+          desc={t('settings.models.geminiThinkingBudgetDesc')}
+        >
+          <ObsidianTextInput
+            value={geminiBudget}
+            placeholder={t('settings.models.geminiThinkingBudgetPlaceholder')}
+            onChange={(v: string) => setGeminiBudget(v)}
+          />
+        </ObsidianSetting>
+      )}
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 

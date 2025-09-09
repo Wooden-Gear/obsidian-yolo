@@ -134,6 +134,16 @@ export interface TranslationKeys {
       // auto-fetched models helper labels
       availableModelsAuto?: string
       fetchModelsFailed?: string
+      // reasoning UI
+      reasoningType?: string
+      reasoningTypeNone?: string
+      reasoningTypeOpenAI?: string
+      reasoningTypeGemini?: string
+      openaiReasoningEffort?: string
+      openaiReasoningEffortDesc?: string
+      geminiThinkingBudget?: string
+      geminiThinkingBudgetDesc?: string
+      geminiThinkingBudgetPlaceholder?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string

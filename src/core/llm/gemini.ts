@@ -85,7 +85,9 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      const model = this.client.getGenerativeModel({
+      // NOTE: '@google/generative-ai' SDK does not support thinking/thinkingConfig yet.
+      // Passing unknown fields may cause invalid_argument errors. So we omit it for now.
+      const geminiModel = this.client.getGenerativeModel({
         model: request.model,
         generationConfig: {
           maxOutputTokens: request.max_tokens,
@@ -97,7 +99,7 @@ export class GeminiProvider extends BaseLLMProvider<
         systemInstruction: systemInstruction,
       })
 
-      const result = await model.generateContent(
+      const result = await geminiModel.generateContent(
         {
           systemInstruction: systemInstruction,
           contents: request.messages
@@ -156,7 +158,7 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      const model = this.client.getGenerativeModel({
+      const geminiModel = this.client.getGenerativeModel({
         model: request.model,
         generationConfig: {
           maxOutputTokens: request.max_tokens,
@@ -168,7 +170,7 @@ export class GeminiProvider extends BaseLLMProvider<
         systemInstruction: systemInstruction,
       })
 
-      const stream = await model.generateContentStream(
+      const stream = await geminiModel.generateContentStream(
         {
           systemInstruction: systemInstruction,
           contents: request.messages

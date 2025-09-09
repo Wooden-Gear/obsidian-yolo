@@ -51,6 +51,13 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
   z.object({
     providerType: z.literal('gemini'),
     ...baseChatModelSchema.shape,
+    thinking: z
+      .object({
+        enabled: z.boolean(),
+        // Google Gemini thinking tokens budget. 0=off (Flash/Flash-Lite), -1=dynamic.
+        thinking_budget: z.number(),
+      })
+      .optional(),
   }),
   z.object({
     providerType: z.literal('groq'),
