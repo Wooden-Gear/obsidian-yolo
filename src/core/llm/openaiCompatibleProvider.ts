@@ -62,6 +62,16 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
       formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
     }
+    // Inject OpenAI reasoning effort for compatible gateways if user enabled OpenAI reasoning
+    if ((model as any).reasoning?.enabled) {
+      const effort = (model as any).reasoning.reasoning_effort
+      if (effort) {
+        // Pass the flat field (widely supported by OpenAI-compatible proxies)
+        formattedRequest.reasoning_effort = effort
+        // Also add a nested object for gateways that prefer `reasoning: { effort }`
+        formattedRequest.reasoning = { effort }
+      }
+    }
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
 
@@ -88,6 +98,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       const budget = (model as any).thinking.thinking_budget
       formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
       formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
+    }
+    if ((model as any).reasoning?.enabled) {
+      const effort = (model as any).reasoning.reasoning_effort
+      if (effort) {
+        formattedRequest.reasoning_effort = effort
+        formattedRequest.reasoning = { effort }
+      }
     }
     return this.adapter.streamResponse(this.client, formattedRequest, options)
   }
