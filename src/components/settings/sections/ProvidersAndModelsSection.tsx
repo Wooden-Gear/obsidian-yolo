@@ -113,33 +113,23 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       return
     }
 
+    // Delete immediately without confirmation
     const vectorManager = (await plugin.getDbManager()).getVectorManager()
     const embeddingStats = await vectorManager.getEmbeddingStats()
     const embeddingStat = embeddingStats.find((v) => v.model === modelId)
     const rowCount = embeddingStat?.rowCount || 0
 
-    const message = 
-      `Are you sure you want to delete embedding model "${modelId}"?\n\n` +
-      `This will also delete ${rowCount} embeddings generated using this model.`
-
-    new ConfirmModal(app, {
-      title: 'Delete Embedding Model',
-      message: message,
-      ctaText: 'Delete',
-      onConfirm: async () => {
-        if (rowCount > 0) {
-          const embeddingModelClient = getEmbeddingModelClient({
-            settings,
-            embeddingModelId: modelId,
-          })
-          await vectorManager.clearAllVectors(embeddingModelClient)
-        }
-        await setSettings({
-          ...settings,
-          embeddingModels: settings.embeddingModels.filter((v) => v.id !== modelId),
-        })
-      },
-    }).open()
+    if (rowCount > 0) {
+      const embeddingModelClient = getEmbeddingModelClient({
+        settings,
+        embeddingModelId: modelId,
+      })
+      await vectorManager.clearAllVectors(embeddingModelClient)
+    }
+    await setSettings({
+      ...settings,
+      embeddingModels: settings.embeddingModels.filter((v) => v.id !== modelId),
+    })
   }
 
   const handleToggleEnableChatModel = async (modelId: string, value: boolean) => {
