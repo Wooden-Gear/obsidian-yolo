@@ -68,36 +68,87 @@ function AddChatModelModalComponent({
       setLoadingModels(true)
       setLoadError(null)
       try {
-        if (selectedProvider.type === 'openai' || selectedProvider.type === 'openai-compatible') {
+        const isOpenAIStyle = (
+          selectedProvider.type === 'openai' ||
+          selectedProvider.type === 'openai-compatible' ||
+          selectedProvider.type === 'openrouter' ||
+          selectedProvider.type === 'groq' ||
+          selectedProvider.type === 'mistral' ||
+          selectedProvider.type === 'perplexity' ||
+          selectedProvider.type === 'deepseek'
+        )
+
+        if (isOpenAIStyle) {
           const base = ((): string => {
             // default OpenAI base when not provided
             const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
             if (cleaned && cleaned.length > 0) return cleaned
             if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
+            if (selectedProvider.type === 'openrouter') return 'https://openrouter.ai/api/v1'
             return '' // no base => skip
           })()
 
           if (base) {
-            const url = `${base}/models`
-            const res = await fetch(url, {
-              method: 'GET',
-              headers: {
-                ...(selectedProvider.apiKey
-                  ? { Authorization: `Bearer ${selectedProvider.apiKey}` }
-                  : {}),
-              },
-            })
-            if (!res.ok) {
-              throw new Error(`Failed to fetch models: ${res.status}`)
+            const baseNorm = base.replace(/\/+$/, '')
+            const urlCandidates: string[] = []
+            if (/\/v1$/.test(baseNorm)) {
+              // Try with v1 first, then without v1
+              urlCandidates.push(`${baseNorm}/models`)
+              urlCandidates.push(`${baseNorm.replace(/\/v1$/, '')}/models`)
+            } else {
+              // Try without v1 first, then with v1
+              urlCandidates.push(`${baseNorm}/models`)
+              urlCandidates.push(`${baseNorm}/v1/models`)
             }
-            const json = await res.json()
-            const data: string[] = Array.isArray(json?.data)
-              ? json.data
-                  .map((v: any) => (typeof v?.id === 'string' ? v.id : null))
-                  .filter((v: string | null): v is string => !!v)
-              : []
-            setAvailableModels(data)
-            return
+
+            let fetched = false
+            let lastErr: any = null
+            for (const url of urlCandidates) {
+              try {
+                const res = await fetch(url, {
+                  method: 'GET',
+                  headers: {
+                    ...(selectedProvider.apiKey
+                      ? { Authorization: `Bearer ${selectedProvider.apiKey}` }
+                      : {}),
+                    Accept: 'application/json',
+                  },
+                })
+                if (!res.ok) {
+                  lastErr = new Error(`Failed to fetch models: ${res.status}`)
+                  continue
+                }
+                const json = await res.json()
+                // Robust extraction: support data[], models[], or array root; prefer id, fallback to name/model
+                const collectFrom = (arr: any[]): string[] =>
+                  arr
+                    .map((v: any) =>
+                      typeof v === 'string'
+                        ? v
+                        : (v?.id as string) || (v?.name as string) || (v?.model as string) || null,
+                    )
+                    .filter((v: string | null): v is string => !!v)
+
+                const buckets: string[] = []
+                if (Array.isArray(json?.data)) buckets.push(...collectFrom(json.data))
+                if (Array.isArray(json?.models)) buckets.push(...collectFrom(json.models))
+                if (Array.isArray(json)) buckets.push(...collectFrom(json))
+
+                if (buckets.length === 0) {
+                  lastErr = new Error('Empty models list in response')
+                  continue
+                }
+                const unique = Array.from(new Set(buckets)).sort()
+                setAvailableModels(unique)
+                fetched = true
+                break
+              } catch (e) {
+                lastErr = e
+                continue
+              }
+            }
+            if (fetched) return
+            throw lastErr ?? new Error('Failed to fetch models from all endpoints')
           }
         }
 
