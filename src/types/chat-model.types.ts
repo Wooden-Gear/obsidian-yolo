@@ -18,6 +18,8 @@ const baseChatModelSchema = z.object({
       required_error: 'model is required',
     })
     .min(1, 'model is required'),
+  // Optional display name for UI. When absent, UI should fallback to showing `model`.
+  name: z.string().optional(),
   promptLevel: z
     .nativeEnum(PromptLevel)
     .default(PromptLevel.Default)

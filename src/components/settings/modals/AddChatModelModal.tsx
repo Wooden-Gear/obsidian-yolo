@@ -47,6 +47,7 @@ function AddChatModelModalComponent({
     providerType: initialProviderType,
     id: '',
     model: '',
+    name: undefined,
   })
 
   // Auto-fetch available models via OpenAI-compatible GET /v1/models
@@ -112,11 +113,20 @@ function AddChatModelModalComponent({
   }, [selectedProvider?.id])
 
   const handleSubmit = async () => {
-    // Generate model ID with provider prefix
-    const modelIdWithPrefix = generateModelId(formData.providerId, formData.id)
-    const modelDataWithPrefix = {
+    // Validate required API model id
+    if (!formData.model || formData.model.trim().length === 0) {
+      new Notice(t('common.error'))
+      return
+    }
+
+    // Generate internal unique id with provider prefix from API model id
+    const modelIdWithPrefix = generateModelId(formData.providerId, formData.model)
+    const modelDataWithPrefix: ChatModel = {
       ...formData,
       id: modelIdWithPrefix,
+      name: (formData.name && formData.name.trim().length > 0)
+        ? formData.name
+        : formData.model,
     }
 
     if (plugin.settings.chatModels.some((p) => p.id === modelIdWithPrefix)) {
@@ -155,22 +165,22 @@ function AddChatModelModalComponent({
         required
       >
         <ObsidianTextInput
-          value={formData.id}
+          value={formData.model}
           placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, id: value }))
+            setFormData((prev) => ({ ...prev, model: value }))
           }
         />
       </ObsidianSetting>
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 
-      <ObsidianSetting name={t('settings.models.modelName')} required>
+      <ObsidianSetting name={t('settings.models.modelName')}>
         <ObsidianTextInput
-          value={formData.model}
+          value={formData.name ?? ''}
           placeholder={t('settings.models.modelNamePlaceholder')}
           onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, model: value }))
+            setFormData((prev) => ({ ...prev, name: value }))
           }
         />
       </ObsidianSetting>
@@ -186,8 +196,12 @@ function AddChatModelModalComponent({
             availableModels.map((m) => [m, m])
           )}
           onChange={(value: string) => {
-            // When a model is selected, fill both ID and model name
-            setFormData((prev) => ({ ...prev, id: value, model: value }))
+            // When a model is selected, set API model id; if display name empty, prefill with the same
+            setFormData((prev) => ({
+              ...prev,
+              model: value,
+              name: (prev.name && prev.name.trim().length > 0) ? prev.name : value,
+            }))
           }}
           disabled={loadingModels || availableModels.length === 0}
         />

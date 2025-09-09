@@ -272,7 +272,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         <thead>
                           <tr>
                             <th>Model ID</th>
-                            <th>Model Name</th>
+                            <th>Model (calling ID)</th>
                             <th>Enable</th>
                             <th>Actions</th>
                           </tr>
@@ -281,7 +281,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                           {chatModels.map((model) => (
                             <tr key={model.id}>
                               <td>{model.id}</td>
-                              <td>{model.model}</td>
+                              <td>{model.model || model.name || model.id}</td>
                               <td>
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}

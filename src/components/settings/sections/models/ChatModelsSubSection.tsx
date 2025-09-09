@@ -96,7 +96,7 @@ export function ChatModelsSubSection({
             <tr>
               <th>ID</th>
               <th>Provider ID</th>
-              <th>Model</th>
+              <th>Model (calling ID)</th>
               <th>Enable</th>
               <th>Actions</th>
             </tr>
@@ -106,7 +106,7 @@ export function ChatModelsSubSection({
               <tr key={chatModel.id}>
                 <td>{chatModel.id}</td>
                 <td>{chatModel.providerId}</td>
-                <td>{chatModel.model}</td>
+                <td>{chatModel.model || chatModel.name || chatModel.id}</td>
                 <td>
                   <ObsidianToggle
                     value={isEnabled(chatModel.enable)}

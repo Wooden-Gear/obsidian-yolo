@@ -8,6 +8,7 @@ import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
+import { generateModelId } from '../../../utils/model-id-utils'
 
 interface EditChatModelModalComponentProps {
   plugin: SmartComposerPlugin
@@ -44,15 +45,15 @@ function EditChatModelModalComponent({
     }
   }, [t])
   const [formData, setFormData] = useState<{
-    id: string
     model: string
+    name: string
   }>({
-    id: model.id,
     model: model.model,
+    name: model.name ?? '',
   })
 
   const handleSubmit = async () => {
-    if (!formData.id.trim() || !formData.model.trim()) {
+    if (!formData.model.trim()) {
       new Notice(t('common.error'))
       return
     }
@@ -67,8 +68,11 @@ function EditChatModelModalComponent({
         return
       }
 
-      // Check if new ID already exists (and it's not the current model)
-      if (formData.id !== model.id && chatModels.some(m => m.id === formData.id)) {
+      // Compute new internal id from provider + API model id (calling ID)
+      const newInternalId = generateModelId(model.providerId, formData.model)
+
+      // Check duplicate id if changed
+      if (newInternalId !== model.id && chatModels.some(m => m.id === newInternalId)) {
         new Notice('Model ID already exists')
         return
       }
@@ -76,14 +80,21 @@ function EditChatModelModalComponent({
       // Update the model
       chatModels[modelIndex] = {
         ...chatModels[modelIndex],
-        id: formData.id,
+        id: newInternalId,
         model: formData.model,
+        name: formData.name && formData.name.trim().length > 0 ? formData.name : undefined,
       }
 
-      await plugin.setSettings({
-        ...settings,
-        chatModels,
-      })
+      // Update references if current selection points to the old id
+      const nextSettings = { ...settings, chatModels }
+      if (nextSettings.chatModelId === model.id) {
+        nextSettings.chatModelId = newInternalId
+      }
+      if (nextSettings.applyModelId === model.id) {
+        nextSettings.applyModelId = newInternalId
+      }
+
+      await plugin.setSettings(nextSettings)
 
       new Notice(t('common.success'))
       onClose()
@@ -101,20 +112,20 @@ function EditChatModelModalComponent({
         required
       >
         <ObsidianTextInput
-          value={formData.id}
+          value={formData.model}
           placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, id: value }))
+            setFormData((prev) => ({ ...prev, model: value }))
           }
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name={t('settings.models.modelName')} required>
+      <ObsidianSetting name={t('settings.models.modelName')}>
         <ObsidianTextInput
-          value={formData.model}
+          value={formData.name}
           placeholder={t('settings.models.modelNamePlaceholder')}
           onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, model: value }))
+            setFormData((prev) => ({ ...prev, name: value }))
           }
         />
       </ObsidianSetting>

@@ -28,10 +28,11 @@ export function ChatSection() {
           options={Object.fromEntries(
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => [
-                chatModel.id,
-                `${chatModel.id}${RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id) ? ' (Recommended)' : ''}`,
-              ]),
+              .map((chatModel) => {
+                const labelBase = chatModel.model || chatModel.name || chatModel.id
+                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id) ? ' (Recommended)' : ''}`
+                return [chatModel.id, label]
+              }),
           )}
           onChange={async (value) => {
             await setSettings({
@@ -51,10 +52,11 @@ export function ChatSection() {
           options={Object.fromEntries(
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => [
-                chatModel.id,
-                `${chatModel.id}${RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id) ? ' (Recommended)' : ''}`,
-              ]),
+              .map((chatModel) => {
+                const labelBase = chatModel.model || chatModel.name || chatModel.id
+                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id) ? ' (Recommended)' : ''}`
+                return [chatModel.id, label]
+              }),
           )}
           onChange={async (value) => {
             await setSettings({
