@@ -63,20 +63,25 @@ import UserMessageItem from './UserMessageItem'
 const getNewInputMessage = (
   app: App,
   includeCurrentFile: boolean,
+  suppression: 'none' | 'hidden' | 'deleted',
 ): ChatUserMessage => {
   return {
     role: 'user',
     content: null,
     promptContent: null,
     id: uuidv4(),
-    mentionables: includeCurrentFile
-      ? [
-          {
-            type: 'current-file',
-            file: app.workspace.getActiveFile(),
-          },
-        ]
-      : [],
+    mentionables:
+      includeCurrentFile && suppression !== 'deleted'
+        ? [
+            {
+              type: 'current-file',
+              file:
+                suppression === 'hidden'
+                  ? null
+                  : app.workspace.getActiveFile(),
+            },
+          ]
+        : [],
   }
 }
 
@@ -107,10 +112,16 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return new PromptGenerator(getRAGEngine, app, settings)
   }, [getRAGEngine, app, settings])
 
+  // Per-conversation suppression: 'none' | 'hidden' | 'deleted'
+  // hidden: show badge with strike-through; deleted: remove entirely
+  const [currentFileSuppression, setCurrentFileSuppression] = useState<'none' | 'hidden' | 'deleted'>('none')
+  const conversationSuppressionRef = useRef<Map<string, 'none' | 'hidden' | 'deleted'>>(new Map())
+
   const [inputMessage, setInputMessage] = useState<ChatUserMessage>(() => {
     const newMessage = getNewInputMessage(
       app,
       settings.chatOptions.includeCurrentFileContent,
+      'none',
     )
     if (props.selectedBlock) {
       newMessage.mentionables = [
@@ -185,9 +196,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
       setCurrentConversationId(conversationId)
       setChatMessages(conversation)
+      const suppressed = conversationSuppressionRef.current.get(conversationId) ?? 'none'
+      setCurrentFileSuppression(suppressed)
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
+        suppressed,
       )
       setInputMessage(newInputMessage)
       setFocusedMessageId(newInputMessage.id)
@@ -201,11 +215,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }
 
   const handleNewChat = (selectedBlock?: MentionableBlockData) => {
-    setCurrentConversationId(uuidv4())
+    const newId = uuidv4()
+    setCurrentConversationId(newId)
+    conversationSuppressionRef.current.set(newId, 'none')
+    setCurrentFileSuppression('none')
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
       settings.chatOptions.includeCurrentFileContent,
+      'none',
     )
     if (selectedBlock) {
       const mentionableBlock: MentionableBlock = {
@@ -508,6 +526,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       return
     }
 
+    // If suppressed for this conversation, do not auto-add or update current-file mentionable
+    if (currentFileSuppression !== 'none') return
+
     // Setting enabled: keep the current-file mentionable updated
     const activeFile = app.workspace.getActiveFile()
     if (!activeFile) return
@@ -553,7 +574,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         }),
       )
     }
-  }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent])
+  }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent, currentFileSuppression])
 
   useEffect(() => {
     app.workspace.on('active-leaf-change', handleActiveLeafChange)
@@ -732,6 +753,43 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 setFocusedMessageId(messageOrGroup.id)
               }}
               onMentionablesChange={(mentionables) => {
+                // Detect visibility toggles or deletion of current-file on historical messages
+                const prevCurrent = messageOrGroup.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                const prevHad = !!prevCurrent
+                const nextHas = !!nextCurrent
+                const prevVisible = prevCurrent?.file != null
+                const nextVisible = nextCurrent?.file != null
+
+                if (prevHad && !nextHas) {
+                  // Deleted -> suppression: deleted
+                  setCurrentFileSuppression('deleted')
+                  conversationSuppressionRef.current.set(currentConversationId, 'deleted')
+                  // Ensure input message removes the badge entirely
+                  setInputMessage((prev) => ({
+                    ...prev,
+                    mentionables: prev.mentionables.filter((m) => m.type !== 'current-file'),
+                  }))
+                } else if (prevVisible && !nextVisible) {
+                  // Hidden -> suppression: hidden
+                  setCurrentFileSuppression('hidden')
+                  conversationSuppressionRef.current.set(currentConversationId, 'hidden')
+                  // Ensure input message shows hidden current-file badge
+                  setInputMessage((prev) => {
+                    const existing = prev.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                    const others = prev.mentionables.filter((m) => m.type !== 'current-file')
+                    const hidden: MentionableCurrentFile = { type: 'current-file', file: null }
+                    return {
+                      ...prev,
+                      mentionables: existing ? [hidden, ...others] : [hidden, ...prev.mentionables],
+                    }
+                  })
+                } else if (!prevVisible && nextVisible) {
+                  // Turned visible -> unsuppress
+                  setCurrentFileSuppression('none')
+                  conversationSuppressionRef.current.set(currentConversationId, 'none')
+                }
+
                 setChatMessages((prevChatHistory) =>
                   prevChatHistory.map((msg) =>
                     msg.id === messageOrGroup.id
@@ -797,6 +855,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             getNewInputMessage(
               app,
               settings.chatOptions.includeCurrentFileContent,
+              currentFileSuppression,
             ),
           )
         }}
@@ -805,10 +864,30 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         }}
         mentionables={inputMessage.mentionables}
         setMentionables={(mentionables) => {
-          setInputMessage((prevInputMessage) => ({
-            ...prevInputMessage,
-            mentionables,
-          }))
+          setInputMessage((prevInputMessage) => {
+            const prevCurrent = prevInputMessage.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+            const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+            const prevHad = !!prevCurrent
+            const nextHas = !!nextCurrent
+            const prevVisible = prevCurrent?.file != null
+            const nextVisible = nextCurrent?.file != null
+
+            if (prevHad && !nextHas) {
+              setCurrentFileSuppression('deleted')
+              conversationSuppressionRef.current.set(currentConversationId, 'deleted')
+            } else if (prevVisible && !nextVisible) {
+              setCurrentFileSuppression('hidden')
+              conversationSuppressionRef.current.set(currentConversationId, 'hidden')
+            } else if (!prevVisible && nextVisible) {
+              setCurrentFileSuppression('none')
+              conversationSuppressionRef.current.set(currentConversationId, 'none')
+            }
+
+            return {
+              ...prevInputMessage,
+              mentionables,
+            }
+          })
         }}
         autoFocus
         addedBlockKey={addedBlockKey}
