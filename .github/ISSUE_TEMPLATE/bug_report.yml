@@ -62,7 +62,7 @@ body:
   - type: input
     id: plugin-version
     attributes:
-      label: Smart Composer Version
+      label: YOLO Version
       description: What version of Smart Composer are you using? (You can find this in Settings > Community plugins menu)
       placeholder: e.g., 1.0.0
     validations:
