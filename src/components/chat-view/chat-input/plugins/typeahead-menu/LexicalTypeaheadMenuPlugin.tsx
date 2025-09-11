@@ -253,7 +253,7 @@ export function LexicalTypeaheadMenuPlugin<TOption extends MenuOption>({
             range,
             editorWindow,
           )
-          if (isRangePositioned !== null) {
+          if (isRangePositioned) {
             startTransition(() =>
               openTypeahead({
                 getRect: () => range.getBoundingClientRect(),

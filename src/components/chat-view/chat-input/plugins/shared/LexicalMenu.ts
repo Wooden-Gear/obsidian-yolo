@@ -486,66 +486,111 @@ export function useMenuAnchorRef(
 ): MutableRefObject<HTMLElement> {
   const [editor] = useLexicalComposerContext()
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
+  const lastSizeRef = useRef<{w: number; h: number} | null>(null)
   const positionMenu = useCallback(() => {
-    // 清除上一次定位（避免闪烁）；通过数据属性驱动定位
+    // 通过行内样式固定定位弹窗容器
     const containerDiv = anchorElementRef.current
-    containerDiv.removeAttribute('data-smtcmp-top')
-    containerDiv.removeAttribute('data-smtcmp-left')
-    containerDiv.removeAttribute('data-smtcmp-width')
-    containerDiv.removeAttribute('data-smtcmp-height')
     containerDiv.classList.remove('smtcmp-menu-above', 'smtcmp-menu-right-align')
     
     const rootElement = editor.getRootElement()
     const menuEle = containerDiv.firstChild as HTMLElement
     
     if (rootElement !== null && resolution !== null) {
-      const { left, top, width, height } = resolution.getRect()
-      const anchorHeight = anchorElementRef.current.offsetHeight // use to position under anchor
-      const calculatedTop = top + anchorHeight + 3 + 
-        (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-      const calculatedLeft = left + window.pageXOffset
-      
-      // 使用数据属性存储位置信息
-      containerDiv.setAttribute('data-smtcmp-top', calculatedTop.toString())
-      containerDiv.setAttribute('data-smtcmp-left', calculatedLeft.toString())
-      containerDiv.setAttribute('data-smtcmp-width', width.toString())
-      containerDiv.setAttribute('data-smtcmp-height', height.toString())
-      
-      if (menuEle !== null) {
-        // 保留 menuEle 默认布局，通过容器定位
-        const menuRect = menuEle.getBoundingClientRect()
-        const menuHeight = menuRect.height
-        const menuWidth = menuRect.width
-
-        const rootElementRect = rootElement.getBoundingClientRect()
-
-        // 右对齐检查
-        if (left + menuWidth > rootElementRect.right) {
-          const rightAlignLeft = rootElementRect.right - menuWidth + window.pageXOffset
-          containerDiv.setAttribute('data-smtcmp-left', rightAlignLeft.toString())
-          containerDiv.classList.add('smtcmp-menu-right-align')
-        }
-        
-        // 向上显示检查
-        if (top + menuHeight > window.innerHeight) {
-          const topAlignTop = top - menuHeight - height + 
-            (shouldIncludePageYOffset__EXPERIMENTAL ? window.pageYOffset : 0)
-          containerDiv.setAttribute('data-smtcmp-top', topAlignTop.toString())
-          containerDiv.classList.add('smtcmp-menu-above')
-        }
-      }
+      const rect = resolution.getRect()
+      const { left, top, bottom } = rect
+      const offset = 6
 
       if (!containerDiv.isConnected) {
         if (className != null) {
           containerDiv.className = className
         }
-        // 使用类名提供默认样式，通过 CSS 变量控制定位与尺寸
         containerDiv.classList.add('smtcmp-typeahead-menu')
         containerDiv.setAttribute('aria-label', 'Typeahead menu')
         containerDiv.setAttribute('id', 'typeahead-menu')
         containerDiv.setAttribute('role', 'listbox')
-        parent.append(containerDiv)
+        // defer append to reposition() so we can choose the correct parent
       }
+
+      const reposition = () => {
+        const offsetTop = 4
+        const margin = 8
+        const containerEl = rootElement.closest(
+          '.smtcmp-chat-user-input-container',
+        ) as HTMLElement | null
+
+        if (containerEl) {
+          // Position the menu in document.body with fixed positioning to avoid clipping by container bounds
+          if (containerDiv.parentElement !== parent) {
+            parent.appendChild(containerDiv)
+          }
+          
+          const rect = containerEl.getBoundingClientRect()
+          const cs = getComputedStyle(containerEl)
+          
+          // Calculate focus ring thickness from box-shadow
+          const boxShadow = cs.boxShadow || ''
+          let ring = 0
+          const matches = boxShadow.match(/0px\s+0px\s+0px\s+([0-9.]+)px/g)
+          if (matches) {
+            for (const m of matches) {
+              const n = parseFloat((m.match(/([0-9.]+)px$/) || [,'0'])[1]) || 0
+              if (n > ring) ring = n
+            }
+          }
+          
+          // Position menu to align with the outermost edge of the focus ring
+          const menuLeft = rect.left - ring
+          const menuWidth = rect.width + (ring * 2)
+          const menuTop = rect.top - offsetTop
+          
+          containerDiv.style.position = 'fixed'
+          containerDiv.style.left = `${menuLeft}px`
+          containerDiv.style.top = `${menuTop}px`
+          containerDiv.style.width = `${menuWidth}px`
+          containerDiv.style.right = ''
+          containerDiv.style.bottom = ''
+          containerDiv.style.zIndex = '1000'
+          
+          if (menuEle) {
+            const pop = menuEle as HTMLElement
+            pop.style.position = 'absolute'
+            pop.style.left = '0px'
+            pop.style.right = '0px'
+            pop.style.bottom = '0px'
+            pop.style.top = ''
+            pop.style.width = '100%'
+            pop.style.maxWidth = 'none'
+            pop.style.boxSizing = 'border-box'
+            pop.style.overflowY = 'auto'
+            // Limit height to available space above the input
+            const available = Math.max(margin, Math.floor(rect.top - margin))
+            pop.style.maxHeight = `${available}px`
+          }
+          return
+        }
+
+        // Fallback: position fixed above the caret rect
+        const estimatedH = 260
+        const leftPos = Math.max(margin, Math.min(left, window.innerWidth - margin))
+        let topPos = Math.max(margin, top - offsetTop - estimatedH)
+        if (!containerDiv.isConnected) parent.append(containerDiv)
+        containerDiv.style.position = 'fixed'
+        containerDiv.style.left = `${Math.round(leftPos)}px`
+        containerDiv.style.top = `${Math.round(topPos)}px`
+        containerDiv.style.width = '360px'
+        containerDiv.style.zIndex = '1000'
+        // Avoid adding smtcmp-menu-above here; topPos is already computed above the caret
+        if (menuEle) {
+          ;(menuEle as HTMLElement).style.width = '100%'
+          requestAnimationFrame(() => {
+            const finalH = menuEle.getBoundingClientRect().height || estimatedH
+            let t2 = Math.max(margin, top - offsetTop - finalH)
+            containerDiv.style.top = `${Math.round(t2)}px`
+          })
+        }
+      }
+
+      reposition()
       anchorElementRef.current = containerDiv
       rootElement.setAttribute('aria-controls', 'typeahead-menu')
     }
