@@ -53,43 +53,61 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       (m) => m.providerId === provider.id,
     )
 
-    const message =
-      `Are you sure you want to delete provider "${provider.id}"?\n\n` +
-      `This will also delete:\n` +
-      `- ${associatedChatModels.length} chat model(s)\n` +
-      `- ${associatedEmbeddingModels.length} embedding model(s)\n\n` +
-      `All embeddings generated using the associated embedding models will also be deleted.`
+    // Handle default model reassignment before deletion
+    let newSettings = { ...settings }
+    
+    // Find alternative chat models from other providers
+    const otherChatModels = settings.chatModels.filter(
+      (m) => m.providerId !== provider.id && (m.enable ?? true)
+    )
+    
+    // Find alternative embedding models from other providers
+    const otherEmbeddingModels = settings.embeddingModels.filter(
+      (m) => m.providerId !== provider.id
+    )
+    
+    // Check if current chat model is from this provider and reassign
+    if (associatedChatModels.some(m => m.id === settings.chatModelId)) {
+      newSettings.chatModelId = otherChatModels.length > 0 ? otherChatModels[0].id : ''
+    }
+    
+    // Check if current apply model is from this provider and reassign
+    if (associatedChatModels.some(m => m.id === settings.applyModelId)) {
+      newSettings.applyModelId = otherChatModels.length > 0 ? otherChatModels[0].id : ''
+    }
+    
+    // Check if current embedding model is from this provider and reassign
+    if (associatedEmbeddingModels.some(m => m.id === settings.embeddingModelId)) {
+      newSettings.embeddingModelId = otherEmbeddingModels.length > 0 ? otherEmbeddingModels[0].id : ''
+    }
 
-    new ConfirmModal(app, {
-      title: 'Delete Provider',
-      message: message,
-      ctaText: 'Delete',
-      onConfirm: async () => {
-        const vectorManager = (await plugin.getDbManager()).getVectorManager()
-        const embeddingStats = await vectorManager.getEmbeddingStats()
+    // Clear embeddings for associated embedding models
+    const vectorManager = (await plugin.getDbManager()).getVectorManager()
+    const embeddingStats = await vectorManager.getEmbeddingStats()
 
-        for (const embeddingModel of associatedEmbeddingModels) {
-          const embeddingStat = embeddingStats.find(
-            (v) => v.model === embeddingModel.id,
-          )
+    for (const embeddingModel of associatedEmbeddingModels) {
+      const embeddingStat = embeddingStats.find(
+        (v) => v.model === embeddingModel.id,
+      )
 
-          if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-            const embeddingModelClient = getEmbeddingModelClient({
-              settings,
-              embeddingModelId: embeddingModel.id,
-            })
-            await vectorManager.clearAllVectors(embeddingModelClient)
-          }
-        }
-
-        await setSettings({
-          ...settings,
-          providers: settings.providers.filter(v => v.id !== provider.id),
-          chatModels: settings.chatModels.filter(v => v.providerId !== provider.id),
-          embeddingModels: settings.embeddingModels.filter(v => v.providerId !== provider.id),
+      if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+        const embeddingModelClient = getEmbeddingModelClient({
+          settings,
+          embeddingModelId: embeddingModel.id,
         })
-      },
-    }).open()
+        await vectorManager.clearAllVectors(embeddingModelClient)
+      }
+    }
+
+    // Delete provider and associated models
+    await setSettings({
+      ...newSettings,
+      providers: settings.providers.filter(v => v.id !== provider.id),
+      chatModels: settings.chatModels.filter(v => v.providerId !== provider.id),
+      embeddingModels: settings.embeddingModels.filter(v => v.providerId !== provider.id),
+    })
+    
+    new Notice(`Provider "${provider.id}" deleted successfully`)
   }
 
   const handleDeleteChatModel = async (modelId: string) => {
