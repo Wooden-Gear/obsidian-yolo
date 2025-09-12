@@ -38,10 +38,10 @@ export default function ChatSettingsButton({
     const wrapper = btn.closest('.smtcmp-chat-input-wrapper') as HTMLElement | null
     if (!wrapper) return
 
-    const MIN_WIDTH = 320
+    const MIN_WIDTH = 200
     const compute = () => {
       const w = wrapper.clientWidth
-      setPanelWidth(Math.max(MIN_WIDTH, Math.floor(w / 2)))
+      setPanelWidth(Math.max(MIN_WIDTH, Math.floor(w * 0.4)))
     }
     compute()
 

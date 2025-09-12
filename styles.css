@@ -1057,7 +1057,7 @@ button.smtcmp-chat-input-model-select {
 /* Conversation settings popover */
 .smtcmp-chat-settings-content {
   /* width is set dynamically by inline style to 50% of input wrapper */
-  min-width: 320px;
+  min-width: 200px;
   max-width: 640px;
   padding: 10px 12px;
 }
