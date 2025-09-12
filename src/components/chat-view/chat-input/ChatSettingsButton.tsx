@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
+import { useLanguage } from '../../../contexts/language-context'
 
 export default function ChatSettingsButton({
   overrides,
@@ -11,6 +12,7 @@ export default function ChatSettingsButton({
   overrides?: ConversationOverrideSettings
   onChange?: (overrides: ConversationOverrideSettings) => void
 }) {
+  const { t } = useLanguage()
   const value = useMemo<ConversationOverrideSettings>(() => {
     return {
       temperature: overrides?.temperature ?? null,
@@ -56,7 +58,7 @@ export default function ChatSettingsButton({
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button ref={triggerRef} className="clickable-icon" aria-label="Conversation settings">
+        <button ref={triggerRef} className="clickable-icon" aria-label={t('chat.conversationSettings.openAria', 'Conversation settings')}>
           <SlidersHorizontal size={14} />
         </button>
       </Popover.Trigger>
@@ -69,16 +71,16 @@ export default function ChatSettingsButton({
       >
         <div className="smtcmp-chat-settings">
           <div className="smtcmp-chat-settings-section">
-            <div className="smtcmp-chat-settings-section-title">Chat Memory</div>
+            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.chatMemory', 'Chat Memory')}</div>
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">Max Context</div>
+              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.maxContext', 'Max Context')}</div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
                 min={0}
                 max={256}
                 step={1}
-                placeholder="Default"
+                placeholder={t('common.default', 'Default')}
                 value={value.maxContextMessages ?? ''}
                 onChange={(e) =>
                   update({
@@ -90,16 +92,16 @@ export default function ChatSettingsButton({
           </div>
 
           <div className="smtcmp-chat-settings-section">
-            <div className="smtcmp-chat-settings-section-title">Sampling Parameters</div>
+            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.sampling', 'Sampling Parameters')}</div>
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">Temperature</div>
+              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.temperature', 'Temperature')}</div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
                 min={0}
                 max={2}
                 step={0.1}
-                placeholder="Default"
+                placeholder={t('common.default', 'Default')}
                 value={value.temperature ?? ''}
                 onChange={(e) =>
                   update({ temperature: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
@@ -108,14 +110,14 @@ export default function ChatSettingsButton({
             </div>
 
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">Top P</div>
+              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.topP', 'Top P')}</div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
                 min={0}
                 max={1}
                 step={0.01}
-                placeholder="Default"
+                placeholder={t('common.default', 'Default')}
                 value={value.top_p ?? ''}
                 onChange={(e) =>
                   update({ top_p: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
@@ -124,25 +126,25 @@ export default function ChatSettingsButton({
             </div>
 
             <div className="smtcmp-chat-settings-row-inline">
-              <div className="smtcmp-chat-settings-label">Streaming</div>
+              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.streaming', 'Streaming')}</div>
               <div className="smtcmp-segmented">
                 <button
                   className={value.stream === null || value.stream === undefined ? 'active' : ''}
                   onClick={() => update({ stream: null })}
                 >
-                  Default
+                  {t('common.default', 'Default')}
                 </button>
                 <button
                   className={value.stream === true ? 'active' : ''}
                   onClick={() => update({ stream: true })}
                 >
-                  On
+                  {t('common.on', 'On')}
                 </button>
                 <button
                   className={value.stream === false ? 'active' : ''}
                   onClick={() => update({ stream: false })}
                 >
-                  Off
+                  {t('common.off', 'Off')}
                 </button>
               </div>
             </div>

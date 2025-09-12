@@ -29,6 +29,9 @@ export const en: TranslationKeys = {
     retry: 'Retry',
     copy: 'Copy',
     paste: 'Paste',
+    default: 'Default',
+    on: 'On',
+    off: 'Off',
   },
 
   settings: {
@@ -265,6 +268,8 @@ export const en: TranslationKeys = {
     placeholder: 'Ask anything about your vault...',
     sendMessage: 'Send message',
     newChat: 'New chat',
+    continueResponse: 'Continue Response',
+    stopGeneration: 'Stop Generation',
     vaultSearch: 'Vault search',
     selectModel: 'Select model',
     uploadImage: 'Upload image',

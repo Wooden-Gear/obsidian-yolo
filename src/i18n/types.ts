@@ -31,6 +31,10 @@ export interface TranslationKeys {
     retry: string
     copy: string
     paste: string
+    // additions
+    default?: string
+    on?: string
+    off?: string
   }
 
   // Settings
@@ -274,6 +278,8 @@ export interface TranslationKeys {
     placeholder: string
     sendMessage: string
     newChat: string
+    continueResponse?: string
+    stopGeneration?: string
     vaultSearch: string
     selectModel: string
     uploadImage: string
@@ -292,6 +298,16 @@ export interface TranslationKeys {
     customRewritePromptPlaceholder?: string
     showMore?: string
     showLess?: string
+    // conversation settings popover
+    conversationSettings?: {
+      openAria?: string
+      chatMemory?: string
+      maxContext?: string
+      sampling?: string
+      temperature?: string
+      topP?: string
+      streaming?: string
+    }
   }
 
   // Notices and Messages

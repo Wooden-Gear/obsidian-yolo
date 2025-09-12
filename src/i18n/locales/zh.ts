@@ -29,6 +29,9 @@ export const zh: TranslationKeys = {
     retry: '重试',
     copy: '复制',
     paste: '粘贴',
+    default: '默认',
+    on: '开',
+    off: '关',
   },
 
   settings: {
@@ -265,6 +268,8 @@ export const zh: TranslationKeys = {
     placeholder: '询问关于你的库的任何问题...',
     sendMessage: '发送消息',
     newChat: '新建聊天',
+    continueResponse: '继续生成',
+    stopGeneration: '停止生成',
     vaultSearch: '库搜索',
     selectModel: '选择模型',
     uploadImage: '上传图片',
@@ -281,6 +286,15 @@ export const zh: TranslationKeys = {
     customContinuePromptLabel: '续写指令',
     customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按 Shift+回车 确认，回车换行，Esc 关闭。',
     customRewritePromptPlaceholder: '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',
+    conversationSettings: {
+      openAria: '对话设置',
+      chatMemory: '聊天记忆',
+      maxContext: '上下文条数',
+      sampling: '采样参数',
+      temperature: '温度',
+      topP: 'Top P',
+      streaming: '流式输出',
+    },
   },
 
   notices: {
