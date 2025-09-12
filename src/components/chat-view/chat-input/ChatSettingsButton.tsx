@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 import { useLanguage } from '../../../contexts/language-context'
+import { useSettings } from '../../../contexts/settings-context'
 
 export default function ChatSettingsButton({
   overrides,
@@ -13,6 +14,7 @@ export default function ChatSettingsButton({
   onChange?: (overrides: ConversationOverrideSettings) => void
 }) {
   const { t } = useLanguage()
+  const { settings } = useSettings()
   const value = useMemo<ConversationOverrideSettings>(() => {
     return {
       temperature: overrides?.temperature ?? null,
@@ -80,7 +82,7 @@ export default function ChatSettingsButton({
                 min={0}
                 max={256}
                 step={1}
-                placeholder={t('common.default', 'Default')}
+                placeholder={settings.chatOptions.maxContextMessages.toString()}
                 value={value.maxContextMessages ?? ''}
                 onChange={(e) =>
                   update({
@@ -101,7 +103,7 @@ export default function ChatSettingsButton({
                 min={0}
                 max={2}
                 step={0.1}
-                placeholder={t('common.default', 'Default')}
+                placeholder={settings.chatOptions.defaultTemperature?.toString() ?? t('common.default', 'Default')}
                 value={value.temperature ?? ''}
                 onChange={(e) =>
                   update({ temperature: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
@@ -117,7 +119,7 @@ export default function ChatSettingsButton({
                 min={0}
                 max={1}
                 step={0.01}
-                placeholder={t('common.default', 'Default')}
+                placeholder={settings.chatOptions.defaultTopP?.toString() ?? t('common.default', 'Default')}
                 value={value.top_p ?? ''}
                 onChange={(e) =>
                   update({ top_p: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
@@ -128,12 +130,6 @@ export default function ChatSettingsButton({
             <div className="smtcmp-chat-settings-row-inline">
               <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.streaming', 'Streaming')}</div>
               <div className="smtcmp-segmented">
-                <button
-                  className={value.stream === null || value.stream === undefined ? 'active' : ''}
-                  onClick={() => update({ stream: null })}
-                >
-                  {t('common.default', 'Default')}
-                </button>
                 <button
                   className={value.stream === true ? 'active' : ''}
                   onClick={() => update({ stream: true })}

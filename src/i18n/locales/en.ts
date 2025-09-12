@@ -63,6 +63,10 @@ export const en: TranslationKeys = {
       maxAutoIterationsDesc: 'Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens.',
       maxContextMessages: 'Max context messages',
       maxContextMessagesDesc: 'Number of previous chat messages to include in each request (0 to include none). 32 is recommended (about 16 user-assistant turns).',
+      defaultTemperature: 'Default temperature',
+      defaultTemperatureDesc: 'Default temperature for new conversations (0.0-2.0). Leave empty to use model default.',
+      defaultTopP: 'Default Top P',
+      defaultTopPDesc: 'Default Top P for new conversations (0.0-1.0). Leave empty to use model default.',
     },
     assistants: {
       title: 'Assistants',

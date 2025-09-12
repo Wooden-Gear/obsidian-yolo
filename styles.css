@@ -1126,8 +1126,9 @@ button.smtcmp-chat-input-model-select {
   background: var(--background-primary);
   color: var(--text-muted);
   border: none;
-  padding: 4px 8px;
+  padding: 2px 16px; /* make smaller */
   font-size: var(--font-smallest);
+  line-height: 16px; /* tighter height */
   cursor: pointer;
 }
 .smtcmp-segmented > button:hover {
