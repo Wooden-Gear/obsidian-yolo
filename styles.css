@@ -14,10 +14,9 @@
 
 .smtcmp-chat-input-settings-outer {
   position: absolute;
-  top: -8px; /* slightly above input */
-  right: 0;  /* align to right edge */
+  top: -14px; /* above input border */
+  right: -14px;  /* outside right border */
   left: auto !important; /* cancel any left: 0 from other rules */
-  transform: translateX(8px); /* slightly outside right border */
   z-index: 3;
 }
 
