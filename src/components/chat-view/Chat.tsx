@@ -52,12 +52,14 @@ import { ChatModeDropdown } from './ChatModeDropdown'
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
 import { AssistantSelector } from './AssistantSelector'
 import ChatUserInput, { ChatUserInputRef } from './chat-input/ChatUserInput'
+import ChatSettingsButton from './chat-input/ChatSettingsButton'
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
 import { ChatListDropdown } from './ChatListDropdown'
 import QueryProgress, { QueryProgressState } from './QueryProgress'
 import { useAutoScroll } from './useAutoScroll'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
+import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 // Add an empty line here
 const getNewInputMessage = (
@@ -156,6 +158,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     settings.chatOptions.enableLearningMode ?? false,
   )
 
+  // Per-conversation override settings (temperature, top_p, context, stream)
+  const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
+  const [conversationOverrides, setConversationOverrides] = useState<ConversationOverrideSettings | undefined>(undefined)
+
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
       return groupAssistantAndToolMessages(chatMessages)
@@ -174,6 +180,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     promptGenerator,
     chatMode,
     learningMode,
+    conversationOverrides,
   })
 
   const registerChatUserInputRef = (
@@ -198,6 +205,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       setChatMessages(conversation)
       const suppressed = conversationSuppressionRef.current.get(conversationId) ?? 'none'
       setCurrentFileSuppression(suppressed)
+      setConversationOverrides(conversationOverridesRef.current.get(conversationId))
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
@@ -219,6 +227,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setCurrentConversationId(newId)
     conversationSuppressionRef.current.set(newId, 'none')
     setCurrentFileSuppression('none')
+    setConversationOverrides(undefined)
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
@@ -835,63 +844,83 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           </button>
         )}
       </div>
-      <ChatUserInput
-        key={inputMessage.id} // this is needed to clear the editor when the user submits a new message
-        ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}
-        initialSerializedEditorState={inputMessage.content}
-        onChange={(content) => {
-          setInputMessage((prevInputMessage) => ({
-            ...prevInputMessage,
-            content,
-          }))
-        }}
-        onSubmit={(content, useVaultSearch) => {
-          if (editorStateToPlainText(content).trim() === '') return
-          handleUserMessageSubmit({
-            inputChatMessages: [...chatMessages, { ...inputMessage, content }],
-            useVaultSearch,
-          })
-          setInputMessage(
-            getNewInputMessage(
-              app,
-              settings.chatOptions.includeCurrentFileContent,
-              currentFileSuppression,
-            ),
-          )
-        }}
-        onFocus={() => {
-          setFocusedMessageId(inputMessage.id)
-        }}
-        mentionables={inputMessage.mentionables}
-        setMentionables={(mentionables) => {
-          setInputMessage((prevInputMessage) => {
-            const prevCurrent = prevInputMessage.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
-            const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
-            const prevHad = !!prevCurrent
-            const nextHas = !!nextCurrent
-            const prevVisible = prevCurrent?.file != null
-            const nextVisible = nextCurrent?.file != null
-
-            if (prevHad && !nextHas) {
-              setCurrentFileSuppression('deleted')
-              conversationSuppressionRef.current.set(currentConversationId, 'deleted')
-            } else if (prevVisible && !nextVisible) {
-              setCurrentFileSuppression('hidden')
-              conversationSuppressionRef.current.set(currentConversationId, 'hidden')
-            } else if (!prevVisible && nextVisible) {
-              setCurrentFileSuppression('none')
-              conversationSuppressionRef.current.set(currentConversationId, 'none')
-            }
-
-            return {
+      <div className="smtcmp-chat-input-wrapper" style={{ position: 'relative', width: '100%' }}>
+        <div
+          className="smtcmp-chat-input-settings-outer"
+          style={{ position: 'absolute', top: -8, right: 0, zIndex: 3 }}
+        >
+          <ChatSettingsButton
+            overrides={conversationOverrides}
+            onChange={(next) => {
+              setConversationOverrides(next)
+              conversationOverridesRef.current.set(currentConversationId, next)
+            }}
+          />
+        </div>
+        <ChatUserInput
+          key={inputMessage.id} // this is needed to clear the editor when the user submits a new message
+          ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}
+          initialSerializedEditorState={inputMessage.content}
+          onChange={(content) => {
+            setInputMessage((prevInputMessage) => ({
               ...prevInputMessage,
-              mentionables,
-            }
-          })
-        }}
-        autoFocus
-        addedBlockKey={addedBlockKey}
-      />
+              content,
+            }))
+          }}
+          onSubmit={(content, useVaultSearch) => {
+            if (editorStateToPlainText(content).trim() === '') return
+            handleUserMessageSubmit({
+              inputChatMessages: [...chatMessages, { ...inputMessage, content }],
+              useVaultSearch,
+            })
+            setInputMessage(
+              getNewInputMessage(
+                app,
+                settings.chatOptions.includeCurrentFileContent,
+                currentFileSuppression,
+              ),
+            )
+          }}
+          onFocus={() => {
+            setFocusedMessageId(inputMessage.id)
+          }}
+          mentionables={inputMessage.mentionables}
+          setMentionables={(mentionables) => {
+            setInputMessage((prevInputMessage) => {
+              const prevCurrent = prevInputMessage.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+              const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+              const prevHad = !!prevCurrent
+              const nextHas = !!nextCurrent
+              const prevVisible = prevCurrent?.file != null
+              const nextVisible = nextCurrent?.file != null
+
+              if (prevHad && !nextHas) {
+                setCurrentFileSuppression('deleted')
+                conversationSuppressionRef.current.set(currentConversationId, 'deleted')
+              } else if (prevVisible && !nextVisible) {
+                setCurrentFileSuppression('hidden')
+                conversationSuppressionRef.current.set(currentConversationId, 'hidden')
+              } else if (!prevVisible && nextVisible) {
+                setCurrentFileSuppression('none')
+                conversationSuppressionRef.current.set(currentConversationId, 'none')
+              }
+
+              return {
+                ...prevInputMessage,
+                mentionables,
+              }
+            })
+          }}
+          autoFocus
+          addedBlockKey={addedBlockKey}
+          conversationOverrides={conversationOverrides}
+          onConversationOverridesChange={(next) => {
+            setConversationOverrides(next)
+            conversationOverridesRef.current.set(currentConversationId, next)
+          }}
+          showConversationSettingsButton={false}
+        />
+      </div>
     </div>
   )
 })

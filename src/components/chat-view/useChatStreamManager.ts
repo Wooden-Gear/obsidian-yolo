@@ -16,6 +16,7 @@ import { ChatMessage } from '../../types/chat'
 import { PromptGenerator } from '../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../utils/chat/responseGenerator'
 import { ErrorModal } from '../modals/ErrorModal'
+import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
@@ -23,6 +24,7 @@ type UseChatStreamManagerParams = {
   promptGenerator: PromptGenerator
   chatMode: 'rag' | 'brute'
   learningMode: boolean
+  conversationOverrides?: ConversationOverrideSettings
 }
 
 export type UseChatStreamManager = {
@@ -40,6 +42,7 @@ export function useChatStreamManager({
   promptGenerator,
   chatMode,
   learningMode,
+  conversationOverrides,
 }: UseChatStreamManagerParams): UseChatStreamManager {
   const app = useApp()
   const { settings, setSettings } = useSettings()
@@ -122,6 +125,14 @@ export function useChatStreamManager({
           abortSignal: abortController.signal,
           chatMode,
           learningMode,
+          requestParams: {
+            stream: conversationOverrides?.stream ?? true,
+            temperature:
+              conversationOverrides?.temperature ?? undefined,
+            top_p: conversationOverrides?.top_p ?? undefined,
+          },
+          maxContextOverride:
+            conversationOverrides?.maxContextMessages ?? undefined,
         })
 
         unsubscribeResponseGenerator = responseGenerator.subscribe(

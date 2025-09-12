@@ -6,6 +6,21 @@
   gap: var(--size-4-2);
 }
 
+/* Chat input: outer wrapper to anchor settings button at top-right */
+.smtcmp-chat-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.smtcmp-chat-input-settings-outer {
+  position: absolute;
+  top: -8px; /* slightly above input */
+  right: 0;  /* align to right edge */
+  left: auto !important; /* cancel any left: 0 from other rules */
+  transform: translateX(8px); /* slightly outside right border */
+  z-index: 3;
+}
+
 .smtcmp-chat-header-right {
   display: flex;
   align-items: center;
