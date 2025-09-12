@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { editorStateToPlainText } from '../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import { useApp } from '../contexts/app-context'
 import { ChatConversationMetadata } from '../database/json/chat/types'
+import { ConversationOverrideSettings } from '../types/conversation-settings.types'
 import { ChatMessage, SerializedChatMessage } from '../types/chat'
 import { Mentionable } from '../types/mentionable'
 import {
@@ -19,9 +20,13 @@ type UseChatHistory = {
   createOrUpdateConversation: (
     id: string,
     messages: ChatMessage[],
+    overrides?: ConversationOverrideSettings | null,
   ) => Promise<void> | undefined
   deleteConversation: (id: string) => Promise<void>
   getChatMessagesById: (id: string) => Promise<ChatMessage[] | null>
+  getConversationById: (
+    id: string,
+  ) => Promise<{ messages: ChatMessage[]; overrides: ConversationOverrideSettings | null | undefined } | null>
   updateConversationTitle: (id: string, title: string) => Promise<void>
   chatList: ChatConversationMetadata[]
 }
@@ -44,16 +49,25 @@ export function useChatHistory(): UseChatHistory {
   const createOrUpdateConversation = useMemo(
     () =>
       debounce(
-        async (id: string, messages: ChatMessage[]): Promise<void> => {
+        async (
+          id: string,
+          messages: ChatMessage[],
+          overrides?: ConversationOverrideSettings | null,
+        ): Promise<void> => {
           const serializedMessages = messages.map(serializeChatMessage)
           const existingConversation = await chatManager.findById(id)
 
           if (existingConversation) {
-            if (isEqual(existingConversation.messages, serializedMessages)) {
+            const nextOverrides = overrides === undefined ? existingConversation.overrides ?? null : overrides
+            if (
+              isEqual(existingConversation.messages, serializedMessages) &&
+              isEqual(existingConversation.overrides ?? null, nextOverrides ?? null)
+            ) {
               return
             }
             await chatManager.updateChat(existingConversation.id, {
               messages: serializedMessages,
+              overrides: overrides === undefined ? existingConversation.overrides ?? null : overrides,
             })
           } else {
             const firstUserMessage = messages.find((v) => v.role === 'user')
@@ -67,6 +81,7 @@ export function useChatHistory(): UseChatHistory {
                   )
                 : 'New chat',
               messages: serializedMessages,
+              overrides: overrides ?? null,
             })
           }
 
@@ -101,6 +116,23 @@ export function useChatHistory(): UseChatHistory {
     [chatManager, app],
   )
 
+  const getConversationById = useCallback(
+    async (
+      id: string,
+    ): Promise<
+      | { messages: ChatMessage[]; overrides: ConversationOverrideSettings | null | undefined }
+      | null
+    > => {
+      const conversation = await chatManager.findById(id)
+      if (!conversation) return null
+      return {
+        messages: conversation.messages.map((m) => deserializeChatMessage(m, app)),
+        overrides: conversation.overrides,
+      }
+    },
+    [chatManager, app],
+  )
+
   const updateConversationTitle = useCallback(
     async (id: string, title: string): Promise<void> => {
       if (title.length === 0) {
@@ -122,6 +154,7 @@ export function useChatHistory(): UseChatHistory {
     createOrUpdateConversation,
     deleteConversation,
     getChatMessagesById,
+    getConversationById,
     updateConversationTitle,
     chatList,
   }

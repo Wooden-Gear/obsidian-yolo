@@ -1,4 +1,5 @@
 import { SerializedChatMessage } from '../../../types/chat'
+import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 
 export const CHAT_SCHEMA_VERSION = 1
 
@@ -9,6 +10,8 @@ export type ChatConversation = {
   createdAt: number
   updatedAt: number
   schemaVersion: number
+  // Optional per-conversation overrides (temperature, top_p, maxContextMessages, stream)
+  overrides?: ConversationOverrideSettings | null
 }
 
 export type ChatConversationMetadata = {

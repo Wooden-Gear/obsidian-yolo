@@ -48,6 +48,9 @@ export type ChatUserInputProps = {
   setMentionables: (mentionables: Mentionable[]) => void
   autoFocus?: boolean
   addedBlockKey?: string | null
+  conversationOverrides?: any
+  onConversationOverridesChange?: (overrides: any) => void
+  showConversationSettingsButton?: boolean
 }
 
 const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
@@ -61,6 +64,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       setMentionables,
       autoFocus = false,
       addedBlockKey,
+      conversationOverrides,
+      onConversationOverridesChange,
+      showConversationSettingsButton = false,
     },
     ref,
   ) => {

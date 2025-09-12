@@ -228,6 +228,72 @@ export function ChatSection() {
           }}
         />
       </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.chat.defaultTemperature')}
+        desc={t('settings.chat.defaultTemperatureDesc')}
+      >
+        <ObsidianTextInput
+          value={settings.chatOptions.defaultTemperature?.toString() ?? ''}
+          placeholder={t('common.default')}
+          onChange={async (value) => {
+            if (value.trim() === '') {
+              await setSettings({
+                ...settings,
+                chatOptions: {
+                  ...settings.chatOptions,
+                  defaultTemperature: undefined,
+                },
+              })
+              return
+            }
+            const parsedValue = parseFloat(value)
+            if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 2) {
+              return
+            }
+            await setSettings({
+              ...settings,
+              chatOptions: {
+                ...settings.chatOptions,
+                defaultTemperature: parsedValue,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.chat.defaultTopP')}
+        desc={t('settings.chat.defaultTopPDesc')}
+      >
+        <ObsidianTextInput
+          value={settings.chatOptions.defaultTopP?.toString() ?? ''}
+          placeholder={t('common.default')}
+          onChange={async (value) => {
+            if (value.trim() === '') {
+              await setSettings({
+                ...settings,
+                chatOptions: {
+                  ...settings.chatOptions,
+                  defaultTopP: undefined,
+                },
+              })
+              return
+            }
+            const parsedValue = parseFloat(value)
+            if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 1) {
+              return
+            }
+            await setSettings({
+              ...settings,
+              chatOptions: {
+                ...settings.chatOptions,
+                defaultTopP: parsedValue,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
     </div>
   )
 }
