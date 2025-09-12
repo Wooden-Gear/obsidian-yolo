@@ -107,6 +107,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     createOrUpdateConversation,
     deleteConversation,
     getChatMessagesById,
+    getConversationById,
     updateConversationTitle,
     chatList,
   } = useChatHistory()
@@ -197,15 +198,18 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const handleLoadConversation = async (conversationId: string) => {
     try {
       abortActiveStreams()
-      const conversation = await getChatMessagesById(conversationId)
+      const conversation = await getConversationById(conversationId)
       if (!conversation) {
         throw new Error('Conversation not found')
       }
       setCurrentConversationId(conversationId)
-      setChatMessages(conversation)
+      setChatMessages(conversation.messages)
       const suppressed = conversationSuppressionRef.current.get(conversationId) ?? 'none'
       setCurrentFileSuppression(suppressed)
-      setConversationOverrides(conversationOverridesRef.current.get(conversationId))
+      setConversationOverrides(conversation.overrides ?? undefined)
+      if (conversation.overrides) {
+        conversationOverridesRef.current.set(conversationId, conversation.overrides)
+      }
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
@@ -495,7 +499,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const updateConversationAsync = async () => {
       try {
         if (chatMessages.length > 0) {
-          createOrUpdateConversation(currentConversationId, chatMessages)
+          createOrUpdateConversation(currentConversationId, chatMessages, conversationOverrides ?? null)
         }
       } catch (error) {
         new Notice('Failed to save chat history')
@@ -503,7 +507,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
     }
     updateConversationAsync()
-  }, [currentConversationId, chatMessages, createOrUpdateConversation])
+  }, [currentConversationId, chatMessages, createOrUpdateConversation, conversationOverrides])
 
   // Updates the currentFile of the focused message (input or chat history)
   // This happens when active file changes or focused message changes
