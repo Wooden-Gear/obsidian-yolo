@@ -117,6 +117,13 @@ export class OpenAIMessageAdapter {
       base.thinking_config = reqAny.thinking_config || reqAny.thinkingConfig // e.g., { thinking_budget: number }
     }
 
+    // Pass-through vendor-specific extra body for gateways (e.g., Gemini tools)
+    // Many OpenAI-compatible gateways (OpenRouter, custom proxies) support extra_body
+    // to carry provider-native fields.
+    if (reqAny.extra_body && typeof reqAny.extra_body === 'object') {
+      base.extra_body = reqAny.extra_body
+    }
+
     return base
   }
 

@@ -83,6 +83,10 @@ export type RequestMessage =
 
 export type LLMOptions = {
   signal?: AbortSignal
+  geminiTools?: {
+    useWebSearch?: boolean
+    useUrlContext?: boolean
+  }
 }
 
 export type RequestTool = {

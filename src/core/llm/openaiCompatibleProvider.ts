@@ -55,6 +55,48 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       ...request,
       messages: formatMessages(request.messages),
     }
+    
+    // Handle Gemini native tools for OpenAI-compatible gateways
+    // Important: DO NOT set top-level `tools` to Gemini objects; gateways may
+    // interpret them as OpenAI function declarations. Instead, pass via extra_body.
+    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
+      const gemTools = (options as any).geminiTools
+      const geminiNativeTools: any[] = []
+      if (gemTools.useWebSearch) {
+        // Provide both snake_case (REST) and camelCase (JS SDK) variants
+        geminiNativeTools.push({ google_search: {} })
+        geminiNativeTools.push({ googleSearch: {} })
+      }
+      if (gemTools.useUrlContext) {
+        geminiNativeTools.push({ url_context: {} })
+        geminiNativeTools.push({ urlContext: {} })
+      }
+      if (geminiNativeTools.length > 0) {
+        const camelTools: any[] = []
+        if (gemTools.useWebSearch) camelTools.push({ googleSearch: {} })
+        if (gemTools.useUrlContext) camelTools.push({ urlContext: {} })
+        ;(formattedRequest as any).extra_body = {
+          ...(formattedRequest as any).extra_body,
+          tools: geminiNativeTools, // REST-compatible
+          config: {
+            ...((formattedRequest as any).extra_body?.config || {}),
+            tools: camelTools, // JS SDK-compatible
+          },
+          gemini: {
+            ...((formattedRequest as any).extra_body?.gemini || {}),
+            tools: camelTools,
+          },
+        }
+      }
+      // Ensure no top-level OpenAI tool fields are sent when using Gemini tools
+      delete (formattedRequest as any).tools
+      delete (formattedRequest as any).tool_choice
+    }
+    // If toolType is Gemini but no Gemini tools enabled, also ensure top-level tools are unset
+    else if ((model as any).toolType === 'gemini') {
+      delete (formattedRequest as any).tools
+    }
+    
     // Inject Gemini thinking config for OpenAI-compatible gateways if user selected Gemini reasoning
     if ((model as any).thinking?.enabled) {
       const budget = (model as any).thinking.thinking_budget
@@ -71,6 +113,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
         // Also add a nested object for gateways that prefer `reasoning: { effort }`
         formattedRequest.reasoning = { effort }
       }
+      // Ensure no top-level OpenAI tools are sent when using Gemini tools
+      delete (formattedRequest as any).tools
+    }
+    // If toolType is Gemini but no Gemini tools enabled, also ensure top-level tools are unset
+    else if ((model as any).toolType === 'gemini') {
+      delete (formattedRequest as any).tools
     }
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
@@ -94,6 +142,32 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       ...request,
       messages: formatMessages(request.messages),
     }
+    
+    // Handle Gemini native tools for OpenAI-compatible gateways (streaming)
+    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
+      const gemTools = (options as any).geminiTools
+      const geminiNativeTools: any[] = []
+      if (gemTools.useWebSearch) {
+        geminiNativeTools.push({ google_search: {} })
+        geminiNativeTools.push({ googleSearch: {} })
+      }
+      if (gemTools.useUrlContext) {
+        geminiNativeTools.push({ url_context: {} })
+        geminiNativeTools.push({ urlContext: {} })
+      }
+      if (geminiNativeTools.length > 0) {
+        ;(formattedRequest as any).extra_body = {
+          ...(formattedRequest as any).extra_body,
+          tools: geminiNativeTools,
+        }
+      }
+      // Ensure no top-level OpenAI tools are sent when using Gemini tools
+      delete (formattedRequest as any).tools
+    } else if ((model as any).toolType === 'gemini') {
+      // Ensure no top-level tools when Gemini tool type but none enabled
+      delete (formattedRequest as any).tools
+    }
+    
     if ((model as any).thinking?.enabled) {
       const budget = (model as any).thinking.thinking_budget
       formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }

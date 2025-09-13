@@ -58,6 +58,7 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
         thinking_budget: z.number(),
       })
       .optional(),
+    toolType: z.enum(['none', 'gemini']).default('none').optional(),
   }),
   z.object({
     providerType: z.literal('groq'),
@@ -129,6 +130,7 @@ export const chatModelSchema = z.discriminatedUnion('providerType', [
         thinking_budget: z.number(),
       })
       .optional(),
+    toolType: z.enum(['none', 'gemini']).default('none').optional(),
   }),
 ])
 

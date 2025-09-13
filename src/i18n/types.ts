@@ -152,6 +152,10 @@ export interface TranslationKeys {
       geminiThinkingBudget?: string
       geminiThinkingBudgetDesc?: string
       geminiThinkingBudgetPlaceholder?: string
+      toolType?: string
+      toolTypeDesc?: string
+      toolTypeNone?: string
+      toolTypeGemini?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string
@@ -313,6 +317,9 @@ export interface TranslationKeys {
       streaming?: string
       vaultSearch?: string
       useVaultSearch?: string
+      geminiTools?: string
+      webSearch?: string
+      urlContext?: string
     }
   }
 

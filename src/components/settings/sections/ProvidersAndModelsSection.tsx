@@ -299,22 +299,22 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                                       <Settings />
                                     </button>
                                   )}
+                                  {/* Always allow editing, even for default models (e.g., Gemini presets) */}
+                                  <button
+                                    onClick={() => new EditChatModelModal(app, plugin, model).open()}
+                                    className="clickable-icon"
+                                    title="Edit model"
+                                  >
+                                    <Edit />
+                                  </button>
+                                  {/* Keep delete hidden for default models */}
                                   {!DEFAULT_CHAT_MODELS.some(v => v.id === model.id && v.providerId === model.providerId) && (
-                                    <>
-                                      <button
-                                        onClick={() => new EditChatModelModal(app, plugin, model).open()}
-                                        className="clickable-icon"
-                                        title="Edit model"
-                                      >
-                                        <Edit />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteChatModel(model.id)}
-                                        className="clickable-icon"
-                                      >
-                                        <Trash2 />
-                                      </button>
-                                    </>
+                                    <button
+                                      onClick={() => handleDeleteChatModel(model.id)}
+                                      className="clickable-icon"
+                                    >
+                                      <Trash2 />
+                                    </button>
                                   )}
                                 </div>
                               </td>

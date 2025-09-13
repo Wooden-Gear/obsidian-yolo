@@ -121,6 +121,10 @@ export function useChatStreamManager({
           },
           maxContextOverride:
             conversationOverrides?.maxContextMessages ?? undefined,
+          geminiTools: {
+            useWebSearch: conversationOverrides?.useWebSearch ?? false,
+            useUrlContext: conversationOverrides?.useUrlContext ?? false,
+          },
         })
 
         unsubscribeResponseGenerator = responseGenerator.subscribe(

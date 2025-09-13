@@ -893,6 +893,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               setConversationOverrides(next)
               conversationOverridesRef.current.set(currentConversationId, next)
             }}
+            currentModel={settings.chatModels?.find(m => m.id === conversationModelId)}
           />
         </div>
         <ChatUserInput

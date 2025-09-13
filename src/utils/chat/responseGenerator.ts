@@ -37,6 +37,10 @@ export type ResponseGeneratorParams = {
     top_p?: number
   }
   maxContextOverride?: number
+  geminiTools?: {
+    useWebSearch?: boolean
+    useUrlContext?: boolean
+  }
 }
 
 export class ResponseGenerator {
@@ -57,6 +61,10 @@ export class ResponseGenerator {
     top_p?: number
   }
   private readonly maxContextOverride?: number
+  private readonly geminiTools?: {
+    useWebSearch?: boolean
+    useUrlContext?: boolean
+  }
 
   private responseMessages: ChatMessage[] = [] // Response messages that are generated after the initial messages
   private subscribers: ((messages: ChatMessage[]) => void)[] = []
@@ -75,6 +83,7 @@ export class ResponseGenerator {
     this.learningMode = params.learningMode
     this.requestParams = params.requestParams
     this.maxContextOverride = params.maxContextOverride
+    this.geminiTools = params.geminiTools
   }
 
   public subscribe(callback: (messages: ChatMessage[]) => void) {
@@ -210,6 +219,7 @@ export class ResponseGenerator {
         },
         {
           signal: this.abortSignal,
+          geminiTools: this.geminiTools,
         },
       )
 
@@ -271,7 +281,7 @@ export class ResponseGenerator {
     }
 
     // Streaming path
-    const stream = await this.providerClient.streamResponse(
+    const responseIterable = await this.providerClient.streamResponse(
       this.model,
       {
         model: this.model.model,
@@ -283,6 +293,7 @@ export class ResponseGenerator {
       },
       {
         signal: this.abortSignal,
+        geminiTools: this.geminiTools,
       },
     )
 
@@ -303,7 +314,7 @@ export class ResponseGenerator {
     }
     const responseMessageId = lastMessage.id
     let responseToolCalls: Record<number, ToolCallDelta> = {}
-    for await (const chunk of stream) {
+    for await (const chunk of responseIterable) {
       const { updatedToolCalls } = this.processChunk(
         chunk,
         responseMessageId,

@@ -9,9 +9,11 @@ import { useSettings } from '../../../contexts/settings-context'
 export default function ChatSettingsButton({
   overrides,
   onChange,
+  currentModel,
 }: {
   overrides?: ConversationOverrideSettings
   onChange?: (overrides: ConversationOverrideSettings) => void
+  currentModel?: any
 }) {
   const { t } = useLanguage()
   const { settings } = useSettings()
@@ -24,8 +26,14 @@ export default function ChatSettingsButton({
       stream: overrides?.stream ?? true,
       // Default: RAG (vault search) OFF by default unless user explicitly turns it on
       useVaultSearch: overrides?.useVaultSearch ?? false,
+      // Default: Web search and URL context OFF by default
+      useWebSearch: overrides?.useWebSearch ?? false,
+      useUrlContext: overrides?.useUrlContext ?? false,
     }
   }, [overrides])
+  
+  // Check if current model supports Gemini tools
+  const hasGeminiTools = currentModel?.toolType === 'gemini'
 
   const update = (patch: Partial<ConversationOverrideSettings>) => {
     const next = { ...value, ...patch }
@@ -169,6 +177,46 @@ export default function ChatSettingsButton({
               </div>
             </div>
           </div>
+          
+          {hasGeminiTools && (
+            <div className="smtcmp-chat-settings-section">
+              <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.geminiTools', 'Gemini Tools')}</div>
+              <div className="smtcmp-chat-settings-row-inline">
+                <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.webSearch', 'Web Search')}</div>
+                <div className="smtcmp-segmented">
+                  <button
+                    className={value.useWebSearch === true ? 'active' : ''}
+                    onClick={() => update({ useWebSearch: true })}
+                  >
+                    {t('common.on', 'On')}
+                  </button>
+                  <button
+                    className={value.useWebSearch === false ? 'active' : ''}
+                    onClick={() => update({ useWebSearch: false })}
+                  >
+                    {t('common.off', 'Off')}
+                  </button>
+                </div>
+              </div>
+              <div className="smtcmp-chat-settings-row-inline">
+                <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.urlContext', 'URL Context')}</div>
+                <div className="smtcmp-segmented">
+                  <button
+                    className={value.useUrlContext === true ? 'active' : ''}
+                    onClick={() => update({ useUrlContext: true })}
+                  >
+                    {t('common.on', 'On')}
+                  </button>
+                  <button
+                    className={value.useUrlContext === false ? 'active' : ''}
+                    onClick={() => update({ useUrlContext: false })}
+                  >
+                    {t('common.off', 'Off')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Popover.Content>
     </Popover.Root>
