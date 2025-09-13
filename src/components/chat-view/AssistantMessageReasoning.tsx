@@ -26,6 +26,10 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
       }
       const timer = setTimeout(() => {
         setShowLoader(false)
+        // Auto-collapse after reasoning finishes if user hasn't interacted
+        if (!hasUserInteracted.current) {
+          setIsExpanded(false)
+        }
       }, 1000)
       return () => clearTimeout(timer)
     }
@@ -43,7 +47,7 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
         className="smtcmp-assistant-message-metadata-toggle"
         onClick={handleToggle}
       >
-        <span>Reasoning {showLoader && <DotLoader />}</span>
+        <span>{showLoader ? 'Reasoning' : 'Reasoned'} {showLoader && <DotLoader />}</span>
         {isExpanded ? (
           <ChevronUp className="smtcmp-assistant-message-metadata-toggle-icon" />
         ) : (
