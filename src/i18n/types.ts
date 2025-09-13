@@ -311,6 +311,8 @@ export interface TranslationKeys {
       temperature?: string
       topP?: string
       streaming?: string
+      vaultSearch?: string
+      useVaultSearch?: string
     }
   }
 

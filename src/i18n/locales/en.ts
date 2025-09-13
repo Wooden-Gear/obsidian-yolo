@@ -288,8 +288,19 @@ export const en: TranslationKeys = {
     modeBrute: 'Brute',
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder: 'Enter how to continue, e.g., “Explain Fermat\'s Last Theorem in LaTeX”. Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
-    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., “Make it concise and active voice; keep markdown structure”. Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customContinuePromptPlaceholder: 'Enter how to continue, e.g., "Explain Fermat\'s Last Theorem in LaTeX". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., "Make it concise and active voice; keep markdown structure". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    conversationSettings: {
+      openAria: 'Conversation settings',
+      chatMemory: 'Chat Memory',
+      maxContext: 'Max Context',
+      sampling: 'Sampling Parameters',
+      temperature: 'Temperature',
+      topP: 'Top P',
+      streaming: 'Streaming',
+      vaultSearch: 'Vault Search',
+      useVaultSearch: 'RAG Search',
+    },
   },
 
   notices: {

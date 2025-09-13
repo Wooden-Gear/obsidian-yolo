@@ -20,7 +20,10 @@ export default function ChatSettingsButton({
       temperature: overrides?.temperature ?? null,
       top_p: overrides?.top_p ?? null,
       maxContextMessages: overrides?.maxContextMessages ?? null,
-      stream: overrides?.stream ?? null,
+      // Default: streaming ON by default unless user explicitly turns it off
+      stream: overrides?.stream ?? true,
+      // Default: RAG (vault search) OFF by default unless user explicitly turns it on
+      useVaultSearch: overrides?.useVaultSearch ?? false,
     }
   }, [overrides])
 
@@ -139,6 +142,27 @@ export default function ChatSettingsButton({
                 <button
                   className={value.stream === false ? 'active' : ''}
                   onClick={() => update({ stream: false })}
+                >
+                  {t('common.off', 'Off')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="smtcmp-chat-settings-section">
+            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.vaultSearch', 'Vault Search')}</div>
+            <div className="smtcmp-chat-settings-row-inline">
+              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.useVaultSearch', 'RAG Search')}</div>
+              <div className="smtcmp-segmented">
+                <button
+                  className={value.useVaultSearch === true ? 'active' : ''}
+                  onClick={() => update({ useVaultSearch: true })}
+                >
+                  {t('common.on', 'On')}
+                </button>
+                <button
+                  className={value.useVaultSearch === false ? 'active' : ''}
+                  onClick={() => update({ useVaultSearch: false })}
                 >
                   {t('common.off', 'Off')}
                 </button>

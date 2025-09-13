@@ -298,6 +298,8 @@ export const zh: TranslationKeys = {
       temperature: '温度',
       topP: 'Top P',
       streaming: '流式输出',
+      vaultSearch: 'Vault 搜索',
+      useVaultSearch: 'RAG 搜索',
     },
   },
 
