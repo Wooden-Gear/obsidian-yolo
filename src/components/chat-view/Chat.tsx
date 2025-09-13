@@ -163,6 +163,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
   const [conversationOverrides, setConversationOverrides] = useState<ConversationOverrideSettings | undefined>(undefined)
 
+  // Per-conversation model id (do NOT write back to global settings)
+  const conversationModelIdRef = useRef<Map<string, string>>(new Map())
+  const [conversationModelId, setConversationModelId] = useState<string>(settings.chatModelId)
+
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
       return groupAssistantAndToolMessages(chatMessages)
@@ -182,6 +186,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     chatMode,
     learningMode,
     conversationOverrides,
+    modelId: conversationModelId,
   })
 
   const registerChatUserInputRef = (
@@ -210,6 +215,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (conversation.overrides) {
         conversationOverridesRef.current.set(conversationId, conversation.overrides)
       }
+      const modelFromRef = conversationModelIdRef.current.get(conversationId) ?? settings.chatModelId
+      setConversationModelId(modelFromRef)
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
@@ -232,6 +239,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     conversationSuppressionRef.current.set(newId, 'none')
     setCurrentFileSuppression('none')
     setConversationOverrides(undefined)
+    conversationModelIdRef.current.set(newId, settings.chatModelId)
+    setConversationModelId(settings.chatModelId)
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
@@ -899,12 +908,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               const nextVisible = nextCurrent?.file != null
 
               if (prevHad && !nextHas) {
+                // Deleted -> suppression: deleted
                 setCurrentFileSuppression('deleted')
                 conversationSuppressionRef.current.set(currentConversationId, 'deleted')
               } else if (prevVisible && !nextVisible) {
+                // Hidden -> suppression: hidden
                 setCurrentFileSuppression('hidden')
                 conversationSuppressionRef.current.set(currentConversationId, 'hidden')
               } else if (!prevVisible && nextVisible) {
+                // Turned visible -> unsuppress
                 setCurrentFileSuppression('none')
                 conversationSuppressionRef.current.set(currentConversationId, 'none')
               }
@@ -914,6 +926,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 mentionables,
               }
             })
+          }}
+          modelId={conversationModelId}
+          onModelChange={(id) => {
+            setConversationModelId(id)
+            conversationModelIdRef.current.set(currentConversationId, id)
           }}
           autoFocus
           addedBlockKey={addedBlockKey}

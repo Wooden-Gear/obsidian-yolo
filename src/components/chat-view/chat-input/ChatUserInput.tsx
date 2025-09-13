@@ -51,6 +51,8 @@ export type ChatUserInputProps = {
   conversationOverrides?: any
   onConversationOverridesChange?: (overrides: any) => void
   showConversationSettingsButton?: boolean
+  modelId?: string
+  onModelChange?: (modelId: string) => void
 }
 
 const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
@@ -67,6 +69,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       conversationOverrides,
       onConversationOverridesChange,
       showConversationSettingsButton = false,
+      modelId,
+      onModelChange,
     },
     ref,
   ) => {
@@ -295,7 +299,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
         <div className="smtcmp-chat-user-input-controls">
           <div className="smtcmp-chat-user-input-controls__model-select-container">
-            <ModelSelect />
+            <ModelSelect modelId={modelId} onChange={onModelChange} />
           </div>
           <div className="smtcmp-chat-user-input-controls__buttons">
             <ImageUploadButton onUpload={handleUploadImages} />
