@@ -167,6 +167,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const conversationModelIdRef = useRef<Map<string, string>>(new Map())
   const [conversationModelId, setConversationModelId] = useState<string>(settings.chatModelId)
 
+  // Per-message model mapping for historical user messages
+  const [messageModelMap, setMessageModelMap] = useState<Map<string, string>>(new Map())
+
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
       return groupAssistantAndToolMessages(chatMessages)
@@ -217,6 +220,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
       const modelFromRef = conversationModelIdRef.current.get(conversationId) ?? settings.chatModelId
       setConversationModelId(modelFromRef)
+      // Reset per-message model mapping when switching conversation
+      setMessageModelMap(new Map())
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
@@ -241,6 +246,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setConversationOverrides(undefined)
     conversationModelIdRef.current.set(newId, settings.chatModelId)
     setConversationModelId(settings.chatModelId)
+    setMessageModelMap(new Map())
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
@@ -750,6 +756,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               }}
               onSubmit={(content, useVaultSearch) => {
                 if (editorStateToPlainText(content).trim() === '') return
+                // Use the model mapping for this message if exists, otherwise current conversation model
+                const modelForThisMessage = messageModelMap.get(messageOrGroup.id) ?? conversationModelId
                 handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
@@ -770,6 +778,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   useVaultSearch,
                 })
                 chatUserInputRefs.current.get(inputMessage.id)?.focus()
+                // Record the model used for this message id
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, modelForThisMessage)
+                  return next
+                })
               }}
               onFocus={() => {
                 setFocusedMessageId(messageOrGroup.id)
@@ -819,6 +833,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       : msg,
                   ),
                 )
+              }}
+              modelId={messageModelMap.get(messageOrGroup.id) ?? conversationModelId}
+              onModelChange={(id) => {
+                // Update both the mapping for this message and the conversation-level model
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, id)
+                  return next
+                })
+                setConversationModelId(id)
+                conversationModelIdRef.current.set(currentConversationId, id)
               }}
             />
           ) : (
@@ -885,6 +910,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             handleUserMessageSubmit({
               inputChatMessages: [...chatMessages, { ...inputMessage, content }],
               useVaultSearch,
+            })
+            // Record the model used for this just-submitted input message
+            setMessageModelMap((prev) => {
+              const next = new Map(prev)
+              next.set(inputMessage.id, conversationModelId)
+              return next
             })
             setInputMessage(
               getNewInputMessage(

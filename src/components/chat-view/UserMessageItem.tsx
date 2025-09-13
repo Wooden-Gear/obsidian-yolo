@@ -13,6 +13,8 @@ export type UserMessageItemProps = {
   onSubmit: (content: SerializedEditorState, useVaultSearch: boolean) => void
   onFocus: () => void
   onMentionablesChange: (mentionables: Mentionable[]) => void
+  modelId?: string
+  onModelChange?: (modelId: string) => void
 }
 
 export default function UserMessageItem({
@@ -22,6 +24,8 @@ export default function UserMessageItem({
   onSubmit,
   onFocus,
   onMentionablesChange,
+  modelId,
+  onModelChange,
 }: UserMessageItemProps) {
   return (
     <div className="smtcmp-chat-messages-user">
@@ -33,6 +37,8 @@ export default function UserMessageItem({
         onFocus={onFocus}
         mentionables={message.mentionables}
         setMentionables={onMentionablesChange}
+        modelId={modelId}
+        onModelChange={onModelChange}
       />
       {message.similaritySearchResults && (
         <SimilaritySearchResults
