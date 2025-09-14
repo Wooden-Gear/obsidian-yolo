@@ -117,11 +117,20 @@ export class OpenAIMessageAdapter {
       base.thinking_config = reqAny.thinking_config || reqAny.thinkingConfig // e.g., { thinking_budget: number }
     }
 
-    // Pass-through vendor-specific extra body for gateways (e.g., Gemini tools)
-    // Many OpenAI-compatible gateways (OpenRouter, custom proxies) support extra_body
-    // to carry provider-native fields.
+    // Handle Gemini native tools from extra_body - override top-level tools if present
     if (reqAny.extra_body && typeof reqAny.extra_body === 'object') {
-      base.extra_body = reqAny.extra_body
+      // If extra_body contains Gemini tools, use them directly in top-level tools field
+      if (reqAny.extra_body.tools && Array.isArray(reqAny.extra_body.tools)) {
+        base.tools = reqAny.extra_body.tools
+        // Remove tool_choice when using Gemini tools to avoid conflicts
+        delete base.tool_choice
+      }
+      
+      // Pass-through other extra_body fields for gateways that need them
+      const { tools: _, ...otherExtraBody } = reqAny.extra_body
+      if (Object.keys(otherExtraBody).length > 0) {
+        base.extra_body = otherExtraBody
+      }
     }
 
     return base
