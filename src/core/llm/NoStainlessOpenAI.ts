@@ -14,6 +14,27 @@ export class NoStainlessOpenAI extends OpenAI {
         delete headers[k]
       }
     })
+    
+    // Handle Gemini native tools by bypassing OpenAI SDK validation
+    if (req.req.body && typeof req.req.body === 'string') {
+      try {
+        const body = JSON.parse(req.req.body)
+        // If tools contain Gemini native format (e.g., {googleSearch: {}}), 
+        // the OpenAI SDK validation will fail. We need to bypass this.
+        if (body.tools && Array.isArray(body.tools)) {
+          const hasGeminiTools = body.tools.some((tool: any) => 
+            tool.googleSearch !== undefined || tool.urlContext !== undefined
+          )
+          if (hasGeminiTools) {
+            // For Gemini tools, we bypass SDK validation by reconstructing the request
+            req.req.body = JSON.stringify(body)
+          }
+        }
+      } catch (e) {
+        // If JSON parsing fails, continue with original body
+      }
+    }
+    
     return req
   }
 }

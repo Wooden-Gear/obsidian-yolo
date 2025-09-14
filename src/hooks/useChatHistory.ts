@@ -46,6 +46,15 @@ export function useChatHistory(): UseChatHistory {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Refresh chat list when other parts of the app clear or modify chat history (e.g., Settings -> Etc -> Clear Chat History)
+  useEffect(() => {
+    const handler = () => {
+      void fetchChatList()
+    }
+    window.addEventListener('smtcmp:chat-history-cleared', handler)
+    return () => window.removeEventListener('smtcmp:chat-history-cleared', handler)
+  }, [fetchChatList])
+
   const createOrUpdateConversation = useMemo(
     () =>
       debounce(
@@ -72,14 +81,16 @@ export function useChatHistory(): UseChatHistory {
           } else {
             const firstUserMessage = messages.find((v) => v.role === 'user')
 
+            // 限制标题长度以避免文件名过长问题
+            // 中文字符URL编码后会变成3倍长度，保守截取20个字符
+            const rawTitle = firstUserMessage?.content
+              ? editorStateToPlainText(firstUserMessage.content)
+              : 'New chat'
+            const safeTitle = rawTitle.substring(0, 20)
+            
             await chatManager.createChat({
               id,
-              title: firstUserMessage?.content
-                ? editorStateToPlainText(firstUserMessage.content).substring(
-                    0,
-                    50,
-                  )
-                : 'New chat',
+              title: safeTitle,
               messages: serializedMessages,
               overrides: overrides ?? null,
             })

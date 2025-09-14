@@ -163,6 +163,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
   const [conversationOverrides, setConversationOverrides] = useState<ConversationOverrideSettings | undefined>(undefined)
 
+  // Per-conversation model id (do NOT write back to global settings)
+  const conversationModelIdRef = useRef<Map<string, string>>(new Map())
+  const [conversationModelId, setConversationModelId] = useState<string>(settings.chatModelId)
+
+  // Per-message model mapping for historical user messages
+  const [messageModelMap, setMessageModelMap] = useState<Map<string, string>>(new Map())
+
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
       return groupAssistantAndToolMessages(chatMessages)
@@ -182,6 +189,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     chatMode,
     learningMode,
     conversationOverrides,
+    modelId: conversationModelId,
   })
 
   const registerChatUserInputRef = (
@@ -210,6 +218,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (conversation.overrides) {
         conversationOverridesRef.current.set(conversationId, conversation.overrides)
       }
+      const modelFromRef = conversationModelIdRef.current.get(conversationId) ?? settings.chatModelId
+      setConversationModelId(modelFromRef)
+      // Reset per-message model mapping when switching conversation
+      setMessageModelMap(new Map())
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
@@ -232,6 +244,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     conversationSuppressionRef.current.set(newId, 'none')
     setCurrentFileSuppression('none')
     setConversationOverrides(undefined)
+    conversationModelIdRef.current.set(newId, settings.chatModelId)
+    setConversationModelId(settings.chatModelId)
+    setMessageModelMap(new Map())
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
@@ -741,6 +756,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               }}
               onSubmit={(content, useVaultSearch) => {
                 if (editorStateToPlainText(content).trim() === '') return
+                // Use the model mapping for this message if exists, otherwise current conversation model
+                const modelForThisMessage = messageModelMap.get(messageOrGroup.id) ?? conversationModelId
                 handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
@@ -761,6 +778,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   useVaultSearch,
                 })
                 chatUserInputRefs.current.get(inputMessage.id)?.focus()
+                // Record the model used for this message id
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, modelForThisMessage)
+                  return next
+                })
               }}
               onFocus={() => {
                 setFocusedMessageId(messageOrGroup.id)
@@ -811,6 +834,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   ),
                 )
               }}
+              modelId={messageModelMap.get(messageOrGroup.id) ?? conversationModelId}
+              onModelChange={(id) => {
+                // Update both the mapping for this message and the conversation-level model
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, id)
+                  return next
+                })
+                setConversationModelId(id)
+                conversationModelIdRef.current.set(currentConversationId, id)
+              }}
             />
           ) : (
             <AssistantToolMessageGroupItem
@@ -859,6 +893,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               setConversationOverrides(next)
               conversationOverridesRef.current.set(currentConversationId, next)
             }}
+            currentModel={settings.chatModels?.find(m => m.id === conversationModelId)}
           />
         </div>
         <ChatUserInput
@@ -876,6 +911,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             handleUserMessageSubmit({
               inputChatMessages: [...chatMessages, { ...inputMessage, content }],
               useVaultSearch,
+            })
+            // Record the model used for this just-submitted input message
+            setMessageModelMap((prev) => {
+              const next = new Map(prev)
+              next.set(inputMessage.id, conversationModelId)
+              return next
             })
             setInputMessage(
               getNewInputMessage(
@@ -899,12 +940,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               const nextVisible = nextCurrent?.file != null
 
               if (prevHad && !nextHas) {
+                // Deleted -> suppression: deleted
                 setCurrentFileSuppression('deleted')
                 conversationSuppressionRef.current.set(currentConversationId, 'deleted')
               } else if (prevVisible && !nextVisible) {
+                // Hidden -> suppression: hidden
                 setCurrentFileSuppression('hidden')
                 conversationSuppressionRef.current.set(currentConversationId, 'hidden')
               } else if (!prevVisible && nextVisible) {
+                // Turned visible -> unsuppress
                 setCurrentFileSuppression('none')
                 conversationSuppressionRef.current.set(currentConversationId, 'none')
               }
@@ -914,6 +958,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 mentionables,
               }
             })
+          }}
+          modelId={conversationModelId}
+          onModelChange={(id) => {
+            setConversationModelId(id)
+            conversationModelIdRef.current.set(currentConversationId, id)
           }}
           autoFocus
           addedBlockKey={addedBlockKey}

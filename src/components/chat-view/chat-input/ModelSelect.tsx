@@ -5,13 +5,20 @@ import { useState } from 'react'
 import { useSettings } from '../../../contexts/settings-context'
 import { getModelDisplayNameWithProvider, getModelDisplayName } from '../../../utils/model-id-utils'
 
-export function ModelSelect() {
+export function ModelSelect({
+  modelId: externalModelId,
+  onChange,
+}: {
+  modelId?: string
+  onChange?: (modelId: string) => void
+} = {}) {
   const { settings, setSettings } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
   
   // Get provider name for current model
   const getCurrentModelDisplay = () => {
-    const currentModel = settings.chatModels.find(m => m.id === settings.chatModelId)
+    const effectiveModelId = externalModelId ?? settings.chatModelId
+    const currentModel = settings.chatModels.find(m => m.id === effectiveModelId)
     if (currentModel) {
       // 优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
       const provider = settings.providers.find(p => p.id === currentModel.providerId)
@@ -20,7 +27,7 @@ export function ModelSelect() {
       const suffix = provider?.id ? ` (${provider.id})` : ''
       return `${display}${suffix}`
     }
-    return settings.chatModelId
+    return effectiveModelId
   }
   
   return (
@@ -63,10 +70,14 @@ export function ModelSelect() {
                     <DropdownMenu.Item
                       key={chatModelOption.id}
                       onSelect={() => {
-                        setSettings({
-                          ...settings,
-                          chatModelId: chatModelOption.id,
-                        })
+                        if (onChange) {
+                          onChange(chatModelOption.id)
+                        } else {
+                          setSettings({
+                            ...settings,
+                            chatModelId: chatModelOption.id,
+                          })
+                        }
                       }}
                       asChild
                     >

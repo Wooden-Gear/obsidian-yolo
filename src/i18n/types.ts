@@ -152,6 +152,10 @@ export interface TranslationKeys {
       geminiThinkingBudget?: string
       geminiThinkingBudgetDesc?: string
       geminiThinkingBudgetPlaceholder?: string
+      toolType?: string
+      toolTypeDesc?: string
+      toolTypeNone?: string
+      toolTypeGemini?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string
@@ -270,6 +274,15 @@ export interface TranslationKeys {
       resetSettingsConfirm: string
       resetSettingsSuccess: string
       reset: string
+      // new actions
+      clearChatHistory?: string
+      clearChatHistoryDesc?: string
+      clearChatHistoryConfirm?: string
+      clearChatHistorySuccess?: string
+      resetProviders?: string
+      resetProvidersDesc?: string
+      resetProvidersConfirm?: string
+      resetProvidersSuccess?: string
     }
     language: {
       title: string
@@ -311,6 +324,11 @@ export interface TranslationKeys {
       temperature?: string
       topP?: string
       streaming?: string
+      vaultSearch?: string
+      useVaultSearch?: string
+      geminiTools?: string
+      webSearch?: string
+      urlContext?: string
     }
   }
 

@@ -50,7 +50,6 @@ body:
       description: What version of Obsidian are you running?
       placeholder: e.g., 1.4.16
     validations:
-      required: true
 
   - type: input
     id: obsidian-installer-version
@@ -59,12 +58,11 @@ body:
       description: What version of Obsidian Installer are you running? (You can find this in Settings > General menu, listed as "installer version" below the current version)
       placeholder: e.g., 1.4.16
     validations:
-      required: true
 
   - type: input
     id: plugin-version
     attributes:
-      label: Smart Composer Version
+      label: YOLO Version
       description: What version of Smart Composer are you using? (You can find this in Settings > Community plugins menu)
       placeholder: e.g., 1.0.0
     validations:

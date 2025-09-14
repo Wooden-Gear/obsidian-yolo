@@ -22,7 +22,16 @@ export class ChatManager extends AbstractJsonRepository<
   protected generateFileName(chat: ChatConversation): string {
     // Format: v{schemaVersion}_{title}_{updatedAt}_{id}.json
     const encodedTitle = encodeURIComponent(chat.title)
-    return `v${chat.schemaVersion}_${encodedTitle}_${chat.updatedAt}_${chat.id}.json`
+    
+    // 确保编码后的文件名不会过长，避免文件系统限制
+    // 预留空间给版本号、时间戳、UUID和扩展名（约80字符）
+    // 文件系统通常限制255字符，保守限制编码后标题为150字符
+    const maxEncodedTitleLength = 150
+    const truncatedEncodedTitle = encodedTitle.length > maxEncodedTitleLength 
+      ? encodedTitle.substring(0, maxEncodedTitleLength) + '...'
+      : encodedTitle
+    
+    return `v${chat.schemaVersion}_${truncatedEncodedTitle}_${chat.updatedAt}_${chat.id}.json`
   }
 
   protected parseFileName(fileName: string): ChatConversationMetadata | null {
