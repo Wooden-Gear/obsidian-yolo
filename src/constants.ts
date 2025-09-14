@@ -348,6 +348,10 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'gemini/gemini-2.5-pro',
     model: 'gemini-2.5-pro',
     enable: false,
+    thinking: {
+      enabled: true,
+      thinking_budget: -1,
+    },
   },
   {
     providerType: 'gemini',
@@ -355,6 +359,10 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'gemini/gemini-2.5-flash',
     model: 'gemini-2.5-flash',
     enable: false,
+    thinking: {
+      enabled: true,
+      thinking_budget: -1,
+    },
   },
   {
     providerType: 'gemini',
@@ -362,6 +370,10 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'gemini/gemini-2.5-flash-lite',
     model: 'gemini-2.5-flash-lite',
     enable: false,
+    thinking: {
+      enabled: true,
+      thinking_budget: -1,
+    },
   },
   {
     providerType: 'gemini',
@@ -369,6 +381,10 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'gemini/gemini-2.0-flash',
     model: 'gemini-2.0-flash',
     enable: false,
+    thinking: {
+      enabled: true,
+      thinking_budget: -1,
+    },
   },
   {
     providerType: 'gemini',
@@ -376,6 +392,10 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'gemini/gemini-2.0-flash-lite',
     model: 'gemini-2.0-flash-lite',
     enable: false,
+    thinking: {
+      enabled: true,
+      thinking_budget: -1,
+    },
   },
   {
     providerType: 'deepseek',

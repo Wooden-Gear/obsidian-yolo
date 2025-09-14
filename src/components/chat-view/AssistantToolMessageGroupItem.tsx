@@ -34,7 +34,10 @@ export default function AssistantToolMessageGroupItem({
           message.reasoning || message.annotations || message.content ? (
             <div key={message.id} className="smtcmp-chat-messages-assistant">
               {message.reasoning && (
-                <AssistantMessageReasoning reasoning={message.reasoning} />
+                <AssistantMessageReasoning 
+                  reasoning={message.reasoning} 
+                  content={message.content}
+                />
               )}
               {message.annotations && (
                 <AssistantMessageAnnotations
