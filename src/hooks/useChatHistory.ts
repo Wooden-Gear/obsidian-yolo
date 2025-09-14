@@ -46,6 +46,15 @@ export function useChatHistory(): UseChatHistory {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Refresh chat list when other parts of the app clear or modify chat history (e.g., Settings -> Etc -> Clear Chat History)
+  useEffect(() => {
+    const handler = () => {
+      void fetchChatList()
+    }
+    window.addEventListener('smtcmp:chat-history-cleared', handler)
+    return () => window.removeEventListener('smtcmp:chat-history-cleared', handler)
+  }, [fetchChatList])
+
   const createOrUpdateConversation = useMemo(
     () =>
       debounce(

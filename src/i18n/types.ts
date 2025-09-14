@@ -274,6 +274,15 @@ export interface TranslationKeys {
       resetSettingsConfirm: string
       resetSettingsSuccess: string
       reset: string
+      // new actions
+      clearChatHistory?: string
+      clearChatHistoryDesc?: string
+      clearChatHistoryConfirm?: string
+      clearChatHistorySuccess?: string
+      resetProviders?: string
+      resetProvidersDesc?: string
+      resetProvidersConfirm?: string
+      resetProvidersSuccess?: string
     }
     language: {
       title: string
