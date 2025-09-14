@@ -67,6 +67,11 @@ function EditChatModelModalComponent({
   const [geminiBudget, setGeminiBudget] = useState<string>(
     `${(model as any).thinking?.thinking_budget ?? 2048}`,
   )
+  
+  // Tool type state
+  const [toolType, setToolType] = useState<'none' | 'gemini'>(
+    (model as any).toolType ?? 'none'
+  )
 
   const handleSubmit = async () => {
     if (!formData.model.trim()) {
@@ -113,6 +118,9 @@ function EditChatModelModalComponent({
         delete updatedModel.reasoning
         delete updatedModel.thinking
       }
+      
+      // Apply tool type
+      updatedModel.toolType = toolType
 
       // Update the model
       chatModels[modelIndex] = updatedModel
@@ -211,7 +219,20 @@ function EditChatModelModalComponent({
         </ObsidianSetting>
       )}
 
-      
+      {/* Tool type */}
+      <ObsidianSetting 
+        name={t('settings.models.toolType')}
+        desc={t('settings.models.toolTypeDesc')}
+      >
+        <ObsidianDropdown
+          value={toolType}
+          options={{
+            none: t('settings.models.toolTypeNone'),
+            gemini: t('settings.models.toolTypeGemini'),
+          }}
+          onChange={(v: string) => setToolType(v as any)}
+        />
+      </ObsidianSetting>
 
       <ObsidianSetting>
         <ObsidianButton text={t('common.save')} onClick={handleSubmit} cta />

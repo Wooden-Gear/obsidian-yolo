@@ -27,6 +27,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
   constructor(provider: Extract<LLMProvider, { type: 'openai-compatible' }>) {
     super(provider)
     this.adapter = new OpenAIMessageAdapter()
+    // Prefer standard OpenAI SDK; allow opting into NoStainless to bypass headers/validation when needed
     this.client = new (
       provider.additionalSettings?.noStainless ? NoStainlessOpenAI : OpenAI
     )({
@@ -55,12 +56,77 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       ...request,
       messages: formatMessages(request.messages),
     }
+    
+    // Handle Gemini tools for OpenAI-compatible gateways
+    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
+      const gemTools = (options as any).geminiTools
+      const openaiTools: any[] = []
+      
+      if (gemTools.useWebSearch) {
+        openaiTools.push({
+          type: 'function',
+          function: {
+            name: 'googleSearch',
+            description: 'Search the web using Google Search',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'The search query'
+                }
+              },
+              required: ['query']
+            }
+          }
+        })
+      }
+      
+      if (gemTools.useUrlContext) {
+        openaiTools.push({
+          type: 'function',
+          function: {
+            name: 'urlContext',
+            description: 'Get context from a URL',
+            parameters: {
+              type: 'object',
+              properties: {
+                url: {
+                  type: 'string',
+                  description: 'The URL to get context from'
+                }
+              },
+              required: ['url']
+            }
+          }
+        })
+      }
+      
+      if (openaiTools.length > 0) {
+        ;(formattedRequest as any).tools = openaiTools
+      }
+    }
+    // If toolType is Gemini but no Gemini tools enabled, also ensure top-level tools are unset
+    else if ((model as any).toolType === 'gemini') {
+      delete (formattedRequest as any).tools
+    }
+    
     // Inject Gemini thinking config for OpenAI-compatible gateways if user selected Gemini reasoning
     if ((model as any).thinking?.enabled) {
       const budget = (model as any).thinking.thinking_budget
       // Use both snake_case and camelCase to maximize compatibility
       formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
       formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
+    }
+    // Inject OpenAI reasoning effort for compatible gateways if user enabled OpenAI reasoning
+    if ((model as any).reasoning?.enabled) {
+      const effort = (model as any).reasoning.reasoning_effort
+      if (effort) {
+        // Pass the flat field (widely supported by OpenAI-compatible proxies)
+        formattedRequest.reasoning_effort = effort
+        // Also add a nested object for gateways that prefer `reasoning: { effort }`
+        formattedRequest.reasoning = { effort }
+      }
     }
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
@@ -84,10 +150,72 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       ...request,
       messages: formatMessages(request.messages),
     }
+    
+    // Handle Gemini tools for OpenAI-compatible gateways (streaming)
+    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
+      const gemTools = (options as any).geminiTools
+      const openaiTools: any[] = []
+      
+      if (gemTools.useWebSearch) {
+        openaiTools.push({
+          type: 'function',
+          function: {
+            name: 'googleSearch',
+            description: 'Search the web using Google Search',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'The search query'
+                }
+              },
+              required: ['query']
+            }
+          }
+        })
+      }
+      
+      if (gemTools.useUrlContext) {
+        openaiTools.push({
+          type: 'function',
+          function: {
+            name: 'urlContext',
+            description: 'Get context from a URL',
+            parameters: {
+              type: 'object',
+              properties: {
+                url: {
+                  type: 'string',
+                  description: 'The URL to get context from'
+                }
+              },
+              required: ['url']
+            }
+          }
+        })
+      }
+      
+      if (openaiTools.length > 0) {
+        ;(formattedRequest as any).tools = openaiTools
+      }
+    }
+    if ((model as any).toolType === 'gemini' && !(options as any)?.geminiTools) {
+      // Ensure no top-level tools when Gemini tool type but none enabled
+      delete (formattedRequest as any).tools
+    }
+    
     if ((model as any).thinking?.enabled) {
       const budget = (model as any).thinking.thinking_budget
       formattedRequest.thinking_config = { thinking_budget: budget, include_thoughts: true }
       formattedRequest.thinkingConfig = { thinkingBudget: budget, includeThoughts: true }
+    }
+    if ((model as any).reasoning?.enabled) {
+      const effort = (model as any).reasoning.reasoning_effort
+      if (effort) {
+        formattedRequest.reasoning_effort = effort
+        formattedRequest.reasoning = { effort }
+      }
     }
     return this.adapter.streamResponse(this.client, formattedRequest, options)
   }

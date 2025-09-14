@@ -31,6 +31,10 @@ export interface TranslationKeys {
     retry: string
     copy: string
     paste: string
+    // additions
+    default?: string
+    on?: string
+    off?: string
   }
 
   // Settings
@@ -63,6 +67,10 @@ export interface TranslationKeys {
       maxAutoIterationsDesc: string
       maxContextMessages: string
       maxContextMessagesDesc: string
+      defaultTemperature?: string
+      defaultTemperatureDesc?: string
+      defaultTopP?: string
+      defaultTopPDesc?: string
     }
     assistants: {
       title: string
@@ -144,6 +152,10 @@ export interface TranslationKeys {
       geminiThinkingBudget?: string
       geminiThinkingBudgetDesc?: string
       geminiThinkingBudgetPlaceholder?: string
+      toolType?: string
+      toolTypeDesc?: string
+      toolTypeNone?: string
+      toolTypeGemini?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string
@@ -262,6 +274,15 @@ export interface TranslationKeys {
       resetSettingsConfirm: string
       resetSettingsSuccess: string
       reset: string
+      // new actions
+      clearChatHistory?: string
+      clearChatHistoryDesc?: string
+      clearChatHistoryConfirm?: string
+      clearChatHistorySuccess?: string
+      resetProviders?: string
+      resetProvidersDesc?: string
+      resetProvidersConfirm?: string
+      resetProvidersSuccess?: string
     }
     language: {
       title: string
@@ -274,6 +295,8 @@ export interface TranslationKeys {
     placeholder: string
     sendMessage: string
     newChat: string
+    continueResponse?: string
+    stopGeneration?: string
     vaultSearch: string
     selectModel: string
     uploadImage: string
@@ -292,6 +315,21 @@ export interface TranslationKeys {
     customRewritePromptPlaceholder?: string
     showMore?: string
     showLess?: string
+    // conversation settings popover
+    conversationSettings?: {
+      openAria?: string
+      chatMemory?: string
+      maxContext?: string
+      sampling?: string
+      temperature?: string
+      topP?: string
+      streaming?: string
+      vaultSearch?: string
+      useVaultSearch?: string
+      geminiTools?: string
+      webSearch?: string
+      urlContext?: string
+    }
   }
 
   // Notices and Messages

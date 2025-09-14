@@ -86,6 +86,9 @@ export class GeminiProvider extends BaseLLMProvider<
         }
       }
 
+      // Prepare tools including Gemini native tools
+      const tools = this.prepareTools(request, model, options)
+
       const result: any = await this.client.models.generateContent({
         model: request.model,
         contents: request.messages
@@ -93,9 +96,7 @@ export class GeminiProvider extends BaseLLMProvider<
           .filter((m) => m !== null),
         config: {
           ...config,
-          ...(request.tools && request.tools.length > 0
-            ? { tools: request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)) }
-            : {}),
+          ...(tools ? { tools } : {}),
         },
       })
 
@@ -151,6 +152,9 @@ export class GeminiProvider extends BaseLLMProvider<
         }
       }
 
+      // Prepare tools including Gemini native tools
+      const tools = this.prepareTools(request, model, options)
+
       const stream = await this.client.models.generateContentStream({
         model: request.model,
         contents: request.messages
@@ -158,9 +162,7 @@ export class GeminiProvider extends BaseLLMProvider<
           .filter((m) => m !== null),
         config: {
           ...config,
-          ...(request.tools && request.tools.length > 0
-            ? { tools: request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)) }
-            : {}),
+          ...(tools ? { tools } : {}),
         },
       })
 
@@ -483,5 +485,35 @@ export class GeminiProvider extends BaseLLMProvider<
       }
       throw error
     }
+  }
+
+  private prepareTools(
+    request: LLMRequestNonStreaming | LLMRequestStreaming,
+    model: ChatModel,
+    options?: LLMOptions,
+  ): any[] | undefined {
+    const tools: any[] = []
+    
+    // Add Gemini native tools if enabled
+    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
+      const geminiTools = (options as any).geminiTools
+      
+      // Add Google Search tool
+      if (geminiTools.useWebSearch) {
+        tools.push({ googleSearch: {} })
+      }
+      
+      // Add URL Context tool
+      if (geminiTools.useUrlContext) {
+        tools.push({ urlContext: {} })
+      }
+    }
+    
+    // Add function calling tools if provided
+    if (request.tools && request.tools.length > 0) {
+      tools.push(...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)))
+    }
+    
+    return tools.length > 0 ? tools : undefined
   }
 }

@@ -16,6 +16,7 @@ import { ChatMessage } from '../../types/chat'
 import { PromptGenerator } from '../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../utils/chat/responseGenerator'
 import { ErrorModal } from '../modals/ErrorModal'
+import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
@@ -23,6 +24,8 @@ type UseChatStreamManagerParams = {
   promptGenerator: PromptGenerator
   chatMode: 'rag' | 'brute'
   learningMode: boolean
+  conversationOverrides?: ConversationOverrideSettings
+  modelId: string
 }
 
 export type UseChatStreamManager = {
@@ -40,9 +43,11 @@ export function useChatStreamManager({
   promptGenerator,
   chatMode,
   learningMode,
+  conversationOverrides,
+  modelId,
 }: UseChatStreamManagerParams): UseChatStreamManager {
   const app = useApp()
-  const { settings, setSettings } = useSettings()
+  const { settings } = useSettings()
   const { getMcpManager } = useMcp()
 
   const activeStreamAbortControllersRef = useRef<AbortController[]>([])
@@ -58,7 +63,7 @@ export function useChatStreamManager({
     try {
       return getChatModelClient({
         settings,
-        modelId: settings.chatModelId,
+        modelId: modelId,
       })
     } catch (error) {
       if (error instanceof LLMModelNotFoundException) {
@@ -67,26 +72,12 @@ export function useChatStreamManager({
         }
         // Fallback to the first chat model if the selected chat model is not found
         const firstChatModel = settings.chatModels[0]
-        setSettings({
-          ...settings,
-          chatModelId: firstChatModel.id,
-          chatModels: settings.chatModels.map((model) =>
-            model.id === firstChatModel.id
-              ? {
-                  ...model,
-                  enable: true,
-                }
-              : model,
-          ),
-        })
-        return getChatModelClient({
-          settings,
-          modelId: firstChatModel.id,
-        })
+        // Do NOT write back to global settings here; just use fallback locally
+        return getChatModelClient({ settings, modelId: firstChatModel.id })
       }
       throw error
     }
-  }, [settings, setSettings])
+  }, [settings, modelId])
 
   const submitChatMutation = useMutation({
     mutationFn: async ({
@@ -122,6 +113,18 @@ export function useChatStreamManager({
           abortSignal: abortController.signal,
           chatMode,
           learningMode,
+          requestParams: {
+            stream: conversationOverrides?.stream ?? true,
+            temperature:
+              conversationOverrides?.temperature ?? undefined,
+            top_p: conversationOverrides?.top_p ?? undefined,
+          },
+          maxContextOverride:
+            conversationOverrides?.maxContextMessages ?? undefined,
+          geminiTools: {
+            useWebSearch: conversationOverrides?.useWebSearch ?? false,
+            useUrlContext: conversationOverrides?.useUrlContext ?? false,
+          },
         })
 
         unsubscribeResponseGenerator = responseGenerator.subscribe(

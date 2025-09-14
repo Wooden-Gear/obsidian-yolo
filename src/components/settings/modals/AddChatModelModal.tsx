@@ -61,6 +61,8 @@ function AddChatModelModalComponent({
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
   const [geminiBudget, setGeminiBudget] = useState<string>('2048')
+  // Tool type (only meaningful for Gemini provider)
+  const [toolType, setToolType] = useState<'none' | 'gemini'>('none')
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -212,6 +214,8 @@ function AddChatModelModalComponent({
       name: (formData.name && formData.name.trim().length > 0)
         ? formData.name
         : formData.model,
+      // Persist tool type when provider is Gemini; keep optional otherwise
+      ...(selectedProvider?.type === 'gemini' ? { toolType } : {}),
     }
 
     // Allow duplicates of the same calling ID by uniquifying internal id; no blocking here
@@ -335,6 +339,23 @@ function AddChatModelModalComponent({
             value={geminiBudget}
             placeholder={t('settings.models.geminiThinkingBudgetPlaceholder')}
             onChange={(v: string) => setGeminiBudget(v)}
+          />
+        </ObsidianSetting>
+      )}
+
+      {/* Tool type for Gemini provider */}
+      {selectedProvider?.type === 'gemini' && (
+        <ObsidianSetting 
+          name={t('settings.models.toolType')}
+          desc={t('settings.models.toolTypeDesc')}
+        >
+          <ObsidianDropdown
+            value={toolType}
+            options={{
+              none: t('settings.models.toolTypeNone'),
+              gemini: t('settings.models.toolTypeGemini'),
+            }}
+            onChange={(v: string) => setToolType(v as any)}
           />
         </ObsidianSetting>
       )}

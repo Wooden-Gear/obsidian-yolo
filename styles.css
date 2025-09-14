@@ -6,6 +6,20 @@
   gap: var(--size-4-2);
 }
 
+/* Chat input: outer wrapper to anchor settings button at top-right */
+.smtcmp-chat-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.smtcmp-chat-input-settings-outer {
+  position: absolute;
+  top: -14px; /* above input border */
+  right: -14px;  /* outside right border */
+  left: auto !important; /* cancel any left: 0 from other rules */
+  z-index: 3;
+}
+
 .smtcmp-chat-header-right {
   display: flex;
   align-items: center;
@@ -1038,6 +1052,91 @@ button.smtcmp-chat-input-model-select {
   padding: var(--size-4-2);
   font-size: var(--font-smallest);
   animation: fadeIn 0.1s ease-in-out;
+}
+
+/* Conversation settings popover */
+.smtcmp-chat-settings-content {
+  /* width is set dynamically by inline style to 50% of input wrapper */
+  min-width: 200px;
+  max-width: 640px;
+  padding: 10px 12px;
+}
+
+.smtcmp-chat-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.smtcmp-chat-settings-section {
+  display: grid;
+  gap: 10px;
+}
+
+.smtcmp-chat-settings-section-title {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+  margin: 0;
+}
+
+/* Grid row: label + number pill (right), slider across entire row */
+.smtcmp-chat-settings-row2 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.smtcmp-chat-settings-row-inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.smtcmp-chat-settings-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+.smtcmp-number-pill {
+  width: 88px;
+  height: 24px;
+  line-height: 24px;
+  text-align: right;
+  padding: 0 8px;
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary-alt);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+
+
+/* Segmented control for Streaming */
+.smtcmp-segmented {
+  display: inline-flex;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.smtcmp-segmented > button {
+  background: var(--background-primary);
+  color: var(--text-muted);
+  border: none;
+  padding: 2px 16px; /* make smaller */
+  font-size: var(--font-smallest);
+  line-height: 16px; /* tighter height */
+  cursor: pointer;
+}
+.smtcmp-segmented > button:hover {
+  background: var(--background-modifier-hover);
+}
+.smtcmp-segmented > button.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
 }
 
 .smtcmp-similarity-search-results {
@@ -2578,38 +2677,20 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-folder-selection-chip-path { font-family: var(--font-monospace); font-size: 12px; }
 .smtcmp-folder-selection-chip-remove { cursor: pointer; color: var(--text-muted); font-size: 12px; line-height: 1; user-select: none; }
 
-/* Fix for inline styles - Using data attributes for positioning */
+/* Floating panel positioning using CSS custom properties */
 .smtcmp-floating-panel {
   position: fixed;
-  top: calc(var(--smtcmp-top, 0) * 1px);
-  left: calc(var(--smtcmp-left, 0) * 1px);
-  width: calc(var(--smtcmp-width, 300) * 1px);
-  height: calc(var(--smtcmp-height, 200) * 1px);
+  top: var(--smtcmp-panel-top, 0px);
+  left: var(--smtcmp-panel-left, 0px);
+  width: var(--smtcmp-panel-width, 300px);
+  height: var(--smtcmp-panel-height, 200px);
 }
 
-.smtcmp-floating-panel[data-smtcmp-top] {
-  top: calc(attr(data-smtcmp-top number) * 1px);
-}
+/* Removed attr() function usage due to browser compatibility issues */
 
-.smtcmp-floating-panel[data-smtcmp-left] {
-  left: calc(attr(data-smtcmp-left number) * 1px);
-}
-
-.smtcmp-floating-panel[data-smtcmp-width] {
-  width: calc(attr(data-smtcmp-width number) * 1px);
-}
-
-.smtcmp-floating-panel[data-smtcmp-height] {
-  height: calc(attr(data-smtcmp-height number) * 1px);
-}
-
-/* LexicalMenu positioning using data attributes */
+/* LexicalMenu positioning - removed attr() usage for compatibility */
 .smtcmp-typeahead-menu {
   position: fixed;
-  top: calc(attr(data-smtcmp-top number, 0) * 1px);
-  left: calc(attr(data-smtcmp-left number, 0) * 1px);
-  width: calc(attr(data-smtcmp-width number, auto) * 1px);
-  height: calc(attr(data-smtcmp-height number, auto) * 1px);
 }
 
 .smtcmp-typeahead-menu.smtcmp-menu-above {

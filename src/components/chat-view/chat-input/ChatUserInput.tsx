@@ -33,7 +33,6 @@ import { MentionNode } from './plugins/mention/MentionNode'
 import { NodeMutations } from './plugins/on-mutation/OnMutationPlugin'
 import { SubmitButton } from './SubmitButton'
 import ToolBadge from './ToolBadge'
-import { VaultChatButton } from './VaultChatButton'
 
 export type ChatUserInputRef = {
   focus: () => void
@@ -48,6 +47,11 @@ export type ChatUserInputProps = {
   setMentionables: (mentionables: Mentionable[]) => void
   autoFocus?: boolean
   addedBlockKey?: string | null
+  conversationOverrides?: any
+  onConversationOverridesChange?: (overrides: any) => void
+  showConversationSettingsButton?: boolean
+  modelId?: string
+  onModelChange?: (modelId: string) => void
 }
 
 const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
@@ -61,6 +65,11 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       setMentionables,
       autoFocus = false,
       addedBlockKey,
+      conversationOverrides,
+      onConversationOverridesChange,
+      showConversationSettingsButton = false,
+      modelId,
+      onModelChange,
     },
     ref,
   ) => {
@@ -197,7 +206,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
     const handleSubmit = (options: { useVaultSearch?: boolean } = {}) => {
       const content = editorRef.current?.getEditorState()?.toJSON()
-      content && onSubmit(content, options.useVaultSearch)
+      // Use vault search from conversation overrides if available, otherwise use the passed option
+      const shouldUseVaultSearch = conversationOverrides?.useVaultSearch ?? options.useVaultSearch
+      content && onSubmit(content, shouldUseVaultSearch)
     }
 
     return (
@@ -273,7 +284,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           editorRef={editorRef}
           contentEditableRef={contentEditableRef}
           onChange={onChange}
-          onEnter={() => handleSubmit({ useVaultSearch: false })}
+          onEnter={() => handleSubmit()}
           onFocus={onFocus}
           onMentionNodeMutation={handleMentionNodeMutation}
           onCreateImageMentionables={handleCreateImageMentionables}
@@ -281,7 +292,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           plugins={{
             onEnter: {
               onVaultChat: () => {
-                handleSubmit({ useVaultSearch: true })
+                handleSubmit()
               },
             },
           }}
@@ -289,16 +300,11 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
         <div className="smtcmp-chat-user-input-controls">
           <div className="smtcmp-chat-user-input-controls__model-select-container">
-            <ModelSelect />
+            <ModelSelect modelId={modelId} onChange={onModelChange} />
           </div>
           <div className="smtcmp-chat-user-input-controls__buttons">
             <ImageUploadButton onUpload={handleUploadImages} />
             <SubmitButton onClick={() => handleSubmit()} />
-            <VaultChatButton
-              onClick={() => {
-                handleSubmit({ useVaultSearch: true })
-              }}
-            />
           </div>
         </div>
       </div>

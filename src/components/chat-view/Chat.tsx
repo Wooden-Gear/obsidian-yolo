@@ -52,31 +52,38 @@ import { ChatModeDropdown } from './ChatModeDropdown'
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
 import { AssistantSelector } from './AssistantSelector'
 import ChatUserInput, { ChatUserInputRef } from './chat-input/ChatUserInput'
+import ChatSettingsButton from './chat-input/ChatSettingsButton'
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
 import { ChatListDropdown } from './ChatListDropdown'
 import QueryProgress, { QueryProgressState } from './QueryProgress'
 import { useAutoScroll } from './useAutoScroll'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
+import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 // Add an empty line here
 const getNewInputMessage = (
   app: App,
   includeCurrentFile: boolean,
+  suppression: 'none' | 'hidden' | 'deleted',
 ): ChatUserMessage => {
   return {
     role: 'user',
     content: null,
     promptContent: null,
     id: uuidv4(),
-    mentionables: includeCurrentFile
-      ? [
-          {
-            type: 'current-file',
-            file: app.workspace.getActiveFile(),
-          },
-        ]
-      : [],
+    mentionables:
+      includeCurrentFile && suppression !== 'deleted'
+        ? [
+            {
+              type: 'current-file',
+              file:
+                suppression === 'hidden'
+                  ? null
+                  : app.workspace.getActiveFile(),
+            },
+          ]
+        : [],
   }
 }
 
@@ -100,6 +107,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     createOrUpdateConversation,
     deleteConversation,
     getChatMessagesById,
+    getConversationById,
     updateConversationTitle,
     chatList,
   } = useChatHistory()
@@ -107,10 +115,16 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return new PromptGenerator(getRAGEngine, app, settings)
   }, [getRAGEngine, app, settings])
 
+  // Per-conversation suppression: 'none' | 'hidden' | 'deleted'
+  // hidden: show badge with strike-through; deleted: remove entirely
+  const [currentFileSuppression, setCurrentFileSuppression] = useState<'none' | 'hidden' | 'deleted'>('none')
+  const conversationSuppressionRef = useRef<Map<string, 'none' | 'hidden' | 'deleted'>>(new Map())
+
   const [inputMessage, setInputMessage] = useState<ChatUserMessage>(() => {
     const newMessage = getNewInputMessage(
       app,
       settings.chatOptions.includeCurrentFileContent,
+      'none',
     )
     if (props.selectedBlock) {
       newMessage.mentionables = [
@@ -145,6 +159,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     settings.chatOptions.enableLearningMode ?? false,
   )
 
+  // Per-conversation override settings (temperature, top_p, context, stream)
+  const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
+  const [conversationOverrides, setConversationOverrides] = useState<ConversationOverrideSettings | undefined>(undefined)
+
+  // Per-conversation model id (do NOT write back to global settings)
+  const conversationModelIdRef = useRef<Map<string, string>>(new Map())
+  const [conversationModelId, setConversationModelId] = useState<string>(settings.chatModelId)
+
+  // Per-message model mapping for historical user messages
+  const [messageModelMap, setMessageModelMap] = useState<Map<string, string>>(new Map())
+
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
       return groupAssistantAndToolMessages(chatMessages)
@@ -163,6 +188,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     promptGenerator,
     chatMode,
     learningMode,
+    conversationOverrides,
+    modelId: conversationModelId,
   })
 
   const registerChatUserInputRef = (
@@ -179,15 +206,26 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const handleLoadConversation = async (conversationId: string) => {
     try {
       abortActiveStreams()
-      const conversation = await getChatMessagesById(conversationId)
+      const conversation = await getConversationById(conversationId)
       if (!conversation) {
         throw new Error('Conversation not found')
       }
       setCurrentConversationId(conversationId)
-      setChatMessages(conversation)
+      setChatMessages(conversation.messages)
+      const suppressed = conversationSuppressionRef.current.get(conversationId) ?? 'none'
+      setCurrentFileSuppression(suppressed)
+      setConversationOverrides(conversation.overrides ?? undefined)
+      if (conversation.overrides) {
+        conversationOverridesRef.current.set(conversationId, conversation.overrides)
+      }
+      const modelFromRef = conversationModelIdRef.current.get(conversationId) ?? settings.chatModelId
+      setConversationModelId(modelFromRef)
+      // Reset per-message model mapping when switching conversation
+      setMessageModelMap(new Map())
       const newInputMessage = getNewInputMessage(
         app,
         settings.chatOptions.includeCurrentFileContent,
+        suppressed,
       )
       setInputMessage(newInputMessage)
       setFocusedMessageId(newInputMessage.id)
@@ -201,11 +239,19 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }
 
   const handleNewChat = (selectedBlock?: MentionableBlockData) => {
-    setCurrentConversationId(uuidv4())
+    const newId = uuidv4()
+    setCurrentConversationId(newId)
+    conversationSuppressionRef.current.set(newId, 'none')
+    setCurrentFileSuppression('none')
+    setConversationOverrides(undefined)
+    conversationModelIdRef.current.set(newId, settings.chatModelId)
+    setConversationModelId(settings.chatModelId)
+    setMessageModelMap(new Map())
     setChatMessages([])
     const newInputMessage = getNewInputMessage(
       app,
       settings.chatOptions.includeCurrentFileContent,
+      'none',
     )
     if (selectedBlock) {
       const mentionableBlock: MentionableBlock = {
@@ -468,7 +514,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const updateConversationAsync = async () => {
       try {
         if (chatMessages.length > 0) {
-          createOrUpdateConversation(currentConversationId, chatMessages)
+          createOrUpdateConversation(currentConversationId, chatMessages, conversationOverrides ?? null)
         }
       } catch (error) {
         new Notice('Failed to save chat history')
@@ -476,7 +522,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
     }
     updateConversationAsync()
-  }, [currentConversationId, chatMessages, createOrUpdateConversation])
+  }, [currentConversationId, chatMessages, createOrUpdateConversation, conversationOverrides])
 
   // Updates the currentFile of the focused message (input or chat history)
   // This happens when active file changes or focused message changes
@@ -507,6 +553,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
       return
     }
+
+    // If suppressed for this conversation, do not auto-add or update current-file mentionable
+    if (currentFileSuppression !== 'none') return
 
     // Setting enabled: keep the current-file mentionable updated
     const activeFile = app.workspace.getActiveFile()
@@ -553,7 +602,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         }),
       )
     }
-  }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent])
+  }, [app.workspace, focusedMessageId, inputMessage.id, settings.chatOptions.includeCurrentFileContent, currentFileSuppression])
 
   useEffect(() => {
     app.workspace.on('active-leaf-change', handleActiveLeafChange)
@@ -707,6 +756,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               }}
               onSubmit={(content, useVaultSearch) => {
                 if (editorStateToPlainText(content).trim() === '') return
+                // Use the model mapping for this message if exists, otherwise current conversation model
+                const modelForThisMessage = messageModelMap.get(messageOrGroup.id) ?? conversationModelId
                 handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
@@ -727,11 +778,54 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   useVaultSearch,
                 })
                 chatUserInputRefs.current.get(inputMessage.id)?.focus()
+                // Record the model used for this message id
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, modelForThisMessage)
+                  return next
+                })
               }}
               onFocus={() => {
                 setFocusedMessageId(messageOrGroup.id)
               }}
               onMentionablesChange={(mentionables) => {
+                // Detect visibility toggles or deletion of current-file on historical messages
+                const prevCurrent = messageOrGroup.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                const prevHad = !!prevCurrent
+                const nextHas = !!nextCurrent
+                const prevVisible = prevCurrent?.file != null
+                const nextVisible = nextCurrent?.file != null
+
+                if (prevHad && !nextHas) {
+                  // Deleted -> suppression: deleted
+                  setCurrentFileSuppression('deleted')
+                  conversationSuppressionRef.current.set(currentConversationId, 'deleted')
+                  // Ensure input message removes the badge entirely
+                  setInputMessage((prev) => ({
+                    ...prev,
+                    mentionables: prev.mentionables.filter((m) => m.type !== 'current-file'),
+                  }))
+                } else if (prevVisible && !nextVisible) {
+                  // Hidden -> suppression: hidden
+                  setCurrentFileSuppression('hidden')
+                  conversationSuppressionRef.current.set(currentConversationId, 'hidden')
+                  // Ensure input message shows hidden current-file badge
+                  setInputMessage((prev) => {
+                    const existing = prev.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+                    const others = prev.mentionables.filter((m) => m.type !== 'current-file')
+                    const hidden: MentionableCurrentFile = { type: 'current-file', file: null }
+                    return {
+                      ...prev,
+                      mentionables: existing ? [hidden, ...others] : [hidden, ...prev.mentionables],
+                    }
+                  })
+                } else if (!prevVisible && nextVisible) {
+                  // Turned visible -> unsuppress
+                  setCurrentFileSuppression('none')
+                  conversationSuppressionRef.current.set(currentConversationId, 'none')
+                }
+
                 setChatMessages((prevChatHistory) =>
                   prevChatHistory.map((msg) =>
                     msg.id === messageOrGroup.id
@@ -739,6 +833,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       : msg,
                   ),
                 )
+              }}
+              modelId={messageModelMap.get(messageOrGroup.id) ?? conversationModelId}
+              onModelChange={(id) => {
+                // Update both the mapping for this message and the conversation-level model
+                setMessageModelMap((prev) => {
+                  const next = new Map(prev)
+                  next.set(messageOrGroup.id, id)
+                  return next
+                })
+                setConversationModelId(id)
+                conversationModelIdRef.current.set(currentConversationId, id)
               }}
             />
           ) : (
@@ -777,42 +882,98 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           </button>
         )}
       </div>
-      <ChatUserInput
-        key={inputMessage.id} // this is needed to clear the editor when the user submits a new message
-        ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}
-        initialSerializedEditorState={inputMessage.content}
-        onChange={(content) => {
-          setInputMessage((prevInputMessage) => ({
-            ...prevInputMessage,
-            content,
-          }))
-        }}
-        onSubmit={(content, useVaultSearch) => {
-          if (editorStateToPlainText(content).trim() === '') return
-          handleUserMessageSubmit({
-            inputChatMessages: [...chatMessages, { ...inputMessage, content }],
-            useVaultSearch,
-          })
-          setInputMessage(
-            getNewInputMessage(
-              app,
-              settings.chatOptions.includeCurrentFileContent,
-            ),
-          )
-        }}
-        onFocus={() => {
-          setFocusedMessageId(inputMessage.id)
-        }}
-        mentionables={inputMessage.mentionables}
-        setMentionables={(mentionables) => {
-          setInputMessage((prevInputMessage) => ({
-            ...prevInputMessage,
-            mentionables,
-          }))
-        }}
-        autoFocus
-        addedBlockKey={addedBlockKey}
-      />
+      <div className="smtcmp-chat-input-wrapper" style={{ position: 'relative', width: '100%' }}>
+        <div
+          className="smtcmp-chat-input-settings-outer"
+          style={{ position: 'absolute', top: -23, right: -3, zIndex: 3 }}
+        >
+          <ChatSettingsButton
+            overrides={conversationOverrides}
+            onChange={(next) => {
+              setConversationOverrides(next)
+              conversationOverridesRef.current.set(currentConversationId, next)
+            }}
+            currentModel={settings.chatModels?.find(m => m.id === conversationModelId)}
+          />
+        </div>
+        <ChatUserInput
+          key={inputMessage.id} // this is needed to clear the editor when the user submits a new message
+          ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}
+          initialSerializedEditorState={inputMessage.content}
+          onChange={(content) => {
+            setInputMessage((prevInputMessage) => ({
+              ...prevInputMessage,
+              content,
+            }))
+          }}
+          onSubmit={(content, useVaultSearch) => {
+            if (editorStateToPlainText(content).trim() === '') return
+            handleUserMessageSubmit({
+              inputChatMessages: [...chatMessages, { ...inputMessage, content }],
+              useVaultSearch,
+            })
+            // Record the model used for this just-submitted input message
+            setMessageModelMap((prev) => {
+              const next = new Map(prev)
+              next.set(inputMessage.id, conversationModelId)
+              return next
+            })
+            setInputMessage(
+              getNewInputMessage(
+                app,
+                settings.chatOptions.includeCurrentFileContent,
+                currentFileSuppression,
+              ),
+            )
+          }}
+          onFocus={() => {
+            setFocusedMessageId(inputMessage.id)
+          }}
+          mentionables={inputMessage.mentionables}
+          setMentionables={(mentionables) => {
+            setInputMessage((prevInputMessage) => {
+              const prevCurrent = prevInputMessage.mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+              const nextCurrent = mentionables.find((m) => m.type === 'current-file') as MentionableCurrentFile | undefined
+              const prevHad = !!prevCurrent
+              const nextHas = !!nextCurrent
+              const prevVisible = prevCurrent?.file != null
+              const nextVisible = nextCurrent?.file != null
+
+              if (prevHad && !nextHas) {
+                // Deleted -> suppression: deleted
+                setCurrentFileSuppression('deleted')
+                conversationSuppressionRef.current.set(currentConversationId, 'deleted')
+              } else if (prevVisible && !nextVisible) {
+                // Hidden -> suppression: hidden
+                setCurrentFileSuppression('hidden')
+                conversationSuppressionRef.current.set(currentConversationId, 'hidden')
+              } else if (!prevVisible && nextVisible) {
+                // Turned visible -> unsuppress
+                setCurrentFileSuppression('none')
+                conversationSuppressionRef.current.set(currentConversationId, 'none')
+              }
+
+              return {
+                ...prevInputMessage,
+                mentionables,
+              }
+            })
+          }}
+          modelId={conversationModelId}
+          onModelChange={(id) => {
+            setConversationModelId(id)
+            conversationModelIdRef.current.set(currentConversationId, id)
+          }}
+          autoFocus
+          addedBlockKey={addedBlockKey}
+          conversationOverrides={conversationOverrides}
+          onConversationOverridesChange={(next) => {
+            setConversationOverrides(next)
+            conversationOverridesRef.current.set(currentConversationId, next)
+          }}
+          showConversationSettingsButton={false}
+        />
+      </div>
     </div>
   )
 })

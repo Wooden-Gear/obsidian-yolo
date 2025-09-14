@@ -31,6 +31,16 @@ export type ResponseGeneratorParams = {
   abortSignal?: AbortSignal
   chatMode?: 'rag' | 'brute'
   learningMode?: boolean
+  requestParams?: {
+    stream?: boolean
+    temperature?: number
+    top_p?: number
+  }
+  maxContextOverride?: number
+  geminiTools?: {
+    useWebSearch?: boolean
+    useUrlContext?: boolean
+  }
 }
 
 export class ResponseGenerator {
@@ -45,6 +55,16 @@ export class ResponseGenerator {
   private readonly maxAutoIterations: number
   private readonly chatMode?: 'rag' | 'brute'
   private readonly learningMode?: boolean
+  private readonly requestParams?: {
+    stream?: boolean
+    temperature?: number
+    top_p?: number
+  }
+  private readonly maxContextOverride?: number
+  private readonly geminiTools?: {
+    useWebSearch?: boolean
+    useUrlContext?: boolean
+  }
 
   private responseMessages: ChatMessage[] = [] // Response messages that are generated after the initial messages
   private subscribers: ((messages: ChatMessage[]) => void)[] = []
@@ -61,6 +81,9 @@ export class ResponseGenerator {
     this.abortSignal = params.abortSignal
     this.chatMode = params.chatMode
     this.learningMode = params.learningMode
+    this.requestParams = params.requestParams
+    this.maxContextOverride = params.maxContextOverride
+    this.geminiTools = params.geminiTools
   }
 
   public subscribe(callback: (messages: ChatMessage[]) => void) {
@@ -160,6 +183,7 @@ export class ResponseGenerator {
       hasTools,
       chatMode: this.chatMode,
       learningMode: this.learningMode,
+      maxContextOverride: this.maxContextOverride,
     })
 
     // Set tools to undefined when no tools are available since some providers
@@ -179,16 +203,97 @@ export class ResponseGenerator {
           }))
         : undefined
 
-    const stream = await this.providerClient.streamResponse(
+    const shouldStream = this.requestParams?.stream ?? true
+
+    if (!shouldStream) {
+      // Non-streaming path
+      const response = await this.providerClient.generateResponse(
+        this.model,
+        {
+          model: this.model.model,
+          messages: requestMessages,
+          tools,
+          stream: false,
+          temperature: this.requestParams?.temperature,
+          top_p: this.requestParams?.top_p,
+        },
+        {
+          signal: this.abortSignal,
+          geminiTools: this.geminiTools,
+        },
+      )
+
+      // Ensure assistant message exists and populate content and metadata
+      this.responseMessages.push({
+        role: 'assistant',
+        content: response.choices[0]?.message?.content ?? '',
+        id: uuidv4(),
+        metadata: {
+          model: this.model,
+          usage: response.usage,
+        },
+      })
+      const responseMessageId = this.responseMessages.at(-1)!.id
+
+      // Merge annotations (if any)
+      const annotations = response.choices[0]?.message?.annotations
+      if (annotations) {
+        this.updateResponseMessages((messages) =>
+          messages.map((message) =>
+            message.id === responseMessageId && message.role === 'assistant'
+              ? {
+                  ...message,
+                  annotations,
+                }
+              : message,
+          ),
+        )
+      }
+
+      // Tool call requests from non-streaming response
+      const toolCallRequests = (response.choices[0]?.message?.tool_calls ?? [])
+        .map((toolCall): ToolCallRequest | null => {
+          if (!toolCall.function?.name) return null
+          const base: ToolCallRequest = {
+            id: toolCall.id ?? uuidv4(),
+            name: toolCall.function.name,
+          }
+          return toolCall.function.arguments
+            ? { ...base, arguments: toolCall.function.arguments }
+            : base
+        })
+        .filter((t): t is ToolCallRequest => t !== null)
+
+      // Update assistant message with toolCallRequests
+      this.updateResponseMessages((messages) =>
+        messages.map((message) =>
+          message.id === responseMessageId && message.role === 'assistant'
+            ? {
+                ...message,
+                toolCallRequests:
+                  toolCallRequests.length > 0 ? toolCallRequests : undefined,
+              }
+            : message,
+        ),
+      )
+
+      return { toolCallRequests }
+    }
+
+    // Streaming path
+    const responseIterable = await this.providerClient.streamResponse(
       this.model,
       {
         model: this.model.model,
         messages: requestMessages,
         tools,
         stream: true,
+        temperature: this.requestParams?.temperature,
+        top_p: this.requestParams?.top_p,
       },
       {
         signal: this.abortSignal,
+        geminiTools: this.geminiTools,
       },
     )
 
@@ -209,7 +314,7 @@ export class ResponseGenerator {
     }
     const responseMessageId = lastMessage.id
     let responseToolCalls: Record<number, ToolCallDelta> = {}
-    for await (const chunk of stream) {
+    for await (const chunk of responseIterable) {
       const { updatedToolCalls } = this.processChunk(
         chunk,
         responseMessageId,

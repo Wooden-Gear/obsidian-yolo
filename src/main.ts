@@ -39,6 +39,24 @@ export default class SmartComposerPlugin extends Plugin {
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()
 
+  // Compute a robust panel anchor position just below the caret line
+  private getCaretPanelPosition(editor: Editor, dy = 8): { x: number; y: number } | undefined {
+    try {
+      // CM6: use selection head to get viewport coords
+      const cm: any = (editor as any).cm
+      const head: number | undefined = cm?.state?.selection?.main?.head
+      if (cm?.coordsAtPos && typeof head === 'number') {
+        const rect = cm.coordsAtPos(head)
+        if (rect) {
+          const y = (rect.bottom ?? rect.top) + dy
+          return { x: rect.left, y }
+        }
+      }
+    } catch {}
+    // Fallback: center (handled by caller when returning undefined)
+    return undefined
+  }
+
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
   }
@@ -311,22 +329,8 @@ export default class SmartComposerPlugin extends Plugin {
             .setTitle(this.t('commands.customContinueWriting'))
             .setIcon('wand-sparkles')
             .onClick(() => {
-              try {
-                const cm: any = (editor as any).cm
-                const cursor = editor.getCursor('to')
-                let position: { x: number; y: number } | undefined
-                if (cm?.state) {
-                  const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
-                  const pos: number = lineFrom + cursor.ch
-                  const rect = cm.coordsAtPos(pos)
-                  if (rect) {
-                    position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
-                  }
-                }
-                new CustomContinuePanel({ plugin: this, editor, position }).open()
-              } catch {
-                new CustomContinuePanel({ plugin: this, editor }).open()
-              }
+              const position = this.getCaretPanelPosition(editor, 8)
+              new CustomContinuePanel({ plugin: this, editor, position }).open()
             }),
         )
 
@@ -337,22 +341,8 @@ export default class SmartComposerPlugin extends Plugin {
               .setTitle(this.t('commands.customRewrite'))
               .setIcon('wand-sparkles')
               .onClick(() => {
-                try {
-                  const cm: any = (editor as any).cm
-                  const cursor = editor.getCursor('to')
-                  let position: { x: number; y: number } | undefined
-                  if (cm?.state) {
-                    const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
-                    const pos: number = lineFrom + cursor.ch
-                    const rect = cm.coordsAtPos(pos)
-                    if (rect) {
-                      position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
-                    }
-                  }
-                  new CustomRewritePanel({ plugin: this, editor, position }).open()
-                } catch {
-                  new CustomRewritePanel({ plugin: this, editor }).open()
-                }
+                const position = this.getCaretPanelPosition(editor, 8)
+                new CustomRewritePanel({ plugin: this, editor, position }).open()
               }),
           )
         }
@@ -366,7 +356,6 @@ export default class SmartComposerPlugin extends Plugin {
           if (this.isContinuationInProgress) return
           if (!editor) return
           const selection = editor.getSelection()
-          if (selection && selection.length > 0) return
           const cursor = editor.getCursor()
 
           // 1) Floating panel trigger (optional)
@@ -380,20 +369,14 @@ export default class SmartComposerPlugin extends Plugin {
             if (before === panelKeyword) {
               // remove keyword and open panel near caret
               editor.replaceRange('', start, cursor)
-              try {
-                const cm: any = (editor as any).cm
-                let position: { x: number; y: number } | undefined
-                if (cm?.state) {
-                  const lineFrom: number = cm.state.doc.line(cursor.line + 1).from
-                  const pos: number = lineFrom + cursor.ch
-                  const rect = cm.coordsAtPos(pos)
-                  if (rect) {
-                    position = { x: rect.left, y: (rect.bottom ?? rect.top) + 8 }
-                  }
+              {
+                const position = this.getCaretPanelPosition(editor, 8)
+                const hasSel = !!selection && selection.trim().length > 0
+                if (hasSel) {
+                  new CustomRewritePanel({ plugin: this, editor, position }).open()
+                } else {
+                  new CustomContinuePanel({ plugin: this, editor, position }).open()
                 }
-                new CustomContinuePanel({ plugin: this, editor, position }).open()
-              } catch {
-                new CustomContinuePanel({ plugin: this, editor }).open()
               }
               return
             }
@@ -401,6 +384,8 @@ export default class SmartComposerPlugin extends Plugin {
 
           // 2) Continuation trigger (inline)
           if (!this.settings.continuationOptions?.enableKeywordTrigger) return
+          // Only run inline continuation when there is NO selection
+          if (selection && selection.length > 0) return
           const keyword =
             this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
           if (!keyword || keyword.length === 0) return

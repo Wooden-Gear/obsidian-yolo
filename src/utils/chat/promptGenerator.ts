@@ -53,11 +53,13 @@ export class PromptGenerator {
     hasTools = false,
     chatMode,
     learningMode,
+    maxContextOverride,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
     chatMode?: 'rag' | 'brute'
     learningMode?: boolean
+    maxContextOverride?: number
   }): Promise<RequestMessage[]> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
@@ -114,7 +116,7 @@ export class PromptGenerator {
       ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
-      ...this.getChatHistoryMessages({ messages: compiledMessages }),
+      ...this.getChatHistoryMessages({ messages: compiledMessages, maxContextOverride }),
       ...(shouldUseRAG && this.getModelPromptLevel() == PromptLevel.Default
         ? [this.getRagInstructionMessage()]
         : []),
@@ -125,8 +127,10 @@ export class PromptGenerator {
 
   private getChatHistoryMessages({
     messages,
+    maxContextOverride,
   }: {
     messages: ChatMessage[]
+    maxContextOverride?: number
   }): RequestMessage[] {
     // Determine max context messages with priority:
     // 1) current assistant's override (if selected and defined)
@@ -145,7 +149,7 @@ export class PromptGenerator {
 
     const maxContext = Math.max(
       0,
-      assistantOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
+      maxContextOverride ?? assistantOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
     )
 
     // Get the last N messages and parse them into request messages

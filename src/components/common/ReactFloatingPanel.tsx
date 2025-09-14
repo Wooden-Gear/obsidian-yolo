@@ -135,10 +135,12 @@ export class ReactFloatingPanel<T> {
             <div
               ref={panelRef}
               className="smtcmp-floating-panel"
-              data-smtcmp-top={pos.y}
-              data-smtcmp-left={pos.x}
-              data-smtcmp-width={size.width}
-              data-smtcmp-height={size.height}
+              style={{
+                '--smtcmp-panel-top': `${pos.y}px`,
+                '--smtcmp-panel-left': `${pos.x}px`,
+                '--smtcmp-panel-width': `${size.width}px`,
+                '--smtcmp-panel-height': `${size.height}px`
+              } as React.CSSProperties}
             >
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
