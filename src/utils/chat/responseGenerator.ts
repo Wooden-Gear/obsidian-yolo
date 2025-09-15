@@ -280,22 +280,102 @@ export class ResponseGenerator {
       return { toolCallRequests }
     }
 
-    // Streaming path
-    const responseIterable = await this.providerClient.streamResponse(
-      this.model,
-      {
-        model: this.model.model,
-        messages: requestMessages,
-        tools,
-        stream: true,
-        temperature: this.requestParams?.temperature,
-        top_p: this.requestParams?.top_p,
-      },
-      {
-        signal: this.abortSignal,
-        geminiTools: this.geminiTools,
-      },
-    )
+    // Streaming path (with fallback on protocol/EOF errors)
+    let responseIterable: AsyncIterable<LLMResponseStreaming>
+    try {
+      responseIterable = await this.providerClient.streamResponse(
+        this.model,
+        {
+          model: this.model.model,
+          messages: requestMessages,
+          tools,
+          stream: true,
+          temperature: this.requestParams?.temperature,
+          top_p: this.requestParams?.top_p,
+        },
+        {
+          signal: this.abortSignal,
+          geminiTools: this.geminiTools,
+        },
+      )
+    } catch (error) {
+      const msg = String((error as any)?.message ?? '')
+      const shouldFallback = /protocol error|unexpected EOF|incomplete envelope/i.test(msg)
+      if (shouldFallback) {
+        const response = await this.providerClient.generateResponse(
+          this.model,
+          {
+            model: this.model.model,
+            messages: requestMessages,
+            tools,
+            stream: false,
+            temperature: this.requestParams?.temperature,
+            top_p: this.requestParams?.top_p,
+          },
+          {
+            signal: this.abortSignal,
+            geminiTools: this.geminiTools,
+          },
+        )
+
+        // Ensure assistant message exists and populate content and metadata
+        this.responseMessages.push({
+          role: 'assistant',
+          content: response.choices[0]?.message?.content ?? '',
+          id: uuidv4(),
+          metadata: {
+            model: this.model,
+            usage: response.usage,
+          },
+        })
+        const responseMessageId = this.responseMessages.at(-1)!.id
+
+        // Merge annotations (if any)
+        const annotations = response.choices[0]?.message?.annotations
+        if (annotations) {
+          this.updateResponseMessages((messages) =>
+            messages.map((message) =>
+              message.id === responseMessageId && message.role === 'assistant'
+                ? {
+                    ...message,
+                    annotations,
+                  }
+                : message,
+            ),
+          )
+        }
+
+        // Tool call requests from non-streaming response
+        const toolCallRequests = (response.choices[0]?.message?.tool_calls ?? [])
+          .map((toolCall): ToolCallRequest | null => {
+            if (!toolCall.function?.name) return null
+            const base: ToolCallRequest = {
+              id: toolCall.id ?? uuidv4(),
+              name: toolCall.function.name,
+            }
+            return toolCall.function.arguments
+              ? { ...base, arguments: toolCall.function.arguments }
+              : base
+          })
+          .filter((t): t is ToolCallRequest => t !== null)
+
+        // Update assistant message with toolCallRequests
+        this.updateResponseMessages((messages) =>
+          messages.map((message) =>
+            message.id === responseMessageId && message.role === 'assistant'
+              ? {
+                  ...message,
+                  toolCallRequests:
+                    toolCallRequests.length > 0 ? toolCallRequests : undefined,
+                }
+              : message,
+          ),
+        )
+
+        return { toolCallRequests }
+      }
+      throw error
+    }
 
     // Create a new assistant message for the response if it doesn't exist
     if (this.responseMessages.at(-1)?.role !== 'assistant') {

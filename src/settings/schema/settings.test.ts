@@ -50,6 +50,8 @@ describe('parseSmartComposerSettings', () => {
         enableTools: true,
         maxAutoIterations: 1,
         maxContextMessages: 32,
+        defaultTemperature: 0.8,
+        defaultTopP: 0.9,
       },
 
       continuationOptions: {
