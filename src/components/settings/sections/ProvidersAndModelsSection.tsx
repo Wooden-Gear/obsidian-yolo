@@ -113,7 +113,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
   const handleDeleteChatModel = async (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Chat Model or Apply Model',
+        'Cannot remove model that is currently selected as Chat Model or Tool Model',
       )
       return
     }
@@ -153,7 +153,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
   const handleToggleEnableChatModel = async (modelId: string, value: boolean) => {
     if (!value && (modelId === settings.chatModelId || modelId === settings.applyModelId)) {
       new Notice(
-        'Cannot disable model that is currently selected as Chat Model or Apply Model',
+        'Cannot disable model that is currently selected as Chat Model or Tool Model',
       )
       await setSettings({
         ...settings,

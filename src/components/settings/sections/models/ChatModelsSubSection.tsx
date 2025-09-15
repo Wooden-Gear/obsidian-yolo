@@ -29,7 +29,7 @@ export function ChatModelsSubSection({
   const handleDeleteChatModel = async (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Chat Model or Apply Model',
+        'Cannot remove model that is currently selected as Chat Model or Tool Model',
       )
       return
     }
@@ -57,7 +57,7 @@ export function ChatModelsSubSection({
       (modelId === settings.chatModelId || modelId === settings.applyModelId)
     ) {
       new Notice(
-        'Cannot disable model that is currently selected as Chat Model or Apply Model',
+        'Cannot disable model that is currently selected as Chat Model or Tool Model',
       )
 
       // to trigger re-render
