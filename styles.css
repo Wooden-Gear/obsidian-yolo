@@ -2442,6 +2442,10 @@ button.smtcmp-chat-input-model-select {
   margin-bottom: 16px;
 }
 
+.smtcmp-settings-header-row .smtcmp-settings-header {
+  margin: 0;
+}
+
 .smtcmp-add-assistant-btn {
   display: flex;
   align-items: center;

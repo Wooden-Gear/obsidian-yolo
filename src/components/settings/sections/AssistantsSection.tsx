@@ -198,7 +198,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header-row">
-        <div>{t('settings.assistants.title')}</div>
+        <div className="smtcmp-settings-header">{t('settings.assistants.title')}</div>
         <button
           onClick={handleAddAssistant}
           aria-label={t('settings.assistants.addAssistantAria', 'Add new assistant')}
