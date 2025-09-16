@@ -8,6 +8,7 @@ import { useApp } from '../contexts/app-context'
 import { useSettings } from '../contexts/settings-context'
 import { useLanguage } from '../contexts/language-context'
 import { getChatModelClient } from '../core/llm/manager'
+import { DEFAULT_CHAT_TITLE_PROMPT } from '../constants'
 import { ChatConversationMetadata } from '../database/json/chat/types'
 import { ConversationOverrideSettings } from '../types/conversation-settings.types'
 import { ChatMessage, SerializedChatMessage } from '../types/chat'
@@ -114,10 +115,11 @@ export function useChatHistory(): UseChatHistory {
                   modelId: settings.applyModelId,
                 })
 
+                const defaultTitlePrompt =
+                  DEFAULT_CHAT_TITLE_PROMPT[language] ?? DEFAULT_CHAT_TITLE_PROMPT.en
+                const customizedPrompt = (settings.chatOptions.chatTitlePrompt ?? '').trim()
                 const systemPrompt =
-                  (typeof language === 'string' && language.toLowerCase().startsWith('zh'))
-                    ? '你是一个标题生成器。请基于用户的第一条消息生成一个简洁的会话标题，最多 10 个字符；去除多余标点与引号；避免过于泛化或敏感内容。直接输出标题本身。'
-                    : "You are a title generator. Generate a concise conversation title (max 10 chars) from the user's first message; remove extra punctuation/quotes; avoid generic or sensitive content. Output the title only."
+                  customizedPrompt.length > 0 ? customizedPrompt : defaultTitlePrompt
 
                 const response = await providerClient.generateResponse(
                   model,

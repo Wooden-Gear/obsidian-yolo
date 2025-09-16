@@ -1,93 +1,27 @@
-import {
-  RECOMMENDED_MODELS_FOR_APPLY,
-  RECOMMENDED_MODELS_FOR_CHAT,
-} from '../../../constants'
+import { DEFAULT_LEARNING_MODE_PROMPT } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { DEFAULT_LEARNING_MODE_PROMPT } from '../../../constants'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 
-export function ChatSection() {
+export function ChatPreferencesSection() {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
+  const learningModePromptValue =
+    (settings.chatOptions.learningModePrompt ?? '').trim().length > 0
+      ? settings.chatOptions.learningModePrompt!
+      : DEFAULT_LEARNING_MODE_PROMPT
+
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.chat.title')}</div>
+      <div className="smtcmp-settings-header">{t('settings.chatPreferences.title')}</div>
 
       <ObsidianSetting
-        name={t('settings.chat.defaultModel')}
-        desc={t('settings.chat.defaultModelDesc')}
-      >
-        <ObsidianDropdown
-          value={settings.chatModelId}
-          options={Object.fromEntries(
-            settings.chatModels
-              .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => {
-                const labelBase = chatModel.model || chatModel.name || chatModel.id
-                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id) ? ' (Recommended)' : ''}`
-                return [chatModel.id, label]
-              }),
-          )}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatModelId: value,
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.chat.applyModel')}
-        desc={t('settings.chat.applyModelDesc')}
-      >
-        <ObsidianDropdown
-          value={settings.applyModelId}
-          options={Object.fromEntries(
-            settings.chatModels
-              .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => {
-                const labelBase = chatModel.model || chatModel.name || chatModel.id
-                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id) ? ' (Recommended)' : ''}`
-                return [chatModel.id, label]
-              }),
-          )}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              applyModelId: value,
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.chat.systemPrompt')}
-        desc={t('settings.chat.systemPromptDesc')}
-        className="smtcmp-settings-textarea-header"
-      />
-
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={settings.systemPrompt}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              systemPrompt: value,
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.chat.includeCurrentFile')}
-        desc={t('settings.chat.includeCurrentFileDesc')}
+        name={t('settings.chatPreferences.includeCurrentFile')}
+        desc={t('settings.chatPreferences.includeCurrentFileDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.includeCurrentFileContent}
@@ -104,8 +38,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.enableBruteMode')}
-        desc={t('settings.chat.enableBruteModeDesc')}
+        name={t('settings.chatPreferences.enableBruteMode')}
+        desc={t('settings.chatPreferences.enableBruteModeDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.enableBruteMode ?? false}
@@ -122,8 +56,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.learningMode')}
-        desc={t('settings.chat.learningModeDesc')}
+        name={t('settings.chatPreferences.enableLearningMode')}
+        desc={t('settings.chatPreferences.enableLearningModeDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.enableLearningMode ?? false}
@@ -142,17 +76,13 @@ export function ChatSection() {
       {settings.chatOptions.enableLearningMode && (
         <>
           <ObsidianSetting
-            name={t('settings.chat.learningModePrompt')}
-            desc={t('settings.chat.learningModePromptDesc')}
+            name={t('settings.chatPreferences.learningModePrompt')}
+            desc={t('settings.chatPreferences.learningModePromptDesc')}
             className="smtcmp-settings-textarea-header"
           />
           <ObsidianSetting className="smtcmp-settings-textarea">
             <ObsidianTextArea
-              value={
-                (settings.chatOptions.learningModePrompt ?? '').trim().length > 0
-                  ? settings.chatOptions.learningModePrompt!
-                  : DEFAULT_LEARNING_MODE_PROMPT
-              }
+              value={learningModePromptValue}
               onChange={async (value: string) => {
                 await setSettings({
                   ...settings,
@@ -168,8 +98,8 @@ export function ChatSection() {
       )}
 
       <ObsidianSetting
-        name={t('settings.chat.enableTools')}
-        desc={t('settings.chat.enableToolsDesc')}
+        name={t('settings.chatPreferences.enableTools')}
+        desc={t('settings.chatPreferences.enableToolsDesc')}
       >
         <ObsidianToggle
           value={settings.chatOptions.enableTools}
@@ -186,8 +116,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.maxAutoIterations')}
-        desc={t('settings.chat.maxAutoIterationsDesc')}
+        name={t('settings.chatPreferences.maxAutoIterations')}
+        desc={t('settings.chatPreferences.maxAutoIterationsDesc')}
       >
         <ObsidianTextInput
           value={settings.chatOptions.maxAutoIterations.toString()}
@@ -208,8 +138,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.maxContextMessages')}
-        desc={t('settings.chat.maxContextMessagesDesc')}
+        name={t('settings.chatPreferences.maxContextMessages')}
+        desc={t('settings.chatPreferences.maxContextMessagesDesc')}
       >
         <ObsidianTextInput
           value={(settings.chatOptions.maxContextMessages ?? 32).toString()}
@@ -230,8 +160,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.defaultTemperature')}
-        desc={t('settings.chat.defaultTemperatureDesc')}
+        name={t('settings.chatPreferences.defaultTemperature')}
+        desc={t('settings.chatPreferences.defaultTemperatureDesc')}
       >
         <ObsidianTextInput
           value={settings.chatOptions.defaultTemperature?.toString() ?? ''}
@@ -263,8 +193,8 @@ export function ChatSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.chat.defaultTopP')}
-        desc={t('settings.chat.defaultTopPDesc')}
+        name={t('settings.chatPreferences.defaultTopP')}
+        desc={t('settings.chatPreferences.defaultTopPDesc')}
       >
         <ObsidianTextInput
           value={settings.chatOptions.defaultTopP?.toString() ?? ''}

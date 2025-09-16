@@ -98,7 +98,7 @@ function AssistantItem({
           </ObsidianSetting>
 
           <ObsidianSetting
-            name={t('settings.chat.maxContextMessages', 'Max context messages')}
+            name={t('settings.chatPreferences.maxContextMessages', 'Max context messages')}
             desc={t('settings.assistants.maxContextMessagesDesc', 'If set, this assistant will use this number of previous chat messages, overriding the global default.')}
           >
             <ObsidianTextInput
