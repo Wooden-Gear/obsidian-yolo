@@ -2,6 +2,7 @@ import {
   DEFAULT_APPLY_MODEL_ID,
   DEFAULT_CHAT_MODELS,
   DEFAULT_CHAT_MODEL_ID,
+  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
@@ -48,17 +49,17 @@ describe('parseSmartComposerSettings', () => {
         enableLearningMode: false,
         learningModePrompt: '',
         enableTools: true,
-        maxAutoIterations: 1,
-        maxContextMessages: 32,
-        defaultTemperature: 0.8,
-        defaultTopP: 0.9,
-      },
+      maxAutoIterations: 1,
+      maxContextMessages: 32,
+      defaultTemperature: 0.8,
+      defaultTopP: 0.9,
+      chatTitlePrompt: '',
+    },
 
       continuationOptions: {
         useCurrentModel: true,
         fixedModelId: 'openai/gpt-4.1-mini',
-        defaultSystemPrompt:
-          'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+        defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
         enableKeywordTrigger: true,
         triggerKeyword: '  ',
         enableFloatingPanelKeywordTrigger: false,

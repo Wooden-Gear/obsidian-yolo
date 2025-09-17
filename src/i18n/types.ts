@@ -45,20 +45,27 @@ export interface TranslationKeys {
       desc: string
       buyMeACoffee: string
     }
-    chat: {
+    defaults: {
       title: string
-      defaultModel: string
-      defaultModelDesc: string
-      applyModel: string
-      applyModelDesc: string
-      systemPrompt: string
-      systemPromptDesc: string
+      defaultChatModel: string
+      defaultChatModelDesc: string
+      toolModel: string
+      toolModelDesc: string
+      globalSystemPrompt: string
+      globalSystemPromptDesc: string
+      continuationSystemPrompt: string
+      continuationSystemPromptDesc: string
+      chatTitlePrompt: string
+      chatTitlePromptDesc: string
+    }
+    chatPreferences: {
+      title: string
       includeCurrentFile: string
       includeCurrentFileDesc: string
       enableBruteMode?: string
       enableBruteModeDesc?: string
-      learningMode?: string
-      learningModeDesc?: string
+      enableLearningMode?: string
+      enableLearningModeDesc?: string
       learningModePrompt?: string
       learningModePromptDesc?: string
       enableTools: string

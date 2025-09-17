@@ -4,6 +4,7 @@ import {
   DEFAULT_APPLY_MODEL_ID,
   DEFAULT_CHAT_MODELS,
   DEFAULT_CHAT_MODEL_ID,
+  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
@@ -96,6 +97,7 @@ export const smartComposerSettingsSchema = z.object({
       // Default conversation parameters
       defaultTemperature: z.number().min(0).max(2).optional(),
       defaultTopP: z.number().min(0).max(1).optional(),
+      chatTitlePrompt: z.string().optional(),
     })
     .catch({
       includeCurrentFileContent: true,
@@ -107,6 +109,7 @@ export const smartComposerSettingsSchema = z.object({
       maxContextMessages: 32,
       defaultTemperature: 0.8,
       defaultTopP: 0.9,
+      chatTitlePrompt: '',
     }),
   
   // Continuation (续写) options
@@ -132,8 +135,7 @@ export const smartComposerSettingsSchema = z.object({
       fixedModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
-      defaultSystemPrompt:
-        'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+      defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
       enableKeywordTrigger: true,
       triggerKeyword: '  ',
       enableFloatingPanelKeywordTrigger: false,

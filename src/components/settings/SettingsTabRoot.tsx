@@ -8,13 +8,14 @@ import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 
 import { AssistantsSection } from './sections/AssistantsSection'
-import { ChatSection } from './sections/ChatSection'
+import { DefaultModelsAndPromptsSection } from './sections/DefaultModelsAndPromptsSection'
 import { EtcSection } from './sections/EtcSection'
 import { LanguageSection } from './sections/LanguageSection'
 import { McpSection } from './sections/McpSection'
 import { ProvidersAndModelsSection } from './sections/ProvidersAndModelsSection'
 import { RAGSection } from './sections/RAGSection'
 import { ContinuationSection } from './sections/ContinuationSection'
+import { ChatPreferencesSection } from './sections/ChatPreferencesSection'
 
 type SettingsTabRootProps = {
   app: App
@@ -41,7 +42,8 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
           cta
         />
       </ObsidianSetting>
-      <ChatSection />
+      <DefaultModelsAndPromptsSection />
+      <ChatPreferencesSection />
       <AssistantsSection app={app} />
       <ProvidersAndModelsSection app={app} plugin={plugin} />
       <RAGSection app={app} plugin={plugin} />

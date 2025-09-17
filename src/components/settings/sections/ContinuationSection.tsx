@@ -8,7 +8,6 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 
 type ContinuationSectionProps = {
   app: App
@@ -155,32 +154,6 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      {/* Default system prompt header (match ChatSection styling) */}
-      <ObsidianSetting
-        name={t('settings.continuation.defaultSystemPrompt')}
-        desc={t('settings.continuation.defaultSystemPromptDesc')}
-        className="smtcmp-settings-textarea-header"
-      />
-
-      {/* Default system prompt textarea (full-width, consistent spacing) */}
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={
-            (settings.continuationOptions.defaultSystemPrompt ?? '').trim()
-              ? settings.continuationOptions.defaultSystemPrompt!
-              : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
-          }
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                defaultSystemPrompt: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
     </div>
   )
 }
