@@ -141,6 +141,7 @@ export const en: TranslationKeys = {
       modelNamePlaceholder: 'Enter a display name',
       availableModelsAuto: 'Available models (auto-fetched)',
       fetchModelsFailed: 'Failed to fetch models',
+      embeddingModelsFirst: 'Embedding models are listed first',
       reasoningType: 'Reasoning type',
       reasoningTypeNone: 'Disable reasoning configuration',
       reasoningTypeOpenAI: 'OpenAI Reasoning (o3 / o4-mini / GPT-5)',

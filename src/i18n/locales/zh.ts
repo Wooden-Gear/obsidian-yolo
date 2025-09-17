@@ -140,6 +140,7 @@ export const zh: TranslationKeys = {
       modelNamePlaceholder: '输入用于展示的名称',
       availableModelsAuto: '可用模型（自动获取）',
       fetchModelsFailed: '获取模型失败',
+      embeddingModelsFirst: '嵌入模型优先显示',
       reasoningType: '推理类型',
       reasoningTypeNone: '不启用推理配置',
       reasoningTypeOpenAI: 'OpenAI 推理（o3 / o4-mini / GPT-5）',

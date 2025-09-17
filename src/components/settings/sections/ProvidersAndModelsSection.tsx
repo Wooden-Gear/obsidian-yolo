@@ -458,6 +458,13 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                     
                     {chatModels.length > 0 ? (
                       <table className="smtcmp-models-table">
+                        <colgroup>
+                          <col width={16} />
+                          <col />
+                          <col />
+                          <col width={60} />
+                          <col width={60} />
+                        </colgroup>
                         <thead>
                           <tr>
                             <th></th>
@@ -542,11 +549,19 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                     </div>
                     
                     {embeddingModels.length > 0 ? (
-                      <table className="smtcmp-models-table">
+                      <table className="smtcmp-models-table smtcmp-embedding-models-table">
+                        <colgroup>
+                          <col />
+                          <col />
+                          <col />
+                          <col width={60} />
+                          <col width={60} />
+                        </colgroup>
                         <thead>
                           <tr>
-                            <th>Model ID</th>
-                            <th>Model Name</th>
+                            <th></th>
+                            <th>{t('settings.models.modelName')}</th>
+                            <th>Model (calling ID)</th>
                             <th>Dimension</th>
                             <th>Actions</th>
                           </tr>
@@ -554,8 +569,9 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         <tbody>
                           {embeddingModels.map((model) => (
                             <tr key={model.id}>
-                              <td>{model.id}</td>
-                              <td>{model.model}</td>
+                              <td></td>
+                              <td title={model.id}>{model.id}</td>
+                              <td title={model.model}>{model.model}</td>
                               <td>{model.dimension}</td>
                               <td>
                                 <div className="smtcmp-settings-actions">

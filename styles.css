@@ -2104,6 +2104,9 @@ button.smtcmp-chat-input-model-select {
   font-style: italic;
 }
 
+/* Embedding models table column sizing */
+/* Note: Embedding table uses <colgroup> with last two 60px columns to align with chat models */
+
 .smtcmp-add-provider-btn {
   width: 100%;
   padding: var(--size-4-2);

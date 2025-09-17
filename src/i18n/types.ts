@@ -149,6 +149,7 @@ export interface TranslationKeys {
       // auto-fetched models helper labels
       availableModelsAuto?: string
       fetchModelsFailed?: string
+      embeddingModelsFirst?: string
       // reasoning UI
       reasoningType?: string
       reasoningTypeNone?: string
