@@ -148,7 +148,7 @@ export const zh: TranslationKeys = {
       openaiReasoningEffortDesc: '选择推理强度：minimal（更快更省，仅 GPT-5）/ low / medium / high',
       geminiThinkingBudget: '思考预算 (thinkingBudget)',
       geminiThinkingBudgetDesc: '单位为“思考 tokens”。0=关闭（Flash/Flash-Lite 支持）；-1=动态；具体范围因模型而异。',
-      geminiThinkingBudgetPlaceholder: '例如：2048（0=关，-1=动态）',
+      geminiThinkingBudgetPlaceholder: '例如：-1（动态，0=关闭）',
       toolType: '工具类型',
       toolTypeDesc: '选择模型支持的工具类型',
       toolTypeNone: '不启用工具',

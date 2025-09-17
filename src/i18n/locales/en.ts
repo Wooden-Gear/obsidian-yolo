@@ -149,7 +149,7 @@ export const en: TranslationKeys = {
       openaiReasoningEffortDesc: 'Choose effort: minimal (GPT-5 only) / low / medium / high',
       geminiThinkingBudget: 'Thinking budget (thinkingBudget)',
       geminiThinkingBudgetDesc: 'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
-      geminiThinkingBudgetPlaceholder: 'e.g., 2048 (0=off, -1=dynamic)',
+      geminiThinkingBudgetPlaceholder: 'e.g., -1 (dynamic, 0=off)',
       toolType: 'Tool Type',
       toolTypeDesc: 'Select the tool type supported by the model',
       toolTypeNone: 'No Tools',

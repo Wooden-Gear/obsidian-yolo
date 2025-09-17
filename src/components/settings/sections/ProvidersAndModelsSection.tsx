@@ -19,10 +19,6 @@ import { AddChatModelModal } from '../modals/AddChatModelModal'
 import { AddEmbeddingModelModal } from '../modals/AddEmbeddingModelModal'
 import { EditChatModelModal } from '../modals/EditChatModelModal'
 import { EditEmbeddingModelModal } from '../modals/EditEmbeddingModelModal'
-import {
-  ChatModelSettingsModal,
-  hasChatModelSettings,
-} from './models/ChatModelSettings'
 
 type ProvidersAndModelsSectionProps = {
   app: App
@@ -291,14 +287,6 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               </td>
                               <td>
                                 <div className="smtcmp-settings-actions">
-                                  {hasChatModelSettings(model) && (
-                                    <button
-                                      onClick={() => new ChatModelSettingsModal(model, app, plugin).open()}
-                                      className="clickable-icon"
-                                    >
-                                      <Settings />
-                                    </button>
-                                  )}
                                   {/* Always allow editing, even for default models (e.g., Gemini presets) */}
                                   <button
                                     onClick={() => new EditChatModelModal(app, plugin, model).open()}

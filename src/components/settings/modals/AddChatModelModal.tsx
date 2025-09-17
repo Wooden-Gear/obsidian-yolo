@@ -60,7 +60,7 @@ function AddChatModelModalComponent({
   // When user manually changes reasoning type, stop auto-detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
-  const [geminiBudget, setGeminiBudget] = useState<string>('2048')
+  const [geminiBudget, setGeminiBudget] = useState<string>('-1')
   // Tool type (only meaningful for Gemini provider)
   const [toolType, setToolType] = useState<'none' | 'gemini'>('none')
 
@@ -371,4 +371,3 @@ function AddChatModelModalComponent({
     </>
   )
 }
-
