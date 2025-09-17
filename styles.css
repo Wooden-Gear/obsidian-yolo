@@ -1448,7 +1448,7 @@ button.smtcmp-chat-input-model-select {
   justify-content: center;
   color: var(--text-muted);
   cursor: grab;
-  padding: 0 var(--size-2-2);
+  padding: 0 var(--size-4-1);
   user-select: none;
 }
 
@@ -1460,6 +1460,25 @@ button.smtcmp-chat-input-model-select {
   width: var(--icon-m);
   height: var(--icon-m);
   stroke-width: var(--icon-stroke);
+}
+
+.smtcmp-drag-handle {
+  padding: 0; /* 去掉手柄内部左右留白 */
+}
+
+/* 紧凑化：手柄列（第一列）不占额外空间，仅按内容宽度布局 */
+.smtcmp-settings-table th:first-child,
+.smtcmp-settings-table td:first-child,
+.smtcmp-models-table th:first-child,
+.smtcmp-models-table td:first-child {
+  padding-left: 0;
+  padding-right: 0;
+  width: 0; /* 让列宽收缩为内容宽度（图标本身宽度）*/
+}
+
+/* 覆盖 ChatModelsSubSection 中 colgroup 的第一列固定宽度 */
+.smtcmp-settings-table col:first-child {
+  width: 0 !important;
 }
 
 .smtcmp-settings-table-api-key {

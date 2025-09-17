@@ -138,7 +138,7 @@ export function ChatModelsSubSection({
       <div className="smtcmp-settings-table-container">
         <table className="smtcmp-settings-table">
           <colgroup>
-            <col width={28} />
+            <col width={16} />
             <col />
             <col />
             <col />
