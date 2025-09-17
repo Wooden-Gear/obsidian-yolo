@@ -24,6 +24,25 @@ export function ChatModelsSubSection({
   const dragIndexRef = useRef<number | null>(null)
   const dragOverRowRef = useRef<HTMLTableRowElement | null>(null)
   const lastDropPosRef = useRef<'before' | 'after' | null>(null)
+  const lastInsertIndexRef = useRef<number | null>(null)
+
+  // Robustly highlight the moved row after DOM re-render
+  const triggerDropSuccess = (movedId: string) => {
+    const tryFind = (attempt = 0) => {
+      const movedRow = document.querySelector(
+        `tr[data-model-id="${movedId}"]`,
+      ) as HTMLTableRowElement | null
+      if (movedRow) {
+        movedRow.classList.add('smtcmp-row-drop-success')
+        window.setTimeout(() => {
+          movedRow.classList.remove('smtcmp-row-drop-success')
+        }, 700)
+      } else if (attempt < 8) {
+        window.setTimeout(() => tryFind(attempt + 1), 50)
+      }
+    }
+    requestAnimationFrame(() => tryFind())
+  }
 
   const handleDeleteChatModel = async (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
@@ -108,6 +127,7 @@ export function ChatModelsSubSection({
       }
       dragOverRowRef.current = row
       lastDropPosRef.current = null
+      lastInsertIndexRef.current = null
       return
     }
 
@@ -122,19 +142,28 @@ export function ChatModelsSubSection({
       dropAfter = rel > 0.5
     }
 
-    // clear previous indicator if row changed or position changed
-    if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+    // Calculate actual insert position to avoid duplicate indicators
+    const sourceIndex = dragIndexRef.current!
+    let insertIndex = targetIndex
+    if (dropAfter) insertIndex += 1
+    if (sourceIndex < targetIndex) insertIndex -= 1
+
+    // If same insert position as before, don't change anything
+    if (lastInsertIndexRef.current === insertIndex) {
+      return
+    }
+
+    // clear previous indicator
+    if (dragOverRowRef.current) {
       dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-      lastDropPosRef.current = null
     }
 
     const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
-    if (lastDropPosRef.current !== (dropAfter ? 'after' : 'before') || dragOverRowRef.current !== row) {
-      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-      row.classList.add(desiredClass)
-      dragOverRowRef.current = row
-      lastDropPosRef.current = dropAfter ? 'after' : 'before'
-    }
+    row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    row.classList.add(desiredClass)
+    dragOverRowRef.current = row
+    lastDropPosRef.current = dropAfter ? 'after' : 'before'
+    lastInsertIndexRef.current = insertIndex
   }
 
   const handleDragEnd = () => {
@@ -144,6 +173,7 @@ export function ChatModelsSubSection({
       dragOverRowRef.current = null
     }
     lastDropPosRef.current = null
+    lastInsertIndexRef.current = null
     // remove dragging visuals from any row still marked
     const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
@@ -199,6 +229,10 @@ export function ChatModelsSubSection({
 
     dragOverRowRef.current = null
     lastDropPosRef.current = null
+    lastInsertIndexRef.current = null
+
+    // success feedback on the moved row at its new position
+    triggerDropSuccess(moved.id)
   }
 
   return (
@@ -230,6 +264,7 @@ export function ChatModelsSubSection({
             {settings.chatModels.map((chatModel, index) => (
               <tr
                 key={chatModel.id}
+                data-model-id={chatModel.id}
                 draggable
                 onDragStart={(event) => handleDragStart(event, index)}
                 onDragOver={(event) => handleDragOver(event, index)}

@@ -35,7 +35,31 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
   } | null>(null)
   const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
+  const lastInsertIndexRef = React.useRef<number | null>(null)
   
+  // Robustly highlight the moved row after DOM re-render
+  const triggerProviderDropSuccess = (providerId: string, movedId: string) => {
+    const key = `${providerId}:${movedId}`
+    const tryFind = (attempt = 0) => {
+      let movedRow = document.querySelector(
+        `tr[data-model-key="${key}"]`,
+      ) as HTMLTableRowElement | null
+      if (!movedRow) {
+        movedRow = document.querySelector(
+          `tr[data-model-id="${movedId}"]`,
+        ) as HTMLTableRowElement | null
+      }
+      if (movedRow) {
+        movedRow.classList.add('smtcmp-row-drop-success')
+        window.setTimeout(() => {
+          movedRow.classList.remove('smtcmp-row-drop-success')
+        }, 700)
+      } else if (attempt < 8) {
+        window.setTimeout(() => tryFind(attempt + 1), 50)
+      }
+    }
+    requestAnimationFrame(() => tryFind())
+  }
 
   const toggleProvider = (providerId: string) => {
     const newExpanded = new Set(expandedProviders)
@@ -197,6 +221,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       dragOverRowRef.current = null
     }
     lastDropPosRef.current = null
+    lastInsertIndexRef.current = null
     const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
     const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
@@ -227,6 +252,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       }
       dragOverRowRef.current = row
       lastDropPosRef.current = null
+      lastInsertIndexRef.current = null
       return
     }
 
@@ -241,18 +267,28 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       dropAfter = rel > 0.5
     }
 
-    if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+    // Calculate actual insert position to avoid duplicate indicators
+    const sourceIndex = dragChatModelRef.current.index
+    let insertIndex = targetIndex
+    if (dropAfter) insertIndex += 1
+    if (sourceIndex < targetIndex) insertIndex -= 1
+
+    // If same insert position as before, don't change anything
+    if (lastInsertIndexRef.current === insertIndex) {
+      return
+    }
+
+    // clear previous indicator
+    if (dragOverRowRef.current) {
       dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-      lastDropPosRef.current = null
     }
 
     const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
-    if (lastDropPosRef.current !== (dropAfter ? 'after' : 'before') || dragOverRowRef.current !== row) {
-      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-      row.classList.add(desiredClass)
-      dragOverRowRef.current = row
-      lastDropPosRef.current = dropAfter ? 'after' : 'before'
-    }
+    row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    row.classList.add(desiredClass)
+    dragOverRowRef.current = row
+    lastDropPosRef.current = dropAfter ? 'after' : 'before'
+    lastInsertIndexRef.current = insertIndex
   }
 
   const handleProviderModelDrop = async (
@@ -318,6 +354,10 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
     dragOverRowRef.current = null
     lastDropPosRef.current = null
+    lastInsertIndexRef.current = null
+
+    // success feedback on moved row
+    triggerProviderDropSuccess(providerId, moved.id)
   }
 
 
@@ -431,6 +471,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                           {chatModels.map((model, index) => (
                             <tr
                               key={model.id}
+                              data-model-id={model.id}
+                              data-model-key={`${provider.id}:${model.id}`}
                               draggable
                               onDragStart={(event) =>
                                 handleProviderModelDragStart(event, provider.id, index)

@@ -6,6 +6,7 @@
   gap: var(--size-4-2);
 }
 
+
 /* Chat input: outer wrapper to anchor settings button at top-right */
 .smtcmp-chat-input-wrapper {
   position: relative;
@@ -1507,6 +1508,29 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-drag-handle--active {
   color: var(--text-normal);
   transform: scale(1.05);
+}
+
+/* 放下成功后的瞬时反馈：高亮并轻微回弹（不改变布局尺寸） */
+.smtcmp-row-drop-success {
+  animation: smtcmp-drop-flash 650ms ease-out;
+}
+
+@keyframes smtcmp-drop-flash {
+  0% {
+    background-color: var(--background-modifier-hover);
+    transform: translateX(2px) scale(0.995);
+    opacity: 0.98;
+  }
+  40% {
+    background-color: var(--background-modifier-hover);
+    transform: translateX(0) scale(1.002);
+    opacity: 1;
+  }
+  100% {
+    background-color: transparent;
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .smtcmp-settings-table-api-key {
