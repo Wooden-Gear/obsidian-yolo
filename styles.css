@@ -1485,9 +1485,11 @@ button.smtcmp-chat-input-model-select {
 /* Plan A: 拖拽行与插入位置的视觉反馈（无布局抖动） */
 .smtcmp-row-dragging {
   background-color: var(--background-modifier-hover);
-  transform: scale(0.995);
+  transform: translateX(2px) scale(0.995);
+  opacity: 0.98;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-  transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+  transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  will-change: transform, opacity;
 }
 
 /* 使用 inset box-shadow 绘制顶部/底部插入线，避免改变 row 高度导致抖动 */
