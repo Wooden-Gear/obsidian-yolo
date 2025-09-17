@@ -1441,6 +1441,27 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
+/* Drag handle for reorderable rows */
+.smtcmp-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 0 var(--size-2-2);
+  user-select: none;
+}
+
+.smtcmp-drag-handle:hover {
+  color: var(--text-normal);
+}
+
+.smtcmp-drag-handle svg {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  stroke-width: var(--icon-stroke);
+}
+
 .smtcmp-settings-table-api-key {
   cursor: pointer;
   color: var(--text-muted);

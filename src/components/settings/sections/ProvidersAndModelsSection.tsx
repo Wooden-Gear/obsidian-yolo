@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Settings, Trash2, Edit } from 'lucide-react'
+import { ChevronDown, ChevronRight, Settings, Trash2, Edit, GripVertical } from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import React, { useState } from 'react'
 
@@ -29,6 +29,10 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
   const { settings, setSettings } = useSettings()
   const { t, language } = useLanguage()
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
+  const dragChatModelRef = React.useRef<{
+    providerId: string
+    index: number
+  } | null>(null)
   
 
   const toggleProvider = (providerId: string) => {
@@ -168,6 +172,79 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     })
   }
 
+  const handleProviderModelDragStart = (
+    event: React.DragEvent<HTMLTableRowElement>,
+    providerId: string,
+    index: number,
+  ) => {
+    dragChatModelRef.current = { providerId, index }
+    event.dataTransfer?.setData('text/plain', `${providerId}:${index}`)
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleProviderModelDragEnd = () => {
+    dragChatModelRef.current = null
+  }
+
+  const handleProviderModelDragOver = (
+    event: React.DragEvent<HTMLTableRowElement>,
+  ) => {
+    event.preventDefault()
+  }
+
+  const handleProviderModelDrop = async (
+    event: React.DragEvent<HTMLTableRowElement>,
+    providerId: string,
+    targetIndex: number,
+  ) => {
+    event.preventDefault()
+    const dragInfo = dragChatModelRef.current
+    dragChatModelRef.current = null
+    if (!dragInfo || dragInfo.providerId !== providerId) {
+      return
+    }
+
+    const providerModelIndexes = settings.chatModels.reduce<number[]>((acc, model, idx) => {
+      if (model.providerId === providerId) {
+        acc.push(idx)
+      }
+      return acc
+    }, [])
+
+    const sourceGlobalIndex = providerModelIndexes[dragInfo.index]
+    const targetGlobalIndex = providerModelIndexes[targetIndex]
+    if (sourceGlobalIndex === undefined || targetGlobalIndex === undefined) {
+      return
+    }
+
+    const updatedChatModels = [...settings.chatModels]
+    const [moved] = updatedChatModels.splice(sourceGlobalIndex, 1)
+    if (!moved) {
+      return
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const dropAfter = event.clientY - rect.top > rect.height / 2
+
+    let insertIndex = targetGlobalIndex + (dropAfter ? 1 : 0)
+    if (sourceGlobalIndex < insertIndex) {
+      insertIndex -= 1
+    }
+    if (insertIndex < 0) {
+      insertIndex = 0
+    }
+    if (insertIndex > updatedChatModels.length) {
+      insertIndex = updatedChatModels.length
+    }
+
+    updatedChatModels.splice(insertIndex, 0, moved)
+
+    await setSettings({
+      ...settings,
+      chatModels: updatedChatModels,
+    })
+  }
+
 
   const isEnabled = (enable: boolean | undefined | null) => enable ?? true
 
@@ -268,6 +345,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                       <table className="smtcmp-models-table">
                         <thead>
                           <tr>
+                            <th></th>
                             <th>{t('settings.models.modelName')}</th>
                             <th>Model (calling ID)</th>
                             <th>Enable</th>
@@ -275,8 +353,24 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                           </tr>
                         </thead>
                         <tbody>
-                          {chatModels.map((model) => (
-                            <tr key={model.id}>
+                          {chatModels.map((model, index) => (
+                            <tr
+                              key={model.id}
+                              draggable
+                              onDragStart={(event) =>
+                                handleProviderModelDragStart(event, provider.id, index)
+                              }
+                              onDragOver={handleProviderModelDragOver}
+                              onDrop={(event) =>
+                                void handleProviderModelDrop(event, provider.id, index)
+                              }
+                              onDragEnd={handleProviderModelDragEnd}
+                            >
+                              <td>
+                                <span className="smtcmp-drag-handle" aria-label="Drag to reorder">
+                                  <GripVertical />
+                                </span>
+                              </td>
                               <td title={model.id}>{model.name || model.model || model.id}</td>
                               <td>{model.model || model.id}</td>
                               <td>
