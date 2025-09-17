@@ -22,6 +22,8 @@ export function ChatModelsSubSection({
 }: ChatModelsSubSectionProps) {
   const { settings, setSettings } = useSettings()
   const dragIndexRef = useRef<number | null>(null)
+  const dragOverRowRef = useRef<HTMLTableRowElement | null>(null)
+  const lastDropPosRef = useRef<'before' | 'after' | null>(null)
 
   const handleDeleteChatModel = async (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
@@ -82,14 +84,71 @@ export function ChatModelsSubSection({
     dragIndexRef.current = index
     event.dataTransfer?.setData('text/plain', settings.chatModels[index]?.id ?? '')
     event.dataTransfer.effectAllowed = 'move'
+
+    // visual feedback: mark dragging row & handle
+    const row = event.currentTarget
+    row.classList.add('smtcmp-row-dragging')
+    const handle = row.querySelector('.smtcmp-drag-handle') as HTMLElement | null
+    if (handle) handle.classList.add('smtcmp-drag-handle--active')
   }
 
-  const handleDragOver = (event: DragEvent<HTMLTableRowElement>) => {
+  const handleDragOver = (event: DragEvent<HTMLTableRowElement>, targetIndex: number) => {
     event.preventDefault()
+
+    // show insert indicator before/after the hovered row
+    const row = event.currentTarget
+    const rect = row.getBoundingClientRect()
+    const rel = (event.clientY - rect.top) / rect.height
+
+    // If hovering the row being dragged, suppress indicator to avoid flicker
+    if (dragIndexRef.current === targetIndex) {
+      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+        dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      }
+      dragOverRowRef.current = row
+      lastDropPosRef.current = null
+      return
+    }
+
+    // Hysteresis around the midline to prevent rapid toggling
+    const HYSTERESIS = 0.05 // 5% of row height
+    let dropAfter: boolean
+    if (lastDropPosRef.current) {
+      if (rel > 0.5 + HYSTERESIS) dropAfter = true
+      else if (rel < 0.5 - HYSTERESIS) dropAfter = false
+      else dropAfter = lastDropPosRef.current === 'after'
+    } else {
+      dropAfter = rel > 0.5
+    }
+
+    // clear previous indicator if row changed or position changed
+    if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      lastDropPosRef.current = null
+    }
+
+    const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
+    if (lastDropPosRef.current !== (dropAfter ? 'after' : 'before') || dragOverRowRef.current !== row) {
+      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      row.classList.add(desiredClass)
+      dragOverRowRef.current = row
+      lastDropPosRef.current = dropAfter ? 'after' : 'before'
+    }
   }
 
   const handleDragEnd = () => {
     dragIndexRef.current = null
+    if (dragOverRowRef.current) {
+      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current = null
+    }
+    lastDropPosRef.current = null
+    // remove dragging visuals from any row still marked
+    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
+    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
   const handleDrop = async (
@@ -97,6 +156,8 @@ export function ChatModelsSubSection({
     targetIndex: number,
   ) => {
     event.preventDefault()
+    // capture row early to avoid React SyntheticEvent pooling issues
+    const rowEl = event.currentTarget as HTMLTableRowElement
     const sourceIndex = dragIndexRef.current
     dragIndexRef.current = null
     if (sourceIndex === null) {
@@ -128,6 +189,16 @@ export function ChatModelsSubSection({
       ...settings,
       chatModels: updatedChatModels,
     })
+
+    // clear visuals on drop target
+    rowEl?.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
+    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+
+    dragOverRowRef.current = null
+    lastDropPosRef.current = null
   }
 
   return (
@@ -161,7 +232,7 @@ export function ChatModelsSubSection({
                 key={chatModel.id}
                 draggable
                 onDragStart={(event) => handleDragStart(event, index)}
-                onDragOver={handleDragOver}
+                onDragOver={(event) => handleDragOver(event, index)}
                 onDrop={(event) => void handleDrop(event, index)}
                 onDragEnd={handleDragEnd}
               >

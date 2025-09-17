@@ -33,6 +33,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     providerId: string
     index: number
   } | null>(null)
+  const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
+  const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
   
 
   const toggleProvider = (providerId: string) => {
@@ -180,16 +182,77 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     dragChatModelRef.current = { providerId, index }
     event.dataTransfer?.setData('text/plain', `${providerId}:${index}`)
     event.dataTransfer.effectAllowed = 'move'
+
+    // visual feedback
+    const row = event.currentTarget
+    row.classList.add('smtcmp-row-dragging')
+    const handle = row.querySelector('.smtcmp-drag-handle') as HTMLElement | null
+    if (handle) handle.classList.add('smtcmp-drag-handle--active')
   }
 
   const handleProviderModelDragEnd = () => {
     dragChatModelRef.current = null
+    if (dragOverRowRef.current) {
+      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current = null
+    }
+    lastDropPosRef.current = null
+    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
+    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
   const handleProviderModelDragOver = (
     event: React.DragEvent<HTMLTableRowElement>,
+    providerId: string,
+    targetIndex: number,
   ) => {
     event.preventDefault()
+
+    // only show indicators when dragging within the same provider group
+    if (!dragChatModelRef.current || dragChatModelRef.current.providerId !== providerId) {
+      return
+    }
+
+    const row = event.currentTarget
+    const rect = row.getBoundingClientRect()
+    const rel = (event.clientY - rect.top) / rect.height
+
+    // If hovering the row being dragged, suppress indicator to avoid flicker
+    if (dragChatModelRef.current.index === targetIndex) {
+      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+        dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      }
+      dragOverRowRef.current = row
+      lastDropPosRef.current = null
+      return
+    }
+
+    // Hysteresis around the midline to prevent rapid toggling
+    const HYSTERESIS = 0.05
+    let dropAfter: boolean
+    if (lastDropPosRef.current) {
+      if (rel > 0.5 + HYSTERESIS) dropAfter = true
+      else if (rel < 0.5 - HYSTERESIS) dropAfter = false
+      else dropAfter = lastDropPosRef.current === 'after'
+    } else {
+      dropAfter = rel > 0.5
+    }
+
+    if (dragOverRowRef.current && dragOverRowRef.current !== row) {
+      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      lastDropPosRef.current = null
+    }
+
+    const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
+    if (lastDropPosRef.current !== (dropAfter ? 'after' : 'before') || dragOverRowRef.current !== row) {
+      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      row.classList.add(desiredClass)
+      dragOverRowRef.current = row
+      lastDropPosRef.current = dropAfter ? 'after' : 'before'
+    }
   }
 
   const handleProviderModelDrop = async (
@@ -198,6 +261,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     targetIndex: number,
   ) => {
     event.preventDefault()
+    // capture row early to avoid SyntheticEvent pooling issues
+    const rowEl = event.currentTarget as HTMLTableRowElement
     const dragInfo = dragChatModelRef.current
     dragChatModelRef.current = null
     if (!dragInfo || dragInfo.providerId !== providerId) {
@@ -243,6 +308,16 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       ...settings,
       chatModels: updatedChatModels,
     })
+
+    // clear visuals
+    rowEl?.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
+    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+
+    dragOverRowRef.current = null
+    lastDropPosRef.current = null
   }
 
 
@@ -360,7 +435,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               onDragStart={(event) =>
                                 handleProviderModelDragStart(event, provider.id, index)
                               }
-                              onDragOver={handleProviderModelDragOver}
+                              onDragOver={(event) => handleProviderModelDragOver(event, provider.id, index)}
                               onDrop={(event) =>
                                 void handleProviderModelDrop(event, provider.id, index)
                               }
