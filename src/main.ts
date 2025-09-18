@@ -94,10 +94,13 @@ export default class SmartComposerPlugin extends Plugin {
         'You are an intelligent assistant that rewrites ONLY the provided markdown text according to the instruction. Preserve the original meaning, structure, and any markdown (links, emphasis, code) unless explicitly told otherwise. Output ONLY the rewritten text without code fences or extra explanations.'
 
       const instruction = (customPrompt ?? '').trim()
+      const isBaseModel = Boolean((model as any).isBaseModel)
       const requestMessages = [
-        { role: 'system', content: systemPrompt },
+        ...(isBaseModel
+          ? []
+          : ([{ role: 'system' as const, content: systemPrompt }] as const)),
         {
-          role: 'user',
+          role: 'user' as const,
           content: `Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ] as const
@@ -730,13 +733,18 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ? 'Continue writing from here.'
         : 'Start writing this document.'
 
+      const isBaseModel = Boolean((model as any).isBaseModel)
       const requestMessages = [
+        ...(isBaseModel
+          ? []
+          : ([
+              {
+                role: 'system' as const,
+                content: systemPrompt,
+              },
+            ] as const)),
         {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
+          role: 'user' as const,
           content: `${titleLine}${contextSection}${continueText}${instructionSuffix}`,
         },
       ] as const

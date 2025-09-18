@@ -54,6 +54,7 @@ describe('parseSmartComposerSettings', () => {
       defaultTemperature: 0.8,
       defaultTopP: 0.9,
       chatTitlePrompt: '',
+      baseModelSpecialPrompt: '',
     },
 
       continuationOptions: {

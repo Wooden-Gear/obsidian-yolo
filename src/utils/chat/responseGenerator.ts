@@ -184,6 +184,7 @@ export class ResponseGenerator {
       chatMode: this.chatMode,
       learningMode: this.learningMode,
       maxContextOverride: this.maxContextOverride,
+      model: this.model,
     })
 
     // Set tools to undefined when no tools are available since some providers

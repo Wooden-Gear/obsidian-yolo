@@ -56,7 +56,9 @@ function AddChatModelModalComponent({
   const [loadingModels, setLoadingModels] = useState<boolean>(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   // Reasoning type selection: none | openai | gemini
-  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => 'none')
+  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini' | 'base'>(
+    () => 'none',
+  )
   // When user manually changes reasoning type, stop auto-detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
@@ -196,7 +198,9 @@ function AddChatModelModalComponent({
     const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
     // Compose reasoning/thinking fields based on selection ONLY (provider-agnostic)
     const reasoningPatch: Partial<ChatModel> = {}
-    if (reasoningType === 'openai') {
+    if (reasoningType === 'base') {
+      ;(reasoningPatch as any).isBaseModel = true
+    } else if (reasoningType === 'openai') {
       ;(reasoningPatch as any).reasoning = { enabled: true, reasoning_effort: openaiEffort }
     } else if (reasoningType === 'gemini') {
       const budget = parseInt(geminiBudget, 10)
@@ -205,6 +209,10 @@ function AddChatModelModalComponent({
         return
       }
       ;(reasoningPatch as any).thinking = { enabled: true, thinking_budget: budget }
+    }
+
+    if (reasoningType !== 'base') {
+      delete (reasoningPatch as any).isBaseModel
     }
 
     const modelDataWithPrefix: ChatModel = {
@@ -300,13 +308,21 @@ function AddChatModelModalComponent({
       </ObsidianSetting>
 
       {/* Reasoning type */}
-      <ObsidianSetting name={t('settings.models.reasoningType')}>
+      <ObsidianSetting
+        name={t('settings.models.reasoningType')}
+        desc={
+          reasoningType === 'base'
+            ? t('settings.models.baseModelWarning')
+            : undefined
+        }
+      >
         <ObsidianDropdown
           value={reasoningType}
           options={{
             none: t('settings.models.reasoningTypeNone'),
             openai: t('settings.models.reasoningTypeOpenAI'),
             gemini: t('settings.models.reasoningTypeGemini'),
+            base: t('settings.models.reasoningTypeBase'),
           }}
           onChange={(v: string) => {
             setReasoningType(v as any)
@@ -316,7 +332,7 @@ function AddChatModelModalComponent({
       </ObsidianSetting>
 
       {/* OpenAI reasoning options */}
-      {(reasoningType === 'openai') && (
+      {reasoningType === 'openai' && (
         <ObsidianSetting
           name={t('settings.models.openaiReasoningEffort')}
           desc={t('settings.models.openaiReasoningEffortDesc')}
@@ -330,7 +346,7 @@ function AddChatModelModalComponent({
       )}
 
       {/* Gemini thinking options */}
-      {(reasoningType === 'gemini') && (
+      {reasoningType === 'gemini' && (
         <ObsidianSetting
           name={t('settings.models.geminiThinkingBudget')}
           desc={t('settings.models.geminiThinkingBudgetDesc')}

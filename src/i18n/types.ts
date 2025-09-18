@@ -57,6 +57,8 @@ export interface TranslationKeys {
       continuationSystemPromptDesc: string
       chatTitlePrompt: string
       chatTitlePromptDesc: string
+      baseModelSpecialPrompt?: string
+      baseModelSpecialPromptDesc?: string
     }
     chatPreferences: {
       title: string
@@ -155,6 +157,8 @@ export interface TranslationKeys {
       reasoningTypeNone?: string
       reasoningTypeOpenAI?: string
       reasoningTypeGemini?: string
+      reasoningTypeBase?: string
+      baseModelWarning?: string
       openaiReasoningEffort?: string
       openaiReasoningEffortDesc?: string
       geminiThinkingBudget?: string

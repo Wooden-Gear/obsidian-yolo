@@ -12,6 +12,7 @@ import {
   ChatToolMessage,
   ChatUserMessage,
 } from '../../types/chat'
+import { ChatModel } from '../../types/chat-model.types'
 import { ContentPart, RequestMessage } from '../../types/llm/request'
 import {
   MentionableBlock,
@@ -54,12 +55,14 @@ export class PromptGenerator {
     chatMode,
     learningMode,
     maxContextOverride,
+    model,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
     chatMode?: 'rag' | 'brute'
     learningMode?: boolean
     maxContextOverride?: number
+    model: ChatModel
   }): Promise<RequestMessage[]> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
@@ -98,9 +101,15 @@ export class PromptGenerator {
     }
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
-    const systemMessage = this.getSystemMessage(shouldUseRAG, hasTools)
+    const isBaseModel = Boolean((model as any).isBaseModel)
 
-    const customInstructionMessage = this.getCustomInstructionMessage()
+    const systemMessage = isBaseModel
+      ? null
+      : this.getSystemMessage(shouldUseRAG, hasTools)
+
+    const customInstructionMessage = isBaseModel
+      ? null
+      : this.getCustomInstructionMessage()
     const learningModeMessage = learningMode ? this.getLearningModeMessage() : null
 
     const currentFile = lastUserMessage.mentionables.find(
@@ -112,7 +121,7 @@ export class PromptGenerator {
         : undefined
 
     const requestMessages: RequestMessage[] = [
-      systemMessage,
+      ...(systemMessage ? [systemMessage] : []),
       ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),

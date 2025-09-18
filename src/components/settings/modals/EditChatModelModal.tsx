@@ -53,14 +53,21 @@ function EditChatModelModalComponent({
     name: model.name ?? '',
   })
 
-  // Reasoning UI states
-  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini'>(() => {
+  const initialReasoningType: 'none' | 'openai' | 'gemini' | 'base' = (() => {
+    if ((model as any).isBaseModel) return 'base'
     if ((model as any).reasoning?.enabled) return 'openai'
     if ((model as any).thinking?.enabled) return 'gemini'
     return 'none'
-  })
+  })()
+
+  // Reasoning UI states
+  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini' | 'base'>(
+    () => initialReasoningType,
+  )
   // If user changes dropdown manually, disable auto detection
-  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
+  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(
+    initialReasoningType !== 'base',
+  )
   const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>(
     ((model as any).reasoning?.reasoning_effort as any) || 'medium',
   )
@@ -103,9 +110,14 @@ function EditChatModelModalComponent({
       } as any
 
       // Apply according to selected reasoningType only (not limited by providerType)
-      if (reasoningType === 'openai') {
+      if (reasoningType === 'base') {
+        delete updatedModel.reasoning
+        delete updatedModel.thinking
+        updatedModel.isBaseModel = true
+      } else if (reasoningType === 'openai') {
         updatedModel.reasoning = { enabled: true, reasoning_effort: openaiEffort }
         delete updatedModel.thinking
+        delete updatedModel.isBaseModel
       } else if (reasoningType === 'gemini') {
         const budget = parseInt(geminiBudget, 10)
         if (Number.isNaN(budget)) {
@@ -114,9 +126,11 @@ function EditChatModelModalComponent({
         }
         updatedModel.thinking = { enabled: true, thinking_budget: budget }
         delete updatedModel.reasoning
+        delete updatedModel.isBaseModel
       } else {
         delete updatedModel.reasoning
         delete updatedModel.thinking
+        delete updatedModel.isBaseModel
       }
       
       // Apply tool type
@@ -176,13 +190,21 @@ function EditChatModelModalComponent({
       </ObsidianSetting>
 
       {/* Reasoning type */}
-      <ObsidianSetting name={t('settings.models.reasoningType')}>
+      <ObsidianSetting
+        name={t('settings.models.reasoningType')}
+        desc={
+          reasoningType === 'base'
+            ? t('settings.models.baseModelWarning')
+            : undefined
+        }
+      >
         <ObsidianDropdown
           value={reasoningType}
           options={{
             none: t('settings.models.reasoningTypeNone'),
             openai: t('settings.models.reasoningTypeOpenAI'),
             gemini: t('settings.models.reasoningTypeGemini'),
+            base: t('settings.models.reasoningTypeBase'),
           }}
           onChange={(v: string) => {
             setReasoningType(v as any)
