@@ -192,11 +192,6 @@ function EditChatModelModalComponent({
       {/* Reasoning type */}
       <ObsidianSetting
         name={t('settings.models.reasoningType')}
-        desc={
-          reasoningType === 'base'
-            ? t('settings.models.baseModelWarning')
-            : undefined
-        }
       >
         <ObsidianDropdown
           value={reasoningType}
@@ -212,6 +207,12 @@ function EditChatModelModalComponent({
           }}
         />
       </ObsidianSetting>
+
+      {reasoningType === 'base' && (
+        <div className="smtcmp-settings-desc">
+          {t('settings.models.baseModelWarning')}
+        </div>
+      )}
 
       {/* OpenAI reasoning options */}
       {(reasoningType === 'openai') && (
