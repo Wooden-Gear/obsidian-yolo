@@ -65,7 +65,7 @@ function EditChatModelModalComponent({
     ((model as any).reasoning?.reasoning_effort as any) || 'medium',
   )
   const [geminiBudget, setGeminiBudget] = useState<string>(
-    `${(model as any).thinking?.thinking_budget ?? 2048}`,
+    `${(model as any).thinking?.thinking_budget ?? -1}`,
   )
   
   // Tool type state
