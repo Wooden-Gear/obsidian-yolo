@@ -102,6 +102,11 @@ export class PromptGenerator {
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
     const isBaseModel = Boolean((model as any).isBaseModel)
+    const baseModelSpecialPrompt = (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+    const baseModelSpecialPromptMessage =
+      isBaseModel && baseModelSpecialPrompt.length > 0
+        ? [{ role: 'user' as const, content: baseModelSpecialPrompt }]
+        : []
 
     const systemMessage = isBaseModel
       ? null
@@ -123,6 +128,7 @@ export class PromptGenerator {
         : undefined
 
     const requestMessages: RequestMessage[] = [
+      ...baseModelSpecialPromptMessage,
       ...(systemMessage ? [systemMessage] : []),
       ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(learningModeMessage ? [learningModeMessage] : []),
