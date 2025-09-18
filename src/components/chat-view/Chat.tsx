@@ -91,6 +91,8 @@ export type ChatRef = {
   openNewChat: (selectedBlock?: MentionableBlockData) => void
   addSelectionToChat: (selectedBlock: MentionableBlockData) => void
   focusMessage: () => void
+  getCurrentConversationOverrides: () => ConversationOverrideSettings | undefined
+  getCurrentConversationModelId: () => string | undefined
 }
 
 export type ChatProps = {
@@ -677,6 +679,24 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     focusMessage: () => {
       if (!focusedMessageId) return
       chatUserInputRefs.current.get(focusedMessageId)?.focus()
+    },
+    getCurrentConversationOverrides: () => {
+      if (conversationOverrides) {
+        return conversationOverrides
+      }
+      if (!currentConversationId) {
+        return undefined
+      }
+      return conversationOverridesRef.current.get(currentConversationId)
+    },
+    getCurrentConversationModelId: () => {
+      if (conversationModelId) {
+        return conversationModelId
+      }
+      if (!currentConversationId) {
+        return undefined
+      }
+      return conversationModelIdRef.current.get(currentConversationId)
     },
   }))
 

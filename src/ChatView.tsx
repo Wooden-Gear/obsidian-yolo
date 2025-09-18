@@ -16,6 +16,7 @@ import { PluginProvider } from './contexts/plugin-context'
 import { RAGProvider } from './contexts/rag-context'
 import { SettingsProvider } from './contexts/settings-context'
 import SmartComposerPlugin from './main'
+import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import { MentionableBlockData } from './types/mentionable'
 
 export class ChatView extends ItemView {
@@ -128,5 +129,13 @@ export class ChatView extends ItemView {
 
   focusMessage() {
     this.chatRef.current?.focusMessage()
+  }
+
+  getCurrentConversationOverrides(): ConversationOverrideSettings | undefined {
+    return this.chatRef.current?.getCurrentConversationOverrides()
+  }
+
+  getCurrentConversationModelId(): string | undefined {
+    return this.chatRef.current?.getCurrentConversationModelId()
   }
 }
