@@ -110,7 +110,9 @@ export class PromptGenerator {
     const customInstructionMessage = isBaseModel
       ? null
       : this.getCustomInstructionMessage()
-    const learningModeMessage = learningMode ? this.getLearningModeMessage() : null
+    const learningModeMessage = !isBaseModel && learningMode
+      ? this.getLearningModeMessage()
+      : null
 
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
@@ -126,7 +128,7 @@ export class PromptGenerator {
       ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
       ...this.getChatHistoryMessages({ messages: compiledMessages, maxContextOverride }),
-      ...(shouldUseRAG && this.getModelPromptLevel() == PromptLevel.Default
+      ...(shouldUseRAG && !isBaseModel && this.getModelPromptLevel() == PromptLevel.Default
         ? [this.getRagInstructionMessage()]
         : []),
     ]

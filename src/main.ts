@@ -95,13 +95,19 @@ export default class SmartComposerPlugin extends Plugin {
 
       const instruction = (customPrompt ?? '').trim()
       const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
       const requestMessages = [
         ...(isBaseModel
           ? []
           : ([{ role: 'system' as const, content: systemPrompt }] as const)),
         {
           role: 'user' as const,
-          content: `Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
+          content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ] as const
 
@@ -734,6 +740,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         : 'Start writing this document.'
 
       const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
       const requestMessages = [
         ...(isBaseModel
           ? []
@@ -745,7 +757,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             ] as const)),
         {
           role: 'user' as const,
-          content: `${titleLine}${contextSection}${continueText}${instructionSuffix}`,
+          content: `${basePromptSection}${titleLine}${contextSection}${continueText}${instructionSuffix}`,
         },
       ] as const
 
