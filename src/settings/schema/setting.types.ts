@@ -98,6 +98,7 @@ export const smartComposerSettingsSchema = z.object({
       defaultTemperature: z.number().min(0).max(2).optional(),
       defaultTopP: z.number().min(0).max(1).optional(),
       chatTitlePrompt: z.string().optional(),
+      baseModelSpecialPrompt: z.string().optional(),
     })
     .catch({
       includeCurrentFileContent: true,
@@ -110,6 +111,7 @@ export const smartComposerSettingsSchema = z.object({
       defaultTemperature: 0.8,
       defaultTopP: 0.9,
       chatTitlePrompt: '',
+      baseModelSpecialPrompt: '',
     }),
   
   // Continuation (续写) options

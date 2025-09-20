@@ -15,6 +15,7 @@ import { createTranslationFunction } from './i18n'
 import { CustomContinueModal } from './components/modals/CustomContinueModal'
 import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
 import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
+import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   SmartComposerSettings,
   smartComposerSettingsSchema,
@@ -57,6 +58,65 @@ export default class SmartComposerPlugin extends Plugin {
     return undefined
   }
 
+  private getActiveConversationOverrides():
+    | ConversationOverrideSettings
+    | undefined {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    for (const leaf of leaves) {
+      const view = leaf.view
+      if (
+        view instanceof ChatView &&
+        typeof view.getCurrentConversationOverrides === 'function'
+      ) {
+        return view.getCurrentConversationOverrides()
+      }
+    }
+    return undefined
+  }
+
+  private getActiveConversationModelId(): string | undefined {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    for (const leaf of leaves) {
+      const view = leaf.view
+      if (
+        view instanceof ChatView &&
+        typeof view.getCurrentConversationModelId === 'function'
+      ) {
+        const modelId = view.getCurrentConversationModelId()
+        if (modelId) return modelId
+      }
+    }
+    return undefined
+  }
+
+  private resolveSamplingParams(overrides?: ConversationOverrideSettings): {
+    temperature?: number
+    topP?: number
+    stream: boolean
+  } {
+    const defaultTemperature = this.settings.chatOptions.defaultTemperature
+    const defaultTopP = this.settings.chatOptions.defaultTopP
+
+    const temperature =
+      typeof overrides?.temperature === 'number'
+        ? overrides.temperature
+        : typeof defaultTemperature === 'number'
+          ? defaultTemperature
+          : undefined
+
+    const topP =
+      typeof overrides?.top_p === 'number'
+        ? overrides.top_p
+        : typeof defaultTopP === 'number'
+          ? defaultTopP
+          : undefined
+
+    const stream =
+      typeof overrides?.stream === 'boolean' ? overrides.stream : true
+
+    return { temperature, topP, stream }
+  }
+
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
   }
@@ -85,6 +145,9 @@ export default class SmartComposerPlugin extends Plugin {
     const notice = new Notice('正在生成改写...', 0)
     let controller: AbortController | null = null
     try {
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const { temperature, topP } = this.resolveSamplingParams(sidebarOverrides)
+
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
         modelId: this.settings.applyModelId,
@@ -94,18 +157,27 @@ export default class SmartComposerPlugin extends Plugin {
         'You are an intelligent assistant that rewrites ONLY the provided markdown text according to the instruction. Preserve the original meaning, structure, and any markdown (links, emphasis, code) unless explicitly told otherwise. Output ONLY the rewritten text without code fences or extra explanations.'
 
       const instruction = (customPrompt ?? '').trim()
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
       const requestMessages = [
-        { role: 'system', content: systemPrompt },
+        ...(isBaseModel
+          ? []
+          : ([{ role: 'system' as const, content: systemPrompt }] as const)),
         {
-          role: 'user',
-          content: `Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
+          role: 'user' as const,
+          content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ] as const
 
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const response = await providerClient.generateResponse(model, {
+      const rewriteRequest: any = {
         model: model.model,
         messages: requestMessages as unknown as any,
         stream: false,
@@ -116,7 +188,19 @@ export default class SmartComposerPlugin extends Plugin {
             { type: 'text', text: instruction },
           ],
         },
-      }, { signal: controller.signal })
+      }
+      if (typeof temperature === 'number') {
+        rewriteRequest.temperature = temperature
+      }
+      if (typeof topP === 'number') {
+        rewriteRequest.top_p = topP
+      }
+
+      const response = await providerClient.generateResponse(
+        model,
+        rewriteRequest,
+        { signal: controller.signal },
+      )
 
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
@@ -700,8 +784,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           : baseContext
 
       const continuationModelId = this.settings.continuationOptions?.useCurrentModel
-        ? this.settings.chatModelId
+        ? this.getActiveConversationModelId() ?? this.settings.chatModelId
         : this.settings.continuationOptions.fixedModelId
+
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const { temperature, topP, stream: streamPreference } =
+        this.resolveSamplingParams(sidebarOverrides)
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -726,18 +814,37 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const contextSection = hasContext
         ? `Context (up to recent portion):\n\n${context}\n\n`
         : ''
-      const continueText = hasContext
+      const baseModelContextSection = hasContext ? `${context}\n\n` : ''
+      const continueText = hasSelection || hasContext
         ? 'Continue writing from here.'
         : 'Start writing this document.'
 
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
+      const baseModelCoreContent = `${basePromptSection}${titleLine}${baseModelContextSection}`
+      const baseModelInstructionSuffix = userInstruction
+        ? `${baseModelCoreContent.trim().length > 0 ? '\n\n' : ''}Instruction: ${userInstruction}`
+        : ''
+
       const requestMessages = [
+        ...(isBaseModel
+          ? []
+          : ([
+              {
+                role: 'system' as const,
+                content: systemPrompt,
+              },
+            ] as const)),
         {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `${titleLine}${contextSection}${continueText}${instructionSuffix}`,
+          role: 'user' as const,
+          content: isBaseModel
+            ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
+            : `${basePromptSection}${titleLine}${contextSection}${continueText}${instructionSuffix}`,
         },
       ] as const
 
@@ -748,11 +855,22 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const stream = await providerClient.streamResponse(model, {
+      const baseRequest: any = {
         model: model.model,
         messages: requestMessages as unknown as any,
-        stream: true,
-      }, { signal: controller.signal })
+      }
+      if (typeof temperature === 'number') {
+        baseRequest.temperature = temperature
+      }
+      if (typeof topP === 'number') {
+        baseRequest.top_p = topP
+      }
+
+      console.debug('Continuation request params', {
+        overrides: sidebarOverrides,
+        request: baseRequest,
+        streamPreference,
+      })
 
       // Insert at current cursor by default; if a selection exists, insert at selection end
       let insertStart = editor.getCursor()
@@ -772,16 +890,38 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         return { line: endLine, ch: endCh }
       }
 
-      for await (const chunk of stream) {
-        const delta = chunk?.choices?.[0]?.delta
-        const piece = delta?.content ?? ''
-        if (!piece) continue
+      if (streamPreference) {
+        const streamIterator = await providerClient.streamResponse(
+          model,
+          { ...baseRequest, stream: true },
+          { signal: controller.signal },
+        )
 
-        insertedText += piece
-        const newEnd = calcEndPos(insertStart, insertedText)
-        // Replace the previously inserted range with the new accumulated text
-        editor.replaceRange(insertedText, insertStart, prevEnd)
-        prevEnd = newEnd
+        for await (const chunk of streamIterator) {
+          const delta = chunk?.choices?.[0]?.delta
+          const piece = delta?.content ?? ''
+          if (!piece) continue
+
+          insertedText += piece
+          const newEnd = calcEndPos(insertStart, insertedText)
+          // Replace the previously inserted range with the new accumulated text
+          editor.replaceRange(insertedText, insertStart, prevEnd)
+          prevEnd = newEnd
+        }
+      } else {
+        const response = await providerClient.generateResponse(
+          model,
+          { ...baseRequest, stream: false },
+          { signal: controller.signal },
+        )
+
+        const fullText = response.choices?.[0]?.message?.content ?? ''
+        if (fullText) {
+          insertedText = fullText
+          const newEnd = calcEndPos(insertStart, insertedText)
+          editor.replaceRange(insertedText, insertStart, prevEnd)
+          prevEnd = newEnd
+        }
       }
 
       if (insertedText.trim().length > 0) {
