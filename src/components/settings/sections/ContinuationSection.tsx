@@ -338,6 +338,31 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
           </ObsidianSetting>
 
           <ObsidianSetting
+            name={t('settings.continuation.tabCompletionMaxTokens')}
+            desc={t('settings.continuation.tabCompletionMaxTokensDesc')}
+          >
+            <ObsidianTextInput
+              type="number"
+              value={String(tabCompletionOptions.maxTokens)}
+              onChange={async (value) => {
+                const parsed = Math.max(
+                  16,
+                  Math.min(
+                    2000,
+                    parseIntegerOption(
+                      value,
+                      DEFAULT_TAB_COMPLETION_OPTIONS.maxTokens,
+                    ),
+                  ),
+                )
+                await updateTabCompletionOptions({
+                  maxTokens: parsed,
+                })
+              }}
+            />
+          </ObsidianSetting>
+
+          <ObsidianSetting
             name={t('settings.continuation.tabCompletionTemperature')}
             desc={t('settings.continuation.tabCompletionTemperatureDesc')}
           >
@@ -397,6 +422,7 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               }}
             />
           </ObsidianSetting>
+
         </>
       )}
 

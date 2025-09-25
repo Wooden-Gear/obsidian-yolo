@@ -6,7 +6,10 @@ import {
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
-import { DEFAULT_TAB_COMPLETION_OPTIONS } from './setting.types'
+import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
+  DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+} from './setting.types'
 
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import { parseSmartComposerSettings } from './settings'
@@ -69,6 +72,7 @@ describe('parseSmartComposerSettings', () => {
       enableTabCompletion: false,
       tabCompletionModelId: 'openai/gpt-4.1-mini',
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
+      tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
     },
 
       assistants: [],

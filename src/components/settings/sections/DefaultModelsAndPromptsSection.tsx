@@ -9,6 +9,7 @@ import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
+import { DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT } from '../../../settings/schema/setting.types'
 
 export function DefaultModelsAndPromptsSection() {
   const { settings, setSettings } = useSettings()
@@ -29,6 +30,11 @@ export function DefaultModelsAndPromptsSection() {
 
   const baseModelSpecialPromptValue =
     settings.chatOptions.baseModelSpecialPrompt ?? ''
+
+  const tabCompletionSystemPromptValue =
+    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
+      ? settings.continuationOptions.tabCompletionSystemPrompt!
+      : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
   return (
     <div className="smtcmp-settings-section">
@@ -157,6 +163,27 @@ export function DefaultModelsAndPromptsSection() {
               chatOptions: {
                 ...settings.chatOptions,
                 baseModelSpecialPrompt: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.defaults.tabCompletionSystemPrompt')}
+        desc={t('settings.defaults.tabCompletionSystemPromptDesc')}
+        className="smtcmp-settings-textarea-header"
+      />
+
+      <ObsidianSetting className="smtcmp-settings-textarea">
+        <ObsidianTextArea
+          value={tabCompletionSystemPromptValue}
+          onChange={async (value: string) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                tabCompletionSystemPrompt: value,
               },
             })
           }}

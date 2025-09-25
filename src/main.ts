@@ -20,6 +20,7 @@ import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
+  DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
   SmartComposerSettings,
   smartComposerSettingsSchema,
 } from './settings/schema/setting.types'
@@ -272,6 +273,7 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   private scheduleTabCompletion(editor: Editor) {
+    if (!this.settings.continuationOptions?.enableTabCompletion) return
     const view = this.getEditorView(editor)
     if (!view) return
     const selection = editor.getSelection()
@@ -330,8 +332,12 @@ export default class SmartComposerPlugin extends Plugin {
 
       const fileTitle = this.app.workspace.getActiveFile()?.basename?.trim()
       const titleSection = fileTitle ? `File title: ${fileTitle}\n\n` : ''
+      const customSystemPrompt =
+        (this.settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
       const systemPrompt =
-        'You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user\'s cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary.'
+        customSystemPrompt.length > 0
+          ? customSystemPrompt
+          : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
       const isBaseModel = Boolean((model as any).isBaseModel)
       const baseModelSpecialPrompt =
@@ -341,7 +347,7 @@ export default class SmartComposerPlugin extends Plugin {
           ? `${baseModelSpecialPrompt}\n\n`
           : ''
       const userContent = isBaseModel
-        ? `${basePromptSection}${context}\n\nPredict the next words that continue naturally.`
+        ? `${basePromptSection}${systemPrompt}\n\n${context}\n\nPredict the next words that continue naturally.`
         : `${basePromptSection}${titleSection}Recent context:\n\n${context}\n\nProvide the next words that would help continue naturally.`
 
       const requestMessages = [
@@ -371,7 +377,7 @@ export default class SmartComposerPlugin extends Plugin {
         model: model.model,
         messages: requestMessages as unknown as any,
         stream: false,
-        max_tokens: 64,
+        max_tokens: Math.max(16, Math.min(options.maxTokens, 2000)),
       }
       if (typeof options.temperature === 'number') {
         baseRequest.temperature = Math.min(Math.max(options.temperature, 0), 2)
@@ -507,6 +513,7 @@ export default class SmartComposerPlugin extends Plugin {
             ch: parts[parts.length - 1].length,
           }
     editor.setCursor(endCursor)
+    this.scheduleTabCompletion(editor)
     return true
   }
 

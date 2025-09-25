@@ -55,6 +55,8 @@ export const zh: TranslationKeys = {
       chatTitlePromptDesc: '用于根据首条用户消息自动生成对话标题的提示词。',
       baseModelSpecialPrompt: 'base 模型特殊提示词',
       baseModelSpecialPromptDesc: '用作 base model 的特殊提示词',
+      tabCompletionSystemPrompt: 'Tab 补全系统提示词',
+      tabCompletionSystemPromptDesc: '生成 Tab 补全建议时使用的系统提示词。留空则使用内置默认值。',
     },
     chatPreferences: {
       title: '聊天偏好',
@@ -279,6 +281,8 @@ export const zh: TranslationKeys = {
       tabCompletionMaxContextCharsDesc: '限制发送给模型的最近上下文字符数量。',
       tabCompletionMaxSuggestionLength: '补全最大长度',
       tabCompletionMaxSuggestionLengthDesc: '限制接受建议时插入的最大字符数。',
+      tabCompletionMaxTokens: '最大 Token 数',
+      tabCompletionMaxTokensDesc: '限制模型每次前缀补全可返回的最大 Token 数。',
       tabCompletionTemperature: '采样温度',
       tabCompletionTemperatureDesc: '控制补全的创造性（0 为确定性，值越大越发散）。',
       tabCompletionRequestTimeout: '请求超时（毫秒）',

@@ -55,6 +55,8 @@ export const en: TranslationKeys = {
       chatTitlePromptDesc: 'Prompt used when automatically generating conversation titles from the first user message.',
       baseModelSpecialPrompt: 'Base model special prompt',
       baseModelSpecialPromptDesc: 'Special prompt words used as base model.',
+      tabCompletionSystemPrompt: 'Tab completion system prompt',
+      tabCompletionSystemPromptDesc: 'System message applied when generating Tab completion suggestions. Leave empty to use the built-in default.',
     },
     chatPreferences: {
       title: 'Chat preferences',
@@ -279,6 +281,8 @@ export const en: TranslationKeys = {
       tabCompletionMaxContextCharsDesc: 'Limit how many recent characters are sent to the model for prefix completion.',
       tabCompletionMaxSuggestionLength: 'Max suggestion length',
       tabCompletionMaxSuggestionLengthDesc: 'Cap the number of characters inserted when accepting a suggestion.',
+      tabCompletionMaxTokens: 'Max tokens',
+      tabCompletionMaxTokensDesc: 'Limit the number of tokens requested from the model for each prefix completion call.',
       tabCompletionTemperature: 'Sampling temperature',
       tabCompletionTemperatureDesc: 'Controls creativity for prefix suggestions (0 = deterministic, higher = more diverse).',
       tabCompletionRequestTimeout: 'Request timeout (ms)',

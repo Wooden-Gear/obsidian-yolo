@@ -59,6 +59,8 @@ export interface TranslationKeys {
       chatTitlePromptDesc: string
       baseModelSpecialPrompt?: string
       baseModelSpecialPromptDesc?: string
+      tabCompletionSystemPrompt?: string
+      tabCompletionSystemPromptDesc?: string
     }
     chatPreferences: {
       title: string
@@ -288,6 +290,8 @@ export interface TranslationKeys {
       tabCompletionMaxContextCharsDesc: string
       tabCompletionMaxSuggestionLength: string
       tabCompletionMaxSuggestionLengthDesc: string
+      tabCompletionMaxTokens: string
+      tabCompletionMaxTokensDesc: string
       tabCompletionTemperature: string
       tabCompletionTemperatureDesc: string
       tabCompletionRequestTimeout: string

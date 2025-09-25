@@ -34,16 +34,21 @@ type TabCompletionOptionDefaults = {
   minContextLength: number
   maxContextChars: number
   maxSuggestionLength: number
+  maxTokens: number
   temperature: number
   requestTimeoutMs: number
   maxRetries: number
 }
+
+export const DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT =
+  'You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user\'s cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary.'
 
 export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
   triggerDelayMs: 3000,
   minContextLength: 20,
   maxContextChars: 4000,
   maxSuggestionLength: 240,
+  maxTokens: 64,
   temperature: 0.5,
   requestTimeoutMs: 12000,
   maxRetries: 0,
@@ -67,6 +72,11 @@ const tabCompletionOptionsSchema = z
       .min(20)
       .max(4000)
       .catch(DEFAULT_TAB_COMPLETION_OPTIONS.maxSuggestionLength),
+    maxTokens: z
+      .number()
+      .min(16)
+      .max(2000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.maxTokens),
     temperature: z
       .number()
       .min(0)
@@ -194,6 +204,8 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionModelId: z.string().optional(),
       // extra options for tab completion behavior
       tabCompletionOptions: tabCompletionOptionsSchema.optional(),
+      // override system prompt for tab completion
+      tabCompletionSystemPrompt: z.string().optional(),
     })
     .catch({
       useCurrentModel: true,
@@ -210,6 +222,7 @@ export const smartComposerSettingsSchema = z.object({
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
+      tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
     }),
   
   // Assistant list
