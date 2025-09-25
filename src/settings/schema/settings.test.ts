@@ -65,6 +65,8 @@ describe('parseSmartComposerSettings', () => {
         triggerKeyword: '  ',
         enableFloatingPanelKeywordTrigger: false,
         floatingPanelTriggerKeyword: '',
+        enableTabCompletion: false,
+        tabCompletionModelId: 'openai/gpt-4.1-mini',
       },
 
       assistants: [],

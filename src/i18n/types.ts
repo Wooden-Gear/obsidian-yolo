@@ -276,6 +276,10 @@ export interface TranslationKeys {
       floatingPanelKeywordTriggerDesc: string
       floatingPanelTriggerKeyword: string
       floatingPanelTriggerKeywordDesc: string
+      tabCompletion: string
+      tabCompletionDesc: string
+      tabCompletionModel: string
+      tabCompletionModelDesc: string
       defaultSystemPrompt: string
       defaultSystemPromptDesc: string
     }

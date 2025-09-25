@@ -6,6 +6,13 @@
   gap: var(--size-4-2);
 }
 
+.smtcmp-ghost-text {
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 0.6;
+  white-space: pre;
+}
+
 
 /* Chat input: outer wrapper to anchor settings button at top-right */
 .smtcmp-chat-input-wrapper {

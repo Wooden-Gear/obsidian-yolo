@@ -1,3 +1,5 @@
+import { StateEffect, StateField } from '@codemirror/state'
+import { Decoration, DecorationSet, EditorView, WidgetType } from '@codemirror/view'
 import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
 import { minimatch } from 'minimatch'
 
@@ -24,6 +26,78 @@ import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
 import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
 
+const TAB_COMPLETION_DELAY_MS = 3000
+
+type TabCompletionGhostPayload = { from: number; text: string } | null
+
+const tabCompletionGhostEffect = StateEffect.define<TabCompletionGhostPayload>()
+
+class TabCompletionGhostWidget extends WidgetType {
+  constructor(private readonly text: string) {
+    super()
+  }
+
+  eq(other: TabCompletionGhostWidget) {
+    return this.text === other.text
+  }
+
+  ignoreEvent(): boolean {
+    return true
+  }
+
+  toDOM(): HTMLElement {
+    const span = document.createElement('span')
+    span.className = 'smtcmp-ghost-text'
+    span.textContent = this.text
+    return span
+  }
+}
+
+const tabCompletionGhostField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(value, tr) {
+    let decorations = value.map(tr.changes)
+
+    for (const effect of tr.effects) {
+      if (effect.is(tabCompletionGhostEffect)) {
+        const payload = effect.value
+        if (!payload) {
+          decorations = Decoration.none
+          continue
+        }
+        const widget = Decoration.widget({
+          widget: new TabCompletionGhostWidget(payload.text),
+          side: 1,
+        }).range(payload.from)
+        decorations = Decoration.set([widget])
+      }
+    }
+
+    if (tr.docChanged) {
+      decorations = Decoration.none
+    }
+
+    return decorations
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
+const tabCompletionExtensions = [tabCompletionGhostField]
+const tabCompletionExtensionViews = new WeakSet<EditorView>()
+
+function ensureTabCompletionExtension(view: EditorView) {
+  if (tabCompletionExtensionViews.has(view)) return
+  view.dispatch({ effects: StateEffect.appendConfig.of(tabCompletionExtensions) })
+  tabCompletionExtensionViews.add(view)
+}
+
+function setTabCompletionGhost(view: EditorView, payload: TabCompletionGhostPayload) {
+  ensureTabCompletionExtension(view)
+  view.dispatch({ effects: tabCompletionGhostEffect.of(payload) })
+}
+
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
   initialChatProps?: ChatProps // TODO: change this to use view state like ApplyView
@@ -39,6 +113,18 @@ export default class SmartComposerPlugin extends Plugin {
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()
+  private tabCompletionTimer: ReturnType<typeof setTimeout> | null = null
+  private tabCompletionAbortController: AbortController | null = null
+  private tabCompletionSuggestion: {
+    editor: Editor
+    text: string
+    cursorOffset: number
+    cursorPos: ReturnType<Editor['getCursor']>
+  } | null = null
+  private tabCompletionPending: {
+    editor: Editor
+    cursorOffset: number
+  } | null = null
 
   // Compute a robust panel anchor position just below the caret line
   private getCaretPanelPosition(editor: Editor, dy = 8): { x: number; y: number } | undefined {
@@ -133,6 +219,225 @@ export default class SmartComposerPlugin extends Plugin {
     }
     this.activeAbortControllers.clear()
     this.isContinuationInProgress = false
+    this.tabCompletionAbortController = null
+  }
+
+  private getEditorView(editor: Editor | null | undefined): EditorView | null {
+    if (!editor) return null
+    const view = (editor as any)?.cm as EditorView | undefined
+    return view ?? null
+  }
+
+  private clearTabCompletionTimer() {
+    if (this.tabCompletionTimer) {
+      clearTimeout(this.tabCompletionTimer)
+      this.tabCompletionTimer = null
+    }
+    this.tabCompletionPending = null
+  }
+
+  private cancelTabCompletionRequest() {
+    if (!this.tabCompletionAbortController) return
+    try {
+      this.tabCompletionAbortController.abort()
+    } catch {}
+    this.activeAbortControllers.delete(this.tabCompletionAbortController)
+    this.tabCompletionAbortController = null
+  }
+
+  private clearTabCompletionSuggestion() {
+    if (!this.tabCompletionSuggestion) return
+    const view = this.getEditorView(this.tabCompletionSuggestion.editor)
+    if (view) {
+      setTabCompletionGhost(view, null)
+    }
+    this.tabCompletionSuggestion = null
+  }
+
+  private scheduleTabCompletion(editor: Editor) {
+    const view = this.getEditorView(editor)
+    if (!view) return
+    const selection = editor.getSelection()
+    if (selection && selection.length > 0) return
+    const cursorOffset = view.state.selection.main.head
+
+    this.clearTabCompletionTimer()
+    this.tabCompletionPending = { editor, cursorOffset }
+    this.tabCompletionTimer = window.setTimeout(() => {
+      if (!this.tabCompletionPending) return
+      if (this.tabCompletionPending.editor !== editor) return
+      void this.runTabCompletion(editor, cursorOffset)
+    }, TAB_COMPLETION_DELAY_MS)
+  }
+
+  private async runTabCompletion(editor: Editor, scheduledCursorOffset: number) {
+    try {
+      if (!this.settings.continuationOptions?.enableTabCompletion) return
+      if (this.isContinuationInProgress) return
+
+      const view = this.getEditorView(editor)
+      if (!view) return
+      if (view.state.selection.main.head !== scheduledCursorOffset) return
+      const selection = editor.getSelection()
+      if (selection && selection.length > 0) return
+
+      const cursorPos = editor.getCursor()
+      const headText = editor.getRange({ line: 0, ch: 0 }, cursorPos)
+      if (!headText || headText.trim().length === 0) return
+
+      const context = headText.length > 4000 ? headText.slice(-4000) : headText
+
+      let modelId = this.settings.continuationOptions.tabCompletionModelId
+      if (!modelId || modelId.length === 0) {
+        modelId = this.settings.continuationOptions.fixedModelId
+      }
+      if (!modelId) return
+
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const { temperature, topP } = this.resolveSamplingParams(sidebarOverrides)
+
+      const { providerClient, model } = getChatModelClient({
+        settings: this.settings,
+        modelId,
+      })
+
+      const fileTitle = this.app.workspace.getActiveFile()?.basename?.trim()
+      const titleSection = fileTitle ? `File title: ${fileTitle}\n\n` : ''
+      const systemPrompt =
+        'You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user\'s cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary.'
+
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
+      const userContent = isBaseModel
+        ? `${basePromptSection}${context}\n\nPredict the next words that continue naturally.`
+        : `${basePromptSection}${titleSection}Recent context:\n\n${context}\n\nProvide the next words that would help continue naturally.`
+
+      const requestMessages = [
+        ...(isBaseModel
+          ? []
+          : ([
+              {
+                role: 'system' as const,
+                content: systemPrompt,
+              },
+            ] as const)),
+        {
+          role: 'user' as const,
+          content: userContent,
+        },
+      ]
+
+      this.cancelTabCompletionRequest()
+      this.clearTabCompletionSuggestion()
+      this.tabCompletionPending = null
+
+      const controller = new AbortController()
+      this.tabCompletionAbortController = controller
+      this.activeAbortControllers.add(controller)
+
+      const baseRequest: any = {
+        model: model.model,
+        messages: requestMessages as unknown as any,
+        stream: false,
+        max_tokens: 64,
+      }
+      if (typeof temperature === 'number') {
+        baseRequest.temperature = Math.min(Math.max(temperature, 0), 1)
+      } else {
+        baseRequest.temperature = 0.5
+      }
+      if (typeof topP === 'number') {
+        baseRequest.top_p = topP
+      }
+
+      const response = await providerClient.generateResponse(
+        model,
+        baseRequest,
+        { signal: controller.signal },
+      )
+
+      let suggestion = response.choices?.[0]?.message?.content ?? ''
+      suggestion = suggestion.replace(/\r\n/g, '\n').replace(/\s+$/, '')
+      if (!suggestion.trim()) return
+      if (/^[\s\n\t]+$/.test(suggestion)) return
+
+      // Avoid leading line breaks which look awkward in ghost text
+      suggestion = suggestion.replace(/^[\s\n\t]+/, '')
+
+      // Guard against large multiline insertions
+      if (suggestion.length > 240) {
+        suggestion = suggestion.slice(0, 240)
+      }
+
+      const currentView = this.getEditorView(editor)
+      if (!currentView) return
+      if (currentView.state.selection.main.head !== scheduledCursorOffset) return
+      if (editor.getSelection()?.length) return
+
+      setTabCompletionGhost(currentView, {
+        from: scheduledCursorOffset,
+        text: suggestion,
+      })
+      this.tabCompletionSuggestion = {
+        editor,
+        text: suggestion,
+        cursorOffset: scheduledCursorOffset,
+        cursorPos,
+      }
+    } catch (error) {
+      if ((error as any)?.name === 'AbortError') return
+      console.error('Tab completion failed:', error)
+    } finally {
+      if (this.tabCompletionAbortController) {
+        this.activeAbortControllers.delete(this.tabCompletionAbortController)
+        this.tabCompletionAbortController = null
+      }
+    }
+  }
+
+  private tryAcceptTabCompletion(editor: Editor): boolean {
+    if (!this.tabCompletionSuggestion) return false
+    if (this.tabCompletionSuggestion.editor !== editor) return false
+
+    const view = this.getEditorView(editor)
+    if (!view) {
+      this.clearTabCompletionSuggestion()
+      return false
+    }
+
+    const currentOffset = view.state.selection.main.head
+    if (currentOffset !== this.tabCompletionSuggestion.cursorOffset) {
+      this.clearTabCompletionSuggestion()
+      return false
+    }
+
+    const suggestionText = this.tabCompletionSuggestion.text
+    this.clearTabCompletionSuggestion()
+    editor.replaceRange(suggestionText, editor.getCursor(), editor.getCursor())
+    return true
+  }
+
+  private handleTabCompletionEditorChange(editor: Editor) {
+    this.clearTabCompletionTimer()
+    this.cancelTabCompletionRequest()
+
+    if (!this.settings.continuationOptions?.enableTabCompletion) {
+      this.clearTabCompletionSuggestion()
+      return
+    }
+
+    if (this.isContinuationInProgress) {
+      this.clearTabCompletionSuggestion()
+      return
+    }
+
+    this.clearTabCompletionSuggestion()
+    this.scheduleTabCompletion(editor)
   }
 
   private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
@@ -288,6 +593,16 @@ export default class SmartComposerPlugin extends Plugin {
       if (e.key === 'Escape') {
         // Do not prevent default so other ESC behaviors (close modals, etc.) still work
         this.cancelAllAiTasks()
+        return
+      }
+
+      if (e.key === 'Tab' && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+        const editor = view?.editor
+        if (editor && this.tryAcceptTabCompletion(editor)) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+        }
       }
     })
 
@@ -437,8 +752,9 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on('editor-change', (editor) => {
         try {
-          if (this.isContinuationInProgress) return
           if (!editor) return
+          this.handleTabCompletionEditorChange(editor)
+          if (this.isContinuationInProgress) return
           const selection = editor.getSelection()
           const cursor = editor.getCursor()
 
@@ -519,6 +835,9 @@ export default class SmartComposerPlugin extends Plugin {
     }
     // Ensure all in-flight requests are aborted on unload
     this.cancelAllAiTasks()
+    this.clearTabCompletionTimer()
+    this.cancelTabCompletionRequest()
+    this.clearTabCompletionSuggestion()
   }
 
   async loadSettings() {

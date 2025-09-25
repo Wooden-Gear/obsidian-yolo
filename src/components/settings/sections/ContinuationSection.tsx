@@ -154,6 +154,55 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
+      <ObsidianSetting
+        name={t('settings.continuation.tabCompletion')}
+        desc={t('settings.continuation.tabCompletionDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableTabCompletion ?? false}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                enableTabCompletion: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
+      <ObsidianSetting
+        name={t('settings.continuation.tabCompletionModel')}
+        desc={t('settings.continuation.tabCompletionModelDesc')}
+      >
+        <ObsidianDropdown
+          value={
+            settings.continuationOptions.tabCompletionModelId ??
+            orderedEnabledModels[0]?.id ??
+            ''
+          }
+          options={Object.fromEntries(
+            orderedEnabledModels.map((m) => [
+              m.id,
+              getModelDisplayNameWithProvider(
+                m.id,
+                settings.providers.find((p) => p.id === m.providerId)?.id,
+              ),
+            ]),
+          )}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                tabCompletionModelId: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
     </div>
   )
 }

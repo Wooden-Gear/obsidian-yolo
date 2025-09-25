@@ -131,6 +131,10 @@ export const smartComposerSettingsSchema = z.object({
       enableFloatingPanelKeywordTrigger: z.boolean().optional(),
       // the keyword to trigger floating panel
       floatingPanelTriggerKeyword: z.string().optional(),
+      // enable tab completion based on prefix suggestion
+      enableTabCompletion: z.boolean().optional(),
+      // fixed model id for tab completion suggestions
+      tabCompletionModelId: z.string().optional(),
     })
     .catch({
       useCurrentModel: true,
@@ -142,6 +146,10 @@ export const smartComposerSettingsSchema = z.object({
       triggerKeyword: '  ',
       enableFloatingPanelKeywordTrigger: false,
       floatingPanelTriggerKeyword: '',
+      enableTabCompletion: false,
+      tabCompletionModelId:
+        DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
+        DEFAULT_CHAT_MODELS[0].id,
     }),
   
   // Assistant list
