@@ -6,6 +6,7 @@ import {
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
+import { DEFAULT_TAB_COMPLETION_OPTIONS } from './setting.types'
 
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import { parseSmartComposerSettings } from './settings'
@@ -63,11 +64,12 @@ describe('parseSmartComposerSettings', () => {
         defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
         enableKeywordTrigger: true,
         triggerKeyword: '  ',
-        enableFloatingPanelKeywordTrigger: false,
-        floatingPanelTriggerKeyword: '',
-        enableTabCompletion: false,
-        tabCompletionModelId: 'openai/gpt-4.1-mini',
-      },
+      enableFloatingPanelKeywordTrigger: false,
+      floatingPanelTriggerKeyword: '',
+      enableTabCompletion: false,
+      tabCompletionModelId: 'openai/gpt-4.1-mini',
+      tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
+    },
 
       assistants: [],
       language: 'en',

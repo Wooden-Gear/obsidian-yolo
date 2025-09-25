@@ -29,6 +29,63 @@ const ragOptionsSchema = z.object({
   lastAutoUpdateAt: z.number().catch(0),
 })
 
+type TabCompletionOptionDefaults = {
+  triggerDelayMs: number
+  minContextLength: number
+  maxContextChars: number
+  maxSuggestionLength: number
+  temperature: number
+  requestTimeoutMs: number
+  maxRetries: number
+}
+
+export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
+  triggerDelayMs: 3000,
+  minContextLength: 20,
+  maxContextChars: 4000,
+  maxSuggestionLength: 240,
+  temperature: 0.5,
+  requestTimeoutMs: 12000,
+  maxRetries: 0,
+}
+
+const tabCompletionOptionsSchema = z
+  .object({
+    triggerDelayMs: z.number().min(200).max(30000).catch(DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs),
+    minContextLength: z
+      .number()
+      .min(0)
+      .max(2000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.minContextLength),
+    maxContextChars: z
+      .number()
+      .min(200)
+      .max(40000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.maxContextChars),
+    maxSuggestionLength: z
+      .number()
+      .min(20)
+      .max(4000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.maxSuggestionLength),
+    temperature: z
+      .number()
+      .min(0)
+      .max(2)
+      .optional()
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.temperature),
+    requestTimeoutMs: z
+      .number()
+      .min(1000)
+      .max(60000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.requestTimeoutMs),
+    maxRetries: z
+      .number()
+      .min(0)
+      .max(5)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.maxRetries),
+  })
+  .catch({ ...DEFAULT_TAB_COMPLETION_OPTIONS })
+
 /**
  * Settings
  */
@@ -135,6 +192,8 @@ export const smartComposerSettingsSchema = z.object({
       enableTabCompletion: z.boolean().optional(),
       // fixed model id for tab completion suggestions
       tabCompletionModelId: z.string().optional(),
+      // extra options for tab completion behavior
+      tabCompletionOptions: tabCompletionOptionsSchema.optional(),
     })
     .catch({
       useCurrentModel: true,
@@ -150,6 +209,7 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
+      tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
     }),
   
   // Assistant list

@@ -19,14 +19,13 @@ import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
 import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
   SmartComposerSettings,
   smartComposerSettingsSchema,
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
 import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
-
-const TAB_COMPLETION_DELAY_MS = 3000
 
 type TabCompletionGhostPayload = { from: number; text: string } | null
 
@@ -239,6 +238,13 @@ export default class SmartComposerPlugin extends Plugin {
     view.dispatch({ effects: tabCompletionGhostEffect.of(payload) })
   }
 
+  private getTabCompletionOptions() {
+    return {
+      ...DEFAULT_TAB_COMPLETION_OPTIONS,
+      ...(this.settings.continuationOptions.tabCompletionOptions ?? {}),
+    }
+  }
+
   private clearTabCompletionTimer() {
     if (this.tabCompletionTimer) {
       clearTimeout(this.tabCompletionTimer)
@@ -272,13 +278,16 @@ export default class SmartComposerPlugin extends Plugin {
     if (selection && selection.length > 0) return
     const cursorOffset = view.state.selection.main.head
 
+    const options = this.getTabCompletionOptions()
+    const delay = Math.max(0, options.triggerDelayMs)
+
     this.clearTabCompletionTimer()
     this.tabCompletionPending = { editor, cursorOffset }
     this.tabCompletionTimer = window.setTimeout(() => {
       if (!this.tabCompletionPending) return
       if (this.tabCompletionPending.editor !== editor) return
       void this.runTabCompletion(editor, cursorOffset)
-    }, TAB_COMPLETION_DELAY_MS)
+    }, delay)
   }
 
   private async runTabCompletion(editor: Editor, scheduledCursorOffset: number) {
@@ -292,11 +301,18 @@ export default class SmartComposerPlugin extends Plugin {
       const selection = editor.getSelection()
       if (selection && selection.length > 0) return
 
+      const options = this.getTabCompletionOptions()
+
       const cursorPos = editor.getCursor()
       const headText = editor.getRange({ line: 0, ch: 0 }, cursorPos)
-      if (!headText || headText.trim().length === 0) return
+      const headLength = headText.trim().length
+      if (!headText || headLength === 0) return
+      if (headLength < options.minContextLength) return
 
-      const context = headText.length > 4000 ? headText.slice(-4000) : headText
+      const context =
+        headText.length > options.maxContextChars
+          ? headText.slice(-options.maxContextChars)
+          : headText
 
       let modelId = this.settings.continuationOptions.tabCompletionModelId
       if (!modelId || modelId.length === 0) {
@@ -357,48 +373,93 @@ export default class SmartComposerPlugin extends Plugin {
         stream: false,
         max_tokens: 64,
       }
-      if (typeof temperature === 'number') {
-        baseRequest.temperature = Math.min(Math.max(temperature, 0), 1)
+      if (typeof options.temperature === 'number') {
+        baseRequest.temperature = Math.min(Math.max(options.temperature, 0), 2)
+      } else if (typeof temperature === 'number') {
+        baseRequest.temperature = Math.min(Math.max(temperature, 0), 2)
       } else {
-        baseRequest.temperature = 0.5
+        baseRequest.temperature = DEFAULT_TAB_COMPLETION_OPTIONS.temperature
       }
       if (typeof topP === 'number') {
         baseRequest.top_p = topP
       }
+      const requestTimeout = Math.max(0, options.requestTimeoutMs)
+      const attempts = Math.max(0, Math.floor(options.maxRetries)) + 1
 
-      const response = await providerClient.generateResponse(
-        model,
-        baseRequest,
-        { signal: controller.signal },
-      )
+      this.cancelTabCompletionRequest()
+      this.clearTabCompletionSuggestion()
+      this.tabCompletionPending = null
 
-      let suggestion = response.choices?.[0]?.message?.content ?? ''
-      suggestion = suggestion.replace(/\r\n/g, '\n').replace(/\s+$/, '')
-      if (!suggestion.trim()) return
-      if (/^[\s\n\t]+$/.test(suggestion)) return
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        const controller = new AbortController()
+        this.tabCompletionAbortController = controller
+        this.activeAbortControllers.add(controller)
 
-      // Avoid leading line breaks which look awkward in ghost text
-      suggestion = suggestion.replace(/^[\s\n\t]+/, '')
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null
+        if (requestTimeout > 0) {
+          timeoutHandle = window.setTimeout(() => controller.abort(), requestTimeout)
+        }
 
-      // Guard against large multiline insertions
-      if (suggestion.length > 240) {
-        suggestion = suggestion.slice(0, 240)
-      }
+        try {
+          const response = await providerClient.generateResponse(
+            model,
+            baseRequest,
+            { signal: controller.signal },
+          )
 
-      const currentView = this.getEditorView(editor)
-      if (!currentView) return
-      if (currentView.state.selection.main.head !== scheduledCursorOffset) return
-      if (editor.getSelection()?.length) return
+          if (timeoutHandle) clearTimeout(timeoutHandle)
 
-      this.setTabCompletionGhost(currentView, {
-        from: scheduledCursorOffset,
-        text: suggestion,
-      })
-      this.tabCompletionSuggestion = {
-        editor,
-        view: currentView,
-        text: suggestion,
-        cursorOffset: scheduledCursorOffset,
+          let suggestion = response.choices?.[0]?.message?.content ?? ''
+          suggestion = suggestion.replace(/\r\n/g, '\n').replace(/\s+$/, '')
+          if (!suggestion.trim()) return
+          if (/^[\s\n\t]+$/.test(suggestion)) return
+
+          // Avoid leading line breaks which look awkward in ghost text
+          suggestion = suggestion.replace(/^[\s\n\t]+/, '')
+
+          // Guard against large multiline insertions
+          if (suggestion.length > options.maxSuggestionLength) {
+            suggestion = suggestion.slice(0, options.maxSuggestionLength)
+          }
+
+          const currentView = this.getEditorView(editor)
+          if (!currentView) return
+          if (currentView.state.selection.main.head !== scheduledCursorOffset) return
+          if (editor.getSelection()?.length) return
+
+          this.setTabCompletionGhost(currentView, {
+            from: scheduledCursorOffset,
+            text: suggestion,
+          })
+          this.tabCompletionSuggestion = {
+            editor,
+            view: currentView,
+            text: suggestion,
+            cursorOffset: scheduledCursorOffset,
+          }
+          return
+        } catch (error) {
+          if (timeoutHandle) clearTimeout(timeoutHandle)
+
+          const aborted = controller.signal.aborted || (error as any)?.name === 'AbortError'
+          if (attempt < attempts - 1 && aborted) {
+            this.activeAbortControllers.delete(controller)
+            this.tabCompletionAbortController = null
+            continue
+          }
+          if ((error as any)?.name === 'AbortError') {
+            return
+          }
+          console.error('Tab completion failed:', error)
+          return
+        } finally {
+          if (this.tabCompletionAbortController === controller) {
+            this.activeAbortControllers.delete(controller)
+            this.tabCompletionAbortController = null
+          } else {
+            this.activeAbortControllers.delete(controller)
+          }
+        }
       }
     } catch (error) {
       if ((error as any)?.name === 'AbortError') return

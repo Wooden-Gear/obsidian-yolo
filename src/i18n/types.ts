@@ -280,6 +280,20 @@ export interface TranslationKeys {
       tabCompletionDesc: string
       tabCompletionModel: string
       tabCompletionModelDesc: string
+      tabCompletionTriggerDelay: string
+      tabCompletionTriggerDelayDesc: string
+      tabCompletionMinContextLength: string
+      tabCompletionMinContextLengthDesc: string
+      tabCompletionMaxContextChars: string
+      tabCompletionMaxContextCharsDesc: string
+      tabCompletionMaxSuggestionLength: string
+      tabCompletionMaxSuggestionLengthDesc: string
+      tabCompletionTemperature: string
+      tabCompletionTemperatureDesc: string
+      tabCompletionRequestTimeout: string
+      tabCompletionRequestTimeoutDesc: string
+      tabCompletionMaxRetries: string
+      tabCompletionMaxRetriesDesc: string
       defaultSystemPrompt: string
       defaultSystemPromptDesc: string
     }
