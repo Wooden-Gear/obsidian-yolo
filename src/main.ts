@@ -1,5 +1,5 @@
-import { StateEffect, StateField } from '@codemirror/state'
-import { Decoration, DecorationSet, EditorView, WidgetType } from '@codemirror/view'
+import { Prec, StateEffect, StateField } from '@codemirror/state'
+import { Decoration, DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
 import { minimatch } from 'minimatch'
 
@@ -84,19 +84,7 @@ const tabCompletionGhostField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 })
 
-const tabCompletionExtensions = [tabCompletionGhostField]
 const tabCompletionExtensionViews = new WeakSet<EditorView>()
-
-function ensureTabCompletionExtension(view: EditorView) {
-  if (tabCompletionExtensionViews.has(view)) return
-  view.dispatch({ effects: StateEffect.appendConfig.of(tabCompletionExtensions) })
-  tabCompletionExtensionViews.add(view)
-}
-
-function setTabCompletionGhost(view: EditorView, payload: TabCompletionGhostPayload) {
-  ensureTabCompletionExtension(view)
-  view.dispatch({ effects: tabCompletionGhostEffect.of(payload) })
-}
 
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
@@ -117,9 +105,9 @@ export default class SmartComposerPlugin extends Plugin {
   private tabCompletionAbortController: AbortController | null = null
   private tabCompletionSuggestion: {
     editor: Editor
+    view: EditorView
     text: string
     cursorOffset: number
-    cursorPos: ReturnType<Editor['getCursor']>
   } | null = null
   private tabCompletionPending: {
     editor: Editor
@@ -228,6 +216,29 @@ export default class SmartComposerPlugin extends Plugin {
     return view ?? null
   }
 
+  private ensureTabCompletionExtension(view: EditorView) {
+    if (tabCompletionExtensionViews.has(view)) return
+    view.dispatch({
+      effects: StateEffect.appendConfig.of([
+        tabCompletionGhostField,
+        Prec.high(
+          keymap.of([
+            {
+              key: 'Tab',
+              run: (v) => this.tryAcceptTabCompletionFromView(v),
+            },
+          ]),
+        ),
+      ]),
+    })
+    tabCompletionExtensionViews.add(view)
+  }
+
+  private setTabCompletionGhost(view: EditorView, payload: TabCompletionGhostPayload) {
+    this.ensureTabCompletionExtension(view)
+    view.dispatch({ effects: tabCompletionGhostEffect.of(payload) })
+  }
+
   private clearTabCompletionTimer() {
     if (this.tabCompletionTimer) {
       clearTimeout(this.tabCompletionTimer)
@@ -247,9 +258,9 @@ export default class SmartComposerPlugin extends Plugin {
 
   private clearTabCompletionSuggestion() {
     if (!this.tabCompletionSuggestion) return
-    const view = this.getEditorView(this.tabCompletionSuggestion.editor)
+    const { view } = this.tabCompletionSuggestion
     if (view) {
-      setTabCompletionGhost(view, null)
+      this.setTabCompletionGhost(view, null)
     }
     this.tabCompletionSuggestion = null
   }
@@ -379,15 +390,15 @@ export default class SmartComposerPlugin extends Plugin {
       if (currentView.state.selection.main.head !== scheduledCursorOffset) return
       if (editor.getSelection()?.length) return
 
-      setTabCompletionGhost(currentView, {
+      this.setTabCompletionGhost(currentView, {
         from: scheduledCursorOffset,
         text: suggestion,
       })
       this.tabCompletionSuggestion = {
         editor,
+        view: currentView,
         text: suggestion,
         cursorOffset: scheduledCursorOffset,
-        cursorPos,
       }
     } catch (error) {
       if ((error as any)?.name === 'AbortError') return
@@ -400,25 +411,31 @@ export default class SmartComposerPlugin extends Plugin {
     }
   }
 
-  private tryAcceptTabCompletion(editor: Editor): boolean {
-    if (!this.tabCompletionSuggestion) return false
-    if (this.tabCompletionSuggestion.editor !== editor) return false
+  private tryAcceptTabCompletionFromView(view: EditorView): boolean {
+    const suggestion = this.tabCompletionSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
 
-    const view = this.getEditorView(editor)
-    if (!view) {
+    if (view.state.selection.main.head !== suggestion.cursorOffset) {
       this.clearTabCompletionSuggestion()
       return false
     }
 
-    const currentOffset = view.state.selection.main.head
-    if (currentOffset !== this.tabCompletionSuggestion.cursorOffset) {
+    const editor = suggestion.editor
+    if (this.getEditorView(editor) !== view) {
       this.clearTabCompletionSuggestion()
       return false
     }
 
-    const suggestionText = this.tabCompletionSuggestion.text
+    if (editor.getSelection()?.length) {
+      this.clearTabCompletionSuggestion()
+      return false
+    }
+
+    const cursor = editor.getCursor()
+    const suggestionText = suggestion.text
     this.clearTabCompletionSuggestion()
-    editor.replaceRange(suggestionText, editor.getCursor(), editor.getCursor())
+    editor.replaceRange(suggestionText, cursor, cursor)
     return true
   }
 
@@ -593,16 +610,6 @@ export default class SmartComposerPlugin extends Plugin {
       if (e.key === 'Escape') {
         // Do not prevent default so other ESC behaviors (close modals, etc.) still work
         this.cancelAllAiTasks()
-        return
-      }
-
-      if (e.key === 'Tab' && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView)
-        const editor = view?.editor
-        if (editor && this.tryAcceptTabCompletion(editor)) {
-          e.preventDefault()
-          e.stopImmediatePropagation()
-        }
       }
     })
 
