@@ -436,6 +436,16 @@ export default class SmartComposerPlugin extends Plugin {
     const suggestionText = suggestion.text
     this.clearTabCompletionSuggestion()
     editor.replaceRange(suggestionText, cursor, cursor)
+
+    const parts = suggestionText.split('\n')
+    const endCursor =
+      parts.length === 1
+        ? { line: cursor.line, ch: cursor.ch + parts[0].length }
+        : {
+            line: cursor.line + parts.length - 1,
+            ch: parts[parts.length - 1].length,
+          }
+    editor.setCursor(endCursor)
     return true
   }
 
