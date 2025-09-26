@@ -10,7 +10,8 @@
   color: var(--text-muted);
   pointer-events: none;
   opacity: 0.6;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 

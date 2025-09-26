@@ -28,16 +28,16 @@ import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
 import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
 
-type TabCompletionGhostPayload = { from: number; text: string } | null
+type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
-const tabCompletionGhostEffect = StateEffect.define<TabCompletionGhostPayload>()
+const inlineSuggestionGhostEffect = StateEffect.define<InlineSuggestionGhostPayload>()
 
-class TabCompletionGhostWidget extends WidgetType {
+class InlineSuggestionGhostWidget extends WidgetType {
   constructor(private readonly text: string) {
     super()
   }
 
-  eq(other: TabCompletionGhostWidget) {
+  eq(other: InlineSuggestionGhostWidget) {
     return this.text === other.text
   }
 
@@ -53,7 +53,7 @@ class TabCompletionGhostWidget extends WidgetType {
   }
 }
 
-const tabCompletionGhostField = StateField.define<DecorationSet>({
+const inlineSuggestionGhostField = StateField.define<DecorationSet>({
   create() {
     return Decoration.none
   },
@@ -61,14 +61,14 @@ const tabCompletionGhostField = StateField.define<DecorationSet>({
     let decorations = value.map(tr.changes)
 
     for (const effect of tr.effects) {
-      if (effect.is(tabCompletionGhostEffect)) {
+      if (effect.is(inlineSuggestionGhostEffect)) {
         const payload = effect.value
         if (!payload) {
           decorations = Decoration.none
           continue
         }
         const widget = Decoration.widget({
-          widget: new TabCompletionGhostWidget(payload.text),
+          widget: new InlineSuggestionGhostWidget(payload.text),
           side: 1,
         }).range(payload.from)
         decorations = Decoration.set([widget])
@@ -84,7 +84,7 @@ const tabCompletionGhostField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 })
 
-const tabCompletionExtensionViews = new WeakSet<EditorView>()
+const inlineSuggestionExtensionViews = new WeakSet<EditorView>()
 
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
@@ -103,11 +103,25 @@ export default class SmartComposerPlugin extends Plugin {
   private activeAbortControllers: Set<AbortController> = new Set()
   private tabCompletionTimer: ReturnType<typeof setTimeout> | null = null
   private tabCompletionAbortController: AbortController | null = null
+  private activeInlineSuggestion: {
+    source: 'tab' | 'continuation'
+    editor: Editor
+    view: EditorView
+    fromOffset: number
+    text: string
+  } | null = null
   private tabCompletionSuggestion: {
     editor: Editor
     view: EditorView
     text: string
     cursorOffset: number
+  } | null = null
+  private continuationInlineSuggestion: {
+    editor: Editor
+    view: EditorView
+    text: string
+    fromOffset: number
+    startPos: ReturnType<Editor['getCursor']>
   } | null = null
   private tabCompletionPending: {
     editor: Editor
@@ -216,27 +230,30 @@ export default class SmartComposerPlugin extends Plugin {
     return view ?? null
   }
 
-  private ensureTabCompletionExtension(view: EditorView) {
-    if (tabCompletionExtensionViews.has(view)) return
+  private ensureInlineSuggestionExtension(view: EditorView) {
+    if (inlineSuggestionExtensionViews.has(view)) return
     view.dispatch({
       effects: StateEffect.appendConfig.of([
-        tabCompletionGhostField,
+        inlineSuggestionGhostField,
         Prec.high(
           keymap.of([
             {
               key: 'Tab',
-              run: (v) => this.tryAcceptTabCompletionFromView(v),
+              run: (v) => this.tryAcceptInlineSuggestionFromView(v),
             },
           ]),
         ),
       ]),
     })
-    tabCompletionExtensionViews.add(view)
+    inlineSuggestionExtensionViews.add(view)
   }
 
-  private setTabCompletionGhost(view: EditorView, payload: TabCompletionGhostPayload) {
-    this.ensureTabCompletionExtension(view)
-    view.dispatch({ effects: tabCompletionGhostEffect.of(payload) })
+  private setInlineSuggestionGhost(
+    view: EditorView,
+    payload: InlineSuggestionGhostPayload,
+  ) {
+    this.ensureInlineSuggestionExtension(view)
+    view.dispatch({ effects: inlineSuggestionGhostEffect.of(payload) })
   }
 
   private getTabCompletionOptions() {
@@ -263,13 +280,38 @@ export default class SmartComposerPlugin extends Plugin {
     this.tabCompletionAbortController = null
   }
 
-  private clearTabCompletionSuggestion() {
-    if (!this.tabCompletionSuggestion) return
-    const { view } = this.tabCompletionSuggestion
-    if (view) {
-      this.setTabCompletionGhost(view, null)
+  private clearInlineSuggestion() {
+    if (this.tabCompletionSuggestion) {
+      const { view } = this.tabCompletionSuggestion
+      if (view) {
+        this.setInlineSuggestionGhost(view, null)
+      }
+      this.tabCompletionSuggestion = null
     }
-    this.tabCompletionSuggestion = null
+    if (this.continuationInlineSuggestion) {
+      const { view } = this.continuationInlineSuggestion
+      if (view) {
+        this.setInlineSuggestionGhost(view, null)
+      }
+      this.continuationInlineSuggestion = null
+    }
+    this.activeInlineSuggestion = null
+  }
+
+  private tryAcceptInlineSuggestionFromView(view: EditorView): boolean {
+    const suggestion = this.activeInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
+
+    if (suggestion.source === 'tab') {
+      return this.tryAcceptTabCompletionFromView(view)
+    }
+
+    if (suggestion.source === 'continuation') {
+      return this.tryAcceptContinuationFromView(view)
+    }
+
+    return false
   }
 
   private scheduleTabCompletion(editor: Editor) {
@@ -285,7 +327,7 @@ export default class SmartComposerPlugin extends Plugin {
 
     this.clearTabCompletionTimer()
     this.tabCompletionPending = { editor, cursorOffset }
-    this.tabCompletionTimer = window.setTimeout(() => {
+    this.tabCompletionTimer = setTimeout(() => {
       if (!this.tabCompletionPending) return
       if (this.tabCompletionPending.editor !== editor) return
       void this.runTabCompletion(editor, cursorOffset)
@@ -366,7 +408,7 @@ export default class SmartComposerPlugin extends Plugin {
       ]
 
       this.cancelTabCompletionRequest()
-      this.clearTabCompletionSuggestion()
+      this.clearInlineSuggestion()
       this.tabCompletionPending = null
 
       const controller = new AbortController()
@@ -393,7 +435,7 @@ export default class SmartComposerPlugin extends Plugin {
       const attempts = Math.max(0, Math.floor(options.maxRetries)) + 1
 
       this.cancelTabCompletionRequest()
-      this.clearTabCompletionSuggestion()
+          this.clearInlineSuggestion()
       this.tabCompletionPending = null
 
       for (let attempt = 0; attempt < attempts; attempt++) {
@@ -403,7 +445,7 @@ export default class SmartComposerPlugin extends Plugin {
 
         let timeoutHandle: ReturnType<typeof setTimeout> | null = null
         if (requestTimeout > 0) {
-          timeoutHandle = window.setTimeout(() => controller.abort(), requestTimeout)
+          timeoutHandle = setTimeout(() => controller.abort(), requestTimeout)
         }
 
         try {
@@ -433,10 +475,17 @@ export default class SmartComposerPlugin extends Plugin {
           if (currentView.state.selection.main.head !== scheduledCursorOffset) return
           if (editor.getSelection()?.length) return
 
-          this.setTabCompletionGhost(currentView, {
+          this.setInlineSuggestionGhost(currentView, {
             from: scheduledCursorOffset,
             text: suggestion,
           })
+          this.activeInlineSuggestion = {
+            source: 'tab',
+            editor,
+            view: currentView,
+            fromOffset: scheduledCursorOffset,
+            text: suggestion,
+          }
           this.tabCompletionSuggestion = {
             editor,
             view: currentView,
@@ -484,24 +533,24 @@ export default class SmartComposerPlugin extends Plugin {
     if (suggestion.view !== view) return false
 
     if (view.state.selection.main.head !== suggestion.cursorOffset) {
-      this.clearTabCompletionSuggestion()
+      this.clearInlineSuggestion()
       return false
     }
 
     const editor = suggestion.editor
     if (this.getEditorView(editor) !== view) {
-      this.clearTabCompletionSuggestion()
+          this.clearInlineSuggestion()
       return false
     }
 
     if (editor.getSelection()?.length) {
-      this.clearTabCompletionSuggestion()
+      this.clearInlineSuggestion()
       return false
     }
 
     const cursor = editor.getCursor()
     const suggestionText = suggestion.text
-    this.clearTabCompletionSuggestion()
+    this.clearInlineSuggestion()
     editor.replaceRange(suggestionText, cursor, cursor)
 
     const parts = suggestionText.split('\n')
@@ -517,21 +566,65 @@ export default class SmartComposerPlugin extends Plugin {
     return true
   }
 
+  private tryAcceptContinuationFromView(view: EditorView): boolean {
+    const suggestion = this.continuationInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const active = this.activeInlineSuggestion
+    if (!active || active.source !== 'continuation') return false
+
+    const { editor, text, startPos } = suggestion
+    if (!text || text.length === 0) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    if (this.getEditorView(editor) !== view) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    if (editor.getSelection()?.length) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const insertionText = text
+    this.clearInlineSuggestion()
+    editor.replaceRange(insertionText, startPos, startPos)
+
+    const parts = insertionText.split('\n')
+    const endCursor =
+      parts.length === 1
+        ? { line: startPos.line, ch: startPos.ch + parts[0].length }
+        : {
+            line: startPos.line + parts.length - 1,
+            ch: parts[parts.length - 1].length,
+          }
+    editor.setCursor(endCursor)
+    this.scheduleTabCompletion(editor)
+    return true
+  }
+
   private handleTabCompletionEditorChange(editor: Editor) {
     this.clearTabCompletionTimer()
     this.cancelTabCompletionRequest()
 
     if (!this.settings.continuationOptions?.enableTabCompletion) {
-      this.clearTabCompletionSuggestion()
+      this.clearInlineSuggestion()
       return
     }
 
     if (this.isContinuationInProgress) {
-      this.clearTabCompletionSuggestion()
+      this.clearInlineSuggestion()
       return
     }
 
-    this.clearTabCompletionSuggestion()
+    this.clearInlineSuggestion()
     this.scheduleTabCompletion(editor)
   }
 
@@ -922,7 +1015,7 @@ export default class SmartComposerPlugin extends Plugin {
     this.cancelAllAiTasks()
     this.clearTabCompletionTimer()
     this.cancelTabCompletionRequest()
-    this.clearTabCompletionSuggestion()
+    this.clearInlineSuggestion()
   }
 
   async loadSettings() {
@@ -1255,7 +1348,17 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
       this.isContinuationInProgress = true
 
-      // Stream response and progressively insert into editor
+      const view = this.getEditorView(editor)
+      if (!view) {
+        notice.setMessage('Unable to access editor view.')
+        this.registerTimeout(() => notice.hide(), 1200)
+        return
+      }
+
+      this.ensureInlineSuggestionExtension(view)
+      this.clearInlineSuggestion()
+
+      // Stream response and progressively update ghost suggestion
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
@@ -1283,15 +1386,26 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         editor.setCursor(endPos)
         insertStart = endPos
       }
-      let insertedText = ''
-      let prevEnd = insertStart
+      const startLine = view.state.doc.line(insertStart.line + 1)
+      const startOffset = startLine.from + insertStart.ch
+      let suggestionText = ''
 
-      const calcEndPos = (start: { line: number; ch: number }, text: string) => {
-        const parts = text.split('\n')
-        const lineDelta = parts.length - 1
-        const endLine = start.line + lineDelta
-        const endCh = lineDelta === 0 ? start.ch + parts[0].length : parts[parts.length - 1].length
-        return { line: endLine, ch: endCh }
+      const updateContinuationSuggestion = (text: string) => {
+        this.setInlineSuggestionGhost(view, { from: startOffset, text })
+        this.activeInlineSuggestion = {
+          source: 'continuation',
+          editor,
+          view,
+          fromOffset: startOffset,
+          text,
+        }
+        this.continuationInlineSuggestion = {
+          editor,
+          view,
+          text,
+          fromOffset: startOffset,
+          startPos: insertStart,
+        }
       }
 
       if (streamPreference) {
@@ -1306,11 +1420,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           const piece = delta?.content ?? ''
           if (!piece) continue
 
-          insertedText += piece
-          const newEnd = calcEndPos(insertStart, insertedText)
-          // Replace the previously inserted range with the new accumulated text
-          editor.replaceRange(insertedText, insertStart, prevEnd)
-          prevEnd = newEnd
+          suggestionText += piece
+          updateContinuationSuggestion(suggestionText)
         }
       } else {
         const response = await providerClient.generateResponse(
@@ -1321,20 +1432,20 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
         const fullText = response.choices?.[0]?.message?.content ?? ''
         if (fullText) {
-          insertedText = fullText
-          const newEnd = calcEndPos(insertStart, insertedText)
-          editor.replaceRange(insertedText, insertStart, prevEnd)
-          prevEnd = newEnd
+          suggestionText = fullText
+          updateContinuationSuggestion(suggestionText)
         }
       }
 
-      if (insertedText.trim().length > 0) {
-        notice.setMessage('AI continuation inserted.')
+      if (suggestionText.trim().length > 0) {
+        notice.setMessage('Continuation suggestion ready. Press Tab to accept.')
       } else {
+        this.clearInlineSuggestion()
         notice.setMessage('No continuation generated.')
       }
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
+      this.clearInlineSuggestion()
       if ((error as any)?.name === 'AbortError') {
         const n = new Notice('已取消生成。')
         this.registerTimeout(() => n.hide(), 1000)
