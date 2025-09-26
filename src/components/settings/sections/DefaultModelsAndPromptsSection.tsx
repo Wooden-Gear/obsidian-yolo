@@ -1,6 +1,5 @@
 import {
   DEFAULT_CHAT_TITLE_PROMPT,
-  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   RECOMMENDED_MODELS_FOR_APPLY,
   RECOMMENDED_MODELS_FOR_CHAT,
 } from '../../../constants'
@@ -9,16 +8,10 @@ import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT } from '../../../settings/schema/setting.types'
 
 export function DefaultModelsAndPromptsSection() {
   const { settings, setSettings } = useSettings()
   const { t, language } = useLanguage()
-
-  const continuationPromptValue =
-    (settings.continuationOptions.defaultSystemPrompt ?? '').trim().length > 0
-      ? settings.continuationOptions.defaultSystemPrompt!
-      : DEFAULT_CONTINUATION_SYSTEM_PROMPT
 
   const defaultTitlePrompt =
     DEFAULT_CHAT_TITLE_PROMPT[language] ?? DEFAULT_CHAT_TITLE_PROMPT.en
@@ -30,11 +23,6 @@ export function DefaultModelsAndPromptsSection() {
 
   const baseModelSpecialPromptValue =
     settings.chatOptions.baseModelSpecialPrompt ?? ''
-
-  const tabCompletionSystemPromptValue =
-    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
-      ? settings.continuationOptions.tabCompletionSystemPrompt!
-      : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
   return (
     <div className="smtcmp-settings-section">
@@ -107,27 +95,6 @@ export function DefaultModelsAndPromptsSection() {
       </ObsidianSetting>
 
       <ObsidianSetting
-        name={t('settings.defaults.continuationSystemPrompt')}
-        desc={t('settings.defaults.continuationSystemPromptDesc')}
-        className="smtcmp-settings-textarea-header"
-      />
-
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={continuationPromptValue}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                defaultSystemPrompt: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
         name={t('settings.defaults.chatTitlePrompt')}
         desc={t('settings.defaults.chatTitlePromptDesc')}
         className="smtcmp-settings-textarea-header"
@@ -169,26 +136,6 @@ export function DefaultModelsAndPromptsSection() {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.defaults.tabCompletionSystemPrompt')}
-        desc={t('settings.defaults.tabCompletionSystemPromptDesc')}
-        className="smtcmp-settings-textarea-header"
-      />
-
-      <ObsidianSetting className="smtcmp-settings-textarea">
-        <ObsidianTextArea
-          value={tabCompletionSystemPromptValue}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                tabCompletionSystemPrompt: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
     </div>
   )
 }

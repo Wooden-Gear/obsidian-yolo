@@ -173,6 +173,8 @@ export const en: TranslationKeys = {
     },
     rag: {
       title: 'RAG (Retrieval Augmented Generation)',
+      enableRag: 'Show RAG settings',
+      enableRagDesc: 'Toggle visibility of the retrieval-augmented generation options below.',
       embeddingModel: 'Embedding Model',
       embeddingModelDesc: 'Choose the model you want to use for embeddings',
       chunkSize: 'Chunk Size',

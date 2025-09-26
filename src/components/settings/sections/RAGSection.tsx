@@ -32,6 +32,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null)
   const [isIndexing, setIsIndexing] = useState(false)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
+  const isRagEnabled = settings.ragOptions.enabled ?? true
   const headerPercent = useMemo(() => {
     if (indexProgress && indexProgress.totalChunks > 0) {
       const pct = Math.round((indexProgress.completedChunks / indexProgress.totalChunks) * 100)
@@ -88,25 +89,45 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       <div className="smtcmp-settings-header">{t('settings.rag.title')}</div>
 
       <ObsidianSetting
-        name={t('settings.rag.embeddingModel')}
-        desc={t('settings.rag.embeddingModelDesc')}
+        name={t('settings.rag.enableRag')}
+        desc={t('settings.rag.enableRagDesc')}
       >
-        <ObsidianDropdown
-          value={settings.embeddingModelId}
-          options={Object.fromEntries(
-            settings.embeddingModels.map((embeddingModel) => [
-              embeddingModel.id,
-              `${embeddingModel.id}${RECOMMENDED_MODELS_FOR_EMBEDDING.includes(embeddingModel.id) ? ' (Recommended)' : ''}`,
-            ]),
-          )}
+        <ObsidianToggle
+          value={isRagEnabled}
           onChange={async (value) => {
             await setSettings({
               ...settings,
-              embeddingModelId: value,
+              ragOptions: {
+                ...settings.ragOptions,
+                enabled: value,
+              },
             })
           }}
         />
       </ObsidianSetting>
+
+      {isRagEnabled && (
+        <>
+          <ObsidianSetting
+            name={t('settings.rag.embeddingModel')}
+            desc={t('settings.rag.embeddingModelDesc')}
+          >
+            <ObsidianDropdown
+              value={settings.embeddingModelId}
+              options={Object.fromEntries(
+                settings.embeddingModels.map((embeddingModel) => [
+                  embeddingModel.id,
+                  `${embeddingModel.id}${RECOMMENDED_MODELS_FOR_EMBEDDING.includes(embeddingModel.id) ? ' (Recommended)' : ''}`,
+                ]),
+              )}
+              onChange={async (value) => {
+                await setSettings({
+                  ...settings,
+                  embeddingModelId: value,
+                })
+              }}
+            />
+          </ObsidianSetting>
 
       <ObsidianSetting
         name={t('settings.rag.includePatterns')}
@@ -484,6 +505,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }

@@ -17,6 +17,7 @@ import { llmProviderSchema } from '../../types/provider.types'
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 
 const ragOptionsSchema = z.object({
+  enabled: z.boolean().catch(true),
   chunkSize: z.number().catch(1000),
   thresholdTokens: z.number().catch(8192),
   minSimilarity: z.number().catch(0.0),
@@ -131,6 +132,7 @@ export const smartComposerSettingsSchema = z.object({
 
   // RAG Options
   ragOptions: ragOptionsSchema.catch({
+    enabled: true,
     chunkSize: 1000,
     thresholdTokens: 8192,
     minSimilarity: 0.0,

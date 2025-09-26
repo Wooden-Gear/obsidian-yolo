@@ -8,7 +8,12 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { DEFAULT_TAB_COMPLETION_OPTIONS } from '../../../settings/schema/setting.types'
+import { ObsidianTextArea } from '../../common/ObsidianTextArea'
+import { DEFAULT_CONTINUATION_SYSTEM_PROMPT } from '../../../constants'
+import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
+  DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+} from '../../../settings/schema/setting.types'
 
 type ContinuationSectionProps = {
   app: App
@@ -31,7 +36,24 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
     )
   }, [settings.chatModels, settings.providers])
 
-  const enableTabCompletion = settings.continuationOptions.enableTabCompletion ?? false
+  const useCurrentModel = Boolean(settings.continuationOptions.useCurrentModel)
+  const enableKeywordTrigger = Boolean(
+    settings.continuationOptions.enableKeywordTrigger,
+  )
+  const enableFloatingPanelKeywordTrigger = Boolean(
+    settings.continuationOptions.enableFloatingPanelKeywordTrigger,
+  )
+  const enableTabCompletion = Boolean(
+    settings.continuationOptions.enableTabCompletion,
+  )
+  const continuationPromptValue =
+    (settings.continuationOptions.defaultSystemPrompt ?? '').trim().length > 0
+      ? settings.continuationOptions.defaultSystemPrompt!
+      : DEFAULT_CONTINUATION_SYSTEM_PROMPT
+  const tabCompletionSystemPromptValue =
+    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
+      ? settings.continuationOptions.tabCompletionSystemPrompt!
+      : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
   const tabCompletionOptions = enableTabCompletion
     ? {
         ...DEFAULT_TAB_COMPLETION_OPTIONS,
@@ -77,7 +99,7 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         desc={t('settings.continuation.modelSourceDesc')}
       >
         <ObsidianToggle
-          value={settings.continuationOptions.useCurrentModel}
+          value={useCurrentModel}
           onChange={async (value) => {
             await setSettings({
               ...settings,
@@ -90,40 +112,41 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.continuation.fixedModel')}
-        desc={t('settings.continuation.fixedModelDesc')}
-      >
-        <ObsidianDropdown
-          value={settings.continuationOptions.fixedModelId}
-          options={Object.fromEntries(
-            orderedEnabledModels.map((m) => [
-              m.id,
-              getModelDisplayNameWithProvider(
+      {!useCurrentModel && (
+        <ObsidianSetting
+          name={t('settings.continuation.fixedModel')}
+          desc={t('settings.continuation.fixedModelDesc')}
+        >
+          <ObsidianDropdown
+            value={settings.continuationOptions.fixedModelId}
+            options={Object.fromEntries(
+              orderedEnabledModels.map((m) => [
                 m.id,
-                settings.providers.find((p) => p.id === m.providerId)?.id,
-              ),
-            ]),
-          )}
-          disabled={!!settings.continuationOptions.useCurrentModel}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                fixedModelId: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
+                getModelDisplayNameWithProvider(
+                  m.id,
+                  settings.providers.find((p) => p.id === m.providerId)?.id,
+                ),
+              ]),
+            )}
+            onChange={async (value) => {
+              await setSettings({
+                ...settings,
+                continuationOptions: {
+                  ...settings.continuationOptions,
+                  fixedModelId: value,
+                },
+              })
+            }}
+          />
+        </ObsidianSetting>
+      )}
 
       <ObsidianSetting
         name={t('settings.continuation.keywordTrigger')}
         desc={t('settings.continuation.keywordTriggerDesc')}
       >
         <ObsidianToggle
-          value={settings.continuationOptions.enableKeywordTrigger}
+          value={enableKeywordTrigger}
           onChange={async (value) => {
             await setSettings({
               ...settings,
@@ -136,31 +159,58 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.continuation.triggerKeyword')}
-        desc={t('settings.continuation.triggerKeywordDesc')}
-      >
-        <ObsidianTextInput
-          value={settings.continuationOptions.triggerKeyword}
-          placeholder={'  '}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                triggerKeyword: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
+      {enableKeywordTrigger && (
+        <>
+          <ObsidianSetting
+            name={t('settings.defaults.continuationSystemPrompt')}
+            desc={t('settings.defaults.continuationSystemPromptDesc')}
+            className="smtcmp-settings-textarea-header"
+          />
+
+          <ObsidianSetting className="smtcmp-settings-textarea">
+            <ObsidianTextArea
+              value={continuationPromptValue}
+              onChange={async (value: string) => {
+                await setSettings({
+                  ...settings,
+                  continuationOptions: {
+                    ...settings.continuationOptions,
+                    defaultSystemPrompt: value,
+                  },
+                })
+              }}
+            />
+          </ObsidianSetting>
+        </>
+      )}
+
+      {enableKeywordTrigger && (
+        <ObsidianSetting
+          name={t('settings.continuation.triggerKeyword')}
+          desc={t('settings.continuation.triggerKeywordDesc')}
+        >
+          <ObsidianTextInput
+            value={settings.continuationOptions.triggerKeyword}
+            placeholder={'  '}
+            onChange={async (value) => {
+              await setSettings({
+                ...settings,
+                continuationOptions: {
+                  ...settings.continuationOptions,
+                  triggerKeyword: value,
+                },
+              })
+            }}
+          />
+        </ObsidianSetting>
+      )}
 
       <ObsidianSetting
         name={t('settings.continuation.floatingPanelKeywordTrigger')}
         desc={t('settings.continuation.floatingPanelKeywordTriggerDesc')}
       >
         <ObsidianToggle
-          value={settings.continuationOptions.enableFloatingPanelKeywordTrigger ?? false}
+          value={enableFloatingPanelKeywordTrigger}
           onChange={async (value) => {
             await setSettings({
               ...settings,
@@ -173,24 +223,26 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      <ObsidianSetting
-        name={t('settings.continuation.floatingPanelTriggerKeyword')}
-        desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
-      >
-        <ObsidianTextInput
-          value={settings.continuationOptions.floatingPanelTriggerKeyword ?? ''}
-          placeholder={''}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                floatingPanelTriggerKeyword: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
+      {enableFloatingPanelKeywordTrigger && (
+        <ObsidianSetting
+          name={t('settings.continuation.floatingPanelTriggerKeyword')}
+          desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
+        >
+          <ObsidianTextInput
+            value={settings.continuationOptions.floatingPanelTriggerKeyword ?? ''}
+            placeholder={''}
+            onChange={async (value) => {
+              await setSettings({
+                ...settings,
+                continuationOptions: {
+                  ...settings.continuationOptions,
+                  floatingPanelTriggerKeyword: value,
+                },
+              })
+            }}
+          />
+        </ObsidianSetting>
+      )}
 
       <ObsidianSetting
         name={t('settings.continuation.tabCompletion')}
@@ -218,6 +270,27 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
 
       {enableTabCompletion && (
         <>
+          <ObsidianSetting
+            name={t('settings.defaults.tabCompletionSystemPrompt')}
+            desc={t('settings.defaults.tabCompletionSystemPromptDesc')}
+            className="smtcmp-settings-textarea-header"
+          />
+
+          <ObsidianSetting className="smtcmp-settings-textarea">
+            <ObsidianTextArea
+              value={tabCompletionSystemPromptValue}
+              onChange={async (value: string) => {
+                await setSettings({
+                  ...settings,
+                  continuationOptions: {
+                    ...settings.continuationOptions,
+                    tabCompletionSystemPrompt: value,
+                  },
+                })
+              }}
+            />
+          </ObsidianSetting>
+
           <ObsidianSetting
             name={t('settings.continuation.tabCompletionModel')}
             desc={t('settings.continuation.tabCompletionModelDesc')}

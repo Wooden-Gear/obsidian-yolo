@@ -182,6 +182,8 @@ export interface TranslationKeys {
     }
     rag: {
       title: string
+      enableRag: string
+      enableRagDesc: string
       embeddingModel: string
       embeddingModelDesc: string
       chunkSize: string

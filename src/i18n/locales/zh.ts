@@ -172,6 +172,8 @@ export const zh: TranslationKeys = {
     },
     rag: {
       title: 'RAG (检索增强生成)',
+      enableRag: '显示 RAG 设置',
+      enableRagDesc: '用于开关下方所有与 RAG 相关的设置项。',
       embeddingModel: '嵌入模型',
       embeddingModelDesc: '选择你想用于嵌入的模型',
       chunkSize: '分块大小',
