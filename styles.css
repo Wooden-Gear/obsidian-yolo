@@ -238,6 +238,13 @@
   flex-direction: column;
 }
 
+.smtcmp-chat-composer-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .smtcmp-composer-container {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
 import Chat, { ChatProps, ChatRef } from './Chat'
-import Composer from './Composer'
 
 type ChatSidebarTabsProps = {
   chatRef: React.RefObject<ChatRef>
@@ -20,22 +19,13 @@ const ChatSidebarTabs: React.FC<ChatSidebarTabsProps> = ({
   return (
     <div className="smtcmp-sidebar-root">
       <div className="smtcmp-sidebar-panels">
-        <div
-          className={`smtcmp-sidebar-pane${activeTab === 'chat' ? ' is-active' : ''}`}
-          aria-hidden={activeTab !== 'chat'}
-        >
+        <div className="smtcmp-sidebar-pane is-active" aria-hidden={false}>
           <Chat
             ref={chatRef}
             {...(chatProps ?? {})}
             activeView={activeTab}
             onChangeView={(view) => setActiveTab(view)}
           />
-        </div>
-        <div
-          className={`smtcmp-sidebar-pane${activeTab === 'composer' ? ' is-active' : ''}`}
-          aria-hidden={activeTab !== 'composer'}
-        >
-          <Composer onNavigateChat={() => setActiveTab('chat')} />
         </div>
       </div>
     </div>

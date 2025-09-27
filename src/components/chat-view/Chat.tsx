@@ -50,6 +50,7 @@ import { readTFileContent } from '../../utils/obsidian'
 import { ErrorModal } from '../modals/ErrorModal'
 // removed Prompt Templates feature
 import { ChatModeDropdown } from './ChatModeDropdown'
+import Composer from './Composer'
 
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
 import { AssistantSelector } from './AssistantSelector'
@@ -196,13 +197,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         )
         item.onClick(() => onChangeView('composer'))
       })
+      const target = event.currentTarget
+      const rect = target.getBoundingClientRect()
+
       const nativeEvent = event.nativeEvent
       if (nativeEvent instanceof MouseEvent) {
-        menu.showAtMouseEvent(nativeEvent)
+        menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
       } else {
-        const target = event.currentTarget
-        const rect = target.getBoundingClientRect()
-        menu.showAtPosition({ x: rect.left, y: rect.bottom })
+        menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
       }
     },
     [onChangeView, activeView, t],
@@ -756,74 +758,89 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     },
   }))
 
-  return (
-    <div className="smtcmp-chat-container">
-      <div className="smtcmp-chat-header">
-        {onChangeView ? (
-          <div
-            role="button"
-            tabIndex={0}
-            className="smtcmp-chat-header-title-toggle"
-            aria-haspopup="menu"
-            aria-label={viewLabel}
-            onClick={openViewMenu}
-            onKeyDown={handleTitleKeyDown}
-          >
-            <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
-            <ChevronDown size={14} className="smtcmp-chat-header-title-icon" />
-          </div>
-        ) : (
+  const header = (
+    <div className="smtcmp-chat-header">
+      {onChangeView ? (
+        <div
+          role="button"
+          tabIndex={0}
+          className="smtcmp-chat-header-title-toggle"
+          aria-haspopup="menu"
+          aria-label={viewLabel}
+          onClick={openViewMenu}
+          onKeyDown={handleTitleKeyDown}
+        >
           <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
-        )}
-        <div className="smtcmp-chat-header-right">
-          <AssistantSelector />
-          <div className="smtcmp-chat-header-buttons">
-            <button
-              onClick={() => handleNewChat()}
-              className="clickable-icon"
-              aria-label="New Chat"
-            >
-              <Plus size={18} />
-            </button>
-            <ChatListDropdown
-              chatList={chatList}
-              currentConversationId={currentConversationId}
-              onSelect={async (conversationId) => {
-                if (conversationId === currentConversationId) return
-                await handleLoadConversation(conversationId)
-              }}
-              onDelete={async (conversationId) => {
-                await deleteConversation(conversationId)
-                if (conversationId === currentConversationId) {
-                  const nextConversation = chatList.find(
-                    (chat) => chat.id !== conversationId,
-                  )
-                  if (nextConversation) {
-                    void handleLoadConversation(nextConversation.id)
-                  } else {
-                    handleNewChat()
-                  }
+          <ChevronDown size={14} className="smtcmp-chat-header-title-icon" />
+        </div>
+      ) : (
+        <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
+      )}
+      <div className="smtcmp-chat-header-right">
+        <AssistantSelector />
+        <div className="smtcmp-chat-header-buttons">
+          <button
+            onClick={() => handleNewChat()}
+            className="clickable-icon"
+            aria-label="New Chat"
+          >
+            <Plus size={18} />
+          </button>
+          <ChatListDropdown
+            chatList={chatList}
+            currentConversationId={currentConversationId}
+            onSelect={async (conversationId) => {
+              if (conversationId === currentConversationId) return
+              await handleLoadConversation(conversationId)
+            }}
+            onDelete={async (conversationId) => {
+              await deleteConversation(conversationId)
+              if (conversationId === currentConversationId) {
+                const nextConversation = chatList.find(
+                  (chat) => chat.id !== conversationId,
+                )
+                if (nextConversation) {
+                  void handleLoadConversation(nextConversation.id)
+                } else {
+                  handleNewChat()
                 }
-              }}
-              onUpdateTitle={async (conversationId, newTitle) => {
-                await updateConversationTitle(conversationId, newTitle)
-              }}
-            >
-              <History size={18} />
-            </ChatListDropdown>
-            <ChatModeDropdown
-              mode={chatMode}
-              onChange={setChatMode}
-              showBruteOption={settings.chatOptions.enableBruteMode ?? false}
-              showLearningOption={settings.chatOptions.enableLearningMode ?? false}
-              learningEnabled={learningMode}
-              onToggleLearning={setLearningMode}
-            >
-              <Book size={18} />
-            </ChatModeDropdown>
-          </div>
+              }
+            }}
+            onUpdateTitle={async (conversationId, newTitle) => {
+              await updateConversationTitle(conversationId, newTitle)
+            }}
+          >
+            <History size={18} />
+          </ChatListDropdown>
+          <ChatModeDropdown
+            mode={chatMode}
+            onChange={setChatMode}
+            showBruteOption={settings.chatOptions.enableBruteMode ?? false}
+            showLearningOption={settings.chatOptions.enableLearningMode ?? false}
+            learningEnabled={learningMode}
+            onToggleLearning={setLearningMode}
+          >
+            <Book size={18} />
+          </ChatModeDropdown>
         </div>
       </div>
+    </div>
+  )
+
+  if (activeView === 'composer') {
+    return (
+      <div className="smtcmp-chat-container">
+        {header}
+        <div className="smtcmp-chat-composer-wrapper">
+          <Composer />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="smtcmp-chat-container">
+      {header}
       <div className="smtcmp-chat-messages" ref={chatMessagesRef}>
         {groupedChatMessages.map((messageOrGroup, index) =>
           !Array.isArray(messageOrGroup) ? (
