@@ -360,7 +360,7 @@ export default class SmartComposerPlugin extends Plugin {
 
       let modelId = this.settings.continuationOptions.tabCompletionModelId
       if (!modelId || modelId.length === 0) {
-        modelId = this.settings.continuationOptions.fixedModelId
+        modelId = this.settings.continuationOptions.continuationModelId
       }
       if (!modelId) return
 
@@ -1280,9 +1280,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           ? baseContext.slice(-MAX_CONTEXT_CHARS)
           : baseContext
 
-      const continuationModelId = this.settings.continuationOptions?.useCurrentModel
-        ? this.getActiveConversationModelId() ?? this.settings.chatModelId
-        : this.settings.continuationOptions.fixedModelId
+      const superContinuationEnabled = Boolean(
+        this.settings.continuationOptions?.enableSuperContinuation,
+      )
+      const continuationModelId = superContinuationEnabled
+        ? this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId
+        : this.getActiveConversationModelId() ?? this.settings.chatModelId
 
       const sidebarOverrides = this.getActiveConversationOverrides()
       const { temperature, topP, stream: streamPreference } =

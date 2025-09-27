@@ -7,7 +7,6 @@ import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import { getModelDisplayNameWithProvider } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
-import { ObsidianToggle } from '../common/ObsidianToggle'
 import { FolderSelectionList } from '../settings/inputs/FolderSelectionList'
 
 type ComposerProps = {
@@ -37,6 +36,13 @@ const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
   )
   const manualContextFolders =
     settings.continuationOptions.manualContextFolders ?? []
+  const continuationModelId =
+    settings.continuationOptions.continuationModelId ??
+    orderedEnabledModels[0]?.id ??
+    settings.chatModelId
+  const enableSuperContinuation = Boolean(
+    settings.continuationOptions.enableSuperContinuation,
+  )
 
   const updateContinuationOptions = useCallback(
     (
@@ -94,45 +100,29 @@ const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
             {t('sidebar.composer.modelSectionTitle', '模型设置')}
           </div>
           <ObsidianSetting
-            name={t('sidebar.composer.useCurrentModel', '沿用当前聊天模型')}
+            name={t('sidebar.composer.continuationModel', '续写模型')}
             desc={t(
-              'sidebar.composer.useCurrentModelDesc',
-              '续写时直接沿用 Chat 页当前选中的模型与参数',
+              'sidebar.composer.continuationModelDesc',
+              '开启超级续写时，Composer 将使用该模型处理续写',
             )}
           >
-            <ObsidianToggle
-              value={Boolean(settings.continuationOptions.useCurrentModel)}
+            <ObsidianDropdown
+              value={continuationModelId}
+              options={Object.fromEntries(
+                orderedEnabledModels.map((m) => [
+                  m.id,
+                  getModelDisplayNameWithProvider(
+                    m.id,
+                    settings.providers.find((p) => p.id === m.providerId)?.id,
+                  ),
+                ]),
+              )}
               onChange={(value) =>
-                updateContinuationOptions({ useCurrentModel: value })
+                updateContinuationOptions({ continuationModelId: value })
               }
+              disabled={!enableSuperContinuation}
             />
           </ObsidianSetting>
-
-          {!settings.continuationOptions.useCurrentModel && (
-            <ObsidianSetting
-              name={t('sidebar.composer.fixedModel', '固定续写模型')}
-              desc={t(
-                'sidebar.composer.fixedModelDesc',
-                '为续写任务单独指定模型（Chat 页不会被影响）',
-              )}
-            >
-              <ObsidianDropdown
-                value={settings.continuationOptions.fixedModelId}
-                options={Object.fromEntries(
-                  orderedEnabledModels.map((m) => [
-                    m.id,
-                    getModelDisplayNameWithProvider(
-                      m.id,
-                      settings.providers.find((p) => p.id === m.providerId)?.id,
-                    ),
-                  ]),
-                )}
-                onChange={(value) =>
-                  updateContinuationOptions({ fixedModelId: value })
-                }
-              />
-            </ObsidianSetting>
-          )}
         </section>
 
         <section className="smtcmp-composer-section">

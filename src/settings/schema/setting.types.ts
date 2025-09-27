@@ -186,10 +186,10 @@ export const smartComposerSettingsSchema = z.object({
   // Continuation (续写) options
   continuationOptions: z
     .object({
-      // whether to use current sidebar chat model
-      useCurrentModel: z.boolean(),
-      // fixed model id when not using current model
-      fixedModelId: z.string(),
+      // enable advanced continuation workflow that unlocks Composer
+      enableSuperContinuation: z.boolean().optional(),
+      // dedicated continuation model used when super continuation is enabled
+      continuationModelId: z.string().optional(),
       // default system prompt for continuation
       defaultSystemPrompt: z.string().optional(),
       // enable keyword trigger for continuation
@@ -214,8 +214,8 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionSystemPrompt: z.string().optional(),
     })
     .catch({
-      useCurrentModel: true,
-      fixedModelId:
+      enableSuperContinuation: false,
+      continuationModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
       defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,

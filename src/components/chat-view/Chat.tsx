@@ -167,8 +167,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     settings.chatOptions.enableLearningMode ?? false,
   )
 
-  const activeView = props.activeView ?? 'chat'
-  const onChangeView = props.onChangeView
+  const superContinuationEnabled = Boolean(
+    settings.continuationOptions.enableSuperContinuation,
+  )
+  const activeView = superContinuationEnabled
+    ? props.activeView ?? 'chat'
+    : 'chat'
+  const onChangeView = superContinuationEnabled ? props.onChangeView : undefined
 
   const viewLabel =
     activeView === 'composer'
@@ -177,7 +182,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   const openViewMenu = useCallback(
     (event: SyntheticEvent<HTMLDivElement>) => {
-      if (!onChangeView) return
+      if (!onChangeView || !superContinuationEnabled) return
       event.preventDefault()
       event.stopPropagation()
 
@@ -207,7 +212,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
       }
     },
-    [onChangeView, activeView, t],
+    [onChangeView, activeView, t, superContinuationEnabled],
   )
 
   const handleTitleKeyDown = useCallback(
@@ -827,12 +832,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     </div>
   )
 
-  if (activeView === 'composer') {
+  if (superContinuationEnabled && activeView === 'composer') {
     return (
       <div className="smtcmp-chat-container">
         {header}
         <div className="smtcmp-chat-composer-wrapper">
-          <Composer />
+          <Composer onNavigateChat={() => onChangeView?.('chat')} />
         </div>
       </div>
     )

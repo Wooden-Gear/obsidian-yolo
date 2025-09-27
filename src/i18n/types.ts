@@ -47,10 +47,8 @@ export interface TranslationKeys {
       subtitle: string
       backToChat: string
       modelSectionTitle: string
-      useCurrentModel: string
-      useCurrentModelDesc: string
-      fixedModel: string
-      fixedModelDesc: string
+      continuationModel: string
+      continuationModelDesc: string
       contextSectionTitle: string
       manualContextToggle: string
       manualContextDesc: string
@@ -295,10 +293,10 @@ export interface TranslationKeys {
       aiSubsectionTitle: string
       customSubsectionTitle: string
       tabSubsectionTitle: string
-      modelSource: string
-      modelSourceDesc: string
-      fixedModel: string
-      fixedModelDesc: string
+      superContinuation: string
+      superContinuationDesc: string
+      continuationModel: string
+      continuationModelDesc: string
       keywordTrigger: string
       keywordTriggerDesc: string
       triggerKeyword: string

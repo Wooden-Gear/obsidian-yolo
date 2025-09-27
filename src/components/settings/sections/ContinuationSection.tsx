@@ -36,7 +36,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
     )
   }, [settings.chatModels, settings.providers])
 
-  const useCurrentModel = Boolean(settings.continuationOptions.useCurrentModel)
+  const enableSuperContinuation = Boolean(
+    settings.continuationOptions.enableSuperContinuation,
+  )
   const enableKeywordTrigger = Boolean(
     settings.continuationOptions.enableKeywordTrigger,
   )
@@ -63,6 +65,11 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         ...DEFAULT_TAB_COMPLETION_OPTIONS,
         ...(settings.continuationOptions.tabCompletionOptions ?? {}),
       }
+  const defaultContinuationModelId =
+    settings.continuationOptions.continuationModelId ??
+    settings.continuationOptions.tabCompletionModelId ??
+    orderedEnabledModels[0]?.id ??
+    settings.chatModelId
 
   const updateTabCompletionOptions = async (
     updates: Partial<typeof tabCompletionOptions>,
@@ -97,51 +104,26 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         {t('settings.continuation.aiSubsectionTitle')}
       </div>
       <ObsidianSetting
-        name={t('settings.continuation.modelSource')}
-        desc={t('settings.continuation.modelSourceDesc')}
+        name={t('settings.continuation.superContinuation')}
+        desc={t('settings.continuation.superContinuationDesc')}
       >
         <ObsidianToggle
-          value={useCurrentModel}
+          value={enableSuperContinuation}
           onChange={async (value) => {
+            const nextContinuationModelId =
+              settings.continuationOptions.continuationModelId ??
+              defaultContinuationModelId
             await setSettings({
               ...settings,
               continuationOptions: {
                 ...settings.continuationOptions,
-                useCurrentModel: value,
+                enableSuperContinuation: value,
+                continuationModelId: nextContinuationModelId,
               },
             })
           }}
         />
       </ObsidianSetting>
-
-      {!useCurrentModel && (
-        <ObsidianSetting
-          name={t('settings.continuation.fixedModel')}
-          desc={t('settings.continuation.fixedModelDesc')}
-        >
-          <ObsidianDropdown
-            value={settings.continuationOptions.fixedModelId}
-            options={Object.fromEntries(
-              orderedEnabledModels.map((m) => [
-                m.id,
-                getModelDisplayNameWithProvider(
-                  m.id,
-                  settings.providers.find((p) => p.id === m.providerId)?.id,
-                ),
-              ]),
-            )}
-            onChange={async (value) => {
-              await setSettings({
-                ...settings,
-                continuationOptions: {
-                  ...settings.continuationOptions,
-                  fixedModelId: value,
-                },
-              })
-            }}
-          />
-        </ObsidianSetting>
-      )}
 
       <ObsidianSetting
         name={t('settings.continuation.keywordTrigger')}
@@ -306,6 +288,7 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
             <ObsidianDropdown
               value={
                 settings.continuationOptions.tabCompletionModelId ??
+                settings.continuationOptions.continuationModelId ??
                 orderedEnabledModels[0]?.id ??
                 ''
               }

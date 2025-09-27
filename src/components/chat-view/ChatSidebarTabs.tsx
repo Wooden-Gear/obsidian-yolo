@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import Chat, { ChatProps, ChatRef } from './Chat'
+import { useSettings } from '../../contexts/settings-context'
 
 type ChatSidebarTabsProps = {
   chatRef: React.RefObject<ChatRef>
@@ -11,10 +12,20 @@ const ChatSidebarTabs: React.FC<ChatSidebarTabsProps> = ({
   chatRef,
   initialChatProps,
 }) => {
+  const { settings } = useSettings()
+  const superContinuationEnabled = Boolean(
+    settings.continuationOptions.enableSuperContinuation,
+  )
   const [activeTab, setActiveTab] = useState<'chat' | 'composer'>('chat')
 
   // Keep the initial props stable even if parent clears them after render
   const chatProps = useMemo(() => initialChatProps, [initialChatProps])
+
+  useEffect(() => {
+    if (!superContinuationEnabled && activeTab !== 'chat') {
+      setActiveTab('chat')
+    }
+  }, [superContinuationEnabled, activeTab])
 
   return (
     <div className="smtcmp-sidebar-root">
@@ -23,8 +34,10 @@ const ChatSidebarTabs: React.FC<ChatSidebarTabsProps> = ({
           <Chat
             ref={chatRef}
             {...(chatProps ?? {})}
-            activeView={activeTab}
-            onChangeView={(view) => setActiveTab(view)}
+            activeView={superContinuationEnabled ? activeTab : 'chat'}
+            onChangeView={
+              superContinuationEnabled ? (view) => setActiveTab(view) : undefined
+            }
           />
         </div>
       </div>

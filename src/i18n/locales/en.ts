@@ -44,12 +44,9 @@ export const en: TranslationKeys = {
       subtitle: 'Configure continuation parameters and context before generating.',
       backToChat: 'Back to chat',
       modelSectionTitle: 'Model',
-      useCurrentModel: 'Use current chat model',
-      useCurrentModelDesc:
-        'Reuse the model currently selected on the Chat tab when running continuation.',
-      fixedModel: 'Dedicated continuation model',
-      fixedModelDesc:
-        "Choose a separate model for continuation tasks. Your Chat tab selection won't change.",
+      continuationModel: 'Continuation model',
+      continuationModelDesc:
+        'When Super Continuation is enabled, Composer will use this model for continuation tasks.',
       contextSectionTitle: 'Context sources',
       manualContextToggle: 'Manual context',
       manualContextDesc:
@@ -291,10 +288,12 @@ export const en: TranslationKeys = {
       aiSubsectionTitle: 'AI Continuation',
       customSubsectionTitle: 'Custom Continuation',
       tabSubsectionTitle: 'Tab Completion',
-      modelSource: 'Use current chat model',
-      modelSourceDesc: 'If enabled, continuation uses the model currently selected in the chat sidebar. If disabled, you can select a fixed model below.',
-      fixedModel: 'Fixed model for continuation',
-      fixedModelDesc: 'Choose a specific model for the continuation feature when not using the current chat model.',
+      superContinuation: 'Super Continuation',
+      superContinuationDesc:
+        'Enable to unlock the Composer sidebar view where you can configure dedicated continuation models, rules, and reference sources. When disabled, only the Chat view is available and continuation reuses the current chat model.',
+      continuationModel: 'Composer continuation model',
+      continuationModelDesc:
+        'Select the model used for continuation while Super Continuation is enabled.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc: 'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
       triggerKeyword: 'Trigger keyword',
