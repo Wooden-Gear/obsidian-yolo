@@ -258,7 +258,10 @@ export const zh: TranslationKeys = {
       actions: '操作',
     },
     continuation: {
-      title: '续写',
+      title: 'Composer 模式',
+      aiSubsectionTitle: 'AI 智能续写',
+      customSubsectionTitle: '自定义续写',
+      tabSubsectionTitle: 'Tab 补全',
       modelSource: '使用侧边栏当前模型',
       modelSourceDesc: '开启后，续写将使用聊天侧边栏当前选择的模型；关闭后，可在下方选择一个固定的模型用于续写。',
       fixedModel: '续写的固定模型',

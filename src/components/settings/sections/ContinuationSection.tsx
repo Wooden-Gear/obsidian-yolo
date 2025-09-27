@@ -93,7 +93,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header">{t('settings.continuation.title')}</div>
-
+      <div className="smtcmp-settings-sub-header">
+        {t('settings.continuation.aiSubsectionTitle')}
+      </div>
       <ObsidianSetting
         name={t('settings.continuation.modelSource')}
         desc={t('settings.continuation.modelSourceDesc')}
@@ -205,6 +207,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         </ObsidianSetting>
       )}
 
+      <div className="smtcmp-settings-sub-header">
+        {t('settings.continuation.customSubsectionTitle')}
+      </div>
       <ObsidianSetting
         name={t('settings.continuation.floatingPanelKeywordTrigger')}
         desc={t('settings.continuation.floatingPanelKeywordTriggerDesc')}
@@ -244,6 +249,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         </ObsidianSetting>
       )}
 
+      <div className="smtcmp-settings-sub-header">
+        {t('settings.continuation.tabSubsectionTitle')}
+      </div>
       <ObsidianSetting
         name={t('settings.continuation.tabCompletion')}
         desc={t('settings.continuation.tabCompletionDesc')}

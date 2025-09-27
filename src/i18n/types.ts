@@ -268,6 +268,9 @@ export interface TranslationKeys {
     }
     continuation: {
       title: string
+      aiSubsectionTitle: string
+      customSubsectionTitle: string
+      tabSubsectionTitle: string
       modelSource: string
       modelSourceDesc: string
       fixedModel: string

@@ -258,7 +258,10 @@ export const en: TranslationKeys = {
       actions: 'Actions',
     },
     continuation: {
-      title: 'Continuation',
+      title: 'Composer Mode',
+      aiSubsectionTitle: 'AI Continuation',
+      customSubsectionTitle: 'Custom Continuation',
+      tabSubsectionTitle: 'Tab Completion',
       modelSource: 'Use current chat model',
       modelSourceDesc: 'If enabled, continuation uses the model currently selected in the chat sidebar. If disabled, you can select a fixed model below.',
       fixedModel: 'Fixed model for continuation',
