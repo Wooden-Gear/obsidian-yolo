@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
-import { Book, CircleStop, History, Plus } from 'lucide-react'
-import { App, Notice } from 'obsidian'
+import { Book, CircleStop, History, Plus, ChevronDown } from 'lucide-react'
+import { App, Menu, Notice } from 'obsidian'
 import {
   forwardRef,
   useCallback,
@@ -10,11 +10,13 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, SyntheticEvent } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { ApplyViewState } from '../../ApplyView'
 import { APPLY_VIEW_TYPE } from '../../constants'
 import { useApp } from '../../contexts/app-context'
+import { useLanguage } from '../../contexts/language-context'
 import { useMcp } from '../../contexts/mcp-context'
 import { useRAG } from '../../contexts/rag-context'
 import { useSettings } from '../../contexts/settings-context'
@@ -97,11 +99,14 @@ export type ChatRef = {
 
 export type ChatProps = {
   selectedBlock?: MentionableBlockData
+  activeView?: 'chat' | 'composer'
+  onChangeView?: (view: 'chat' | 'composer') => void
 }
 
 const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const app = useApp()
   const { settings } = useSettings()
+  const { t } = useLanguage()
   const { getRAGEngine } = useRAG()
   const { getMcpManager } = useMcp()
 
@@ -159,6 +164,57 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [chatMode, setChatMode] = useState<'rag' | 'brute'>('rag')
   const [learningMode, setLearningMode] = useState<boolean>(
     settings.chatOptions.enableLearningMode ?? false,
+  )
+
+  const activeView = props.activeView ?? 'chat'
+  const onChangeView = props.onChangeView
+
+  const viewLabel =
+    activeView === 'composer'
+      ? t('sidebar.tabs.composer', 'Composer')
+      : t('sidebar.tabs.chat', 'Chat')
+
+  const openViewMenu = useCallback(
+    (event: SyntheticEvent<HTMLDivElement>) => {
+      if (!onChangeView) return
+      event.preventDefault()
+      event.stopPropagation()
+
+      const chatLabel = t('sidebar.tabs.chat', 'Chat')
+      const composerLabel = t('sidebar.tabs.composer', 'Composer')
+
+      const menu = new Menu()
+      menu.addItem((item) => {
+        item.setTitle(
+          `${chatLabel}${activeView === 'chat' ? ' (current)' : ''}`,
+        )
+        item.onClick(() => onChangeView('chat'))
+      })
+      menu.addItem((item) => {
+        item.setTitle(
+          `${composerLabel}${activeView === 'composer' ? ' (current)' : ''}`,
+        )
+        item.onClick(() => onChangeView('composer'))
+      })
+      const nativeEvent = event.nativeEvent
+      if (nativeEvent instanceof MouseEvent) {
+        menu.showAtMouseEvent(nativeEvent)
+      } else {
+        const target = event.currentTarget
+        const rect = target.getBoundingClientRect()
+        menu.showAtPosition({ x: rect.left, y: rect.bottom })
+      }
+    },
+    [onChangeView, activeView, t],
+  )
+
+  const handleTitleKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space') {
+        openViewMenu(event)
+      }
+    },
+    [openViewMenu],
   )
 
   // Per-conversation override settings (temperature, top_p, context, stream)
@@ -703,7 +759,22 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   return (
     <div className="smtcmp-chat-container">
       <div className="smtcmp-chat-header">
-        <h1 className="smtcmp-chat-header-title">Chat</h1>
+        {onChangeView ? (
+          <div
+            role="button"
+            tabIndex={0}
+            className="smtcmp-chat-header-title-toggle"
+            aria-haspopup="menu"
+            aria-label={viewLabel}
+            onClick={openViewMenu}
+            onKeyDown={handleTitleKeyDown}
+          >
+            <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
+            <ChevronDown size={14} className="smtcmp-chat-header-title-icon" />
+          </div>
+        ) : (
+          <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
+        )}
         <div className="smtcmp-chat-header-right">
           <AssistantSelector />
           <div className="smtcmp-chat-header-buttons">

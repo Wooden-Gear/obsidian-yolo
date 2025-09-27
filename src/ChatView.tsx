@@ -3,7 +3,8 @@ import { ItemView, WorkspaceLeaf } from 'obsidian'
 import React from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
-import Chat, { ChatProps, ChatRef } from './components/chat-view/Chat'
+import ChatSidebarTabs from './components/chat-view/ChatSidebarTabs'
+import type { ChatProps, ChatRef } from './components/chat-view/Chat'
 import { CHAT_VIEW_TYPE } from './constants'
 import { AppProvider } from './contexts/app-context'
 import { ChatViewProvider } from './contexts/chat-view-context'
@@ -100,9 +101,9 @@ export class ChatView extends ItemView {
                               this.containerEl.children[1] as HTMLElement
                             }
                           >
-                            <Chat
-                              ref={this.chatRef}
-                              {...this.initialChatProps}
+                            <ChatSidebarTabs
+                              chatRef={this.chatRef}
+                              initialChatProps={this.initialChatProps}
                             />
                           </DialogContainerProvider>
                         </React.StrictMode>

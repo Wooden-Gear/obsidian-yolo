@@ -37,6 +37,30 @@ export interface TranslationKeys {
     off?: string
   }
 
+  sidebar?: {
+    tabs: {
+      chat: string
+      composer: string
+    }
+    composer: {
+      title: string
+      subtitle: string
+      backToChat: string
+      modelSectionTitle: string
+      useCurrentModel: string
+      useCurrentModelDesc: string
+      fixedModel: string
+      fixedModelDesc: string
+      contextSectionTitle: string
+      manualContextToggle: string
+      manualContextDesc: string
+      manualContextFoldersTitle: string
+      manualContextFoldersPlaceholder: string
+      ragToggle: string
+      ragToggleDesc: string
+    }
+  }
+
   // Settings
   settings: {
     title: string

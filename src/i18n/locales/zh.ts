@@ -34,6 +34,31 @@ export const zh: TranslationKeys = {
     off: '关',
   },
 
+  sidebar: {
+    tabs: {
+      chat: 'Chat',
+      composer: 'Composer',
+    },
+    composer: {
+      title: 'Composer 模式',
+      subtitle: '在续写之前先配置模型、上下文与规则',
+      backToChat: '返回 Chat',
+      modelSectionTitle: '模型设置',
+      useCurrentModel: '沿用当前聊天模型',
+      useCurrentModelDesc: '续写时直接沿用 Chat 页当前选中的模型与参数。',
+      fixedModel: '独立的续写模型',
+      fixedModelDesc: '为续写任务单独指定模型，Chat 页的选择不会被改变。',
+      contextSectionTitle: '上下文来源',
+      manualContextToggle: '手动选择上下文',
+      manualContextDesc: '挑选固定文件夹，续写前优先作为参考上下文。',
+      manualContextFoldersTitle: '优先参考目录',
+      manualContextFoldersPlaceholder:
+        '点击选择需要优先参考的文件夹（留空表示全库）。',
+      ragToggle: '启用 RAG 检索',
+      ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
+    },
+  },
+
   settings: {
     title: 'YOLO 设置',
     supportSmartComposer: {

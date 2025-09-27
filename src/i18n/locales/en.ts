@@ -34,6 +34,35 @@ export const en: TranslationKeys = {
     off: 'Off',
   },
 
+  sidebar: {
+    tabs: {
+      chat: 'Chat',
+      composer: 'Composer',
+    },
+    composer: {
+      title: 'Composer',
+      subtitle: 'Configure continuation parameters and context before generating.',
+      backToChat: 'Back to chat',
+      modelSectionTitle: 'Model',
+      useCurrentModel: 'Use current chat model',
+      useCurrentModelDesc:
+        'Reuse the model currently selected on the Chat tab when running continuation.',
+      fixedModel: 'Dedicated continuation model',
+      fixedModelDesc:
+        "Choose a separate model for continuation tasks. Your Chat tab selection won't change.",
+      contextSectionTitle: 'Context sources',
+      manualContextToggle: 'Manual context',
+      manualContextDesc:
+        'Hand-pick folders that should always be considered before writing.',
+      manualContextFoldersTitle: 'Preferred folders',
+      manualContextFoldersPlaceholder:
+        'Click to choose folders to prioritise (leave empty to include the entire vault).',
+      ragToggle: 'Enable RAG retrieval',
+      ragToggleDesc:
+        'Fetch similar notes via embeddings before generating new text.',
+    },
+  },
+
   settings: {
     title: 'YOLO Settings',
     supportSmartComposer: {

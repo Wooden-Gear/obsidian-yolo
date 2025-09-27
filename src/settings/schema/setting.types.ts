@@ -200,6 +200,10 @@ export const smartComposerSettingsSchema = z.object({
       enableFloatingPanelKeywordTrigger: z.boolean().optional(),
       // the keyword to trigger floating panel
       floatingPanelTriggerKeyword: z.string().optional(),
+      // enable manual context selection for continuation
+      manualContextEnabled: z.boolean().optional(),
+      // manual context folders picked by user from the vault
+      manualContextFolders: z.array(z.string()).optional(),
       // enable tab completion based on prefix suggestion
       enableTabCompletion: z.boolean().optional(),
       // fixed model id for tab completion suggestions
@@ -219,6 +223,8 @@ export const smartComposerSettingsSchema = z.object({
       triggerKeyword: '  ',
       enableFloatingPanelKeywordTrigger: false,
       floatingPanelTriggerKeyword: '',
+      manualContextEnabled: false,
+      manualContextFolders: [],
       enableTabCompletion: false,
       tabCompletionModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
