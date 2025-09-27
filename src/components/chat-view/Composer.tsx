@@ -7,6 +7,7 @@ import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import { getModelDisplayNameWithProvider } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
+import { ObsidianToggle } from '../common/ObsidianToggle'
 import { FolderSelectionList } from '../settings/inputs/FolderSelectionList'
 
 type ComposerProps = {
