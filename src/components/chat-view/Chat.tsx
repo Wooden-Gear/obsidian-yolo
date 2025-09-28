@@ -731,54 +731,56 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       ) : (
         <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
       )}
-      <div className="smtcmp-chat-header-right">
-        <AssistantSelector />
-        <div className="smtcmp-chat-header-buttons">
-          <button
-            onClick={() => handleNewChat()}
-            className="clickable-icon"
-            aria-label="New Chat"
-          >
-            <Plus size={18} />
-          </button>
-          <ChatListDropdown
-            chatList={chatList}
-            currentConversationId={currentConversationId}
-            onSelect={async (conversationId) => {
-              if (conversationId === currentConversationId) return
-              await handleLoadConversation(conversationId)
-            }}
-            onDelete={async (conversationId) => {
-              await deleteConversation(conversationId)
-              if (conversationId === currentConversationId) {
-                const nextConversation = chatList.find(
-                  (chat) => chat.id !== conversationId,
-                )
-                if (nextConversation) {
-                  void handleLoadConversation(nextConversation.id)
-                } else {
-                  handleNewChat()
+      {activeView === 'chat' && (
+        <div className="smtcmp-chat-header-right">
+          <AssistantSelector />
+          <div className="smtcmp-chat-header-buttons">
+            <button
+              onClick={() => handleNewChat()}
+              className="clickable-icon"
+              aria-label="New Chat"
+            >
+              <Plus size={18} />
+            </button>
+            <ChatListDropdown
+              chatList={chatList}
+              currentConversationId={currentConversationId}
+              onSelect={async (conversationId) => {
+                if (conversationId === currentConversationId) return
+                await handleLoadConversation(conversationId)
+              }}
+              onDelete={async (conversationId) => {
+                await deleteConversation(conversationId)
+                if (conversationId === currentConversationId) {
+                  const nextConversation = chatList.find(
+                    (chat) => chat.id !== conversationId,
+                  )
+                  if (nextConversation) {
+                    void handleLoadConversation(nextConversation.id)
+                  } else {
+                    handleNewChat()
+                  }
                 }
-              }
-            }}
-            onUpdateTitle={async (conversationId, newTitle) => {
-              await updateConversationTitle(conversationId, newTitle)
-            }}
-          >
-            <History size={18} />
-          </ChatListDropdown>
-          <ChatModeDropdown
-            mode={chatMode}
-            onChange={setChatMode}
-            showBruteOption={settings.chatOptions.enableBruteMode ?? false}
-            showLearningOption={settings.chatOptions.enableLearningMode ?? false}
-            learningEnabled={learningMode}
-            onToggleLearning={setLearningMode}
-          >
-            <Book size={18} />
-          </ChatModeDropdown>
+              }}
+              onUpdateTitle={async (conversationId, newTitle) => {
+                await updateConversationTitle(conversationId, newTitle)
+              }}
+            >
+              <History size={18} />
+            </ChatListDropdown>
+            <ChatModeDropdown
+              mode={chatMode}
+              onChange={setChatMode}
+              showBruteOption={settings.chatOptions.enableBruteMode ?? false}
+              showLearningOption={settings.chatOptions.enableLearningMode ?? false}
+              learningEnabled={learningMode}
+              onToggleLearning={setLearningMode}
+            >
+              <Book size={18} />
+            </ChatModeDropdown>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 
