@@ -204,6 +204,13 @@ export const smartComposerSettingsSchema = z.object({
       manualContextEnabled: z.boolean().optional(),
       // manual context folders picked by user from the vault
       manualContextFolders: z.array(z.string()).optional(),
+      // override sampling parameters specifically for continuation
+      temperature: z.number().min(0).max(2).optional(),
+      topP: z.number().min(0).max(1).optional(),
+      // enable or disable streaming responses for continuation results
+      stream: z.boolean().optional(),
+      // whether continuation requests should include RAG / vault search context
+      useVaultSearch: z.boolean().optional(),
       // enable tab completion based on prefix suggestion
       enableTabCompletion: z.boolean().optional(),
       // fixed model id for tab completion suggestions
@@ -225,6 +232,8 @@ export const smartComposerSettingsSchema = z.object({
       floatingPanelTriggerKeyword: '',
       manualContextEnabled: false,
       manualContextFolders: [],
+      stream: true,
+      useVaultSearch: false,
       enableTabCompletion: false,
       tabCompletionModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??

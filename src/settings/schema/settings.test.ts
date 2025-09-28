@@ -70,6 +70,8 @@ describe('parseSmartComposerSettings', () => {
         triggerKeyword: '  ',
         manualContextEnabled: false,
         manualContextFolders: [],
+        stream: true,
+        useVaultSearch: false,
         enableFloatingPanelKeywordTrigger: false,
         floatingPanelTriggerKeyword: '',
         enableTabCompletion: false,

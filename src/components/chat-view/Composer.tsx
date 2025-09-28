@@ -44,6 +44,13 @@ const Composer: React.FC<ComposerProps> = (_props) => {
   const enableSuperContinuation = Boolean(
     settings.continuationOptions.enableSuperContinuation,
   )
+  const continuationTemperature = settings.continuationOptions.temperature
+  const continuationTopP = settings.continuationOptions.topP
+  const continuationStreamEnabled =
+    settings.continuationOptions.stream ?? true
+  const continuationUseVaultSearch =
+    settings.continuationOptions.useVaultSearch ??
+    Boolean(settings.ragOptions.enabled)
 
   const updateContinuationOptions = useCallback(
     (
@@ -68,6 +75,10 @@ const Composer: React.FC<ComposerProps> = (_props) => {
           ...settings.ragOptions,
           enabled,
         },
+        continuationOptions: {
+          ...settings.continuationOptions,
+          useVaultSearch: enabled,
+        },
       })
     },
     [setSettings, settings],
@@ -87,12 +98,6 @@ const Composer: React.FC<ComposerProps> = (_props) => {
           </header>
           <div className="smtcmp-composer-option smtcmp-composer-option--model">
             <div className="smtcmp-composer-option-info">
-              <div className="smtcmp-composer-option-desc">
-                {t(
-                  'sidebar.composer.continuationModelDescShort',
-                  '不同模型会影响续写质量与速度，可按需切换。',
-                )}
-              </div>
             </div>
             <div className="smtcmp-composer-option-control">
               <ObsidianDropdown
@@ -130,19 +135,87 @@ const Composer: React.FC<ComposerProps> = (_props) => {
           <div className="smtcmp-composer-option">
             <div className="smtcmp-composer-option-info">
               <div className="smtcmp-composer-option-title">
-                {t('sidebar.composer.ragToggle', '启用 RAG 检索')}
+                {t('chat.conversationSettings.temperature', '温度')}
               </div>
-              <div className="smtcmp-composer-option-desc">
-                {t(
-                  'sidebar.composer.ragToggleDescShort',
-                  '在续写前自动召回与当前内容相似的笔记片段。',
-                )}
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <input
+                type="number"
+                min={0}
+                max={2}
+                step={0.1}
+                className="smtcmp-number-pill"
+                value={
+                  typeof continuationTemperature === 'number'
+                    ? continuationTemperature
+                    : ''
+                }
+                placeholder={
+                  settings.chatOptions.defaultTemperature?.toString() ??
+                  t('common.default', '默认')
+                }
+                onChange={(event) => {
+                  const value = event.currentTarget.value
+                  if (value === '') {
+                    updateContinuationOptions({ temperature: undefined })
+                    return
+                  }
+                  const parsed = Number(value)
+                  if (Number.isNaN(parsed)) return
+                  const clamped = Math.min(2, Math.max(0, parsed))
+                  updateContinuationOptions({ temperature: clamped })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('chat.conversationSettings.topP', 'Top P')}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <input
+                type="number"
+                min={0}
+                max={1}
+                step={0.01}
+                className="smtcmp-number-pill"
+                value={
+                  typeof continuationTopP === 'number' ? continuationTopP : ''
+                }
+                placeholder={
+                  settings.chatOptions.defaultTopP?.toString() ??
+                  t('common.default', '默认')
+                }
+                onChange={(event) => {
+                  const value = event.currentTarget.value
+                  if (value === '') {
+                    updateContinuationOptions({ topP: undefined })
+                    return
+                  }
+                  const parsed = Number(value)
+                  if (Number.isNaN(parsed)) return
+                  const clamped = Math.min(1, Math.max(0, parsed))
+                  updateContinuationOptions({ topP: clamped })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('chat.conversationSettings.streaming', '流式输出')}
               </div>
             </div>
             <div className="smtcmp-composer-option-control">
               <ObsidianToggle
-                value={Boolean(settings.ragOptions.enabled)}
-                onChange={(value) => updateRagEnabled(value)}
+                value={continuationStreamEnabled}
+                onChange={(value) =>
+                  updateContinuationOptions({ stream: value })
+                }
               />
             </div>
           </div>
@@ -165,12 +238,6 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               <div className="smtcmp-composer-option-title">
                 {t('sidebar.composer.manualContextToggle', '手动选择上下文')}
               </div>
-              <div className="smtcmp-composer-option-desc">
-                {t(
-                  'sidebar.composer.manualContextDescShort',
-                  '固定一组文件或文件夹，续写时优先参考。',
-                )}
-              </div>
             </div>
             <div className="smtcmp-composer-option-control">
               <ObsidianToggle
@@ -178,6 +245,20 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                 onChange={(value) =>
                   updateContinuationOptions({ manualContextEnabled: value })
                 }
+              />
+            </div>
+          </div>
+
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('chat.conversationSettings.useVaultSearch', 'RAG 搜索')}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <ObsidianToggle
+                value={continuationUseVaultSearch}
+                onChange={(value) => updateRagEnabled(value)}
               />
             </div>
           </div>

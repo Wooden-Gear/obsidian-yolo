@@ -205,6 +205,53 @@ export default class SmartComposerPlugin extends Plugin {
     return { temperature, topP, stream }
   }
 
+  private resolveContinuationParams(
+    overrides?: ConversationOverrideSettings,
+  ): {
+    temperature?: number
+    topP?: number
+    stream: boolean
+    useVaultSearch: boolean
+  } {
+    const continuation = this.settings.continuationOptions ?? {}
+    const chatDefaults = this.settings.chatOptions ?? {}
+
+    const temperature =
+      typeof continuation.temperature === 'number'
+        ? continuation.temperature
+        : typeof overrides?.temperature === 'number'
+          ? overrides.temperature
+          : typeof chatDefaults.defaultTemperature === 'number'
+            ? chatDefaults.defaultTemperature
+            : undefined
+
+    const overrideTopP = overrides?.top_p
+    const topP =
+      typeof continuation.topP === 'number'
+        ? continuation.topP
+        : typeof overrideTopP === 'number'
+          ? overrideTopP
+          : typeof chatDefaults.defaultTopP === 'number'
+            ? chatDefaults.defaultTopP
+            : undefined
+
+    const stream =
+      typeof continuation.stream === 'boolean'
+        ? continuation.stream
+        : typeof overrides?.stream === 'boolean'
+          ? overrides.stream
+          : true
+
+    const useVaultSearch =
+      typeof continuation.useVaultSearch === 'boolean'
+        ? continuation.useVaultSearch
+        : typeof overrides?.useVaultSearch === 'boolean'
+          ? overrides.useVaultSearch
+          : Boolean(this.settings.ragOptions?.enabled)
+
+    return { temperature, topP, stream, useVaultSearch }
+  }
+
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
   }
@@ -365,7 +412,8 @@ export default class SmartComposerPlugin extends Plugin {
       if (!modelId) return
 
       const sidebarOverrides = this.getActiveConversationOverrides()
-      const { temperature, topP } = this.resolveSamplingParams(sidebarOverrides)
+      const { temperature, topP } =
+        this.resolveContinuationParams(sidebarOverrides)
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -1275,7 +1323,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
       // Truncate context to avoid exceeding model limits (simple char-based cap)
       const MAX_CONTEXT_CHARS = 8000
-      const context =
+      let context =
         baseContext.length > MAX_CONTEXT_CHARS
           ? baseContext.slice(-MAX_CONTEXT_CHARS)
           : baseContext
@@ -1289,8 +1337,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         : this.getActiveConversationModelId() ?? this.settings.chatModelId
 
       const sidebarOverrides = this.getActiveConversationOverrides()
-      const { temperature, topP, stream: streamPreference } =
-        this.resolveSamplingParams(sidebarOverrides)
+      const {
+        temperature,
+        topP,
+        stream: streamPreference,
+        useVaultSearch,
+      } = this.resolveContinuationParams(sidebarOverrides)
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -1312,10 +1364,49 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const fileTitle = activeFileForTitle?.basename?.trim() ?? ''
       const titleLine = fileTitle ? `File title: ${fileTitle}\n\n` : ''
       const hasContext = (baseContext ?? '').trim().length > 0
-      const contextSection = hasContext
-        ? `Context (up to recent portion):\n\n${context}\n\n`
-        : ''
-      const baseModelContextSection = hasContext ? `${context}\n\n` : ''
+
+      let ragContextSection = ''
+      const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
+      if (useVaultSearch && ragGloballyEnabled) {
+        try {
+          const querySource = (context || baseContext || userInstruction || fileTitle).trim()
+          if (querySource.length > 0) {
+            const ragEngine = await this.getRAGEngine()
+            const ragResults = await ragEngine.processQuery({
+              query: querySource.slice(-4000),
+            })
+            const snippetLimit = Math.max(
+              1,
+              Math.min(this.settings.ragOptions?.limit ?? 10, 10),
+            )
+            const snippets = ragResults.slice(0, snippetLimit)
+            if (snippets.length > 0) {
+              const formatted = snippets
+                .map((snippet, index) => {
+                  const content = (snippet.content ?? '').trim()
+                  const truncated =
+                    content.length > 600 ? `${content.slice(0, 600)}...` : content
+                  return `Snippet ${index + 1} (from ${snippet.path}):\n${truncated}`
+                })
+                .join('\n\n')
+              if (formatted.trim().length > 0) {
+                ragContextSection = `Vault snippets:\n\n${formatted}\n\n`
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Continuation RAG lookup failed:', error)
+        }
+      }
+
+      const contextSection =
+        hasContext && context.trim().length > 0
+          ? `Context (up to recent portion):\n\n${context}\n\n`
+          : ''
+      const baseModelContextSection = `${
+        hasContext && context.trim().length > 0 ? `${context}\n\n` : ''
+      }${ragContextSection}`
+      const combinedContextSection = `${contextSection}${ragContextSection}`
       const continueText = hasSelection || hasContext
         ? 'Continue writing from here.'
         : 'Start writing this document.'
@@ -1345,7 +1436,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           role: 'user' as const,
           content: isBaseModel
             ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
-            : `${basePromptSection}${titleLine}${contextSection}${continueText}${instructionSuffix}`,
+            : `${basePromptSection}${titleLine}${combinedContextSection}${continueText}${instructionSuffix}`,
         },
       ] as const
 
@@ -1381,6 +1472,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         overrides: sidebarOverrides,
         request: baseRequest,
         streamPreference,
+        useVaultSearch,
       })
 
       // Insert at current cursor by default; if a selection exists, insert at selection end
