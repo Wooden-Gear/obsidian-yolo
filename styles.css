@@ -1597,7 +1597,7 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-view-toggle-indicator[data-active-view="composer"] {
-  transform: translateX(calc(100% + 4px));
+  transform: translateX(100%);
 }
 
 /* 在header中的样式调整 */

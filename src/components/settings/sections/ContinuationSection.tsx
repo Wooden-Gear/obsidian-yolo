@@ -6,6 +6,7 @@ import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
+import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import {
