@@ -82,29 +82,36 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.model.title', '模型选择')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t(
-                'sidebar.composer.sections.model.desc',
-                '确定续写时优先使用的模型',
-              )}
+              {t('sidebar.composer.sections.model.desc', '选择续写时使用的模型')}
             </div>
           </header>
-          <div className="smtcmp-composer-model-select">
-            <ObsidianDropdown
-              value={continuationModelId}
-              options={Object.fromEntries(
-                orderedEnabledModels.map((m) => [
-                  m.id,
-                  getModelDisplayNameWithProvider(
+          <div className="smtcmp-composer-option smtcmp-composer-option--model">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-desc">
+                {t(
+                  'sidebar.composer.continuationModelDescShort',
+                  '不同模型会影响续写质量与速度，可按需切换。',
+                )}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <ObsidianDropdown
+                value={continuationModelId}
+                options={Object.fromEntries(
+                  orderedEnabledModels.map((m) => [
                     m.id,
-                    settings.providers.find((p) => p.id === m.providerId)?.id,
-                  ),
-                ]),
-              )}
-              onChange={(value) =>
-                updateContinuationOptions({ continuationModelId: value })
-              }
-              disabled={!enableSuperContinuation}
-            />
+                    getModelDisplayNameWithProvider(
+                      m.id,
+                      settings.providers.find((p) => p.id === m.providerId)?.id,
+                    ),
+                  ]),
+                )}
+                onChange={(value) =>
+                  updateContinuationOptions({ continuationModelId: value })
+                }
+                disabled={!enableSuperContinuation}
+              />
+            </div>
           </div>
         </section>
 
@@ -116,22 +123,29 @@ const Composer: React.FC<ComposerProps> = (_props) => {
             <div className="smtcmp-composer-heading-desc">
               {t(
                 'sidebar.composer.sections.parameters.desc',
-                '按需调整续写行为相关的系统参数',
+                '针对续写行为的核心开关',
               )}
             </div>
           </header>
-          <ObsidianSetting
-            name={t('sidebar.composer.ragToggle', '启用 RAG 检索')}
-            desc={t(
-              'sidebar.composer.ragToggleDesc',
-              '根据 embedding 相似度自动召回相关片段',
-            )}
-          >
-            <ObsidianToggle
-              value={Boolean(settings.ragOptions.enabled)}
-              onChange={(value) => updateRagEnabled(value)}
-            />
-          </ObsidianSetting>
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('sidebar.composer.ragToggle', '启用 RAG 检索')}
+              </div>
+              <div className="smtcmp-composer-option-desc">
+                {t(
+                  'sidebar.composer.ragToggleDescShort',
+                  '在续写前自动召回与当前内容相似的笔记片段。',
+                )}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <ObsidianToggle
+                value={Boolean(settings.ragOptions.enabled)}
+                onChange={(value) => updateRagEnabled(value)}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="smtcmp-composer-section">
@@ -142,43 +156,59 @@ const Composer: React.FC<ComposerProps> = (_props) => {
             <div className="smtcmp-composer-heading-desc">
               {t(
                 'sidebar.composer.sections.context.desc',
-                '配置续写时优先引用的内容来源',
+                '定义续写时优先参考的内容来源',
               )}
             </div>
           </header>
-          <ObsidianSetting
-            name={t('sidebar.composer.manualContextToggle', '手动上下文')}
-            desc={t(
-              'sidebar.composer.manualContextDesc',
-              '挑选特定文件夹，续写前优先作为参考上下文',
-            )}
-          >
-            <ObsidianToggle
-              value={manualContextEnabled}
-              onChange={(value) =>
-                updateContinuationOptions({ manualContextEnabled: value })
-              }
-            />
-          </ObsidianSetting>
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('sidebar.composer.manualContextToggle', '手动选择上下文')}
+              </div>
+              <div className="smtcmp-composer-option-desc">
+                {t(
+                  'sidebar.composer.manualContextDescShort',
+                  '固定一组文件或文件夹，续写时优先参考。',
+                )}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <ObsidianToggle
+                value={manualContextEnabled}
+                onChange={(value) =>
+                  updateContinuationOptions({ manualContextEnabled: value })
+                }
+              />
+            </div>
+          </div>
 
           {manualContextEnabled ? (
-            <FolderSelectionList
-              app={app}
-              vault={app.vault}
-              value={manualContextFolders}
-              onChange={(folders) =>
-                updateContinuationOptions({ manualContextFolders: folders })
-              }
-              title={t(
-                'sidebar.composer.manualContextFoldersTitle',
-                '续写参考目录',
+            <div className="smtcmp-composer-context-picker">
+              <FolderSelectionList
+                app={app}
+                vault={app.vault}
+                value={manualContextFolders}
+                onChange={(folders) =>
+                  updateContinuationOptions({ manualContextFolders: folders })
+                }
+                title={t(
+                  'sidebar.composer.manualContextFoldersTitle',
+                  '优先参考目录',
+                )}
+                placeholder={t(
+                  'sidebar.composer.manualContextFoldersPlaceholder',
+                  '点击选择优先参考的文件夹（留空表示全库）。',
+                )}
+              />
+            </div>
+          ) : (
+            <div className="smtcmp-composer-hint">
+              {t(
+                'sidebar.composer.manualContextHint',
+                '开启后即可指定需要优先参考的目录。',
               )}
-              placeholder={t(
-                'sidebar.composer.manualContextFoldersPlaceholder',
-                '点击选择需要优先参考的文件夹（默认为全部）',
-              )}
-            />
-          ) : null}
+            </div>
+          )}
         </section>
       </div>
     </div>
