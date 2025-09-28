@@ -57,6 +57,12 @@ export const en: TranslationKeys = {
       ragToggle: 'Enable RAG retrieval',
       ragToggleDesc:
         'Fetch similar notes via embeddings before generating new text.',
+      sections: {
+        modelWithPrompt: {
+          title: 'Model & Prompt',
+        },
+      },
+      continuationPrompt: 'Continuation system prompt',
     },
   },
 

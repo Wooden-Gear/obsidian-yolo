@@ -366,6 +366,22 @@
   margin-left: auto;
 }
 
+.smtcmp-composer-option-control--full {
+  width: 100%;
+  justify-content: flex-start;
+  margin-left: 0;
+}
+
+.smtcmp-composer-option-control--full textarea {
+  width: 100%;
+  min-height: 120px;
+}
+
+.smtcmp-composer-option-control--full .smtcmp-textarea-container,
+.smtcmp-composer-option-control--full .smtcmp-textarea-container textarea {
+  width: 100% !important;
+}
+
 .smtcmp-composer-option-control select {
   width: 100%;
   max-width: 100%;

@@ -56,6 +56,12 @@ export interface TranslationKeys {
       manualContextFoldersPlaceholder: string
       ragToggle: string
       ragToggleDesc: string
+      sections?: {
+        modelWithPrompt?: {
+          title: string
+        }
+      }
+      continuationPrompt?: string
     }
   }
 

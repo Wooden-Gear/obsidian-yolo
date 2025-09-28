@@ -7,6 +7,7 @@ import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import { getModelDisplayNameWithProvider } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
+import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ObsidianToggle } from '../common/ObsidianToggle'
 import { FolderSelectionList } from '../settings/inputs/FolderSelectionList'
 
@@ -92,7 +93,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
         <section className="smtcmp-composer-section">
           <header className="smtcmp-composer-heading">
             <div className="smtcmp-composer-heading-title">
-              {t('sidebar.composer.sections.model.title', '模型选择')}
+              {t('sidebar.composer.sections.modelWithPrompt.title', '模型选择与提示词')}
             </div>
             <div className="smtcmp-composer-heading-desc">
               {t('sidebar.composer.sections.model.desc', '选择续写时使用的模型')}
@@ -115,6 +116,23 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                 )}
                 onChange={(value) =>
                   updateContinuationOptions({ continuationModelId: value })
+                }
+                disabled={!enableSuperContinuation}
+              />
+            </div>
+          </div>
+
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('sidebar.composer.continuationPrompt', '续写系统提示词')}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control smtcmp-composer-option-control--full">
+              <ObsidianTextArea
+                value={settings.continuationOptions.defaultSystemPrompt ?? ''}
+                onChange={(value) =>
+                  updateContinuationOptions({ defaultSystemPrompt: value })
                 }
                 disabled={!enableSuperContinuation}
               />

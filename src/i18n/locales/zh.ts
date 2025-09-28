@@ -54,6 +54,12 @@ export const zh: TranslationKeys = {
         '点击选择需要优先参考的文件夹（留空表示全库）。',
       ragToggle: '启用 RAG 检索',
       ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
+      sections: {
+        modelWithPrompt: {
+          title: '模型选择与提示词',
+        },
+      },
+      continuationPrompt: '续写系统提示词',
     },
   },
 

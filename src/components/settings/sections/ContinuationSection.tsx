@@ -8,8 +8,6 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { DEFAULT_CONTINUATION_SYSTEM_PROMPT } from '../../../constants'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
@@ -48,10 +46,6 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
   const enableTabCompletion = Boolean(
     settings.continuationOptions.enableTabCompletion,
   )
-  const continuationPromptValue =
-    (settings.continuationOptions.defaultSystemPrompt ?? '').trim().length > 0
-      ? settings.continuationOptions.defaultSystemPrompt!
-      : DEFAULT_CONTINUATION_SYSTEM_PROMPT
   const tabCompletionSystemPromptValue =
     (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
       ? settings.continuationOptions.tabCompletionSystemPrompt!
@@ -142,31 +136,6 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
           }}
         />
       </ObsidianSetting>
-
-      {enableKeywordTrigger && (
-        <>
-          <ObsidianSetting
-            name={t('settings.defaults.continuationSystemPrompt')}
-            desc={t('settings.defaults.continuationSystemPromptDesc')}
-            className="smtcmp-settings-textarea-header"
-          />
-
-          <ObsidianSetting className="smtcmp-settings-textarea">
-            <ObsidianTextArea
-              value={continuationPromptValue}
-              onChange={async (value: string) => {
-                await setSettings({
-                  ...settings,
-                  continuationOptions: {
-                    ...settings.continuationOptions,
-                    defaultSystemPrompt: value,
-                  },
-                })
-              }}
-            />
-          </ObsidianSetting>
-        </>
-      )}
 
       {enableKeywordTrigger && (
         <ObsidianSetting
