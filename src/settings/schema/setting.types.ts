@@ -211,6 +211,8 @@ export const smartComposerSettingsSchema = z.object({
       stream: z.boolean().optional(),
       // whether continuation requests should include RAG / vault search context
       useVaultSearch: z.boolean().optional(),
+      // cap on how many characters of context to send with continuation requests
+      maxContinuationChars: z.number().int().min(0).optional(),
       // enable tab completion based on prefix suggestion
       enableTabCompletion: z.boolean().optional(),
       // fixed model id for tab completion suggestions
@@ -234,6 +236,7 @@ export const smartComposerSettingsSchema = z.object({
       manualContextFolders: [],
       stream: true,
       useVaultSearch: false,
+      maxContinuationChars: 8000,
       enableTabCompletion: false,
       tabCompletionModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??

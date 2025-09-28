@@ -72,6 +72,7 @@ describe('parseSmartComposerSettings', () => {
         manualContextFolders: [],
         stream: true,
         useVaultSearch: false,
+        maxContinuationChars: 8000,
         enableFloatingPanelKeywordTrigger: false,
         floatingPanelTriggerKeyword: '',
         enableTabCompletion: false,

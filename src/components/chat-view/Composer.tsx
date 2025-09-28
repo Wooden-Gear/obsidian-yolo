@@ -51,6 +51,8 @@ const Composer: React.FC<ComposerProps> = (_props) => {
   const continuationUseVaultSearch =
     settings.continuationOptions.useVaultSearch ??
     Boolean(settings.ragOptions.enabled)
+  const maxContinuationChars =
+    settings.continuationOptions.maxContinuationChars ?? 8000
 
   const updateContinuationOptions = useCallback(
     (
@@ -199,6 +201,38 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                   if (Number.isNaN(parsed)) return
                   const clamped = Math.min(1, Math.max(0, parsed))
                   updateContinuationOptions({ topP: clamped })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="smtcmp-composer-option">
+            <div className="smtcmp-composer-option-info">
+              <div className="smtcmp-composer-option-title">
+                {t('sidebar.composer.maxContinuationChars', '续写传入字符数')}
+              </div>
+            </div>
+            <div className="smtcmp-composer-option-control">
+              <input
+                type="number"
+                min={0}
+                max={20000}
+                step={100}
+                className="smtcmp-number-pill"
+                value={maxContinuationChars}
+                placeholder="8000"
+                onChange={(event) => {
+                  const raw = event.currentTarget.value
+                  if (raw === '') {
+                    updateContinuationOptions({ maxContinuationChars: undefined })
+                    return
+                  }
+                  const value = Number(raw)
+                  if (Number.isNaN(value)) return
+                  const clamped = Math.max(0, Math.min(20000, Math.round(value)))
+                  updateContinuationOptions({
+                    maxContinuationChars: clamped,
+                  })
                 }}
               />
             </div>

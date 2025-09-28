@@ -1322,11 +1322,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
 
       // Truncate context to avoid exceeding model limits (simple char-based cap)
-      const MAX_CONTEXT_CHARS = 8000
-      let context =
-        baseContext.length > MAX_CONTEXT_CHARS
-          ? baseContext.slice(-MAX_CONTEXT_CHARS)
-          : baseContext
+      const continuationCharLimit = Math.max(
+        0,
+        this.settings.continuationOptions?.maxContinuationChars ?? 8000,
+      )
+      const limitedContext =
+        continuationCharLimit > 0 && baseContext.length > continuationCharLimit
+          ? baseContext.slice(-continuationCharLimit)
+          : continuationCharLimit === 0
+            ? ''
+            : baseContext
 
       const superContinuationEnabled = Boolean(
         this.settings.continuationOptions?.enableSuperContinuation,
@@ -1369,7 +1374,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
       if (useVaultSearch && ragGloballyEnabled) {
         try {
-          const querySource = (context || baseContext || userInstruction || fileTitle).trim()
+          const querySource = (baseContext || userInstruction || fileTitle).trim()
           if (querySource.length > 0) {
             const ragEngine = await this.getRAGEngine()
             const ragResults = await ragEngine.processQuery({
@@ -1399,12 +1404,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         }
       }
 
+      const limitedContextHasContent = limitedContext.trim().length > 0
       const contextSection =
-        hasContext && context.trim().length > 0
-          ? `Context (up to recent portion):\n\n${context}\n\n`
+        hasContext && limitedContextHasContent
+          ? `Context (up to recent portion):\n\n${limitedContext}\n\n`
           : ''
       const baseModelContextSection = `${
-        hasContext && context.trim().length > 0 ? `${context}\n\n` : ''
+        hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''
       }${ragContextSection}`
       const combinedContextSection = `${contextSection}${ragContextSection}`
       const continueText = hasSelection || hasContext
