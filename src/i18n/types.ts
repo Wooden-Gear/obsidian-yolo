@@ -50,10 +50,6 @@ export interface TranslationKeys {
       continuationModel: string
       continuationModelDesc: string
       contextSectionTitle: string
-      manualContextToggle: string
-      manualContextDesc: string
-      manualContextFoldersTitle: string
-      manualContextFoldersPlaceholder: string
       ragToggle: string
       ragToggleDesc: string
       sections?: {
@@ -62,6 +58,11 @@ export interface TranslationKeys {
         }
       }
       continuationPrompt?: string
+      referenceRulesTitle?: string
+      referenceRulesPlaceholder?: string
+      knowledgeBaseTitle?: string
+      knowledgeBasePlaceholder?: string
+      knowledgeBaseHint?: string
     }
   }
 

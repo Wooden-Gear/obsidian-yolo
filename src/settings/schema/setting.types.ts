@@ -204,6 +204,10 @@ export const smartComposerSettingsSchema = z.object({
       manualContextEnabled: z.boolean().optional(),
       // manual context folders picked by user from the vault
       manualContextFolders: z.array(z.string()).optional(),
+      // folders that should be fully injected into continuation context
+      referenceRuleFolders: z.array(z.string()).optional(),
+      // folders used as the scoped knowledge base for RAG retrieval
+      knowledgeBaseFolders: z.array(z.string()).optional(),
       // override sampling parameters specifically for continuation
       temperature: z.number().min(0).max(2).optional(),
       topP: z.number().min(0).max(1).optional(),
@@ -234,6 +238,8 @@ export const smartComposerSettingsSchema = z.object({
       floatingPanelTriggerKeyword: '',
       manualContextEnabled: false,
       manualContextFolders: [],
+      referenceRuleFolders: [],
+      knowledgeBaseFolders: [],
       stream: true,
       useVaultSearch: false,
       maxContinuationChars: 8000,

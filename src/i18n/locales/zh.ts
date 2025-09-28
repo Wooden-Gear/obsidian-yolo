@@ -47,11 +47,6 @@ export const zh: TranslationKeys = {
       continuationModel: '续写模型',
       continuationModelDesc: '在开启超级续写时，Composer 将使用该模型处理续写。',
       contextSectionTitle: '上下文来源',
-      manualContextToggle: '手动选择上下文',
-      manualContextDesc: '挑选固定文件夹，续写前优先作为参考上下文。',
-      manualContextFoldersTitle: '优先参考目录',
-      manualContextFoldersPlaceholder:
-        '点击选择需要优先参考的文件夹（留空表示全库）。',
       ragToggle: '启用 RAG 检索',
       ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
       sections: {
@@ -60,6 +55,11 @@ export const zh: TranslationKeys = {
         },
       },
       continuationPrompt: '续写系统提示词',
+      referenceRulesTitle: '参考规则',
+      referenceRulesPlaceholder: '点击选择需要完整注入上下文的文件夹。',
+      knowledgeBaseTitle: '知识库',
+      knowledgeBasePlaceholder: '点击选择用作检索范围的文件夹（留空表示全库）。',
+      knowledgeBaseHint: '开启 RAG 搜索后可限定检索范围。',
     },
   },
 

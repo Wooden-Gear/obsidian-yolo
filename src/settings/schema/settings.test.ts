@@ -70,6 +70,8 @@ describe('parseSmartComposerSettings', () => {
         triggerKeyword: '  ',
         manualContextEnabled: false,
         manualContextFolders: [],
+        referenceRuleFolders: [],
+        knowledgeBaseFolders: [],
         stream: true,
         useVaultSearch: false,
         maxContinuationChars: 8000,

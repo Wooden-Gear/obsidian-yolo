@@ -48,12 +48,6 @@ export const en: TranslationKeys = {
       continuationModelDesc:
         'When Super Continuation is enabled, Composer will use this model for continuation tasks.',
       contextSectionTitle: 'Context sources',
-      manualContextToggle: 'Manual context',
-      manualContextDesc:
-        'Hand-pick folders that should always be considered before writing.',
-      manualContextFoldersTitle: 'Preferred folders',
-      manualContextFoldersPlaceholder:
-        'Click to choose folders to prioritise (leave empty to include the entire vault).',
       ragToggle: 'Enable RAG retrieval',
       ragToggleDesc:
         'Fetch similar notes via embeddings before generating new text.',
@@ -63,6 +57,11 @@ export const en: TranslationKeys = {
         },
       },
       continuationPrompt: 'Continuation system prompt',
+      referenceRulesTitle: 'Reference rules',
+      referenceRulesPlaceholder: 'Select folders whose content should be fully injected.',
+      knowledgeBaseTitle: 'Knowledge base',
+      knowledgeBasePlaceholder: 'Select folders used as the retrieval scope (leave empty for all).',
+      knowledgeBaseHint: 'Enable RAG search to limit the retrieval scope.',
     },
   },
 

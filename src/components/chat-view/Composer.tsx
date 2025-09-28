@@ -33,11 +33,11 @@ const Composer: React.FC<ComposerProps> = (_props) => {
     )
   }, [settings.chatModels, settings.providers])
 
-  const manualContextEnabled = Boolean(
-    settings.continuationOptions.manualContextEnabled,
-  )
-  const manualContextFolders =
+  const referenceRuleFolders =
+    settings.continuationOptions.referenceRuleFolders ??
     settings.continuationOptions.manualContextFolders ?? []
+  const knowledgeBaseFolders =
+    settings.continuationOptions.knowledgeBaseFolders ?? []
   const continuationModelId =
     settings.continuationOptions.continuationModelId ??
     orderedEnabledModels[0]?.id ??
@@ -285,20 +285,23 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               )}
             </div>
           </header>
-          <div className="smtcmp-composer-option">
-            <div className="smtcmp-composer-option-info">
-              <div className="smtcmp-composer-option-title">
-                {t('sidebar.composer.manualContextToggle', '手动选择上下文')}
-              </div>
-            </div>
-            <div className="smtcmp-composer-option-control">
-              <ObsidianToggle
-                value={manualContextEnabled}
-                onChange={(value) =>
-                  updateContinuationOptions({ manualContextEnabled: value })
-                }
-              />
-            </div>
+          <div className="smtcmp-composer-context-picker">
+            <FolderSelectionList
+              app={app}
+              vault={app.vault}
+              value={referenceRuleFolders}
+              onChange={(folders) =>
+                updateContinuationOptions({ referenceRuleFolders: folders })
+              }
+              title={t(
+                'sidebar.composer.referenceRulesTitle',
+                '参考规则',
+              )}
+              placeholder={t(
+                'sidebar.composer.referenceRulesPlaceholder',
+                '点击选择需要完整注入上下文的文件夹。',
+              )}
+            />
           </div>
 
           <div className="smtcmp-composer-option">
@@ -315,30 +318,27 @@ const Composer: React.FC<ComposerProps> = (_props) => {
             </div>
           </div>
 
-          {manualContextEnabled ? (
+          {continuationUseVaultSearch ? (
             <div className="smtcmp-composer-context-picker">
               <FolderSelectionList
                 app={app}
                 vault={app.vault}
-                value={manualContextFolders}
+                value={knowledgeBaseFolders}
                 onChange={(folders) =>
-                  updateContinuationOptions({ manualContextFolders: folders })
+                  updateContinuationOptions({ knowledgeBaseFolders: folders })
                 }
-                title={t(
-                  'sidebar.composer.manualContextFoldersTitle',
-                  '优先参考目录',
-                )}
+                title={t('sidebar.composer.knowledgeBaseTitle', '知识库')}
                 placeholder={t(
-                  'sidebar.composer.manualContextFoldersPlaceholder',
-                  '点击选择优先参考的文件夹（留空表示全库）。',
+                  'sidebar.composer.knowledgeBasePlaceholder',
+                  '点击选择用作检索范围的文件夹（留空表示全库）。',
                 )}
               />
             </div>
           ) : (
             <div className="smtcmp-composer-hint">
               {t(
-                'sidebar.composer.manualContextHint',
-                '开启后即可指定需要优先参考的目录。',
+                'sidebar.composer.knowledgeBaseHint',
+                '开启 RAG 搜索后可限定检索范围。',
               )}
             </div>
           )}

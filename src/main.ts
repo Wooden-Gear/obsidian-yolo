@@ -26,7 +26,12 @@ import {
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
-import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
+import {
+  getMentionableBlockData,
+  getNestedFiles,
+  readMultipleTFiles,
+  readTFileContent,
+} from './utils/obsidian'
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
@@ -1321,6 +1326,51 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         }
       }
 
+      const referenceRuleFolders =
+        this.settings.continuationOptions?.referenceRuleFolders ??
+        this.settings.continuationOptions?.manualContextFolders ??
+        []
+
+      let referenceRulesSection = ''
+      if (referenceRuleFolders.length > 0) {
+        try {
+          const referenceFilesMap = new Map<string, TFile>()
+          for (const folderPath of referenceRuleFolders) {
+            if (!folderPath) continue
+            const abstract = this.app.vault.getAbstractFileByPath(folderPath)
+            if (abstract instanceof TFolder) {
+              for (const file of getNestedFiles(abstract, this.app.vault)) {
+                referenceFilesMap.set(file.path, file)
+              }
+            } else if (abstract instanceof TFile) {
+              referenceFilesMap.set(abstract.path, abstract)
+            }
+          }
+
+          const referenceFiles = Array.from(referenceFilesMap.values())
+          if (referenceFiles.length > 0) {
+            const referenceContents = await readMultipleTFiles(
+              referenceFiles,
+              this.app.vault,
+            )
+            const referenceLabel = this.t(
+              'sidebar.composer.referenceRulesTitle',
+              'Reference rules',
+            )
+            const blocks = referenceFiles.map((file, index) => {
+              const content = referenceContents[index] ?? ''
+              return `File: ${file.path}\n${content}`
+            })
+            const combinedReference = blocks.join('\n\n')
+            if (combinedReference.trim().length > 0) {
+              referenceRulesSection = `${referenceLabel}:\n\n${combinedReference}\n\n`
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to load reference rule folders for continuation', error)
+        }
+      }
+
       // Truncate context to avoid exceeding model limits (simple char-based cap)
       const continuationCharLimit = Math.max(
         0,
@@ -1371,6 +1421,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const hasContext = (baseContext ?? '').trim().length > 0
 
       let ragContextSection = ''
+      const knowledgeBaseFolders =
+        this.settings.continuationOptions?.knowledgeBaseFolders ?? []
       const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
       if (useVaultSearch && ragGloballyEnabled) {
         try {
@@ -1379,6 +1431,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             const ragEngine = await this.getRAGEngine()
             const ragResults = await ragEngine.processQuery({
               query: querySource.slice(-4000),
+              scope:
+                knowledgeBaseFolders.length > 0
+                  ? { folders: knowledgeBaseFolders }
+                  : undefined,
             })
             const snippetLimit = Math.max(
               1,
@@ -1410,9 +1466,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           ? `Context (up to recent portion):\n\n${limitedContext}\n\n`
           : ''
       const baseModelContextSection = `${
-        hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''
-      }${ragContextSection}`
-      const combinedContextSection = `${contextSection}${ragContextSection}`
+        referenceRulesSection
+      }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
+      const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
       const continueText = hasSelection || hasContext
         ? 'Continue writing from here.'
         : 'Start writing this document.'
