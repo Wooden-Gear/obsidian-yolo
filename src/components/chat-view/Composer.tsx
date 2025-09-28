@@ -14,7 +14,7 @@ type ComposerProps = {
   onNavigateChat?: () => void
 }
 
-const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
+const Composer: React.FC<ComposerProps> = (_props) => {
   const app = useApp()
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
@@ -75,38 +75,20 @@ const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
 
   return (
     <div className="smtcmp-composer-container">
-      <div className="smtcmp-composer-header">
-        <div>
-          <div className="smtcmp-composer-title">
-            {t('sidebar.composer.title', 'Composer 模式')}
-          </div>
-          <div className="smtcmp-composer-subtitle">
-            {t('sidebar.composer.subtitle', '在续写前配置模型、上下文与规则')}
-          </div>
-        </div>
-        {onNavigateChat ? (
-          <button
-            type="button"
-            className="smtcmp-composer-back"
-            onClick={() => onNavigateChat?.()}
-          >
-            {t('sidebar.composer.backToChat', '返回聊天')}
-          </button>
-        ) : null}
-      </div>
-
       <div className="smtcmp-composer-scroll">
         <section className="smtcmp-composer-section">
-          <div className="smtcmp-composer-section-title">
-            {t('sidebar.composer.modelSectionTitle', '模型设置')}
-          </div>
-          <ObsidianSetting
-            name={t('sidebar.composer.continuationModel', '续写模型')}
-            desc={t(
-              'sidebar.composer.continuationModelDesc',
-              '开启超级续写时，Composer 将使用该模型处理续写',
-            )}
-          >
+          <header className="smtcmp-composer-heading">
+            <div className="smtcmp-composer-heading-title">
+              {t('sidebar.composer.sections.model.title', '模型选择')}
+            </div>
+            <div className="smtcmp-composer-heading-desc">
+              {t(
+                'sidebar.composer.sections.model.desc',
+                '确定续写时优先使用的模型',
+              )}
+            </div>
+          </header>
+          <div className="smtcmp-composer-model-select">
             <ObsidianDropdown
               value={continuationModelId}
               options={Object.fromEntries(
@@ -123,13 +105,21 @@ const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
               }
               disabled={!enableSuperContinuation}
             />
-          </ObsidianSetting>
+          </div>
         </section>
 
         <section className="smtcmp-composer-section">
-          <div className="smtcmp-composer-section-title">
-            {t('sidebar.composer.contextSectionTitle', '上下文来源')}
-          </div>
+          <header className="smtcmp-composer-heading">
+            <div className="smtcmp-composer-heading-title">
+              {t('sidebar.composer.sections.parameters.title', '参数设置')}
+            </div>
+            <div className="smtcmp-composer-heading-desc">
+              {t(
+                'sidebar.composer.sections.parameters.desc',
+                '按需调整续写行为相关的系统参数',
+              )}
+            </div>
+          </header>
           <ObsidianSetting
             name={t('sidebar.composer.ragToggle', '启用 RAG 检索')}
             desc={t(
@@ -142,7 +132,20 @@ const Composer: React.FC<ComposerProps> = ({ onNavigateChat }) => {
               onChange={(value) => updateRagEnabled(value)}
             />
           </ObsidianSetting>
+        </section>
 
+        <section className="smtcmp-composer-section">
+          <header className="smtcmp-composer-heading">
+            <div className="smtcmp-composer-heading-title">
+              {t('sidebar.composer.sections.context.title', '上下文管理')}
+            </div>
+            <div className="smtcmp-composer-heading-desc">
+              {t(
+                'sidebar.composer.sections.context.desc',
+                '配置续写时优先引用的内容来源',
+              )}
+            </div>
+          </header>
           <ObsidianSetting
             name={t('sidebar.composer.manualContextToggle', '手动上下文')}
             desc={t(
