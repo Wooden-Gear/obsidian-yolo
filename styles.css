@@ -4,6 +4,7 @@
   align-items: center;
   margin-bottom: var(--size-4-2);
   gap: var(--size-4-2);
+  padding: var(--size-2-1) 0;
 }
 
 .smtcmp-ghost-text {
@@ -1519,6 +1520,107 @@ button.smtcmp-chat-input-model-select {
 }
 .smtcmp-segmented > button:hover {
   background: var(--background-modifier-hover);
+}
+
+/* 视图切换标签页样式 - 重新设计配色 */
+.smtcmp-view-toggle {
+  display: inline-flex;
+  position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px;
+  overflow: hidden;
+  isolation: isolate;
+  transition: all 0.2s ease;
+  min-width: 180px;
+  box-shadow: 
+    0 1px 3px color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+}
+
+.smtcmp-view-toggle-button {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none;
+  padding: 8px 4px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.4;
+  /* 重置所有可能的按钮样式 */
+  box-shadow: none !important;
+  outline: none;
+}
+
+.smtcmp-view-toggle-button:hover:not(.smtcmp-view-toggle-button--active) {
+  color: var(--text-normal);
+  background-color: transparent !important;
+  background: none !important;
+}
+
+.smtcmp-view-toggle-button--active {
+  color: var(--interactive-accent);
+  font-weight: var(--font-semibold);
+  background-color: transparent !important;
+}
+
+.smtcmp-view-toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.smtcmp-view-toggle-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc(50% - 4px);
+  left: 4px;
+  background: transparent;
+  border: 2px solid var(--interactive-accent);
+  border-radius: 4px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  transform: translateX(0);
+}
+
+.smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  transform: translateX(calc(100% + 4px));
+}
+
+/* 在header中的样式调整 */
+.smtcmp-chat-header .smtcmp-view-toggle {
+  margin-right: auto;
+}
+
+/* 增强视觉反馈 */
+.smtcmp-view-toggle:hover {
+  box-shadow: 
+    0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+/* 响应式调整 */
+@media (max-width: 400px) {
+  .smtcmp-view-toggle-button {
+    padding: 6px 2px;
+    font-size: var(--font-ui-smallest);
+  }
+  .smtcmp-view-toggle {
+    min-width: 160px;
+  }
 }
 .smtcmp-segmented > button.active {
   background: var(--interactive-accent);

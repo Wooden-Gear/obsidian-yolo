@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
-import { Book, CircleStop, History, Plus, ChevronDown } from 'lucide-react'
-import { App, Menu, Notice } from 'obsidian'
+import { Book, CircleStop, History, Plus } from 'lucide-react'
+import { App, Notice } from 'obsidian'
 import {
   forwardRef,
   useCallback,
@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent, SyntheticEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { ApplyViewState } from '../../ApplyView'
@@ -62,6 +62,7 @@ import QueryProgress, { QueryProgressState } from './QueryProgress'
 import { useAutoScroll } from './useAutoScroll'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
+import ViewToggle from './ViewToggle'
 import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 // Add an empty line here
@@ -179,50 +180,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     activeView === 'composer'
       ? t('sidebar.tabs.composer', 'Composer')
       : t('sidebar.tabs.chat', 'Chat')
-
-  const openViewMenu = useCallback(
-    (event: SyntheticEvent<HTMLDivElement>) => {
-      if (!onChangeView || !superContinuationEnabled) return
-      event.preventDefault()
-      event.stopPropagation()
-
-      const chatLabel = t('sidebar.tabs.chat', 'Chat')
-      const composerLabel = t('sidebar.tabs.composer', 'Composer')
-
-      const menu = new Menu()
-      menu.addItem((item) => {
-        item.setTitle(
-          `${chatLabel}${activeView === 'chat' ? ' (current)' : ''}`,
-        )
-        item.onClick(() => onChangeView('chat'))
-      })
-      menu.addItem((item) => {
-        item.setTitle(
-          `${composerLabel}${activeView === 'composer' ? ' (current)' : ''}`,
-        )
-        item.onClick(() => onChangeView('composer'))
-      })
-      const target = event.currentTarget
-      const rect = target.getBoundingClientRect()
-
-      const nativeEvent = event.nativeEvent
-      if (nativeEvent instanceof MouseEvent) {
-        menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
-      } else {
-        menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
-      }
-    },
-    [onChangeView, activeView, t, superContinuationEnabled],
-  )
-
-  const handleTitleKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space') {
-        openViewMenu(event)
-      }
-    },
-    [openViewMenu],
-  )
 
   // Per-conversation override settings (temperature, top_p, context, stream)
   const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
@@ -766,18 +723,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const header = (
     <div className="smtcmp-chat-header">
       {onChangeView ? (
-        <div
-          role="button"
-          tabIndex={0}
-          className="smtcmp-chat-header-title-toggle"
-          aria-haspopup="menu"
-          aria-label={viewLabel}
-          onClick={openViewMenu}
-          onKeyDown={handleTitleKeyDown}
-        >
-          <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
-          <ChevronDown size={14} className="smtcmp-chat-header-title-icon" />
-        </div>
+        <ViewToggle
+          activeView={activeView}
+          onChangeView={onChangeView}
+          disabled={!superContinuationEnabled}
+        />
       ) : (
         <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
       )}
