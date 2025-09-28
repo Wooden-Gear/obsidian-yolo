@@ -266,7 +266,7 @@
 .smtcmp-composer-section {
   display: flex;
   flex-direction: column;
-  gap: var(--size-4-4);
+  gap: var(--size-4-2);
   padding: var(--size-4-4);
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -280,9 +280,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--size-2-2);
-  margin-bottom: var(--size-4-3);
+  margin-bottom: var(--size-2-4);
   position: relative;
-  padding-bottom: var(--size-4-2);
+  padding-bottom: 0;
 }
 
 .smtcmp-composer-heading-title {
@@ -372,14 +372,16 @@
 }
 
 .smtcmp-composer-option--model .smtcmp-composer-option-control {
-  flex: 1 1 220px;
-  min-width: 140px;
+  flex: 1 1 auto;
+  min-width: 0;
   margin-left: 0;
   justify-content: flex-start;
 }
 
+.smtcmp-composer-option--model .smtcmp-composer-option-control > div,
 .smtcmp-composer-option--model .smtcmp-composer-option-control select {
   width: 100%;
+  max-width: 100%;
 }
 
 .smtcmp-composer-option-control .smtcmp-display-contents,
