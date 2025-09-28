@@ -301,6 +301,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                 'sidebar.composer.referenceRulesPlaceholder',
                 '点击选择需要完整注入上下文的文件夹。',
               )}
+              allowFiles
             />
           </div>
 
@@ -332,6 +333,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                   'sidebar.composer.knowledgeBasePlaceholder',
                   '点击选择用作检索范围的文件夹（留空表示全库）。',
                 )}
+                allowFiles
               />
             </div>
           ) : (

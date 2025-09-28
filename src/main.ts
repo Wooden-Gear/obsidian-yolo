@@ -1335,24 +1335,34 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       if (referenceRuleFolders.length > 0) {
         try {
           const referenceFilesMap = new Map<string, TFile>()
-          for (const folderPath of referenceRuleFolders) {
-            if (!folderPath) continue
-            const abstract = this.app.vault.getAbstractFileByPath(folderPath)
-            if (abstract instanceof TFolder) {
-              for (const file of getNestedFiles(abstract, this.app.vault)) {
-                referenceFilesMap.set(file.path, file)
-              }
-            } else if (abstract instanceof TFile) {
-              referenceFilesMap.set(abstract.path, abstract)
+      const isSupportedReferenceFile = (file: TFile) => {
+        const ext = file.extension?.toLowerCase?.() ?? ''
+        return ext === 'md' || ext === 'markdown' || ext === 'txt'
+      }
+
+      for (const rawPath of referenceRuleFolders) {
+        const folderPath = rawPath.trim()
+        if (!folderPath) continue
+        const abstract = this.app.vault.getAbstractFileByPath(folderPath)
+        if (abstract instanceof TFolder) {
+          for (const file of getNestedFiles(abstract, this.app.vault)) {
+            if (isSupportedReferenceFile(file)) {
+              referenceFilesMap.set(file.path, file)
             }
           }
+        } else if (abstract instanceof TFile) {
+          if (isSupportedReferenceFile(abstract)) {
+            referenceFilesMap.set(abstract.path, abstract)
+          }
+        }
+      }
 
-          const referenceFiles = Array.from(referenceFilesMap.values())
-          if (referenceFiles.length > 0) {
-            const referenceContents = await readMultipleTFiles(
-              referenceFiles,
-              this.app.vault,
-            )
+      const referenceFiles = Array.from(referenceFilesMap.values())
+      if (referenceFiles.length > 0) {
+        const referenceContents = await readMultipleTFiles(
+          referenceFiles,
+          this.app.vault,
+        )
             const referenceLabel = this.t(
               'sidebar.composer.referenceRulesTitle',
               'Reference rules',
@@ -1421,8 +1431,20 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const hasContext = (baseContext ?? '').trim().length > 0
 
       let ragContextSection = ''
-      const knowledgeBaseFolders =
+      const knowledgeBaseRaw =
         this.settings.continuationOptions?.knowledgeBaseFolders ?? []
+      const knowledgeBaseFolders: string[] = []
+      const knowledgeBaseFiles: string[] = []
+      for (const raw of knowledgeBaseRaw) {
+        const trimmed = raw.trim()
+        if (!trimmed) continue
+        const abstract = this.app.vault.getAbstractFileByPath(trimmed)
+        if (abstract instanceof TFolder) {
+          knowledgeBaseFolders.push(abstract.path)
+        } else if (abstract instanceof TFile) {
+          knowledgeBaseFiles.push(abstract.path)
+        }
+      }
       const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
       if (useVaultSearch && ragGloballyEnabled) {
         try {
@@ -1432,8 +1454,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             const ragResults = await ragEngine.processQuery({
               query: querySource.slice(-4000),
               scope:
-                knowledgeBaseFolders.length > 0
-                  ? { folders: knowledgeBaseFolders }
+                knowledgeBaseFolders.length > 0 || knowledgeBaseFiles.length > 0
+                  ? {
+                      folders: knowledgeBaseFolders,
+                      files: knowledgeBaseFiles,
+                    }
                   : undefined,
             })
             const snippetLimit = Math.max(

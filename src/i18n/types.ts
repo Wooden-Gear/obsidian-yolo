@@ -235,6 +235,7 @@ export interface TranslationKeys {
       selectedFolders?: string
       excludedFolders?: string
       selectFoldersPlaceholder?: string
+      selectFilesOrFoldersPlaceholder?: string
       selectExcludeFoldersPlaceholder?: string
       conflictNoteDefaultInclude?: string
       conflictExact?: string

@@ -1,4 +1,4 @@
-import { App, Vault } from 'obsidian'
+import { App, TFile, TFolder, Vault } from 'obsidian'
 import React, { useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -8,27 +8,44 @@ import { listAllFolderPaths } from '../../../utils/rag-utils'
 type FolderPickerModalProps = {
   vault: Vault
   existing: string[]
+  allowFiles?: boolean
   onPick: (folderPath: string) => void
   onClose: () => void
 }
 
 export class FolderPickerModal extends ReactModal<FolderPickerModalProps> {
-  constructor(app: App, vault: Vault, existing: string[], onPick: (folderPath: string) => void) {
+  constructor(
+    app: App,
+    vault: Vault,
+    existing: string[],
+    allowFiles: boolean,
+    onPick: (folderPath: string) => void,
+  ) {
     super({
       app,
       Component: FolderPickerModalComponent,
-      props: { vault, existing, onPick },
-      options: { title: '选择文件夹' },
+      props: { vault, existing, onPick, allowFiles },
+      options: { title: allowFiles ? '选择文件或文件夹' : '选择文件夹' },
     })
   }
 }
 
-function FolderPickerModalComponent({ vault, existing, onPick, onClose }: FolderPickerModalProps) {
+function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFiles }: FolderPickerModalProps) {
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['']))
   const allFolders = useMemo(() => listAllFolderPaths(vault), [vault])
+  const allFiles = useMemo(() => {
+    if (!allowFiles) return [] as TFile[]
+    try {
+      const all = vault.getAllLoadedFiles?.()
+      if (all && Array.isArray(all)) {
+        return all.filter((f): f is TFile => f instanceof TFile)
+      }
+    } catch {}
+    return vault.getMarkdownFiles?.() ?? []
+  }, [vault, allowFiles])
 
-  type Node = { path: string; name: string; children: Node[] }
+  type Node = { path: string; name: string; children: Node[]; type: 'folder' | 'file' }
 
   const roots: Node[] = useMemo(() => {
     // build nodes
@@ -37,7 +54,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
       const norm = p
       if (nodes.has(norm)) return nodes.get(norm)!
       const name = norm === '' ? '/' : norm.split('/').pop()!
-      const n: Node = { path: norm, name, children: [] }
+      const n: Node = { path: norm, name, children: [], type: 'folder' }
       nodes.set(norm, n)
       return n
     }
@@ -57,6 +74,21 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
       parent.children.push(node)
     }
 
+    if (allowFiles) {
+      for (const file of allFiles) {
+        const folderPath = file.parent?.path
+          ? file.parent.path.replace(/^\/+/, '').replace(/\/+$/, '')
+          : ''
+        const parentNode = ensure(folderPath)
+        parentNode.children.push({
+          path: file.path,
+          name: file.name,
+          children: [],
+          type: 'file',
+        })
+      }
+    }
+
     const sortRec = (arr: Node[]) => {
       arr.sort((a, b) => a.name.localeCompare(b.name))
       for (const n of arr) sortRec(n.children)
@@ -64,7 +96,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
     const r = ensure('').children
     sortRec(r)
     return r
-  }, [allFolders])
+  }, [allFolders, allFiles, allowFiles])
 
   // filter tree by query (show matches and their ancestors)
   const filteredRoots: Node[] = useMemo(() => {
@@ -112,16 +144,16 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
   }
 
   // hover 态通过 CSS :hover 处理
-  const [hovered, setHovered] = useState<string | null>(null)
-
   const renderNode = (node: Node, depth: number) => {
-    const hasChildren = node.children.length > 0
-    const isOpen = expanded.has(node.path)
+    const hasChildren = node.type === 'folder' && node.children.length > 0
+    const isOpen = node.type === 'folder' && expanded.has(node.path)
     const isSelected = existing.includes(node.path)
-    const isCoveredByAncestor = existing.some(
-      (p) => p !== node.path && (p === '' || node.path === p || node.path.startsWith(p + '/')),
-    )
-    const isDisabled = isSelected || isCoveredByAncestor
+    const isCoveredByAncestor = existing.some((p) => {
+      if (p === '') return true
+      if (p === node.path) return true
+      return node.path.startsWith(p + '/')
+    })
+    const isDisabled = isSelected || (node.type === 'file' ? isCoveredByAncestor : isCoveredByAncestor)
     return (
       <li key={node.path}>
         <div
@@ -129,8 +161,6 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
             `smtcmp-provider-header smtcmp-folder-row smtcmp-indent-folder smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}` +
             (isDisabled ? ' is-disabled' : '')
           }
-          onMouseEnter={() => setHovered(node.path)}
-          onMouseLeave={() => setHovered((h) => (h === node.path ? null : h))}
           onClick={() => {
             if (isDisabled) return
             onPick(node.path)
@@ -159,7 +189,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose }: Folder
           <div className="smtcmp-provider-info">
             <span
               className="smtcmp-folder-name"
-              title={isSelected ? '已选择' : (isCoveredByAncestor ? '已被父级覆盖' : (node.path === '' ? '/' : node.path))}
+              title={isSelected ? '已选择' : isCoveredByAncestor ? '已被父级覆盖' : node.path || '/'}
             >
               {node.name}
             </span>
