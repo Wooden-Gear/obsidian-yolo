@@ -4,7 +4,7 @@ import { useApp } from '../../contexts/app-context'
 import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'
-import { getModelDisplayNameWithProvider } from '../../utils/model-id-utils'
+import { getModelDisplayName } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
@@ -106,13 +106,14 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               <ObsidianDropdown
                 value={continuationModelId}
                 options={Object.fromEntries(
-                  orderedEnabledModels.map((m) => [
-                    m.id,
-                    getModelDisplayNameWithProvider(
-                      m.id,
-                      settings.providers.find((p) => p.id === m.providerId)?.id,
-                    ),
-                  ]),
+                  orderedEnabledModels.map((m) => {
+                    const provider = settings.providers.find(
+                      (p) => p.id === m.providerId,
+                    )
+                    const baseName = m.name?.trim() || m.model || getModelDisplayName(m.id)
+                    const providerSuffix = provider?.id ? ` (${provider.id})` : ''
+                    return [m.id, `${baseName}${providerSuffix}`]
+                  }),
                 )}
                 onChange={(value) =>
                   updateContinuationOptions({ continuationModelId: value })
