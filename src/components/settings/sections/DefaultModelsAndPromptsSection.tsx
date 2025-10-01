@@ -38,8 +38,11 @@ export function DefaultModelsAndPromptsSection() {
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
               .map((chatModel) => {
-                const labelBase = chatModel.model || chatModel.name || chatModel.id
-                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id) ? ' (Recommended)' : ''}`
+                const labelBase = chatModel.name || chatModel.model || chatModel.id
+                const badge = RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id)
+                  ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
+                  : ''
+                const label = `${labelBase}${badge}`.trim()
                 return [chatModel.id, label]
               }),
           )}
@@ -62,8 +65,11 @@ export function DefaultModelsAndPromptsSection() {
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
               .map((chatModel) => {
-                const labelBase = chatModel.model || chatModel.name || chatModel.id
-                const label = `${labelBase}${RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id) ? ' (Recommended)' : ''}`
+                const labelBase = chatModel.name || chatModel.model || chatModel.id
+                const badge = RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id)
+                  ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
+                  : ''
+                const label = `${labelBase}${badge}`.trim()
                 return [chatModel.id, label]
               }),
           )}
