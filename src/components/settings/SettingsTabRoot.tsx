@@ -42,10 +42,10 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
           cta
         />
       </ObsidianSetting>
+      <ProvidersAndModelsSection app={app} plugin={plugin} />
       <DefaultModelsAndPromptsSection />
       <ChatPreferencesSection />
       <AssistantsSection app={app} />
-      <ProvidersAndModelsSection app={app} plugin={plugin} />
       <RAGSection app={app} plugin={plugin} />
       <McpSection app={app} plugin={plugin} />
       <ContinuationSection app={app} />
