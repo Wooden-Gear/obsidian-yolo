@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { MessageCircle, PenLine } from 'lucide-react'
 
 import { useLanguage } from '../../contexts/language-context'
 
@@ -38,7 +39,11 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
         onMouseLeave={() => setHoveredView(null)}
         disabled={disabled}
         aria-pressed={activeView === 'chat'}
+        aria-label={chatLabel}
       >
+        <span className="smtcmp-view-toggle-button-icon" aria-hidden="true">
+          <MessageCircle size={16} strokeWidth={2} />
+        </span>
         <span className="smtcmp-view-toggle-button-label">{chatLabel}</span>
       </button>
       <button
@@ -50,7 +55,11 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
         onMouseLeave={() => setHoveredView(null)}
         disabled={disabled}
         aria-pressed={activeView === 'composer'}
+        aria-label={composerLabel}
       >
+        <span className="smtcmp-view-toggle-button-icon" aria-hidden="true">
+          <PenLine size={16} strokeWidth={2} />
+        </span>
         <span className="smtcmp-view-toggle-button-label">{composerLabel}</span>
       </button>
       <div
