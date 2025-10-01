@@ -1,8 +1,9 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 
 import DotLoader from '../common/DotLoader'
 
+import { parseTagContents } from '../../utils/chat/parse-tag-content'
 import { ObsidianMarkdown } from './ObsidianMarkdown'
 
 const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
@@ -13,41 +14,66 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
   content: string
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [showLoader, setShowLoader] = useState(false)
-  const previousReasoning = useRef(reasoning)
-  const previousContent = useRef(content)
   const hasUserInteracted = useRef(false)
 
-  useEffect(() => {
-    const reasoningChanged = previousReasoning.current !== reasoning && previousReasoning.current !== ''
-    const contentChanged = previousContent.current !== content && previousContent.current !== ''
-    
-    // Start showing loader when reasoning starts or continues
-    if (reasoningChanged) {
-      setShowLoader(true)
-      if (!hasUserInteracted.current) {
-        setIsExpanded(true)
+  const hasAnswerContent = useMemo(() => {
+    const blocks = parseTagContents(content)
+    return blocks.some((block) => {
+      if (block.type === 'think') return false
+      if (block.type === 'smtcmp_block') {
+        return block.content.trim().length > 0
       }
+      return block.content.trim().length > 0
+    })
+  }, [content])
+
+  const hasReasoningText = useMemo(() => reasoning.trim().length > 0, [reasoning])
+  const previousHasReasoningText = useRef(hasReasoningText)
+  const previousReasoning = useRef(reasoning)
+  const [showLoader, setShowLoader] = useState(() => !hasAnswerContent)
+
+  useEffect(() => {
+    if (!hasUserInteracted.current && !previousHasReasoningText.current && hasReasoningText) {
+      setIsExpanded(true)
     }
-    
-    // Stop showing loader only when content starts appearing (indicating reasoning is done)
-    if (contentChanged && reasoning && !showLoader) {
-      // Content appeared after reasoning, reasoning is likely complete
-    } else if (contentChanged && showLoader) {
-      // Content is being generated, reasoning phase is over
-      const timer = setTimeout(() => {
-        setShowLoader(false)
-        // Auto-collapse after reasoning finishes if user hasn't interacted
-        if (!hasUserInteracted.current) {
-          setIsExpanded(false)
-        }
-      }, 500) // Shorter delay since we know content is flowing
-      return () => clearTimeout(timer)
+    previousHasReasoningText.current = hasReasoningText
+  }, [hasReasoningText])
+
+  useEffect(() => {
+    if (previousReasoning.current === reasoning) {
+      return
     }
-    
+
+    const previousLength = previousReasoning.current.trim().length
+    const currentLength = reasoning.trim().length
     previousReasoning.current = reasoning
-    previousContent.current = content
-  }, [reasoning, content, showLoader])
+
+    if (currentLength > previousLength && !showLoader) {
+      setShowLoader(true)
+    }
+  }, [reasoning, showLoader])
+
+  useEffect(() => {
+    if (!hasAnswerContent) {
+      if (!showLoader) {
+        setShowLoader(true)
+      }
+      return
+    }
+
+    if (!showLoader) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setShowLoader(false)
+      if (!hasUserInteracted.current) {
+        setIsExpanded(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [hasAnswerContent, showLoader])
 
   const handleToggle = () => {
     hasUserInteracted.current = true
