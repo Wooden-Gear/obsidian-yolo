@@ -692,11 +692,23 @@ export default class SmartComposerPlugin extends Plugin {
     let controller: AbortController | null = null
     try {
       const sidebarOverrides = this.getActiveConversationOverrides()
-      const { temperature, topP } = this.resolveSamplingParams(sidebarOverrides)
+      const {
+        temperature,
+        topP,
+        stream: streamPreference,
+      } = this.resolveContinuationParams(sidebarOverrides)
+
+      const superContinuationEnabled = Boolean(
+        this.settings.continuationOptions?.enableSuperContinuation,
+      )
+      const rewriteModelId = superContinuationEnabled
+        ? this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId
+        : this.getActiveConversationModelId() ?? this.settings.chatModelId
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
-        modelId: this.settings.applyModelId,
+        modelId: rewriteModelId,
       })
 
       const systemPrompt =
@@ -723,30 +735,16 @@ export default class SmartComposerPlugin extends Plugin {
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const rewriteRequest: any = {
+      const rewriteRequestBase: any = {
         model: model.model,
         messages: requestMessages as unknown as any,
-        stream: false,
-        prediction: {
-          type: 'content',
-          content: [
-            { type: 'text', text: selected },
-            { type: 'text', text: instruction },
-          ],
-        },
       }
       if (typeof temperature === 'number') {
-        rewriteRequest.temperature = temperature
+        rewriteRequestBase.temperature = temperature
       }
       if (typeof topP === 'number') {
-        rewriteRequest.top_p = topP
+        rewriteRequestBase.top_p = topP
       }
-
-      const response = await providerClient.generateResponse(
-        model,
-        rewriteRequest,
-        { signal: controller.signal },
-      )
 
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
@@ -755,7 +753,29 @@ export default class SmartComposerPlugin extends Plugin {
         return lines.join('\n')
       }
 
-      const rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+      let rewritten = ''
+      if (streamPreference) {
+        const streamIterator = await providerClient.streamResponse(
+          model,
+          { ...rewriteRequestBase, stream: true },
+          { signal: controller.signal },
+        )
+        let accumulated = ''
+        for await (const chunk of streamIterator) {
+          const delta = chunk?.choices?.[0]?.delta
+          const piece = delta?.content ?? ''
+          if (!piece) continue
+          accumulated += piece
+        }
+        rewritten = stripFences(accumulated).trim()
+      } else {
+        const response = await providerClient.generateResponse(
+          model,
+          { ...rewriteRequestBase, stream: false },
+          { signal: controller.signal },
+        )
+        rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+      }
       if (!rewritten) {
         notice.setMessage('未生成改写内容。')
         this.registerTimeout(() => notice.hide(), 1200)
@@ -939,19 +959,6 @@ export default class SmartComposerPlugin extends Plugin {
             return false
           }
         })()
-
-        const title = hasSelection
-          ? this.t('commands.continueWritingSelected')
-          : this.t('commands.continueWriting')
-
-        menu.addItem((item) =>
-          item
-            .setTitle(title)
-            .setIcon('wand-sparkles')
-            .onClick(async () => {
-              await this.handleContinueWriting(editor)
-            }),
-        )
 
         // Custom continuation via floating panel
         menu.addItem((item) =>
