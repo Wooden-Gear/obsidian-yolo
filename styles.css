@@ -1522,7 +1522,7 @@ button.smtcmp-chat-input-model-select {
   background: var(--background-modifier-hover);
 }
 
-/* 视图切换标签页样式 - 重新设计配色 */
+/* 视图切换标签页样式 - 手风琴展开效果 */
 .smtcmp-view-toggle {
   display: inline-flex;
   position: relative;
@@ -1533,10 +1533,18 @@ button.smtcmp-chat-input-model-select {
   overflow: hidden;
   isolation: isolate;
   transition: all 0.2s ease;
-  min-width: 180px;
+  width: 200px; /* 固定总宽度 */
   box-shadow: 
     0 1px 3px color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+
+  /* 布局变量 */
+  --smtcmp-total-width: 200px;
+  --smtcmp-padding-inline: 8px; /* 左右 4px */
+  --smtcmp-collapsed-width: 50px;
+  --smtcmp-expanded-width: calc(
+    var(--smtcmp-total-width) - var(--smtcmp-padding-inline) - var(--smtcmp-collapsed-width)
+  );
 }
 
 .smtcmp-view-toggle-button {
@@ -1551,15 +1559,34 @@ button.smtcmp-chat-input-model-select {
   font-weight: var(--font-medium);
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 4px;
-  flex: 1;
   text-align: center;
   white-space: nowrap;
   line-height: 1.4;
   /* 重置所有可能的按钮样式 */
   box-shadow: none !important;
   outline: none;
+  /* 默认宽度：收缩状态 */
+  width: var(--smtcmp-collapsed-width);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* 展开状态：悬停或激活的按钮 */
+.smtcmp-view-toggle-button--expanded {
+  width: var(--smtcmp-expanded-width);
+}
+
+.smtcmp-view-toggle-button-label {
+  display: inline-block;
+  transition: opacity 0.2s ease;
+  opacity: 1;
+}
+
+/* 收缩状态下文字淡出 */
+.smtcmp-view-toggle-button:not(.smtcmp-view-toggle-button--expanded) .smtcmp-view-toggle-button-label {
+  opacity: 0.4;
 }
 
 .smtcmp-view-toggle-button:hover:not(.smtcmp-view-toggle-button--active) {
@@ -1583,21 +1610,42 @@ button.smtcmp-chat-input-model-select {
   position: absolute;
   top: 4px;
   bottom: 4px;
-  width: calc(50% - 4px);
   left: 4px;
   background: transparent;
   border: 2px solid var(--h1-color, var(--interactive-accent));
   border-radius: 4px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
 
+/* 默认状态：根据激活的视图设置宽度和位置 */
+/* indicator只跟随activeView，不响应hover */
 .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  width: var(--smtcmp-collapsed-width);
   transform: translateX(0);
 }
 
 .smtcmp-view-toggle-indicator[data-active-view="composer"] {
-  transform: translateX(100%);
+  width: var(--smtcmp-collapsed-width);
+  transform: translateX(var(--smtcmp-collapsed-width));
+}
+
+/* 当chat激活且被展开时（hover在激活的chat上） */
+.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  width: var(--smtcmp-expanded-width);
+  transform: translateX(0);
+}
+
+/* 当composer激活且被展开时（hover在激活的composer上） */
+.smtcmp-view-toggle[data-expanded-view="composer"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  width: var(--smtcmp-expanded-width);
+  transform: translateX(var(--smtcmp-collapsed-width));
+}
+
+/* 当composer激活但chat被展开时（hover在chat上） */
+.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="false"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  width: var(--smtcmp-collapsed-width);
+  transform: translateX(var(--smtcmp-expanded-width));
 }
 
 /* 在header中的样式调整 */
@@ -1614,12 +1662,24 @@ button.smtcmp-chat-input-model-select {
 
 /* 响应式调整 */
 @media (max-width: 400px) {
+  .smtcmp-view-toggle {
+    width: 160px;
+    --smtcmp-total-width: 160px;
+    --smtcmp-collapsed-width: 40px;
+  }
   .smtcmp-view-toggle-button {
     padding: 6px 2px;
     font-size: var(--font-ui-smallest);
   }
-  .smtcmp-view-toggle {
-    min-width: 160px;
+  .smtcmp-view-toggle-button--expanded {
+    width: var(--smtcmp-expanded-width);
+  }
+  .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+    width: var(--smtcmp-collapsed-width);
+  }
+  .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+    width: var(--smtcmp-collapsed-width);
+    transform: translateX(var(--smtcmp-collapsed-width));
   }
 }
 .smtcmp-segmented > button.active {
