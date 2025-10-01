@@ -227,7 +227,7 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionSystemPrompt: z.string().optional(),
     })
     .catch({
-      enableSuperContinuation: false,
+      enableSuperContinuation: true,
       continuationModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
