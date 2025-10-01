@@ -53,8 +53,21 @@ export const zh: TranslationKeys = {
         modelWithPrompt: {
           title: '模型选择与提示词',
         },
+        model: {
+          title: '模型选择',
+          desc: '选择用于续写任务的模型。',
+        },
+        parameters: {
+          title: '参数设置',
+          desc: '针对续写行为的核心开关。',
+        },
+        context: {
+          title: '上下文管理',
+          desc: '定义续写时优先参考的内容来源。',
+        },
       },
       continuationPrompt: '续写系统提示词',
+      maxContinuationChars: '续写传入字符数',
       referenceRulesTitle: '参考规则',
       referenceRulesPlaceholder: '点击选择需要完整注入上下文的文件夹。',
       knowledgeBaseTitle: '知识库',

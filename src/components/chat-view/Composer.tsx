@@ -96,7 +96,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.modelWithPrompt.title', '模型选择与提示词')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t('sidebar.composer.sections.model.desc', '选择续写时使用的模型')}
+              {t('sidebar.composer.sections.model.desc', '选择用于续写任务的模型。')}
             </div>
           </header>
           <div className="smtcmp-composer-option smtcmp-composer-option--model">
@@ -147,10 +147,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.parameters.title', '参数设置')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t(
-                'sidebar.composer.sections.parameters.desc',
-                '针对续写行为的核心开关',
-              )}
+              {t('sidebar.composer.sections.parameters.desc', '针对续写行为的核心开关。')}
             </div>
           </header>
           <div className="smtcmp-composer-option">
@@ -280,10 +277,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.context.title', '上下文管理')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t(
-                'sidebar.composer.sections.context.desc',
-                '定义续写时优先参考的内容来源',
-              )}
+              {t('sidebar.composer.sections.context.desc', '定义续写时优先参考的内容来源。')}
             </div>
           </header>
           <div className="smtcmp-composer-context-picker">

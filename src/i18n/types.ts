@@ -56,8 +56,21 @@ export interface TranslationKeys {
         modelWithPrompt?: {
           title: string
         }
+        model?: {
+          title?: string
+          desc?: string
+        }
+        parameters?: {
+          title: string
+          desc: string
+        }
+        context?: {
+          title: string
+          desc: string
+        }
       }
       continuationPrompt?: string
+      maxContinuationChars?: string
       referenceRulesTitle?: string
       referenceRulesPlaceholder?: string
       knowledgeBaseTitle?: string

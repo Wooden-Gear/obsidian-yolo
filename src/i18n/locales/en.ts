@@ -55,8 +55,21 @@ export const en: TranslationKeys = {
         modelWithPrompt: {
           title: 'Model & Prompt',
         },
+        model: {
+          title: 'Model Selection',
+          desc: 'Choose which model handles continuation tasks.',
+        },
+        parameters: {
+          title: 'Parameters',
+          desc: 'Core toggles that control continuation behavior.',
+        },
+        context: {
+          title: 'Context Management',
+          desc: 'Define the content sources prioritized for continuation.',
+        },
       },
       continuationPrompt: 'Continuation system prompt',
+      maxContinuationChars: 'Max continuation characters',
       referenceRulesTitle: 'Reference rules',
       referenceRulesPlaceholder: 'Select folders whose content should be fully injected.',
       knowledgeBaseTitle: 'Knowledge base',
