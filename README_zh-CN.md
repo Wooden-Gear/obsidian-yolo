@@ -12,8 +12,6 @@
 > [!NOTE]
 > **可能是目前最灵活、易用、智能的 Obsidian AI 助手？**  
 
-![SC1_Title.gif](https://github.com/user-attachments/assets/a50a1f80-39ff-4eba-8090-e3d75e7be98c)
-
 **YOLO（You Orchestrate, LLM Operates）** 是一款为 Obsidian 打造的面向 Agent 时代的智能助手。
 
 你可以用 YOLO：
