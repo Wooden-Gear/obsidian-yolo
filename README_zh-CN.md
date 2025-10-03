@@ -10,24 +10,49 @@
 
 
 > [!NOTE]
-> **更友善、更易用、更智能的 Obsidian AI 助手**  
+> **可能是目前最灵活、易用、智能的 Obsidian AI 助手？**  
 
 ![SC1_Title.gif](https://github.com/user-attachments/assets/a50a1f80-39ff-4eba-8090-e3d75e7be98c)
 
-**YOLO 是 Smart Composer 的一个分支。** 我在 Smart Composer 的基础上，添加了以下新功能，致力于为您提供更智能、更便捷的 AI 写作体验。
+**YOLO（You Orchestrate, LLM Operates）** 是一款为 Obsidian 打造的面向 Agent 时代的智能助手。
 
-## 新增功能
+你可以用 YOLO：
 
-*   **i18n国际化翻译**：为项目添加了多语种选项，现在可以很容易的切换语言。
-*   **自定义助手 (Agent)**：您可以自由设定不同助手的 system prompt 并进行保存，以适应不同的写作场景。
-*   **优化的供应商与模型设置**：我们重构了供应商与模型的设置界面，使其更加集中和易于管理，解决了原版中过于复杂和分散的问题。
-*   **更强大的 RAG 功能**：现在您可以更方便地选择纳入或排除特定的文件夹来进行 RAG（检索增强生成），并且嵌入数据库支持按时自动更新。
-*   **全新的 AI 续写与改写**：通过关键词触发，配合悬浮窗中的自定义 prompt，为您带来流畅、高效的 AI 续写与改写体验。
+- 💬 在侧边栏和 LLM 进行对话讨论
+- 📚 将你的整个 Vault 作为 AI 的知识库
+- ✍️ 使用「超级续写」模式来自由接力你的创意
+- 🧩 开启 Learning Mode、子 Agent 等实验性特性，探索个性化工作流
+- 🎨 更多、更好的用户体验优化与 UI 改善
 
-## 未来计划
+未来，YOLO 将在 Agent 编排、长程任务管理、多模型协同等方向持续演进，目标是成为你在大模型时代的**严肃学习助手与知识合作伙伴**。
 
-*   **学习模式与抽认卡制作**：集成学习功能，帮助用户更高效地记忆和复习。
-*   **全自动 YOLO 模式**：一个支持后台自动运行的智能模式，让 AI 在您需要时随时待命。
+## 特性预览
+以下是 YOLO 的部分核心能力展示，更多细节欢迎在插件中自行探索：
+
+## **💬 侧边栏对话**
+
+https://github.com/user-attachments/assets/90bbd4f5-b73a-41b4-bf7d-85a5f44659ec
+
+与大模型无缝对话，支持上下文注入、预设 prompt、自定义 provider，以及对 Markdown 内容的智能解析与生成。
+
+## **🧠 知识库问答**
+
+https://github.com/user-attachments/assets/cffbada7-4314-4709-bef4-9867b43d6484
+
+## **✍️ 超级续写**
+
+
+https://github.com/user-attachments/assets/141f3c6a-19f5-46be-9674-2ddd230be9c6
+
+
+通过快捷键或命令面板激活续写功能，结合模型上下文理解能力，实现自然流畅的段落生成。
+
+## **🎛️ 模型多路支持 + i18n 国际化**
+
+支持多模型配置（OpenAI、Claude、Gemini、DeepSeek 等），并原生支持多语言界面切换。
+
+
+
 
 
 ## 开始使用
