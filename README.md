@@ -13,37 +13,46 @@
 </p>
 
 > [!NOTE]
-> **A More Friendly, User-Friendly, and Intelligent Obsidian AI Assistant**  
+> **Possibly the most flexible, easy to use, and intelligent Obsidian AI assistant?**  
 
-![SC1_Title.gif](https://github.com/user-attachments/assets/a50a1f80-39ff-4eba-8090-e3d75e7be98c)
+**YOLO (You Orchestrate, LLM Operates)** is an intelligent assistant for Obsidian, built for the Agent era.
 
-**YOLO is a fork of Smart Composer.** Built upon Smart Composer's foundation, I've added the following new features to provide you with a more intelligent and convenient AI writing experience.
+With YOLO you can:
 
-## New Features
+- 💬 Chat with LLMs directly in the sidebar
+- 📚 Treat your entire vault as the AI’s knowledge base
+- ✍️ Use the “Super Rewrite” mode to continue your ideas effortlessly
+- 🧩 Enable experimental features like Learning Mode and sub-agents to explore personalized workflows
+- 🎨 Enjoy numerous UX improvements and UI polish
 
-*   **i18n Internationalization**: Added multi-language support to the project, making it easy to switch between different languages.
-*   **Custom Assistants (Agents)**: You can freely set different assistants' system prompts and save them to adapt to different writing scenarios.
-*   **Optimized Provider and Model Settings**: We've restructured the provider and model settings interface to be more centralized and easier to manage, solving the overly complex and scattered issues in the original version.
-*   **More Powerful RAG Features**: Now you can more conveniently select specific folders to include or exclude for RAG (Retrieval Augmented Generation), and the embedding database supports automatic updates over time.
-*   **Brand New AI Continuation and Rewriting**: Through keyword triggers combined with custom prompts in floating windows, providing you with a smooth and efficient AI continuation and rewriting experience.
+YOLO will keep evolving toward agent orchestration, long-range task management, and multi-model collaboration, aiming to become your **serious learning assistant and knowledge partner** in the age of large language models.
 
-## Future Plans
+## Feature Preview
+Here’s a glimpse of YOLO’s core capabilities. Explore the plugin for more details:
 
-*   **Learning Mode and Flashcard Creation**: Integrating learning features to help users memorize and review more efficiently.
-*   **Fully Automatic YOLO Mode**: An intelligent mode that supports automatic background operation, keeping AI ready whenever you need it.
+## **💬 Sidebar Conversations**
+
+https://github.com/user-attachments/assets/90bbd4f5-b73a-41b4-bf7d-85a5f44659ec
+
+Seamless conversations with LLMs, with context injection, preset prompts, custom providers, and smart Markdown parsing/generation.
+
+## **🧠 Knowledge Base Q&A**
+
+https://github.com/user-attachments/assets/cffbada7-4314-4709-bef4-9867b43d6484
+
+## **✍️ Super Rewrite**
+
+
+https://github.com/user-attachments/assets/141f3c6a-19f5-46be-9674-2ddd230be9c6
+
+
+Activate continuation through hotkeys or the command palette, combining context understanding with natural, fluent paragraph generation.
+
+## **🎛️ Multi-Model Support + i18n**
+
+Supports multiple providers (OpenAI, Claude, Gemini, DeepSeek, etc.) with native i18n language switching.
 
 ## Getting Started
-
-> [!IMPORTANT]
-> **Installer Version Requirement**  
-> YOLO requires a recent version of the Obsidian installer. If you experience issues with the plugin not loading properly:
-> 
-> 1. First, try updating Obsidian normally at `Settings > General > Check for updates`.
-> 
-> 2. If issues persist, manually update your Obsidian installer:
->    - Download the latest installer from [Obsidian's download page](https://obsidian.md/download)
->    - Close Obsidian completely
->    - Run the new installer
 
 1. Open Obsidian Settings
 2. Navigate to "Community plugins" and click "Browse"
@@ -55,29 +64,7 @@
    - Gemini : [Gemini API Keys](https://aistudio.google.com/apikey)
    - Groq : [Groq API Keys](https://console.groq.com/keys)
 
-> [!TIP]
-> **Looking for a free option?**  
-> Gemini API provides the best performance among free models for YOLO. Recommended for users looking for a free option.
-> _When using free APIs, please review the provider’s privacy policy before sending sensitive data._
-
 For more detailed information, please refer to the [documentation](./DOC/DOC_en/01-basic-introduction.md)
-
-## Roadmap
-
-*   **Learning Mode and Flashcard Creation**: Integrating learning features to help users memorize and review more efficiently.
-*   **Fully Automatic YOLO Mode**: An intelligent mode that supports automatic background operation, keeping AI ready whenever you need it.
-
-## Feedback and Support
-
-We value your input and want to ensure you can easily share your thoughts and report any issues:
-
-- **Bug Reports**: If you encounter any bugs or unexpected behavior, please submit an issue on our [GitHub Issues](https://github.com/Lapis0x0/obsidian-yolo/issues) page. Be sure to include as much detail as possible to help us reproduce and address the problem.
-
-- **Feature Requests**: For new feature ideas or enhancements, please use our [GitHub Discussions - Ideas & Feature Requests](https://github.com/Lapis0x0/obsidian-yolo/discussions/categories/ideas-feature-requests) page. Create a new discussion to share your suggestions. This allows for community engagement and helps us prioritize future developments.
-
-- **Show and Tell**: We love seeing how you use YOLO! Share your unique use cases, workflows, or interesting applications of the plugin in the [GitHub Discussions - YOLO Showcase](https://github.com/Lapis0x0/obsidian-yolo/discussions/categories/smart-composer-showcase) page.
-
-Your feedback and experiences are crucial in making YOLO better for everyone!
 
 ## Contributing
 
