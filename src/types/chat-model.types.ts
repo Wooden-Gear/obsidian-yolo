@@ -25,6 +25,7 @@ const baseChatModelSchema = z.object({
     .default(PromptLevel.Default)
     .optional(),
   enable: z.boolean().default(true).optional(),
+  isBaseModel: z.boolean().default(false).optional(),
 })
 
 export const chatModelSchema = z.discriminatedUnion('providerType', [

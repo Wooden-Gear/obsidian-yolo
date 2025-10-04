@@ -2,9 +2,14 @@ import {
   DEFAULT_APPLY_MODEL_ID,
   DEFAULT_CHAT_MODELS,
   DEFAULT_CHAT_MODEL_ID,
+  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
+import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
+  DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+} from './setting.types'
 
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import { parseSmartComposerSettings } from './settings'
@@ -27,6 +32,7 @@ describe('parseSmartComposerSettings', () => {
       systemPrompt: '',
 
       ragOptions: {
+        enabled: true,
         chunkSize: 1000,
         thresholdTokens: 8192,
         minSimilarity: 0.0,
@@ -50,17 +56,31 @@ describe('parseSmartComposerSettings', () => {
         enableTools: true,
         maxAutoIterations: 1,
         maxContextMessages: 32,
+        defaultTemperature: 0.8,
+        defaultTopP: 0.9,
+        chatTitlePrompt: '',
+        baseModelSpecialPrompt: '',
       },
 
       continuationOptions: {
-        useCurrentModel: true,
-        fixedModelId: 'openai/gpt-4.1-mini',
-        defaultSystemPrompt:
-          'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+        enableSuperContinuation: false,
+        continuationModelId: 'openai/gpt-4.1-mini',
+        defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
         enableKeywordTrigger: true,
         triggerKeyword: '  ',
+        manualContextEnabled: false,
+        manualContextFolders: [],
+        referenceRuleFolders: [],
+        knowledgeBaseFolders: [],
+        stream: true,
+        useVaultSearch: false,
+        maxContinuationChars: 8000,
         enableFloatingPanelKeywordTrigger: false,
         floatingPanelTriggerKeyword: '',
+        enableTabCompletion: false,
+        tabCompletionModelId: 'openai/gpt-4.1-mini',
+        tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
+        tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
       },
 
       assistants: [],

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { App, Vault } from 'obsidian'
+import { App, TFile, TFolder, Vault } from 'obsidian'
 
 import { FolderPickerModal } from '../modals/FolderPickerModal'
 import { useLanguage } from '../../../contexts/language-context'
@@ -11,29 +11,49 @@ export type FolderSelectionListProps = {
   onChange: (folders: string[]) => void
   title?: string
   placeholder?: string
+  allowFiles?: boolean
 }
 
 /**
  * A minimal folder selection list with add/remove and drag-and-drop reordering.
  * Style aims to resemble Obsidian's file list while keeping zero external deps.
  */
-export function FolderSelectionList({ app, vault, value, onChange, title, placeholder }: FolderSelectionListProps) {
+export function FolderSelectionList({
+  app,
+  vault,
+  value,
+  onChange,
+  title,
+  placeholder,
+  allowFiles = false,
+}: FolderSelectionListProps) {
   const { t } = useLanguage()
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const overIndexRef = useRef<number | null>(null)
 
   // Normalize any incoming folder values to avoid duplicates like '/', '**', 'path/'
   const normalize = (p: string): string => {
-    if (!p || p === '/' || p === '**') return ''
-    // common patterns to folder path
-    // <folder>/**/*, <folder>/**/*.md, <folder>/*, <folder>/*.md
-    const m1 = p.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
+    if (!p) return ''
+    const trimmed = p.replace(/^\/+/, '').replace(/\/+$/, '')
+    if (allowFiles) {
+      const abstract = vault.getAbstractFileByPath(trimmed)
+      if (abstract instanceof TFile) {
+        return abstract.path
+      }
+      if (abstract instanceof TFolder) {
+        return abstract.path.replace(/^\/+/, '').replace(/\/+$/, '')
+      }
+      if (trimmed.includes('*')) return ''
+      return trimmed
+    }
+
+    if (trimmed === '' || trimmed === '**') return ''
+    const m1 = trimmed.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
     if (m1) return m1[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    const m2 = p.match(/^(.*)\/\*\.md$/)
+    const m2 = trimmed.match(/^(.*)\/\*\.md$/)
     if (m2) return m2[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    // if contains any wildcard, treat as root
-    if (p.includes('*')) return ''
-    return p.replace(/^\/+/, '').replace(/\/+$/, '')
+    if (trimmed.includes('*')) return ''
+    return trimmed
   }
 
   const items = useMemo(() => value.map(normalize), [value])
@@ -57,7 +77,7 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
   }
 
   const handleAdd = () => {
-    new FolderPickerModal(app, vault, items, (picked) => {
+    new FolderPickerModal(app, vault, items, allowFiles, (picked) => {
       const np = normalize(picked)
       if (items.includes(np)) return
       const next = absorbByParent([...items, np])
@@ -142,7 +162,10 @@ export function FolderSelectionList({ app, vault, value, onChange, title, placeh
       <div onClick={onContainerClick} className="smtcmp-folder-selection-picker">
         {items.length === 0 ? (
           <div className="smtcmp-folder-selection-empty">
-            {placeholder ?? t('settings.rag.selectFoldersPlaceholder', '点击此处选择文件夹（留空则默认包含全部）')}
+            {placeholder ??
+              (allowFiles
+                ? t('settings.rag.selectFilesOrFoldersPlaceholder', '点击此处选择文件或文件夹（留空表示全库）')
+                : t('settings.rag.selectFoldersPlaceholder', '点击此处选择文件夹（留空则默认包含全部）'))}
           </div>
         ) : (
           <div className="smtcmp-folder-selection-list">

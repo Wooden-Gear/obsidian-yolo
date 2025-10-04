@@ -12,6 +12,7 @@ node_modules
 # They should be uploaded to GitHub releases instead.
 main.js
 meta.json
+main.css
 
 # Exclude sourcemaps
 *.map
@@ -25,3 +26,4 @@ CLAUDE.md
 AGENTS.md
 temporary
 TODO.md
+

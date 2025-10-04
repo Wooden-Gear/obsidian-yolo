@@ -10,11 +10,13 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { ApplyViewState } from '../../ApplyView'
 import { APPLY_VIEW_TYPE } from '../../constants'
 import { useApp } from '../../contexts/app-context'
+import { useLanguage } from '../../contexts/language-context'
 import { useMcp } from '../../contexts/mcp-context'
 import { useRAG } from '../../contexts/rag-context'
 import { useSettings } from '../../contexts/settings-context'
@@ -48,6 +50,7 @@ import { readTFileContent } from '../../utils/obsidian'
 import { ErrorModal } from '../modals/ErrorModal'
 // removed Prompt Templates feature
 import { ChatModeDropdown } from './ChatModeDropdown'
+import Composer from './Composer'
 
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
 import { AssistantSelector } from './AssistantSelector'
@@ -59,6 +62,7 @@ import QueryProgress, { QueryProgressState } from './QueryProgress'
 import { useAutoScroll } from './useAutoScroll'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
+import ViewToggle from './ViewToggle'
 import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 // Add an empty line here
@@ -91,15 +95,20 @@ export type ChatRef = {
   openNewChat: (selectedBlock?: MentionableBlockData) => void
   addSelectionToChat: (selectedBlock: MentionableBlockData) => void
   focusMessage: () => void
+  getCurrentConversationOverrides: () => ConversationOverrideSettings | undefined
+  getCurrentConversationModelId: () => string | undefined
 }
 
 export type ChatProps = {
   selectedBlock?: MentionableBlockData
+  activeView?: 'chat' | 'composer'
+  onChangeView?: (view: 'chat' | 'composer') => void
 }
 
 const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const app = useApp()
   const { settings } = useSettings()
+  const { t } = useLanguage()
   const { getRAGEngine } = useRAG()
   const { getMcpManager } = useMcp()
 
@@ -158,6 +167,19 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [learningMode, setLearningMode] = useState<boolean>(
     settings.chatOptions.enableLearningMode ?? false,
   )
+
+  const superContinuationEnabled = Boolean(
+    settings.continuationOptions.enableSuperContinuation,
+  )
+  const activeView = superContinuationEnabled
+    ? props.activeView ?? 'chat'
+    : 'chat'
+  const onChangeView = superContinuationEnabled ? props.onChangeView : undefined
+
+  const viewLabel =
+    activeView === 'composer'
+      ? t('sidebar.tabs.composer', 'Composer')
+      : t('sidebar.tabs.chat', 'Chat')
 
   // Per-conversation override settings (temperature, top_p, context, stream)
   const conversationOverridesRef = useRef<Map<string, ConversationOverrideSettings>>(new Map())
@@ -678,12 +700,38 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (!focusedMessageId) return
       chatUserInputRefs.current.get(focusedMessageId)?.focus()
     },
+    getCurrentConversationOverrides: () => {
+      if (conversationOverrides) {
+        return conversationOverrides
+      }
+      if (!currentConversationId) {
+        return undefined
+      }
+      return conversationOverridesRef.current.get(currentConversationId)
+    },
+    getCurrentConversationModelId: () => {
+      if (conversationModelId) {
+        return conversationModelId
+      }
+      if (!currentConversationId) {
+        return undefined
+      }
+      return conversationModelIdRef.current.get(currentConversationId)
+    },
   }))
 
-  return (
-    <div className="smtcmp-chat-container">
-      <div className="smtcmp-chat-header">
-        <h1 className="smtcmp-chat-header-title">Chat</h1>
+  const header = (
+    <div className="smtcmp-chat-header">
+      {onChangeView ? (
+        <ViewToggle
+          activeView={activeView}
+          onChangeView={onChangeView}
+          disabled={!superContinuationEnabled}
+        />
+      ) : (
+        <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
+      )}
+      {activeView === 'chat' && (
         <div className="smtcmp-chat-header-right">
           <AssistantSelector />
           <div className="smtcmp-chat-header-buttons">
@@ -732,7 +780,24 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             </ChatModeDropdown>
           </div>
         </div>
+      )}
+    </div>
+  )
+
+  if (superContinuationEnabled && activeView === 'composer') {
+    return (
+      <div className="smtcmp-chat-container">
+        {header}
+        <div className="smtcmp-chat-composer-wrapper">
+          <Composer onNavigateChat={() => onChangeView?.('chat')} />
+        </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="smtcmp-chat-container">
+      {header}
       <div className="smtcmp-chat-messages" ref={chatMessagesRef}>
         {groupedChatMessages.map((messageOrGroup, index) =>
           !Array.isArray(messageOrGroup) ? (

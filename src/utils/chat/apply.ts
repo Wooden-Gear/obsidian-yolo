@@ -122,21 +122,25 @@ export const applyChangesToFile = async ({
   providerClient: BaseLLMProvider<LLMProvider>
   model: ChatModel
 }): Promise<string | null> => {
-  const requestMessages: RequestMessage[] = [
-    {
+  const isBaseModel = Boolean((model as any).isBaseModel)
+  const requestMessages: RequestMessage[] = []
+
+  if (!isBaseModel) {
+    requestMessages.push({
       role: 'system',
       content: systemPrompt,
-    },
-    {
-      role: 'user',
-      content: generateApplyPrompt(
-        blockToApply,
-        currentFile,
-        currentFileContent,
-        chatMessages,
-      ),
-    },
-  ]
+    })
+  }
+
+  requestMessages.push({
+    role: 'user',
+    content: generateApplyPrompt(
+      blockToApply,
+      currentFile,
+      currentFileContent,
+      chatMessages,
+    ),
+  })
 
   const response = await providerClient.generateResponse(model, {
     model: model.model,

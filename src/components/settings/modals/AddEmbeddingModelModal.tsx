@@ -1,7 +1,8 @@
 import { App, Notice } from 'obsidian'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
+import { GoogleGenAI } from '@google/genai'
 import { useLanguage } from '../../../contexts/language-context'
 import { getProviderClient } from '../../../core/llm/manager'
 import { supportedDimensionsForIndex } from '../../../database/schema'
@@ -14,6 +15,7 @@ import { LLMProvider } from '../../../types/provider.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 
@@ -56,6 +58,152 @@ function AddEmbeddingModelModalComponent({
     id: '',
     model: '',
   })
+
+  // Auto-fetch available models via OpenAI-compatible GET /v1/models
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [loadingModels, setLoadingModels] = useState<boolean>(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Sort models with embedding-related ones first
+  const sortModelsForEmbedding = (models: string[]): string[] => {
+    const embeddingKeywords = ['embedding', 'embed', 'text-embedding']
+    const embeddingModels: string[] = []
+    const otherModels: string[] = []
+    
+    models.forEach(model => {
+      const modelLower = model.toLowerCase()
+      if (embeddingKeywords.some(keyword => modelLower.includes(keyword))) {
+        embeddingModels.push(model)
+      } else {
+        otherModels.push(model)
+      }
+    })
+    
+    return [...embeddingModels.sort(), ...otherModels.sort()]
+  }
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (!selectedProvider) return
+      setLoadingModels(true)
+      setLoadError(null)
+      try {
+        const isOpenAIStyle = (
+          selectedProvider.type === 'openai' ||
+          selectedProvider.type === 'openai-compatible' ||
+          selectedProvider.type === 'openrouter' ||
+          selectedProvider.type === 'groq' ||
+          selectedProvider.type === 'mistral' ||
+          selectedProvider.type === 'perplexity' ||
+          selectedProvider.type === 'deepseek'
+        )
+
+        if (isOpenAIStyle) {
+          const base = ((): string => {
+            // default OpenAI base when not provided
+            const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
+            if (cleaned && cleaned.length > 0) return cleaned
+            if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
+            if (selectedProvider.type === 'openrouter') return 'https://openrouter.ai/api/v1'
+            return '' // no base => skip
+          })()
+
+          if (base) {
+            const baseNorm = base.replace(/\/+$/, '')
+            const urlCandidates: string[] = []
+            if (/\/v1$/.test(baseNorm)) {
+              // Try with v1 first, then without v1
+              urlCandidates.push(`${baseNorm}/models`)
+              urlCandidates.push(`${baseNorm.replace(/\/v1$/, '')}/models`)
+            } else {
+              // Try without v1 first, then with v1
+              urlCandidates.push(`${baseNorm}/models`)
+              urlCandidates.push(`${baseNorm}/v1/models`)
+            }
+
+            let fetched = false
+            let lastErr: any = null
+            for (const url of urlCandidates) {
+              try {
+                const res = await fetch(url, {
+                  method: 'GET',
+                  headers: {
+                    ...(selectedProvider.apiKey
+                      ? { Authorization: `Bearer ${selectedProvider.apiKey}` }
+                      : {}),
+                    Accept: 'application/json',
+                  },
+                })
+                if (!res.ok) {
+                  lastErr = new Error(`Failed to fetch models: ${res.status}`)
+                  continue
+                }
+                const json = await res.json()
+                // Robust extraction: support data[], models[], or array root; prefer id, fallback to name/model
+                const collectFrom = (arr: any[]): string[] =>
+                  arr
+                    .map((v: any) =>
+                      typeof v === 'string'
+                        ? v
+                        : (v?.id as string) || (v?.name as string) || (v?.model as string) || null,
+                    )
+                    .filter((v: string | null): v is string => !!v)
+
+                const buckets: string[] = []
+                if (Array.isArray(json?.data)) buckets.push(...collectFrom(json.data))
+                if (Array.isArray(json?.models)) buckets.push(...collectFrom(json.models))
+                if (Array.isArray(json)) buckets.push(...collectFrom(json))
+
+                if (buckets.length === 0) {
+                  lastErr = new Error('Empty models list in response')
+                  continue
+                }
+                const unique = Array.from(new Set(buckets))
+                const sorted = sortModelsForEmbedding(unique)
+                setAvailableModels(sorted)
+                fetched = true
+                break
+              } catch (e) {
+                lastErr = e
+                continue
+              }
+            }
+            if (fetched) return
+            throw lastErr ?? new Error('Failed to fetch models from all endpoints')
+          }
+        }
+
+        if (selectedProvider.type === 'gemini') {
+          const ai = new GoogleGenAI({ apiKey: selectedProvider.apiKey ?? '' })
+          const pager = await ai.models.list()
+          const names: string[] = []
+          for await (const m of pager as any) {
+            const raw = (m?.name || m?.model || '') as string
+            if (!raw) continue
+            // Normalize like "models/text-embedding-004" -> "text-embedding-004"
+            const norm = raw.includes('/') ? raw.split('/').pop()! : raw
+            // Keep embedding models and general gemini models
+            if (norm.toLowerCase().includes('embedding') || norm.toLowerCase().includes('gemini')) {
+              names.push(norm)
+            }
+          }
+          // Sort with embedding models first
+          const unique = Array.from(new Set(names))
+          const sorted = sortModelsForEmbedding(unique)
+          setAvailableModels(sorted)
+          return
+        }
+      } catch (err: any) {
+        console.error('Failed to auto fetch embedding models', err)
+        setLoadError(err?.message ?? 'unknown error')
+      } finally {
+        setLoadingModels(false)
+      }
+    }
+
+    fetchModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvider?.id])
 
   const handleSubmit = async () => {
     try {
@@ -134,6 +282,26 @@ function AddEmbeddingModelModalComponent({
 
   return (
     <>
+      {/* Available models dropdown (moved above other fields) */}
+      <ObsidianSetting
+        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
+        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : t('settings.models.embeddingModelsFirst')}
+      >
+        <ObsidianDropdown
+          value={formData.model || ''}
+          options={Object.fromEntries(availableModels.map((m) => [m, m]))}
+          onChange={(value: string) => {
+            // When a model is selected, set both model name and generate ID
+            setFormData((prev) => ({
+              ...prev,
+              model: value,
+              id: prev.id && prev.id.trim().length > 0 ? prev.id : value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+            }))
+          }}
+          disabled={loadingModels || availableModels.length === 0}
+        />
+      </ObsidianSetting>
+
       <ObsidianSetting
         name={t('settings.models.modelId')}
         desc={t('settings.models.modelIdDesc')}

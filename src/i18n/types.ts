@@ -37,6 +37,48 @@ export interface TranslationKeys {
     off?: string
   }
 
+  sidebar?: {
+    tabs: {
+      chat: string
+      composer: string
+    }
+    composer: {
+      title: string
+      subtitle: string
+      backToChat: string
+      modelSectionTitle: string
+      continuationModel: string
+      continuationModelDesc: string
+      contextSectionTitle: string
+      ragToggle: string
+      ragToggleDesc: string
+      sections?: {
+        modelWithPrompt?: {
+          title: string
+        }
+        model?: {
+          title?: string
+          desc?: string
+        }
+        parameters?: {
+          title: string
+          desc: string
+        }
+        context?: {
+          title: string
+          desc: string
+        }
+      }
+      continuationPrompt?: string
+      maxContinuationChars?: string
+      referenceRulesTitle?: string
+      referenceRulesPlaceholder?: string
+      knowledgeBaseTitle?: string
+      knowledgeBasePlaceholder?: string
+      knowledgeBaseHint?: string
+    }
+  }
+
   // Settings
   settings: {
     title: string
@@ -45,20 +87,31 @@ export interface TranslationKeys {
       desc: string
       buyMeACoffee: string
     }
-    chat: {
+    defaults: {
       title: string
-      defaultModel: string
-      defaultModelDesc: string
-      applyModel: string
-      applyModelDesc: string
-      systemPrompt: string
-      systemPromptDesc: string
+      defaultChatModel: string
+      defaultChatModelDesc: string
+      toolModel: string
+      toolModelDesc: string
+      globalSystemPrompt: string
+      globalSystemPromptDesc: string
+      continuationSystemPrompt: string
+      continuationSystemPromptDesc: string
+      chatTitlePrompt: string
+      chatTitlePromptDesc: string
+      baseModelSpecialPrompt?: string
+      baseModelSpecialPromptDesc?: string
+      tabCompletionSystemPrompt?: string
+      tabCompletionSystemPromptDesc?: string
+    }
+    chatPreferences: {
+      title: string
       includeCurrentFile: string
       includeCurrentFileDesc: string
       enableBruteMode?: string
       enableBruteModeDesc?: string
-      learningMode?: string
-      learningModeDesc?: string
+      enableLearningMode?: string
+      enableLearningModeDesc?: string
       learningModePrompt?: string
       learningModePromptDesc?: string
       enableTools: string
@@ -142,11 +195,14 @@ export interface TranslationKeys {
       // auto-fetched models helper labels
       availableModelsAuto?: string
       fetchModelsFailed?: string
+      embeddingModelsFirst?: string
       // reasoning UI
       reasoningType?: string
       reasoningTypeNone?: string
       reasoningTypeOpenAI?: string
       reasoningTypeGemini?: string
+      reasoningTypeBase?: string
+      baseModelWarning?: string
       openaiReasoningEffort?: string
       openaiReasoningEffortDesc?: string
       geminiThinkingBudget?: string
@@ -168,6 +224,8 @@ export interface TranslationKeys {
     }
     rag: {
       title: string
+      enableRag: string
+      enableRagDesc: string
       embeddingModel: string
       embeddingModelDesc: string
       chunkSize: string
@@ -190,6 +248,7 @@ export interface TranslationKeys {
       selectedFolders?: string
       excludedFolders?: string
       selectFoldersPlaceholder?: string
+      selectFilesOrFoldersPlaceholder?: string
       selectExcludeFoldersPlaceholder?: string
       conflictNoteDefaultInclude?: string
       conflictExact?: string
@@ -252,10 +311,13 @@ export interface TranslationKeys {
     }
     continuation: {
       title: string
-      modelSource: string
-      modelSourceDesc: string
-      fixedModel: string
-      fixedModelDesc: string
+      aiSubsectionTitle: string
+      customSubsectionTitle: string
+      tabSubsectionTitle: string
+      superContinuation: string
+      superContinuationDesc: string
+      continuationModel: string
+      continuationModelDesc: string
       keywordTrigger: string
       keywordTriggerDesc: string
       triggerKeyword: string
@@ -264,6 +326,26 @@ export interface TranslationKeys {
       floatingPanelKeywordTriggerDesc: string
       floatingPanelTriggerKeyword: string
       floatingPanelTriggerKeywordDesc: string
+      tabCompletion: string
+      tabCompletionDesc: string
+      tabCompletionModel: string
+      tabCompletionModelDesc: string
+      tabCompletionTriggerDelay: string
+      tabCompletionTriggerDelayDesc: string
+      tabCompletionMinContextLength: string
+      tabCompletionMinContextLengthDesc: string
+      tabCompletionMaxContextChars: string
+      tabCompletionMaxContextCharsDesc: string
+      tabCompletionMaxSuggestionLength: string
+      tabCompletionMaxSuggestionLengthDesc: string
+      tabCompletionMaxTokens: string
+      tabCompletionMaxTokensDesc: string
+      tabCompletionTemperature: string
+      tabCompletionTemperatureDesc: string
+      tabCompletionRequestTimeout: string
+      tabCompletionRequestTimeoutDesc: string
+      tabCompletionMaxRetries: string
+      tabCompletionMaxRetriesDesc: string
       defaultSystemPrompt: string
       defaultSystemPromptDesc: string
     }

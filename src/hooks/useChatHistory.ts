@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { editorStateToPlainText } from '../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import { useApp } from '../contexts/app-context'
+import { useSettings } from '../contexts/settings-context'
+import { useLanguage } from '../contexts/language-context'
+import { getChatModelClient } from '../core/llm/manager'
+import { DEFAULT_CHAT_TITLE_PROMPT } from '../constants'
 import { ChatConversationMetadata } from '../database/json/chat/types'
 import { ConversationOverrideSettings } from '../types/conversation-settings.types'
 import { ChatMessage, SerializedChatMessage } from '../types/chat'
@@ -33,6 +37,8 @@ type UseChatHistory = {
 
 export function useChatHistory(): UseChatHistory {
   const app = useApp()
+  const { settings } = useSettings()
+  const { language } = useLanguage()
   const chatManager = useChatManager()
   const [chatList, setChatList] = useState<ChatConversationMetadata[]>([])
 
@@ -81,19 +87,65 @@ export function useChatHistory(): UseChatHistory {
           } else {
             const firstUserMessage = messages.find((v) => v.role === 'user')
 
-            // 限制标题长度以避免文件名过长问题
-            // 中文字符URL编码后会变成3倍长度，保守截取20个字符
+            // 默认标题统一为“新消息”，待首条消息发送后由工具模型自动改名
+            // 同时保留首条消息的纯文本供后续自动命名使用
             const rawTitle = firstUserMessage?.content
               ? editorStateToPlainText(firstUserMessage.content)
-              : 'New chat'
-            const safeTitle = rawTitle.substring(0, 20)
-            
+              : ''
+            const defaultTitle = '新消息'
+
             await chatManager.createChat({
               id,
-              title: safeTitle,
+              title: defaultTitle,
               messages: serializedMessages,
               overrides: overrides ?? null,
             })
+
+            // Auto-generate a better title using the tool model (applyModelId). Timeout: 3s
+            ;(async () => {
+              try {
+                const firstUserText = rawTitle
+                if (!firstUserText || (firstUserText ?? '').trim().length === 0) return
+
+                const controller = new AbortController()
+                const timer = setTimeout(() => controller.abort(), 3000)
+
+                const { providerClient, model } = getChatModelClient({
+                  settings,
+                  modelId: settings.applyModelId,
+                })
+
+                const defaultTitlePrompt =
+                  DEFAULT_CHAT_TITLE_PROMPT[language] ?? DEFAULT_CHAT_TITLE_PROMPT.en
+                const customizedPrompt = (settings.chatOptions.chatTitlePrompt ?? '').trim()
+                const systemPrompt =
+                  customizedPrompt.length > 0 ? customizedPrompt : defaultTitlePrompt
+
+                const response = await providerClient.generateResponse(
+                  model,
+                  {
+                    model: model.model,
+                    messages: [
+                      { role: 'system', content: systemPrompt },
+                      { role: 'user', content: firstUserText },
+                    ],
+                    stream: false,
+                  },
+                  { signal: controller.signal },
+                )
+                clearTimeout(timer)
+
+                const generated = response.choices?.[0]?.message?.content ?? ''
+                let nextTitle = (generated || '').trim().replace(/^[\'\"“”‘’]+|[\'\"“”‘’]+$/g, '')
+                if (!nextTitle) return
+                const nextSafeTitle = nextTitle.substring(0, 10)
+
+                await chatManager.updateChat(id, { title: nextSafeTitle })
+                await fetchChatList()
+              } catch (_) {
+                // Ignore failures/timeouts; keep fallback title
+              }
+            })()
           }
 
           await fetchChatList()

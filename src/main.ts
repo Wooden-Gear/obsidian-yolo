@@ -1,3 +1,5 @@
+import { Prec, StateEffect, StateField } from '@codemirror/state'
+import { Decoration, DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
 import { minimatch } from 'minimatch'
 
@@ -15,13 +17,79 @@ import { createTranslationFunction } from './i18n'
 import { CustomContinueModal } from './components/modals/CustomContinueModal'
 import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
 import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
+import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
+  DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
   SmartComposerSettings,
   smartComposerSettingsSchema,
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
-import { getMentionableBlockData, readTFileContent } from './utils/obsidian'
+import {
+  getMentionableBlockData,
+  getNestedFiles,
+  readMultipleTFiles,
+  readTFileContent,
+} from './utils/obsidian'
+
+type InlineSuggestionGhostPayload = { from: number; text: string } | null
+
+const inlineSuggestionGhostEffect = StateEffect.define<InlineSuggestionGhostPayload>()
+
+class InlineSuggestionGhostWidget extends WidgetType {
+  constructor(private readonly text: string) {
+    super()
+  }
+
+  eq(other: InlineSuggestionGhostWidget) {
+    return this.text === other.text
+  }
+
+  ignoreEvent(): boolean {
+    return true
+  }
+
+  toDOM(): HTMLElement {
+    const span = document.createElement('span')
+    span.className = 'smtcmp-ghost-text'
+    span.textContent = this.text
+    return span
+  }
+}
+
+const inlineSuggestionGhostField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(value, tr) {
+    let decorations = value.map(tr.changes)
+
+    for (const effect of tr.effects) {
+      if (effect.is(inlineSuggestionGhostEffect)) {
+        const payload = effect.value
+        if (!payload) {
+          decorations = Decoration.none
+          continue
+        }
+        const widget = Decoration.widget({
+          widget: new InlineSuggestionGhostWidget(payload.text),
+          side: 1,
+        }).range(payload.from)
+        decorations = Decoration.set([widget])
+      }
+    }
+
+    if (tr.docChanged) {
+      decorations = Decoration.none
+    }
+
+    return decorations
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
+const inlineSuggestionExtensionViews = new WeakSet<EditorView>()
 
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
@@ -38,6 +106,32 @@ export default class SmartComposerPlugin extends Plugin {
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()
+  private tabCompletionTimer: ReturnType<typeof setTimeout> | null = null
+  private tabCompletionAbortController: AbortController | null = null
+  private activeInlineSuggestion: {
+    source: 'tab' | 'continuation'
+    editor: Editor
+    view: EditorView
+    fromOffset: number
+    text: string
+  } | null = null
+  private tabCompletionSuggestion: {
+    editor: Editor
+    view: EditorView
+    text: string
+    cursorOffset: number
+  } | null = null
+  private continuationInlineSuggestion: {
+    editor: Editor
+    view: EditorView
+    text: string
+    fromOffset: number
+    startPos: ReturnType<Editor['getCursor']>
+  } | null = null
+  private tabCompletionPending: {
+    editor: Editor
+    cursorOffset: number
+  } | null = null
 
   // Compute a robust panel anchor position just below the caret line
   private getCaretPanelPosition(editor: Editor, dy = 8): { x: number; y: number } | undefined {
@@ -57,6 +151,112 @@ export default class SmartComposerPlugin extends Plugin {
     return undefined
   }
 
+  private getActiveConversationOverrides():
+    | ConversationOverrideSettings
+    | undefined {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    for (const leaf of leaves) {
+      const view = leaf.view
+      if (
+        view instanceof ChatView &&
+        typeof view.getCurrentConversationOverrides === 'function'
+      ) {
+        return view.getCurrentConversationOverrides()
+      }
+    }
+    return undefined
+  }
+
+  private getActiveConversationModelId(): string | undefined {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    for (const leaf of leaves) {
+      const view = leaf.view
+      if (
+        view instanceof ChatView &&
+        typeof view.getCurrentConversationModelId === 'function'
+      ) {
+        const modelId = view.getCurrentConversationModelId()
+        if (modelId) return modelId
+      }
+    }
+    return undefined
+  }
+
+  private resolveSamplingParams(overrides?: ConversationOverrideSettings): {
+    temperature?: number
+    topP?: number
+    stream: boolean
+  } {
+    const defaultTemperature = this.settings.chatOptions.defaultTemperature
+    const defaultTopP = this.settings.chatOptions.defaultTopP
+
+    const temperature =
+      typeof overrides?.temperature === 'number'
+        ? overrides.temperature
+        : typeof defaultTemperature === 'number'
+          ? defaultTemperature
+          : undefined
+
+    const topP =
+      typeof overrides?.top_p === 'number'
+        ? overrides.top_p
+        : typeof defaultTopP === 'number'
+          ? defaultTopP
+          : undefined
+
+    const stream =
+      typeof overrides?.stream === 'boolean' ? overrides.stream : true
+
+    return { temperature, topP, stream }
+  }
+
+  private resolveContinuationParams(
+    overrides?: ConversationOverrideSettings,
+  ): {
+    temperature?: number
+    topP?: number
+    stream: boolean
+    useVaultSearch: boolean
+  } {
+    const continuation = this.settings.continuationOptions ?? {}
+    const chatDefaults = this.settings.chatOptions ?? {}
+
+    const temperature =
+      typeof continuation.temperature === 'number'
+        ? continuation.temperature
+        : typeof overrides?.temperature === 'number'
+          ? overrides.temperature
+          : typeof chatDefaults.defaultTemperature === 'number'
+            ? chatDefaults.defaultTemperature
+            : undefined
+
+    const overrideTopP = overrides?.top_p
+    const topP =
+      typeof continuation.topP === 'number'
+        ? continuation.topP
+        : typeof overrideTopP === 'number'
+          ? overrideTopP
+          : typeof chatDefaults.defaultTopP === 'number'
+            ? chatDefaults.defaultTopP
+            : undefined
+
+    const stream =
+      typeof continuation.stream === 'boolean'
+        ? continuation.stream
+        : typeof overrides?.stream === 'boolean'
+          ? overrides.stream
+          : true
+
+    const useVaultSearch =
+      typeof continuation.useVaultSearch === 'boolean'
+        ? continuation.useVaultSearch
+        : typeof overrides?.useVaultSearch === 'boolean'
+          ? overrides.useVaultSearch
+          : Boolean(this.settings.ragOptions?.enabled)
+
+    return { temperature, topP, stream, useVaultSearch }
+  }
+
   get t() {
     return createTranslationFunction(this.settings.language || 'en')
   }
@@ -73,6 +273,412 @@ export default class SmartComposerPlugin extends Plugin {
     }
     this.activeAbortControllers.clear()
     this.isContinuationInProgress = false
+    this.tabCompletionAbortController = null
+  }
+
+  private getEditorView(editor: Editor | null | undefined): EditorView | null {
+    if (!editor) return null
+    const view = (editor as any)?.cm as EditorView | undefined
+    return view ?? null
+  }
+
+  private ensureInlineSuggestionExtension(view: EditorView) {
+    if (inlineSuggestionExtensionViews.has(view)) return
+    view.dispatch({
+      effects: StateEffect.appendConfig.of([
+        inlineSuggestionGhostField,
+        Prec.high(
+          keymap.of([
+            {
+              key: 'Tab',
+              run: (v) => this.tryAcceptInlineSuggestionFromView(v),
+            },
+          ]),
+        ),
+      ]),
+    })
+    inlineSuggestionExtensionViews.add(view)
+  }
+
+  private setInlineSuggestionGhost(
+    view: EditorView,
+    payload: InlineSuggestionGhostPayload,
+  ) {
+    this.ensureInlineSuggestionExtension(view)
+    view.dispatch({ effects: inlineSuggestionGhostEffect.of(payload) })
+  }
+
+  private getTabCompletionOptions() {
+    return {
+      ...DEFAULT_TAB_COMPLETION_OPTIONS,
+      ...(this.settings.continuationOptions.tabCompletionOptions ?? {}),
+    }
+  }
+
+  private clearTabCompletionTimer() {
+    if (this.tabCompletionTimer) {
+      clearTimeout(this.tabCompletionTimer)
+      this.tabCompletionTimer = null
+    }
+    this.tabCompletionPending = null
+  }
+
+  private cancelTabCompletionRequest() {
+    if (!this.tabCompletionAbortController) return
+    try {
+      this.tabCompletionAbortController.abort()
+    } catch {}
+    this.activeAbortControllers.delete(this.tabCompletionAbortController)
+    this.tabCompletionAbortController = null
+  }
+
+  private clearInlineSuggestion() {
+    if (this.tabCompletionSuggestion) {
+      const { view } = this.tabCompletionSuggestion
+      if (view) {
+        this.setInlineSuggestionGhost(view, null)
+      }
+      this.tabCompletionSuggestion = null
+    }
+    if (this.continuationInlineSuggestion) {
+      const { view } = this.continuationInlineSuggestion
+      if (view) {
+        this.setInlineSuggestionGhost(view, null)
+      }
+      this.continuationInlineSuggestion = null
+    }
+    this.activeInlineSuggestion = null
+  }
+
+  private tryAcceptInlineSuggestionFromView(view: EditorView): boolean {
+    const suggestion = this.activeInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
+
+    if (suggestion.source === 'tab') {
+      return this.tryAcceptTabCompletionFromView(view)
+    }
+
+    if (suggestion.source === 'continuation') {
+      return this.tryAcceptContinuationFromView(view)
+    }
+
+    return false
+  }
+
+  private scheduleTabCompletion(editor: Editor) {
+    if (!this.settings.continuationOptions?.enableTabCompletion) return
+    const view = this.getEditorView(editor)
+    if (!view) return
+    const selection = editor.getSelection()
+    if (selection && selection.length > 0) return
+    const cursorOffset = view.state.selection.main.head
+
+    const options = this.getTabCompletionOptions()
+    const delay = Math.max(0, options.triggerDelayMs)
+
+    this.clearTabCompletionTimer()
+    this.tabCompletionPending = { editor, cursorOffset }
+    this.tabCompletionTimer = setTimeout(() => {
+      if (!this.tabCompletionPending) return
+      if (this.tabCompletionPending.editor !== editor) return
+      void this.runTabCompletion(editor, cursorOffset)
+    }, delay)
+  }
+
+  private async runTabCompletion(editor: Editor, scheduledCursorOffset: number) {
+    try {
+      if (!this.settings.continuationOptions?.enableTabCompletion) return
+      if (this.isContinuationInProgress) return
+
+      const view = this.getEditorView(editor)
+      if (!view) return
+      if (view.state.selection.main.head !== scheduledCursorOffset) return
+      const selection = editor.getSelection()
+      if (selection && selection.length > 0) return
+
+      const options = this.getTabCompletionOptions()
+
+      const cursorPos = editor.getCursor()
+      const headText = editor.getRange({ line: 0, ch: 0 }, cursorPos)
+      const headLength = headText.trim().length
+      if (!headText || headLength === 0) return
+      if (headLength < options.minContextLength) return
+
+      const context =
+        headText.length > options.maxContextChars
+          ? headText.slice(-options.maxContextChars)
+          : headText
+
+      let modelId = this.settings.continuationOptions.tabCompletionModelId
+      if (!modelId || modelId.length === 0) {
+        modelId = this.settings.continuationOptions.continuationModelId
+      }
+      if (!modelId) return
+
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const { temperature, topP } =
+        this.resolveContinuationParams(sidebarOverrides)
+
+      const { providerClient, model } = getChatModelClient({
+        settings: this.settings,
+        modelId,
+      })
+
+      const fileTitle = this.app.workspace.getActiveFile()?.basename?.trim()
+      const titleSection = fileTitle ? `File title: ${fileTitle}\n\n` : ''
+      const customSystemPrompt =
+        (this.settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
+      const systemPrompt =
+        customSystemPrompt.length > 0
+          ? customSystemPrompt
+          : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
+
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
+      const userContent = isBaseModel
+        ? `${basePromptSection}${systemPrompt}\n\n${context}\n\nPredict the next words that continue naturally.`
+        : `${basePromptSection}${titleSection}Recent context:\n\n${context}\n\nProvide the next words that would help continue naturally.`
+
+      const requestMessages = [
+        ...(isBaseModel
+          ? []
+          : ([
+              {
+                role: 'system' as const,
+                content: systemPrompt,
+              },
+            ] as const)),
+        {
+          role: 'user' as const,
+          content: userContent,
+        },
+      ]
+
+      this.cancelTabCompletionRequest()
+      this.clearInlineSuggestion()
+      this.tabCompletionPending = null
+
+      const controller = new AbortController()
+      this.tabCompletionAbortController = controller
+      this.activeAbortControllers.add(controller)
+
+      const baseRequest: any = {
+        model: model.model,
+        messages: requestMessages as unknown as any,
+        stream: false,
+        max_tokens: Math.max(16, Math.min(options.maxTokens, 2000)),
+      }
+      if (typeof options.temperature === 'number') {
+        baseRequest.temperature = Math.min(Math.max(options.temperature, 0), 2)
+      } else if (typeof temperature === 'number') {
+        baseRequest.temperature = Math.min(Math.max(temperature, 0), 2)
+      } else {
+        baseRequest.temperature = DEFAULT_TAB_COMPLETION_OPTIONS.temperature
+      }
+      if (typeof topP === 'number') {
+        baseRequest.top_p = topP
+      }
+      const requestTimeout = Math.max(0, options.requestTimeoutMs)
+      const attempts = Math.max(0, Math.floor(options.maxRetries)) + 1
+
+      this.cancelTabCompletionRequest()
+          this.clearInlineSuggestion()
+      this.tabCompletionPending = null
+
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        const controller = new AbortController()
+        this.tabCompletionAbortController = controller
+        this.activeAbortControllers.add(controller)
+
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null
+        if (requestTimeout > 0) {
+          timeoutHandle = setTimeout(() => controller.abort(), requestTimeout)
+        }
+
+        try {
+          const response = await providerClient.generateResponse(
+            model,
+            baseRequest,
+            { signal: controller.signal },
+          )
+
+          if (timeoutHandle) clearTimeout(timeoutHandle)
+
+          let suggestion = response.choices?.[0]?.message?.content ?? ''
+          suggestion = suggestion.replace(/\r\n/g, '\n').replace(/\s+$/, '')
+          if (!suggestion.trim()) return
+          if (/^[\s\n\t]+$/.test(suggestion)) return
+
+          // Avoid leading line breaks which look awkward in ghost text
+          suggestion = suggestion.replace(/^[\s\n\t]+/, '')
+
+          // Guard against large multiline insertions
+          if (suggestion.length > options.maxSuggestionLength) {
+            suggestion = suggestion.slice(0, options.maxSuggestionLength)
+          }
+
+          const currentView = this.getEditorView(editor)
+          if (!currentView) return
+          if (currentView.state.selection.main.head !== scheduledCursorOffset) return
+          if (editor.getSelection()?.length) return
+
+          this.setInlineSuggestionGhost(currentView, {
+            from: scheduledCursorOffset,
+            text: suggestion,
+          })
+          this.activeInlineSuggestion = {
+            source: 'tab',
+            editor,
+            view: currentView,
+            fromOffset: scheduledCursorOffset,
+            text: suggestion,
+          }
+          this.tabCompletionSuggestion = {
+            editor,
+            view: currentView,
+            text: suggestion,
+            cursorOffset: scheduledCursorOffset,
+          }
+          return
+        } catch (error) {
+          if (timeoutHandle) clearTimeout(timeoutHandle)
+
+          const aborted = controller.signal.aborted || (error as any)?.name === 'AbortError'
+          if (attempt < attempts - 1 && aborted) {
+            this.activeAbortControllers.delete(controller)
+            this.tabCompletionAbortController = null
+            continue
+          }
+          if ((error as any)?.name === 'AbortError') {
+            return
+          }
+          console.error('Tab completion failed:', error)
+          return
+        } finally {
+          if (this.tabCompletionAbortController === controller) {
+            this.activeAbortControllers.delete(controller)
+            this.tabCompletionAbortController = null
+          } else {
+            this.activeAbortControllers.delete(controller)
+          }
+        }
+      }
+    } catch (error) {
+      if ((error as any)?.name === 'AbortError') return
+      console.error('Tab completion failed:', error)
+    } finally {
+      if (this.tabCompletionAbortController) {
+        this.activeAbortControllers.delete(this.tabCompletionAbortController)
+        this.tabCompletionAbortController = null
+      }
+    }
+  }
+
+  private tryAcceptTabCompletionFromView(view: EditorView): boolean {
+    const suggestion = this.tabCompletionSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
+
+    if (view.state.selection.main.head !== suggestion.cursorOffset) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const editor = suggestion.editor
+    if (this.getEditorView(editor) !== view) {
+          this.clearInlineSuggestion()
+      return false
+    }
+
+    if (editor.getSelection()?.length) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const cursor = editor.getCursor()
+    const suggestionText = suggestion.text
+    this.clearInlineSuggestion()
+    editor.replaceRange(suggestionText, cursor, cursor)
+
+    const parts = suggestionText.split('\n')
+    const endCursor =
+      parts.length === 1
+        ? { line: cursor.line, ch: cursor.ch + parts[0].length }
+        : {
+            line: cursor.line + parts.length - 1,
+            ch: parts[parts.length - 1].length,
+          }
+    editor.setCursor(endCursor)
+    this.scheduleTabCompletion(editor)
+    return true
+  }
+
+  private tryAcceptContinuationFromView(view: EditorView): boolean {
+    const suggestion = this.continuationInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const active = this.activeInlineSuggestion
+    if (!active || active.source !== 'continuation') return false
+
+    const { editor, text, startPos } = suggestion
+    if (!text || text.length === 0) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    if (this.getEditorView(editor) !== view) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    if (editor.getSelection()?.length) {
+      this.clearInlineSuggestion()
+      return false
+    }
+
+    const insertionText = text
+    this.clearInlineSuggestion()
+    editor.replaceRange(insertionText, startPos, startPos)
+
+    const parts = insertionText.split('\n')
+    const endCursor =
+      parts.length === 1
+        ? { line: startPos.line, ch: startPos.ch + parts[0].length }
+        : {
+            line: startPos.line + parts.length - 1,
+            ch: parts[parts.length - 1].length,
+          }
+    editor.setCursor(endCursor)
+    this.scheduleTabCompletion(editor)
+    return true
+  }
+
+  private handleTabCompletionEditorChange(editor: Editor) {
+    this.clearTabCompletionTimer()
+    this.cancelTabCompletionRequest()
+
+    if (!this.settings.continuationOptions?.enableTabCompletion) {
+      this.clearInlineSuggestion()
+      return
+    }
+
+    if (this.isContinuationInProgress) {
+      this.clearInlineSuggestion()
+      return
+    }
+
+    this.clearInlineSuggestion()
+    this.scheduleTabCompletion(editor)
   }
 
   private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
@@ -85,38 +691,60 @@ export default class SmartComposerPlugin extends Plugin {
     const notice = new Notice('正在生成改写...', 0)
     let controller: AbortController | null = null
     try {
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const {
+        temperature,
+        topP,
+        stream: streamPreference,
+      } = this.resolveContinuationParams(sidebarOverrides)
+
+      const superContinuationEnabled = Boolean(
+        this.settings.continuationOptions?.enableSuperContinuation,
+      )
+      const rewriteModelId = superContinuationEnabled
+        ? this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId
+        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
-        modelId: this.settings.applyModelId,
+        modelId: rewriteModelId,
       })
 
       const systemPrompt =
         'You are an intelligent assistant that rewrites ONLY the provided markdown text according to the instruction. Preserve the original meaning, structure, and any markdown (links, emphasis, code) unless explicitly told otherwise. Output ONLY the rewritten text without code fences or extra explanations.'
 
       const instruction = (customPrompt ?? '').trim()
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
       const requestMessages = [
-        { role: 'system', content: systemPrompt },
+        ...(isBaseModel
+          ? []
+          : ([{ role: 'system' as const, content: systemPrompt }] as const)),
         {
-          role: 'user',
-          content: `Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
+          role: 'user' as const,
+          content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ] as const
 
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const response = await providerClient.generateResponse(model, {
+      const rewriteRequestBase: any = {
         model: model.model,
         messages: requestMessages as unknown as any,
-        stream: false,
-        prediction: {
-          type: 'content',
-          content: [
-            { type: 'text', text: selected },
-            { type: 'text', text: instruction },
-          ],
-        },
-      }, { signal: controller.signal })
+      }
+      if (typeof temperature === 'number') {
+        rewriteRequestBase.temperature = temperature
+      }
+      if (typeof topP === 'number') {
+        rewriteRequestBase.top_p = topP
+      }
 
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
@@ -125,7 +753,29 @@ export default class SmartComposerPlugin extends Plugin {
         return lines.join('\n')
       }
 
-      const rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+      let rewritten = ''
+      if (streamPreference) {
+        const streamIterator = await providerClient.streamResponse(
+          model,
+          { ...rewriteRequestBase, stream: true },
+          { signal: controller.signal },
+        )
+        let accumulated = ''
+        for await (const chunk of streamIterator) {
+          const delta = chunk?.choices?.[0]?.delta
+          const piece = delta?.content ?? ''
+          if (!piece) continue
+          accumulated += piece
+        }
+        rewritten = stripFences(accumulated).trim()
+      } else {
+        const response = await providerClient.generateResponse(
+          model,
+          { ...rewriteRequestBase, stream: false },
+          { signal: controller.signal },
+        )
+        rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+      }
       if (!rewritten) {
         notice.setMessage('未生成改写内容。')
         this.registerTimeout(() => notice.hide(), 1200)
@@ -310,19 +960,6 @@ export default class SmartComposerPlugin extends Plugin {
           }
         })()
 
-        const title = hasSelection
-          ? this.t('commands.continueWritingSelected')
-          : this.t('commands.continueWriting')
-
-        menu.addItem((item) =>
-          item
-            .setTitle(title)
-            .setIcon('wand-sparkles')
-            .onClick(async () => {
-              await this.handleContinueWriting(editor)
-            }),
-        )
-
         // Custom continuation via floating panel
         menu.addItem((item) =>
           item
@@ -353,8 +990,9 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on('editor-change', (editor) => {
         try {
-          if (this.isContinuationInProgress) return
           if (!editor) return
+          this.handleTabCompletionEditorChange(editor)
+          if (this.isContinuationInProgress) return
           const selection = editor.getSelection()
           const cursor = editor.getCursor()
 
@@ -435,6 +1073,9 @@ export default class SmartComposerPlugin extends Plugin {
     }
     // Ensure all in-flight requests are aborted on unload
     this.cancelAllAiTasks()
+    this.clearTabCompletionTimer()
+    this.cancelTabCompletionRequest()
+    this.clearInlineSuggestion()
   }
 
   async loadSettings() {
@@ -692,16 +1333,88 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         }
       }
 
-      // Truncate context to avoid exceeding model limits (simple char-based cap)
-      const MAX_CONTEXT_CHARS = 8000
-      const context =
-        baseContext.length > MAX_CONTEXT_CHARS
-          ? baseContext.slice(-MAX_CONTEXT_CHARS)
-          : baseContext
+      const referenceRuleFolders =
+        this.settings.continuationOptions?.referenceRuleFolders ??
+        this.settings.continuationOptions?.manualContextFolders ??
+        []
 
-      const continuationModelId = this.settings.continuationOptions?.useCurrentModel
-        ? this.settings.chatModelId
-        : this.settings.continuationOptions.fixedModelId
+      let referenceRulesSection = ''
+      if (referenceRuleFolders.length > 0) {
+        try {
+          const referenceFilesMap = new Map<string, TFile>()
+      const isSupportedReferenceFile = (file: TFile) => {
+        const ext = file.extension?.toLowerCase?.() ?? ''
+        return ext === 'md' || ext === 'markdown' || ext === 'txt'
+      }
+
+      for (const rawPath of referenceRuleFolders) {
+        const folderPath = rawPath.trim()
+        if (!folderPath) continue
+        const abstract = this.app.vault.getAbstractFileByPath(folderPath)
+        if (abstract instanceof TFolder) {
+          for (const file of getNestedFiles(abstract, this.app.vault)) {
+            if (isSupportedReferenceFile(file)) {
+              referenceFilesMap.set(file.path, file)
+            }
+          }
+        } else if (abstract instanceof TFile) {
+          if (isSupportedReferenceFile(abstract)) {
+            referenceFilesMap.set(abstract.path, abstract)
+          }
+        }
+      }
+
+      const referenceFiles = Array.from(referenceFilesMap.values())
+      if (referenceFiles.length > 0) {
+        const referenceContents = await readMultipleTFiles(
+          referenceFiles,
+          this.app.vault,
+        )
+            const referenceLabel = this.t(
+              'sidebar.composer.referenceRulesTitle',
+              'Reference rules',
+            )
+            const blocks = referenceFiles.map((file, index) => {
+              const content = referenceContents[index] ?? ''
+              return `File: ${file.path}\n${content}`
+            })
+            const combinedReference = blocks.join('\n\n')
+            if (combinedReference.trim().length > 0) {
+              referenceRulesSection = `${referenceLabel}:\n\n${combinedReference}\n\n`
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to load reference rule folders for continuation', error)
+        }
+      }
+
+      // Truncate context to avoid exceeding model limits (simple char-based cap)
+      const continuationCharLimit = Math.max(
+        0,
+        this.settings.continuationOptions?.maxContinuationChars ?? 8000,
+      )
+      const limitedContext =
+        continuationCharLimit > 0 && baseContext.length > continuationCharLimit
+          ? baseContext.slice(-continuationCharLimit)
+          : continuationCharLimit === 0
+            ? ''
+            : baseContext
+
+      const superContinuationEnabled = Boolean(
+        this.settings.continuationOptions?.enableSuperContinuation,
+      )
+      const continuationModelId = superContinuationEnabled
+        ? this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId
+        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+
+      const sidebarOverrides = this.getActiveConversationOverrides()
+      const {
+        temperature,
+        topP,
+        stream: streamPreference,
+        useVaultSearch,
+      } = this.resolveContinuationParams(sidebarOverrides)
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -723,36 +1436,138 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const fileTitle = activeFileForTitle?.basename?.trim() ?? ''
       const titleLine = fileTitle ? `File title: ${fileTitle}\n\n` : ''
       const hasContext = (baseContext ?? '').trim().length > 0
-      const contextSection = hasContext
-        ? `Context (up to recent portion):\n\n${context}\n\n`
-        : ''
-      const continueText = hasContext
+
+      let ragContextSection = ''
+      const knowledgeBaseRaw =
+        this.settings.continuationOptions?.knowledgeBaseFolders ?? []
+      const knowledgeBaseFolders: string[] = []
+      const knowledgeBaseFiles: string[] = []
+      for (const raw of knowledgeBaseRaw) {
+        const trimmed = raw.trim()
+        if (!trimmed) continue
+        const abstract = this.app.vault.getAbstractFileByPath(trimmed)
+        if (abstract instanceof TFolder) {
+          knowledgeBaseFolders.push(abstract.path)
+        } else if (abstract instanceof TFile) {
+          knowledgeBaseFiles.push(abstract.path)
+        }
+      }
+      const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
+      if (useVaultSearch && ragGloballyEnabled) {
+        try {
+          const querySource = (baseContext || userInstruction || fileTitle).trim()
+          if (querySource.length > 0) {
+            const ragEngine = await this.getRAGEngine()
+            const ragResults = await ragEngine.processQuery({
+              query: querySource.slice(-4000),
+              scope:
+                knowledgeBaseFolders.length > 0 || knowledgeBaseFiles.length > 0
+                  ? {
+                      folders: knowledgeBaseFolders,
+                      files: knowledgeBaseFiles,
+                    }
+                  : undefined,
+            })
+            const snippetLimit = Math.max(
+              1,
+              Math.min(this.settings.ragOptions?.limit ?? 10, 10),
+            )
+            const snippets = ragResults.slice(0, snippetLimit)
+            if (snippets.length > 0) {
+              const formatted = snippets
+                .map((snippet, index) => {
+                  const content = (snippet.content ?? '').trim()
+                  const truncated =
+                    content.length > 600 ? `${content.slice(0, 600)}...` : content
+                  return `Snippet ${index + 1} (from ${snippet.path}):\n${truncated}`
+                })
+                .join('\n\n')
+              if (formatted.trim().length > 0) {
+                ragContextSection = `Vault snippets:\n\n${formatted}\n\n`
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Continuation RAG lookup failed:', error)
+        }
+      }
+
+      const limitedContextHasContent = limitedContext.trim().length > 0
+      const contextSection =
+        hasContext && limitedContextHasContent
+          ? `Context (up to recent portion):\n\n${limitedContext}\n\n`
+          : ''
+      const baseModelContextSection = `${
+        referenceRulesSection
+      }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
+      const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
+      const continueText = hasSelection || hasContext
         ? 'Continue writing from here.'
         : 'Start writing this document.'
 
+      const isBaseModel = Boolean((model as any).isBaseModel)
+      const baseModelSpecialPrompt =
+        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const basePromptSection =
+        isBaseModel && baseModelSpecialPrompt.length > 0
+          ? `${baseModelSpecialPrompt}\n\n`
+          : ''
+      const baseModelCoreContent = `${basePromptSection}${titleLine}${baseModelContextSection}`
+      const baseModelInstructionSuffix = userInstruction
+        ? `${baseModelCoreContent.trim().length > 0 ? '\n\n' : ''}Instruction: ${userInstruction}`
+        : ''
+
       const requestMessages = [
+        ...(isBaseModel
+          ? []
+          : ([
+              {
+                role: 'system' as const,
+                content: systemPrompt,
+              },
+            ] as const)),
         {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `${titleLine}${contextSection}${continueText}${instructionSuffix}`,
+          role: 'user' as const,
+          content: isBaseModel
+            ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
+            : `${basePromptSection}${titleLine}${combinedContextSection}${continueText}${instructionSuffix}`,
         },
       ] as const
 
       // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
       this.isContinuationInProgress = true
 
-      // Stream response and progressively insert into editor
+      const view = this.getEditorView(editor)
+      if (!view) {
+        notice.setMessage('Unable to access editor view.')
+        this.registerTimeout(() => notice.hide(), 1200)
+        return
+      }
+
+      this.ensureInlineSuggestionExtension(view)
+      this.clearInlineSuggestion()
+
+      // Stream response and progressively update ghost suggestion
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const stream = await providerClient.streamResponse(model, {
+      const baseRequest: any = {
         model: model.model,
         messages: requestMessages as unknown as any,
-        stream: true,
-      }, { signal: controller.signal })
+      }
+      if (typeof temperature === 'number') {
+        baseRequest.temperature = temperature
+      }
+      if (typeof topP === 'number') {
+        baseRequest.top_p = topP
+      }
+
+      console.debug('Continuation request params', {
+        overrides: sidebarOverrides,
+        request: baseRequest,
+        streamPreference,
+        useVaultSearch,
+      })
 
       // Insert at current cursor by default; if a selection exists, insert at selection end
       let insertStart = editor.getCursor()
@@ -761,36 +1576,66 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         editor.setCursor(endPos)
         insertStart = endPos
       }
-      let insertedText = ''
-      let prevEnd = insertStart
+      const startLine = view.state.doc.line(insertStart.line + 1)
+      const startOffset = startLine.from + insertStart.ch
+      let suggestionText = ''
 
-      const calcEndPos = (start: { line: number; ch: number }, text: string) => {
-        const parts = text.split('\n')
-        const lineDelta = parts.length - 1
-        const endLine = start.line + lineDelta
-        const endCh = lineDelta === 0 ? start.ch + parts[0].length : parts[parts.length - 1].length
-        return { line: endLine, ch: endCh }
+      const updateContinuationSuggestion = (text: string) => {
+        this.setInlineSuggestionGhost(view, { from: startOffset, text })
+        this.activeInlineSuggestion = {
+          source: 'continuation',
+          editor,
+          view,
+          fromOffset: startOffset,
+          text,
+        }
+        this.continuationInlineSuggestion = {
+          editor,
+          view,
+          text,
+          fromOffset: startOffset,
+          startPos: insertStart,
+        }
       }
 
-      for await (const chunk of stream) {
-        const delta = chunk?.choices?.[0]?.delta
-        const piece = delta?.content ?? ''
-        if (!piece) continue
+      if (streamPreference) {
+        const streamIterator = await providerClient.streamResponse(
+          model,
+          { ...baseRequest, stream: true },
+          { signal: controller.signal },
+        )
 
-        insertedText += piece
-        const newEnd = calcEndPos(insertStart, insertedText)
-        // Replace the previously inserted range with the new accumulated text
-        editor.replaceRange(insertedText, insertStart, prevEnd)
-        prevEnd = newEnd
-      }
+        for await (const chunk of streamIterator) {
+          const delta = chunk?.choices?.[0]?.delta
+          const piece = delta?.content ?? ''
+          if (!piece) continue
 
-      if (insertedText.trim().length > 0) {
-        notice.setMessage('AI continuation inserted.')
+          suggestionText += piece
+          updateContinuationSuggestion(suggestionText)
+        }
       } else {
+        const response = await providerClient.generateResponse(
+          model,
+          { ...baseRequest, stream: false },
+          { signal: controller.signal },
+        )
+
+        const fullText = response.choices?.[0]?.message?.content ?? ''
+        if (fullText) {
+          suggestionText = fullText
+          updateContinuationSuggestion(suggestionText)
+        }
+      }
+
+      if (suggestionText.trim().length > 0) {
+        notice.setMessage('Continuation suggestion ready. Press Tab to accept.')
+      } else {
+        this.clearInlineSuggestion()
         notice.setMessage('No continuation generated.')
       }
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
+      this.clearInlineSuggestion()
       if ((error as any)?.name === 'AbortError') {
         const n = new Notice('已取消生成。')
         this.registerTimeout(() => n.hide(), 1000)

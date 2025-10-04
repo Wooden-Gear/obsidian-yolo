@@ -97,24 +97,6 @@ function AssistantItem({
             />
           </ObsidianSetting>
 
-          <ObsidianSetting
-            name={t('settings.chat.maxContextMessages', 'Max context messages')}
-            desc={t('settings.assistants.maxContextMessagesDesc', 'If set, this assistant will use this number of previous chat messages, overriding the global default.')}
-          >
-            <ObsidianTextInput
-              value={(assistant as any).maxContextMessages?.toString?.() ?? ''}
-              onChange={(value) => {
-                const parsed = parseInt(value)
-                if (isNaN(parsed)) {
-                  const { maxContextMessages, ...rest } = assistant as any
-                  onUpdate(rest as Assistant)
-                  return
-                }
-                if (parsed < 0) return
-                onUpdate({ ...(assistant as any), maxContextMessages: parsed })
-              }}
-            />
-          </ObsidianSetting>
         </div>
       )}
     </div>
@@ -198,7 +180,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header-row">
-        <div>{t('settings.assistants.title')}</div>
+        <div className="smtcmp-settings-header">{t('settings.assistants.title')}</div>
         <button
           onClick={handleAddAssistant}
           aria-label={t('settings.assistants.addAssistantAria', 'Add new assistant')}

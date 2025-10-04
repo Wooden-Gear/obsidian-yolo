@@ -11,6 +11,7 @@ type ObsidianTextAreaProps = {
   inputClassName?: string
   autoFocus?: boolean
   onKeyDown?: (ev: KeyboardEvent) => void
+  disabled?: boolean
 }
 
 export function ObsidianTextArea({
@@ -21,6 +22,7 @@ export function ObsidianTextArea({
   inputClassName,
   autoFocus,
   onKeyDown,
+  disabled = false,
 }: ObsidianTextAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
@@ -62,7 +64,8 @@ export function ObsidianTextArea({
     if (!textAreaComponent) return
     if (placeholder) textAreaComponent.setPlaceholder(placeholder)
     textAreaComponent.setValue(value)
-  }, [textAreaComponent, value, placeholder])
+    textAreaComponent.inputEl.disabled = !!disabled
+  }, [textAreaComponent, value, placeholder, disabled])
 
   // Apply input class for theming instead of inline styles
   useEffect(() => {

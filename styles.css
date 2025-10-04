@@ -4,7 +4,17 @@
   align-items: center;
   margin-bottom: var(--size-4-2);
   gap: var(--size-4-2);
+  padding: var(--size-2-1) 0;
 }
+
+.smtcmp-ghost-text {
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 0.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 
 /* Chat input: outer wrapper to anchor settings button at top-right */
 .smtcmp-chat-input-wrapper {
@@ -30,6 +40,50 @@
   font-size: var(--font-ui-medium);
   font-weight: var(--font-medium);
   margin: 0;
+}
+
+
+.smtcmp-chat-header-title-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.smtcmp-chat-header-title-toggle:focus-visible {
+  outline: 1px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.smtcmp-chat-header-title-toggle:hover,
+.smtcmp-chat-header-title-toggle:focus,
+.smtcmp-chat-header-title-toggle:active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.smtcmp-chat-header-title-toggle .smtcmp-chat-header-title {
+  margin: 0;
+}
+
+.smtcmp-chat-header-title-icon {
+  height: 14px;
+  width: 14px;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.smtcmp-chat-header-title-toggle:hover .smtcmp-chat-header-title-icon {
+  color: var(--text-normal);
 }
 
 .smtcmp-chat-header-buttons {
@@ -150,6 +204,342 @@
     align-items: center;
     gap: var(--size-4-1);
   }
+}
+
+.smtcmp-sidebar-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+
+.smtcmp-sidebar-panels {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+
+.smtcmp-sidebar-pane {
+  display: none;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.smtcmp-sidebar-pane.is-active {
+  display: flex;
+  width: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.smtcmp-chat-composer-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.smtcmp-composer-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--size-4-3) var(--size-4-3) var(--size-4-2);
+}
+
+.smtcmp-composer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-5);
+  padding: 0;
+}
+
+.smtcmp-composer-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-4);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow) 40%, transparent);
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.smtcmp-composer-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+  margin-bottom: var(--size-2-4);
+  position: relative;
+  padding-bottom: 0;
+}
+
+.smtcmp-composer-heading-title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.smtcmp-composer-heading-title::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: var(--h1-color, var(--text-accent));
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.smtcmp-composer-heading-desc {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+.smtcmp-composer-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+  padding: var(--size-4-3);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.smtcmp-composer-option:hover {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+.smtcmp-composer-option--model {
+  flex-wrap: wrap;
+  gap: var(--size-4-3);
+}
+
+.smtcmp-composer-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.smtcmp-composer-option-title {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+  font-size: var(--font-ui-small);
+  margin-bottom: var(--size-2-1);
+}
+
+.smtcmp-composer-option-desc {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+.smtcmp-composer-option-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: var(--size-2-1);
+  min-width: auto;
+  margin-left: auto;
+}
+
+.smtcmp-composer-option-control--full {
+  width: 100%;
+  justify-content: flex-start;
+  margin-left: 0;
+}
+
+.smtcmp-composer-option-control--full textarea {
+  width: 100%;
+  min-height: 120px;
+}
+
+.smtcmp-composer-option-control--full .smtcmp-textarea-container,
+.smtcmp-composer-option-control--full .smtcmp-textarea-container textarea {
+  width: 100% !important;
+}
+
+.smtcmp-composer-option-control select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.smtcmp-composer-option--model .smtcmp-composer-option-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0;
+  justify-content: flex-start;
+}
+
+.smtcmp-composer-option--model .smtcmp-composer-option-control > div,
+.smtcmp-composer-option--model .smtcmp-composer-option-control select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.smtcmp-composer-option-control .smtcmp-display-contents,
+.smtcmp-composer-option-control .checkbox-container {
+  margin-left: auto;
+}
+
+.smtcmp-composer-option-control .checkbox-component,
+.smtcmp-composer-option-control .checkbox-container,
+.smtcmp-composer-option-control .setting-item-control {
+  margin-left: auto;
+}
+
+.smtcmp-composer-context-picker {
+  margin-top: var(--size-4-2);
+}
+
+.smtcmp-composer-hint {
+  margin-top: var(--size-4-2);
+  padding: var(--size-2-3) var(--size-4-2);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  border: 1px dashed var(--background-modifier-border);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.smtcmp-composer-container .setting-item {
+  border-top: none;
+}
+
+/* 特殊样式：模型选择区域 */
+.smtcmp-composer-section--primary {
+  background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+  border: 2px solid var(--interactive-accent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+}
+
+.smtcmp-composer-section--primary .smtcmp-composer-heading-title::before {
+  background: linear-gradient(135deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%);
+  width: 6px;
+  height: 20px;
+}
+
+/* 功能开关区域 */
+.smtcmp-composer-section--toggles .smtcmp-composer-option {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border-hover);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2) var(--size-4-3);
+}
+
+.smtcmp-composer-section--toggles .smtcmp-composer-option:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+/* 高级设置区域 */
+.smtcmp-composer-section--advanced {
+  background: var(--background-secondary);
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.smtcmp-composer-section--advanced .smtcmp-composer-heading-title {
+  font-size: var(--font-ui-small);
+  opacity: 0.8;
+}
+
+.smtcmp-composer-section--advanced .smtcmp-composer-heading-title::before {
+  background: var(--text-muted);
+  width: 3px;
+  height: 16px;
+}
+
+/* 改进开关控件样式 */
+.checkbox-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background: var(--background-modifier-border);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.checkbox-container input[type="checkbox"]:checked {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+.checkbox-container input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  top: 1px;
+  left: 1px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.checkbox-container input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+}
+
+/* 优先参考目录样式优化 */
+.smtcmp-composer-hint {
+  margin-top: var(--size-4-3);
+  padding: var(--size-4-3);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  position: relative;
+  overflow: hidden;
+}
+
+.smtcmp-composer-hint::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%);
 }
 
 .smtcmp-chat-messages {
@@ -1134,6 +1524,196 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-segmented > button:hover {
   background: var(--background-modifier-hover);
 }
+
+/* 视图切换标签页样式 - 手风琴展开效果 */
+.smtcmp-view-toggle {
+  display: inline-flex;
+  position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px;
+  overflow: hidden;
+  isolation: isolate;
+  transition: all 0.2s ease;
+  width: 200px; /* 固定总宽度 */
+  box-shadow: 
+    0 1px 3px color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+
+  /* 布局变量 */
+  --smtcmp-total-width: 200px;
+  --smtcmp-padding-inline: 8px; /* 左右 4px */
+  --smtcmp-collapsed-width: 50px;
+  --smtcmp-expanded-width: calc(
+    var(--smtcmp-total-width) - var(--smtcmp-padding-inline) - var(--smtcmp-collapsed-width)
+  );
+}
+
+.smtcmp-view-toggle-button {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none;
+  padding: 8px 6px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.4;
+  /* 重置所有可能的按钮样式 */
+  box-shadow: none !important;
+  outline: none;
+  /* 默认宽度：收缩状态 */
+  width: var(--smtcmp-collapsed-width);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+/* 展开状态：悬停或激活的按钮 */
+.smtcmp-view-toggle-button--expanded {
+  width: var(--smtcmp-expanded-width);
+  justify-content: center;
+  gap: 6px;
+}
+
+.smtcmp-view-toggle-button-label {
+  display: inline-block;
+  transition:
+    opacity 0.2s ease,
+    max-width 0.3s ease;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 展开状态：显示文字 */
+.smtcmp-view-toggle-button--expanded .smtcmp-view-toggle-button-label {
+  opacity: 1;
+  max-width: 100px;
+}
+
+.smtcmp-view-toggle-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.smtcmp-view-toggle-button--active .smtcmp-view-toggle-button-icon {
+  color: var(--h1-color, var(--interactive-accent));
+}
+
+.smtcmp-view-toggle-button-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.smtcmp-view-toggle-button:hover:not(.smtcmp-view-toggle-button--active) {
+  color: var(--text-normal);
+  background-color: transparent !important;
+  background: none !important;
+}
+
+.smtcmp-view-toggle-button--active {
+  color: var(--h1-color, var(--interactive-accent));
+  font-weight: var(--font-semibold);
+  background-color: transparent !important;
+}
+
+.smtcmp-view-toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.smtcmp-view-toggle-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  background: transparent;
+  border: 2px solid var(--h1-color, var(--interactive-accent));
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+/* 默认状态：根据激活的视图设置宽度和位置 */
+/* indicator只跟随activeView，不响应hover */
+.smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  width: var(--smtcmp-collapsed-width);
+  transform: translateX(0);
+}
+
+.smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  width: var(--smtcmp-collapsed-width);
+  transform: translateX(var(--smtcmp-collapsed-width));
+}
+
+/* 当chat激活且被展开时（hover在激活的chat上） */
+.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  width: var(--smtcmp-expanded-width);
+  transform: translateX(0);
+}
+
+/* 当composer激活且被展开时（hover在激活的composer上） */
+.smtcmp-view-toggle[data-expanded-view="composer"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  width: var(--smtcmp-expanded-width);
+  transform: translateX(var(--smtcmp-collapsed-width));
+}
+
+/* 当composer激活但chat被展开时（hover在chat上） */
+.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="false"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  width: var(--smtcmp-collapsed-width);
+  transform: translateX(var(--smtcmp-expanded-width));
+}
+
+/* 在header中的样式调整 */
+.smtcmp-chat-header .smtcmp-view-toggle {
+  margin-right: auto;
+}
+
+/* 增强视觉反馈 */
+.smtcmp-view-toggle:hover {
+  box-shadow: 
+    0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+/* 响应式调整 */
+@media (max-width: 400px) {
+  .smtcmp-view-toggle {
+    width: 160px;
+    --smtcmp-total-width: 160px;
+    --smtcmp-collapsed-width: 40px;
+  }
+  .smtcmp-view-toggle-button {
+    padding: 6px 2px;
+    font-size: var(--font-ui-smallest);
+  }
+  .smtcmp-view-toggle-button--expanded {
+    width: var(--smtcmp-expanded-width);
+  }
+  .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+    width: var(--smtcmp-collapsed-width);
+  }
+  .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+    width: var(--smtcmp-collapsed-width);
+    transform: translateX(var(--smtcmp-collapsed-width));
+  }
+}
 .smtcmp-segmented > button.active {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
@@ -1438,6 +2018,97 @@ button.smtcmp-chat-input-model-select {
     height: var(--icon-l);
     width: var(--icon-l);
     stroke-width: var(--icon-stroke);
+  }
+}
+
+/* Drag handle for reorderable rows */
+.smtcmp-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 0 var(--size-4-1);
+  user-select: none;
+}
+
+.smtcmp-drag-handle:hover {
+  color: var(--text-normal);
+}
+
+.smtcmp-drag-handle svg {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  stroke-width: var(--icon-stroke);
+}
+
+.smtcmp-drag-handle {
+  padding: 0; /* 去掉手柄内部左右留白 */
+  transition: transform 120ms ease, color 120ms ease;
+}
+
+/* 紧凑化：手柄列（第一列）不占额外空间，仅按内容宽度布局 */
+.smtcmp-settings-table th:first-child,
+.smtcmp-settings-table td:first-child,
+.smtcmp-models-table th:first-child,
+.smtcmp-models-table td:first-child {
+  padding-left: 0;
+  padding-right: 0;
+  width: 0; /* 让列宽收缩为内容宽度（图标本身宽度）*/
+}
+
+/* 覆盖 ChatModelsSubSection 中 colgroup 的第一列固定宽度 */
+.smtcmp-settings-table col:first-child {
+  width: 0 !important;
+}
+
+/* Plan A: 拖拽行与插入位置的视觉反馈（无布局抖动） */
+.smtcmp-row-dragging {
+  background-color: var(--background-modifier-hover);
+  transform: translateX(2px) scale(0.995);
+  opacity: 0.98;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+  transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  will-change: transform, opacity;
+}
+
+/* 使用 inset box-shadow 绘制顶部/底部插入线，避免改变 row 高度导致抖动 */
+.smtcmp-row-drag-over-before {
+  box-shadow: inset 0 2px 0 0 var(--interactive-accent);
+  transition: box-shadow 120ms ease;
+}
+
+.smtcmp-row-drag-over-after {
+  box-shadow: inset 0 -2px 0 0 var(--interactive-accent);
+  transition: box-shadow 120ms ease;
+}
+
+/* 手柄抓取时的轻微强调 */
+.smtcmp-drag-handle--active {
+  color: var(--text-normal);
+  transform: scale(1.05);
+}
+
+/* 放下成功后的瞬时反馈：高亮并轻微回弹（不改变布局尺寸） */
+.smtcmp-row-drop-success {
+  animation: smtcmp-drop-flash 650ms ease-out;
+}
+
+@keyframes smtcmp-drop-flash {
+  0% {
+    background-color: var(--background-modifier-hover);
+    transform: translateX(2px) scale(0.995);
+    opacity: 0.98;
+  }
+  40% {
+    background-color: var(--background-modifier-hover);
+    transform: translateX(0) scale(1.002);
+    opacity: 1;
+  }
+  100% {
+    background-color: transparent;
+    transform: none;
+    opacity: 1;
   }
 }
 
@@ -2012,6 +2683,9 @@ button.smtcmp-chat-input-model-select {
   font-style: italic;
 }
 
+/* Embedding models table column sizing */
+/* Note: Embedding table uses <colgroup> with last two 60px columns to align with chat models */
+
 .smtcmp-add-provider-btn {
   width: 100%;
   padding: var(--size-4-2);
@@ -2440,6 +3114,10 @@ button.smtcmp-chat-input-model-select {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.smtcmp-settings-header-row .smtcmp-settings-header {
+  margin: 0;
 }
 
 .smtcmp-add-assistant-btn {

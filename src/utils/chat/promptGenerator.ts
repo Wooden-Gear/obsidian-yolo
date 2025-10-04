@@ -12,6 +12,7 @@ import {
   ChatToolMessage,
   ChatUserMessage,
 } from '../../types/chat'
+import { ChatModel } from '../../types/chat-model.types'
 import { ContentPart, RequestMessage } from '../../types/llm/request'
 import {
   MentionableBlock,
@@ -54,12 +55,14 @@ export class PromptGenerator {
     chatMode,
     learningMode,
     maxContextOverride,
+    model,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
     chatMode?: 'rag' | 'brute'
     learningMode?: boolean
     maxContextOverride?: number
+    model: ChatModel
   }): Promise<RequestMessage[]> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
@@ -98,10 +101,23 @@ export class PromptGenerator {
     }
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
-    const systemMessage = this.getSystemMessage(shouldUseRAG, hasTools)
+    const isBaseModel = Boolean((model as any).isBaseModel)
+    const baseModelSpecialPrompt = (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+    const baseModelSpecialPromptMessage =
+      isBaseModel && baseModelSpecialPrompt.length > 0
+        ? [{ role: 'user' as const, content: baseModelSpecialPrompt }]
+        : []
 
-    const customInstructionMessage = this.getCustomInstructionMessage()
-    const learningModeMessage = learningMode ? this.getLearningModeMessage() : null
+    const systemMessage = isBaseModel
+      ? null
+      : this.getSystemMessage(shouldUseRAG, hasTools)
+
+    const customInstructionMessage = isBaseModel
+      ? null
+      : this.getCustomInstructionMessage()
+    const learningModeMessage = !isBaseModel && learningMode
+      ? this.getLearningModeMessage()
+      : null
 
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
@@ -112,12 +128,13 @@ export class PromptGenerator {
         : undefined
 
     const requestMessages: RequestMessage[] = [
-      systemMessage,
+      ...baseModelSpecialPromptMessage,
+      ...(systemMessage ? [systemMessage] : []),
       ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
       ...this.getChatHistoryMessages({ messages: compiledMessages, maxContextOverride }),
-      ...(shouldUseRAG && this.getModelPromptLevel() == PromptLevel.Default
+      ...(shouldUseRAG && !isBaseModel && this.getModelPromptLevel() == PromptLevel.Default
         ? [this.getRagInstructionMessage()]
         : []),
     ]
@@ -133,23 +150,12 @@ export class PromptGenerator {
     maxContextOverride?: number
   }): RequestMessage[] {
     // Determine max context messages with priority:
-    // 1) current assistant's override (if selected and defined)
+    // 1) explicit override from conversation settings
     // 2) global settings.chatOptions.maxContextMessages
     // 3) class default (32)
-    const currentAssistantId = this.settings.currentAssistantId
-    const assistants = this.settings.assistants || []
-    const currentAssistant = currentAssistantId
-      ? assistants.find((a) => a.id === currentAssistantId)
-      : null
-
-    const assistantOverride =
-      typeof currentAssistant?.maxContextMessages === 'number'
-        ? currentAssistant?.maxContextMessages
-        : undefined
-
     const maxContext = Math.max(
       0,
-      maxContextOverride ?? assistantOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
+      maxContextOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
     )
 
     // Get the last N messages and parse them into request messages
