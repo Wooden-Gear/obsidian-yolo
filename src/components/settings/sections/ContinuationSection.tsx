@@ -7,7 +7,6 @@ import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
@@ -22,18 +21,10 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
-  const orderedEnabledModels = useMemo(() => {
-    const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
-    const providerOrder = settings.providers.map((p) => p.id)
-    const providerIdsInModels = Array.from(new Set(enabledModels.map((m) => m.providerId)))
-    const orderedProviderIds = [
-      ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
-      ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
-    ]
-    return orderedProviderIds.flatMap((pid) =>
-      enabledModels.filter((m) => m.providerId === pid),
-    )
-  }, [settings.chatModels, settings.providers])
+  const enabledChatModels = useMemo(
+    () => settings.chatModels.filter(({ enable }) => enable ?? true),
+    [settings.chatModels],
+  )
 
   const enableSuperContinuation = Boolean(
     settings.continuationOptions.enableSuperContinuation,
@@ -63,7 +54,7 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
   const defaultContinuationModelId =
     settings.continuationOptions.continuationModelId ??
     settings.continuationOptions.tabCompletionModelId ??
-    orderedEnabledModels[0]?.id ??
+    enabledChatModels[0]?.id ??
     settings.chatModelId
 
   const updateTabCompletionOptions = async (
@@ -259,17 +250,16 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               value={
                 settings.continuationOptions.tabCompletionModelId ??
                 settings.continuationOptions.continuationModelId ??
-                orderedEnabledModels[0]?.id ??
+                enabledChatModels[0]?.id ??
                 ''
               }
               options={Object.fromEntries(
-                orderedEnabledModels.map((m) => [
-                  m.id,
-                  getModelDisplayNameWithProvider(
-                    m.id,
-                    settings.providers.find((p) => p.id === m.providerId)?.id,
-                  ),
-                ]),
+                enabledChatModels.map((chatModel) => {
+                  const label = chatModel.name?.trim()
+                    ? chatModel.name!.trim()
+                    : chatModel.model || chatModel.id
+                  return [chatModel.id, label]
+                }),
               )}
               onChange={async (value) => {
                 await setSettings({
