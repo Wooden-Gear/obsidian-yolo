@@ -39,12 +39,16 @@ export class MorphProvider extends BaseLLMProvider<
       throw new Error('Model is not an morph model')
     }
 
+    let formattedRequest = {
+      ...request,
+      prediction: undefined, // morph doesn't support prediction
+    }
+
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
+
     return this.adapter.generateResponse(
       this.client,
-      {
-        ...request,
-        prediction: undefined, // morph doesn't support prediction
-      },
+      formattedRequest,
       options,
     )
   }
@@ -58,12 +62,16 @@ export class MorphProvider extends BaseLLMProvider<
       throw new Error('Model is not an morph model')
     }
 
+    let formattedRequest = {
+      ...request,
+      prediction: undefined, // morph doesn't support prediction
+    }
+
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
+
     return this.adapter.streamResponse(
       this.client,
-      {
-        ...request,
-        prediction: undefined, // morph doesn't support prediction
-      },
+      formattedRequest,
       options,
     )
   }

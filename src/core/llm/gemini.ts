@@ -89,7 +89,7 @@ export class GeminiProvider extends BaseLLMProvider<
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      const result: any = await this.client.models.generateContent({
+      let payload: Record<string, unknown> = {
         model: request.model,
         contents: request.messages
           .map((message) => GeminiProvider.parseRequestMessage(message))
@@ -98,7 +98,15 @@ export class GeminiProvider extends BaseLLMProvider<
           ...config,
           ...(tools ? { tools } : {}),
         },
-      })
+      }
+
+      if (systemInstruction) {
+        payload.systemInstruction = systemInstruction
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const result: any = await this.client.models.generateContent(payload as any)
 
       const messageId = crypto.randomUUID()
       return GeminiProvider.parseNonStreamingResponse(result, request.model, messageId)
@@ -155,7 +163,7 @@ export class GeminiProvider extends BaseLLMProvider<
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      const stream = await this.client.models.generateContentStream({
+      let payload: Record<string, unknown> = {
         model: request.model,
         contents: request.messages
           .map((message) => GeminiProvider.parseRequestMessage(message))
@@ -164,7 +172,15 @@ export class GeminiProvider extends BaseLLMProvider<
           ...config,
           ...(tools ? { tools } : {}),
         },
-      })
+      }
+
+      if (systemInstruction) {
+        payload.systemInstruction = systemInstruction
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const stream = await this.client.models.generateContentStream(payload as any)
 
       const messageId = crypto.randomUUID()
       return this.streamResponseGenerator(stream as any, request.model, messageId)

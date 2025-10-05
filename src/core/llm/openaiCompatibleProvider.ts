@@ -52,7 +52,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest: any = {
+    let formattedRequest: any = {
       ...request,
       messages: formatMessages(request.messages),
     }
@@ -128,6 +128,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
         formattedRequest.reasoning = { effort }
       }
     }
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
 
@@ -146,7 +147,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest: any = {
+    let formattedRequest: any = {
       ...request,
       messages: formatMessages(request.messages),
     }
@@ -217,6 +218,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
         formattedRequest.reasoning = { effort }
       }
     }
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
     return this.adapter.streamResponse(this.client, formattedRequest, options)
   }
 

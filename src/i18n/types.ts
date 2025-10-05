@@ -212,6 +212,11 @@ export interface TranslationKeys {
       toolTypeDesc?: string
       toolTypeNone?: string
       toolTypeGemini?: string
+      customParameters?: string
+      customParametersDesc?: string
+      customParametersAdd?: string
+      customParametersKeyPlaceholder?: string
+      customParametersValuePlaceholder?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string

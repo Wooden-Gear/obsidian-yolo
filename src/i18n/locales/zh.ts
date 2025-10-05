@@ -202,6 +202,13 @@ export const zh: TranslationKeys = {
       toolTypeDesc: '选择模型支持的工具类型',
       toolTypeNone: '不启用工具',
       toolTypeGemini: 'Gemini 工具',
+      customParameters: '自定义参数',
+      customParametersDesc:
+        '为请求附加额外字段，值支持纯文本或 JSON（例如 {"type":"enabled"} 或 0.7）。',
+      customParametersAdd: '添加参数',
+      customParametersKeyPlaceholder: '参数名，例如 thinking',
+      customParametersValuePlaceholder:
+        '参数值，支持 JSON，如 {"type":"enabled"} 或 0.7',
       promptLevel: '提示级别',
       promptLevelDesc: '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
       promptLevelDefault: '默认',

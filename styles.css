@@ -2021,6 +2021,21 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
+.smtcmp-settings-kv-entry .setting-item-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+}
+
+.smtcmp-settings-kv-entry .setting-item-control input {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.smtcmp-settings-kv-entry .setting-item-control .setting-item-button {
+  margin-top: 0;
+}
+
 /* Drag handle for reorderable rows */
 .smtcmp-drag-handle {
   display: inline-flex;

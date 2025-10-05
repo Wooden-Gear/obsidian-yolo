@@ -205,6 +205,13 @@ export const en: TranslationKeys = {
       toolTypeDesc: 'Select the tool type supported by the model',
       toolTypeNone: 'No Tools',
       toolTypeGemini: 'Gemini Tools',
+      customParameters: 'Custom parameters',
+      customParametersDesc:
+        'Attach additional request fields. Values accept plain text or JSON (e.g., {"thinking": {"type": "enabled"}}).',
+      customParametersAdd: 'Add parameter',
+      customParametersKeyPlaceholder: 'Key, e.g., thinking',
+      customParametersValuePlaceholder:
+        'Value, plain text or JSON. Example: {"type":"enabled"} or 0.7',
       promptLevel: 'Prompt Level',
       promptLevelDesc: 'Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.',
       promptLevelDefault: 'default',

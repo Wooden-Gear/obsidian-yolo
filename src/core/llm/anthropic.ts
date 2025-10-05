@@ -72,38 +72,38 @@ export class AnthropicProvider extends BaseLLMProvider<
     )
 
     try {
-      const response = await this.client.messages.create(
-        {
-          model: request.model,
-          messages: request.messages
-            .map((m) => AnthropicProvider.parseRequestMessage(m))
-            .filter((m) => m !== null),
-          system: systemMessage,
-          thinking: model.thinking?.enabled
-            ? {
-                type: 'enabled',
-                budget_tokens: model.thinking.budget_tokens,
-              }
-            : undefined,
-          tools: request.tools?.map((t) =>
-            AnthropicProvider.parseRequestTool(t),
-          ),
-          tool_choice: request.tool_choice
-            ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
-            : undefined,
-          max_tokens:
-            request.max_tokens ??
-            (model.thinking?.enabled
-              ? model.thinking?.budget_tokens +
-                AnthropicProvider.DEFAULT_MAX_TOKENS
-              : AnthropicProvider.DEFAULT_MAX_TOKENS),
-          temperature: request.temperature,
-          top_p: request.top_p,
-        },
-        {
-          signal: options?.signal,
-        },
-      )
+      let payload: Record<string, unknown> = {
+        model: request.model,
+        messages: request.messages
+          .map((m) => AnthropicProvider.parseRequestMessage(m))
+          .filter((m) => m !== null),
+        system: systemMessage,
+        thinking: model.thinking?.enabled
+          ? {
+              type: 'enabled',
+              budget_tokens: model.thinking.budget_tokens,
+            }
+          : undefined,
+        tools: request.tools?.map((t) =>
+          AnthropicProvider.parseRequestTool(t),
+        ),
+        tool_choice: request.tool_choice
+          ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
+          : undefined,
+        max_tokens:
+          request.max_tokens ??
+          (model.thinking?.enabled
+            ? model.thinking?.budget_tokens + AnthropicProvider.DEFAULT_MAX_TOKENS
+            : AnthropicProvider.DEFAULT_MAX_TOKENS),
+        temperature: request.temperature,
+        top_p: request.top_p,
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const response = await this.client.messages.create(payload as any, {
+        signal: options?.signal,
+      })
 
       return AnthropicProvider.parseNonStreamingResponse(response)
     } catch (error) {
@@ -166,39 +166,39 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
     )
 
     try {
-      const stream = await this.client.messages.create(
-        {
-          model: request.model,
-          messages: request.messages
-            .map((m) => AnthropicProvider.parseRequestMessage(m))
-            .filter((m) => m !== null),
-          system: systemMessage,
-          thinking: model.thinking?.enabled
-            ? {
-                type: 'enabled',
-                budget_tokens: model.thinking.budget_tokens,
-              }
-            : undefined,
-          tools: request.tools?.map((t) =>
-            AnthropicProvider.parseRequestTool(t),
-          ),
-          tool_choice: request.tool_choice
-            ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
-            : undefined,
-          max_tokens:
-            request.max_tokens ??
-            (model.thinking?.enabled
-              ? model.thinking?.budget_tokens +
-                AnthropicProvider.DEFAULT_MAX_TOKENS
-              : AnthropicProvider.DEFAULT_MAX_TOKENS),
-          temperature: request.temperature,
-          top_p: request.top_p,
-          stream: true,
-        },
-        {
-          signal: options?.signal,
-        },
-      )
+      let payload: Record<string, unknown> = {
+        model: request.model,
+        messages: request.messages
+          .map((m) => AnthropicProvider.parseRequestMessage(m))
+          .filter((m) => m !== null),
+        system: systemMessage,
+        thinking: model.thinking?.enabled
+          ? {
+              type: 'enabled',
+              budget_tokens: model.thinking.budget_tokens,
+            }
+          : undefined,
+        tools: request.tools?.map((t) =>
+          AnthropicProvider.parseRequestTool(t),
+        ),
+        tool_choice: request.tool_choice
+          ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
+          : undefined,
+        max_tokens:
+          request.max_tokens ??
+          (model.thinking?.enabled
+            ? model.thinking?.budget_tokens + AnthropicProvider.DEFAULT_MAX_TOKENS
+            : AnthropicProvider.DEFAULT_MAX_TOKENS),
+        temperature: request.temperature,
+        top_p: request.top_p,
+        stream: true,
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const stream = (await this.client.messages.create(payload as any, {
+        signal: options?.signal,
+      })) as unknown as AsyncIterable<MessageStreamEvent>
 
       return this.streamResponseGenerator(stream)
     } catch (error) {

@@ -65,6 +65,9 @@ function AddChatModelModalComponent({
   const [geminiBudget, setGeminiBudget] = useState<string>('-1')
   // Tool type (only meaningful for Gemini provider)
   const [toolType, setToolType] = useState<'none' | 'gemini'>('none')
+  const [customParameters, setCustomParameters] = useState<
+    Array<{ key: string; value: string }>
+  >([])
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -215,6 +218,10 @@ function AddChatModelModalComponent({
       delete (reasoningPatch as any).isBaseModel
     }
 
+    const sanitizedCustomParameters = customParameters
+      .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
+      .filter((entry) => entry.key.length > 0)
+
     const modelDataWithPrefix: ChatModel = {
       ...formData,
       ...(reasoningPatch as any),
@@ -224,6 +231,9 @@ function AddChatModelModalComponent({
         : formData.model,
       // Persist tool type when provider is Gemini; keep optional otherwise
       ...(selectedProvider?.type === 'gemini' ? { toolType } : {}),
+      ...(sanitizedCustomParameters.length > 0
+        ? { customParameters: sanitizedCustomParameters }
+        : {}),
     }
 
     // Allow duplicates of the same calling ID by uniquifying internal id; no blocking here
@@ -376,6 +386,60 @@ function AddChatModelModalComponent({
       )}
 
       {/* Provider is derived from the current group context; field removed intentionally */}
+
+      <ObsidianSetting
+        name={t('settings.models.customParameters')}
+        desc={t('settings.models.customParametersDesc')}
+      >
+        <ObsidianButton
+          text={t('settings.models.customParametersAdd')}
+          onClick={() =>
+            setCustomParameters((prev) => [...prev, { key: '', value: '' }])
+          }
+        />
+      </ObsidianSetting>
+
+      {customParameters.map((param, index) => (
+        <ObsidianSetting
+          key={`custom-parameter-${index}`}
+          className="smtcmp-settings-kv-entry"
+        >
+          <ObsidianTextInput
+            value={param.key}
+            placeholder={t(
+              'settings.models.customParametersKeyPlaceholder',
+            )}
+            onChange={(value: string) =>
+              setCustomParameters((prev) => {
+                const next = [...prev]
+                next[index] = { ...next[index], key: value }
+                return next
+              })
+            }
+          />
+          <ObsidianTextInput
+            value={param.value}
+            placeholder={t(
+              'settings.models.customParametersValuePlaceholder',
+            )}
+            onChange={(value: string) =>
+              setCustomParameters((prev) => {
+                const next = [...prev]
+                next[index] = { ...next[index], value }
+                return next
+              })
+            }
+          />
+          <ObsidianButton
+            text={t('common.remove')}
+            onClick={() =>
+              setCustomParameters((prev) =>
+                prev.filter((_, removeIndex) => removeIndex !== index),
+              )
+            }
+          />
+        </ObsidianSetting>
+      ))}
 
       
 
