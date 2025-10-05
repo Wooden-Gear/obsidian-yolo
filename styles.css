@@ -2427,6 +2427,81 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-faint);
 }
 
+.smtcmp-tree-root,
+.smtcmp-tree-children {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.smtcmp-tree-children {
+  margin-left: 0;
+}
+
+.smtcmp-tree-item {
+  margin: 0;
+}
+
+.smtcmp-tree-guides {
+  display: flex;
+  align-self: stretch;
+  pointer-events: none;
+  flex: 0 0 auto;
+  margin-right: 4px;
+}
+
+.smtcmp-tree-guide {
+  position: relative;
+  width: 16px;
+  flex: 0 0 16px;
+}
+
+.smtcmp-tree-guide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-0.5px);
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+.smtcmp-tree-guide.is-empty::before {
+  display: none;
+}
+
+.smtcmp-tree-guide-branch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  transform: translate(-0.5px, -0.5px);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.smtcmp-tree-guide-branch::before {
+  bottom: -12px;
+}
+
+.smtcmp-tree-guide-branch.is-last::before {
+  bottom: 50%;
+}
+
+.smtcmp-tree-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.smtcmp-folder-row:not(.is-disabled):hover .smtcmp-tree-icon {
+  color: var(--text-normal);
+}
+
+.smtcmp-folder-row.is-disabled .smtcmp-tree-icon {
+  color: var(--text-faint);
+}
+
 /* Indent helpers using CSS variables for depth */
 .smtcmp-depth { --smtcmp-depth: 0; }
 .smtcmp-depth-0 { --smtcmp-depth: 0; }
@@ -3081,6 +3156,8 @@ button.smtcmp-chat-input-model-select {
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  padding: 4px 8px;
+  gap: 8px;
 }
 
 .smtcmp-folder-picker .smtcmp-provider-header:hover {
@@ -3103,6 +3180,10 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-folder-picker .smtcmp-provider-expand-btn {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
 }
 
 /* ===== Added for review fixes: move inline styles to CSS ===== */

@@ -1,6 +1,6 @@
 import { App, TFile, TFolder, Vault } from 'obsidian'
 import React, { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Folder, FolderClosed, FolderOpen } from 'lucide-react'
 
 import { ReactModal } from '../../common/ReactModal'
 import { listAllFolderPaths } from '../../../utils/rag-utils'
@@ -143,65 +143,81 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
     })
   }
 
-  // hover 态通过 CSS :hover 处理
-  const renderNode = (node: Node, depth: number) => {
-    const hasChildren = node.type === 'folder' && node.children.length > 0
-    const isOpen = node.type === 'folder' && expanded.has(node.path)
-    const isSelected = existing.includes(node.path)
-    const isCoveredByAncestor = existing.some((p) => {
-      if (p === '') return true
-      if (p === node.path) return true
-      return node.path.startsWith(p + '/')
-    })
-    const isDisabled = isSelected || (node.type === 'file' ? isCoveredByAncestor : isCoveredByAncestor)
-    return (
-      <li key={node.path}>
-        <div
-          className={
-            `smtcmp-provider-header smtcmp-folder-row smtcmp-indent-folder smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}` +
-            (isDisabled ? ' is-disabled' : '')
-          }
-          onClick={() => {
-            if (isDisabled) return
-            onPick(node.path)
-            onClose()
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (isDisabled) return
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
+  const renderNodes = (nodes: Node[], depth: number, ancestorLast: boolean[]): React.ReactNode => {
+    return nodes.map((node, index) => {
+      const hasChildren = node.type === 'folder' && node.children.length > 0
+      const isOpen = node.type === 'folder' && expanded.has(node.path)
+      const isSelected = existing.includes(node.path)
+      const isCoveredByAncestor = existing.some((p) => {
+        if (p === '') return true
+        if (p === node.path) return true
+        return node.path.startsWith(p + '/')
+      })
+      const isDisabled = isSelected || (node.type === 'file' ? isCoveredByAncestor : isCoveredByAncestor)
+      const isLast = index === nodes.length - 1
+      const guides = ancestorLast.map((isLastAncestor, levelIdx) => (
+        <span key={`guide-${node.path}-${levelIdx}`} className={`smtcmp-tree-guide ${isLastAncestor ? 'is-empty' : ''}`} />
+      ))
+
+      const folderIcon = hasChildren ? (isOpen ? <FolderOpen size={16} /> : <FolderClosed size={16} />) : <Folder size={16} />
+      const itemIcon = node.type === 'folder' ? folderIcon : <FileText size={16} />
+
+      return (
+        <li key={node.path} className="smtcmp-tree-item">
+          <div
+            className={`smtcmp-provider-header smtcmp-folder-row${isDisabled ? ' is-disabled' : ''}`}
+            onClick={() => {
+              if (isDisabled) return
               onPick(node.path)
               onClose()
-            }
-          }}
-        >
-          <div
-            className={`smtcmp-provider-expand-btn ${hasChildren ? '' : 'no-children'}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (hasChildren) toggle(node.path)
             }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (isDisabled) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onPick(node.path)
+                onClose()
+              }
+            }}
+            data-depth={depth}
           >
-            {hasChildren ? (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <span className="smtcmp-icon-placeholder" />}
-          </div>
-          <div className="smtcmp-provider-info">
-            <span
-              className="smtcmp-folder-name"
-              title={isSelected ? '已选择' : isCoveredByAncestor ? '已被父级覆盖' : node.path || '/'}
+            <div className="smtcmp-tree-guides">
+              {guides}
+              {depth > 0 && (
+                <span className={`smtcmp-tree-guide smtcmp-tree-guide-branch${isLast ? ' is-last' : ''}`} />
+              )}
+            </div>
+            <div
+              className={`smtcmp-provider-expand-btn ${hasChildren ? '' : 'no-children'}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (hasChildren) toggle(node.path)
+              }}
             >
-              {node.name}
-            </span>
+              {hasChildren ? (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <span className="smtcmp-icon-placeholder" />}
+            </div>
+            <div className="smtcmp-tree-icon" aria-hidden="true">
+              {itemIcon}
+            </div>
+            <div className="smtcmp-provider-info">
+              <span
+                className="smtcmp-folder-name"
+                title={isSelected ? '已选择' : isCoveredByAncestor ? '已被父级覆盖' : node.path || '/'}
+              >
+                {node.name}
+              </span>
+            </div>
           </div>
-        </div>
-        {hasChildren && isOpen && (
-          <ul className="smtcmp-list-reset">
-            {node.children.map((c) => renderNode(c, depth + 1))}
-          </ul>
-        )}
-      </li>
-    )
+          {hasChildren && isOpen && node.children.length > 0 && (
+            <ul className="smtcmp-list-reset smtcmp-tree-children">
+              {renderNodes(node.children, depth + 1, [...ancestorLast, isLast])}
+            </ul>
+          )}
+        </li>
+      )
+    })
   }
 
   return (
@@ -218,8 +234,8 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
         {filteredRoots.length === 0 ? (
           <div className="smtcmp-folder-empty">未找到匹配的文件夹</div>
         ) : (
-          <ul className="smtcmp-list-reset">
-            {filteredRoots.map((n) => renderNode(n, 0))}
+          <ul className="smtcmp-list-reset smtcmp-tree-root">
+            {renderNodes(filteredRoots, 0, [])}
           </ul>
         )}
       </div>
