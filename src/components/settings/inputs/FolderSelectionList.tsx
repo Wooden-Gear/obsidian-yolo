@@ -32,29 +32,32 @@ export function FolderSelectionList({
   const overIndexRef = useRef<number | null>(null)
 
   // Normalize any incoming folder values to avoid duplicates like '/', '**', 'path/'
-  const normalize = useCallback((p: string): string => {
-    if (!p) return ''
-    const trimmed = p.replace(/^\/+/, '').replace(/\/+$/, '')
-    if (allowFiles) {
-      const abstract = vault.getAbstractFileByPath(trimmed)
-      if (abstract instanceof TFile) {
-        return abstract.path
+  const normalize = useCallback(
+    (p: string): string => {
+      if (!p) return ''
+      const trimmed = p.replace(/^\/+/, '').replace(/\/+$/, '')
+      if (allowFiles) {
+        const abstract = vault.getAbstractFileByPath(trimmed)
+        if (abstract instanceof TFile) {
+          return abstract.path
+        }
+        if (abstract instanceof TFolder) {
+          return abstract.path.replace(/^\/+/, '').replace(/\/+$/, '')
+        }
+        if (trimmed.includes('*')) return ''
+        return trimmed
       }
-      if (abstract instanceof TFolder) {
-        return abstract.path.replace(/^\/+/, '').replace(/\/+$/, '')
-      }
+
+      if (trimmed === '' || trimmed === '**') return ''
+      const m1 = trimmed.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
+      if (m1) return m1[1].replace(/^\/+/, '').replace(/\/+$/, '')
+      const m2 = trimmed.match(/^(.*)\/\*\.md$/)
+      if (m2) return m2[1].replace(/^\/+/, '').replace(/\/+$/, '')
       if (trimmed.includes('*')) return ''
       return trimmed
-    }
-
-    if (trimmed === '' || trimmed === '**') return ''
-    const m1 = trimmed.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
-    if (m1) return m1[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    const m2 = trimmed.match(/^(.*)\/\*\.md$/)
-    if (m2) return m2[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    if (trimmed.includes('*')) return ''
-    return trimmed
-  }, [allowFiles, vault])
+    },
+    [allowFiles, vault],
+  )
 
   const items = useMemo(() => value.map(normalize), [normalize, value])
 
