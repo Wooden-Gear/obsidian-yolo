@@ -84,16 +84,15 @@ export class AnthropicProvider extends BaseLLMProvider<
               budget_tokens: model.thinking.budget_tokens,
             }
           : undefined,
-        tools: request.tools?.map((t) =>
-          AnthropicProvider.parseRequestTool(t),
-        ),
+        tools: request.tools?.map((t) => AnthropicProvider.parseRequestTool(t)),
         tool_choice: request.tool_choice
           ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
           : undefined,
         max_tokens:
           request.max_tokens ??
           (model.thinking?.enabled
-            ? model.thinking?.budget_tokens + AnthropicProvider.DEFAULT_MAX_TOKENS
+            ? model.thinking?.budget_tokens +
+              AnthropicProvider.DEFAULT_MAX_TOKENS
             : AnthropicProvider.DEFAULT_MAX_TOKENS),
         temperature: request.temperature,
         top_p: request.top_p,
@@ -178,16 +177,15 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
               budget_tokens: model.thinking.budget_tokens,
             }
           : undefined,
-        tools: request.tools?.map((t) =>
-          AnthropicProvider.parseRequestTool(t),
-        ),
+        tools: request.tools?.map((t) => AnthropicProvider.parseRequestTool(t)),
         tool_choice: request.tool_choice
           ? AnthropicProvider.parseRequestToolChoice(request.tool_choice)
           : undefined,
         max_tokens:
           request.max_tokens ??
           (model.thinking?.enabled
-            ? model.thinking?.budget_tokens + AnthropicProvider.DEFAULT_MAX_TOKENS
+            ? model.thinking?.budget_tokens +
+              AnthropicProvider.DEFAULT_MAX_TOKENS
             : AnthropicProvider.DEFAULT_MAX_TOKENS),
         temperature: request.temperature,
         top_p: request.top_p,

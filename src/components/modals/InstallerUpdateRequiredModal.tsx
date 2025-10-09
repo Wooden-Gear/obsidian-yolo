@@ -21,10 +21,9 @@ function InstallerUpdateRequiredModalComponent() {
   return (
     <div>
       <div>
-        YOLO requires a newer version of the Obsidian installer.
-        Please note that this is different from Obsidian&apos;s in-app updates.
-        You must manually download the latest version of Obsidian to continue
-        using YOLO.
+        YOLO requires a newer version of the Obsidian installer. Please note
+        that this is different from Obsidian&apos;s in-app updates. You must
+        manually download the latest version of Obsidian to continue using YOLO.
       </div>
       <div>
         <div className="modal-button-container">

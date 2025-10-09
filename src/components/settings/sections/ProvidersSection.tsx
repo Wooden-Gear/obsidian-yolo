@@ -81,7 +81,9 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.providers.title')}</div>
+      <div className="smtcmp-settings-header">
+        {t('settings.providers.title')}
+      </div>
 
       <div className="smtcmp-settings-desc">
         <span>{t('settings.providers.desc')}</span>

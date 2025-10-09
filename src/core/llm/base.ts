@@ -36,7 +36,10 @@ export abstract class BaseLLMProvider<P extends LLMProvider> {
     request: T,
   ): T {
     const entries = Array.isArray((model as any).customParameters)
-      ? ((model as any).customParameters as Array<{ key?: string; value?: string }>)
+      ? ((model as any).customParameters as {
+          key?: string
+          value?: string
+        }[])
       : []
 
     if (entries.length === 0) {

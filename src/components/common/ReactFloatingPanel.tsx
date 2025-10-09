@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { createRoot, Root } from 'react-dom/client'
+import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
@@ -48,7 +48,10 @@ export class ReactFloatingPanel<T> {
     const options = this.options
     const PanelShell: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const [pos, setPos] = useState<{ x: number; y: number }>(
-        options?.initialPosition ?? { x: window.innerWidth / 2 - 180, y: window.innerHeight / 2 - 120 },
+        options?.initialPosition ?? {
+          x: window.innerWidth / 2 - 180,
+          y: window.innerHeight / 2 - 120,
+        },
       )
       const [size, setSize] = useState<{ width: number; height?: number }>({
         width: options?.width ?? 360,
@@ -57,7 +60,12 @@ export class ReactFloatingPanel<T> {
       const [dragging, setDragging] = useState(false)
       const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
       const [resizing, setResizing] = useState(false)
-      const resizeStart = useRef<{ x: number; y: number; width: number; height: number | undefined } | null>(null)
+      const resizeStart = useRef<{
+        x: number
+        y: number
+        width: number
+        height: number | undefined
+      } | null>(null)
       const panelRef = useRef<HTMLDivElement>(null)
 
       useEffect(() => {
@@ -83,8 +91,6 @@ export class ReactFloatingPanel<T> {
         return () => document.removeEventListener('mousedown', onMouseDown)
       }, [onClose])
 
-      
-
       const onHeaderPointerDown = (e: React.PointerEvent) => {
         setDragging(true)
         dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
@@ -92,7 +98,10 @@ export class ReactFloatingPanel<T> {
       }
       const onHeaderPointerMove = (e: React.PointerEvent) => {
         if (!dragging) return
-        const next = { x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y }
+        const next = {
+          x: e.clientX - dragOffset.current.x,
+          y: e.clientY - dragOffset.current.y,
+        }
         setPos(next)
       }
       const onHeaderPointerUp = (e: React.PointerEvent) => {
@@ -120,7 +129,10 @@ export class ReactFloatingPanel<T> {
         const minW = 280
         const minH = 160
         const nextW = Math.max(minW, Math.round(resizeStart.current.width + dx))
-        const nextH = Math.max(minH, Math.round((resizeStart.current.height ?? minH) + dy))
+        const nextH = Math.max(
+          minH,
+          Math.round((resizeStart.current.height ?? minH) + dy),
+        )
         setSize({ width: nextW, height: nextH })
       }
       const onResizePointerUp = (e: React.PointerEvent) => {
@@ -135,12 +147,14 @@ export class ReactFloatingPanel<T> {
             <div
               ref={panelRef}
               className="smtcmp-floating-panel"
-              style={{
-                '--smtcmp-panel-top': `${pos.y}px`,
-                '--smtcmp-panel-left': `${pos.x}px`,
-                '--smtcmp-panel-width': `${size.width}px`,
-                '--smtcmp-panel-height': `${size.height}px`
-              } as React.CSSProperties}
+              style={
+                {
+                  '--smtcmp-panel-top': `${pos.y}px`,
+                  '--smtcmp-panel-left': `${pos.x}px`,
+                  '--smtcmp-panel-width': `${size.width}px`,
+                  '--smtcmp-panel-height': `${size.height}px`,
+                } as React.CSSProperties
+              }
             >
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
@@ -157,7 +171,9 @@ export class ReactFloatingPanel<T> {
                   onPointerMove={onHeaderPointerMove}
                   onPointerUp={onHeaderPointerUp}
                 >
-                  <div className="smtcmp-floating-panel-title">{options?.title ?? ''}</div>
+                  <div className="smtcmp-floating-panel-title">
+                    {options?.title ?? ''}
+                  </div>
                   <button
                     aria-label="Close"
                     className="clickable-icon smtcmp-floating-panel-close"

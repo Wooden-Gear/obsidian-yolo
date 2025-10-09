@@ -57,7 +57,7 @@ export function getModelDisplayName(modelId: string): string {
  */
 export function getModelDisplayNameWithProvider(
   modelId: string,
-  providerName?: string
+  providerName?: string,
 ): string {
   const { providerId, modelName } = parseModelId(modelId)
   if (providerId && providerName) {
@@ -107,7 +107,9 @@ export function detectReasoningTypeFromModelId(
   // Common OpenAI patterns: gpt*, o1/o3/o4 (including variants like o4mini), gpt5
   if (
     s.includes('gpt') ||
-    s.includes('o1') || s.includes('o3') || s.includes('o4') ||
+    s.includes('o1') ||
+    s.includes('o3') ||
+    s.includes('o4') ||
     s.includes('gpt5') ||
     s.includes('gpt-5')
   ) {
@@ -121,7 +123,10 @@ export function detectReasoningTypeFromModelId(
  * Ensure a unique model internal id among existing ids by appending a short numeric suffix.
  * Example: base "prov/gemini-2.5-flash" -> "prov/gemini-2.5-flash-2", "...-3", ...
  */
-export function ensureUniqueModelId(existingIds: string[], baseId: string): string {
+export function ensureUniqueModelId(
+  existingIds: string[],
+  baseId: string,
+): string {
   if (!existingIds.includes(baseId)) return baseId
   let i = 2
   while (existingIds.includes(`${baseId}-${i}`)) i++

@@ -1,13 +1,12 @@
-import { DEFAULT_TAB_COMPLETION_OPTIONS } from '../setting.types'
-import { SettingMigration } from '../setting.types'
+import {
+  DEFAULT_TAB_COMPLETION_OPTIONS,
+  SettingMigration,
+} from '../setting.types'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-const normalizeNumber = (
-  value: unknown,
-  fallback: number,
-): number => {
+const normalizeNumber = (value: unknown, fallback: number): number => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
   }
@@ -28,13 +27,18 @@ export const migrateFrom13To14: SettingMigration['migrate'] = (data) => {
     newData.continuationOptions = {}
   }
 
-  const continuationOptions = newData.continuationOptions as Record<string, unknown>
+  const continuationOptions = newData.continuationOptions as Record<
+    string,
+    unknown
+  >
 
   if (!isRecord(continuationOptions.tabCompletionOptions)) {
-    continuationOptions.tabCompletionOptions = { ...DEFAULT_TAB_COMPLETION_OPTIONS }
+    continuationOptions.tabCompletionOptions = {
+      ...DEFAULT_TAB_COMPLETION_OPTIONS,
+    }
   } else {
     const options = { ...DEFAULT_TAB_COMPLETION_OPTIONS }
-    const legacy = continuationOptions.tabCompletionOptions as Record<string, unknown>
+    const legacy = continuationOptions.tabCompletionOptions
 
     options.triggerDelayMs = normalizeNumber(
       legacy.triggerDelayMs,
@@ -62,7 +66,10 @@ export const migrateFrom13To14: SettingMigration['migrate'] = (data) => {
     )
     options.maxRetries = Math.max(
       0,
-      Math.min(5, Math.round(normalizeNumber(legacy.maxRetries, options.maxRetries))),
+      Math.min(
+        5,
+        Math.round(normalizeNumber(legacy.maxRetries, options.maxRetries)),
+      ),
     )
 
     continuationOptions.tabCompletionOptions = options
@@ -72,4 +79,3 @@ export const migrateFrom13To14: SettingMigration['migrate'] = (data) => {
 
   return newData
 }
-

@@ -98,5 +98,10 @@ export function ObsidianTextArea({
     }
   }, [textAreaComponent, onKeyDown])
 
-  return <div ref={containerRef} className={`smtcmp-textarea-container${containerClassName ? ' ' + containerClassName : ''}`} />
+  return (
+    <div
+      ref={containerRef}
+      className={`smtcmp-textarea-container${containerClassName ? ' ' + containerClassName : ''}`}
+    />
+  )
 }

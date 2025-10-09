@@ -1,8 +1,9 @@
 /**
  * Minimal tests for PromptGenerator brute mode behavior
  */
-import { PromptGenerator } from './promptGenerator'
 import { App, TFile } from 'obsidian'
+
+import { PromptGenerator } from './promptGenerator'
 
 jest.mock('../llm/token', () => ({
   tokenCount: jest.fn(async () => 999999), // force threshold exceed
@@ -23,14 +24,16 @@ describe('PromptGenerator brute mode', () => {
       assistants: [],
     }
 
-    const gen = new PromptGenerator(async () => ({} as any), fakeApp, settings)
+    const gen = new PromptGenerator(async () => ({}) as any, fakeApp, settings)
 
     const file1 = { path: 'a.md' } as unknown as TFile
     const file2 = { path: 'b.md' } as unknown as TFile
 
     const message: any = {
       role: 'user',
-      content: { root: { children: [{ type: 'paragraph', children: [{ text: 'Q' }] }] } },
+      content: {
+        root: { children: [{ type: 'paragraph', children: [{ text: 'Q' }] }] },
+      },
       mentionables: [
         { type: 'file', file: file1 },
         { type: 'file', file: file2 },
@@ -47,4 +50,3 @@ describe('PromptGenerator brute mode', () => {
     expect(textPart.text).toContain('```b.md')
   })
 })
-

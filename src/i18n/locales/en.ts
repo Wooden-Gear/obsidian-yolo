@@ -41,7 +41,8 @@ export const en: TranslationKeys = {
     },
     composer: {
       title: 'Composer',
-      subtitle: 'Configure continuation parameters and context before generating.',
+      subtitle:
+        'Configure continuation parameters and context before generating.',
       backToChat: 'Back to chat',
       modelSectionTitle: 'Model',
       continuationModel: 'Continuation model',
@@ -71,9 +72,11 @@ export const en: TranslationKeys = {
       continuationPrompt: 'Continuation system prompt',
       maxContinuationChars: 'Max continuation characters',
       referenceRulesTitle: 'Reference rules',
-      referenceRulesPlaceholder: 'Select folders whose content should be fully injected.',
+      referenceRulesPlaceholder:
+        'Select folders whose content should be fully injected.',
       knowledgeBaseTitle: 'Knowledge base',
-      knowledgeBasePlaceholder: 'Select folders or files used as the retrieval scope (leave empty for all).',
+      knowledgeBasePlaceholder:
+        'Select folders or files used as the retrieval scope (leave empty for all).',
       knowledgeBaseHint: 'Enable RAG search to limit the retrieval scope.',
     },
   },
@@ -88,40 +91,54 @@ export const en: TranslationKeys = {
     defaults: {
       title: 'Default Models & Prompts',
       defaultChatModel: 'Default chat model',
-      defaultChatModelDesc: 'Choose the model you want to use for sidebar chat.',
+      defaultChatModelDesc:
+        'Choose the model you want to use for sidebar chat.',
       toolModel: 'Tool model',
-      toolModelDesc: 'Select the model used globally as the tool model (for auto conversation naming, apply operations, etc.).',
+      toolModelDesc:
+        'Select the model used globally as the tool model (for auto conversation naming, apply operations, etc.).',
       globalSystemPrompt: 'Global system prompt',
-      globalSystemPromptDesc: 'This prompt is added to the beginning of every chat conversation.',
+      globalSystemPromptDesc:
+        'This prompt is added to the beginning of every chat conversation.',
       continuationSystemPrompt: 'Default continuation system prompt',
-      continuationSystemPromptDesc: 'Used as the system message when generating continuation text. Leave empty to fall back to the built-in default.',
+      continuationSystemPromptDesc:
+        'Used as the system message when generating continuation text. Leave empty to fall back to the built-in default.',
       chatTitlePrompt: 'Chat title prompt',
-      chatTitlePromptDesc: 'Prompt used when automatically generating conversation titles from the first user message.',
+      chatTitlePromptDesc:
+        'Prompt used when automatically generating conversation titles from the first user message.',
       baseModelSpecialPrompt: 'Base model special prompt',
       baseModelSpecialPromptDesc: 'Special prompt words used as base model.',
       tabCompletionSystemPrompt: 'Tab completion system prompt',
-      tabCompletionSystemPromptDesc: 'System message applied when generating Tab completion suggestions. Leave empty to use the built-in default.',
+      tabCompletionSystemPromptDesc:
+        'System message applied when generating Tab completion suggestions. Leave empty to use the built-in default.',
     },
     chatPreferences: {
       title: 'Chat preferences',
       includeCurrentFile: 'Auto-include current page',
-      includeCurrentFileDesc: 'Automatically include the content of your current file in chats.',
+      includeCurrentFileDesc:
+        'Automatically include the content of your current file in chats.',
       enableBruteMode: 'Enable Brute Mode',
-      enableBruteModeDesc: 'Show chat mode switch in chat view to include entire folders verbatim (may exceed token limits).',
+      enableBruteModeDesc:
+        'Show chat mode switch in chat view to include entire folders verbatim (may exceed token limits).',
       enableLearningMode: 'Learning Mode',
-      enableLearningModeDesc: 'Add tutoring rules on top of the system/assistant prompt.',
+      enableLearningModeDesc:
+        'Add tutoring rules on top of the system/assistant prompt.',
       learningModePrompt: 'Default learning prompt',
-      learningModePromptDesc: 'This text is appended when Learning Mode is enabled. View or customize as needed.',
+      learningModePromptDesc:
+        'This text is appended when Learning Mode is enabled. View or customize as needed.',
       enableTools: 'Enable tools',
       enableToolsDesc: 'Allow the AI to use MCP tools.',
       maxAutoIterations: 'Max auto tool requests',
-      maxAutoIterationsDesc: 'Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens.',
+      maxAutoIterationsDesc:
+        'Maximum number of consecutive tool calls that can be made automatically without user confirmation. Higher values can significantly increase costs as each tool call consumes additional tokens.',
       maxContextMessages: 'Max context messages',
-      maxContextMessagesDesc: 'Number of previous chat messages to include in each request (0 to include none). 32 is recommended (about 16 user-assistant turns).',
+      maxContextMessagesDesc:
+        'Number of previous chat messages to include in each request (0 to include none). 32 is recommended (about 16 user-assistant turns).',
       defaultTemperature: 'Default temperature',
-      defaultTemperatureDesc: 'Default temperature for new conversations (0.0-2.0). Leave empty to use model default.',
+      defaultTemperatureDesc:
+        'Default temperature for new conversations (0.0-2.0). Leave empty to use model default.',
       defaultTopP: 'Default Top P',
-      defaultTopPDesc: 'Default Top P for new conversations (0.0-1.0). Leave empty to use model default.',
+      defaultTopPDesc:
+        'Default Top P for new conversations (0.0-1.0). Leave empty to use model default.',
     },
     assistants: {
       title: 'Assistants',
@@ -132,8 +149,10 @@ export const en: TranslationKeys = {
       name: 'Name',
       description: 'Description',
       systemPrompt: 'System Prompt',
-      systemPromptDesc: 'This prompt will be added to the beginning of every chat.',
-      systemPromptPlaceholder: "Enter system prompt to define assistant's behavior and capabilities",
+      systemPromptDesc:
+        'This prompt will be added to the beginning of every chat.',
+      systemPromptPlaceholder:
+        "Enter system prompt to define assistant's behavior and capabilities",
       namePlaceholder: 'Enter assistant name',
       defaultAssistantName: 'New Assistant',
       deleteConfirmTitle: 'Confirm Delete Assistant',
@@ -142,7 +161,8 @@ export const en: TranslationKeys = {
       addAssistantAria: 'Add new assistant',
       deleteAssistantAria: 'Delete assistant',
       actions: 'Actions',
-      maxContextMessagesDesc: 'If set, this assistant will use this number of previous chat messages, overriding the global default.',
+      maxContextMessagesDesc:
+        'If set, this assistant will use this number of previous chat messages, overriding the global default.',
       noAssistants: 'No assistants available',
       noAssistant: 'Default',
       selectAssistant: 'Select Assistant',
@@ -158,17 +178,20 @@ export const en: TranslationKeys = {
       deleteWarning: 'This will also delete',
       chatModels: 'chat models',
       embeddingModels: 'embedding models',
-      embeddingsWillBeDeleted: 'All embeddings generated using the related embedding models will also be deleted.',
+      embeddingsWillBeDeleted:
+        'All embeddings generated using the related embedding models will also be deleted.',
       addCustomProvider: 'Add Custom Provider',
       editProviderTitle: 'Edit Provider',
       apiKey: 'API Key',
       apiKeyDesc: '(Leave empty if not required)',
       apiKeyPlaceholder: 'Enter your API key',
       baseUrl: 'Base URL',
-      baseUrlDesc: 'API endpoint for third-party services, e.g.: https://api.example.com/v1 or https://your-proxy.com/openai (Leave empty to use default)',
+      baseUrlDesc:
+        'API endpoint for third-party services, e.g.: https://api.example.com/v1 or https://your-proxy.com/openai (Leave empty to use default)',
       baseUrlPlaceholder: 'https://api.example.com/v1',
       noStainlessHeaders: 'No Stainless Headers',
-      noStainlessHeadersDesc: 'Enable this if you encounter CORS errors related to Stainless headers (x-stainless-os, etc.)',
+      noStainlessHeadersDesc:
+        'Enable this if you encounter CORS errors related to Stainless headers (x-stainless-os, etc.)',
     },
     models: {
       title: 'Models',
@@ -183,7 +206,8 @@ export const en: TranslationKeys = {
       editCustomChatModel: 'Edit Custom Chat Model',
       editCustomEmbeddingModel: 'Edit Custom Embedding Model',
       modelId: 'Model ID',
-      modelIdDesc: 'API model identifier used for requests (e.g., gpt-4o-mini, claude-3-5-sonnet)',
+      modelIdDesc:
+        'API model identifier used for requests (e.g., gpt-4o-mini, claude-3-5-sonnet)',
       modelIdPlaceholder: 'gpt-4o-mini',
       modelName: 'Display name',
       modelNamePlaceholder: 'Enter a display name',
@@ -195,11 +219,14 @@ export const en: TranslationKeys = {
       reasoningTypeOpenAI: 'OpenAI Reasoning (o3 / o4-mini / GPT-5)',
       reasoningTypeGemini: 'Gemini Reasoning (2.5 Pro / Flash / Flash-Lite)',
       reasoningTypeBase: 'Special: base model',
-      baseModelWarning: 'When enabled, no system prompts (including assistant prompts) will be injected for this model. Enable only if you understand how base models behave.',
+      baseModelWarning:
+        'When enabled, no system prompts (including assistant prompts) will be injected for this model. Enable only if you understand how base models behave.',
       openaiReasoningEffort: 'Reasoning effort',
-      openaiReasoningEffortDesc: 'Choose effort: minimal (GPT-5 only) / low / medium / high',
+      openaiReasoningEffortDesc:
+        'Choose effort: minimal (GPT-5 only) / low / medium / high',
       geminiThinkingBudget: 'Thinking budget (thinkingBudget)',
-      geminiThinkingBudgetDesc: 'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
+      geminiThinkingBudgetDesc:
+        'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
       geminiThinkingBudgetPlaceholder: 'e.g., -1 (dynamic, 0=off)',
       toolType: 'Tool Type',
       toolTypeDesc: 'Select the tool type supported by the model',
@@ -213,7 +240,8 @@ export const en: TranslationKeys = {
       customParametersValuePlaceholder:
         'Value, plain text or JSON. Example: {"type":"enabled"} or 0.7',
       promptLevel: 'Prompt Level',
-      promptLevelDesc: 'Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.',
+      promptLevelDesc:
+        'Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.',
       promptLevelDefault: 'default',
       promptLevelSimple: 'simple',
       dimension: 'Dimension',
@@ -225,21 +253,28 @@ export const en: TranslationKeys = {
     rag: {
       title: 'RAG (Retrieval Augmented Generation)',
       enableRag: 'Show RAG settings',
-      enableRagDesc: 'Toggle visibility of the retrieval-augmented generation options below.',
+      enableRagDesc:
+        'Toggle visibility of the retrieval-augmented generation options below.',
       embeddingModel: 'Embedding Model',
       embeddingModelDesc: 'Choose the model you want to use for embeddings',
       chunkSize: 'Chunk Size',
-      chunkSizeDesc: 'Set the chunk size for text splitting. After changing this, please re-index the vault using the \'Rebuild entire vault index\' command.',
+      chunkSizeDesc:
+        "Set the chunk size for text splitting. After changing this, please re-index the vault using the 'Rebuild entire vault index' command.",
       thresholdTokens: 'Threshold Tokens',
-      thresholdTokensDesc: 'Maximum number of tokens before switching to RAG. If the total tokens from mentioned files exceed this, RAG will be used instead of including all file contents.',
+      thresholdTokensDesc:
+        'Maximum number of tokens before switching to RAG. If the total tokens from mentioned files exceed this, RAG will be used instead of including all file contents.',
       minSimilarity: 'Minimum Similarity',
-      minSimilarityDesc: 'Minimum similarity score for RAG results. Higher values return more relevant but potentially fewer results.',
+      minSimilarityDesc:
+        'Minimum similarity score for RAG results. Higher values return more relevant but potentially fewer results.',
       limit: 'Limit',
-      limitDesc: 'Maximum number of RAG results to include in the prompt. Higher values provide more context but increase token usage.',
+      limitDesc:
+        'Maximum number of RAG results to include in the prompt. Higher values provide more context but increase token usage.',
       includePatterns: 'Include Patterns',
-      includePatternsDesc: 'Specify glob patterns to include files in indexing (one per line). Example: use \'notes/**\' for all files in the notes folder. Leave empty to include all files. Requires \'Rebuild entire vault index\' after changes.',
+      includePatternsDesc:
+        "Specify glob patterns to include files in indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to include all files. Requires 'Rebuild entire vault index' after changes.",
       excludePatterns: 'Exclude Patterns',
-      excludePatternsDesc: 'Specify glob patterns to exclude files from indexing (one per line). Example: use \'notes/**\' for all files in the notes folder. Leave empty to exclude nothing. Requires \'Rebuild entire vault index\' after changes.',
+      excludePatternsDesc:
+        "Specify glob patterns to exclude files from indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to exclude nothing. Requires 'Rebuild entire vault index' after changes.",
       testPatterns: 'Test Patterns',
       manageEmbeddingDatabase: 'Manage Embedding Database',
       manage: 'Manage',
@@ -247,21 +282,32 @@ export const en: TranslationKeys = {
       // UI additions
       selectedFolders: 'Selected folders',
       excludedFolders: 'Excluded folders',
-      selectFoldersPlaceholder: 'Click here to select folders (leave empty to include all)',
-      selectFilesOrFoldersPlaceholder: 'Click here to pick files or folders (leave empty for the entire vault)',
-      selectExcludeFoldersPlaceholder: 'Click here to select folders to exclude (leave empty to exclude nothing)',
-      conflictNoteDefaultInclude: 'Tip: No include folders selected, all are included by default. If exclude folders are set, exclusion takes precedence.',
-      conflictExact: 'The following folders are both included and excluded; they will be excluded:',
-      conflictParentExclude: 'The following included folders are under excluded parents and will be excluded:',
-      conflictChildExclude: 'The following excluded subfolders are under included folders (partial exclusion applies):',
-      conflictRule: 'When include and exclude overlap, exclusion takes precedence.',
+      selectFoldersPlaceholder:
+        'Click here to select folders (leave empty to include all)',
+      selectFilesOrFoldersPlaceholder:
+        'Click here to pick files or folders (leave empty for the entire vault)',
+      selectExcludeFoldersPlaceholder:
+        'Click here to select folders to exclude (leave empty to exclude nothing)',
+      conflictNoteDefaultInclude:
+        'Tip: No include folders selected, all are included by default. If exclude folders are set, exclusion takes precedence.',
+      conflictExact:
+        'The following folders are both included and excluded; they will be excluded:',
+      conflictParentExclude:
+        'The following included folders are under excluded parents and will be excluded:',
+      conflictChildExclude:
+        'The following excluded subfolders are under included folders (partial exclusion applies):',
+      conflictRule:
+        'When include and exclude overlap, exclusion takes precedence.',
       // Auto update
       autoUpdate: 'Auto update index',
-      autoUpdateDesc: 'When files within the included folders change, perform incremental updates automatically based on the minimum interval; default once per day.',
+      autoUpdateDesc:
+        'When files within the included folders change, perform incremental updates automatically based on the minimum interval; default once per day.',
       autoUpdateInterval: 'Minimum interval (hours)',
-      autoUpdateIntervalDesc: 'Only trigger auto update after this interval to avoid frequent re-indexing.',
+      autoUpdateIntervalDesc:
+        'Only trigger auto update after this interval to avoid frequent re-indexing.',
       manualUpdateNow: 'Update Now',
-      manualUpdateNowDesc: 'Run an incremental update immediately and record the last updated time.',
+      manualUpdateNowDesc:
+        'Run an incremental update immediately and record the last updated time.',
       // Index progress header/status
       indexProgressTitle: 'RAG Index Progress',
       indexing: 'In progress',
@@ -270,7 +316,8 @@ export const en: TranslationKeys = {
     mcp: {
       title: 'Model Context Protocol (MCP)',
       desc: 'Configure MCP servers to extend AI capabilities',
-      warning: 'When using tools, the tool response is passed to the language model (LLM). If the tool result contains a large amount of content, this can significantly increase LLM usage and associated costs. Please be mindful when enabling or using tools that may return long outputs.',
+      warning:
+        'When using tools, the tool response is passed to the language model (LLM). If the tool result contains a large amount of content, this can significantly increase LLM usage and associated costs. Please be mindful when enabling or using tools that may return long outputs.',
       notSupportedOnMobile: 'MCP is not supported on mobile devices',
       mcpServers: 'MCP Servers',
       addServer: 'Add MCP Server',
@@ -297,7 +344,8 @@ export const en: TranslationKeys = {
     templates: {
       title: 'Templates',
       desc: 'Create reusable prompt templates',
-      howToUse: 'Create templates with reusable content that you can quickly insert into your chat. Type /template-name in the chat input to trigger template insertion. You can also drag and select text in the chat input to reveal a "Create template" button for quick template creation.',
+      howToUse:
+        'Create templates with reusable content that you can quickly insert into your chat. Type /template-name in the chat input to trigger template insertion. You can also drag and select text in the chat input to reveal a "Create template" button for quick template creation.',
       savedTemplates: 'Saved Templates',
       addTemplate: 'Add Prompt Template',
       templateName: 'Template Name',
@@ -321,50 +369,69 @@ export const en: TranslationKeys = {
       continuationModelDesc:
         'Select the model used for continuation while Super Continuation is enabled.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
-      keywordTriggerDesc: 'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
+      keywordTriggerDesc:
+        'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
       triggerKeyword: 'Trigger keyword',
-      triggerKeywordDesc: 'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
-      floatingPanelKeywordTrigger: 'Enable keyword trigger for custom floating panel',
-      floatingPanelKeywordTriggerDesc: 'Open the "Custom Continue" floating panel when the specified keyword is detected in the editor.',
+      triggerKeywordDesc:
+        'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
+      floatingPanelKeywordTrigger:
+        'Enable keyword trigger for custom floating panel',
+      floatingPanelKeywordTriggerDesc:
+        'Open the "Custom Continue" floating panel when the specified keyword is detected in the editor.',
       floatingPanelTriggerKeyword: 'Floating panel trigger keyword',
-      floatingPanelTriggerKeywordDesc: 'Open the "Custom Continue" floating panel when the text immediately before the cursor equals this keyword.',
+      floatingPanelTriggerKeywordDesc:
+        'Open the "Custom Continue" floating panel when the text immediately before the cursor equals this keyword.',
       tabCompletion: 'Enable Tab completion',
-      tabCompletionDesc: 'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with Tab.',
+      tabCompletionDesc:
+        'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with Tab.',
       tabCompletionModel: 'Completion model',
-      tabCompletionModelDesc: 'Choose which model provides Tab completion suggestions.',
+      tabCompletionModelDesc:
+        'Choose which model provides Tab completion suggestions.',
       tabCompletionTriggerDelay: 'Trigger delay (ms)',
-      tabCompletionTriggerDelayDesc: 'How long to wait after you stop typing before a prefix completion request is sent.',
+      tabCompletionTriggerDelayDesc:
+        'How long to wait after you stop typing before a prefix completion request is sent.',
       tabCompletionMinContextLength: 'Minimum context length',
-      tabCompletionMinContextLengthDesc: 'Skip Tab completion unless the text before the cursor contains at least this many characters.',
+      tabCompletionMinContextLengthDesc:
+        'Skip Tab completion unless the text before the cursor contains at least this many characters.',
       tabCompletionMaxContextChars: 'Max context characters',
-      tabCompletionMaxContextCharsDesc: 'Limit how many recent characters are sent to the model for prefix completion.',
+      tabCompletionMaxContextCharsDesc:
+        'Limit how many recent characters are sent to the model for prefix completion.',
       tabCompletionMaxSuggestionLength: 'Max suggestion length',
-      tabCompletionMaxSuggestionLengthDesc: 'Cap the number of characters inserted when accepting a suggestion.',
+      tabCompletionMaxSuggestionLengthDesc:
+        'Cap the number of characters inserted when accepting a suggestion.',
       tabCompletionMaxTokens: 'Max tokens',
-      tabCompletionMaxTokensDesc: 'Limit the number of tokens requested from the model for each prefix completion call.',
+      tabCompletionMaxTokensDesc:
+        'Limit the number of tokens requested from the model for each prefix completion call.',
       tabCompletionTemperature: 'Sampling temperature',
-      tabCompletionTemperatureDesc: 'Controls creativity for prefix suggestions (0 = deterministic, higher = more diverse).',
+      tabCompletionTemperatureDesc:
+        'Controls creativity for prefix suggestions (0 = deterministic, higher = more diverse).',
       tabCompletionRequestTimeout: 'Request timeout (ms)',
-      tabCompletionRequestTimeoutDesc: 'Abort a prefix completion request if it takes longer than this time.',
+      tabCompletionRequestTimeoutDesc:
+        'Abort a prefix completion request if it takes longer than this time.',
       tabCompletionMaxRetries: 'Retry count',
-      tabCompletionMaxRetriesDesc: 'Automatically retry timed-out prefix completion requests up to this many times.',
+      tabCompletionMaxRetriesDesc:
+        'Automatically retry timed-out prefix completion requests up to this many times.',
       defaultSystemPrompt: 'Default continuation system prompt',
-      defaultSystemPromptDesc: 'This prompt will be used as the system message for continuation. Leave empty to use the built-in default.',
+      defaultSystemPromptDesc:
+        'This prompt will be used as the system message for continuation. Leave empty to use the built-in default.',
     },
     etc: {
       title: 'Etc',
       resetSettings: 'Reset settings',
       resetSettingsDesc: 'Reset all settings to default values',
-      resetSettingsConfirm: 'Are you sure you want to reset all settings to default values? This cannot be undone.',
+      resetSettingsConfirm:
+        'Are you sure you want to reset all settings to default values? This cannot be undone.',
       resetSettingsSuccess: 'Settings have been reset to defaults',
       reset: 'Reset',
       clearChatHistory: 'Clear chat history',
       clearChatHistoryDesc: 'Delete all chat conversations and messages',
-      clearChatHistoryConfirm: 'Are you sure you want to clear all chat history? This action cannot be undone.',
+      clearChatHistoryConfirm:
+        'Are you sure you want to clear all chat history? This action cannot be undone.',
       clearChatHistorySuccess: 'All chat history has been cleared',
       resetProviders: 'Reset providers and models',
       resetProvidersDesc: 'Restore default providers and model configurations',
-      resetProvidersConfirm: 'Are you sure you want to reset providers and models to defaults? This will overwrite existing configuration.',
+      resetProvidersConfirm:
+        'Are you sure you want to reset providers and models to defaults? This will overwrite existing configuration.',
       resetProvidersSuccess: 'Providers and models have been reset to defaults',
     },
     language: {
@@ -393,8 +460,10 @@ export const en: TranslationKeys = {
     modeBrute: 'Brute',
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder: 'Enter how to continue, e.g., "Explain Fermat\'s Last Theorem in LaTeX". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
-    customRewritePromptPlaceholder: 'Describe how to rewrite the selected text, e.g., "Make it concise and active voice; keep markdown structure". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customContinuePromptPlaceholder:
+      'Enter how to continue, e.g., "Explain Fermat\'s Last Theorem in LaTeX". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customRewritePromptPlaceholder:
+      'Describe how to rewrite the selected text, e.g., "Make it concise and active voice; keep markdown structure". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
     conversationSettings: {
       openAria: 'Conversation settings',
       chatMemory: 'Chat Memory',
@@ -419,7 +488,8 @@ export const en: TranslationKeys = {
     indexUpdated: 'Vault index updated',
     indexUpdateFailed: 'Vault index update failed',
     migrationComplete: 'Migration to JSON storage completed successfully',
-    migrationFailed: 'Failed to migrate to JSON storage. Please check the console for details.',
+    migrationFailed:
+      'Failed to migrate to JSON storage. Please check the console for details.',
     reloadingPlugin: 'Reloading "next-composer" due to migration',
     settingsInvalid: 'Invalid settings',
   },

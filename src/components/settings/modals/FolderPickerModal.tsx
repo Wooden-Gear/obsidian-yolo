@@ -1,9 +1,16 @@
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  FolderClosed,
+  FolderOpen,
+} from 'lucide-react'
 import { App, TFile, TFolder, Vault } from 'obsidian'
 import React, { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, FolderClosed, FolderOpen } from 'lucide-react'
 
-import { ReactModal } from '../../common/ReactModal'
 import { listAllFolderPaths } from '../../../utils/rag-utils'
+import { ReactModal } from '../../common/ReactModal'
 
 type FolderPickerModalProps = {
   vault: Vault
@@ -30,7 +37,13 @@ export class FolderPickerModal extends ReactModal<FolderPickerModalProps> {
   }
 }
 
-function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFiles }: FolderPickerModalProps) {
+function FolderPickerModalComponent({
+  vault,
+  existing,
+  onPick,
+  onClose,
+  allowFiles,
+}: FolderPickerModalProps) {
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['']))
   const allFolders = useMemo(() => listAllFolderPaths(vault), [vault])
@@ -45,7 +58,12 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
     return vault.getMarkdownFiles?.() ?? []
   }, [vault, allowFiles])
 
-  type Node = { path: string; name: string; children: Node[]; type: 'folder' | 'file' }
+  type Node = {
+    path: string
+    name: string
+    children: Node[]
+    type: 'folder' | 'file'
+  }
 
   const roots: Node[] = useMemo(() => {
     // build nodes
@@ -103,7 +121,9 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
     const lower = q.trim().toLowerCase()
     if (!lower) return roots
     const filterRec = (node: Node): Node | null => {
-      const selfMatch = node.path.toLowerCase().includes(lower) || node.name.toLowerCase().includes(lower)
+      const selfMatch =
+        node.path.toLowerCase().includes(lower) ||
+        node.name.toLowerCase().includes(lower)
       const childMatches = node.children
         .map(filterRec)
         .filter((x): x is Node => x !== null)
@@ -112,9 +132,7 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
       }
       return null
     }
-    const out = roots
-      .map(filterRec)
-      .filter((x): x is Node => x !== null)
+    const out = roots.map(filterRec).filter((x): x is Node => x !== null)
     return out
   }, [q, roots])
 
@@ -143,7 +161,11 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
     })
   }
 
-  const renderNodes = (nodes: Node[], depth: number, ancestorLast: boolean[]): React.ReactNode => {
+  const renderNodes = (
+    nodes: Node[],
+    depth: number,
+    ancestorLast: boolean[],
+  ): React.ReactNode => {
     return nodes.map((node, index) => {
       const hasChildren = node.type === 'folder' && node.children.length > 0
       const isOpen = node.type === 'folder' && expanded.has(node.path)
@@ -153,14 +175,28 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
         if (p === node.path) return true
         return node.path.startsWith(p + '/')
       })
-      const isDisabled = isSelected || (node.type === 'file' ? isCoveredByAncestor : isCoveredByAncestor)
+      const isDisabled =
+        isSelected ||
+        (node.type === 'file' ? isCoveredByAncestor : isCoveredByAncestor)
       const isLast = index === nodes.length - 1
       const guides = ancestorLast.map((isLastAncestor, levelIdx) => (
-        <span key={`guide-${node.path}-${levelIdx}`} className={`smtcmp-tree-guide ${isLastAncestor ? 'is-empty' : ''}`} />
+        <span
+          key={`guide-${node.path}-${levelIdx}`}
+          className={`smtcmp-tree-guide ${isLastAncestor ? 'is-empty' : ''}`}
+        />
       ))
 
-      const folderIcon = hasChildren ? (isOpen ? <FolderOpen size={16} /> : <FolderClosed size={16} />) : <Folder size={16} />
-      const itemIcon = node.type === 'folder' ? folderIcon : <FileText size={16} />
+      const folderIcon = hasChildren ? (
+        isOpen ? (
+          <FolderOpen size={16} />
+        ) : (
+          <FolderClosed size={16} />
+        )
+      ) : (
+        <Folder size={16} />
+      )
+      const itemIcon =
+        node.type === 'folder' ? folderIcon : <FileText size={16} />
 
       return (
         <li key={node.path} className="smtcmp-tree-item">
@@ -186,7 +222,9 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
             <div className="smtcmp-tree-guides">
               {guides}
               {depth > 0 && (
-                <span className={`smtcmp-tree-guide smtcmp-tree-guide-branch${isLast ? ' is-last' : ''}`} />
+                <span
+                  className={`smtcmp-tree-guide smtcmp-tree-guide-branch${isLast ? ' is-last' : ''}`}
+                />
               )}
             </div>
             <div
@@ -196,7 +234,15 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
                 if (hasChildren) toggle(node.path)
               }}
             >
-              {hasChildren ? (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />) : <span className="smtcmp-icon-placeholder" />}
+              {hasChildren ? (
+                isOpen ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )
+              ) : (
+                <span className="smtcmp-icon-placeholder" />
+              )}
             </div>
             <div className="smtcmp-tree-icon" aria-hidden="true">
               {itemIcon}
@@ -204,7 +250,13 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
             <div className="smtcmp-provider-info">
               <span
                 className="smtcmp-folder-name"
-                title={isSelected ? '已选择' : isCoveredByAncestor ? '已被父级覆盖' : node.path || '/'}
+                title={
+                  isSelected
+                    ? '已选择'
+                    : isCoveredByAncestor
+                      ? '已被父级覆盖'
+                      : node.path || '/'
+                }
               >
                 {node.name}
               </span>
@@ -241,7 +293,9 @@ function FolderPickerModalComponent({ vault, existing, onPick, onClose, allowFil
       </div>
 
       <div className="smtcmp-actions-right-gap-8">
-        <button onClick={onClose} className="mod-cancel">关闭</button>
+        <button onClick={onClose} className="mod-cancel">
+          关闭
+        </button>
       </div>
     </div>
   )

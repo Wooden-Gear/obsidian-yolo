@@ -61,7 +61,10 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<
           : undefined,
       }
 
-      formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
+      formattedRequest = this.applyCustomModelParameters(
+        model,
+        formattedRequest,
+      )
 
       const response = await this.adapter.generateResponse(
         this.client,
@@ -126,7 +129,10 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<
           : undefined,
       }
 
-      formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
+      formattedRequest = this.applyCustomModelParameters(
+        model,
+        formattedRequest,
+      )
 
       return await this.adapter.streamResponse(
         this.client,

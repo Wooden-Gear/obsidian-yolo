@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { useLanguage } from '../../contexts/language-context'
 
 export function ConversationModeSelector({
@@ -12,7 +13,9 @@ export function ConversationModeSelector({
 
   return (
     <div className="smtcmp-chat-mode-selector">
-      <span className="smtcmp-chat-mode-label">{t('chat.modeTitle') ?? 'Chat Mode'}</span>
+      <span className="smtcmp-chat-mode-label">
+        {t('chat.modeTitle') ?? 'Chat Mode'}
+      </span>
       <div className="smtcmp-chat-mode-selector-buttons">
         <button
           className={`clickable-icon ${mode === 'rag' ? 'is-active' : ''}`}

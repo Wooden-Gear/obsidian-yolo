@@ -1,34 +1,51 @@
-import { ChevronDown, ChevronRight, Settings, Trash2, Edit, GripVertical } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit,
+  GripVertical,
+  Settings,
+  Trash2,
+} from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import React, { useState } from 'react'
 
-import { DEFAULT_CHAT_MODELS, DEFAULT_EMBEDDING_MODELS, DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
+import {
+  DEFAULT_CHAT_MODELS,
+  DEFAULT_EMBEDDING_MODELS,
+  DEFAULT_PROVIDERS,
+  PROVIDER_TYPES_INFO,
+} from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { getEmbeddingModelClient } from '../../../core/rag/embedding'
 import SmartComposerPlugin from '../../../main'
-import { LLMProvider } from '../../../types/provider.types'
 import { EmbeddingModel } from '../../../types/embedding-model.types'
+import { LLMProvider } from '../../../types/provider.types'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ConfirmModal } from '../../modals/ConfirmModal'
-import {
-  AddProviderModal,
-  EditProviderModal,
-} from '../modals/ProviderFormModal'
 import { AddChatModelModal } from '../modals/AddChatModelModal'
 import { AddEmbeddingModelModal } from '../modals/AddEmbeddingModelModal'
 import { EditChatModelModal } from '../modals/EditChatModelModal'
 import { EditEmbeddingModelModal } from '../modals/EditEmbeddingModelModal'
+import {
+  AddProviderModal,
+  EditProviderModal,
+} from '../modals/ProviderFormModal'
 
 type ProvidersAndModelsSectionProps = {
   app: App
   plugin: SmartComposerPlugin
 }
 
-export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSectionProps) {
+export function ProvidersAndModelsSection({
+  app,
+  plugin,
+}: ProvidersAndModelsSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t, language } = useLanguage()
-  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
+    new Set(),
+  )
   const dragChatModelRef = React.useRef<{
     providerId: string
     index: number
@@ -36,18 +53,14 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
   const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
   const lastInsertIndexRef = React.useRef<number | null>(null)
-  
+
   // Robustly highlight the moved row after DOM re-render
   const triggerProviderDropSuccess = (providerId: string, movedId: string) => {
     const key = `${providerId}:${movedId}`
     const tryFind = (attempt = 0) => {
-      let movedRow = document.querySelector(
-        `tr[data-model-key="${key}"]`,
-      ) as HTMLTableRowElement | null
+      let movedRow = document.querySelector(`tr[data-model-key="${key}"]`)
       if (!movedRow) {
-        movedRow = document.querySelector(
-          `tr[data-model-id="${movedId}"]`,
-        ) as HTMLTableRowElement | null
+        movedRow = document.querySelector(`tr[data-model-id="${movedId}"]`)
       }
       if (movedRow) {
         movedRow.classList.add('smtcmp-row-drop-success')
@@ -80,31 +93,36 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     )
 
     // Handle default model reassignment before deletion
-    let newSettings = { ...settings }
-    
+    const newSettings = { ...settings }
+
     // Find alternative chat models from other providers
     const otherChatModels = settings.chatModels.filter(
-      (m) => m.providerId !== provider.id && (m.enable ?? true)
+      (m) => m.providerId !== provider.id && (m.enable ?? true),
     )
-    
+
     // Find alternative embedding models from other providers
     const otherEmbeddingModels = settings.embeddingModels.filter(
-      (m) => m.providerId !== provider.id
+      (m) => m.providerId !== provider.id,
     )
-    
+
     // Check if current chat model is from this provider and reassign
-    if (associatedChatModels.some(m => m.id === settings.chatModelId)) {
-      newSettings.chatModelId = otherChatModels.length > 0 ? otherChatModels[0].id : ''
+    if (associatedChatModels.some((m) => m.id === settings.chatModelId)) {
+      newSettings.chatModelId =
+        otherChatModels.length > 0 ? otherChatModels[0].id : ''
     }
-    
+
     // Check if current apply model is from this provider and reassign
-    if (associatedChatModels.some(m => m.id === settings.applyModelId)) {
-      newSettings.applyModelId = otherChatModels.length > 0 ? otherChatModels[0].id : ''
+    if (associatedChatModels.some((m) => m.id === settings.applyModelId)) {
+      newSettings.applyModelId =
+        otherChatModels.length > 0 ? otherChatModels[0].id : ''
     }
-    
+
     // Check if current embedding model is from this provider and reassign
-    if (associatedEmbeddingModels.some(m => m.id === settings.embeddingModelId)) {
-      newSettings.embeddingModelId = otherEmbeddingModels.length > 0 ? otherEmbeddingModels[0].id : ''
+    if (
+      associatedEmbeddingModels.some((m) => m.id === settings.embeddingModelId)
+    ) {
+      newSettings.embeddingModelId =
+        otherEmbeddingModels.length > 0 ? otherEmbeddingModels[0].id : ''
     }
 
     // Clear embeddings for associated embedding models
@@ -128,11 +146,15 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     // Delete provider and associated models
     await setSettings({
       ...newSettings,
-      providers: settings.providers.filter(v => v.id !== provider.id),
-      chatModels: settings.chatModels.filter(v => v.providerId !== provider.id),
-      embeddingModels: settings.embeddingModels.filter(v => v.providerId !== provider.id),
+      providers: settings.providers.filter((v) => v.id !== provider.id),
+      chatModels: settings.chatModels.filter(
+        (v) => v.providerId !== provider.id,
+      ),
+      embeddingModels: settings.embeddingModels.filter(
+        (v) => v.providerId !== provider.id,
+      ),
     })
-    
+
     new Notice(`Provider "${provider.id}" deleted successfully`)
   }
 
@@ -153,7 +175,9 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
   const handleDeleteEmbeddingModel = async (modelId: string) => {
     if (modelId === settings.embeddingModelId) {
-      new Notice('Cannot remove model that is currently selected as Embedding Model')
+      new Notice(
+        'Cannot remove model that is currently selected as Embedding Model',
+      )
       return
     }
 
@@ -176,8 +200,14 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     })
   }
 
-  const handleToggleEnableChatModel = async (modelId: string, value: boolean) => {
-    if (!value && (modelId === settings.chatModelId || modelId === settings.applyModelId)) {
+  const handleToggleEnableChatModel = async (
+    modelId: string,
+    value: boolean,
+  ) => {
+    if (
+      !value &&
+      (modelId === settings.chatModelId || modelId === settings.applyModelId)
+    ) {
       new Notice(
         'Cannot disable model that is currently selected as Chat Model or Tool Model',
       )
@@ -210,22 +240,28 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     // visual feedback
     const row = event.currentTarget
     row.classList.add('smtcmp-row-dragging')
-    const handle = row.querySelector('.smtcmp-drag-handle') as HTMLElement | null
+    const handle = row.querySelector('.smtcmp-drag-handle')
     if (handle) handle.classList.add('smtcmp-drag-handle--active')
   }
 
   const handleProviderModelDragEnd = () => {
     dragChatModelRef.current = null
     if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
       dragOverRowRef.current = null
     }
     lastDropPosRef.current = null
     lastInsertIndexRef.current = null
-    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    const dragging = document.querySelector('tr.smtcmp-row-dragging')
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
   const handleProviderModelDragOver = (
@@ -236,7 +272,10 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     event.preventDefault()
 
     // only show indicators when dragging within the same provider group
-    if (!dragChatModelRef.current || dragChatModelRef.current.providerId !== providerId) {
+    if (
+      !dragChatModelRef.current ||
+      dragChatModelRef.current.providerId !== providerId
+    ) {
       return
     }
 
@@ -246,9 +285,15 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
     // If hovering the row being dragged, suppress indicator to avoid flicker
     if (dragChatModelRef.current.index === targetIndex) {
-      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      row.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
       if (dragOverRowRef.current && dragOverRowRef.current !== row) {
-        dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+        dragOverRowRef.current.classList.remove(
+          'smtcmp-row-drag-over-before',
+          'smtcmp-row-drag-over-after',
+        )
       }
       dragOverRowRef.current = row
       lastDropPosRef.current = null
@@ -280,11 +325,19 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
 
     // clear previous indicator
     if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
     }
 
-    const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
-    row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    const desiredClass = dropAfter
+      ? 'smtcmp-row-drag-over-after'
+      : 'smtcmp-row-drag-over-before'
+    row.classList.remove(
+      'smtcmp-row-drag-over-before',
+      'smtcmp-row-drag-over-after',
+    )
     row.classList.add(desiredClass)
     dragOverRowRef.current = row
     lastDropPosRef.current = dropAfter ? 'after' : 'before'
@@ -305,12 +358,15 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       return
     }
 
-    const providerModelIndexes = settings.chatModels.reduce<number[]>((acc, model, idx) => {
-      if (model.providerId === providerId) {
-        acc.push(idx)
-      }
-      return acc
-    }, [])
+    const providerModelIndexes = settings.chatModels.reduce<number[]>(
+      (acc, model, idx) => {
+        if (model.providerId === providerId) {
+          acc.push(idx)
+        }
+        return acc
+      },
+      [],
+    )
 
     const sourceGlobalIndex = providerModelIndexes[dragInfo.index]
     const targetGlobalIndex = providerModelIndexes[targetIndex]
@@ -346,11 +402,17 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     })
 
     // clear visuals
-    rowEl?.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    rowEl?.classList.remove(
+      'smtcmp-row-drag-over-before',
+      'smtcmp-row-drag-over-after',
+    )
+    const dragging = document.querySelector('tr.smtcmp-row-dragging')
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
 
     dragOverRowRef.current = null
     lastDropPosRef.current = null
@@ -360,13 +422,14 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
     triggerProviderDropSuccess(providerId, moved.id)
   }
 
-
   const isEnabled = (enable: boolean | undefined | null) => enable ?? true
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.providers.title')}</div>
-      
+      <div className="smtcmp-settings-header">
+        {t('settings.providers.title')}
+      </div>
+
       <div className="smtcmp-settings-desc">
         <span>{t('settings.providers.desc')}</span>
         <br />
@@ -382,35 +445,45 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
       <div className="smtcmp-providers-models-container">
         {settings.providers.map((provider) => {
           const isExpanded = expandedProviders.has(provider.id)
-          const chatModels = settings.chatModels.filter(m => m.providerId === provider.id)
-          const embeddingModels = settings.embeddingModels.filter(m => m.providerId === provider.id)
+          const chatModels = settings.chatModels.filter(
+            (m) => m.providerId === provider.id,
+          )
+          const embeddingModels = settings.embeddingModels.filter(
+            (m) => m.providerId === provider.id,
+          )
 
           return (
             <div key={provider.id} className="smtcmp-provider-section">
-              <div 
+              <div
                 className="smtcmp-provider-header smtcmp-clickable"
                 onClick={() => toggleProvider(provider.id)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleProvider(provider.id);
+                    e.preventDefault()
+                    toggleProvider(provider.id)
                   }
                 }}
               >
                 <div className="smtcmp-provider-expand-btn">
-                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  {isExpanded ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
                 </div>
-                
+
                 <div className="smtcmp-provider-info">
                   <span className="smtcmp-provider-id">{provider.id}</span>
-                  <span className="smtcmp-provider-type">{PROVIDER_TYPES_INFO[provider.type].label}</span>
-                  <span 
+                  <span className="smtcmp-provider-type">
+                    {PROVIDER_TYPES_INFO[provider.type].label}
+                  </span>
+                  <span
                     className="smtcmp-provider-api-key"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      new EditProviderModal(app, plugin, provider).open();
+                      e.stopPropagation()
+                      new EditProviderModal(app, plugin, provider).open()
                     }}
                   >
                     {provider.apiKey ? '••••••••' : 'Set API key'}
@@ -420,8 +493,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                 <div className="smtcmp-provider-actions">
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
-                      new EditProviderModal(app, plugin, provider).open();
+                      e.stopPropagation()
+                      new EditProviderModal(app, plugin, provider).open()
                     }}
                     className="clickable-icon"
                   >
@@ -429,8 +502,8 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                   </button>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProvider(provider);
+                      e.stopPropagation()
+                      handleDeleteProvider(provider)
                     }}
                     className="clickable-icon"
                   >
@@ -445,17 +518,21 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                   <div className="smtcmp-models-subsection">
                     <div className="smtcmp-models-subsection-header">
                       <span>{t('settings.models.chatModels')}</span>
-                      <button 
+                      <button
                         className="smtcmp-add-model-btn"
                         onClick={() => {
-                          const modal = new AddChatModelModal(app, plugin, provider)
+                          const modal = new AddChatModelModal(
+                            app,
+                            plugin,
+                            provider,
+                          )
                           modal.open()
                         }}
                       >
                         + {t('settings.models.addChatModel')}
                       </button>
                     </div>
-                    
+
                     {chatModels.length > 0 ? (
                       <table className="smtcmp-models-table">
                         <colgroup>
@@ -482,41 +559,74 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               data-model-key={`${provider.id}:${model.id}`}
                               draggable
                               onDragStart={(event) =>
-                                handleProviderModelDragStart(event, provider.id, index)
+                                handleProviderModelDragStart(
+                                  event,
+                                  provider.id,
+                                  index,
+                                )
                               }
-                              onDragOver={(event) => handleProviderModelDragOver(event, provider.id, index)}
+                              onDragOver={(event) =>
+                                handleProviderModelDragOver(
+                                  event,
+                                  provider.id,
+                                  index,
+                                )
+                              }
                               onDrop={(event) =>
-                                void handleProviderModelDrop(event, provider.id, index)
+                                void handleProviderModelDrop(
+                                  event,
+                                  provider.id,
+                                  index,
+                                )
                               }
                               onDragEnd={handleProviderModelDragEnd}
                             >
                               <td>
-                                <span className="smtcmp-drag-handle" aria-label="Drag to reorder">
+                                <span
+                                  className="smtcmp-drag-handle"
+                                  aria-label="Drag to reorder"
+                                >
                                   <GripVertical />
                                 </span>
                               </td>
-                              <td title={model.id}>{model.name || model.model || model.id}</td>
+                              <td title={model.id}>
+                                {model.name || model.model || model.id}
+                              </td>
                               <td>{model.model || model.id}</td>
                               <td>
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}
-                                  onChange={(value) => handleToggleEnableChatModel(model.id, value)}
+                                  onChange={(value) =>
+                                    handleToggleEnableChatModel(model.id, value)
+                                  }
                                 />
                               </td>
                               <td>
                                 <div className="smtcmp-settings-actions">
                                   {/* Always allow editing, even for default models (e.g., Gemini presets) */}
                                   <button
-                                    onClick={() => new EditChatModelModal(app, plugin, model).open()}
+                                    onClick={() =>
+                                      new EditChatModelModal(
+                                        app,
+                                        plugin,
+                                        model,
+                                      ).open()
+                                    }
                                     className="clickable-icon"
                                     title="Edit model"
                                   >
                                     <Edit />
                                   </button>
                                   {/* Keep delete hidden for default models */}
-                                  {!DEFAULT_CHAT_MODELS.some(v => v.id === model.id && v.providerId === model.providerId) && (
+                                  {!DEFAULT_CHAT_MODELS.some(
+                                    (v) =>
+                                      v.id === model.id &&
+                                      v.providerId === model.providerId,
+                                  ) && (
                                     <button
-                                      onClick={() => handleDeleteChatModel(model.id)}
+                                      onClick={() =>
+                                        handleDeleteChatModel(model.id)
+                                      }
                                       className="clickable-icon"
                                     >
                                       <Trash2 />
@@ -529,7 +639,9 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         </tbody>
                       </table>
                     ) : (
-                      <div className="smtcmp-no-models">{t('settings.models.noChatModelsConfigured')}</div>
+                      <div className="smtcmp-no-models">
+                        {t('settings.models.noChatModelsConfigured')}
+                      </div>
                     )}
                   </div>
 
@@ -537,17 +649,21 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                   <div className="smtcmp-models-subsection">
                     <div className="smtcmp-models-subsection-header">
                       <span>{t('settings.models.embeddingModels')}</span>
-                      <button 
+                      <button
                         className="smtcmp-add-model-btn"
                         onClick={() => {
-                          const modal = new AddEmbeddingModelModal(app, plugin, provider)
+                          const modal = new AddEmbeddingModelModal(
+                            app,
+                            plugin,
+                            provider,
+                          )
                           modal.open()
                         }}
                       >
                         + {t('settings.models.addEmbeddingModel')}
                       </button>
                     </div>
-                    
+
                     {embeddingModels.length > 0 ? (
                       <table className="smtcmp-models-table smtcmp-embedding-models-table">
                         <colgroup>
@@ -575,17 +691,29 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                               <td>{model.dimension}</td>
                               <td>
                                 <div className="smtcmp-settings-actions">
-                                  {!DEFAULT_EMBEDDING_MODELS.some(v => v.id === model.id && v.providerId === model.providerId) && (
+                                  {!DEFAULT_EMBEDDING_MODELS.some(
+                                    (v) =>
+                                      v.id === model.id &&
+                                      v.providerId === model.providerId,
+                                  ) && (
                                     <>
                                       <button
-                                        onClick={() => new EditEmbeddingModelModal(app, plugin, model).open()}
+                                        onClick={() =>
+                                          new EditEmbeddingModelModal(
+                                            app,
+                                            plugin,
+                                            model,
+                                          ).open()
+                                        }
                                         className="clickable-icon"
                                         title="Edit model"
                                       >
                                         <Edit />
                                       </button>
                                       <button
-                                        onClick={() => handleDeleteEmbeddingModel(model.id)}
+                                        onClick={() =>
+                                          handleDeleteEmbeddingModel(model.id)
+                                        }
                                         className="clickable-icon"
                                       >
                                         <Trash2 />
@@ -599,7 +727,9 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
                         </tbody>
                       </table>
                     ) : (
-                      <div className="smtcmp-no-models">{t('settings.models.noEmbeddingModelsConfigured')}</div>
+                      <div className="smtcmp-no-models">
+                        {t('settings.models.noEmbeddingModelsConfigured')}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -608,7 +738,7 @@ export function ProvidersAndModelsSection({ app, plugin }: ProvidersAndModelsSec
           )
         })}
 
-        <button 
+        <button
           className="smtcmp-add-provider-btn"
           onClick={() => new AddProviderModal(app, plugin).open()}
         >

@@ -300,8 +300,9 @@ export class ResponseGenerator {
         },
       )
     } catch (error) {
-      const msg = String((error as any)?.message ?? '')
-      const shouldFallback = /protocol error|unexpected EOF|incomplete envelope/i.test(msg)
+      const msg = String(error?.message ?? '')
+      const shouldFallback =
+        /protocol error|unexpected EOF|incomplete envelope/i.test(msg)
       if (shouldFallback) {
         const response = await this.providerClient.generateResponse(
           this.model,
@@ -347,7 +348,9 @@ export class ResponseGenerator {
         }
 
         // Tool call requests from non-streaming response
-        const toolCallRequests = (response.choices[0]?.message?.tool_calls ?? [])
+        const toolCallRequests = (
+          response.choices[0]?.message?.tool_calls ?? []
+        )
           .map((toolCall): ToolCallRequest | null => {
             if (!toolCall.function?.name) return null
             const base: ToolCallRequest = {

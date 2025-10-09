@@ -15,7 +15,6 @@
   overflow-wrap: anywhere;
 }
 
-
 /* Chat input: outer wrapper to anchor settings button at top-right */
 .smtcmp-chat-input-wrapper {
   position: relative;
@@ -25,7 +24,7 @@
 .smtcmp-chat-input-settings-outer {
   position: absolute;
   top: -14px; /* above input border */
-  right: -14px;  /* outside right border */
+  right: -14px; /* outside right border */
   left: auto !important; /* cancel any left: 0 from other rules */
   z-index: 3;
 }
@@ -41,7 +40,6 @@
   font-weight: var(--font-medium);
   margin: 0;
 }
-
 
 .smtcmp-chat-header-title-toggle {
   display: flex;
@@ -213,7 +211,6 @@
   min-height: 0;
 }
 
-
 .smtcmp-sidebar-panels {
   position: relative;
   flex: 1;
@@ -274,7 +271,8 @@
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-l);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow) 40%, transparent);
+  box-shadow: 0 2px 8px
+    color-mix(in srgb, var(--background-modifier-box-shadow) 40%, transparent);
   position: relative;
   overflow: hidden;
   flex: 0 0 auto;
@@ -330,7 +328,8 @@
 
 .smtcmp-composer-option:hover {
   border-color: var(--interactive-accent);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--interactive-accent) 20%, transparent);
   transform: translateY(-1px);
 }
 
@@ -435,13 +434,22 @@
 
 /* 特殊样式：模型选择区域 */
 .smtcmp-composer-section--primary {
-  background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--background-primary) 0%,
+    var(--background-secondary) 100%
+  );
   border: 2px solid var(--interactive-accent);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--interactive-accent) 25%, transparent);
 }
 
 .smtcmp-composer-section--primary .smtcmp-composer-heading-title::before {
-  background: linear-gradient(135deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--interactive-accent) 0%,
+    var(--interactive-accent-hover) 100%
+  );
   width: 6px;
   height: 20px;
 }
@@ -485,7 +493,7 @@
   gap: var(--size-2-2);
 }
 
-.checkbox-container input[type="checkbox"] {
+.checkbox-container input[type='checkbox'] {
   width: 44px;
   height: 24px;
   appearance: none;
@@ -497,12 +505,12 @@
   border: 2px solid transparent;
 }
 
-.checkbox-container input[type="checkbox"]:checked {
+.checkbox-container input[type='checkbox']:checked {
   background: var(--interactive-accent);
   border-color: var(--interactive-accent);
 }
 
-.checkbox-container input[type="checkbox"]::before {
+.checkbox-container input[type='checkbox']::before {
   content: '';
   position: absolute;
   width: 18px;
@@ -512,10 +520,10 @@
   top: 1px;
   left: 1px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.checkbox-container input[type="checkbox"]:checked::before {
+.checkbox-container input[type='checkbox']:checked::before {
   transform: translateX(20px);
 }
 
@@ -539,7 +547,11 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--interactive-accent) 0%,
+    var(--interactive-accent-hover) 100%
+  );
 }
 
 .smtcmp-chat-messages {
@@ -891,10 +903,10 @@
   align-items: start;
 }
 
-  /* Must come after the generic li padding shorthand above */
-  .smtcmp-popover .smtcmp-model-select-list > li {
-    padding-left: calc(var(--size-4-2) + 8px);
-  }
+/* Must come after the generic li padding shorthand above */
+.smtcmp-popover .smtcmp-model-select-list > li {
+  padding-left: calc(var(--size-4-2) + 8px);
+}
 
 .smtcmp-popover li.active {
   display: flex;
@@ -1503,8 +1515,6 @@ button.smtcmp-chat-input-model-select {
   font-size: var(--font-ui-smaller);
 }
 
-
-
 /* Segmented control for Streaming */
 .smtcmp-segmented {
   display: inline-flex;
@@ -1537,8 +1547,9 @@ button.smtcmp-chat-input-model-select {
   isolation: isolate;
   transition: all 0.2s ease;
   width: 200px; /* 固定总宽度 */
-  box-shadow: 
-    0 1px 3px color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
+  box-shadow:
+    0 1px 3px
+      color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
 
   /* 布局变量 */
@@ -1546,7 +1557,8 @@ button.smtcmp-chat-input-model-select {
   --smtcmp-padding-inline: 8px; /* 左右 4px */
   --smtcmp-collapsed-width: 50px;
   --smtcmp-expanded-width: calc(
-    var(--smtcmp-total-width) - var(--smtcmp-padding-inline) - var(--smtcmp-collapsed-width)
+    var(--smtcmp-total-width) - var(--smtcmp-padding-inline) -
+      var(--smtcmp-collapsed-width)
   );
 }
 
@@ -1652,30 +1664,33 @@ button.smtcmp-chat-input-model-select {
 
 /* 默认状态：根据激活的视图设置宽度和位置 */
 /* indicator只跟随activeView，不响应hover */
-.smtcmp-view-toggle-indicator[data-active-view="chat"] {
+.smtcmp-view-toggle-indicator[data-active-view='chat'] {
   width: var(--smtcmp-collapsed-width);
   transform: translateX(0);
 }
 
-.smtcmp-view-toggle-indicator[data-active-view="composer"] {
+.smtcmp-view-toggle-indicator[data-active-view='composer'] {
   width: var(--smtcmp-collapsed-width);
   transform: translateX(var(--smtcmp-collapsed-width));
 }
 
 /* 当chat激活且被展开时（hover在激活的chat上） */
-.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+.smtcmp-view-toggle[data-expanded-view='chat'][data-active-expanded='true']
+  .smtcmp-view-toggle-indicator[data-active-view='chat'] {
   width: var(--smtcmp-expanded-width);
   transform: translateX(0);
 }
 
 /* 当composer激活且被展开时（hover在激活的composer上） */
-.smtcmp-view-toggle[data-expanded-view="composer"][data-active-expanded="true"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+.smtcmp-view-toggle[data-expanded-view='composer'][data-active-expanded='true']
+  .smtcmp-view-toggle-indicator[data-active-view='composer'] {
   width: var(--smtcmp-expanded-width);
   transform: translateX(var(--smtcmp-collapsed-width));
 }
 
 /* 当composer激活但chat被展开时（hover在chat上） */
-.smtcmp-view-toggle[data-expanded-view="chat"][data-active-expanded="false"] .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+.smtcmp-view-toggle[data-expanded-view='chat'][data-active-expanded='false']
+  .smtcmp-view-toggle-indicator[data-active-view='composer'] {
   width: var(--smtcmp-collapsed-width);
   transform: translateX(var(--smtcmp-expanded-width));
 }
@@ -1687,8 +1702,9 @@ button.smtcmp-chat-input-model-select {
 
 /* 增强视觉反馈 */
 .smtcmp-view-toggle:hover {
-  box-shadow: 
-    0 2px 8px color-mix(in srgb, var(--background-modifier-box-shadow) 20%, transparent),
+  box-shadow:
+    0 2px 8px
+      color-mix(in srgb, var(--background-modifier-box-shadow) 20%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
 }
 
@@ -1706,10 +1722,10 @@ button.smtcmp-chat-input-model-select {
   .smtcmp-view-toggle-button--expanded {
     width: var(--smtcmp-expanded-width);
   }
-  .smtcmp-view-toggle-indicator[data-active-view="chat"] {
+  .smtcmp-view-toggle-indicator[data-active-view='chat'] {
     width: var(--smtcmp-collapsed-width);
   }
-  .smtcmp-view-toggle-indicator[data-active-view="composer"] {
+  .smtcmp-view-toggle-indicator[data-active-view='composer'] {
     width: var(--smtcmp-collapsed-width);
     transform: translateX(var(--smtcmp-collapsed-width));
   }
@@ -2059,7 +2075,9 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-drag-handle {
   padding: 0; /* 去掉手柄内部左右留白 */
-  transition: transform 120ms ease, color 120ms ease;
+  transition:
+    transform 120ms ease,
+    color 120ms ease;
 }
 
 /* 紧凑化：手柄列（第一列）不占额外空间，仅按内容宽度布局 */
@@ -2082,8 +2100,12 @@ button.smtcmp-chat-input-model-select {
   background-color: var(--background-modifier-hover);
   transform: translateX(2px) scale(0.995);
   opacity: 0.98;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-  transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
   will-change: transform, opacity;
 }
 
@@ -2370,7 +2392,9 @@ button.smtcmp-chat-input-model-select {
   gap: 8px;
 }
 
-.smtcmp-clickable { cursor: pointer; }
+.smtcmp-clickable {
+  cursor: pointer;
+}
 
 /* List reset & scroll panel */
 .smtcmp-list-reset {
@@ -2503,18 +2527,42 @@ button.smtcmp-chat-input-model-select {
 }
 
 /* Indent helpers using CSS variables for depth */
-.smtcmp-depth { --smtcmp-depth: 0; }
-.smtcmp-depth-0 { --smtcmp-depth: 0; }
-.smtcmp-depth-1 { --smtcmp-depth: 1; }
-.smtcmp-depth-2 { --smtcmp-depth: 2; }
-.smtcmp-depth-3 { --smtcmp-depth: 3; }
-.smtcmp-depth-4 { --smtcmp-depth: 4; }
-.smtcmp-depth-5 { --smtcmp-depth: 5; }
-.smtcmp-depth-6 { --smtcmp-depth: 6; }
-.smtcmp-depth-7 { --smtcmp-depth: 7; }
-.smtcmp-depth-8 { --smtcmp-depth: 8; }
-.smtcmp-depth-9 { --smtcmp-depth: 9; }
-.smtcmp-depth-10 { --smtcmp-depth: 10; }
+.smtcmp-depth {
+  --smtcmp-depth: 0;
+}
+.smtcmp-depth-0 {
+  --smtcmp-depth: 0;
+}
+.smtcmp-depth-1 {
+  --smtcmp-depth: 1;
+}
+.smtcmp-depth-2 {
+  --smtcmp-depth: 2;
+}
+.smtcmp-depth-3 {
+  --smtcmp-depth: 3;
+}
+.smtcmp-depth-4 {
+  --smtcmp-depth: 4;
+}
+.smtcmp-depth-5 {
+  --smtcmp-depth: 5;
+}
+.smtcmp-depth-6 {
+  --smtcmp-depth: 6;
+}
+.smtcmp-depth-7 {
+  --smtcmp-depth: 7;
+}
+.smtcmp-depth-8 {
+  --smtcmp-depth: 8;
+}
+.smtcmp-depth-9 {
+  --smtcmp-depth: 9;
+}
+.smtcmp-depth-10 {
+  --smtcmp-depth: 10;
+}
 
 /* Folder picker row indent (base 8px + depth*12px) */
 .smtcmp-indent-folder {
@@ -3171,9 +3219,9 @@ button.smtcmp-chat-input-model-select {
   outline: none !important;
 }
 
-.smtcmp-folder-picker [role="button"]:focus,
-.smtcmp-folder-picker [role="button"]:focus-visible,
-.smtcmp-folder-picker [role="button"]:active {
+.smtcmp-folder-picker [role='button']:focus,
+.smtcmp-folder-picker [role='button']:focus-visible,
+.smtcmp-folder-picker [role='button']:active {
   outline: none !important;
   box-shadow: none !important;
 }
@@ -3241,7 +3289,9 @@ button.smtcmp-chat-input-model-select {
   font-size: 15px;
 }
 
-.smtcmp-no-assistants-text { margin: 0; }
+.smtcmp-no-assistants-text {
+  margin: 0;
+}
 
 .smtcmp-assistants-list {
   display: flex;
@@ -3314,7 +3364,9 @@ button.smtcmp-chat-input-model-select {
   height: 24px;
   transition: transform 0.2s ease;
 }
-.smtcmp-assistant-item.expanded .smtcmp-assistant-expand-icon { transform: rotate(180deg); }
+.smtcmp-assistant-item.expanded .smtcmp-assistant-expand-icon {
+  transform: rotate(180deg);
+}
 
 .smtcmp-assistant-details {
   padding: 16px;
@@ -3365,7 +3417,9 @@ button.smtcmp-chat-input-model-select {
   border-bottom: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
 }
-.smtcmp-floating-panel-title { font-weight: 600; }
+.smtcmp-floating-panel-title {
+  font-weight: 600;
+}
 .smtcmp-floating-panel-close {
   border: none;
   background: transparent;
@@ -3399,23 +3453,51 @@ button.smtcmp-chat-input-model-select {
 }
 
 /* Textarea container and inputs */
-.smtcmp-textarea-container { width: 100%; height: 100%; }
-.smtcmp-instruction-editor-container { width: 100%; flex: 1; min-height: 0; display: flex; }
-.smtcmp-instruction-textarea { width: 100%; height: 100%; min-height: 160px; resize: none; }
-.smtcmp-modal-input-container { width: 100%; margin-bottom: 12px; }
-.smtcmp-prewrap { white-space: pre-wrap; }
-.smtcmp-display-contents { display: contents; }
+.smtcmp-textarea-container {
+  width: 100%;
+  height: 100%;
+}
+.smtcmp-instruction-editor-container {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.smtcmp-instruction-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  resize: none;
+}
+.smtcmp-modal-input-container {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.smtcmp-prewrap {
+  white-space: pre-wrap;
+}
+.smtcmp-display-contents {
+  display: contents;
+}
 
 /* Folder selection list */
-.smtcmp-folder-selection { width: 100%; }
+.smtcmp-folder-selection {
+  width: 100%;
+}
 .smtcmp-folder-selection-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.smtcmp-folder-selection-title { font-weight: 600; opacity: 0.8; }
-.smtcmp-folder-selection-actions { display: flex; gap: 6px; }
+.smtcmp-folder-selection-title {
+  font-weight: 600;
+  opacity: 0.8;
+}
+.smtcmp-folder-selection-actions {
+  display: flex;
+  gap: 6px;
+}
 .smtcmp-folder-selection-btn {
   border: 1px solid var(--background-modifier-border);
   border-radius: 0;
@@ -3434,8 +3516,14 @@ button.smtcmp-chat-input-model-select {
   min-height: 32px;
   position: relative;
 }
-.smtcmp-folder-selection-empty { opacity: 0.7; }
-.smtcmp-folder-selection-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.smtcmp-folder-selection-empty {
+  opacity: 0.7;
+}
+.smtcmp-folder-selection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .smtcmp-folder-selection-chip {
   display: inline-flex;
   align-items: center;
@@ -3447,9 +3535,21 @@ button.smtcmp-chat-input-model-select {
   cursor: grab;
   user-select: none;
 }
-.smtcmp-folder-selection-chip-handle { opacity: 0.5; font-size: 12px; }
-.smtcmp-folder-selection-chip-path { font-family: var(--font-monospace); font-size: 12px; }
-.smtcmp-folder-selection-chip-remove { cursor: pointer; color: var(--text-muted); font-size: 12px; line-height: 1; user-select: none; }
+.smtcmp-folder-selection-chip-handle {
+  opacity: 0.5;
+  font-size: 12px;
+}
+.smtcmp-folder-selection-chip-path {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+}
+.smtcmp-folder-selection-chip-remove {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+}
 
 /* Floating panel positioning using CSS custom properties */
 .smtcmp-floating-panel {

@@ -207,7 +207,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
     const handleSubmit = (options: { useVaultSearch?: boolean } = {}) => {
       const content = editorRef.current?.getEditorState()?.toJSON()
       // Use vault search from conversation overrides if available, otherwise use the passed option
-      const shouldUseVaultSearch = conversationOverrides?.useVaultSearch ?? options.useVaultSearch
+      const shouldUseVaultSearch =
+        conversationOverrides?.useVaultSearch ?? options.useVaultSearch
       content && onSubmit(content, shouldUseVaultSearch)
     }
 

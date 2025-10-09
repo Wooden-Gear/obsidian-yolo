@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
-import Chat, { ChatProps, ChatRef } from './Chat'
 import { useSettings } from '../../contexts/settings-context'
+
+import Chat, { ChatProps, ChatRef } from './Chat'
 
 type ChatSidebarTabsProps = {
   chatRef: React.RefObject<ChatRef>
@@ -36,7 +37,9 @@ const ChatSidebarTabs: React.FC<ChatSidebarTabsProps> = ({
             {...(chatProps ?? {})}
             activeView={superContinuationEnabled ? activeTab : 'chat'}
             onChangeView={
-              superContinuationEnabled ? (view) => setActiveTab(view) : undefined
+              superContinuationEnabled
+                ? (view) => setActiveTab(view)
+                : undefined
             }
           />
         </div>

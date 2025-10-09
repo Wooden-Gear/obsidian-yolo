@@ -13,10 +13,10 @@ import {
 } from '../../core/llm/exception'
 import { getChatModelClient } from '../../core/llm/manager'
 import { ChatMessage } from '../../types/chat'
+import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 import { PromptGenerator } from '../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../utils/chat/responseGenerator'
 import { ErrorModal } from '../modals/ErrorModal'
-import { ConversationOverrideSettings } from '../../types/conversation-settings.types'
 
 type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
@@ -115,8 +115,7 @@ export function useChatStreamManager({
           learningMode,
           requestParams: {
             stream: conversationOverrides?.stream ?? true,
-            temperature:
-              conversationOverrides?.temperature ?? undefined,
+            temperature: conversationOverrides?.temperature ?? undefined,
             top_p: conversationOverrides?.top_p ?? undefined,
           },
           maxContextOverride:

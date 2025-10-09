@@ -1,17 +1,21 @@
+import { GoogleGenAI } from '@google/genai'
 import { App, Notice } from 'obsidian'
 import { useEffect, useState } from 'react'
 
 import { DEFAULT_PROVIDERS } from '../../../constants'
-import { GoogleGenAI } from '@google/genai'
 import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel, chatModelSchema } from '../../../types/chat-model.types'
 import { LLMProvider } from '../../../types/provider.types'
-import { generateModelId, detectReasoningTypeFromModelId, ensureUniqueModelId } from '../../../utils/model-id-utils'
+import {
+  detectReasoningTypeFromModelId,
+  ensureUniqueModelId,
+  generateModelId,
+} from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
 
 type AddChatModelModalComponentProps = {
@@ -40,9 +44,11 @@ function AddChatModelModalComponent({
   provider,
 }: AddChatModelModalComponentProps) {
   const { t } = useLanguage()
-  const selectedProvider: LLMProvider | undefined = provider ?? plugin.settings.providers[0]
+  const selectedProvider: LLMProvider | undefined =
+    provider ?? plugin.settings.providers[0]
   const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
-  const initialProviderType = selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
+  const initialProviderType =
+    selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
   const [formData, setFormData] = useState<ChatModel>({
     providerId: initialProviderId,
     providerType: initialProviderType,
@@ -56,17 +62,19 @@ function AddChatModelModalComponent({
   const [loadingModels, setLoadingModels] = useState<boolean>(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   // Reasoning type selection: none | openai | gemini
-  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini' | 'base'>(
-    () => 'none',
-  )
+  const [reasoningType, setReasoningType] = useState<
+    'none' | 'openai' | 'gemini' | 'base'
+  >(() => 'none')
   // When user manually changes reasoning type, stop auto-detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
-  const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>('medium')
+  const [openaiEffort, setOpenaiEffort] = useState<
+    'minimal' | 'low' | 'medium' | 'high'
+  >('medium')
   const [geminiBudget, setGeminiBudget] = useState<string>('-1')
   // Tool type (only meaningful for Gemini provider)
   const [toolType, setToolType] = useState<'none' | 'gemini'>('none')
   const [customParameters, setCustomParameters] = useState<
-    Array<{ key: string; value: string }>
+    { key: string; value: string }[]
   >([])
 
   useEffect(() => {
@@ -75,7 +83,7 @@ function AddChatModelModalComponent({
       setLoadingModels(true)
       setLoadError(null)
       try {
-        const isOpenAIStyle = (
+        const isOpenAIStyle =
           selectedProvider.type === 'openai' ||
           selectedProvider.type === 'openai-compatible' ||
           selectedProvider.type === 'openrouter' ||
@@ -83,22 +91,23 @@ function AddChatModelModalComponent({
           selectedProvider.type === 'mistral' ||
           selectedProvider.type === 'perplexity' ||
           selectedProvider.type === 'deepseek'
-        )
 
         if (isOpenAIStyle) {
           const base = ((): string => {
             // default OpenAI base when not provided
             const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
             if (cleaned && cleaned.length > 0) return cleaned
-            if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
-            if (selectedProvider.type === 'openrouter') return 'https://openrouter.ai/api/v1'
+            if (selectedProvider.type === 'openai')
+              return 'https://api.openai.com/v1'
+            if (selectedProvider.type === 'openrouter')
+              return 'https://openrouter.ai/api/v1'
             return '' // no base => skip
           })()
 
           if (base) {
             const baseNorm = base.replace(/\/+$/, '')
             const urlCandidates: string[] = []
-            if (/\/v1$/.test(baseNorm)) {
+            if (baseNorm.endsWith('/v1')) {
               // Try with v1 first, then without v1
               urlCandidates.push(`${baseNorm}/models`)
               urlCandidates.push(`${baseNorm.replace(/\/v1$/, '')}/models`)
@@ -132,13 +141,18 @@ function AddChatModelModalComponent({
                     .map((v: any) =>
                       typeof v === 'string'
                         ? v
-                        : (v?.id as string) || (v?.name as string) || (v?.model as string) || null,
+                        : (v?.id as string) ||
+                          (v?.name as string) ||
+                          (v?.model as string) ||
+                          null,
                     )
                     .filter((v: string | null): v is string => !!v)
 
                 const buckets: string[] = []
-                if (Array.isArray(json?.data)) buckets.push(...collectFrom(json.data))
-                if (Array.isArray(json?.models)) buckets.push(...collectFrom(json.models))
+                if (Array.isArray(json?.data))
+                  buckets.push(...collectFrom(json.data))
+                if (Array.isArray(json?.models))
+                  buckets.push(...collectFrom(json.models))
                 if (Array.isArray(json)) buckets.push(...collectFrom(json))
 
                 if (buckets.length === 0) {
@@ -155,7 +169,9 @@ function AddChatModelModalComponent({
               }
             }
             if (fetched) return
-            throw lastErr ?? new Error('Failed to fetch models from all endpoints')
+            throw (
+              lastErr ?? new Error('Failed to fetch models from all endpoints')
+            )
           }
         }
 
@@ -197,21 +213,27 @@ function AddChatModelModalComponent({
 
     // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
     const baseInternalId = generateModelId(formData.providerId, formData.model)
-    const existingIds = plugin.settings.chatModels.map(m => m.id)
+    const existingIds = plugin.settings.chatModels.map((m) => m.id)
     const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
     // Compose reasoning/thinking fields based on selection ONLY (provider-agnostic)
     const reasoningPatch: Partial<ChatModel> = {}
     if (reasoningType === 'base') {
       ;(reasoningPatch as any).isBaseModel = true
     } else if (reasoningType === 'openai') {
-      ;(reasoningPatch as any).reasoning = { enabled: true, reasoning_effort: openaiEffort }
+      ;(reasoningPatch as any).reasoning = {
+        enabled: true,
+        reasoning_effort: openaiEffort,
+      }
     } else if (reasoningType === 'gemini') {
       const budget = parseInt(geminiBudget, 10)
       if (Number.isNaN(budget)) {
         new Notice(t('common.error'))
         return
       }
-      ;(reasoningPatch as any).thinking = { enabled: true, thinking_budget: budget }
+      ;(reasoningPatch as any).thinking = {
+        enabled: true,
+        thinking_budget: budget,
+      }
     }
 
     if (reasoningType !== 'base') {
@@ -226,9 +248,10 @@ function AddChatModelModalComponent({
       ...formData,
       ...(reasoningPatch as any),
       id: modelIdWithPrefix,
-      name: (formData.name && formData.name.trim().length > 0)
-        ? formData.name
-        : formData.model,
+      name:
+        formData.name && formData.name.trim().length > 0
+          ? formData.name
+          : formData.model,
       // Persist tool type when provider is Gemini; keep optional otherwise
       ...(selectedProvider?.type === 'gemini' ? { toolType } : {}),
       ...(sanitizedCustomParameters.length > 0
@@ -265,8 +288,16 @@ function AddChatModelModalComponent({
     <>
       {/* Available models dropdown (moved above modelId) */}
       <ObsidianSetting
-        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
-        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : undefined}
+        name={
+          loadingModels
+            ? t('common.loading')
+            : t('settings.models.availableModelsAuto')
+        }
+        desc={
+          loadError
+            ? `${t('settings.models.fetchModelsFailed')}：${loadError}`
+            : undefined
+        }
       >
         <ObsidianDropdown
           value={formData.model || ''}
@@ -276,7 +307,8 @@ function AddChatModelModalComponent({
             setFormData((prev) => ({
               ...prev,
               model: value,
-              name: prev.name && prev.name.trim().length > 0 ? prev.name : value,
+              name:
+                prev.name && prev.name.trim().length > 0 ? prev.name : value,
             }))
             if (autoDetectReasoning) {
               const detected = detectReasoningTypeFromModelId(value)
@@ -348,7 +380,12 @@ function AddChatModelModalComponent({
         >
           <ObsidianDropdown
             value={openaiEffort}
-            options={{ minimal: 'minimal', low: 'low', medium: 'medium', high: 'high' }}
+            options={{
+              minimal: 'minimal',
+              low: 'low',
+              medium: 'medium',
+              high: 'high',
+            }}
             onChange={(v: string) => setOpenaiEffort(v as any)}
           />
         </ObsidianSetting>
@@ -370,7 +407,7 @@ function AddChatModelModalComponent({
 
       {/* Tool type for Gemini provider */}
       {selectedProvider?.type === 'gemini' && (
-        <ObsidianSetting 
+        <ObsidianSetting
           name={t('settings.models.toolType')}
           desc={t('settings.models.toolTypeDesc')}
         >
@@ -406,9 +443,7 @@ function AddChatModelModalComponent({
         >
           <ObsidianTextInput
             value={param.key}
-            placeholder={t(
-              'settings.models.customParametersKeyPlaceholder',
-            )}
+            placeholder={t('settings.models.customParametersKeyPlaceholder')}
             onChange={(value: string) =>
               setCustomParameters((prev) => {
                 const next = [...prev]
@@ -419,9 +454,7 @@ function AddChatModelModalComponent({
           />
           <ObsidianTextInput
             value={param.value}
-            placeholder={t(
-              'settings.models.customParametersValuePlaceholder',
-            )}
+            placeholder={t('settings.models.customParametersValuePlaceholder')}
             onChange={(value: string) =>
               setCustomParameters((prev) => {
                 const next = [...prev]
@@ -440,8 +473,6 @@ function AddChatModelModalComponent({
           />
         </ObsidianSetting>
       ))}
-
-      
 
       <ObsidianSetting>
         <ObsidianButton text={t('common.add')} onClick={handleSubmit} cta />

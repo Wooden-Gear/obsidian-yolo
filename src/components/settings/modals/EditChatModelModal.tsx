@@ -1,17 +1,21 @@
-import React, { useState } from 'react'
 import { App, Notice } from 'obsidian'
+import React, { useState } from 'react'
 
+import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { ChatModel } from '../../../types/chat-model.types'
-import { useLanguage } from '../../../contexts/language-context'
+import {
+  detectReasoningTypeFromModelId,
+  ensureUniqueModelId,
+  generateModelId,
+} from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
-import { generateModelId, detectReasoningTypeFromModelId, ensureUniqueModelId } from '../../../utils/model-id-utils'
 
-interface EditChatModelModalComponentProps {
+type EditChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
   onClose: () => void
   model: ChatModel
@@ -37,7 +41,7 @@ function EditChatModelModalComponent({
   model,
 }: EditChatModelModalComponentProps) {
   const { t } = useLanguage()
-  
+
   // Update modal title
   React.useEffect(() => {
     const modalEl = document.querySelector('.modal .modal-title')
@@ -61,27 +65,31 @@ function EditChatModelModalComponent({
   })()
 
   // Reasoning UI states
-  const [reasoningType, setReasoningType] = useState<'none' | 'openai' | 'gemini' | 'base'>(
-    () => initialReasoningType,
-  )
+  const [reasoningType, setReasoningType] = useState<
+    'none' | 'openai' | 'gemini' | 'base'
+  >(() => initialReasoningType)
   // If user changes dropdown manually, disable auto detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(
     initialReasoningType !== 'base',
   )
-  const [openaiEffort, setOpenaiEffort] = useState<'minimal' | 'low' | 'medium' | 'high'>(
-    ((model as any).reasoning?.reasoning_effort as any) || 'medium',
-  )
+  const [openaiEffort, setOpenaiEffort] = useState<
+    'minimal' | 'low' | 'medium' | 'high'
+  >((model as any).reasoning?.reasoning_effort || 'medium')
   const [geminiBudget, setGeminiBudget] = useState<string>(
     `${(model as any).thinking?.thinking_budget ?? -1}`,
   )
-  
+
   // Tool type state
   const [toolType, setToolType] = useState<'none' | 'gemini'>(
-    (model as any).toolType ?? 'none'
+    (model as any).toolType ?? 'none',
   )
   const [customParameters, setCustomParameters] = useState<
-    Array<{ key: string; value: string }>
-  >(() => (Array.isArray((model as any).customParameters) ? (model as any).customParameters : []))
+    { key: string; value: string }[]
+  >(() =>
+    Array.isArray((model as any).customParameters)
+      ? (model as any).customParameters
+      : [],
+  )
 
   const handleSubmit = async () => {
     if (!formData.model.trim()) {
@@ -92,8 +100,8 @@ function EditChatModelModalComponent({
     try {
       const settings = plugin.settings
       const chatModels = [...settings.chatModels]
-      const modelIndex = chatModels.findIndex(m => m.id === model.id)
-      
+      const modelIndex = chatModels.findIndex((m) => m.id === model.id)
+
       if (modelIndex === -1) {
         new Notice('Model not found')
         return
@@ -101,7 +109,9 @@ function EditChatModelModalComponent({
 
       // Compute new internal id from provider + API model id (calling ID)
       const baseInternalId = generateModelId(model.providerId, formData.model)
-      const existingIds = chatModels.map(m => m.id).filter(id => id !== model.id)
+      const existingIds = chatModels
+        .map((m) => m.id)
+        .filter((id) => id !== model.id)
       const newInternalId = ensureUniqueModelId(existingIds, baseInternalId)
 
       // Compose reasoning/thinking fields based on selection and provider
@@ -109,7 +119,10 @@ function EditChatModelModalComponent({
         ...chatModels[modelIndex],
         id: newInternalId,
         model: formData.model,
-        name: formData.name && formData.name.trim().length > 0 ? formData.name : undefined,
+        name:
+          formData.name && formData.name.trim().length > 0
+            ? formData.name
+            : undefined,
       } as any
 
       // Apply according to selected reasoningType only (not limited by providerType)
@@ -118,7 +131,10 @@ function EditChatModelModalComponent({
         delete updatedModel.thinking
         updatedModel.isBaseModel = true
       } else if (reasoningType === 'openai') {
-        updatedModel.reasoning = { enabled: true, reasoning_effort: openaiEffort }
+        updatedModel.reasoning = {
+          enabled: true,
+          reasoning_effort: openaiEffort,
+        }
         delete updatedModel.thinking
         delete updatedModel.isBaseModel
       } else if (reasoningType === 'gemini') {
@@ -135,7 +151,7 @@ function EditChatModelModalComponent({
         delete updatedModel.thinking
         delete updatedModel.isBaseModel
       }
-      
+
       // Apply tool type
       updatedModel.toolType = toolType
 
@@ -203,9 +219,7 @@ function EditChatModelModalComponent({
       </ObsidianSetting>
 
       {/* Reasoning type */}
-      <ObsidianSetting
-        name={t('settings.models.reasoningType')}
-      >
+      <ObsidianSetting name={t('settings.models.reasoningType')}>
         <ObsidianDropdown
           value={reasoningType}
           options={{
@@ -228,21 +242,26 @@ function EditChatModelModalComponent({
       )}
 
       {/* OpenAI reasoning options */}
-      {(reasoningType === 'openai') && (
+      {reasoningType === 'openai' && (
         <ObsidianSetting
           name={t('settings.models.openaiReasoningEffort')}
           desc={t('settings.models.openaiReasoningEffortDesc')}
         >
           <ObsidianDropdown
             value={openaiEffort}
-            options={{ minimal: 'minimal', low: 'low', medium: 'medium', high: 'high' }}
+            options={{
+              minimal: 'minimal',
+              low: 'low',
+              medium: 'medium',
+              high: 'high',
+            }}
             onChange={(v: string) => setOpenaiEffort(v as any)}
           />
         </ObsidianSetting>
       )}
 
       {/* Gemini thinking options */}
-      {(reasoningType === 'gemini') && (
+      {reasoningType === 'gemini' && (
         <ObsidianSetting
           name={t('settings.models.geminiThinkingBudget')}
           desc={t('settings.models.geminiThinkingBudgetDesc')}
@@ -256,7 +275,7 @@ function EditChatModelModalComponent({
       )}
 
       {/* Tool type */}
-      <ObsidianSetting 
+      <ObsidianSetting
         name={t('settings.models.toolType')}
         desc={t('settings.models.toolTypeDesc')}
       >
@@ -289,9 +308,7 @@ function EditChatModelModalComponent({
         >
           <ObsidianTextInput
             value={param.key}
-            placeholder={t(
-              'settings.models.customParametersKeyPlaceholder',
-            )}
+            placeholder={t('settings.models.customParametersKeyPlaceholder')}
             onChange={(value: string) =>
               setCustomParameters((prev) => {
                 const next = [...prev]
@@ -302,9 +319,7 @@ function EditChatModelModalComponent({
           />
           <ObsidianTextInput
             value={param.value}
-            placeholder={t(
-              'settings.models.customParametersValuePlaceholder',
-            )}
+            placeholder={t('settings.models.customParametersValuePlaceholder')}
             onChange={(value: string) =>
               setCustomParameters((prev) => {
                 const next = [...prev]

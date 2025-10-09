@@ -10,19 +10,19 @@ export function AssistantSelector() {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
-  
+
   // Get assistant list and currently selected assistant
   const assistants = settings.assistants || []
   const currentAssistantId = settings.currentAssistantId
-  
+
   // Get the current assistant object
-  const currentAssistant = assistants.find(a => a.id === currentAssistantId)
+  const currentAssistant = assistants.find((a) => a.id === currentAssistantId)
 
   // Handler function for selecting an assistant
   const handleSelectAssistant = async (assistant: Assistant) => {
     await setSettings({
       ...settings,
-      currentAssistantId: assistant.id
+      currentAssistantId: assistant.id,
     })
     setOpen(false)
   }
@@ -31,7 +31,7 @@ export function AssistantSelector() {
   const handleSelectNoAssistant = async () => {
     await setSettings({
       ...settings,
-      currentAssistantId: undefined
+      currentAssistantId: undefined,
     })
     setOpen(false)
   }
@@ -41,7 +41,9 @@ export function AssistantSelector() {
       <Popover.Trigger asChild>
         <button className="smtcmp-assistant-selector-button">
           <div className="smtcmp-assistant-selector-current">
-            {currentAssistant ? currentAssistant.name : t('settings.assistants.noAssistant')}
+            {currentAssistant
+              ? currentAssistant.name
+              : t('settings.assistants.noAssistant')}
           </div>
           <div className="smtcmp-assistant-selector-icon">
             {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
@@ -63,7 +65,7 @@ export function AssistantSelector() {
                 {t('settings.assistants.noAssistant')}
               </div>
             </li>
-            
+
             {/* Available assistants */}
             {assistants.map((assistant) => (
               <li

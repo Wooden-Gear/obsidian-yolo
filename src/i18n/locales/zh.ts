@@ -45,7 +45,8 @@ export const zh: TranslationKeys = {
       backToChat: '返回 Chat',
       modelSectionTitle: '模型设置',
       continuationModel: '续写模型',
-      continuationModelDesc: '在开启超级续写时，Composer 将使用该模型处理续写。',
+      continuationModelDesc:
+        '在开启超级续写时，Composer 将使用该模型处理续写。',
       contextSectionTitle: '上下文来源',
       ragToggle: '启用 RAG 检索',
       ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
@@ -71,7 +72,8 @@ export const zh: TranslationKeys = {
       referenceRulesTitle: '参考规则',
       referenceRulesPlaceholder: '点击选择需要完整注入上下文的文件夹。',
       knowledgeBaseTitle: '知识库',
-      knowledgeBasePlaceholder: '点击选择用作检索范围的文件夹或文件（留空表示全库）。',
+      knowledgeBasePlaceholder:
+        '点击选择用作检索范围的文件夹或文件（留空表示全库）。',
       knowledgeBaseHint: '开启 RAG 搜索后可限定检索范围。',
     },
   },
@@ -88,38 +90,47 @@ export const zh: TranslationKeys = {
       defaultChatModel: '默认聊天模型',
       defaultChatModelDesc: '选择你想用于侧边栏聊天的模型。',
       toolModel: '工具模型',
-      toolModelDesc: '选择将作为插件全局工具模型调用的模型（用于自动对话命名、应用操作等）。',
+      toolModelDesc:
+        '选择将作为插件全局工具模型调用的模型（用于自动对话命名、应用操作等）。',
       globalSystemPrompt: '全局系统提示词',
       globalSystemPromptDesc: '该提示将追加到每次聊天的最前面。',
       continuationSystemPrompt: '默认续写系统提示词',
-      continuationSystemPromptDesc: '用于续写功能的系统消息。留空将使用内置默认值。',
+      continuationSystemPromptDesc:
+        '用于续写功能的系统消息。留空将使用内置默认值。',
       chatTitlePrompt: '对话标题提示词',
       chatTitlePromptDesc: '用于根据首条用户消息自动生成对话标题的提示词。',
       baseModelSpecialPrompt: 'base 模型特殊提示词',
       baseModelSpecialPromptDesc: '用作 base model 的特殊提示词',
       tabCompletionSystemPrompt: 'Tab 补全系统提示词',
-      tabCompletionSystemPromptDesc: '生成 Tab 补全建议时使用的系统提示词。留空则使用内置默认值。',
+      tabCompletionSystemPromptDesc:
+        '生成 Tab 补全建议时使用的系统提示词。留空则使用内置默认值。',
     },
     chatPreferences: {
       title: '聊天偏好',
       includeCurrentFile: '自动添加当前页面文件',
       includeCurrentFileDesc: '自动在聊天中包含当前文件的内容。',
       enableBruteMode: '暴力模式',
-      enableBruteModeDesc: '在聊天页右上显示“对话模式”开关，可选择直接拼接整个文件夹（可能导致超长上下文与高额费用）。',
+      enableBruteModeDesc:
+        '在聊天页右上显示“对话模式”开关，可选择直接拼接整个文件夹（可能导致超长上下文与高额费用）。',
       enableLearningMode: '学习模式',
       enableLearningModeDesc: '在系统/自定义助手的提示词基础上追加学习规则。',
       learningModePrompt: '默认学习模式提示词',
-      learningModePromptDesc: '开启学习模式时会追加此提示词。你可以在此查看或自定义。',
+      learningModePromptDesc:
+        '开启学习模式时会追加此提示词。你可以在此查看或自定义。',
       enableTools: '启用工具',
       enableToolsDesc: '允许AI使用MCP工具。',
       maxAutoIterations: '最大自动工具请求',
-      maxAutoIterationsDesc: '可以自动进行的连续工具调用的最大数量，无需用户确认。更高的值会显著增加成本，因为每次工具调用都会消耗额外的令牌。',
+      maxAutoIterationsDesc:
+        '可以自动进行的连续工具调用的最大数量，无需用户确认。更高的值会显著增加成本，因为每次工具调用都会消耗额外的令牌。',
       maxContextMessages: '默认上下文传递条数',
-      maxContextMessagesDesc: '每次请求要包含的历史消息条数（0 表示不包含）。建议 32 条（约等于 16 轮对话）。',
+      maxContextMessagesDesc:
+        '每次请求要包含的历史消息条数（0 表示不包含）。建议 32 条（约等于 16 轮对话）。',
       defaultTemperature: '默认温度',
-      defaultTemperatureDesc: '新对话的默认温度值（0.0-2.0）。留空则使用模型默认值。',
+      defaultTemperatureDesc:
+        '新对话的默认温度值（0.0-2.0）。留空则使用模型默认值。',
       defaultTopP: '默认 Top P',
-      defaultTopPDesc: '新对话的默认 Top P 值（0.0-1.0）。留空则使用模型默认值。',
+      defaultTopPDesc:
+        '新对话的默认 Top P 值（0.0-1.0）。留空则使用模型默认值。',
     },
     assistants: {
       title: '助手',
@@ -162,10 +173,12 @@ export const zh: TranslationKeys = {
       apiKeyDesc: '（如不需要可留空）',
       apiKeyPlaceholder: '输入你的 API 密钥',
       baseUrl: '基础 URL',
-      baseUrlDesc: '第三方服务的 API 端点地址，例如：https://api.example.com/v1 或 https://your-proxy.com/openai（使用默认值可留空）',
+      baseUrlDesc:
+        '第三方服务的 API 端点地址，例如：https://api.example.com/v1 或 https://your-proxy.com/openai（使用默认值可留空）',
       baseUrlPlaceholder: 'https://api.example.com/v1',
       noStainlessHeaders: '无 Stainless 请求头',
-      noStainlessHeadersDesc: '如果你遇到与 Stainless 请求头相关的 CORS 错误（x-stainless-os 等），请启用此选项',
+      noStainlessHeadersDesc:
+        '如果你遇到与 Stainless 请求头相关的 CORS 错误（x-stainless-os 等），请启用此选项',
     },
     models: {
       title: '模型',
@@ -180,7 +193,8 @@ export const zh: TranslationKeys = {
       editCustomChatModel: '编辑自定义聊天模型',
       editCustomEmbeddingModel: '编辑自定义嵌入模型',
       modelId: '调用ID',
-      modelIdDesc: '用于实际 API 调用的模型标识（例如：gpt-4o-mini、claude-3-5-sonnet）',
+      modelIdDesc:
+        '用于实际 API 调用的模型标识（例如：gpt-4o-mini、claude-3-5-sonnet）',
       modelIdPlaceholder: 'gpt-4o-mini',
       modelName: '展示名称',
       modelNamePlaceholder: '输入用于展示的名称',
@@ -192,11 +206,14 @@ export const zh: TranslationKeys = {
       reasoningTypeOpenAI: 'OpenAI 推理（o3 / o4-mini / GPT-5）',
       reasoningTypeGemini: 'Gemini 推理（2.5 Pro / Flash / Flash-Lite）',
       reasoningTypeBase: '特殊：base 模型',
-      baseModelWarning: '启用后将不会为此模型注入任何 system prompt（包括助手提示词）。仅在你了解 base 模型含义时再勾选。',
+      baseModelWarning:
+        '启用后将不会为此模型注入任何 system prompt（包括助手提示词）。仅在你了解 base 模型含义时再勾选。',
       openaiReasoningEffort: '推理强度 (effort)',
-      openaiReasoningEffortDesc: '选择推理强度：minimal（更快更省，仅 GPT-5）/ low / medium / high',
+      openaiReasoningEffortDesc:
+        '选择推理强度：minimal（更快更省，仅 GPT-5）/ low / medium / high',
       geminiThinkingBudget: '思考预算 (thinkingBudget)',
-      geminiThinkingBudgetDesc: '单位为“思考 tokens”。0=关闭（Flash/Flash-Lite 支持）；-1=动态；具体范围因模型而异。',
+      geminiThinkingBudgetDesc:
+        '单位为“思考 tokens”。0=关闭（Flash/Flash-Lite 支持）；-1=动态；具体范围因模型而异。',
       geminiThinkingBudgetPlaceholder: '例如：-1（动态，0=关闭）',
       toolType: '工具类型',
       toolTypeDesc: '选择模型支持的工具类型',
@@ -210,7 +227,8 @@ export const zh: TranslationKeys = {
       customParametersValuePlaceholder:
         '参数值，支持 JSON，如 {"type":"enabled"} 或 0.7',
       promptLevel: '提示级别',
-      promptLevelDesc: '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
+      promptLevelDesc:
+        '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
       promptLevelDefault: '默认',
       promptLevelSimple: '简单',
       dimension: '维度',
@@ -226,17 +244,23 @@ export const zh: TranslationKeys = {
       embeddingModel: '嵌入模型',
       embeddingModelDesc: '选择你想用于嵌入的模型',
       chunkSize: '分块大小',
-      chunkSizeDesc: '设置文本分割的块大小。更改后，请使用"重建整个库索引"命令重新索引库。',
+      chunkSizeDesc:
+        '设置文本分割的块大小。更改后，请使用"重建整个库索引"命令重新索引库。',
       thresholdTokens: '阈值令牌数',
-      thresholdTokensDesc: '切换到RAG前的最大令牌数。如果提及文件的总令牌数超过此值，将使用RAG而不是包含所有文件内容。',
+      thresholdTokensDesc:
+        '切换到RAG前的最大令牌数。如果提及文件的总令牌数超过此值，将使用RAG而不是包含所有文件内容。',
       minSimilarity: '最小相似度',
-      minSimilarityDesc: 'RAG结果的最小相似度分数。更高的值返回更相关但可能更少的结果。',
+      minSimilarityDesc:
+        'RAG结果的最小相似度分数。更高的值返回更相关但可能更少的结果。',
       limit: '限制',
-      limitDesc: '在提示中包含的RAG结果的最大数量。更高的值提供更多上下文但增加令牌使用量。',
+      limitDesc:
+        '在提示中包含的RAG结果的最大数量。更高的值提供更多上下文但增加令牌使用量。',
       includePatterns: '包含模式',
-      includePatternsDesc: '指定要在索引中包含文件的全局模式（每行一个）。例如：使用"notes/**"包含notes文件夹中的所有文件。留空以包含所有文件。更改后需要"重建整个库索引"。',
+      includePatternsDesc:
+        '指定要在索引中包含文件的全局模式（每行一个）。例如：使用"notes/**"包含notes文件夹中的所有文件。留空以包含所有文件。更改后需要"重建整个库索引"。',
       excludePatterns: '排除模式',
-      excludePatternsDesc: '指定要从索引中排除文件的全局模式（每行一个）。例如：使用"notes/**"排除notes文件夹中的所有文件。留空以不排除任何内容。更改后需要"重建整个库索引"。',
+      excludePatternsDesc:
+        '指定要从索引中排除文件的全局模式（每行一个）。例如：使用"notes/**"排除notes文件夹中的所有文件。留空以不排除任何内容。更改后需要"重建整个库索引"。',
       testPatterns: '测试模式',
       manageEmbeddingDatabase: '管理嵌入数据库',
       manage: '管理',
@@ -245,12 +269,17 @@ export const zh: TranslationKeys = {
       selectedFolders: '已选择的文件夹',
       excludedFolders: '已排除的文件夹',
       selectFoldersPlaceholder: '点击此处选择文件夹（留空则默认包含全部）',
-      selectFilesOrFoldersPlaceholder: '点击此处选择文件或文件夹（留空表示全库）',
-      selectExcludeFoldersPlaceholder: '点击此处选择要排除的文件夹（留空则不排除）',
-      conflictNoteDefaultInclude: '提示：当前未选择包含文件夹，默认包含全部。若设置了排除文件夹，则排除将优先生效。',
+      selectFilesOrFoldersPlaceholder:
+        '点击此处选择文件或文件夹（留空表示全库）',
+      selectExcludeFoldersPlaceholder:
+        '点击此处选择要排除的文件夹（留空则不排除）',
+      conflictNoteDefaultInclude:
+        '提示：当前未选择包含文件夹，默认包含全部。若设置了排除文件夹，则排除将优先生效。',
       conflictExact: '以下文件夹同时被包含与排除，最终将被排除：',
-      conflictParentExclude: '以下包含的文件夹位于已排除的上级之下，最终将被排除：',
-      conflictChildExclude: '以下排除的子文件夹位于包含文件夹之下（局部排除将生效）：',
+      conflictParentExclude:
+        '以下包含的文件夹位于已排除的上级之下，最终将被排除：',
+      conflictChildExclude:
+        '以下排除的子文件夹位于包含文件夹之下（局部排除将生效）：',
       conflictRule: '当包含与排除重叠时，以排除为准。',
       // Auto update
       autoUpdate: '自动更新索引',
@@ -268,7 +297,8 @@ export const zh: TranslationKeys = {
     mcp: {
       title: '模型上下文协议 (MCP)',
       desc: '配置MCP服务器以扩展AI功能',
-      warning: '使用工具时，工具响应会传递给语言模型(LLM)。如果工具结果包含大量内容，这可能会显著增加LLM使用量和相关成本。启用或使用可能返回长输出的工具时请注意。',
+      warning:
+        '使用工具时，工具响应会传递给语言模型(LLM)。如果工具结果包含大量内容，这可能会显著增加LLM使用量和相关成本。启用或使用可能返回长输出的工具时请注意。',
       notSupportedOnMobile: '移动设备不支持MCP',
       mcpServers: 'MCP服务器',
       addServer: '添加 MCP 服务器',
@@ -295,7 +325,8 @@ export const zh: TranslationKeys = {
     templates: {
       title: '模板',
       desc: '创建可重用的提示模板',
-      howToUse: '创建包含可重用内容的模板，你可以快速插入到聊天中。在聊天输入框中输入 /template-name 触发模板插入。你也可以在聊天输入框中拖拽和选择文本来显示"创建模板"按钮以快速创建模板。',
+      howToUse:
+        '创建包含可重用内容的模板，你可以快速插入到聊天中。在聊天输入框中输入 /template-name 触发模板插入。你也可以在聊天输入框中拖拽和选择文本来显示"创建模板"按钮以快速创建模板。',
       savedTemplates: '已保存的模板',
       addTemplate: '添加提示模板',
       templateName: '模板名称',
@@ -313,25 +344,32 @@ export const zh: TranslationKeys = {
       customSubsectionTitle: '自定义续写',
       tabSubsectionTitle: 'Tab 补全',
       superContinuation: '超级续写',
-      superContinuationDesc: '开启后，侧边栏将提供 Composer 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
+      superContinuationDesc:
+        '开启后，侧边栏将提供 Composer 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
       continuationModel: 'Composer 续写模型',
       continuationModelDesc: '指定在 Composer 模式下用于续写的模型。',
       keywordTrigger: '启用关键词触发AI续写',
-      keywordTriggerDesc: '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
+      keywordTriggerDesc:
+        '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
       triggerKeyword: '触发关键词',
-      triggerKeywordDesc: '当光标前的文本等于该关键词时触发续写（默认：两个空格）',
+      triggerKeywordDesc:
+        '当光标前的文本等于该关键词时触发续写（默认：两个空格）',
       floatingPanelKeywordTrigger: '启用关键词触发自定义悬浮框',
-      floatingPanelKeywordTriggerDesc: '在编辑器中检测到指定关键词时打开“自定义续写”的悬浮面板。',
+      floatingPanelKeywordTriggerDesc:
+        '在编辑器中检测到指定关键词时打开“自定义续写”的悬浮面板。',
       floatingPanelTriggerKeyword: '悬浮框触发关键词',
-      floatingPanelTriggerKeywordDesc: '当光标前的文本等于该关键词时打开“自定义续写”悬浮面板。',
+      floatingPanelTriggerKeywordDesc:
+        '当光标前的文本等于该关键词时打开“自定义续写”悬浮面板。',
       tabCompletion: '启用 Tab 补全',
-      tabCompletionDesc: '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',
+      tabCompletionDesc:
+        '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',
       tabCompletionModel: '补全模型',
       tabCompletionModelDesc: '为 Tab 补全选择一个专用模型。',
       tabCompletionTriggerDelay: '触发延迟（毫秒）',
       tabCompletionTriggerDelayDesc: '在停止输入后等待多久再向模型请求补全。',
       tabCompletionMinContextLength: '最小上下文长度',
-      tabCompletionMinContextLengthDesc: '光标前文本长度不足该值时不触发 Tab 补全。',
+      tabCompletionMinContextLengthDesc:
+        '光标前文本长度不足该值时不触发 Tab 补全。',
       tabCompletionMaxContextChars: '最大上下文字符数',
       tabCompletionMaxContextCharsDesc: '限制发送给模型的最近上下文字符数量。',
       tabCompletionMaxSuggestionLength: '补全最大长度',
@@ -339,13 +377,16 @@ export const zh: TranslationKeys = {
       tabCompletionMaxTokens: '最大 Token 数',
       tabCompletionMaxTokensDesc: '限制模型每次前缀补全可返回的最大 Token 数。',
       tabCompletionTemperature: '采样温度',
-      tabCompletionTemperatureDesc: '控制补全的创造性（0 为确定性，值越大越发散）。',
+      tabCompletionTemperatureDesc:
+        '控制补全的创造性（0 为确定性，值越大越发散）。',
       tabCompletionRequestTimeout: '请求超时（毫秒）',
-      tabCompletionRequestTimeoutDesc: '若补全请求超过该时间仍未返回则强制中止。',
+      tabCompletionRequestTimeoutDesc:
+        '若补全请求超过该时间仍未返回则强制中止。',
       tabCompletionMaxRetries: '最大重试次数',
       tabCompletionMaxRetriesDesc: '补全请求超时后自动重试的次数上限。',
       defaultSystemPrompt: '默认续写系统提示词',
-      defaultSystemPromptDesc: '此提示将作为系统提示用于 AI 续写。留空则使用内置默认值。',
+      defaultSystemPromptDesc:
+        '此提示将作为系统提示用于 AI 续写。留空则使用内置默认值。',
     },
     etc: {
       title: '其他',
@@ -360,7 +401,8 @@ export const zh: TranslationKeys = {
       clearChatHistorySuccess: '已清空所有聊天记录',
       resetProviders: '重置供应商与模型',
       resetProvidersDesc: '恢复默认的供应商与模型配置',
-      resetProvidersConfirm: '确定要重置供应商与模型配置为默认吗？此操作将覆盖现有配置。',
+      resetProvidersConfirm:
+        '确定要重置供应商与模型配置为默认吗？此操作将覆盖现有配置。',
       resetProvidersSuccess: '供应商与模型配置已重置为默认',
     },
     language: {
@@ -389,8 +431,10 @@ export const zh: TranslationKeys = {
     modeBrute: '暴力模式',
     modeLearning: '学习模式',
     customContinuePromptLabel: '续写指令',
-    customContinuePromptPlaceholder: '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按 Shift+回车 确认，回车换行，Esc 关闭。',
-    customRewritePromptPlaceholder: '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',
+    customContinuePromptPlaceholder:
+      '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按 Shift+回车 确认，回车换行，Esc 关闭。',
+    customRewritePromptPlaceholder:
+      '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',
     conversationSettings: {
       openAria: '对话设置',
       chatMemory: '聊天记忆',

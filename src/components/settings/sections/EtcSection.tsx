@@ -1,11 +1,17 @@
 import { App, Notice } from 'obsidian'
 
+import {
+  DEFAULT_APPLY_MODEL_ID,
+  DEFAULT_CHAT_MODELS,
+  DEFAULT_CHAT_MODEL_ID,
+  DEFAULT_EMBEDDING_MODELS,
+  DEFAULT_PROVIDERS,
+} from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { ChatManager } from '../../../database/json/chat/ChatManager'
 import SmartComposerPlugin from '../../../main'
 import { smartComposerSettingsSchema } from '../../../settings/schema/setting.types'
-import { DEFAULT_APPLY_MODEL_ID, DEFAULT_CHAT_MODELS, DEFAULT_CHAT_MODEL_ID, DEFAULT_EMBEDDING_MODELS, DEFAULT_PROVIDERS } from '../../../constants'
-import { ChatManager } from '../../../database/json/chat/ChatManager'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ConfirmModal } from '../../modals/ConfirmModal'
@@ -60,8 +66,8 @@ export function EtcSection({ app }: EtcSectionProps) {
           DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_CHAT_MODEL_ID)?.id ??
           DEFAULT_CHAT_MODELS[0].id
         const defaultApplyModelId =
-          DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
-          DEFAULT_CHAT_MODELS[0].id
+          DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)
+            ?.id ?? DEFAULT_CHAT_MODELS[0].id
         const defaultEmbeddingModelId = DEFAULT_EMBEDDING_MODELS[0].id
 
         await setSettings({
@@ -86,21 +92,33 @@ export function EtcSection({ app }: EtcSectionProps) {
         name={t('settings.etc.clearChatHistory')}
         desc={t('settings.etc.clearChatHistoryDesc')}
       >
-        <ObsidianButton text={t('common.clear')} warning onClick={handleClearChatHistory} />
+        <ObsidianButton
+          text={t('common.clear')}
+          warning
+          onClick={handleClearChatHistory}
+        />
       </ObsidianSetting>
 
       <ObsidianSetting
         name={t('settings.etc.resetProviders')}
         desc={t('settings.etc.resetProvidersDesc')}
       >
-        <ObsidianButton text={t('settings.etc.reset')} warning onClick={handleResetProviders} />
+        <ObsidianButton
+          text={t('settings.etc.reset')}
+          warning
+          onClick={handleResetProviders}
+        />
       </ObsidianSetting>
 
       <ObsidianSetting
         name={t('settings.etc.resetSettings')}
         desc={t('settings.etc.resetSettingsDesc')}
       >
-        <ObsidianButton text={t('settings.etc.reset')} warning onClick={handleResetSettings} />
+        <ObsidianButton
+          text={t('settings.etc.reset')}
+          warning
+          onClick={handleResetSettings}
+        />
       </ObsidianSetting>
     </div>
   )

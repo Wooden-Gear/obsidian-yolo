@@ -75,7 +75,9 @@ export function McpSection({ app, plugin }: McpSectionProps) {
       ) : (
         <>
           <div className="smtcmp-settings-sub-header-container">
-            <div className="smtcmp-settings-sub-header">{t('settings.mcp.mcpServers')}</div>
+            <div className="smtcmp-settings-sub-header">
+              {t('settings.mcp.mcpServers')}
+            </div>
             <ObsidianButton
               text={t('settings.mcp.addServer')}
               onClick={() => new AddMcpServerModal(app, plugin).open()}
@@ -191,7 +193,9 @@ function McpServerComponent({
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="clickable-icon"
-            aria-label={isOpen ? t('settings.mcp.collapse') : t('settings.mcp.expand')}
+            aria-label={
+              isOpen ? t('settings.mcp.collapse') : t('settings.mcp.expand')
+            }
           >
             {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -204,7 +208,7 @@ function McpServerComponent({
 
 function ExpandedServerInfo({ server }: { server: McpServerState }) {
   const { t } = useLanguage()
-  
+
   if (
     server.status === McpServerStatus.Disconnected ||
     server.status === McpServerStatus.Connecting
@@ -216,7 +220,9 @@ function ExpandedServerInfo({ server }: { server: McpServerState }) {
     <div className="smtcmp-server-expanded-info">
       {server.status === McpServerStatus.Connected && (
         <div>
-          <div className="smtcmp-server-expanded-info-header">{t('settings.mcp.tools')}</div>
+          <div className="smtcmp-server-expanded-info-header">
+            {t('settings.mcp.tools')}
+          </div>
           <div className="smtcmp-server-tools-container">
             {server.tools.map((tool) => (
               <McpToolComponent key={tool.name} tool={tool} server={server} />
@@ -226,7 +232,9 @@ function ExpandedServerInfo({ server }: { server: McpServerState }) {
       )}
       {server.status === McpServerStatus.Error && (
         <div>
-          <div className="smtcmp-server-expanded-info-header">{t('settings.mcp.error')}</div>
+          <div className="smtcmp-server-expanded-info-header">
+            {t('settings.mcp.error')}
+          </div>
           <div className="smtcmp-server-error-message">
             {server.error.message}
           </div>
@@ -336,14 +344,18 @@ function McpToolComponent({
         <div className="smtcmp-mcp-tool-description">{tool.description}</div>
       </div>
       <div className="smtcmp-mcp-tool-toggle">
-        <span className="smtcmp-mcp-tool-toggle-label">{t('settings.mcp.enabled')}</span>
+        <span className="smtcmp-mcp-tool-toggle-label">
+          {t('settings.mcp.enabled')}
+        </span>
         <ObsidianToggle
           value={!disabled}
           onChange={(value) => handleToggleEnabled(value)}
         />
       </div>
       <div className="smtcmp-mcp-tool-toggle">
-        <span className="smtcmp-mcp-tool-toggle-label">{t('settings.mcp.autoExecute')}</span>
+        <span className="smtcmp-mcp-tool-toggle-label">
+          {t('settings.mcp.autoExecute')}
+        </span>
         <ObsidianToggle
           value={allowAutoExecution}
           onChange={(value) => handleToggleAutoExecution(value)}

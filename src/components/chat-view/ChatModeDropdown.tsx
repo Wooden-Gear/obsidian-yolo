@@ -1,6 +1,7 @@
 import * as Popover from '@radix-ui/react-popover'
-import React, { useCallback, useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
+import React, { useCallback, useEffect, useState } from 'react'
+
 import { useLanguage } from '../../contexts/language-context'
 
 export function ChatModeDropdown({
@@ -26,7 +27,9 @@ export function ChatModeDropdown({
   const modeItems: ModeItem[] = [
     { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
     ...(showBruteOption
-      ? ([{ key: 'brute', label: t('chat.modeBrute') ?? 'Brute' }] as ModeItem[])
+      ? ([
+          { key: 'brute', label: t('chat.modeBrute') ?? 'Brute' },
+        ] as ModeItem[])
       : []),
   ]
 
@@ -64,10 +67,7 @@ export function ChatModeDropdown({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button
-          className="clickable-icon"
-          aria-label={triggerAriaLabel}
-        >
+        <button className="clickable-icon" aria-label={triggerAriaLabel}>
           {children}
         </button>
       </Popover.Trigger>

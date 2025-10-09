@@ -2,8 +2,8 @@ import { App, TFile, htmlToMarkdown, requestUrl } from 'obsidian'
 
 import { editorStateToPlainText } from '../../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import { QueryProgressState } from '../../components/chat-view/QueryProgress'
-import { RAGEngine } from '../../core/rag/ragEngine'
 import { DEFAULT_LEARNING_MODE_PROMPT } from '../../constants'
+import { RAGEngine } from '../../core/rag/ragEngine'
 import { SelectEmbedding } from '../../database/schema'
 import { SmartComposerSettings } from '../../settings/schema/setting.types'
 import {
@@ -102,7 +102,9 @@ export class PromptGenerator {
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
     const isBaseModel = Boolean((model as any).isBaseModel)
-    const baseModelSpecialPrompt = (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+    const baseModelSpecialPrompt = (
+      this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+    ).trim()
     const baseModelSpecialPromptMessage =
       isBaseModel && baseModelSpecialPrompt.length > 0
         ? [{ role: 'user' as const, content: baseModelSpecialPrompt }]
@@ -115,9 +117,8 @@ export class PromptGenerator {
     const customInstructionMessage = isBaseModel
       ? null
       : this.getCustomInstructionMessage()
-    const learningModeMessage = !isBaseModel && learningMode
-      ? this.getLearningModeMessage()
-      : null
+    const learningModeMessage =
+      !isBaseModel && learningMode ? this.getLearningModeMessage() : null
 
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
@@ -133,8 +134,13 @@ export class PromptGenerator {
       ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
-      ...this.getChatHistoryMessages({ messages: compiledMessages, maxContextOverride }),
-      ...(shouldUseRAG && !isBaseModel && this.getModelPromptLevel() == PromptLevel.Default
+      ...this.getChatHistoryMessages({
+        messages: compiledMessages,
+        maxContextOverride,
+      }),
+      ...(shouldUseRAG &&
+      !isBaseModel &&
+      this.getModelPromptLevel() == PromptLevel.Default
         ? [this.getRagInstructionMessage()]
         : []),
     ]
@@ -155,7 +161,9 @@ export class PromptGenerator {
     // 3) class default (32)
     const maxContext = Math.max(
       0,
-      maxContextOverride ?? this.settings?.chatOptions?.maxContextMessages ?? this.MAX_CONTEXT_MESSAGES,
+      maxContextOverride ??
+        this.settings?.chatOptions?.maxContextMessages ??
+        this.MAX_CONTEXT_MESSAGES,
     )
 
     // Get the last N messages and parse them into request messages
@@ -345,7 +353,9 @@ ${message.annotations
         return false
       }
       const isBrute = chatMode === 'brute'
-      const shouldUseRAG = isBrute ? false : useVaultSearch || (await exceedsTokenThreshold())
+      const shouldUseRAG = isBrute
+        ? false
+        : useVaultSearch || (await exceedsTokenThreshold())
 
       let filePrompt: string
       if (shouldUseRAG) {
@@ -453,21 +463,28 @@ ${await this.getWebsiteContent(url)}
     }
   }
 
-  private getSystemMessage(shouldUseRAG: boolean, hasTools: boolean = false): RequestMessage {
+  private getSystemMessage(
+    shouldUseRAG: boolean,
+    hasTools = false,
+  ): RequestMessage {
     const modelPromptLevel = this.getModelPromptLevel()
-    
+
     // When both RAG and tools are available, prioritize based on context
     const useRAGPrompt = shouldUseRAG && !hasTools
-    
+
     const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has${modelPromptLevel == PromptLevel.Default ? `, particularly about editing and organizing markdown files in Obsidian` : ''}.
 
 1. Format your response in markdown.
 
-${hasTools ? `
+${
+  hasTools
+    ? `
 2. You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
 
 3. When using tools, explain what you're doing and why.
-` : ''}
+`
+    : ''
+}
 
 ${
   modelPromptLevel == PromptLevel.Default
@@ -505,11 +522,15 @@ The user has full access to the file, so they prefer seeing only the changes in 
 
 2. Format your response in markdown.
 
-${hasTools ? `
+${
+  hasTools
+    ? `
 3. You have access to tools, but prioritize using the provided markdown content from the vault first before using tools.
 
 4. When using tools, explain what you're doing and why the vault content wasn't sufficient.
-` : ''}
+`
+    : ''
+}
 
 ${
   modelPromptLevel == PromptLevel.Default
@@ -543,23 +564,23 @@ ${hasTools ? '6' : '4'}. When referencing markdown blocks in your answer, keep t
   private getCustomInstructionMessage(): RequestMessage | null {
     // Get custom system prompt
     const customInstruction = this.settings.systemPrompt.trim()
-    
+
     // Get currently selected assistant
     const currentAssistantId = this.settings.currentAssistantId
     const assistants = this.settings.assistants || []
     // Only use assistant if explicitly selected (currentAssistantId is not undefined)
-    const currentAssistant = currentAssistantId 
-      ? assistants.find(a => a.id === currentAssistantId)
+    const currentAssistant = currentAssistantId
+      ? assistants.find((a) => a.id === currentAssistantId)
       : null
-    
+
     // If there's no custom prompt and no selected assistant, return null
     if (!customInstruction && !currentAssistant) {
       return null
     }
-    
+
     // Build prompt content
     let content = ''
-    
+
     // Add assistant's system prompt (if available)
     if (currentAssistant && currentAssistant.systemPrompt) {
       content += `Here are instructions from the selected assistant (${currentAssistant.name}):
@@ -569,7 +590,7 @@ ${currentAssistant.systemPrompt}
 
 `
     }
-    
+
     // Add global custom instructions (if available)
     if (customInstruction) {
       content += `Here are additional instructions to follow in your responses when relevant. There's no need to explicitly acknowledge them:
@@ -577,7 +598,7 @@ ${currentAssistant.systemPrompt}
 ${customInstruction}
 </custom_instructions>`
     }
-    
+
     return {
       role: 'user',
       content: content,
@@ -612,7 +633,8 @@ When writing out new markdown blocks, remember not to include "line_number|" at 
   private getLearningModeMessage(): RequestMessage {
     const custom = (this.settings.chatOptions as any)?.learningModePrompt
     const defaultContent = DEFAULT_LEARNING_MODE_PROMPT
-    const content = custom && `${custom}`.trim().length > 0 ? custom : defaultContent
+    const content =
+      custom && `${custom}`.trim().length > 0 ? custom : defaultContent
     return {
       role: 'user',
       content,

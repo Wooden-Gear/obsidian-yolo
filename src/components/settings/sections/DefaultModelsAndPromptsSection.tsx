@@ -26,7 +26,9 @@ export function DefaultModelsAndPromptsSection() {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.defaults.title')}</div>
+      <div className="smtcmp-settings-header">
+        {t('settings.defaults.title')}
+      </div>
 
       <ObsidianSetting
         name={t('settings.defaults.defaultChatModel')}
@@ -38,7 +40,8 @@ export function DefaultModelsAndPromptsSection() {
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
               .map((chatModel) => {
-                const labelBase = chatModel.name || chatModel.model || chatModel.id
+                const labelBase =
+                  chatModel.name || chatModel.model || chatModel.id
                 const badge = RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id)
                   ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
                   : ''
@@ -65,8 +68,11 @@ export function DefaultModelsAndPromptsSection() {
             settings.chatModels
               .filter(({ enable }) => enable ?? true)
               .map((chatModel) => {
-                const labelBase = chatModel.name || chatModel.model || chatModel.id
-                const badge = RECOMMENDED_MODELS_FOR_APPLY.includes(chatModel.id)
+                const labelBase =
+                  chatModel.name || chatModel.model || chatModel.id
+                const badge = RECOMMENDED_MODELS_FOR_APPLY.includes(
+                  chatModel.id,
+                )
                   ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
                   : ''
                 const label = `${labelBase}${badge}`.trim()
@@ -141,7 +147,6 @@ export function DefaultModelsAndPromptsSection() {
           }}
         />
       </ObsidianSetting>
-
     </div>
   )
 }

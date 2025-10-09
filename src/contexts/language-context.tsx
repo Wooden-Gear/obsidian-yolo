@@ -1,9 +1,16 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react'
+import React, {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
 import { Language, createTranslationFunction } from '../i18n'
+
 import { usePlugin } from './plugin-context'
 
-interface LanguageContextType {
+type LanguageContextType = {
   language: Language
   t: (keyPath: string, fallback?: string) => string
   setLanguage: (language: Language) => void
@@ -11,24 +18,26 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | null>(null)
 
-interface LanguageProviderProps {
+type LanguageProviderProps = {
   children: ReactNode
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const plugin = usePlugin()
-  const [language, setLanguageState] = useState<Language>(plugin.settings.language as Language || 'en')
-  
+  const [language, setLanguageState] = useState<Language>(
+    (plugin.settings.language as Language) || 'en',
+  )
+
   // Listen for settings changes
   useEffect(() => {
     const unsubscribe = plugin.addSettingsChangeListener((newSettings) => {
-      setLanguageState(newSettings.language as Language || 'en')
+      setLanguageState((newSettings.language as Language) || 'en')
     })
     return unsubscribe
   }, [plugin])
-  
+
   const t = createTranslationFunction(language)
-  
+
   const setLanguage = async (newLanguage: Language) => {
     await plugin.setSettings({
       ...plugin.settings,

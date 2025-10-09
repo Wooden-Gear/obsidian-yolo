@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { Editor } from 'obsidian'
+import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
@@ -13,14 +13,20 @@ export type CustomContinuePanelProps = {
   onClose: () => void
 }
 
-function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) {
+function CustomContinuePanelBody({
+  editor,
+  onClose,
+}: CustomContinuePanelProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
 
   const handleConfirm = async () => {
     onClose()
-    await plugin.continueWriting(editor, instruction.trim().length > 0 ? instruction : undefined)
+    await plugin.continueWriting(
+      editor,
+      instruction.trim().length > 0 ? instruction : undefined,
+    )
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +60,11 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
 
       {/* 底部轻量工具条 */}
       <ObsidianSetting>
-        <ObsidianButton text={t('common.confirm')} onClick={handleConfirm} cta />
+        <ObsidianButton
+          text={t('common.confirm')}
+          onClick={handleConfirm}
+          cta
+        />
         <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
@@ -64,7 +74,15 @@ function CustomContinuePanelBody({ editor, onClose }: CustomContinuePanelProps) 
 export class CustomContinuePanel {
   private panel: ReactFloatingPanel<CustomContinuePanelProps>
 
-  constructor({ plugin, editor, position }: { plugin: any; editor: Editor; position?: { x: number; y: number } }) {
+  constructor({
+    plugin,
+    editor,
+    position,
+  }: {
+    plugin: any
+    editor: Editor
+    position?: { x: number; y: number }
+  }) {
     this.panel = new ReactFloatingPanel<CustomContinuePanelProps>({
       Component: CustomContinuePanelBody,
       props: { editor },

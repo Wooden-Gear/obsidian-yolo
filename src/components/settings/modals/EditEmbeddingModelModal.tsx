@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
 import { App, Notice } from 'obsidian'
+import React, { useState } from 'react'
 
+import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
 import { EmbeddingModel } from '../../../types/embedding-model.types'
-import { useLanguage } from '../../../contexts/language-context'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
 
-interface EditEmbeddingModelModalComponentProps {
+type EditEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
   onClose: () => void
   model: EmbeddingModel
@@ -35,7 +35,7 @@ function EditEmbeddingModelModalComponent({
   model,
 }: EditEmbeddingModelModalComponentProps) {
   const { t } = useLanguage()
-  
+
   // Update modal title
   React.useEffect(() => {
     const modalEl = document.querySelector('.modal .modal-title')
@@ -59,7 +59,9 @@ function EditEmbeddingModelModalComponent({
       return
     }
 
-    const dimension = formData.dimension ? parseInt(formData.dimension) : undefined
+    const dimension = formData.dimension
+      ? parseInt(formData.dimension)
+      : undefined
     if (formData.dimension && (isNaN(dimension!) || dimension! <= 0)) {
       new Notice('Invalid dimension value')
       return
@@ -68,15 +70,18 @@ function EditEmbeddingModelModalComponent({
     try {
       const settings = plugin.settings
       const embeddingModels = [...settings.embeddingModels]
-      const modelIndex = embeddingModels.findIndex(m => m.id === model.id)
-      
+      const modelIndex = embeddingModels.findIndex((m) => m.id === model.id)
+
       if (modelIndex === -1) {
         new Notice('Model not found')
         return
       }
 
       // Check if new ID already exists (and it's not the current model)
-      if (formData.id !== model.id && embeddingModels.some(m => m.id === formData.id)) {
+      if (
+        formData.id !== model.id &&
+        embeddingModels.some((m) => m.id === formData.id)
+      ) {
         new Notice('Model ID already exists')
         return
       }

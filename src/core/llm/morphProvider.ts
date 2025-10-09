@@ -46,11 +46,7 @@ export class MorphProvider extends BaseLLMProvider<
 
     formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
 
-    return this.adapter.generateResponse(
-      this.client,
-      formattedRequest,
-      options,
-    )
+    return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
 
   async streamResponse(
@@ -69,11 +65,7 @@ export class MorphProvider extends BaseLLMProvider<
 
     formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
 
-    return this.adapter.streamResponse(
-      this.client,
-      formattedRequest,
-      options,
-    )
+    return this.adapter.streamResponse(this.client, formattedRequest, options)
   }
 
   async getEmbedding(_model: string, _text: string): Promise<number[]> {

@@ -1,6 +1,6 @@
 export type Language = 'en' | 'zh'
 
-export interface TranslationKeys {
+export type TranslationKeys = {
   // Commands
   commands: {
     openChat: string
@@ -12,7 +12,7 @@ export interface TranslationKeys {
     customContinueWriting: string
     customRewrite: string
   }
-  
+
   // UI Common
   common: {
     save: string

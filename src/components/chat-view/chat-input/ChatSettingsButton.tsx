@@ -2,9 +2,9 @@ import * as Popover from '@radix-ui/react-popover'
 import { SlidersHorizontal } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 
 export default function ChatSettingsButton({
   overrides,
@@ -31,7 +31,7 @@ export default function ChatSettingsButton({
       useUrlContext: overrides?.useUrlContext ?? false,
     }
   }, [overrides])
-  
+
   // Check if current model supports Gemini tools
   const hasGeminiTools = currentModel?.toolType === 'gemini'
 
@@ -46,7 +46,7 @@ export default function ChatSettingsButton({
   useEffect(() => {
     const btn = triggerRef.current
     if (!btn) return
-    const wrapper = btn.closest('.smtcmp-chat-input-wrapper') as HTMLElement | null
+    const wrapper = btn.closest('.smtcmp-chat-input-wrapper')
     if (!wrapper) return
 
     const MIN_WIDTH = 200
@@ -71,7 +71,14 @@ export default function ChatSettingsButton({
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
-        <button ref={triggerRef} className="clickable-icon" aria-label={t('chat.conversationSettings.openAria', 'Conversation settings')}>
+        <button
+          ref={triggerRef}
+          className="clickable-icon"
+          aria-label={t(
+            'chat.conversationSettings.openAria',
+            'Conversation settings',
+          )}
+        >
           <SlidersHorizontal size={14} />
         </button>
       </Popover.Trigger>
@@ -84,9 +91,13 @@ export default function ChatSettingsButton({
       >
         <div className="smtcmp-chat-settings">
           <div className="smtcmp-chat-settings-section">
-            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.chatMemory', 'Chat Memory')}</div>
+            <div className="smtcmp-chat-settings-section-title">
+              {t('chat.conversationSettings.chatMemory', 'Chat Memory')}
+            </div>
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.maxContext', 'Max Context')}</div>
+              <div className="smtcmp-chat-settings-label">
+                {t('chat.conversationSettings.maxContext', 'Max Context')}
+              </div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
@@ -97,7 +108,10 @@ export default function ChatSettingsButton({
                 value={value.maxContextMessages ?? ''}
                 onChange={(e) =>
                   update({
-                    maxContextMessages: e.currentTarget.value === '' ? null : Number(e.currentTarget.value),
+                    maxContextMessages:
+                      e.currentTarget.value === ''
+                        ? null
+                        : Number(e.currentTarget.value),
                   })
                 }
               />
@@ -105,41 +119,65 @@ export default function ChatSettingsButton({
           </div>
 
           <div className="smtcmp-chat-settings-section">
-            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.sampling', 'Sampling Parameters')}</div>
+            <div className="smtcmp-chat-settings-section-title">
+              {t('chat.conversationSettings.sampling', 'Sampling Parameters')}
+            </div>
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.temperature', 'Temperature')}</div>
+              <div className="smtcmp-chat-settings-label">
+                {t('chat.conversationSettings.temperature', 'Temperature')}
+              </div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
                 min={0}
                 max={2}
                 step={0.1}
-                placeholder={settings.chatOptions.defaultTemperature?.toString() ?? t('common.default', 'Default')}
+                placeholder={
+                  settings.chatOptions.defaultTemperature?.toString() ??
+                  t('common.default', 'Default')
+                }
                 value={value.temperature ?? ''}
                 onChange={(e) =>
-                  update({ temperature: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
+                  update({
+                    temperature:
+                      e.currentTarget.value === ''
+                        ? null
+                        : Number(e.currentTarget.value),
+                  })
                 }
               />
             </div>
 
             <div className="smtcmp-chat-settings-row2">
-              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.topP', 'Top P')}</div>
+              <div className="smtcmp-chat-settings-label">
+                {t('chat.conversationSettings.topP', 'Top P')}
+              </div>
               <input
                 type="number"
                 className="smtcmp-chat-settings-input smtcmp-number-pill"
                 min={0}
                 max={1}
                 step={0.01}
-                placeholder={settings.chatOptions.defaultTopP?.toString() ?? t('common.default', 'Default')}
+                placeholder={
+                  settings.chatOptions.defaultTopP?.toString() ??
+                  t('common.default', 'Default')
+                }
                 value={value.top_p ?? ''}
                 onChange={(e) =>
-                  update({ top_p: e.currentTarget.value === '' ? null : Number(e.currentTarget.value) })
+                  update({
+                    top_p:
+                      e.currentTarget.value === ''
+                        ? null
+                        : Number(e.currentTarget.value),
+                  })
                 }
               />
             </div>
 
             <div className="smtcmp-chat-settings-row-inline">
-              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.streaming', 'Streaming')}</div>
+              <div className="smtcmp-chat-settings-label">
+                {t('chat.conversationSettings.streaming', 'Streaming')}
+              </div>
               <div className="smtcmp-segmented">
                 <button
                   className={value.stream === true ? 'active' : ''}
@@ -158,9 +196,13 @@ export default function ChatSettingsButton({
           </div>
 
           <div className="smtcmp-chat-settings-section">
-            <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.vaultSearch', 'Vault Search')}</div>
+            <div className="smtcmp-chat-settings-section-title">
+              {t('chat.conversationSettings.vaultSearch', 'Vault Search')}
+            </div>
             <div className="smtcmp-chat-settings-row-inline">
-              <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.useVaultSearch', 'RAG Search')}</div>
+              <div className="smtcmp-chat-settings-label">
+                {t('chat.conversationSettings.useVaultSearch', 'RAG Search')}
+              </div>
               <div className="smtcmp-segmented">
                 <button
                   className={value.useVaultSearch === true ? 'active' : ''}
@@ -177,12 +219,16 @@ export default function ChatSettingsButton({
               </div>
             </div>
           </div>
-          
+
           {hasGeminiTools && (
             <div className="smtcmp-chat-settings-section">
-              <div className="smtcmp-chat-settings-section-title">{t('chat.conversationSettings.geminiTools', 'Gemini Tools')}</div>
+              <div className="smtcmp-chat-settings-section-title">
+                {t('chat.conversationSettings.geminiTools', 'Gemini Tools')}
+              </div>
               <div className="smtcmp-chat-settings-row-inline">
-                <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.webSearch', 'Web Search')}</div>
+                <div className="smtcmp-chat-settings-label">
+                  {t('chat.conversationSettings.webSearch', 'Web Search')}
+                </div>
                 <div className="smtcmp-segmented">
                   <button
                     className={value.useWebSearch === true ? 'active' : ''}
@@ -199,7 +245,9 @@ export default function ChatSettingsButton({
                 </div>
               </div>
               <div className="smtcmp-chat-settings-row-inline">
-                <div className="smtcmp-chat-settings-label">{t('chat.conversationSettings.urlContext', 'URL Context')}</div>
+                <div className="smtcmp-chat-settings-label">
+                  {t('chat.conversationSettings.urlContext', 'URL Context')}
+                </div>
                 <div className="smtcmp-segmented">
                   <button
                     className={value.useUrlContext === true ? 'active' : ''}

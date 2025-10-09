@@ -17,7 +17,9 @@ export function ChatPreferencesSection() {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.chatPreferences.title')}</div>
+      <div className="smtcmp-settings-header">
+        {t('settings.chatPreferences.title')}
+      </div>
 
       <ObsidianSetting
         name={t('settings.chatPreferences.includeCurrentFile')}

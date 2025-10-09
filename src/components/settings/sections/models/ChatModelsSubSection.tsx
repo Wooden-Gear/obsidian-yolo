@@ -1,6 +1,6 @@
-import { Trash2, GripVertical } from 'lucide-react'
-import { useRef, type DragEvent } from 'react'
+import { GripVertical, Trash2 } from 'lucide-react'
 import { App, Notice } from 'obsidian'
+import { type DragEvent, useRef } from 'react'
 import { ObsidianToggle } from 'src/components/common/ObsidianToggle'
 
 import { DEFAULT_CHAT_MODELS } from '../../../../constants'
@@ -29,9 +29,7 @@ export function ChatModelsSubSection({
   // Robustly highlight the moved row after DOM re-render
   const triggerDropSuccess = (movedId: string) => {
     const tryFind = (attempt = 0) => {
-      const movedRow = document.querySelector(
-        `tr[data-model-id="${movedId}"]`,
-      ) as HTMLTableRowElement | null
+      const movedRow = document.querySelector(`tr[data-model-id="${movedId}"]`)
       if (movedRow) {
         movedRow.classList.add('smtcmp-row-drop-success')
         window.setTimeout(() => {
@@ -101,17 +99,23 @@ export function ChatModelsSubSection({
     index: number,
   ) => {
     dragIndexRef.current = index
-    event.dataTransfer?.setData('text/plain', settings.chatModels[index]?.id ?? '')
+    event.dataTransfer?.setData(
+      'text/plain',
+      settings.chatModels[index]?.id ?? '',
+    )
     event.dataTransfer.effectAllowed = 'move'
 
     // visual feedback: mark dragging row & handle
     const row = event.currentTarget
     row.classList.add('smtcmp-row-dragging')
-    const handle = row.querySelector('.smtcmp-drag-handle') as HTMLElement | null
+    const handle = row.querySelector('.smtcmp-drag-handle')
     if (handle) handle.classList.add('smtcmp-drag-handle--active')
   }
 
-  const handleDragOver = (event: DragEvent<HTMLTableRowElement>, targetIndex: number) => {
+  const handleDragOver = (
+    event: DragEvent<HTMLTableRowElement>,
+    targetIndex: number,
+  ) => {
     event.preventDefault()
 
     // show insert indicator before/after the hovered row
@@ -121,9 +125,15 @@ export function ChatModelsSubSection({
 
     // If hovering the row being dragged, suppress indicator to avoid flicker
     if (dragIndexRef.current === targetIndex) {
-      row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      row.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
       if (dragOverRowRef.current && dragOverRowRef.current !== row) {
-        dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+        dragOverRowRef.current.classList.remove(
+          'smtcmp-row-drag-over-before',
+          'smtcmp-row-drag-over-after',
+        )
       }
       dragOverRowRef.current = row
       lastDropPosRef.current = null
@@ -155,11 +165,19 @@ export function ChatModelsSubSection({
 
     // clear previous indicator
     if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
     }
 
-    const desiredClass = dropAfter ? 'smtcmp-row-drag-over-after' : 'smtcmp-row-drag-over-before'
-    row.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+    const desiredClass = dropAfter
+      ? 'smtcmp-row-drag-over-after'
+      : 'smtcmp-row-drag-over-before'
+    row.classList.remove(
+      'smtcmp-row-drag-over-before',
+      'smtcmp-row-drag-over-after',
+    )
     row.classList.add(desiredClass)
     dragOverRowRef.current = row
     lastDropPosRef.current = dropAfter ? 'after' : 'before'
@@ -169,16 +187,22 @@ export function ChatModelsSubSection({
   const handleDragEnd = () => {
     dragIndexRef.current = null
     if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
+      dragOverRowRef.current.classList.remove(
+        'smtcmp-row-drag-over-before',
+        'smtcmp-row-drag-over-after',
+      )
       dragOverRowRef.current = null
     }
     lastDropPosRef.current = null
     lastInsertIndexRef.current = null
     // remove dragging visuals from any row still marked
-    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    const dragging = document.querySelector('tr.smtcmp-row-dragging')
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
   const handleDrop = async (
@@ -221,11 +245,17 @@ export function ChatModelsSubSection({
     })
 
     // clear visuals on drop target
-    rowEl?.classList.remove('smtcmp-row-drag-over-before', 'smtcmp-row-drag-over-after')
-    const dragging = document.querySelector('tr.smtcmp-row-dragging') as HTMLElement | null
+    rowEl?.classList.remove(
+      'smtcmp-row-drag-over-before',
+      'smtcmp-row-drag-over-after',
+    )
+    const dragging = document.querySelector('tr.smtcmp-row-dragging')
     if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active') as HTMLElement | null
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
 
     dragOverRowRef.current = null
     lastDropPosRef.current = null
@@ -272,7 +302,10 @@ export function ChatModelsSubSection({
                 onDragEnd={handleDragEnd}
               >
                 <td>
-                  <span className="smtcmp-drag-handle" aria-label="Drag to reorder">
+                  <span
+                    className="smtcmp-drag-handle"
+                    aria-label="Drag to reorder"
+                  >
                     <GripVertical />
                   </span>
                 </td>

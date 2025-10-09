@@ -1,12 +1,29 @@
 import { Prec, StateEffect, StateField } from '@codemirror/state'
-import { Decoration, DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view'
-import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  WidgetType,
+  keymap,
+} from '@codemirror/view'
 import { minimatch } from 'minimatch'
+import {
+  Editor,
+  MarkdownView,
+  Notice,
+  Plugin,
+  TAbstractFile,
+  TFile,
+  TFolder,
+} from 'obsidian'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
+import { CustomContinueModal } from './components/modals/CustomContinueModal'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
+import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
+import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
@@ -14,10 +31,6 @@ import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
 import { createTranslationFunction } from './i18n'
-import { CustomContinueModal } from './components/modals/CustomContinueModal'
-import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
-import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
-import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
@@ -26,6 +39,7 @@ import {
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
+import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -35,7 +49,8 @@ import {
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
-const inlineSuggestionGhostEffect = StateEffect.define<InlineSuggestionGhostPayload>()
+const inlineSuggestionGhostEffect =
+  StateEffect.define<InlineSuggestionGhostPayload>()
 
 class InlineSuggestionGhostWidget extends WidgetType {
   constructor(private readonly text: string) {
@@ -134,7 +149,10 @@ export default class SmartComposerPlugin extends Plugin {
   } | null = null
 
   // Compute a robust panel anchor position just below the caret line
-  private getCaretPanelPosition(editor: Editor, dy = 8): { x: number; y: number } | undefined {
+  private getCaretPanelPosition(
+    editor: Editor,
+    dy = 8,
+  ): { x: number; y: number } | undefined {
     try {
       // CM6: use selection head to get viewport coords
       const cm: any = (editor as any).cm
@@ -210,9 +228,7 @@ export default class SmartComposerPlugin extends Plugin {
     return { temperature, topP, stream }
   }
 
-  private resolveContinuationParams(
-    overrides?: ConversationOverrideSettings,
-  ): {
+  private resolveContinuationParams(overrides?: ConversationOverrideSettings): {
     temperature?: number
     topP?: number
     stream: boolean
@@ -386,7 +402,10 @@ export default class SmartComposerPlugin extends Plugin {
     }, delay)
   }
 
-  private async runTabCompletion(editor: Editor, scheduledCursorOffset: number) {
+  private async runTabCompletion(
+    editor: Editor,
+    scheduledCursorOffset: number,
+  ) {
     try {
       if (!this.settings.continuationOptions?.enableTabCompletion) return
       if (this.isContinuationInProgress) return
@@ -427,16 +446,18 @@ export default class SmartComposerPlugin extends Plugin {
 
       const fileTitle = this.app.workspace.getActiveFile()?.basename?.trim()
       const titleSection = fileTitle ? `File title: ${fileTitle}\n\n` : ''
-      const customSystemPrompt =
-        (this.settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
+      const customSystemPrompt = (
+        this.settings.continuationOptions.tabCompletionSystemPrompt ?? ''
+      ).trim()
       const systemPrompt =
         customSystemPrompt.length > 0
           ? customSystemPrompt
           : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
@@ -488,7 +509,7 @@ export default class SmartComposerPlugin extends Plugin {
       const attempts = Math.max(0, Math.floor(options.maxRetries)) + 1
 
       this.cancelTabCompletionRequest()
-          this.clearInlineSuggestion()
+      this.clearInlineSuggestion()
       this.tabCompletionPending = null
 
       for (let attempt = 0; attempt < attempts; attempt++) {
@@ -525,7 +546,8 @@ export default class SmartComposerPlugin extends Plugin {
 
           const currentView = this.getEditorView(editor)
           if (!currentView) return
-          if (currentView.state.selection.main.head !== scheduledCursorOffset) return
+          if (currentView.state.selection.main.head !== scheduledCursorOffset)
+            return
           if (editor.getSelection()?.length) return
 
           this.setInlineSuggestionGhost(currentView, {
@@ -549,13 +571,14 @@ export default class SmartComposerPlugin extends Plugin {
         } catch (error) {
           if (timeoutHandle) clearTimeout(timeoutHandle)
 
-          const aborted = controller.signal.aborted || (error as any)?.name === 'AbortError'
+          const aborted =
+            controller.signal.aborted || error?.name === 'AbortError'
           if (attempt < attempts - 1 && aborted) {
             this.activeAbortControllers.delete(controller)
             this.tabCompletionAbortController = null
             continue
           }
-          if ((error as any)?.name === 'AbortError') {
+          if (error?.name === 'AbortError') {
             return
           }
           console.error('Tab completion failed:', error)
@@ -570,7 +593,7 @@ export default class SmartComposerPlugin extends Plugin {
         }
       }
     } catch (error) {
-      if ((error as any)?.name === 'AbortError') return
+      if (error?.name === 'AbortError') return
       console.error('Tab completion failed:', error)
     } finally {
       if (this.tabCompletionAbortController) {
@@ -592,7 +615,7 @@ export default class SmartComposerPlugin extends Plugin {
 
     const editor = suggestion.editor
     if (this.getEditorView(editor) !== view) {
-          this.clearInlineSuggestion()
+      this.clearInlineSuggestion()
       return false
     }
 
@@ -702,9 +725,9 @@ export default class SmartComposerPlugin extends Plugin {
         this.settings.continuationOptions?.enableSuperContinuation,
       )
       const rewriteModelId = superContinuationEnabled
-        ? this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId
-        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+        ? (this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId)
+        : (this.getActiveConversationModelId() ?? this.settings.chatModelId)
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -716,8 +739,9 @@ export default class SmartComposerPlugin extends Plugin {
 
       const instruction = (customPrompt ?? '').trim()
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
@@ -749,7 +773,8 @@ export default class SmartComposerPlugin extends Plugin {
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
         if (lines.length > 0 && lines[0].startsWith('```')) lines.shift()
-        if (lines.length > 0 && lines[lines.length - 1].startsWith('```')) lines.pop()
+        if (lines.length > 0 && lines[lines.length - 1].startsWith('```'))
+          lines.pop()
         return lines.join('\n')
       }
 
@@ -774,7 +799,9 @@ export default class SmartComposerPlugin extends Plugin {
           { ...rewriteRequestBase, stream: false },
           { signal: controller.signal },
         )
-        rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+        rewritten = stripFences(
+          response.choices?.[0]?.message?.content ?? '',
+        ).trim()
       }
       if (!rewritten) {
         notice.setMessage('未生成改写内容。')
@@ -809,7 +836,7 @@ export default class SmartComposerPlugin extends Plugin {
       notice.setMessage('改写结果已生成。')
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
-      if ((error as any)?.name === 'AbortError') {
+      if (error?.name === 'AbortError') {
         notice.setMessage('已取消生成。')
         this.registerTimeout(() => notice.hide(), 1000)
       } else {
@@ -826,12 +853,14 @@ export default class SmartComposerPlugin extends Plugin {
     await this.loadSettings()
     // initialize keyword from settings
     this.continuationTriggerKeyword =
-      this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+      this.settings.continuationOptions?.triggerKeyword ??
+      this.continuationTriggerKeyword
 
     // keep keyword in sync with settings changes
     this.addSettingsChangeListener((newSettings) => {
       this.continuationTriggerKeyword =
-        newSettings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+        newSettings.continuationOptions?.triggerKeyword ??
+        this.continuationTriggerKeyword
     })
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
@@ -864,15 +893,23 @@ export default class SmartComposerPlugin extends Plugin {
         this.addSelectionToChat(editor, view)
       },
     })
-    
+
     // Auto update: listen to vault file changes and schedule incremental index updates
-    this.registerEvent(this.app.vault.on('create', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('modify', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('delete', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-      this.onVaultFileChanged(file)
-      if (oldPath) this.onVaultPathChanged(oldPath)
-    }))
+    this.registerEvent(
+      this.app.vault.on('create', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('modify', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('delete', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('rename', (file, oldPath) => {
+        this.onVaultFileChanged(file)
+        if (oldPath) this.onVaultPathChanged(oldPath)
+      }),
+    )
 
     this.addCommand({
       id: 'rebuild-vault-index',
@@ -979,7 +1016,11 @@ export default class SmartComposerPlugin extends Plugin {
               .setIcon('wand-sparkles')
               .onClick(() => {
                 const position = this.getCaretPanelPosition(editor, 8)
-                new CustomRewritePanel({ plugin: this, editor, position }).open()
+                new CustomRewritePanel({
+                  plugin: this,
+                  editor,
+                  position,
+                }).open()
               }),
           )
         }
@@ -998,11 +1039,16 @@ export default class SmartComposerPlugin extends Plugin {
 
           // 1) Floating panel trigger (optional)
           const enablePanel =
-            this.settings.continuationOptions?.enableFloatingPanelKeywordTrigger ?? false
-          const panelKeyword = this.settings.continuationOptions?.floatingPanelTriggerKeyword ?? ''
+            this.settings.continuationOptions
+              ?.enableFloatingPanelKeywordTrigger ?? false
+          const panelKeyword =
+            this.settings.continuationOptions?.floatingPanelTriggerKeyword ?? ''
           if (enablePanel && panelKeyword && panelKeyword.length > 0) {
             const klen = panelKeyword.length
-            const start = { line: cursor.line, ch: Math.max(0, cursor.ch - klen) }
+            const start = {
+              line: cursor.line,
+              ch: Math.max(0, cursor.ch - klen),
+            }
             const before = editor.getRange(start, cursor)
             if (before === panelKeyword) {
               // remove keyword and open panel near caret
@@ -1011,9 +1057,17 @@ export default class SmartComposerPlugin extends Plugin {
                 const position = this.getCaretPanelPosition(editor, 8)
                 const hasSel = !!selection && selection.trim().length > 0
                 if (hasSel) {
-                  new CustomRewritePanel({ plugin: this, editor, position }).open()
+                  new CustomRewritePanel({
+                    plugin: this,
+                    editor,
+                    position,
+                  }).open()
                 } else {
-                  new CustomContinuePanel({ plugin: this, editor, position }).open()
+                  new CustomContinuePanel({
+                    plugin: this,
+                    editor,
+                    position,
+                  }).open()
                 }
               }
               return
@@ -1025,10 +1079,14 @@ export default class SmartComposerPlugin extends Plugin {
           // Only run inline continuation when there is NO selection
           if (selection && selection.length > 0) return
           const keyword =
-            this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
+            this.settings.continuationOptions?.triggerKeyword ??
+            this.continuationTriggerKeyword
           if (!keyword || keyword.length === 0) return
           const keyLen = keyword.length
-          const start = { line: cursor.line, ch: Math.max(0, cursor.ch - keyLen) }
+          const start = {
+            line: cursor.line,
+            ch: Math.max(0, cursor.ch - keyLen),
+          }
           const before = editor.getRange(start, cursor)
           if (before === keyword) {
             // Mark in-progress first to suppress re-entrancy from subsequent editor-change
@@ -1253,7 +1311,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     if (!this.settings?.ragOptions?.autoUpdateEnabled) return
     if (!this.isPathSelectedByIncludeExclude(path)) return
     // Check minimal interval
-    const intervalMs = (this.settings.ragOptions.autoUpdateIntervalHours ?? 24) * 60 * 60 * 1000
+    const intervalMs =
+      (this.settings.ragOptions.autoUpdateIntervalHours ?? 24) * 60 * 60 * 1000
     const last = this.settings.ragOptions.lastAutoUpdateAt ?? 0
     const now = Date.now()
     if (now - last < intervalMs) {
@@ -1266,7 +1325,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   private isPathSelectedByIncludeExclude(path: string): boolean {
-    const { includePatterns = [], excludePatterns = [] } = this.settings?.ragOptions ?? {}
+    const { includePatterns = [], excludePatterns = [] } =
+      this.settings?.ragOptions ?? {}
     // Exclude has priority
     if (excludePatterns.some((p) => minimatch(path, p))) return false
     if (!includePatterns || includePatterns.length === 0) return true
@@ -1278,10 +1338,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.isAutoUpdating = true
     try {
       const ragEngine = await this.getRAGEngine()
-      await ragEngine.updateVaultIndex(
-        { reindexAll: false },
-        undefined,
-      )
+      await ragEngine.updateVaultIndex({ reindexAll: false }, undefined)
       await this.setSettings({
         ...this.settings,
         ragOptions: {
@@ -1321,7 +1378,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const hasSelection = !!selected && selected.trim().length > 0
       const baseContext = hasSelection ? selected : headText
       const fallbackInstruction = (customPrompt ?? '').trim()
-      const fileTitleCandidate = this.app.workspace.getActiveFile()?.basename?.trim() ?? ''
+      const fileTitleCandidate =
+        this.app.workspace.getActiveFile()?.basename?.trim() ?? ''
 
       if (!baseContext || baseContext.trim().length === 0) {
         // 没有前文时，如果既没有自定义指令也没有文件标题，则提示无法续写；
@@ -1342,34 +1400,34 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       if (referenceRuleFolders.length > 0) {
         try {
           const referenceFilesMap = new Map<string, TFile>()
-      const isSupportedReferenceFile = (file: TFile) => {
-        const ext = file.extension?.toLowerCase?.() ?? ''
-        return ext === 'md' || ext === 'markdown' || ext === 'txt'
-      }
+          const isSupportedReferenceFile = (file: TFile) => {
+            const ext = file.extension?.toLowerCase?.() ?? ''
+            return ext === 'md' || ext === 'markdown' || ext === 'txt'
+          }
 
-      for (const rawPath of referenceRuleFolders) {
-        const folderPath = rawPath.trim()
-        if (!folderPath) continue
-        const abstract = this.app.vault.getAbstractFileByPath(folderPath)
-        if (abstract instanceof TFolder) {
-          for (const file of getNestedFiles(abstract, this.app.vault)) {
-            if (isSupportedReferenceFile(file)) {
-              referenceFilesMap.set(file.path, file)
+          for (const rawPath of referenceRuleFolders) {
+            const folderPath = rawPath.trim()
+            if (!folderPath) continue
+            const abstract = this.app.vault.getAbstractFileByPath(folderPath)
+            if (abstract instanceof TFolder) {
+              for (const file of getNestedFiles(abstract, this.app.vault)) {
+                if (isSupportedReferenceFile(file)) {
+                  referenceFilesMap.set(file.path, file)
+                }
+              }
+            } else if (abstract instanceof TFile) {
+              if (isSupportedReferenceFile(abstract)) {
+                referenceFilesMap.set(abstract.path, abstract)
+              }
             }
           }
-        } else if (abstract instanceof TFile) {
-          if (isSupportedReferenceFile(abstract)) {
-            referenceFilesMap.set(abstract.path, abstract)
-          }
-        }
-      }
 
-      const referenceFiles = Array.from(referenceFilesMap.values())
-      if (referenceFiles.length > 0) {
-        const referenceContents = await readMultipleTFiles(
-          referenceFiles,
-          this.app.vault,
-        )
+          const referenceFiles = Array.from(referenceFilesMap.values())
+          if (referenceFiles.length > 0) {
+            const referenceContents = await readMultipleTFiles(
+              referenceFiles,
+              this.app.vault,
+            )
             const referenceLabel = this.t(
               'sidebar.composer.referenceRulesTitle',
               'Reference rules',
@@ -1384,7 +1442,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             }
           }
         } catch (error) {
-          console.warn('Failed to load reference rule folders for continuation', error)
+          console.warn(
+            'Failed to load reference rule folders for continuation',
+            error,
+          )
         }
       }
 
@@ -1404,9 +1465,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         this.settings.continuationOptions?.enableSuperContinuation,
       )
       const continuationModelId = superContinuationEnabled
-        ? this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId
-        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+        ? (this.settings.continuationOptions?.continuationModelId ??
+          this.settings.chatModelId)
+        : (this.getActiveConversationModelId() ?? this.settings.chatModelId)
 
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1428,8 +1489,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
       const systemPrompt =
         this.settings.continuationOptions?.defaultSystemPrompt?.trim() &&
-        (this.settings.continuationOptions.defaultSystemPrompt as string).trim().length > 0
-          ? (this.settings.continuationOptions.defaultSystemPrompt as string).trim()
+        this.settings.continuationOptions.defaultSystemPrompt.trim().length > 0
+          ? this.settings.continuationOptions.defaultSystemPrompt.trim()
           : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
 
       const activeFileForTitle = this.app.workspace.getActiveFile()
@@ -1455,7 +1516,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
       if (useVaultSearch && ragGloballyEnabled) {
         try {
-          const querySource = (baseContext || userInstruction || fileTitle).trim()
+          const querySource = (
+            baseContext ||
+            userInstruction ||
+            fileTitle
+          ).trim()
           if (querySource.length > 0) {
             const ragEngine = await this.getRAGEngine()
             const ragResults = await ragEngine.processQuery({
@@ -1478,7 +1543,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
                 .map((snippet, index) => {
                   const content = (snippet.content ?? '').trim()
                   const truncated =
-                    content.length > 600 ? `${content.slice(0, 600)}...` : content
+                    content.length > 600
+                      ? `${content.slice(0, 600)}...`
+                      : content
                   return `Snippet ${index + 1} (from ${snippet.path}):\n${truncated}`
                 })
                 .join('\n\n')
@@ -1501,13 +1568,15 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         referenceRulesSection
       }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
       const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
-      const continueText = hasSelection || hasContext
-        ? 'Continue writing from here.'
-        : 'Start writing this document.'
+      const continueText =
+        hasSelection || hasContext
+          ? 'Continue writing from here.'
+          : 'Start writing this document.'
 
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
@@ -1636,7 +1705,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
       this.clearInlineSuggestion()
-      if ((error as any)?.name === 'AbortError') {
+      if (error?.name === 'AbortError') {
         const n = new Notice('已取消生成。')
         this.registerTimeout(() => n.hide(), 1000)
       } else {

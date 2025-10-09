@@ -212,12 +212,16 @@ const DiffBlockView = forwardRef<
       <div className="smtcmp-diff-block-container" ref={ref}>
         {part.originalValue && part.originalValue.length > 0 && (
           <div className="smtcmp-diff-block removed">
-            <div className="smtcmp-diff-block-content">{part.originalValue}</div>
+            <div className="smtcmp-diff-block-content">
+              {part.originalValue}
+            </div>
           </div>
         )}
         {part.modifiedValue && part.modifiedValue.length > 0 && (
           <div className="smtcmp-diff-block added">
-            <div className="smtcmp-diff-block-content">{part.modifiedValue}</div>
+            <div className="smtcmp-diff-block-content">
+              {part.modifiedValue}
+            </div>
           </div>
         )}
         <div className="smtcmp-diff-block-actions">

@@ -486,15 +486,18 @@ export function useMenuAnchorRef(
 ): MutableRefObject<HTMLElement> {
   const [editor] = useLexicalComposerContext()
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
-  const lastSizeRef = useRef<{w: number; h: number} | null>(null)
+  const lastSizeRef = useRef<{ w: number; h: number } | null>(null)
   const positionMenu = useCallback(() => {
     // 通过行内样式固定定位弹窗容器
     const containerDiv = anchorElementRef.current
-    containerDiv.classList.remove('smtcmp-menu-above', 'smtcmp-menu-right-align')
-    
+    containerDiv.classList.remove(
+      'smtcmp-menu-above',
+      'smtcmp-menu-right-align',
+    )
+
     const rootElement = editor.getRootElement()
     const menuEle = containerDiv.firstChild as HTMLElement
-    
+
     if (rootElement !== null && resolution !== null) {
       const rect = resolution.getRect()
       const { left, top, bottom } = rect
@@ -516,33 +519,33 @@ export function useMenuAnchorRef(
         const margin = 8
         const containerEl = rootElement.closest(
           '.smtcmp-chat-user-input-container',
-        ) as HTMLElement | null
+        )
 
         if (containerEl) {
           // Position the menu in document.body with fixed positioning to avoid clipping by container bounds
           if (containerDiv.parentElement !== parent) {
             parent.appendChild(containerDiv)
           }
-          
+
           const rect = containerEl.getBoundingClientRect()
           const cs = getComputedStyle(containerEl)
-          
+
           // Calculate focus ring thickness from box-shadow
           const boxShadow = cs.boxShadow || ''
           let ring = 0
           const matches = boxShadow.match(/0px\s+0px\s+0px\s+([0-9.]+)px/g)
           if (matches) {
             for (const m of matches) {
-              const n = parseFloat((m.match(/([0-9.]+)px$/) || [,'0'])[1]) || 0
+              const n = parseFloat((m.match(/([0-9.]+)px$/) || [, '0'])[1]) || 0
               if (n > ring) ring = n
             }
           }
-          
+
           // Position menu to align with the outermost edge of the focus ring
           const menuLeft = rect.left - ring
-          const menuWidth = rect.width + (ring * 2)
+          const menuWidth = rect.width + ring * 2
           const menuTop = rect.top - offsetTop
-          
+
           containerDiv.style.position = 'fixed'
           containerDiv.style.left = `${menuLeft}px`
           containerDiv.style.top = `${menuTop}px`
@@ -550,9 +553,9 @@ export function useMenuAnchorRef(
           containerDiv.style.right = ''
           containerDiv.style.bottom = ''
           containerDiv.style.zIndex = '1000'
-          
+
           if (menuEle) {
-            const pop = menuEle as HTMLElement
+            const pop = menuEle
             pop.style.position = 'absolute'
             pop.style.left = '0px'
             pop.style.right = '0px'
@@ -571,8 +574,11 @@ export function useMenuAnchorRef(
 
         // Fallback: position fixed above the caret rect
         const estimatedH = 260
-        const leftPos = Math.max(margin, Math.min(left, window.innerWidth - margin))
-        let topPos = Math.max(margin, top - offsetTop - estimatedH)
+        const leftPos = Math.max(
+          margin,
+          Math.min(left, window.innerWidth - margin),
+        )
+        const topPos = Math.max(margin, top - offsetTop - estimatedH)
         if (!containerDiv.isConnected) parent.append(containerDiv)
         containerDiv.style.position = 'fixed'
         containerDiv.style.left = `${Math.round(leftPos)}px`
@@ -581,10 +587,10 @@ export function useMenuAnchorRef(
         containerDiv.style.zIndex = '1000'
         // Avoid adding smtcmp-menu-above here; topPos is already computed above the caret
         if (menuEle) {
-          ;(menuEle as HTMLElement).style.width = '100%'
+          menuEle.style.width = '100%'
           requestAnimationFrame(() => {
             const finalH = menuEle.getBoundingClientRect().height || estimatedH
-            let t2 = Math.max(margin, top - offsetTop - finalH)
+            const t2 = Math.max(margin, top - offsetTop - finalH)
             containerDiv.style.top = `${Math.round(t2)}px`
           })
         }

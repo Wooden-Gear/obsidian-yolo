@@ -3,8 +3,8 @@ import { ItemView, WorkspaceLeaf } from 'obsidian'
 import React from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
-import ChatSidebarTabs from './components/chat-view/ChatSidebarTabs'
 import type { ChatProps, ChatRef } from './components/chat-view/Chat'
+import ChatSidebarTabs from './components/chat-view/ChatSidebarTabs'
 import { CHAT_VIEW_TYPE } from './constants'
 import { AppProvider } from './contexts/app-context'
 import { ChatViewProvider } from './contexts/chat-view-context'
@@ -87,30 +87,32 @@ export class ChatView extends ItemView {
                 }
               >
                 <DarkModeProvider>
-                <DatabaseProvider
-                  getDatabaseManager={() => this.plugin.getDbManager()}
-                >
-                  <RAGProvider getRAGEngine={() => this.plugin.getRAGEngine()}>
-                    <McpProvider
-                      getMcpManager={() => this.plugin.getMcpManager()}
+                  <DatabaseProvider
+                    getDatabaseManager={() => this.plugin.getDbManager()}
+                  >
+                    <RAGProvider
+                      getRAGEngine={() => this.plugin.getRAGEngine()}
                     >
-                      <QueryClientProvider client={queryClient}>
-                        <React.StrictMode>
-                          <DialogContainerProvider
-                            container={
-                              this.containerEl.children[1] as HTMLElement
-                            }
-                          >
-                            <ChatSidebarTabs
-                              chatRef={this.chatRef}
-                              initialChatProps={this.initialChatProps}
-                            />
-                          </DialogContainerProvider>
-                        </React.StrictMode>
-                      </QueryClientProvider>
-                    </McpProvider>
-                  </RAGProvider>
-                </DatabaseProvider>
+                      <McpProvider
+                        getMcpManager={() => this.plugin.getMcpManager()}
+                      >
+                        <QueryClientProvider client={queryClient}>
+                          <React.StrictMode>
+                            <DialogContainerProvider
+                              container={
+                                this.containerEl.children[1] as HTMLElement
+                              }
+                            >
+                              <ChatSidebarTabs
+                                chatRef={this.chatRef}
+                                initialChatProps={this.initialChatProps}
+                              />
+                            </DialogContainerProvider>
+                          </React.StrictMode>
+                        </QueryClientProvider>
+                      </McpProvider>
+                    </RAGProvider>
+                  </DatabaseProvider>
                 </DarkModeProvider>
               </SettingsProvider>
             </AppProvider>

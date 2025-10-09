@@ -6,12 +6,12 @@ import {
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
+
+import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
 } from './setting.types'
-
-import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import { parseSmartComposerSettings } from './settings'
 
 describe('parseSmartComposerSettings', () => {

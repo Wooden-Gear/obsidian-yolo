@@ -42,7 +42,7 @@ type TabCompletionOptionDefaults = {
 }
 
 export const DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT =
-  'You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user\'s cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary.'
+  "You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user's cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary."
 
 export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
   triggerDelayMs: 3000,
@@ -57,7 +57,11 @@ export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
 
 const tabCompletionOptionsSchema = z
   .object({
-    triggerDelayMs: z.number().min(200).max(30000).catch(DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs),
+    triggerDelayMs: z
+      .number()
+      .min(200)
+      .max(30000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs),
     minContextLength: z
       .number()
       .min(0)
@@ -182,7 +186,7 @@ export const smartComposerSettingsSchema = z.object({
       chatTitlePrompt: '',
       baseModelSpecialPrompt: '',
     }),
-  
+
   // Continuation (续写) options
   continuationOptions: z
     .object({
@@ -250,10 +254,10 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
     }),
-  
+
   // Assistant list
   assistants: z.array(assistantSchema).catch([]),
-  
+
   // Currently selected assistant ID
   currentAssistantId: z.string().optional(),
 

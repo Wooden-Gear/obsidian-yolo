@@ -3,15 +3,15 @@ import { useMemo } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
-import { ObsidianSetting } from '../../common/ObsidianSetting'
-import { ObsidianToggle } from '../../common/ObsidianToggle'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
 } from '../../../settings/schema/setting.types'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
+import { ObsidianSetting } from '../../common/ObsidianSetting'
+import { ObsidianTextArea } from '../../common/ObsidianTextArea'
+import { ObsidianTextInput } from '../../common/ObsidianTextInput'
+import { ObsidianToggle } from '../../common/ObsidianToggle'
 
 type ContinuationSectionProps = {
   app: App
@@ -39,7 +39,8 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
     settings.continuationOptions.enableTabCompletion,
   )
   const tabCompletionSystemPromptValue =
-    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
+    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
+      .length > 0
       ? settings.continuationOptions.tabCompletionSystemPrompt!
       : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
   const tabCompletionOptions = enableTabCompletion
@@ -85,7 +86,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.continuation.title')}</div>
+      <div className="smtcmp-settings-header">
+        {t('settings.continuation.title')}
+      </div>
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.aiSubsectionTitle')}
       </div>
@@ -177,7 +180,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
           desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
         >
           <ObsidianTextInput
-            value={settings.continuationOptions.floatingPanelTriggerKeyword ?? ''}
+            value={
+              settings.continuationOptions.floatingPanelTriggerKeyword ?? ''
+            }
             placeholder={''}
             onChange={async (value) => {
               await setSettings({
@@ -210,7 +215,8 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
                 tabCompletionOptions: value
                   ? {
                       ...DEFAULT_TAB_COMPLETION_OPTIONS,
-                      ...(settings.continuationOptions.tabCompletionOptions ?? {}),
+                      ...(settings.continuationOptions.tabCompletionOptions ??
+                        {}),
                     }
                   : settings.continuationOptions.tabCompletionOptions,
               },
@@ -256,7 +262,7 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               options={Object.fromEntries(
                 enabledChatModels.map((chatModel) => {
                   const label = chatModel.name?.trim()
-                    ? chatModel.name!.trim()
+                    ? chatModel.name.trim()
                     : chatModel.model || chatModel.id
                   return [chatModel.id, label]
                 }),
@@ -341,7 +347,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
 
           <ObsidianSetting
             name={t('settings.continuation.tabCompletionMaxSuggestionLength')}
-            desc={t('settings.continuation.tabCompletionMaxSuggestionLengthDesc')}
+            desc={t(
+              'settings.continuation.tabCompletionMaxSuggestionLengthDesc',
+            )}
           >
             <ObsidianTextInput
               type="number"
@@ -446,10 +454,8 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               }}
             />
           </ObsidianSetting>
-
         </>
       )}
-
     </div>
   )
 }

@@ -33,4 +33,3 @@ describe('migrateFrom12To13', () => {
     )
   })
 })
-

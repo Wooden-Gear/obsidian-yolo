@@ -31,14 +31,15 @@ export type IndexProgress = {
   currentFolder?: string
   currentFile?: string
   completedFiles?: number
-  folderProgress?: {
-    [folderPath: string]: {
+  folderProgress?: Record<
+    string,
+    {
       completedFiles: number
       totalFiles: number
       completedChunks: number
       totalChunks: number
     }
-  }
+  >
   // 文件分类统计
   newFilesCount?: number
   updatedFilesCount?: number

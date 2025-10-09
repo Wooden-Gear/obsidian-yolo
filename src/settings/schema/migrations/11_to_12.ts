@@ -1,7 +1,10 @@
-import { SettingMigration } from '../setting.types'
 import { migrateModelId } from '../../../utils/model-id-utils'
+import { SettingMigration } from '../setting.types'
 
-import { getMigratedChatModels, getMigratedEmbeddingModels } from './migrationUtils'
+import {
+  getMigratedChatModels,
+  getMigratedEmbeddingModels,
+} from './migrationUtils'
 
 /**
  * Migration from version 11 to version 12
@@ -39,10 +42,17 @@ export const migrateFrom11To12: SettingMigration['migrate'] = (data) => {
   // Migrate selected model IDs
   if ('chatModelId' in newData && typeof newData.chatModelId === 'string') {
     // Find the corresponding model to get its providerId
-    const chatModels = Array.isArray(newData.chatModels) ? newData.chatModels : []
-    const chatModel = chatModels.find((m: any) => m.id.endsWith(newData.chatModelId))
+    const chatModels = Array.isArray(newData.chatModels)
+      ? newData.chatModels
+      : []
+    const chatModel = chatModels.find((m: any) =>
+      m.id.endsWith(newData.chatModelId),
+    )
     if (chatModel) {
-      newData.chatModelId = migrateModelId(newData.chatModelId, chatModel.providerId)
+      newData.chatModelId = migrateModelId(
+        newData.chatModelId,
+        chatModel.providerId,
+      )
     } else {
       // Fallback: assume it's an OpenAI model if not found
       newData.chatModelId = migrateModelId(newData.chatModelId, 'openai')
@@ -51,31 +61,54 @@ export const migrateFrom11To12: SettingMigration['migrate'] = (data) => {
 
   if ('applyModelId' in newData && typeof newData.applyModelId === 'string') {
     // Find the corresponding model to get its providerId
-    const chatModels = Array.isArray(newData.chatModels) ? newData.chatModels : []
-    const applyModel = chatModels.find((m: any) => m.id.endsWith(newData.applyModelId))
+    const chatModels = Array.isArray(newData.chatModels)
+      ? newData.chatModels
+      : []
+    const applyModel = chatModels.find((m: any) =>
+      m.id.endsWith(newData.applyModelId),
+    )
     if (applyModel) {
-      newData.applyModelId = migrateModelId(newData.applyModelId, applyModel.providerId)
+      newData.applyModelId = migrateModelId(
+        newData.applyModelId,
+        applyModel.providerId,
+      )
     } else {
       // Fallback: assume it's an OpenAI model if not found
       newData.applyModelId = migrateModelId(newData.applyModelId, 'openai')
     }
   }
 
-  if ('embeddingModelId' in newData && typeof newData.embeddingModelId === 'string') {
+  if (
+    'embeddingModelId' in newData &&
+    typeof newData.embeddingModelId === 'string'
+  ) {
     // Find the corresponding model to get its providerId
-    const embeddingModels = Array.isArray(newData.embeddingModels) ? newData.embeddingModels : []
-    const embeddingModel = embeddingModels.find((m: any) => m.id.endsWith(newData.embeddingModelId))
+    const embeddingModels = Array.isArray(newData.embeddingModels)
+      ? newData.embeddingModels
+      : []
+    const embeddingModel = embeddingModels.find((m: any) =>
+      m.id.endsWith(newData.embeddingModelId),
+    )
     if (embeddingModel) {
-      newData.embeddingModelId = migrateModelId(newData.embeddingModelId, embeddingModel.providerId)
+      newData.embeddingModelId = migrateModelId(
+        newData.embeddingModelId,
+        embeddingModel.providerId,
+      )
     } else {
       // Fallback: assume it's an OpenAI model if not found
-      newData.embeddingModelId = migrateModelId(newData.embeddingModelId, 'openai')
+      newData.embeddingModelId = migrateModelId(
+        newData.embeddingModelId,
+        'openai',
+      )
     }
   }
 
   // Add new default models with prefixed IDs
   newData.chatModels = getMigratedChatModels(newData, DEFAULT_CHAT_MODELS_V12)
-  newData.embeddingModels = getMigratedEmbeddingModels(newData, DEFAULT_EMBEDDING_MODELS_V12)
+  newData.embeddingModels = getMigratedEmbeddingModels(
+    newData,
+    DEFAULT_EMBEDDING_MODELS_V12,
+  )
 
   return newData
 }

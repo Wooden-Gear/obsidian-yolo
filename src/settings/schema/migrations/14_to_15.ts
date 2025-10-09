@@ -1,9 +1,9 @@
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+  SettingMigration,
   SmartComposerSettings,
 } from '../setting.types'
-import { SettingMigration } from '../setting.types'
 
 const cloneDefaults = () => ({ ...DEFAULT_TAB_COMPLETION_OPTIONS })
 
@@ -28,24 +28,32 @@ export const migrateFrom14To15: SettingMigration['migrate'] = (data) => {
     return newData
   }
 
-  const existingOptions = continuationOptions as Record<string, unknown>
+  const existingOptions = continuationOptions
 
-  if (typeof existingOptions.tabCompletionOptions !== 'object' || existingOptions.tabCompletionOptions === null) {
+  if (
+    typeof existingOptions.tabCompletionOptions !== 'object' ||
+    existingOptions.tabCompletionOptions === null
+  ) {
     existingOptions.tabCompletionOptions = cloneDefaults()
   } else {
-    const legacy = existingOptions.tabCompletionOptions as Record<string, unknown>
+    const legacy = existingOptions.tabCompletionOptions as Record<
+      string,
+      unknown
+    >
     existingOptions.tabCompletionOptions = {
       ...cloneDefaults(),
       ...legacy,
       maxTokens:
-        typeof legacy.maxTokens === 'number' && Number.isFinite(legacy.maxTokens)
+        typeof legacy.maxTokens === 'number' &&
+        Number.isFinite(legacy.maxTokens)
           ? legacy.maxTokens
           : DEFAULT_TAB_COMPLETION_OPTIONS.maxTokens,
     }
   }
 
   if (typeof existingOptions.tabCompletionSystemPrompt !== 'string') {
-    existingOptions.tabCompletionSystemPrompt = DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
+    existingOptions.tabCompletionSystemPrompt =
+      DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
   }
 
   newData.continuationOptions = existingOptions

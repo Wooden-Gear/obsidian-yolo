@@ -44,7 +44,7 @@ describe('migrateFrom11To12', () => {
     const result = migrateFrom11To12(inputData)
 
     expect(result.version).toBe(12)
-    
+
     // Check that model IDs are migrated with provider prefix
     expect(result.chatModels).toEqual(
       expect.arrayContaining([
@@ -60,7 +60,7 @@ describe('migrateFrom11To12', () => {
           id: 'gemini/gemini-2.5-flash',
           providerId: 'gemini',
         }),
-      ])
+      ]),
     )
 
     expect(result.embeddingModels).toEqual(
@@ -69,7 +69,7 @@ describe('migrateFrom11To12', () => {
           id: 'openai/text-embedding-3-small',
           providerId: 'openai',
         }),
-      ])
+      ]),
     )
 
     // Check that selected model IDs are migrated
@@ -167,7 +167,7 @@ describe('migrateFrom11To12', () => {
       : ([] as ModelWithProvider[])
     const oneapiModel = chatModels.find((m) => m.providerId === 'oneapi')
     const vertexModel = chatModels.find((m) => m.providerId === 'vertex')
-    
+
     expect(oneapiModel?.id).toBe('oneapi/gemini-2.5-flash')
     expect(vertexModel?.id).toBe('vertex/gemini-2.5-flash')
   })
