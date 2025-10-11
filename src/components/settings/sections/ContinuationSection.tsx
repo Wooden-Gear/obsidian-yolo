@@ -138,7 +138,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         >
           <ObsidianTextInput
             value={settings.continuationOptions.triggerKeyword}
-            placeholder={'  '}
+            placeholder={'cc'}
             onChange={async (value) => {
               await setSettings({
                 ...settings,

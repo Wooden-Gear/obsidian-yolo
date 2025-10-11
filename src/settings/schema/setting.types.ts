@@ -200,7 +200,7 @@ export const smartComposerSettingsSchema = z.object({
       enableSmartSpace: z.boolean().optional(),
       // enable keyword trigger for continuation
       enableKeywordTrigger: z.boolean(),
-      // the keyword to trigger continuation, default to double space
+      // the keyword to trigger continuation, default to 'cc'
       triggerKeyword: z.string(),
       // enable manual context selection for continuation
       manualContextEnabled: z.boolean().optional(),
@@ -236,7 +236,7 @@ export const smartComposerSettingsSchema = z.object({
       defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
       enableSmartSpace: true,
       enableKeywordTrigger: true,
-      triggerKeyword: '  ',
+      triggerKeyword: 'cc',
       manualContextEnabled: false,
       manualContextFolders: [],
       referenceRuleFolders: [],

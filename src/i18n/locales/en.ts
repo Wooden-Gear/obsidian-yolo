@@ -375,10 +375,10 @@ export const en: TranslationKeys = {
         'When disabled, pressing Space will no longer summon the Smart Space floating composer.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc:
-        'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
+        'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: cc.',
       triggerKeyword: 'Trigger keyword',
       triggerKeywordDesc:
-        'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
+        'Continuation is triggered when the text immediately before the cursor equals this keyword (default: cc).',
       tabCompletion: 'Enable Tab completion',
       tabCompletionDesc:
         'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with Tab.',

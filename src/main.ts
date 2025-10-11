@@ -160,7 +160,7 @@ export default class SmartComposerPlugin extends Plugin {
   private ragEngineInitPromise: Promise<RAGEngine> | null = null
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
   private isContinuationInProgress = false
-  private continuationTriggerKeyword = '  '
+  private continuationTriggerKeyword = 'cc'
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()

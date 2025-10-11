@@ -354,10 +354,10 @@ export const zh: TranslationKeys = {
       smartSpaceToggleDesc: '当关闭时，空格将不再唤出 Smart Space 悬浮输入框。',
       keywordTrigger: '启用关键词触发AI续写',
       keywordTriggerDesc:
-        '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
+        '在编辑器中检测到指定关键词时自动触发续写。建议使用"cc"。',
       triggerKeyword: '触发关键词',
       triggerKeywordDesc:
-        '当光标前的文本等于该关键词时触发续写（默认：两个空格）',
+        '当光标前的文本等于该关键词时触发续写（默认：cc）',
       tabCompletion: '启用 Tab 补全',
       tabCompletionDesc:
         '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',

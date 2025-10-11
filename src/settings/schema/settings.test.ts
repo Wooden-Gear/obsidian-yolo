@@ -67,7 +67,7 @@ describe('parseSmartComposerSettings', () => {
         continuationModelId: 'openai/gpt-4.1-mini',
         defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
         enableKeywordTrigger: true,
-        triggerKeyword: '  ',
+        triggerKeyword: 'cc',
         manualContextEnabled: false,
         manualContextFolders: [],
         referenceRuleFolders: [],
