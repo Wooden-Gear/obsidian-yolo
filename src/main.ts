@@ -1729,6 +1729,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.ensureInlineSuggestionExtension(view)
       this.clearInlineSuggestion()
 
+      let hasClosedSmartSpaceWidget = false
+      const closeSmartSpaceWidgetOnce = () => {
+        if (!hasClosedSmartSpaceWidget) {
+          this.closeCustomContinueWidget()
+          hasClosedSmartSpaceWidget = true
+        }
+      }
+
       // Stream response and progressively update ghost suggestion
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
@@ -1793,6 +1801,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           if (!piece) continue
 
           suggestionText += piece
+          closeSmartSpaceWidgetOnce()
           updateContinuationSuggestion(suggestionText)
         }
       } else {
@@ -1805,6 +1814,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         const fullText = response.choices?.[0]?.message?.content ?? ''
         if (fullText) {
           suggestionText = fullText
+          closeSmartSpaceWidgetOnce()
           updateContinuationSuggestion(suggestionText)
         }
       }
