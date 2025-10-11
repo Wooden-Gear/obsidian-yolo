@@ -1715,6 +1715,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ? `${baseModelCoreContent.trim().length > 0 ? '\n\n' : ''}Instruction: ${userInstruction}`
         : ''
 
+      const includeDefaultContinuationPrompt = !userInstruction
+      const userMessageContent = isBaseModel
+        ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
+        : `${basePromptSection}${titleLine}${combinedContextSection}${includeDefaultContinuationPrompt ? continueText : ''}${instructionSuffix}`
+
       const requestMessages = [
         ...(isBaseModel
           ? []
@@ -1726,9 +1731,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             ] as const)),
         {
           role: 'user' as const,
-          content: isBaseModel
-            ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
-            : `${basePromptSection}${titleLine}${combinedContextSection}${continueText}${instructionSuffix}`,
+          content: userMessageContent,
         },
       ] as const
 

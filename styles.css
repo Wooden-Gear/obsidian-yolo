@@ -3866,6 +3866,32 @@ button.smtcmp-chat-input-model-select {
   box-shadow: var(--shadow-s);
 }
 
+.smtcmp-quick-action-editor-inline {
+  border-top: 1px solid var(--interactive-accent);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-radius: 0 0 var(--radius-m) var(--radius-m);
+  margin-top: 0;
+  margin-bottom: var(--size-4-1);
+  border-color: var(--interactive-accent);
+  animation: smtcmp-editor-expand 0.2s ease;
+}
+
+@keyframes smtcmp-editor-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smtcmp-quick-action-editor-new {
+  margin-bottom: var(--size-4-3);
+}
+
 .smtcmp-quick-action-editor-buttons {
   display: flex;
   gap: var(--size-4-2);
@@ -3896,6 +3922,14 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-action-item:hover {
   border-color: var(--background-modifier-border-hover);
   box-shadow: var(--shadow-xs);
+}
+
+.smtcmp-quick-action-item.editing {
+  border-color: var(--interactive-accent);
+  cursor: default;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
 }
 
 .smtcmp-quick-action-item.disabled {

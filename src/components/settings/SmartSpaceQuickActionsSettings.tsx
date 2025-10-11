@@ -366,9 +366,9 @@ export function SmartSpaceQuickActionsSettings() {
         />
       </ObsidianSetting>
 
-      {/* Edit/Add Dialog */}
-      {editingAction && (
-        <div className="smtcmp-quick-action-editor">
+      {/* Add new action form (shown at top when adding) */}
+      {isAddingAction && editingAction && (
+        <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-new">
           <ObsidianSetting
             name={t('settings.smartSpace.actionLabel', '选项名称')}
             desc={t('settings.smartSpace.actionLabelDesc', '显示在快捷选项中的文本')}
@@ -450,54 +450,142 @@ export function SmartSpaceQuickActionsSettings() {
         {quickActions.map((action, index) => {
           const IconComponent = ICON_OPTIONS[action.icon as keyof typeof ICON_OPTIONS]?.component || Sparkles
 
+          const isEditing = !isAddingAction && editingAction?.id === action.id
+
           return (
-            <div
-              key={action.id}
-              data-action-id={action.id}
-              className={`smtcmp-quick-action-item ${!action.enabled ? 'disabled' : ''}`}
-              draggable
-              onDragStart={(event) => handleDragStart(event, index)}
-              onDragOver={(event) => handleDragOver(event, index)}
-              onDrop={(event) => void handleDrop(event, index)}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="smtcmp-quick-action-drag-handle">
-                <span className="smtcmp-drag-handle" aria-label="拖拽排序">
-                  <GripVertical size={16} />
-                </span>
-              </div>
-              <div className="smtcmp-quick-action-content">
-                <div className="smtcmp-quick-action-header">
-                  <IconComponent size={16} className="smtcmp-quick-action-icon" />
-                  <span className="smtcmp-quick-action-label">{action.label}</span>
-                  <span className={`smtcmp-quick-action-category category-${action.category}`}>
-                    {CATEGORY_OPTIONS[action.category || 'custom']}
+            <React.Fragment key={action.id}>
+              <div
+                data-action-id={action.id}
+                className={`smtcmp-quick-action-item ${!action.enabled ? 'disabled' : ''} ${isEditing ? 'editing' : ''}`}
+                draggable={!isEditing}
+                onDragStart={(event) => handleDragStart(event, index)}
+                onDragOver={(event) => handleDragOver(event, index)}
+                onDrop={(event) => void handleDrop(event, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="smtcmp-quick-action-drag-handle">
+                  <span className="smtcmp-drag-handle" aria-label="拖拽排序">
+                    <GripVertical size={16} />
                   </span>
-                  {!action.enabled && (
-                    <span className="smtcmp-quick-action-disabled-badge">
-                      {t('settings.smartSpace.disabled', '已禁用')}
+                </div>
+                <div className="smtcmp-quick-action-content">
+                  <div className="smtcmp-quick-action-header">
+                    <IconComponent size={16} className="smtcmp-quick-action-icon" />
+                    <span className="smtcmp-quick-action-label">{action.label}</span>
+                    <span className={`smtcmp-quick-action-category category-${action.category}`}>
+                      {CATEGORY_OPTIONS[action.category || 'custom']}
                     </span>
-                  )}
+                    {!action.enabled && (
+                      <span className="smtcmp-quick-action-disabled-badge">
+                        {t('settings.smartSpace.disabled', '已禁用')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="smtcmp-quick-action-controls">
+                  <ObsidianButton
+                    onClick={() => {
+                      if (isEditing) {
+                        setEditingAction(null)
+                      } else {
+                        setEditingAction(action)
+                        setIsAddingAction(false)
+                      }
+                    }}
+                    icon={isEditing ? 'x' : 'pencil'}
+                    tooltip={isEditing ? t('common.cancel', '取消') : t('common.edit', '编辑')}
+                  />
+                  <ObsidianButton
+                    onClick={() => handleDuplicateAction(action)}
+                    icon="copy"
+                    tooltip={t('settings.smartSpace.duplicate', '复制')}
+                  />
+                  <ObsidianButton
+                    onClick={() => handleDeleteAction(action.id)}
+                    icon="trash-2"
+                    tooltip={t('common.delete', '删除')}
+                  />
                 </div>
               </div>
-              <div className="smtcmp-quick-action-controls">
-                <ObsidianButton
-                  onClick={() => setEditingAction(action)}
-                  icon="pencil"
-                  tooltip={t('common.edit', '编辑')}
-                />
-                <ObsidianButton
-                  onClick={() => handleDuplicateAction(action)}
-                  icon="copy"
-                  tooltip={t('settings.smartSpace.duplicate', '复制')}
-                />
-                <ObsidianButton
-                  onClick={() => handleDeleteAction(action.id)}
-                  icon="trash-2"
-                  tooltip={t('common.delete', '删除')}
-                />
-              </div>
-            </div>
+
+              {/* Inline edit form */}
+              {isEditing && (
+                <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-inline">
+                  <ObsidianSetting
+                    name={t('settings.smartSpace.actionLabel', '选项名称')}
+                    desc={t('settings.smartSpace.actionLabelDesc', '显示在快捷选项中的文本')}
+                  >
+                    <ObsidianTextInput
+                      value={editingAction.label}
+                      placeholder={t('settings.smartSpace.actionLabelPlaceholder', '例如：继续编写')}
+                      onChange={(value) => setEditingAction({ ...editingAction, label: value })}
+                    />
+                  </ObsidianSetting>
+
+                  <ObsidianSetting
+                    name={t('settings.smartSpace.actionInstruction', '提示词')}
+                    desc={t('settings.smartSpace.actionInstructionDesc', '发送给 AI 的指令')}
+                    className="smtcmp-settings-textarea-header"
+                  />
+                  <ObsidianSetting className="smtcmp-settings-textarea">
+                    <ObsidianTextArea
+                      value={editingAction.instruction}
+                      placeholder={t('settings.smartSpace.actionInstructionPlaceholder', '例如：请继续扩展当前段落，保持原有语气与风格。')}
+                      onChange={(value) => setEditingAction({ ...editingAction, instruction: value })}
+                    />
+                  </ObsidianSetting>
+
+                  <ObsidianSetting
+                    name={t('settings.smartSpace.actionCategory', '分类')}
+                    desc={t('settings.smartSpace.actionCategoryDesc', '选项所属的分类')}
+                  >
+                    <ObsidianDropdown
+                      value={editingAction.category || 'custom'}
+                      options={CATEGORY_OPTIONS}
+                      onChange={(value) => setEditingAction({ ...editingAction, category: value as any })}
+                    />
+                  </ObsidianSetting>
+
+                  <ObsidianSetting
+                    name={t('settings.smartSpace.actionIcon', '图标')}
+                    desc={t('settings.smartSpace.actionIconDesc', '选择一个图标')}
+                  >
+                    <ObsidianDropdown
+                      value={editingAction.icon || 'sparkles'}
+                      options={Object.fromEntries(
+                        Object.entries(ICON_OPTIONS).map(([key, value]) => [key, value.label])
+                      )}
+                      onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
+                    />
+                  </ObsidianSetting>
+
+                  <ObsidianSetting
+                    name={t('settings.smartSpace.actionEnabled', '启用')}
+                    desc={t('settings.smartSpace.actionEnabledDesc', '是否在 Smart Space 中显示此选项')}
+                  >
+                    <ObsidianToggle
+                      value={editingAction.enabled}
+                      onChange={(value) => setEditingAction({ ...editingAction, enabled: value })}
+                    />
+                  </ObsidianSetting>
+
+                  <div className="smtcmp-quick-action-editor-buttons">
+                    <ObsidianButton
+                      text={t('common.save', '保存')}
+                      onClick={handleSaveAction}
+                      cta
+                      disabled={!editingAction.label || !editingAction.instruction}
+                    />
+                    <ObsidianButton
+                      text={t('common.cancel', '取消')}
+                      onClick={() => {
+                        setEditingAction(null)
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
           )
         })}
       </div>
