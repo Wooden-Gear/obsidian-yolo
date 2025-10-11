@@ -431,8 +431,62 @@ export const zh: TranslationKeys = {
     modeBrute: '暴力模式',
     modeLearning: '学习模式',
     customContinuePromptLabel: '续写指令',
-    customContinuePromptPlaceholder:
-      '输入你的续写指令，例如：“用 LaTeX 介绍一下费马大定理”。按 Shift+回车 确认，回车换行，Esc 关闭。',
+    customContinuePromptPlaceholder: '询问 AI...',
+    customContinueProcessing: '思考中',
+    customContinueError: '生成失败，请稍后重试。',
+    customContinueSections: {
+      suggestions: {
+        title: '建议',
+        items: {
+          continue: {
+            label: '继续编写',
+            instruction: '请继续扩展当前段落，保持原有语气与风格。',
+          },
+        },
+      },
+      writing: {
+        title: '撰写',
+        items: {
+          summarize: {
+            label: '添加摘要',
+            instruction: '请为当前内容写一个简洁摘要。',
+          },
+          todo: {
+            label: '添加待办事项',
+            instruction: '请基于当前内容整理一个可执行的待办清单。',
+          },
+          flowchart: {
+            label: '制作流程图',
+            instruction: '请将当前要点整理成流程图或分步骤说明。',
+          },
+          table: {
+            label: '制作表格',
+            instruction: '请把当前信息整理成表格，并给出合适的列标题。',
+          },
+          freewrite: {
+            label: '随心写作',
+            instruction: '请结合上下文自由发挥，继续创作新的段落。',
+          },
+        },
+      },
+      thinking: {
+        title: '思考 · 询问 · 对话',
+        items: {
+          brainstorm: {
+            label: '头脑风暴',
+            instruction: '请给出若干新的灵感或切入点。',
+          },
+          analyze: {
+            label: '分析重点',
+            instruction: '请简要分析当前内容的要点、风险或机会。',
+          },
+          dialogue: {
+            label: '提出追问',
+            instruction: '请给出一些深入讨论的追问。',
+          },
+        },
+      },
+    },
     customRewritePromptPlaceholder:
       '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',
     conversationSettings: {

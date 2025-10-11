@@ -1,4 +1,9 @@
-import { Prec, StateEffect, StateField } from '@codemirror/state'
+import {
+  type Extension,
+  Prec,
+  StateEffect,
+  StateField,
+} from '@codemirror/state'
 import {
   Decoration,
   DecorationSet,
@@ -21,7 +26,7 @@ import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
-import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
+import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
 import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
@@ -105,6 +110,45 @@ const inlineSuggestionGhostField = StateField.define<DecorationSet>({
 
 const inlineSuggestionExtensionViews = new WeakSet<EditorView>()
 
+type CustomContinueWidgetPayload = {
+  pos: number
+  options: {
+    plugin: SmartComposerPlugin
+    editor: Editor
+    view: EditorView
+    onClose: () => void
+  }
+}
+
+const customContinueWidgetEffect =
+  StateEffect.define<CustomContinueWidgetPayload | null>()
+
+const customContinueWidgetField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(decorations, tr) {
+    let updated = decorations.map(tr.changes)
+    for (const effect of tr.effects) {
+      if (effect.is(customContinueWidgetEffect)) {
+        updated = Decoration.none
+        const payload = effect.value
+        if (payload) {
+          updated = Decoration.set([
+            Decoration.widget({
+              widget: new CustomContinueWidget(payload.options),
+              side: 1,
+              block: false,
+            }).range(payload.pos),
+          ])
+        }
+      }
+    }
+    return updated
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
   initialChatProps?: ChatProps // TODO: change this to use view state like ApplyView
@@ -146,6 +190,11 @@ export default class SmartComposerPlugin extends Plugin {
     editor: Editor
     cursorOffset: number
   } | null = null
+  private customContinueWidgetState: {
+    view: EditorView
+    pos: number
+    close: () => void
+  } | null = null
 
   // Compute a robust panel anchor position just below the caret line
   private getCaretPanelPosition(
@@ -153,7 +202,6 @@ export default class SmartComposerPlugin extends Plugin {
     dy = 8,
   ): { x: number; y: number } | undefined {
     try {
-      // CM6: use selection head to get viewport coords
       const cm: any = (editor as any).cm
       const head: number | undefined = cm?.state?.selection?.main?.head
       if (cm?.coordsAtPos && typeof head === 'number') {
@@ -167,10 +215,95 @@ export default class SmartComposerPlugin extends Plugin {
         }
       }
     } catch {
-      // Fall back to default positioning when the cursor coordinates cannot be resolved.
+      // ignore
     }
-    // Fallback: center (handled by caller when returning undefined)
     return undefined
+  }
+
+  private closeCustomContinueWidget() {
+    const state = this.customContinueWidgetState
+    if (!state) return
+    this.customContinueWidgetState = null
+    state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+    state.view.focus()
+  }
+
+  private showCustomContinueWidget(editor: Editor, view: EditorView) {
+    const selection = view.state.selection.main
+    const pos = selection.head
+
+    this.closeCustomContinueWidget()
+
+    const close = () => {
+      if (this.customContinueWidgetState?.view !== view) return
+      this.customContinueWidgetState = null
+      view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+      view.focus()
+    }
+
+    view.dispatch({
+      effects: [
+        customContinueWidgetEffect.of(null),
+        customContinueWidgetEffect.of({
+          pos,
+          options: {
+            plugin: this,
+            editor,
+            view,
+            onClose: close,
+          },
+        }),
+      ],
+    })
+
+    this.customContinueWidgetState = { view, pos, close }
+  }
+
+  private createCustomContinueTriggerExtension(): Extension {
+    return [
+      customContinueWidgetField,
+      EditorView.domEventHandlers({
+        keydown: (event, view) => {
+          if (event.defaultPrevented) return false
+          if (event.key !== ' ') return false
+          if (event.altKey || event.metaKey || event.ctrlKey) return false
+
+          const selection = view.state.selection.main
+          if (!selection.empty) return false
+
+          const line = view.state.doc.lineAt(selection.head)
+          if (line.text.trim().length > 0) return false
+
+          const markdownView =
+            this.app.workspace.getActiveViewOfType(MarkdownView)
+          const editor = markdownView?.editor
+          if (!editor) return false
+          const cm = (editor as any)?.cm
+          if (cm && cm !== view) return false
+
+          event.preventDefault()
+          event.stopPropagation()
+
+          this.showCustomContinueWidget(editor, view)
+          return true
+        },
+      }),
+      EditorView.updateListener.of((update) => {
+        const state = this.customContinueWidgetState
+        if (!state || state.view !== update.view) return
+
+        if (update.docChanged) {
+          state.pos = update.changes.mapPos(state.pos)
+        }
+
+        if (update.selectionSet) {
+          const head = update.state.selection.main
+          if (!head.empty || head.head !== state.pos) {
+            this.closeCustomContinueWidget()
+          }
+        }
+      }),
+    ]
   }
 
   private getActiveConversationOverrides():
@@ -874,6 +1007,8 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
 
+    this.registerEditorExtension(this.createCustomContinueTriggerExtension())
+
     // This creates an icon in the left ribbon.
     this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () =>
       this.openChatView(),
@@ -1011,8 +1146,9 @@ export default class SmartComposerPlugin extends Plugin {
             .setTitle(this.t('commands.customContinueWriting'))
             .setIcon('wand-sparkles')
             .onClick(() => {
-              const position = this.getCaretPanelPosition(editor, 8)
-              new CustomContinuePanel({ plugin: this, editor, position }).open()
+              const view = this.getEditorView(editor)
+              if (!view) return
+              this.showCustomContinueWidget(editor, view)
             }),
         )
 
@@ -1071,11 +1207,10 @@ export default class SmartComposerPlugin extends Plugin {
                     position,
                   }).open()
                 } else {
-                  new CustomContinuePanel({
-                    plugin: this,
-                    editor,
-                    position,
-                  }).open()
+                  const view = this.getEditorView(editor)
+                  if (view) {
+                    this.showCustomContinueWidget(editor, view)
+                  }
                 }
               }
               return
@@ -1114,6 +1249,7 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   onunload() {
+    this.closeCustomContinueWidget()
     // clear all timers
     this.timeoutIds.forEach((id) => clearTimeout(id))
     this.timeoutIds = []

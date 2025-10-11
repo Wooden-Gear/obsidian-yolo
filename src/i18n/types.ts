@@ -400,6 +400,39 @@ export type TranslationKeys = {
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
     customRewritePromptPlaceholder?: string
+    customContinueProcessing?: string
+    customContinueError?: string
+    customContinuePresets?: {
+      continue?: { label: string; instruction: string }
+      summarize?: { label: string; instruction: string }
+      flowchart?: { label: string; instruction: string }
+    }
+    customContinueSections?: {
+      suggestions?: {
+        title: string
+        items?: {
+          continue?: { label: string; instruction: string }
+        }
+      }
+      writing?: {
+        title: string
+        items?: {
+          summarize?: { label: string; instruction: string }
+          todo?: { label: string; instruction: string }
+          flowchart?: { label: string; instruction: string }
+          table?: { label: string; instruction: string }
+          freewrite?: { label: string; instruction: string }
+        }
+      }
+      thinking?: {
+        title: string
+        items?: {
+          brainstorm?: { label: string; instruction: string }
+          analyze?: { label: string; instruction: string }
+          dialogue?: { label: string; instruction: string }
+        }
+      }
+    }
     showMore?: string
     showLess?: string
     // conversation settings popover

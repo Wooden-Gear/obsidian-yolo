@@ -460,8 +460,70 @@ export const en: TranslationKeys = {
     modeBrute: 'Brute',
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder:
-      'Enter how to continue, e.g., "Explain Fermat\'s Last Theorem in LaTeX". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
+    customContinuePromptPlaceholder: 'Ask AI...',
+    customContinueProcessing: 'Thinking',
+    customContinueError: 'Generation failed. Please try again soon.',
+    customContinueSections: {
+      suggestions: {
+        title: 'Suggestions',
+        items: {
+          continue: {
+            label: 'Continue writing',
+            instruction:
+              'Continue the current passage and keep the tone consistent.',
+          },
+        },
+      },
+      writing: {
+        title: 'Writing',
+        items: {
+          summarize: {
+            label: 'Add a summary',
+            instruction: 'Write a concise summary of the current content.',
+          },
+          todo: {
+            label: 'Add action items',
+            instruction:
+              'Generate a checklist of actionable next steps from the current context.',
+          },
+          flowchart: {
+            label: 'Create a flowchart',
+            instruction:
+              'Turn the current points into a flowchart or ordered steps.',
+          },
+          table: {
+            label: 'Organize into a table',
+            instruction:
+              'Convert the current information into a structured table with appropriate columns.',
+          },
+          freewrite: {
+            label: 'Freewriting',
+            instruction:
+              'Start a fresh continuation in a creative style that fits the context.',
+          },
+        },
+      },
+      thinking: {
+        title: 'Ideate & converse',
+        items: {
+          brainstorm: {
+            label: 'Brainstorm ideas',
+            instruction:
+              'Suggest several fresh ideas or angles based on the current topic.',
+          },
+          analyze: {
+            label: 'Analyze this section',
+            instruction:
+              'Provide a brief analysis highlighting key insights, risks, or opportunities.',
+          },
+          dialogue: {
+            label: 'Ask follow-up questions',
+            instruction:
+              'Generate thoughtful questions that can deepen understanding of the topic.',
+          },
+        },
+      },
+    },
     customRewritePromptPlaceholder:
       'Describe how to rewrite the selected text, e.g., "Make it concise and active voice; keep markdown structure". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
     conversationSettings: {

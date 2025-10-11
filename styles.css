@@ -3386,6 +3386,191 @@ button.smtcmp-chat-input-model-select {
   font-size: 14px;
 }
 
+/* Custom continue inline panel */
+.smtcmp-custom-continue-overlay-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 0;
+  z-index: 9998;
+}
+
+.smtcmp-custom-continue-overlay {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 9999;
+}
+
+.smtcmp-custom-continue-inline-anchor {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  line-height: 0;
+}
+
+.smtcmp-custom-continue-panel {
+  position: relative;
+  width: 100%;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-l, 0 8px 24px rgba(0, 0, 0, 0.12));
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: min(420px, 100%);
+  max-height: min(440px, 70vh);
+  overflow: hidden;
+}
+
+.smtcmp-custom-continue-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--background-secondary);
+  border-radius: 999px;
+  padding: 8px 12px 8px 8px;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+}
+
+.smtcmp-custom-continue-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  flex-shrink: 0;
+}
+
+.smtcmp-custom-continue-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-normal);
+  font: inherit;
+}
+
+.smtcmp-custom-continue-input::placeholder {
+  color: var(--text-muted);
+}
+
+.smtcmp-custom-continue-input:disabled {
+  opacity: 0.6;
+}
+
+.smtcmp-custom-continue-section-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 6px;
+}
+
+.smtcmp-custom-continue-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.smtcmp-custom-continue-section + .smtcmp-custom-continue-section {
+  padding-top: 10px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.smtcmp-custom-continue-section-title {
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.smtcmp-custom-continue-section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.smtcmp-custom-continue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-m);
+  padding: 8px 10px;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.smtcmp-custom-continue-item:hover,
+.smtcmp-custom-continue-item:focus-visible {
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  transform: translateX(2px);
+  outline: none;
+}
+
+.smtcmp-custom-continue-item:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.smtcmp-custom-continue-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  flex-shrink: 0;
+}
+
+.smtcmp-custom-continue-item-icon-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.smtcmp-custom-continue-item-label {
+  flex: 1;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smtcmp-custom-continue-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.smtcmp-custom-continue-error {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error);
+  padding-left: 8px;
+}
+
 /* Floating Panel */
 .smtcmp-floating-panel-container {
   position: fixed;

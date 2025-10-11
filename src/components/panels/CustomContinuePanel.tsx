@@ -432,7 +432,6 @@ export class CustomContinueWidget extends WidgetType {
     const anchorRect = this.anchor.getBoundingClientRect()
 
     const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
     const margin = 12
     const offsetY = 6
     const maxPanelWidth = 420
@@ -445,15 +444,7 @@ export class CustomContinueWidget extends WidgetType {
     }
     if (left < margin) left = margin
 
-    const desiredTop = anchorRect.bottom + offsetY
-    let top = desiredTop
-
-    const panelHeight = this.overlayContainer.offsetHeight
-    if (panelHeight > 0 && top + panelHeight > viewportHeight - margin) {
-      const aboveTop = anchorRect.top - offsetY - panelHeight
-      const clamped = viewportHeight - margin - panelHeight
-      top = Math.max(Math.min(top, clamped), Math.max(margin, aboveTop))
-    }
+    const top = anchorRect.bottom + offsetY
 
     this.overlayContainer.style.width = `${panelWidth}px`
     this.overlayContainer.style.left = `${Math.round(left)}px`
