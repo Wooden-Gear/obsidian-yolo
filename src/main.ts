@@ -451,6 +451,14 @@ export default class SmartComposerPlugin extends Plugin {
               key: 'Tab',
               run: (v) => this.tryAcceptInlineSuggestionFromView(v),
             },
+            {
+              key: 'Shift-Tab',
+              run: (v) => this.tryRejectInlineSuggestionFromView(v),
+            },
+            {
+              key: 'Escape',
+              run: (v) => this.tryRejectInlineSuggestionFromView(v),
+            },
           ]),
         ),
       ]),
@@ -524,6 +532,14 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     return false
+  }
+
+  private tryRejectInlineSuggestionFromView(view: EditorView): boolean {
+    const suggestion = this.activeInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
+    this.clearInlineSuggestion()
+    return true
   }
 
   private scheduleTabCompletion(editor: Editor) {
