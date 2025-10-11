@@ -20,7 +20,6 @@ import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextInput } from '../common/ObsidianTextInput'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
-import { ObsidianToggle } from '../common/ObsidianToggle'
 
 // Available icons mapping
 const ICON_OPTIONS = {
@@ -145,14 +144,20 @@ export function SmartSpaceQuickActionsSettings() {
   const lastInsertIndexRef = useRef<number | null>(null)
 
   // Get current quick actions, or use default ones if not customized
-  const quickActions = settings.continuationOptions.smartSpaceQuickActions || getDefaultQuickActions(t)
+  const quickActions = (settings.continuationOptions.smartSpaceQuickActions || getDefaultQuickActions(t)).map((action) => ({
+    ...action,
+    enabled: true,
+  }))
 
   const handleSaveActions = async (newActions: QuickAction[]) => {
     await setSettings({
       ...settings,
       continuationOptions: {
         ...settings.continuationOptions,
-        smartSpaceQuickActions: newActions,
+        smartSpaceQuickActions: newActions.map((action) => ({
+          ...action,
+          enabled: true,
+        })),
       },
     })
   }
@@ -177,10 +182,12 @@ export function SmartSpaceQuickActionsSettings() {
 
     let newActions: QuickAction[]
     if (isAddingAction) {
-      newActions = [...quickActions, editingAction]
+      newActions = [...quickActions, { ...editingAction, enabled: true }]
     } else {
       newActions = quickActions.map(action =>
-        action.id === editingAction.id ? editingAction : action
+        action.id === editingAction.id
+          ? { ...editingAction, enabled: true }
+          : { ...action, enabled: true }
       )
     }
 
@@ -199,6 +206,7 @@ export function SmartSpaceQuickActionsSettings() {
       ...action,
       id: generateId(),
       label: `${action.label} (副本)`,
+      enabled: true,
     }
     const newActions = [...quickActions, newAction]
     await handleSaveActions(newActions)
@@ -417,16 +425,6 @@ export function SmartSpaceQuickActionsSettings() {
             />
           </ObsidianSetting>
 
-          <ObsidianSetting
-            name={t('settings.smartSpace.actionEnabled', '启用')}
-            desc={t('settings.smartSpace.actionEnabledDesc', '是否在 Smart Space 中显示此选项')}
-          >
-            <ObsidianToggle
-              value={editingAction.enabled}
-              onChange={(value) => setEditingAction({ ...editingAction, enabled: value })}
-            />
-          </ObsidianSetting>
-
           <div className="smtcmp-quick-action-editor-buttons">
             <ObsidianButton
               text={t('common.save', '保存')}
@@ -456,7 +454,7 @@ export function SmartSpaceQuickActionsSettings() {
             <React.Fragment key={action.id}>
               <div
                 data-action-id={action.id}
-                className={`smtcmp-quick-action-item ${!action.enabled ? 'disabled' : ''} ${isEditing ? 'editing' : ''}`}
+                className={`smtcmp-quick-action-item ${isEditing ? 'editing' : ''}`}
                 draggable={!isEditing}
                 onDragStart={(event) => handleDragStart(event, index)}
                 onDragOver={(event) => handleDragOver(event, index)}
@@ -475,11 +473,6 @@ export function SmartSpaceQuickActionsSettings() {
                     <span className={`smtcmp-quick-action-category category-${action.category}`}>
                       {CATEGORY_OPTIONS[action.category || 'custom']}
                     </span>
-                    {!action.enabled && (
-                      <span className="smtcmp-quick-action-disabled-badge">
-                        {t('settings.smartSpace.disabled', '已禁用')}
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="smtcmp-quick-action-controls">
@@ -556,16 +549,6 @@ export function SmartSpaceQuickActionsSettings() {
                         Object.entries(ICON_OPTIONS).map(([key, value]) => [key, value.label])
                       )}
                       onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
-                    />
-                  </ObsidianSetting>
-
-                  <ObsidianSetting
-                    name={t('settings.smartSpace.actionEnabled', '启用')}
-                    desc={t('settings.smartSpace.actionEnabledDesc', '是否在 Smart Space 中显示此选项')}
-                  >
-                    <ObsidianToggle
-                      value={editingAction.enabled}
-                      onChange={(value) => setEditingAction({ ...editingAction, enabled: value })}
                     />
                   </ObsidianSetting>
 

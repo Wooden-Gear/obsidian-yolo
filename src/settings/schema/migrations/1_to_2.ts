@@ -581,6 +581,23 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
 ) => {
   const providers: LLMProvider[] = [...V2_DEFAULT_PROVIDERS]
   const chatModels: ChatModel[] = [...V2_DEFAULT_CHAT_MODELS]
+  const ollamaChatModelData = data.ollamaChatModel ?? { baseUrl: '', model: '' }
+  const ollamaApplyModelData =
+    data.ollamaApplyModel ?? { baseUrl: '', model: '' }
+  const ollamaEmbeddingModelData =
+    data.ollamaEmbeddingModel ?? { baseUrl: '', model: '' }
+  const openAICompatibleChatModelData =
+    data.openAICompatibleChatModel ?? {
+      baseUrl: '',
+      apiKey: '',
+      model: '',
+    }
+  const openAICompatibleApplyModelData =
+    data.openAICompatibleApplyModel ?? {
+      baseUrl: '',
+      apiKey: '',
+      model: '',
+    }
 
   // Map old model IDs to new model IDs
   const MODEL_ID_MAP: Record<string, string> = {
@@ -617,9 +634,9 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
    */
   let ollamaCustomProviderCount = 0
   const defaultOllamaBaseUrl =
-    data.ollamaEmbeddingModel.baseUrl || // embedding model takes precedence
-    data.ollamaChatModel.baseUrl ||
-    data.ollamaApplyModel.baseUrl ||
+    ollamaEmbeddingModelData.baseUrl || // embedding model takes precedence
+    ollamaChatModelData.baseUrl ||
+    ollamaApplyModelData.baseUrl ||
     ''
   const ollamaProvider = providers.find((v) => v.type === 'ollama')
   if (ollamaProvider) {
@@ -629,26 +646,26 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
 
   let ollamaChatProviderId
   if (
-    data.ollamaChatModel.baseUrl &&
-    data.ollamaChatModel.baseUrl !== defaultOllamaBaseUrl
+    ollamaChatModelData.baseUrl &&
+    ollamaChatModelData.baseUrl !== defaultOllamaBaseUrl
   ) {
     ollamaChatProviderId = `ollama-${ollamaCustomProviderCount + 1}`
     providers.push({
       type: 'ollama',
       id: ollamaChatProviderId,
-      baseUrl: data.ollamaChatModel.baseUrl,
+      baseUrl: ollamaChatModelData.baseUrl,
     })
     ollamaCustomProviderCount += 1
   } else {
     ollamaChatProviderId = V2_PROVIDER_TYPES_INFO.ollama.defaultProviderId
   }
-  if (data.ollamaChatModel.model) {
-    const ollamaChatModelId = `${ollamaChatProviderId}/${data.ollamaChatModel.model}`
+  if (ollamaChatModelData.model) {
+    const ollamaChatModelId = `${ollamaChatProviderId}/${ollamaChatModelData.model}`
     chatModels.push({
       providerType: 'ollama',
       providerId: ollamaChatProviderId,
       id: ollamaChatModelId,
-      model: data.ollamaChatModel.model,
+      model: ollamaChatModelData.model,
     })
     if (data.chatModelId === 'ollama') {
       chatModelId = ollamaChatModelId
@@ -656,19 +673,19 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
   }
 
   const existingSameOllamaProviderForApplyModel = providers.find(
-    (v) => v.type === 'ollama' && v.baseUrl === data.ollamaApplyModel.baseUrl,
+    (v) => v.type === 'ollama' && v.baseUrl === ollamaApplyModelData.baseUrl,
   )
 
   let ollamaApplyProviderId
   if (
     !existingSameOllamaProviderForApplyModel &&
-    data.ollamaApplyModel.baseUrl
+    ollamaApplyModelData.baseUrl
   ) {
     ollamaApplyProviderId = `ollama-${ollamaCustomProviderCount + 1}`
     providers.push({
       type: 'ollama',
       id: ollamaApplyProviderId,
-      baseUrl: data.ollamaApplyModel.baseUrl,
+      baseUrl: ollamaApplyModelData.baseUrl,
     })
     ollamaCustomProviderCount += 1
   } else {
@@ -676,24 +693,24 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
       existingSameOllamaProviderForApplyModel?.id ??
       V2_PROVIDER_TYPES_INFO.ollama.defaultProviderId
   }
-  if (data.ollamaApplyModel.model) {
+  if (ollamaApplyModelData.model) {
     const existingSameChatModelForApplyModel = chatModels.find(
       (v) =>
         v.providerType === 'ollama' &&
         v.providerId === ollamaApplyProviderId &&
-        v.model === data.ollamaApplyModel.model,
+        v.model === ollamaApplyModelData.model,
     )
 
     let ollamaApplyModelId
     if (existingSameChatModelForApplyModel) {
       ollamaApplyModelId = existingSameChatModelForApplyModel.id
     } else {
-      ollamaApplyModelId = `${ollamaApplyProviderId}/${data.ollamaApplyModel.model}`
+      ollamaApplyModelId = `${ollamaApplyProviderId}/${ollamaApplyModelData.model}`
       chatModels.push({
         providerType: 'ollama',
         providerId: ollamaApplyProviderId,
         id: ollamaApplyModelId,
-        model: data.ollamaApplyModel.model,
+        model: ollamaApplyModelData.model,
       })
     }
     if (data.applyModelId === 'ollama') {
@@ -705,21 +722,21 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
    * handle OpenAI Compatible migration
    */
   let openAICompatibleCustomProviderCount = 0
-  if (data.openAICompatibleChatModel.baseUrl) {
+  if (openAICompatibleChatModelData.baseUrl) {
     const customProviderId = `custom-${openAICompatibleCustomProviderCount + 1}`
     providers.push({
       type: 'openai-compatible',
       id: customProviderId,
-      baseUrl: data.openAICompatibleChatModel.baseUrl,
-      apiKey: data.openAICompatibleChatModel.apiKey,
+      baseUrl: openAICompatibleChatModelData.baseUrl,
+      apiKey: openAICompatibleChatModelData.apiKey,
     })
-    if (data.openAICompatibleChatModel.model) {
-      const customChatModelId = `${customProviderId}/${data.openAICompatibleChatModel.model}`
+    if (openAICompatibleChatModelData.model) {
+      const customChatModelId = `${customProviderId}/${openAICompatibleChatModelData.model}`
       chatModels.push({
         providerType: 'openai-compatible',
         providerId: customProviderId,
         id: customChatModelId,
-        model: data.openAICompatibleChatModel.model,
+        model: openAICompatibleChatModelData.model,
       })
       if (data.chatModelId === 'openai-compatible') {
         chatModelId = customChatModelId
@@ -727,12 +744,12 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
     }
     openAICompatibleCustomProviderCount += 1
   }
-  if (data.openAICompatibleApplyModel.baseUrl) {
+  if (openAICompatibleApplyModelData.baseUrl) {
     const existingSameProvider = providers.find(
       (v) =>
         v.type === 'openai-compatible' &&
-        v.baseUrl === data.openAICompatibleApplyModel.baseUrl &&
-        v.apiKey === data.openAICompatibleApplyModel.apiKey,
+        v.baseUrl === openAICompatibleApplyModelData.baseUrl &&
+        v.apiKey === openAICompatibleApplyModelData.apiKey,
     )
 
     let customProviderId
@@ -744,29 +761,29 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
       providers.push({
         type: 'openai-compatible',
         id: customProviderId,
-        baseUrl: data.openAICompatibleApplyModel.baseUrl,
-        apiKey: data.openAICompatibleApplyModel.apiKey,
+        baseUrl: openAICompatibleApplyModelData.baseUrl,
+        apiKey: openAICompatibleApplyModelData.apiKey,
       })
     }
 
-    if (data.openAICompatibleApplyModel.model) {
+    if (openAICompatibleApplyModelData.model) {
       const existingSameChatModel = chatModels.find(
         (v) =>
           v.providerType === 'openai-compatible' &&
           v.providerId === customProviderId &&
-          v.model === data.openAICompatibleApplyModel.model,
+          v.model === openAICompatibleApplyModelData.model,
       )
 
       let customApplyModelId
       if (existingSameChatModel) {
         customApplyModelId = existingSameChatModel.id
       } else {
-        customApplyModelId = `${customProviderId}/${data.openAICompatibleApplyModel.model}`
+        customApplyModelId = `${customProviderId}/${openAICompatibleApplyModelData.model}`
         chatModels.push({
           providerType: 'openai-compatible',
           providerId: customProviderId,
           id: customApplyModelId,
-          model: data.openAICompatibleApplyModel.model,
+          model: openAICompatibleApplyModelData.model,
         })
       }
       if (data.applyModelId === 'openai-compatible') {

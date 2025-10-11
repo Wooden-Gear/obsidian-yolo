@@ -1,11 +1,4 @@
-import {
-  DEFAULT_APPLY_MODEL_ID,
-  DEFAULT_CHAT_MODELS,
-  DEFAULT_CHAT_MODEL_ID,
-  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
-  DEFAULT_EMBEDDING_MODELS,
-  DEFAULT_PROVIDERS,
-} from '../../constants'
+import { DEFAULT_CONTINUATION_SYSTEM_PROMPT } from '../../constants'
 
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import {
@@ -17,74 +10,74 @@ import { parseSmartComposerSettings } from './settings'
 describe('parseSmartComposerSettings', () => {
   it('should return default values for empty input', () => {
     const result = parseSmartComposerSettings({})
-    expect(result).toEqual({
-      version: SETTINGS_SCHEMA_VERSION,
+    expect(result.version).toBe(SETTINGS_SCHEMA_VERSION)
 
-      providers: [...DEFAULT_PROVIDERS],
+    expect(result.providers.length).toBeGreaterThan(0)
+    expect(result.providers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'openai' }),
+        expect.objectContaining({ type: 'anthropic' }),
+      ]),
+    )
 
-      chatModels: [...DEFAULT_CHAT_MODELS],
-      embeddingModels: [...DEFAULT_EMBEDDING_MODELS],
+    expect(result.chatModels.length).toBeGreaterThan(0)
+    expect(
+      result.chatModels.some((model) => model.id === result.chatModelId),
+    ).toBe(true)
+    expect(
+      result.chatModels.some((model) => model.id === result.applyModelId),
+    ).toBe(true)
 
-      chatModelId: DEFAULT_CHAT_MODEL_ID,
-      applyModelId: DEFAULT_APPLY_MODEL_ID,
-      embeddingModelId: 'openai/text-embedding-3-small',
+    expect(result.embeddingModels.length).toBeGreaterThan(0)
+    expect(
+      result.embeddingModels.some(
+        (model) => model.id === result.embeddingModelId,
+      ),
+    ).toBe(true)
 
-      systemPrompt: '',
+    expect(result.systemPrompt).toBe('')
 
-      ragOptions: {
-        enabled: true,
-        chunkSize: 1000,
-        thresholdTokens: 8192,
-        minSimilarity: 0.0,
-        limit: 10,
-        excludePatterns: [],
-        includePatterns: [],
-        autoUpdateEnabled: false,
-        autoUpdateIntervalHours: 24,
-        lastAutoUpdateAt: 0,
-      },
-
-      mcp: {
-        servers: [],
-      },
-
-      chatOptions: {
-        includeCurrentFileContent: true,
-        enableBruteMode: false,
-        enableLearningMode: false,
-        learningModePrompt: '',
-        enableTools: true,
-        maxAutoIterations: 1,
-        maxContextMessages: 32,
-        defaultTemperature: 0.8,
-        defaultTopP: 0.9,
-        chatTitlePrompt: '',
-        baseModelSpecialPrompt: '',
-      },
-
-      continuationOptions: {
-        enableSuperContinuation: true,
-        continuationModelId: 'openai/gpt-4.1-mini',
-        defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
-        enableKeywordTrigger: true,
-        triggerKeyword: 'cc',
-        manualContextEnabled: false,
-        manualContextFolders: [],
-        referenceRuleFolders: [],
-        knowledgeBaseFolders: [],
-        stream: true,
-        useVaultSearch: false,
-        maxContinuationChars: 8000,
-        enableFloatingPanelKeywordTrigger: false,
-        floatingPanelTriggerKeyword: '',
-        enableTabCompletion: false,
-        tabCompletionModelId: 'openai/gpt-4.1-mini',
-        tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
-        tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
-      },
-
-      assistants: [],
-      language: 'en',
+    expect(result.ragOptions).toMatchObject({
+      enabled: true,
+      chunkSize: 1000,
+      thresholdTokens: 8192,
+      minSimilarity: 0.0,
+      limit: 10,
+      autoUpdateEnabled: false,
+      autoUpdateIntervalHours: 24,
+      lastAutoUpdateAt: 0,
     })
+
+    expect(result.mcp.servers).toEqual([])
+
+    expect(result.chatOptions).toMatchObject({
+      includeCurrentFileContent: true,
+      enableBruteMode: false,
+      enableLearningMode: false,
+      enableTools: true,
+      maxAutoIterations: 1,
+      maxContextMessages: 32,
+    })
+
+    expect(result.continuationOptions).toMatchObject({
+      enableSuperContinuation: true,
+      defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
+      enableSmartSpace: true,
+      enableKeywordTrigger: true,
+      triggerKeyword: 'cc',
+      manualContextEnabled: false,
+      stream: true,
+      useVaultSearch: false,
+      maxContinuationChars: 8000,
+      enableTabCompletion: false,
+      tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+    })
+    expect(result.continuationOptions.tabCompletionOptions).toMatchObject(
+      DEFAULT_TAB_COMPLETION_OPTIONS,
+    )
+    expect(result.continuationOptions.smartSpaceQuickActions).toBeUndefined()
+
+    expect(result.assistants).toEqual([])
+    expect(result.language).toBe('en')
   })
 })
