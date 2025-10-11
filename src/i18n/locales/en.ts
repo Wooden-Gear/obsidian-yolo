@@ -40,14 +40,14 @@ export const en: TranslationKeys = {
       composer: 'Composer',
     },
     composer: {
-      title: 'Composer',
+      title: 'Sparkle',
       subtitle:
         'Configure continuation parameters and context before generating.',
       backToChat: 'Back to chat',
       modelSectionTitle: 'Model',
       continuationModel: 'Continuation model',
       continuationModelDesc:
-        'When Super Continuation is enabled, Composer will use this model for continuation tasks.',
+        'When Super Continuation is enabled, Sparkle will use this model for continuation tasks.',
       contextSectionTitle: 'Context sources',
       ragToggle: 'Enable RAG retrieval',
       ragToggleDesc:
@@ -358,16 +358,16 @@ export const en: TranslationKeys = {
       actions: 'Actions',
     },
     continuation: {
-      title: 'Composer Mode',
-      aiSubsectionTitle: 'AI Continuation',
-      customSubsectionTitle: 'Custom Continuation',
+      title: 'Sparkle Mode',
+      aiSubsectionTitle: 'Super Continuation',
+      customSubsectionTitle: 'Smart Space',
       tabSubsectionTitle: 'Tab Completion',
       superContinuation: 'Super Continuation',
       superContinuationDesc:
-        'Enable to unlock the Composer sidebar view where you can configure dedicated continuation models, rules, and reference sources. When disabled, only the Chat view is available and continuation reuses the current chat model.',
-      continuationModel: 'Composer continuation model',
+        'Enable to unlock the Sparkle sidebar view where you can configure dedicated continuation models, rules, and reference sources. When disabled, only the Chat view is available and continuation reuses the current chat model.',
+      continuationModel: 'Sparkle continuation model',
       continuationModelDesc:
-        'Select the model used for continuation while Super Continuation is enabled.',
+        'Select the model used for continuation while Sparkle mode is enabled.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc:
         'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',

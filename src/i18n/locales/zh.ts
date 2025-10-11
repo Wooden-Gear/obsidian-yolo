@@ -40,13 +40,13 @@ export const zh: TranslationKeys = {
       composer: 'Composer',
     },
     composer: {
-      title: 'Composer 模式',
+      title: 'Sparkle 模式',
       subtitle: '在续写之前先配置模型、上下文与规则',
       backToChat: '返回 Chat',
       modelSectionTitle: '模型设置',
       continuationModel: '续写模型',
       continuationModelDesc:
-        '在开启超级续写时，Composer 将使用该模型处理续写。',
+        '在开启超级续写时，Sparkle 将使用该模型处理续写。',
       contextSectionTitle: '上下文来源',
       ragToggle: '启用 RAG 检索',
       ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
@@ -339,15 +339,15 @@ export const zh: TranslationKeys = {
       actions: '操作',
     },
     continuation: {
-      title: 'Composer 模式',
-      aiSubsectionTitle: 'AI 智能续写',
-      customSubsectionTitle: '自定义续写',
+      title: 'Sparkle 模式',
+      aiSubsectionTitle: '超级续写',
+      customSubsectionTitle: 'Smart Space',
       tabSubsectionTitle: 'Tab 补全',
       superContinuation: '超级续写',
       superContinuationDesc:
-        '开启后，侧边栏将提供 Composer 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
-      continuationModel: 'Composer 续写模型',
-      continuationModelDesc: '指定在 Composer 模式下用于续写的模型。',
+        '开启后，侧边栏将提供 Sparkle 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
+      continuationModel: 'Sparkle 续写模型',
+      continuationModelDesc: '指定在 Sparkle 模式下用于续写的模型。',
       keywordTrigger: '启用关键词触发AI续写',
       keywordTriggerDesc:
         '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
