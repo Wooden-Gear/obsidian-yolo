@@ -392,6 +392,26 @@ export type TranslationKeys = {
       moveDown: string
       duplicate: string
       disabled: string
+      categories?: {
+        suggestions: string
+        writing: string
+        thinking: string
+        custom: string
+      }
+      iconLabels?: {
+        sparkles: string
+        file: string
+        todo: string
+        workflow: string
+        table: string
+        pen: string
+        lightbulb: string
+        brain: string
+        message: string
+        settings: string
+      }
+      copySuffix?: string
+      dragHandleAria?: string
     }
     language: {
       title: string

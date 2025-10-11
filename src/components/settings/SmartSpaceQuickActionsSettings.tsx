@@ -11,7 +11,7 @@ import {
   Table,
   Workflow,
 } from 'lucide-react'
-import React, { useState, useRef, type DragEvent } from 'react'
+import React, { useMemo, useState, useRef, type DragEvent } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
@@ -20,27 +20,6 @@ import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextInput } from '../common/ObsidianTextInput'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
-
-// Available icons mapping
-const ICON_OPTIONS = {
-  sparkles: { component: Sparkles, label: 'Sparkles' },
-  filetext: { component: FileText, label: 'File' },
-  listtodo: { component: ListTodo, label: 'Todo' },
-  workflow: { component: Workflow, label: 'Workflow' },
-  table: { component: Table, label: 'Table' },
-  penline: { component: PenLine, label: 'Pen' },
-  lightbulb: { component: Lightbulb, label: 'Lightbulb' },
-  brain: { component: Brain, label: 'Brain' },
-  messagecircle: { component: MessageCircle, label: 'Message' },
-  settings: { component: Settings, label: 'Settings' },
-}
-
-const CATEGORY_OPTIONS = {
-  suggestions: '建议',
-  writing: '撰写',
-  thinking: '思考 · 询问 · 对话',
-  custom: '自定义',
-}
 
 type QuickAction = {
   id: string
@@ -51,91 +30,207 @@ type QuickAction = {
   enabled: boolean
 }
 
+// Available icons mapping
+const ICON_OPTIONS = {
+  sparkles: {
+    component: Sparkles,
+    labelKey: 'settings.smartSpace.iconLabels.sparkles',
+    fallback: 'Sparkles',
+  },
+  filetext: {
+    component: FileText,
+    labelKey: 'settings.smartSpace.iconLabels.file',
+    fallback: 'File',
+  },
+  listtodo: {
+    component: ListTodo,
+    labelKey: 'settings.smartSpace.iconLabels.todo',
+    fallback: 'Todo',
+  },
+  workflow: {
+    component: Workflow,
+    labelKey: 'settings.smartSpace.iconLabels.workflow',
+    fallback: 'Workflow',
+  },
+  table: {
+    component: Table,
+    labelKey: 'settings.smartSpace.iconLabels.table',
+    fallback: 'Table',
+  },
+  penline: {
+    component: PenLine,
+    labelKey: 'settings.smartSpace.iconLabels.pen',
+    fallback: 'Pen',
+  },
+  lightbulb: {
+    component: Lightbulb,
+    labelKey: 'settings.smartSpace.iconLabels.lightbulb',
+    fallback: 'Lightbulb',
+  },
+  brain: {
+    component: Brain,
+    labelKey: 'settings.smartSpace.iconLabels.brain',
+    fallback: 'Brain',
+  },
+  messagecircle: {
+    component: MessageCircle,
+    labelKey: 'settings.smartSpace.iconLabels.message',
+    fallback: 'Message',
+  },
+  settings: {
+    component: Settings,
+    labelKey: 'settings.smartSpace.iconLabels.settings',
+    fallback: 'Settings',
+  },
+}
+
+type DefaultActionConfig = {
+  id: string
+  icon: string
+  category: QuickAction['category']
+  labelKey: string
+  labelFallback: string
+  instructionKey: string
+  instructionFallback: string
+}
+
+const DEFAULT_ACTION_CONFIGS: DefaultActionConfig[] = [
+  {
+    id: 'continue',
+    icon: 'sparkles',
+    category: 'suggestions',
+    labelKey: 'chat.customContinueSections.suggestions.items.continue.label',
+    labelFallback: '继续编写',
+    instructionKey:
+      'chat.customContinueSections.suggestions.items.continue.instruction',
+    instructionFallback: '请继续扩展当前段落，保持原有语气与风格。',
+  },
+  {
+    id: 'summarize',
+    icon: 'filetext',
+    category: 'writing',
+    labelKey: 'chat.customContinueSections.writing.items.summarize.label',
+    labelFallback: '添加摘要',
+    instructionKey:
+      'chat.customContinueSections.writing.items.summarize.instruction',
+    instructionFallback: '请为当前内容写一个简洁摘要。',
+  },
+  {
+    id: 'todo',
+    icon: 'listtodo',
+    category: 'writing',
+    labelKey: 'chat.customContinueSections.writing.items.todo.label',
+    labelFallback: '添加待办事项',
+    instructionKey:
+      'chat.customContinueSections.writing.items.todo.instruction',
+    instructionFallback: '请基于当前内容整理一个可执行的待办清单。',
+  },
+  {
+    id: 'flowchart',
+    icon: 'workflow',
+    category: 'writing',
+    labelKey: 'chat.customContinueSections.writing.items.flowchart.label',
+    labelFallback: '制作流程图',
+    instructionKey:
+      'chat.customContinueSections.writing.items.flowchart.instruction',
+    instructionFallback: '请将当前要点整理成流程图或分步骤说明。',
+  },
+  {
+    id: 'table',
+    icon: 'table',
+    category: 'writing',
+    labelKey: 'chat.customContinueSections.writing.items.table.label',
+    labelFallback: '制作表格',
+    instructionKey:
+      'chat.customContinueSections.writing.items.table.instruction',
+    instructionFallback: '请把当前信息整理成表格，并给出合适的列标题。',
+  },
+  {
+    id: 'freewrite',
+    icon: 'penline',
+    category: 'writing',
+    labelKey: 'chat.customContinueSections.writing.items.freewrite.label',
+    labelFallback: '随心写作',
+    instructionKey:
+      'chat.customContinueSections.writing.items.freewrite.instruction',
+    instructionFallback: '请结合上下文自由发挥，继续创作新的段落。',
+  },
+  {
+    id: 'brainstorm',
+    icon: 'lightbulb',
+    category: 'thinking',
+    labelKey: 'chat.customContinueSections.thinking.items.brainstorm.label',
+    labelFallback: '头脑风暴',
+    instructionKey:
+      'chat.customContinueSections.thinking.items.brainstorm.instruction',
+    instructionFallback: '请给出若干新的灵感或切入点。',
+  },
+  {
+    id: 'analyze',
+    icon: 'brain',
+    category: 'thinking',
+    labelKey: 'chat.customContinueSections.thinking.items.analyze.label',
+    labelFallback: '分析重点',
+    instructionKey:
+      'chat.customContinueSections.thinking.items.analyze.instruction',
+    instructionFallback: '请简要分析当前内容的要点、风险或机会。',
+  },
+  {
+    id: 'dialogue',
+    icon: 'messagecircle',
+    category: 'thinking',
+    labelKey: 'chat.customContinueSections.thinking.items.dialogue.label',
+    labelFallback: '提出追问',
+    instructionKey:
+      'chat.customContinueSections.thinking.items.dialogue.instruction',
+    instructionFallback: '请给出一些深入讨论的追问。',
+  },
+]
+
+const DEFAULT_ACTION_LOOKUP: Record<string, DefaultActionConfig> =
+  Object.fromEntries(DEFAULT_ACTION_CONFIGS.map((config) => [config.id, config]))
+
 // Generate unique ID
 const generateId = () => {
   return `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
 const getDefaultQuickActions = (t: any): QuickAction[] => {
-    return [
-      {
-        id: 'continue',
-        label: t('chat.customContinueSections.suggestions.items.continue.label', '继续编写'),
-        instruction: t('chat.customContinueSections.suggestions.items.continue.instruction', '请继续扩展当前段落，保持原有语气与风格。'),
-        icon: 'sparkles',
-        category: 'suggestions',
-        enabled: true,
-      },
-      {
-        id: 'summarize',
-        label: t('chat.customContinueSections.writing.items.summarize.label', '添加摘要'),
-        instruction: t('chat.customContinueSections.writing.items.summarize.instruction', '请为当前内容写一个简洁摘要。'),
-        icon: 'filetext',
-        category: 'writing',
-        enabled: true,
-      },
-      {
-        id: 'todo',
-        label: t('chat.customContinueSections.writing.items.todo.label', '添加待办事项'),
-        instruction: t('chat.customContinueSections.writing.items.todo.instruction', '请基于当前内容整理一个可执行的待办清单。'),
-        icon: 'listtodo',
-        category: 'writing',
-        enabled: true,
-      },
-      {
-        id: 'flowchart',
-        label: t('chat.customContinueSections.writing.items.flowchart.label', '制作流程图'),
-        instruction: t('chat.customContinueSections.writing.items.flowchart.instruction', '请将当前要点整理成流程图或分步骤说明。'),
-        icon: 'workflow',
-        category: 'writing',
-        enabled: true,
-      },
-      {
-        id: 'table',
-        label: t('chat.customContinueSections.writing.items.table.label', '制作表格'),
-        instruction: t('chat.customContinueSections.writing.items.table.instruction', '请把当前信息整理成表格，并给出合适的列标题。'),
-        icon: 'table',
-        category: 'writing',
-        enabled: true,
-      },
-      {
-        id: 'freewrite',
-        label: t('chat.customContinueSections.writing.items.freewrite.label', '随心写作'),
-        instruction: t('chat.customContinueSections.writing.items.freewrite.instruction', '请结合上下文自由发挥，继续创作新的段落。'),
-        icon: 'penline',
-        category: 'writing',
-        enabled: true,
-      },
-      {
-        id: 'brainstorm',
-        label: t('chat.customContinueSections.thinking.items.brainstorm.label', '头脑风暴'),
-        instruction: t('chat.customContinueSections.thinking.items.brainstorm.instruction', '请给出若干新的灵感或切入点。'),
-        icon: 'lightbulb',
-        category: 'thinking',
-        enabled: true,
-      },
-      {
-        id: 'analyze',
-        label: t('chat.customContinueSections.thinking.items.analyze.label', '分析重点'),
-        instruction: t('chat.customContinueSections.thinking.items.analyze.instruction', '请简要分析当前内容的要点、风险或机会。'),
-        icon: 'brain',
-        category: 'thinking',
-        enabled: true,
-      },
-      {
-        id: 'dialogue',
-        label: t('chat.customContinueSections.thinking.items.dialogue.label', '提出追问'),
-        instruction: t('chat.customContinueSections.thinking.items.dialogue.instruction', '请给出一些深入讨论的追问。'),
-        icon: 'messagecircle',
-        category: 'thinking',
-        enabled: true,
-      },
-    ]
-  }
+  return DEFAULT_ACTION_CONFIGS.map((config) => ({
+    id: config.id,
+    label: t(config.labelKey, config.labelFallback),
+    instruction: t(config.instructionKey, config.instructionFallback),
+    icon: config.icon,
+    category: config.category,
+    enabled: true,
+  }))
+}
 
 export function SmartSpaceQuickActionsSettings() {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
+  const categoryOptions = useMemo(
+    () => ({
+      suggestions: t('settings.smartSpace.categories.suggestions', '建议'),
+      writing: t('settings.smartSpace.categories.writing', '撰写'),
+      thinking: t(
+        'settings.smartSpace.categories.thinking',
+        '思考 · 询问 · 对话',
+      ),
+      custom: t('settings.smartSpace.categories.custom', '自定义'),
+    }),
+    [t],
+  )
+  const iconOptions = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(ICON_OPTIONS).map(([key, value]) => [
+          key,
+          t(value.labelKey, value.fallback),
+        ]),
+      ),
+    [t],
+  )
   const [editingAction, setEditingAction] = useState<QuickAction | null>(null)
   const [isAddingAction, setIsAddingAction] = useState(false)
   const dragIndexRef = useRef<number | null>(null)
@@ -144,10 +239,45 @@ export function SmartSpaceQuickActionsSettings() {
   const lastInsertIndexRef = useRef<number | null>(null)
 
   // Get current quick actions, or use default ones if not customized
-  const quickActions = (settings.continuationOptions.smartSpaceQuickActions || getDefaultQuickActions(t)).map((action) => ({
-    ...action,
-    enabled: true,
-  }))
+  const quickActions = (
+    settings.continuationOptions.smartSpaceQuickActions ||
+    getDefaultQuickActions(t)
+  ).map((action) => {
+    const config = DEFAULT_ACTION_LOOKUP[action.id]
+    let label = action.label
+    let instruction = action.instruction
+
+    if (config) {
+      const localizedLabel = t(config.labelKey, config.labelFallback)
+      const localizedInstruction = t(
+        config.instructionKey,
+        config.instructionFallback,
+      )
+
+      if (
+        label === config.labelFallback ||
+        label === localizedLabel ||
+        !label
+      ) {
+        label = localizedLabel
+      }
+
+      if (
+        instruction === config.instructionFallback ||
+        instruction === localizedInstruction ||
+        !instruction
+      ) {
+        instruction = localizedInstruction
+      }
+    }
+
+    return {
+      ...action,
+      label,
+      instruction,
+      enabled: true,
+    }
+  })
 
   const handleSaveActions = async (newActions: QuickAction[]) => {
     await setSettings({
@@ -205,7 +335,7 @@ export function SmartSpaceQuickActionsSettings() {
     const newAction = {
       ...action,
       id: generateId(),
-      label: `${action.label} (副本)`,
+      label: `${action.label}${t('settings.smartSpace.copySuffix', ' (副本)')}`,
       enabled: true,
     }
     const newActions = [...quickActions, newAction]
@@ -407,7 +537,7 @@ export function SmartSpaceQuickActionsSettings() {
           >
             <ObsidianDropdown
               value={editingAction.category || 'custom'}
-              options={CATEGORY_OPTIONS}
+              options={categoryOptions}
               onChange={(value) => setEditingAction({ ...editingAction, category: value as any })}
             />
           </ObsidianSetting>
@@ -418,9 +548,7 @@ export function SmartSpaceQuickActionsSettings() {
           >
             <ObsidianDropdown
               value={editingAction.icon || 'sparkles'}
-              options={Object.fromEntries(
-                Object.entries(ICON_OPTIONS).map(([key, value]) => [key, value.label])
-              )}
+              options={iconOptions}
               onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
             />
           </ObsidianSetting>
@@ -462,7 +590,10 @@ export function SmartSpaceQuickActionsSettings() {
                 onDragEnd={handleDragEnd}
               >
                 <div className="smtcmp-quick-action-drag-handle">
-                  <span className="smtcmp-drag-handle" aria-label="拖拽排序">
+                  <span
+                    className="smtcmp-drag-handle"
+                    aria-label={t('settings.smartSpace.dragHandleAria', '拖拽排序')}
+                  >
                     <GripVertical size={16} />
                   </span>
                 </div>
@@ -471,7 +602,7 @@ export function SmartSpaceQuickActionsSettings() {
                     <IconComponent size={16} className="smtcmp-quick-action-icon" />
                     <span className="smtcmp-quick-action-label">{action.label}</span>
                     <span className={`smtcmp-quick-action-category category-${action.category}`}>
-                      {CATEGORY_OPTIONS[action.category || 'custom']}
+                      {categoryOptions[action.category || 'custom']}
                     </span>
                   </div>
                 </div>
@@ -534,7 +665,7 @@ export function SmartSpaceQuickActionsSettings() {
                   >
                     <ObsidianDropdown
                       value={editingAction.category || 'custom'}
-                      options={CATEGORY_OPTIONS}
+                      options={categoryOptions}
                       onChange={(value) => setEditingAction({ ...editingAction, category: value as any })}
                     />
                   </ObsidianSetting>
@@ -545,9 +676,7 @@ export function SmartSpaceQuickActionsSettings() {
                   >
                     <ObsidianDropdown
                       value={editingAction.icon || 'sparkles'}
-                      options={Object.fromEntries(
-                        Object.entries(ICON_OPTIONS).map(([key, value]) => [key, value.label])
-                      )}
+                      options={iconOptions}
                       onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
                     />
                   </ObsidianSetting>
