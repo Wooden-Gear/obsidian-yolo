@@ -3420,39 +3420,74 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-custom-continue-input-card {
   background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--h1-color, var(--interactive-accent));
   border-radius: var(--radius-l);
-  box-shadow: var(--shadow-m, 0 8px 20px rgba(0, 0, 0, 0.1));
-  overflow: hidden;
+  box-shadow: var(--shadow-l, 0 4px 12px rgba(0, 0, 0, 0.08));
+  overflow: visible;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smtcmp-custom-continue-input-card:focus-within {
+  border-color: var(--h1-color, var(--interactive-accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 20%, transparent),
+    var(--shadow-l, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.smtcmp-custom-continue-input-card:hover {
+  background: var(--background-primary) !important;
 }
 
 .smtcmp-custom-continue-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   width: 100%;
-  padding: 10px 16px 10px 12px;
+  padding: 12px 16px;
+}
+
+.smtcmp-custom-continue-header:hover {
+  background: transparent !important;
 }
 
 .smtcmp-custom-continue-avatar {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+  background: color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 16%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--interactive-accent);
+  color: var(--h1-color, var(--interactive-accent));
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.smtcmp-custom-continue-input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.smtcmp-custom-continue-input-wrapper:hover {
+  background: transparent !important;
 }
 
 .smtcmp-custom-continue-input {
   width: 100%;
-  border: none;
-  outline: none;
+  border: none !important;
+  outline: none !important;
   background: transparent;
   color: var(--text-normal);
-  font: inherit;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-medium);
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+  min-height: 24px;
+  max-height: 200px;
+  box-shadow: none !important;
 }
 
 .smtcmp-custom-continue-input::placeholder {
@@ -3463,13 +3498,33 @@ button.smtcmp-chat-input-model-select {
   opacity: 0.6;
 }
 
+.smtcmp-custom-continue-input:focus,
+.smtcmp-custom-continue-input:focus-visible,
+.smtcmp-custom-continue-input:active,
+.smtcmp-custom-continue-input:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.smtcmp-custom-continue-input-hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  opacity: 0.8;
+}
+
 .smtcmp-custom-continue-section-card {
   flex: 1;
   min-height: 0;
   background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--h1-color, var(--interactive-accent));
   border-radius: var(--radius-l);
-  box-shadow: var(--shadow-l, 0 8px 24px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-s, 0 2px 8px rgba(0, 0, 0, 0.05));
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -3520,21 +3575,20 @@ button.smtcmp-chat-input-model-select {
   width: 100%;
   border: none;
   background: transparent;
-  border-radius: var(--radius-m);
-  padding: 8px 10px;
+  border-radius: var(--radius-s);
+  padding: 6px 8px;
   color: inherit;
   text-align: left;
   font: inherit;
   cursor: pointer;
   transition:
     background 0.15s ease,
-    transform 0.15s ease;
+    transform 0.1s ease;
 }
 
 .smtcmp-custom-continue-item:hover,
 .smtcmp-custom-continue-item:focus-visible {
-  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
-  transform: translateX(2px);
+  background: var(--background-modifier-hover);
   outline: none;
 }
 
@@ -3545,20 +3599,20 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-custom-continue-item-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 12%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--interactive-accent);
+  color: var(--h1-color, var(--interactive-accent));
   flex-shrink: 0;
 }
 
 .smtcmp-custom-continue-item-icon-svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .smtcmp-custom-continue-item-label {

@@ -29,7 +29,7 @@ function CustomContinuePanelBody({
 }: CustomContinuePanelProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,6 +37,17 @@ function CustomContinuePanelBody({
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
   }, [])
+
+  // 自动调整 textarea 高度
+  useEffect(() => {
+    const textarea = inputRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      const scrollHeight = textarea.scrollHeight
+      const maxHeight = 200 // 最大高度约 8-10 行
+      textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
+    }
+  }, [instruction])
 
   const sections = useMemo(() => {
     type SectionItem = {
@@ -86,7 +97,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.suggestions.items.continue.instruction',
             <Sparkles
               className="smtcmp-custom-continue-item-icon-svg"
-              size={16}
+              size={14}
             />,
           ),
         ],
@@ -98,7 +109,7 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.writing.items.summarize.instruction',
           <FileText
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
         makeItem(
@@ -107,7 +118,7 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.writing.items.todo.instruction',
           <ListTodo
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
         makeItem(
@@ -116,14 +127,14 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.writing.items.flowchart.instruction',
           <Workflow
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
         makeItem(
           'table',
           'chat.customContinueSections.writing.items.table.label',
           'chat.customContinueSections.writing.items.table.instruction',
-          <Table className="smtcmp-custom-continue-item-icon-svg" size={16} />,
+          <Table className="smtcmp-custom-continue-item-icon-svg" size={14} />,
         ),
         makeItem(
           'freewrite',
@@ -131,7 +142,7 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.writing.items.freewrite.instruction',
           <PenLine
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
       ]),
@@ -142,14 +153,14 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.thinking.items.brainstorm.instruction',
           <Lightbulb
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
         makeItem(
           'analyze',
           'chat.customContinueSections.thinking.items.analyze.label',
           'chat.customContinueSections.thinking.items.analyze.instruction',
-          <Brain className="smtcmp-custom-continue-item-icon-svg" size={16} />,
+          <Brain className="smtcmp-custom-continue-item-icon-svg" size={14} />,
         ),
         makeItem(
           'dialogue',
@@ -157,7 +168,7 @@ function CustomContinuePanelBody({
           'chat.customContinueSections.thinking.items.dialogue.instruction',
           <MessageCircle
             className="smtcmp-custom-continue-item-icon-svg"
-            size={16}
+            size={14}
           />,
         ),
       ]),
@@ -184,7 +195,8 @@ function CustomContinuePanelBody({
     }
   }
 
-  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter（含 Cmd/Ctrl+Enter）直接提交
     if (event.key === 'Enter') {
       event.preventDefault()
       void handleSubmit()
@@ -201,20 +213,28 @@ function CustomContinuePanelBody({
           <div className="smtcmp-custom-continue-input-card">
             <div className="smtcmp-custom-continue-header">
               <div className="smtcmp-custom-continue-avatar">
-                <Sparkles size={16} />
+                <Sparkles size={14} />
               </div>
-              <input
-                ref={inputRef}
-                className="smtcmp-custom-continue-input"
-                placeholder={t(
-                  'chat.customContinuePromptPlaceholder',
-                  'Ask AI...',
+              <div className="smtcmp-custom-continue-input-wrapper">
+                <textarea
+                  ref={inputRef}
+                  className="smtcmp-custom-continue-input"
+                  placeholder={t(
+                    'chat.customContinuePromptPlaceholder',
+                    'Ask AI...',
+                  )}
+                  value={instruction}
+                  onChange={(event) => setInstruction(event.target.value)}
+                  onKeyDown={handleInputKeyDown}
+                  disabled={isSubmitting}
+                  rows={1}
+                />
+                {instruction.length > 0 && (
+                  <div className="smtcmp-custom-continue-input-hint">
+                    {t('chat.customContinueHint', '⏎ 提交')}
+                  </div>
                 )}
-                value={instruction}
-                onChange={(event) => setInstruction(event.target.value)}
-                onKeyDown={handleInputKeyDown}
-                disabled={isSubmitting}
-              />
+              </div>
             </div>
           </div>
           {error && (
