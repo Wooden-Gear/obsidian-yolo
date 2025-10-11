@@ -63,117 +63,179 @@ function CustomContinuePanelBody({
       items: SectionItem[]
     }
 
-    const makeItem = (
-      id: string,
-      labelKey: string,
-      instructionKey: string,
-      icon: React.ReactNode,
-    ): SectionItem | null => {
-      const label = t(labelKey, '')
-      const instruction = t(instructionKey, '')
-      if (!label || !instruction) return null
-      return { id, label, instruction, icon }
-    }
+    // Get custom quick actions from settings if available
+    const customActions = plugin.settings?.continuationOptions?.smartSpaceQuickActions
+    
+    if (customActions && customActions.length > 0) {
+      // Use custom actions
+      const enabledActions = customActions.filter(action => action.enabled)
+      
+      // Group actions by category
+      const categorizedActions = {
+        suggestions: [] as SectionItem[],
+        writing: [] as SectionItem[],
+        thinking: [] as SectionItem[],
+        custom: [] as SectionItem[],
+      }
+      
+      const iconMap = {
+        sparkles: Sparkles,
+        filetext: FileText,
+        listtodo: ListTodo,
+        workflow: Workflow,
+        table: Table,
+        penline: PenLine,
+        lightbulb: Lightbulb,
+        brain: Brain,
+        messagecircle: MessageCircle,
+      } as const
+      
+      for (const action of enabledActions) {
+        const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Sparkles
+        const item: SectionItem = {
+          id: action.id,
+          label: action.label,
+          instruction: action.instruction,
+          icon: <IconComponent className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+        }
+        const category = action.category || 'custom'
+        categorizedActions[category].push(item)
+      }
+      
+      const sections: Section[] = []
+      
+      const categoryTitles: Record<string, string> = {
+        suggestions: t('chat.customContinueSections.suggestions.title', '建议'),
+        writing: t('chat.customContinueSections.writing.title', '撰写'),
+        thinking: t('chat.customContinueSections.thinking.title', '思考 · 询问 · 对话'),
+        custom: t('chat.customContinueSections.custom.title', '自定义'),
+      }
+      
+      for (const [category, items] of Object.entries(categorizedActions)) {
+        if (items.length > 0) {
+          sections.push({
+            id: category,
+            title: categoryTitles[category] || category,
+            items,
+          })
+        }
+      }
+      
+      return sections
+    } else {
+      // Use default actions
+      const makeItem = (
+        id: string,
+        labelKey: string,
+        instructionKey: string,
+        icon: React.ReactNode,
+      ): SectionItem | null => {
+        const label = t(labelKey, '')
+        const instruction = t(instructionKey, '')
+        if (!label || !instruction) return null
+        return { id, label, instruction, icon }
+      }
 
-    const makeSection = (
-      id: string,
-      titleKey: string,
-      items: (SectionItem | null)[],
-    ): Section | null => {
-      const title = t(titleKey, '')
-      const resolvedItems = items.filter((item): item is SectionItem => !!item)
-      if (!title || resolvedItems.length === 0) return null
-      return { id, title, items: resolvedItems }
-    }
+      const makeSection = (
+        id: string,
+        titleKey: string,
+        items: (SectionItem | null)[],
+      ): Section | null => {
+        const title = t(titleKey, '')
+        const resolvedItems = items.filter((item): item is SectionItem => !!item)
+        if (!title || resolvedItems.length === 0) return null
+        return { id, title, items: resolvedItems }
+      }
 
-    return [
-      makeSection(
-        'suggestions',
-        'chat.customContinueSections.suggestions.title',
-        [
+      return [
+        makeSection(
+          'suggestions',
+          'chat.customContinueSections.suggestions.title',
+          [
+            makeItem(
+              'continue',
+              'chat.customContinueSections.suggestions.items.continue.label',
+              'chat.customContinueSections.suggestions.items.continue.instruction',
+              <Sparkles
+                className="smtcmp-custom-continue-item-icon-svg"
+                size={14}
+              />,
+            ),
+          ],
+        ),
+        makeSection('writing', 'chat.customContinueSections.writing.title', [
           makeItem(
-            'continue',
-            'chat.customContinueSections.suggestions.items.continue.label',
-            'chat.customContinueSections.suggestions.items.continue.instruction',
-            <Sparkles
+            'summarize',
+            'chat.customContinueSections.writing.items.summarize.label',
+            'chat.customContinueSections.writing.items.summarize.instruction',
+            <FileText
               className="smtcmp-custom-continue-item-icon-svg"
               size={14}
             />,
           ),
-        ],
-      ),
-      makeSection('writing', 'chat.customContinueSections.writing.title', [
-        makeItem(
-          'summarize',
-          'chat.customContinueSections.writing.items.summarize.label',
-          'chat.customContinueSections.writing.items.summarize.instruction',
-          <FileText
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-        makeItem(
-          'todo',
-          'chat.customContinueSections.writing.items.todo.label',
-          'chat.customContinueSections.writing.items.todo.instruction',
-          <ListTodo
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-        makeItem(
-          'flowchart',
-          'chat.customContinueSections.writing.items.flowchart.label',
-          'chat.customContinueSections.writing.items.flowchart.instruction',
-          <Workflow
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-        makeItem(
-          'table',
-          'chat.customContinueSections.writing.items.table.label',
-          'chat.customContinueSections.writing.items.table.instruction',
-          <Table className="smtcmp-custom-continue-item-icon-svg" size={14} />,
-        ),
-        makeItem(
-          'freewrite',
-          'chat.customContinueSections.writing.items.freewrite.label',
-          'chat.customContinueSections.writing.items.freewrite.instruction',
-          <PenLine
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-      ]),
-      makeSection('thinking', 'chat.customContinueSections.thinking.title', [
-        makeItem(
-          'brainstorm',
-          'chat.customContinueSections.thinking.items.brainstorm.label',
-          'chat.customContinueSections.thinking.items.brainstorm.instruction',
-          <Lightbulb
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-        makeItem(
-          'analyze',
-          'chat.customContinueSections.thinking.items.analyze.label',
-          'chat.customContinueSections.thinking.items.analyze.instruction',
-          <Brain className="smtcmp-custom-continue-item-icon-svg" size={14} />,
-        ),
-        makeItem(
-          'dialogue',
-          'chat.customContinueSections.thinking.items.dialogue.label',
-          'chat.customContinueSections.thinking.items.dialogue.instruction',
-          <MessageCircle
-            className="smtcmp-custom-continue-item-icon-svg"
-            size={14}
-          />,
-        ),
-      ]),
-    ].filter((section): section is Section => !!section)
-  }, [t])
+          makeItem(
+            'todo',
+            'chat.customContinueSections.writing.items.todo.label',
+            'chat.customContinueSections.writing.items.todo.instruction',
+            <ListTodo
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
+          ),
+          makeItem(
+            'flowchart',
+            'chat.customContinueSections.writing.items.flowchart.label',
+            'chat.customContinueSections.writing.items.flowchart.instruction',
+            <Workflow
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
+          ),
+          makeItem(
+            'table',
+            'chat.customContinueSections.writing.items.table.label',
+            'chat.customContinueSections.writing.items.table.instruction',
+            <Table className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+          ),
+          makeItem(
+            'freewrite',
+            'chat.customContinueSections.writing.items.freewrite.label',
+            'chat.customContinueSections.writing.items.freewrite.instruction',
+            <PenLine
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
+          ),
+        ]),
+        makeSection('thinking', 'chat.customContinueSections.thinking.title', [
+          makeItem(
+            'brainstorm',
+            'chat.customContinueSections.thinking.items.brainstorm.label',
+            'chat.customContinueSections.thinking.items.brainstorm.instruction',
+            <Lightbulb
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
+          ),
+          makeItem(
+            'analyze',
+            'chat.customContinueSections.thinking.items.analyze.label',
+            'chat.customContinueSections.thinking.items.analyze.instruction',
+            <Brain className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+          ),
+          makeItem(
+            'dialogue',
+            'chat.customContinueSections.thinking.items.dialogue.label',
+            'chat.customContinueSections.thinking.items.dialogue.instruction',
+            <MessageCircle
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
+          ),
+        ]),
+      ].filter((section): section is Section => !!section)
+    }
+  }, [t, plugin.settings])
 
   const handleSubmit = async (value?: string) => {
     if (isSubmitting) return

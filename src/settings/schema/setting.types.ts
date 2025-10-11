@@ -227,6 +227,17 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionOptions: tabCompletionOptionsSchema.optional(),
       // override system prompt for tab completion
       tabCompletionSystemPrompt: z.string().optional(),
+      // Smart Space custom quick actions
+      smartSpaceQuickActions: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          instruction: z.string(),
+          icon: z.string().optional(),
+          category: z.enum(['suggestions', 'writing', 'thinking', 'custom']).optional(),
+          enabled: z.boolean().default(true),
+        })
+      ).optional(),
     })
     .catch({
       enableSuperContinuation: true,
@@ -250,6 +261,7 @@ export const smartComposerSettingsSchema = z.object({
         DEFAULT_CHAT_MODELS[0].id,
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+      smartSpaceQuickActions: undefined,
     }),
 
   // Assistant list

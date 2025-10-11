@@ -370,6 +370,29 @@ export type TranslationKeys = {
       resetProvidersConfirm?: string
       resetProvidersSuccess?: string
     }
+    smartSpace?: {
+      quickActionsTitle: string
+      quickActionsDesc: string
+      addAction: string
+      resetToDefault: string
+      confirmReset: string
+      actionLabel: string
+      actionLabelDesc: string
+      actionLabelPlaceholder: string
+      actionInstruction: string
+      actionInstructionDesc: string
+      actionInstructionPlaceholder: string
+      actionCategory: string
+      actionCategoryDesc: string
+      actionIcon: string
+      actionIconDesc: string
+      actionEnabled: string
+      actionEnabledDesc: string
+      moveUp: string
+      moveDown: string
+      duplicate: string
+      disabled: string
+    }
     language: {
       title: string
       select: string
@@ -430,6 +453,9 @@ export type TranslationKeys = {
           analyze?: { label: string; instruction: string }
           dialogue?: { label: string; instruction: string }
         }
+      }
+      custom?: {
+        title: string
       }
     }
     showMore?: string

@@ -12,6 +12,7 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
+import { SmartSpaceQuickActionsSettings } from '../SmartSpaceQuickActionsSettings'
 
 type ContinuationSectionProps = {
   app: App
@@ -175,6 +176,10 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
           }}
         />
       </ObsidianSetting>
+
+      {enableSmartSpace && (
+        <SmartSpaceQuickActionsSettings />
+      )}
 
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.tabSubsectionTitle')}
