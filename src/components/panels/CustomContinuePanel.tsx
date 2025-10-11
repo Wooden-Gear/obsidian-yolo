@@ -458,15 +458,32 @@ export class CustomContinueWidget extends WidgetType {
     const viewportWidth = window.innerWidth
     const margin = 12
     const offsetY = 6
-    const maxPanelWidth = 420
-    const availableWidth = Math.max(120, viewportWidth - margin * 2)
-    const panelWidth = Math.min(maxPanelWidth, availableWidth)
+
+    const scrollDom = this.options.view.scrollDOM
+    const scrollRect = scrollDom?.getBoundingClientRect()
+    const sizer = scrollDom?.querySelector('.cm-sizer') as HTMLElement | null
+    const sizerRect = sizer?.getBoundingClientRect()
+
+    const fallbackWidth = parseInt(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--file-line-width') || '720',
+      10,
+    )
+
+    const editorContentWidth = sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
+    const panelWidth = Math.max(
+      120,
+      Math.min(editorContentWidth, viewportWidth - margin * 2),
+    )
+
+    const contentLeft = sizerRect?.left ?? scrollRect?.left ?? margin
+    const contentRight = contentLeft + editorContentWidth
 
     let left = anchorRect.left
-    if (left + panelWidth > viewportWidth - margin) {
-      left = viewportWidth - margin - panelWidth
-    }
-    if (left < margin) left = margin
+    left = Math.min(left, contentRight - panelWidth)
+    left = Math.max(left, contentLeft)
+    left = Math.min(left, viewportWidth - margin - panelWidth)
+    left = Math.max(left, margin)
 
     const top = anchorRect.bottom + offsetY
 

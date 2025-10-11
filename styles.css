@@ -3417,7 +3417,8 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-custom-continue-panel {
   position: relative;
-  width: min(var(--file-line-width, 720px), 92vw);
+  width: 100%;
+  max-width: min(var(--file-line-width, 720px), 92vw);
   display: flex;
   flex-direction: column;
   gap: 12px;
