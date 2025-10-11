@@ -198,22 +198,24 @@ function CustomContinuePanelBody({
     <div className="smtcmp-custom-continue-panel">
       {!isSubmitting ? (
         <>
-          <div className="smtcmp-custom-continue-header">
-            <div className="smtcmp-custom-continue-avatar">
-              <Sparkles size={16} />
+          <div className="smtcmp-custom-continue-input-card">
+            <div className="smtcmp-custom-continue-header">
+              <div className="smtcmp-custom-continue-avatar">
+                <Sparkles size={16} />
+              </div>
+              <input
+                ref={inputRef}
+                className="smtcmp-custom-continue-input"
+                placeholder={t(
+                  'chat.customContinuePromptPlaceholder',
+                  'Ask AI...',
+                )}
+                value={instruction}
+                onChange={(event) => setInstruction(event.target.value)}
+                onKeyDown={handleInputKeyDown}
+                disabled={isSubmitting}
+              />
             </div>
-            <input
-              ref={inputRef}
-              className="smtcmp-custom-continue-input"
-              placeholder={t(
-                'chat.customContinuePromptPlaceholder',
-                'Ask AI...',
-              )}
-              value={instruction}
-              onChange={(event) => setInstruction(event.target.value)}
-              onKeyDown={handleInputKeyDown}
-              disabled={isSubmitting}
-            />
           </div>
           {error && (
             <div className="smtcmp-custom-continue-error" role="alert">
@@ -221,35 +223,37 @@ function CustomContinuePanelBody({
             </div>
           )}
           {sections.length > 0 && (
-            <div className="smtcmp-custom-continue-section-list">
-              {sections.map((section) => (
-                <div
-                  className="smtcmp-custom-continue-section"
-                  key={section.id}
-                >
-                  <div className="smtcmp-custom-continue-section-title">
-                    {section.title}
+            <div className="smtcmp-custom-continue-section-card">
+              <div className="smtcmp-custom-continue-section-list">
+                {sections.map((section) => (
+                  <div
+                    className="smtcmp-custom-continue-section"
+                    key={section.id}
+                  >
+                    <div className="smtcmp-custom-continue-section-title">
+                      {section.title}
+                    </div>
+                    <div className="smtcmp-custom-continue-section-items">
+                      {section.items.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="smtcmp-custom-continue-item"
+                          onClick={() => void handleSubmit(item.instruction)}
+                          disabled={isSubmitting}
+                        >
+                          <span className="smtcmp-custom-continue-item-icon">
+                            {item.icon}
+                          </span>
+                          <span className="smtcmp-custom-continue-item-label">
+                            {item.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="smtcmp-custom-continue-section-items">
-                    {section.items.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="smtcmp-custom-continue-item"
-                        onClick={() => void handleSubmit(item.instruction)}
-                        disabled={isSubmitting}
-                      >
-                        <span className="smtcmp-custom-continue-item-icon">
-                          {item.icon}
-                        </span>
-                        <span className="smtcmp-custom-continue-item-label">
-                          {item.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </>
