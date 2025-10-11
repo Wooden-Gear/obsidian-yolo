@@ -37,7 +37,7 @@ export const en: TranslationKeys = {
   sidebar: {
     tabs: {
       chat: 'Chat',
-      composer: 'Composer',
+      composer: 'Sparkle',
     },
     composer: {
       title: 'Sparkle',
@@ -368,19 +368,17 @@ export const en: TranslationKeys = {
       continuationModel: 'Sparkle continuation model',
       continuationModelDesc:
         'Select the model used for continuation while Sparkle mode is enabled.',
+      smartSpaceDescription:
+        'Smart Space offers a lightweight floating composer while you write. By default it appears when you press Space on an empty line. Press Enter to submit and Esc to close.',
+      smartSpaceToggle: 'Enable Smart Space',
+      smartSpaceToggleDesc:
+        'When disabled, pressing Space will no longer summon the Smart Space floating composer.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc:
         'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: two spaces.',
       triggerKeyword: 'Trigger keyword',
       triggerKeywordDesc:
         'Continuation is triggered when the text immediately before the cursor equals this keyword (default: two spaces).',
-      floatingPanelKeywordTrigger:
-        'Enable keyword trigger for custom floating panel',
-      floatingPanelKeywordTriggerDesc:
-        'Open the "Custom Continue" floating panel when the specified keyword is detected in the editor.',
-      floatingPanelTriggerKeyword: 'Floating panel trigger keyword',
-      floatingPanelTriggerKeywordDesc:
-        'Open the "Custom Continue" floating panel when the text immediately before the cursor equals this keyword.',
       tabCompletion: 'Enable Tab completion',
       tabCompletionDesc:
         'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with Tab.',

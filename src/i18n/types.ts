@@ -323,14 +323,13 @@ export type TranslationKeys = {
       superContinuationDesc: string
       continuationModel: string
       continuationModelDesc: string
+      smartSpaceDescription: string
+      smartSpaceToggle: string
+      smartSpaceToggleDesc: string
       keywordTrigger: string
       keywordTriggerDesc: string
       triggerKeyword: string
       triggerKeywordDesc: string
-      floatingPanelKeywordTrigger: string
-      floatingPanelKeywordTriggerDesc: string
-      floatingPanelTriggerKeyword: string
-      floatingPanelTriggerKeywordDesc: string
       tabCompletion: string
       tabCompletionDesc: string
       tabCompletionModel: string

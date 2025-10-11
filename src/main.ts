@@ -264,6 +264,9 @@ export default class SmartComposerPlugin extends Plugin {
       customContinueWidgetField,
       EditorView.domEventHandlers({
         keydown: (event, view) => {
+          const smartSpaceEnabled =
+            this.settings.continuationOptions?.enableSmartSpace ?? true
+          if (!smartSpaceEnabled) return false
           if (event.defaultPrevented) return false
           if (event.key !== ' ') return false
           if (event.altKey || event.metaKey || event.ctrlKey) return false
@@ -1181,43 +1184,7 @@ export default class SmartComposerPlugin extends Plugin {
           const selection = editor.getSelection()
           const cursor = editor.getCursor()
 
-          // 1) Floating panel trigger (optional)
-          const enablePanel =
-            this.settings.continuationOptions
-              ?.enableFloatingPanelKeywordTrigger ?? false
-          const panelKeyword =
-            this.settings.continuationOptions?.floatingPanelTriggerKeyword ?? ''
-          if (enablePanel && panelKeyword && panelKeyword.length > 0) {
-            const klen = panelKeyword.length
-            const start = {
-              line: cursor.line,
-              ch: Math.max(0, cursor.ch - klen),
-            }
-            const before = editor.getRange(start, cursor)
-            if (before === panelKeyword) {
-              // remove keyword and open panel near caret
-              editor.replaceRange('', start, cursor)
-              {
-                const position = this.getCaretPanelPosition(editor, 8)
-                const hasSel = !!selection && selection.trim().length > 0
-                if (hasSel) {
-                  new CustomRewritePanel({
-                    plugin: this,
-                    editor,
-                    position,
-                  }).open()
-                } else {
-                  const view = this.getEditorView(editor)
-                  if (view) {
-                    this.showCustomContinueWidget(editor, view)
-                  }
-                }
-              }
-              return
-            }
-          }
-
-          // 2) Continuation trigger (inline)
+          // Continuation trigger (inline)
           if (!this.settings.continuationOptions?.enableKeywordTrigger) return
           // Only run inline continuation when there is NO selection
           if (selection && selection.length > 0) return

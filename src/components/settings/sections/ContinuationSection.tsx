@@ -32,9 +32,8 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
   const enableKeywordTrigger = Boolean(
     settings.continuationOptions.enableKeywordTrigger,
   )
-  const enableFloatingPanelKeywordTrigger = Boolean(
-    settings.continuationOptions.enableFloatingPanelKeywordTrigger,
-  )
+  const enableSmartSpace =
+    settings.continuationOptions.enableSmartSpace ?? true
   const enableTabCompletion = Boolean(
     settings.continuationOptions.enableTabCompletion,
   )
@@ -156,46 +155,26 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.customSubsectionTitle')}
       </div>
+      <div className="smtcmp-settings-desc smtcmp-settings-callout">
+        {t('settings.continuation.smartSpaceDescription')}
+      </div>
       <ObsidianSetting
-        name={t('settings.continuation.floatingPanelKeywordTrigger')}
-        desc={t('settings.continuation.floatingPanelKeywordTriggerDesc')}
+        name={t('settings.continuation.smartSpaceToggle')}
+        desc={t('settings.continuation.smartSpaceToggleDesc')}
       >
         <ObsidianToggle
-          value={enableFloatingPanelKeywordTrigger}
+          value={enableSmartSpace}
           onChange={async (value) => {
             await setSettings({
               ...settings,
               continuationOptions: {
                 ...settings.continuationOptions,
-                enableFloatingPanelKeywordTrigger: value,
+                enableSmartSpace: value,
               },
             })
           }}
         />
       </ObsidianSetting>
-
-      {enableFloatingPanelKeywordTrigger && (
-        <ObsidianSetting
-          name={t('settings.continuation.floatingPanelTriggerKeyword')}
-          desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
-        >
-          <ObsidianTextInput
-            value={
-              settings.continuationOptions.floatingPanelTriggerKeyword ?? ''
-            }
-            placeholder={''}
-            onChange={async (value) => {
-              await setSettings({
-                ...settings,
-                continuationOptions: {
-                  ...settings.continuationOptions,
-                  floatingPanelTriggerKeyword: value,
-                },
-              })
-            }}
-          />
-        </ObsidianSetting>
-      )}
 
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.tabSubsectionTitle')}

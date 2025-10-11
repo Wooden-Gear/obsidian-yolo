@@ -1916,9 +1916,15 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-settings-callout {
+  border: none;
   padding-inline-start: var(--size-4-2);
   border-inline-start: var(--blockquote-border-thickness) solid
     var(--blockquote-border-color);
+}
+
+.smtcmp-settings-callout + .setting-item {
+  border-top: none !important;
+  padding-top: 0 !important;
 }
 
 .smtcmp-settings-required::after {

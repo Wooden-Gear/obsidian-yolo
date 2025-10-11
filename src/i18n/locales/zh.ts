@@ -37,7 +37,7 @@ export const zh: TranslationKeys = {
   sidebar: {
     tabs: {
       chat: 'Chat',
-      composer: 'Composer',
+      composer: 'Sparkle',
     },
     composer: {
       title: 'Sparkle 模式',
@@ -348,18 +348,16 @@ export const zh: TranslationKeys = {
         '开启后，侧边栏将提供 Sparkle 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
       continuationModel: 'Sparkle 续写模型',
       continuationModelDesc: '指定在 Sparkle 模式下用于续写的模型。',
+      smartSpaceDescription:
+        'Smart Space 会在写作时提供一个轻量的悬浮输入框。默认在空白行按下空格时唤出，输入后按 Enter 提交，Esc 关闭。',
+      smartSpaceToggle: '启用 Smart Space',
+      smartSpaceToggleDesc: '当关闭时，空格将不再唤出 Smart Space 悬浮输入框。',
       keywordTrigger: '启用关键词触发AI续写',
       keywordTriggerDesc:
         '在编辑器中检测到指定关键词时自动触发续写。建议使用“两个空格”。',
       triggerKeyword: '触发关键词',
       triggerKeywordDesc:
         '当光标前的文本等于该关键词时触发续写（默认：两个空格）',
-      floatingPanelKeywordTrigger: '启用关键词触发自定义悬浮框',
-      floatingPanelKeywordTriggerDesc:
-        '在编辑器中检测到指定关键词时打开“自定义续写”的悬浮面板。',
-      floatingPanelTriggerKeyword: '悬浮框触发关键词',
-      floatingPanelTriggerKeywordDesc:
-        '当光标前的文本等于该关键词时打开“自定义续写”悬浮面板。',
       tabCompletion: '启用 Tab 补全',
       tabCompletionDesc:
         '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',
