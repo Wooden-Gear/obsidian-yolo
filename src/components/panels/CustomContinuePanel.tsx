@@ -30,6 +30,7 @@ function CustomContinuePanelBody({
   const plugin = usePlugin()
   const { t } = useLanguage()
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -237,6 +238,53 @@ function CustomContinuePanelBody({
     }
   }, [t, plugin.settings])
 
+  const totalItems = useMemo(
+    () => sections.reduce((sum, section) => sum + section.items.length, 0),
+    [sections],
+  )
+
+  useEffect(() => {
+    if (itemRefs.current.length !== totalItems) {
+      const nextRefs = new Array<HTMLButtonElement | null>(totalItems).fill(null)
+      for (let i = 0; i < totalItems; i += 1) {
+        nextRefs[i] = itemRefs.current[i] ?? null
+      }
+      itemRefs.current = nextRefs
+    }
+  }, [totalItems])
+
+  const focusFirstItem = () => {
+    for (const ref of itemRefs.current) {
+      if (ref && !ref.disabled) {
+        ref.focus()
+        return
+      }
+    }
+  }
+
+  const focusLastItem = () => {
+    for (let i = itemRefs.current.length - 1; i >= 0; i -= 1) {
+      const ref = itemRefs.current[i]
+      if (ref && !ref.disabled) {
+        ref.focus()
+        return
+      }
+    }
+  }
+
+  const moveFocus = (startIndex: number, direction: 1 | -1) => {
+    if (totalItems === 0) return
+    let nextIndex = startIndex
+    for (let i = 0; i < totalItems; i += 1) {
+      nextIndex = (nextIndex + direction + totalItems) % totalItems
+      const ref = itemRefs.current[nextIndex]
+      if (ref && !ref.disabled) {
+        ref.focus()
+        return
+      }
+    }
+  }
+
   const handleSubmit = async (value?: string) => {
     if (isSubmitting) return
     setIsSubmitting(true)
@@ -262,6 +310,34 @@ function CustomContinuePanelBody({
     if (event.key === 'Enter') {
       event.preventDefault()
       void handleSubmit()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+    } else if (event.key === 'ArrowDown') {
+      if (totalItems === 0) return
+      event.preventDefault()
+      focusFirstItem()
+    } else if (event.key === 'ArrowUp') {
+      if (totalItems === 0) return
+      event.preventDefault()
+      focusLastItem()
+    }
+  }
+
+  const handleItemKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+    instructionText: string,
+  ) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveFocus(index, 1)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveFocus(index, -1)
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      void handleSubmit(instructionText)
     } else if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
@@ -307,34 +383,47 @@ function CustomContinuePanelBody({
           {sections.length > 0 && (
             <div className="smtcmp-custom-continue-section-card">
               <div className="smtcmp-custom-continue-section-list">
-                {sections.map((section) => (
-                  <div
-                    className="smtcmp-custom-continue-section"
-                    key={section.id}
-                  >
-                    <div className="smtcmp-custom-continue-section-title">
-                      {section.title}
+                {(() => {
+                  let itemIndex = -1
+                  return sections.map((section) => (
+                    <div
+                      className="smtcmp-custom-continue-section"
+                      key={section.id}
+                    >
+                      <div className="smtcmp-custom-continue-section-title">
+                        {section.title}
+                      </div>
+                      <div className="smtcmp-custom-continue-section-items">
+                        {section.items.map((item) => {
+                          itemIndex += 1
+                          const currentIndex = itemIndex
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="smtcmp-custom-continue-item"
+                              onClick={() => void handleSubmit(item.instruction)}
+                              onKeyDown={(event) =>
+                                handleItemKeyDown(event, currentIndex, item.instruction)
+                              }
+                              disabled={isSubmitting}
+                              ref={(element) => {
+                                itemRefs.current[currentIndex] = element
+                              }}
+                            >
+                              <span className="smtcmp-custom-continue-item-icon">
+                                {item.icon}
+                              </span>
+                              <span className="smtcmp-custom-continue-item-label">
+                                {item.label}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                    <div className="smtcmp-custom-continue-section-items">
-                      {section.items.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className="smtcmp-custom-continue-item"
-                          onClick={() => void handleSubmit(item.instruction)}
-                          disabled={isSubmitting}
-                        >
-                          <span className="smtcmp-custom-continue-item-icon">
-                            {item.icon}
-                          </span>
-                          <span className="smtcmp-custom-continue-item-label">
-                            {item.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  ))
+                })()}
               </div>
             </div>
           )}
