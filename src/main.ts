@@ -1626,8 +1626,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       })
 
       const userInstruction = (customPrompt ?? '').trim()
-      const instructionSuffix = userInstruction
-        ? `\n\nInstruction: ${userInstruction}`
+      const instructionSection = userInstruction
+        ? `Instruction:\n${userInstruction}\n\n`
         : ''
 
       const systemPrompt =
@@ -1711,10 +1711,6 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         referenceRulesSection
       }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
       const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
-      const continueText =
-        hasSelection || hasContext
-          ? 'Continue writing from here.'
-          : 'Start writing this document.'
 
       const isBaseModel = Boolean((model as any).isBaseModel)
       const baseModelSpecialPrompt = (
@@ -1724,15 +1720,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
           : ''
-      const baseModelCoreContent = `${basePromptSection}${titleLine}${baseModelContextSection}`
-      const baseModelInstructionSuffix = userInstruction
-        ? `${baseModelCoreContent.trim().length > 0 ? '\n\n' : ''}Instruction: ${userInstruction}`
-        : ''
+      const baseModelCoreContent = `${basePromptSection}${titleLine}${instructionSection}${baseModelContextSection}`
 
-      const includeDefaultContinuationPrompt = !userInstruction
       const userMessageContent = isBaseModel
-        ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
-        : `${basePromptSection}${titleLine}${combinedContextSection}${includeDefaultContinuationPrompt ? continueText : ''}${instructionSuffix}`
+        ? `${baseModelCoreContent}`
+        : `${basePromptSection}${titleLine}${instructionSection}${combinedContextSection}`
 
       const requestMessages = [
         ...(isBaseModel
