@@ -16,6 +16,7 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
+import { getChatModelClient } from '../../core/llm/manager'
 import DotLoader from '../common/DotLoader'
 
 type CustomContinuePanelProps = {
@@ -34,10 +35,33 @@ function CustomContinuePanelBody({
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [useWebSearch, setUseWebSearch] = useState(false)
+  const [useUrlContext, setUseUrlContext] = useState(false)
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
   }, [])
+
+  // Check if current model supports Gemini tools
+  const hasGeminiTools = useMemo(() => {
+    try {
+      const superContinuationEnabled = Boolean(
+        plugin.settings?.continuationOptions?.enableSuperContinuation,
+      )
+      const continuationModelId = superContinuationEnabled
+        ? (plugin.settings?.continuationOptions?.continuationModelId ??
+          plugin.settings?.chatModelId)
+        : plugin.settings?.chatModelId
+
+      const { model } = getChatModelClient({
+        settings: plugin.settings,
+        modelId: continuationModelId,
+      })
+      return (model as any)?.toolType === 'gemini'
+    } catch {
+      return false
+    }
+  }, [plugin.settings])
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -291,9 +315,13 @@ function CustomContinuePanelBody({
     setError(null)
     const payload = (value ?? instruction).trim()
     try {
+      const geminiTools = hasGeminiTools
+        ? { useWebSearch, useUrlContext }
+        : undefined
       await plugin.continueWriting(
         editor,
         payload.length > 0 ? payload : undefined,
+        geminiTools,
       )
       onClose()
     } catch (err) {
@@ -373,6 +401,30 @@ function CustomContinuePanelBody({
                   </div>
                 )}
               </div>
+              {hasGeminiTools && (
+                <div className="smtcmp-custom-continue-tools">
+                  <button
+                    type="button"
+                    className={`smtcmp-custom-continue-tool-button ${ 
+                      useWebSearch ? 'active' : ''
+                    }`}
+                    onClick={() => setUseWebSearch(!useWebSearch)}
+                    title={t('chat.conversationSettings.webSearch', 'Web Search')}
+                  >
+                    {t('smartSpace.webSearch', '联网')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`smtcmp-custom-continue-tool-button ${
+                      useUrlContext ? 'active' : ''
+                    }`}
+                    onClick={() => setUseUrlContext(!useUrlContext)}
+                    title={t('chat.conversationSettings.urlContext', 'URL Context')}
+                  >
+                    {t('smartSpace.urlContext', 'URL')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {error && (

@@ -79,6 +79,12 @@ export type TranslationKeys = {
     }
   }
 
+  // Smart Space UI
+  smartSpace?: {
+    webSearch?: string
+    urlContext?: string
+  }
+
   // Settings
   settings: {
     title: string

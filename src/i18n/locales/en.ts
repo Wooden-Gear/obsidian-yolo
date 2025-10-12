@@ -81,6 +81,11 @@ export const en: TranslationKeys = {
     },
   },
 
+  smartSpace: {
+    webSearch: 'Web',
+    urlContext: 'URL',
+  },
+
   settings: {
     title: 'YOLO Settings',
     supportSmartComposer: {

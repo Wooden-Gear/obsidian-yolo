@@ -452,6 +452,11 @@ export const zh: TranslationKeys = {
     },
   },
 
+  smartSpace: {
+    webSearch: '联网',
+    urlContext: 'URL',
+  },
+
   chat: {
     placeholder: '询问关于你的库的任何问题...',
     sendMessage: '发送消息',

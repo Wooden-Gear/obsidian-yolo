@@ -1500,8 +1500,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   // Public wrapper for use in React modal
-  async continueWriting(editor: Editor, customPrompt?: string) {
-    return this.handleContinueWriting(editor, customPrompt)
+  async continueWriting(
+    editor: Editor,
+    customPrompt?: string,
+    geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+  ) {
+    return this.handleContinueWriting(editor, customPrompt, geminiTools)
   }
 
   // Public wrapper for use in React panel
@@ -1509,7 +1513,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     return this.handleCustomRewrite(editor, customPrompt)
   }
 
-  private async handleContinueWriting(editor: Editor, customPrompt?: string) {
+  private async handleContinueWriting(
+    editor: Editor,
+    customPrompt?: string,
+    geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+  ) {
     let controller: AbortController | null = null
     try {
       const notice = new Notice('Generating continuation...', 0)
@@ -1817,7 +1825,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         const streamIterator = await providerClient.streamResponse(
           model,
           { ...baseRequest, stream: true },
-          { signal: controller.signal },
+          { signal: controller.signal, geminiTools },
         )
 
         for await (const chunk of streamIterator) {
@@ -1833,7 +1841,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         const response = await providerClient.generateResponse(
           model,
           { ...baseRequest, stream: false },
-          { signal: controller.signal },
+          { signal: controller.signal, geminiTools },
         )
 
         const fullText = response.choices?.[0]?.message?.content ?? ''
