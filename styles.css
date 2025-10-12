@@ -3404,9 +3404,13 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-custom-continue-overlay {
   position: absolute;
-  pointer-events: auto;
+  pointer-events: none;
   z-index: 9999;
   animation: smtcmp-smart-space-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.smtcmp-custom-continue-overlay.closing {
+  animation: smtcmp-smart-space-fade-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 /* Smart Space 弹出动画 */
@@ -3418,6 +3422,18 @@ button.smtcmp-chat-input-model-select {
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* Smart Space 关闭动画 */
+@keyframes smtcmp-smart-space-fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
   }
 }
 
@@ -3448,6 +3464,7 @@ button.smtcmp-chat-input-model-select {
   flex-direction: column;
   gap: 12px;
   max-height: min(440px, 70vh);
+  pointer-events: none;
 }
 
 .smtcmp-custom-continue-input-card {
@@ -3458,6 +3475,7 @@ button.smtcmp-chat-input-model-select {
   overflow: visible;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s backwards;
+  pointer-events: auto;
 }
 
 .smtcmp-custom-continue-input-card:focus-within {
@@ -3565,6 +3583,7 @@ button.smtcmp-chat-input-model-select {
   width: min(420px, 100%);
   align-self: flex-start;
   animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+  pointer-events: auto;
 }
 
 .smtcmp-custom-continue-section-list {

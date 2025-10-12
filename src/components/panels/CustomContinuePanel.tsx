@@ -351,6 +351,7 @@ function CustomContinuePanelBody({
 
 export class CustomContinueWidget extends WidgetType {
   private static overlayRoot: HTMLElement | null = null
+  private static currentInstance: CustomContinueWidget | null = null
 
   private root: Root | null = null
   private overlayContainer: HTMLDivElement | null = null
@@ -359,6 +360,8 @@ export class CustomContinueWidget extends WidgetType {
   private cleanupCallbacks: (() => void)[] = []
   private rafId: number | null = null
   private resizeObserver: ResizeObserver | null = null
+  private isClosing: boolean = false
+  private closeAnimationTimeout: number | null = null
 
   constructor(
     private readonly options: {
@@ -381,6 +384,9 @@ export class CustomContinueWidget extends WidgetType {
     anchor.setAttribute('aria-hidden', 'true')
     this.anchor = anchor
 
+    // 保存当前实例的引用
+    CustomContinueWidget.currentInstance = this
+
     this.mountOverlay()
     this.setupGlobalListeners()
     this.schedulePositionUpdate()
@@ -389,6 +395,16 @@ export class CustomContinueWidget extends WidgetType {
   }
 
   destroy(): void {
+    // 清除当前实例引用
+    if (CustomContinueWidget.currentInstance === this) {
+      CustomContinueWidget.currentInstance = null
+    }
+
+    if (this.closeAnimationTimeout !== null) {
+      window.clearTimeout(this.closeAnimationTimeout)
+      this.closeAnimationTimeout = null
+    }
+
     if (this.cleanupListeners) {
       this.cleanupListeners()
       this.cleanupListeners = null
@@ -429,6 +445,31 @@ export class CustomContinueWidget extends WidgetType {
     return root
   }
 
+  // 静态方法：从外部触发当前实例的关闭动画
+  static closeCurrentWithAnimation(): boolean {
+    if (CustomContinueWidget.currentInstance) {
+      CustomContinueWidget.currentInstance.closeWithAnimation()
+      return true
+    }
+    return false
+  }
+
+  private closeWithAnimation = () => {
+    if (this.isClosing) return
+    this.isClosing = true
+
+    // 添加关闭动画类
+    if (this.overlayContainer) {
+      this.overlayContainer.classList.add('closing')
+    }
+
+    // 等待动画完成后执行真正的关闭
+    this.closeAnimationTimeout = window.setTimeout(() => {
+      this.closeAnimationTimeout = null
+      this.options.onClose()
+    }, 200) // 与 CSS 动画时长一致
+  }
+
   private mountOverlay() {
     const overlayRoot = CustomContinueWidget.getOverlayRoot()
     const overlayContainer = document.createElement('div')
@@ -442,7 +483,7 @@ export class CustomContinueWidget extends WidgetType {
         <LanguageProvider>
           <CustomContinuePanelBody
             editor={this.options.editor}
-            onClose={this.options.onClose}
+            onClose={this.closeWithAnimation}
           />
         </LanguageProvider>
       </PluginProvider>,
@@ -481,14 +522,14 @@ export class CustomContinueWidget extends WidgetType {
       if (!target) return
       if (this.overlayContainer?.contains(target)) return
       if (this.anchor?.contains(target)) return
-      this.options.onClose()
+      this.closeWithAnimation()
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
       event.stopPropagation()
-      this.options.onClose()
+      this.closeWithAnimation()
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
@@ -533,7 +574,7 @@ export class CustomContinueWidget extends WidgetType {
     )
 
     const editorContentWidth = sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
-    const panelWidth = Math.max(
+    const maxPanelWidth = Math.max(
       120,
       Math.min(editorContentWidth, viewportWidth - margin * 2),
     )
@@ -542,14 +583,14 @@ export class CustomContinueWidget extends WidgetType {
     const contentRight = contentLeft + editorContentWidth
 
     let left = anchorRect.left
-    left = Math.min(left, contentRight - panelWidth)
+    left = Math.min(left, contentRight - maxPanelWidth)
     left = Math.max(left, contentLeft)
-    left = Math.min(left, viewportWidth - margin - panelWidth)
+    left = Math.min(left, viewportWidth - margin - maxPanelWidth)
     left = Math.max(left, margin)
 
     const top = anchorRect.bottom + offsetY
 
-    this.overlayContainer.style.width = `${panelWidth}px`
+    this.overlayContainer.style.width = `${maxPanelWidth}px`
     this.overlayContainer.style.left = `${Math.round(left)}px`
     this.overlayContainer.style.top = `${Math.round(top)}px`
   }

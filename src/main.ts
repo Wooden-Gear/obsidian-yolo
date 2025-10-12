@@ -223,8 +223,19 @@ export default class SmartComposerPlugin extends Plugin {
   private closeCustomContinueWidget() {
     const state = this.customContinueWidgetState
     if (!state) return
+    
+    // 先清除状态，避免重复关闭
     this.customContinueWidgetState = null
-    state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+    
+    // 尝试触发关闭动画
+    const hasAnimation = CustomContinueWidget.closeCurrentWithAnimation()
+    
+    if (!hasAnimation) {
+      // 如果没有动画实例，直接分发关闭效果
+      state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+    }
+    // 如果有动画，widget 会在动画结束后自己调用 onClose 来分发关闭效果
+    
     state.view.focus()
   }
 
@@ -235,7 +246,10 @@ export default class SmartComposerPlugin extends Plugin {
     this.closeCustomContinueWidget()
 
     const close = () => {
-      if (this.customContinueWidgetState?.view !== view) return
+      // 检查是否是当前的 widget（允许状态为 null，因为可能在动画期间被清除）
+      if (this.customContinueWidgetState && this.customContinueWidgetState.view !== view) {
+        return
+      }
       this.customContinueWidgetState = null
       view.dispatch({ effects: customContinueWidgetEffect.of(null) })
       view.focus()
