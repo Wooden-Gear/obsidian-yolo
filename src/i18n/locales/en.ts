@@ -58,15 +58,15 @@ export const en: TranslationKeys = {
         },
         model: {
           title: 'Model Selection',
-          desc: 'Choose which model handles continuation tasks.',
+          desc: 'Choose which model powers Sparkle tasks.',
         },
         parameters: {
           title: 'Parameters',
-          desc: 'Core toggles that control continuation behavior.',
+          desc: 'Adjust parameters for the model used by Sparkle.',
         },
         context: {
           title: 'Context Management',
-          desc: 'Define the content sources prioritized for continuation.',
+          desc: 'Prioritize the content sources referenced when Sparkle runs.',
         },
       },
       continuationPrompt: 'Continuation system prompt',
