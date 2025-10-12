@@ -3714,34 +3714,34 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-custom-continue-tool-button {
-  padding: 4px 10px;
-  font-size: var(--font-ui-smaller);
-  font-weight: var(--font-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   color: var(--text-muted);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   border-radius: var(--radius-s);
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
-  line-height: 1.2;
 }
 
 .smtcmp-custom-continue-tool-button:hover {
   color: var(--text-normal);
-  background: var(--background-modifier-hover);
-  border-color: var(--background-modifier-border-hover);
+  background: transparent;
 }
 
 .smtcmp-custom-continue-tool-button.active {
-  color: var(--text-on-accent);
-  background: var(--interactive-accent);
-  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+  background: transparent;
 }
 
 .smtcmp-custom-continue-tool-button.active:hover {
-  background: var(--interactive-accent-hover);
-  border-color: var(--interactive-accent-hover);
+  color: var(--interactive-accent-hover);
+  background: transparent;
 }
 
 /* Floating Panel */

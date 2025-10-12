@@ -2,7 +2,9 @@ import { EditorView, WidgetType } from '@codemirror/view'
 import {
   Brain,
   FileText,
+  Globe,
   Lightbulb,
+  Link,
   ListTodo,
   MessageCircle,
   PenLine,
@@ -410,8 +412,9 @@ function CustomContinuePanelBody({
                     }`}
                     onClick={() => setUseWebSearch(!useWebSearch)}
                     title={t('chat.conversationSettings.webSearch', 'Web Search')}
+                    aria-label={t('chat.conversationSettings.webSearch', 'Web Search')}
                   >
-                    {t('smartSpace.webSearch', '联网')}
+                    <Globe size={14} />
                   </button>
                   <button
                     type="button"
@@ -420,8 +423,9 @@ function CustomContinuePanelBody({
                     }`}
                     onClick={() => setUseUrlContext(!useUrlContext)}
                     title={t('chat.conversationSettings.urlContext', 'URL Context')}
+                    aria-label={t('chat.conversationSettings.urlContext', 'URL Context')}
                   >
-                    {t('smartSpace.urlContext', 'URL')}
+                    <Link size={14} />
                   </button>
                 </div>
               )}
