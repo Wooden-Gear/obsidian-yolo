@@ -1,6 +1,6 @@
 import { PGlite } from '@electric-sql/pglite'
 import { PgliteDatabase, drizzle } from 'drizzle-orm/pglite'
-import { App, normalizePath, requestUrl } from 'obsidian'
+import { App, normalizePath } from 'obsidian'
 
 import { PGLITE_DB_PATH } from '../constants'
 
@@ -191,22 +191,24 @@ export class DatabaseManager {
     vectorExtensionBundlePath: URL
   }> {
     try {
-      const PGLITE_VERSION = '0.2.12'
-      const [fsBundleResponse, wasmResponse] = await Promise.all([
-        requestUrl(
-          `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/postgres.data`,
-        ),
-        requestUrl(
-          `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/postgres.wasm`,
-        ),
-      ])
+      const basePath = this.app.vault.adapter.getResourcePath(
+        normalizePath('vendor/pglite'),
+      )
 
-      const fsBundle = new Blob([fsBundleResponse.arrayBuffer], {
+      const fsResponse = await fetch(`${basePath}/postgres.data`)
+      const wasmResponse = await fetch(`${basePath}/postgres.wasm`)
+      if (!fsResponse.ok || !wasmResponse.ok) {
+        throw new Error('Failed to load PGlite assets from local bundle')
+      }
+
+      const fsBundle = new Blob([await fsResponse.arrayBuffer()], {
         type: 'application/octet-stream',
       })
-      const wasmModule = await WebAssembly.compile(wasmResponse.arrayBuffer)
+      const wasmModule = await WebAssembly.compile(
+        await wasmResponse.arrayBuffer(),
+      )
       const vectorExtensionBundlePath = new URL(
-        `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/vector.tar.gz`,
+        `${basePath}/vector.tar.gz`,
       )
 
       return { fsBundle, wasmModule, vectorExtensionBundlePath }
