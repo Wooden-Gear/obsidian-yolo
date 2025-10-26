@@ -195,8 +195,15 @@ export class DatabaseManager {
         normalizePath('vendor/pglite'),
       )
 
-      const fsResponse = await fetch(`${basePath}/postgres.data`)
-      const wasmResponse = await fetch(`${basePath}/postgres.wasm`)
+      const baseUrl = new URL(basePath)
+      const fsUrl = new URL(baseUrl.href)
+      fsUrl.pathname += '/postgres.data'
+      
+      const wasmUrl = new URL(baseUrl.href)
+      wasmUrl.pathname += '/postgres.wasm'
+
+      const fsResponse = await fetch(fsUrl.toString())
+      const wasmResponse = await fetch(wasmUrl.toString())
       if (!fsResponse.ok || !wasmResponse.ok) {
         throw new Error('Failed to load PGlite assets from local bundle')
       }
@@ -207,9 +214,8 @@ export class DatabaseManager {
       const wasmModule = await WebAssembly.compile(
         await wasmResponse.arrayBuffer(),
       )
-      const vectorExtensionBundlePath = new URL(
-        `${basePath}/vector.tar.gz`,
-      )
+      const vectorExtensionBundlePath = new URL(baseUrl.href)
+      vectorExtensionBundlePath.pathname += '/vector.tar.gz'
 
       return { fsBundle, wasmModule, vectorExtensionBundlePath }
     } catch (error) {
