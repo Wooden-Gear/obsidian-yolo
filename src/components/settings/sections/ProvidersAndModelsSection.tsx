@@ -683,7 +683,9 @@ export function ProvidersAndModelsSection({
                           {embeddingModels.map((model) => (
                             <tr key={model.id}>
                               <td></td>
-                              <td title={model.id}>{model.id}</td>
+                              <td title={model.id}>
+                                {(model as any).name || model.model || model.id}
+                              </td>
                               <td title={model.model}>{model.model}</td>
                               <td>{model.dimension}</td>
                               <td>

@@ -46,15 +46,17 @@ function EditEmbeddingModelModalComponent({
   const [formData, setFormData] = useState<{
     id: string
     model: string
+    name: string | undefined
     dimension: string
   }>({
     id: model.id,
     model: model.model,
+    name: (model as any).name,
     dimension: model.dimension?.toString() || '',
   })
 
   const handleSubmit = async () => {
-    if (!formData.id.trim() || !formData.model.trim()) {
+    if (!formData.model.trim()) {
       new Notice(t('common.error'))
       return
     }
@@ -77,20 +79,13 @@ function EditEmbeddingModelModalComponent({
         return
       }
 
-      // Check if new ID already exists (and it's not the current model)
-      if (
-        formData.id !== model.id &&
-        embeddingModels.some((m) => m.id === formData.id)
-      ) {
-        new Notice('Model ID already exists')
-        return
-      }
-
-      // Update the model
+      // Update the model (keep the original ID, don't allow editing it for existing models)
       embeddingModels[modelIndex] = {
         ...embeddingModels[modelIndex],
-        id: formData.id,
         model: formData.model,
+        name: formData.name && formData.name.trim().length > 0
+          ? formData.name
+          : formData.model,
         dimension: dimension!,
       }
 
@@ -109,24 +104,26 @@ function EditEmbeddingModelModalComponent({
 
   return (
     <>
+      {/* Display name */}
+      <ObsidianSetting name={t('settings.models.modelName')}>
+        <ObsidianTextInput
+          value={formData.name ?? ''}
+          placeholder={t('settings.models.modelNamePlaceholder')}
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+        />
+      </ObsidianSetting>
+
+      {/* Model calling ID */}
       <ObsidianSetting
         name={t('settings.models.modelId')}
         desc={t('settings.models.modelIdDesc')}
         required
       >
         <ObsidianTextInput
-          value={formData.id}
-          placeholder={t('settings.models.modelIdPlaceholder')}
-          onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, id: value }))
-          }
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting name={t('settings.models.modelName')} required>
-        <ObsidianTextInput
           value={formData.model}
-          placeholder={t('settings.models.modelNamePlaceholder')}
+          placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, model: value }))
           }

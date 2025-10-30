@@ -12,6 +12,10 @@ import {
   embeddingModelSchema,
 } from '../../../types/embedding-model.types'
 import { LLMProvider } from '../../../types/provider.types'
+import {
+  generateModelId,
+  ensureUniqueModelId,
+} from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
@@ -58,6 +62,7 @@ function AddEmbeddingModelModalComponent({
     providerType: initialProviderType,
     id: '',
     model: '',
+    name: undefined,
   })
 
   // Auto-fetch available models via OpenAI-compatible GET /v1/models
@@ -219,11 +224,10 @@ function AddEmbeddingModelModalComponent({
 
   const handleSubmit = async () => {
     try {
-      if (plugin.settings.embeddingModels.some((p) => p.id === formData.id)) {
-        throw new Error(
-          'Model with this ID already exists. Try a different ID.',
-        )
-      }
+      // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
+      const baseInternalId = generateModelId(formData.providerId, formData.model)
+      const existingIds = plugin.settings.embeddingModels.map((m) => m.id)
+      const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
 
       if (
         !plugin.settings.providers.some(
@@ -268,6 +272,11 @@ function AddEmbeddingModelModalComponent({
 
       const embeddingModel: EmbeddingModel = {
         ...formData,
+        id: modelIdWithPrefix,
+        name:
+          formData.name && formData.name.trim().length > 0
+            ? formData.name
+            : formData.model,
         dimension,
       }
 
@@ -311,40 +320,38 @@ function AddEmbeddingModelModalComponent({
           value={formData.model || ''}
           options={Object.fromEntries(availableModels.map((m) => [m, m]))}
           onChange={(value: string) => {
-            // When a model is selected, set both model name and generate ID
+            // When a model is selected, set API model id; if display name empty, prefill with the same
             setFormData((prev) => ({
               ...prev,
               model: value,
-              id:
-                prev.id && prev.id.trim().length > 0
-                  ? prev.id
-                  : value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+              name:
+                prev.name && prev.name.trim().length > 0 ? prev.name : value,
             }))
           }}
           disabled={loadingModels || availableModels.length === 0}
         />
       </ObsidianSetting>
 
+      {/* Display name (moved right below modelId) */}
+      <ObsidianSetting name={t('settings.models.modelName')}>
+        <ObsidianTextInput
+          value={formData.name ?? ''}
+          placeholder={t('settings.models.modelNamePlaceholder')}
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+        />
+      </ObsidianSetting>
+
+      {/* Model calling ID */}
       <ObsidianSetting
         name={t('settings.models.modelId')}
         desc={t('settings.models.modelIdDesc')}
         required
       >
         <ObsidianTextInput
-          value={formData.id}
-          placeholder="my-custom-embedding-model"
-          onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, id: value }))
-          }
-        />
-      </ObsidianSetting>
-
-      {/* Provider is derived from the current group context; field removed intentionally */}
-
-      <ObsidianSetting name={t('settings.models.modelName')} required>
-        <ObsidianTextInput
           value={formData.model}
-          placeholder={t('settings.models.modelNamePlaceholder')}
+          placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, model: value }))
           }
