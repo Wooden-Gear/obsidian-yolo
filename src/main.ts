@@ -27,7 +27,6 @@ import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
 import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
-import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
@@ -1160,49 +1159,6 @@ export default class SmartComposerPlugin extends Plugin {
     this.addSettingTab(new SmartComposerSettingTab(this.app, this))
 
     // removed templates JSON migration
-
-    // Editor context menu: AI Continue Writing
-    this.registerEvent(
-      this.app.workspace.on('editor-menu', (menu, editor) => {
-        const hasSelection = (() => {
-          try {
-            const sel = editor?.getSelection?.()
-            return !!sel && sel.trim().length > 0
-          } catch {
-            return false
-          }
-        })()
-
-        // Custom continuation via floating panel
-        menu.addItem((item) =>
-          item
-            .setTitle(this.t('commands.customContinueWriting'))
-            .setIcon('wand-sparkles')
-            .onClick(() => {
-              const view = this.getEditorView(editor)
-              if (!view) return
-              this.showCustomContinueWidget(editor, view)
-            }),
-        )
-
-        // Custom rewrite via floating panel (only when there is a selection)
-        if (hasSelection) {
-          menu.addItem((item) =>
-            item
-              .setTitle(this.t('commands.customRewrite'))
-              .setIcon('wand-sparkles')
-              .onClick(() => {
-                const position = this.getCaretPanelPosition(editor, 8)
-                new CustomRewritePanel({
-                  plugin: this,
-                  editor,
-                  position,
-                }).open()
-              }),
-          )
-        }
-      }),
-    )
 
     // Keyword triggers: floating panel (custom continue) and inline continuation
     this.registerEvent(
