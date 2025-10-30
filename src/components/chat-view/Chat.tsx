@@ -171,13 +171,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     settings.chatOptions.enableLearningMode ?? false,
   )
 
-  const superContinuationEnabled = Boolean(
-    settings.continuationOptions.enableSuperContinuation,
-  )
-  const activeView = superContinuationEnabled
-    ? (props.activeView ?? 'chat')
-    : 'chat'
-  const onChangeView = superContinuationEnabled ? props.onChangeView : undefined
+  const activeView = props.activeView ?? 'chat'
+  const onChangeView = props.onChangeView
 
   const viewLabel =
     activeView === 'composer'
@@ -769,7 +764,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         <ViewToggle
           activeView={activeView}
           onChangeView={onChangeView}
-          disabled={!superContinuationEnabled}
+          disabled={false}
         />
       ) : (
         <h1 className="smtcmp-chat-header-title">{viewLabel}</h1>
@@ -829,7 +824,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     </div>
   )
 
-  if (superContinuationEnabled && activeView === 'composer') {
+  if (activeView === 'composer') {
     return (
       <div className="smtcmp-chat-container">
         {header}

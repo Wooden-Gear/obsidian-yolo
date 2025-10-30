@@ -20,6 +20,7 @@ import {
   TAbstractFile,
   TFile,
   TFolder,
+  normalizePath,
 } from 'obsidian'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
@@ -158,8 +159,8 @@ export default class SmartComposerPlugin extends Plugin {
   private dbManagerInitPromise: Promise<DatabaseManager> | null = null
   private ragEngineInitPromise: Promise<RAGEngine> | null = null
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
+  private pgliteResourcePath?: string
   private isContinuationInProgress = false
-  private continuationTriggerKeyword = 'cc'
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()
@@ -194,6 +195,17 @@ export default class SmartComposerPlugin extends Plugin {
     pos: number
     close: () => void
   } | null = null
+
+  private resolvePgliteResourcePath(): string {
+    if (!this.pgliteResourcePath) {
+      const pluginFolder = this.manifest.dir ?? this.manifest.id
+      const configDir = this.app.vault.configDir
+      this.pgliteResourcePath = normalizePath(
+        `${configDir}/plugins/${pluginFolder}/vendor/pglite`,
+      )
+    }
+    return this.pgliteResourcePath
+  }
 
   // Compute a robust panel anchor position just below the caret line
   private getCaretPanelPosition(
@@ -894,13 +906,9 @@ export default class SmartComposerPlugin extends Plugin {
         stream: streamPreference,
       } = this.resolveContinuationParams(sidebarOverrides)
 
-      const superContinuationEnabled = Boolean(
-        this.settings.continuationOptions?.enableSuperContinuation,
-      )
-      const rewriteModelId = superContinuationEnabled
-        ? (this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId)
-        : (this.getActiveConversationModelId() ?? this.settings.chatModelId)
+      const rewriteModelId =
+        this.settings.continuationOptions?.continuationModelId ??
+        this.settings.chatModelId
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -1024,17 +1032,6 @@ export default class SmartComposerPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings()
-    // initialize keyword from settings
-    this.continuationTriggerKeyword =
-      this.settings.continuationOptions?.triggerKeyword ??
-      this.continuationTriggerKeyword
-
-    // keep keyword in sync with settings changes
-    this.addSettingsChangeListener((newSettings) => {
-      this.continuationTriggerKeyword =
-        newSettings.continuationOptions?.triggerKeyword ??
-        this.continuationTriggerKeyword
-    })
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
@@ -1160,42 +1157,14 @@ export default class SmartComposerPlugin extends Plugin {
 
     // removed templates JSON migration
 
-    // Keyword triggers: floating panel (custom continue) and inline continuation
+    // Handle tab completion trigger
     this.registerEvent(
       this.app.workspace.on('editor-change', (editor) => {
         try {
           if (!editor) return
           this.handleTabCompletionEditorChange(editor)
-          if (this.isContinuationInProgress) return
-          const selection = editor.getSelection()
-          const cursor = editor.getCursor()
-
-          // Continuation trigger (inline)
-          if (!this.settings.continuationOptions?.enableKeywordTrigger) return
-          // Only run inline continuation when there is NO selection
-          if (selection && selection.length > 0) return
-          const keyword =
-            this.settings.continuationOptions?.triggerKeyword ??
-            this.continuationTriggerKeyword
-          if (!keyword || keyword.length === 0) return
-          const keyLen = keyword.length
-          const start = {
-            line: cursor.line,
-            ch: Math.max(0, cursor.ch - keyLen),
-          }
-          const before = editor.getRange(start, cursor)
-          if (before === keyword) {
-            // Mark in-progress first to suppress re-entrancy from subsequent editor-change
-            this.isContinuationInProgress = true
-            // Remove the trigger keyword before starting streaming continuation
-            editor.replaceRange('', start, cursor)
-            // Defer continuation to next tick to avoid interfering with current input transaction
-            setTimeout(() => {
-              void this.handleContinueWriting(editor)
-            }, 0)
-          }
         } catch (err) {
-          console.error('Keyword trigger error:', err)
+          console.error('Editor change handler error:', err)
         }
       }),
     )
@@ -1328,7 +1297,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     if (!this.dbManagerInitPromise) {
       this.dbManagerInitPromise = (async () => {
         try {
-          this.dbManager = await DatabaseManager.create(this.app)
+          this.dbManager = await DatabaseManager.create(
+            this.app,
+            this.resolvePgliteResourcePath(),
+          )
           return this.dbManager
         } catch (error) {
           this.dbManagerInitPromise = null
@@ -1568,13 +1540,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             ? ''
             : baseContext
 
-      const superContinuationEnabled = Boolean(
-        this.settings.continuationOptions?.enableSuperContinuation,
-      )
-      const continuationModelId = superContinuationEnabled
-        ? (this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId)
-        : (this.getActiveConversationModelId() ?? this.settings.chatModelId)
+      const continuationModelId =
+        this.settings.continuationOptions?.continuationModelId ??
+        this.settings.chatModelId
 
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1595,10 +1563,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         : ''
 
       const systemPrompt =
-        this.settings.continuationOptions?.defaultSystemPrompt?.trim() &&
-        this.settings.continuationOptions.defaultSystemPrompt.trim().length > 0
-          ? this.settings.continuationOptions.defaultSystemPrompt.trim()
-          : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
+        'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
 
       const activeFileForTitle = this.app.workspace.getActiveFile()
       const fileTitle = activeFileForTitle?.basename?.trim() ?? ''

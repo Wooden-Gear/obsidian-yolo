@@ -47,13 +47,9 @@ function CustomContinuePanelBody({
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
     try {
-      const superContinuationEnabled = Boolean(
-        plugin.settings?.continuationOptions?.enableSuperContinuation,
-      )
-      const continuationModelId = superContinuationEnabled
-        ? (plugin.settings?.continuationOptions?.continuationModelId ??
-          plugin.settings?.chatModelId)
-        : plugin.settings?.chatModelId
+      const continuationModelId =
+        plugin.settings?.continuationOptions?.continuationModelId ??
+        plugin.settings?.chatModelId
 
       const { model } = getChatModelClient({
         settings: plugin.settings,

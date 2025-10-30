@@ -386,9 +386,9 @@ export const zh: TranslationKeys = {
       aiSubsectionTitle: '超级续写',
       customSubsectionTitle: 'Smart Space',
       tabSubsectionTitle: 'Tab 补全',
-      superContinuation: '超级续写',
+      superContinuation: '启用 Sparkle 视图',
       superContinuationDesc:
-        '开启后，侧边栏将提供 Sparkle 视图，可为续写配置模型、规则与参考范围。关闭后，仅保留 Chat 视图并使用当前聊天模型。',
+        '开启后，侧边栏将提供 Sparkle 视图，可为续写配置专用模型、参数、规则与参考范围。关闭后，仅保留 Chat 视图。',
       continuationModel: 'Sparkle 续写模型',
       continuationModelDesc: '指定在 Sparkle 模式下用于续写的模型。',
       smartSpaceDescription:
@@ -486,7 +486,7 @@ export const zh: TranslationKeys = {
         items: {
           continue: {
             label: '继续编写',
-            instruction: '请继续扩展当前段落，保持原有语气与风格。',
+            instruction: '您是一位乐于助人的写作助理。请根据提供的上下文继续写作，不要重复或转述上下文。保持语气、语言和风格一致。只输出续写文本。',
           },
         },
       },

@@ -103,7 +103,7 @@ const DEFAULT_ACTION_CONFIGS: DefaultActionConfig[] = [
     labelFallback: '继续编写',
     instructionKey:
       'chat.customContinueSections.suggestions.items.continue.instruction',
-    instructionFallback: '请继续扩展当前段落，保持原有语气与风格。',
+    instructionFallback: 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
   },
   {
     id: 'summarize',

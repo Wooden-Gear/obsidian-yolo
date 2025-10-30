@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { PgliteDatabase, drizzle } from 'drizzle-orm/pglite'
 import { App, normalizePath } from 'obsidian'
 
-import { PGLITE_DB_PATH } from '../constants'
+import { PGLITE_DB_PATH, PLUGIN_ID } from '../constants'
 
 import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
@@ -11,6 +11,7 @@ import { VectorManager } from './modules/vector/VectorManager'
 export class DatabaseManager {
   private app: App
   private dbPath: string
+  private pgliteResourcePath: string
   private pgClient: PGlite | null = null
   private db: PgliteDatabase | null = null
   // WeakMap to prevent circular references
@@ -19,13 +20,21 @@ export class DatabaseManager {
     { vectorManager?: VectorManager }
   >()
 
-  constructor(app: App, dbPath: string) {
+  constructor(app: App, dbPath: string, pgliteResourcePath: string) {
     this.app = app
     this.dbPath = dbPath
+    this.pgliteResourcePath = normalizePath(pgliteResourcePath)
   }
 
-  static async create(app: App): Promise<DatabaseManager> {
-    const dbManager = new DatabaseManager(app, normalizePath(PGLITE_DB_PATH))
+  static async create(
+    app: App,
+    pgliteResourcePath: string,
+  ): Promise<DatabaseManager> {
+    const dbManager = new DatabaseManager(
+      app,
+      normalizePath(PGLITE_DB_PATH),
+      pgliteResourcePath,
+    )
     dbManager.db = await dbManager.loadExistingDatabase()
     if (!dbManager.db) {
       dbManager.db = await dbManager.createNewDatabase()
@@ -191,33 +200,84 @@ export class DatabaseManager {
     vectorExtensionBundlePath: URL
   }> {
     try {
-      const basePath = this.app.vault.adapter.getResourcePath(
-        normalizePath('vendor/pglite'),
-      )
+      const candidateBaseUrls: URL[] = []
+      const seen = new Set<string>()
 
-      const baseUrl = new URL(basePath)
-      const fsUrl = new URL(baseUrl.href)
-      fsUrl.pathname += '/postgres.data'
-      
-      const wasmUrl = new URL(baseUrl.href)
-      wasmUrl.pathname += '/postgres.wasm'
-
-      const fsResponse = await fetch(fsUrl.toString())
-      const wasmResponse = await fetch(wasmUrl.toString())
-      if (!fsResponse.ok || !wasmResponse.ok) {
-        throw new Error('Failed to load PGlite assets from local bundle')
+      const addCandidateUrl = (candidate: string | URL | null | undefined) => {
+        if (!candidate) {
+          return
+        }
+        try {
+          const url =
+            candidate instanceof URL ? candidate : new URL(candidate)
+          const key = url.href.endsWith('/') ? url.href : `${url.href}/`
+          if (!seen.has(key)) {
+            seen.add(key)
+            candidateBaseUrls.push(
+              url.href.endsWith('/') ? url : new URL(key),
+            )
+          }
+        } catch {
+          // ignore invalid candidate
+        }
       }
 
-      const fsBundle = new Blob([await fsResponse.arrayBuffer()], {
-        type: 'application/octet-stream',
-      })
-      const wasmModule = await WebAssembly.compile(
-        await wasmResponse.arrayBuffer(),
-      )
-      const vectorExtensionBundlePath = new URL(baseUrl.href)
-      vectorExtensionBundlePath.pathname += '/vector.tar.gz'
+      const addFromResourcePath = (path: string | undefined) => {
+        if (!path) {
+          return
+        }
+        try {
+          addCandidateUrl(this.app.vault.adapter.getResourcePath(path))
+        } catch {
+          // ignore adapter resolution failures
+        }
+      }
 
-      return { fsBundle, wasmModule, vectorExtensionBundlePath }
+      addFromResourcePath(this.pgliteResourcePath)
+      addFromResourcePath(
+        normalizePath(
+          `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/vendor/pglite`,
+        ),
+      )
+      addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
+
+      let lastError: unknown = null
+
+      for (const baseUrl of candidateBaseUrls) {
+        try {
+          const fsUrl = new URL('postgres.data', baseUrl)
+          const wasmUrl = new URL('postgres.wasm', baseUrl)
+
+          const [fsResponse, wasmResponse] = await Promise.all([
+            fetch(fsUrl.href),
+            fetch(wasmUrl.href),
+          ])
+
+          if (!fsResponse.ok || !wasmResponse.ok) {
+            lastError = new Error(
+              'Failed to load PGlite assets from local bundle',
+            )
+            continue
+          }
+
+          const fsBundle = new Blob([await fsResponse.arrayBuffer()], {
+            type: 'application/octet-stream',
+          })
+          const wasmModule = await WebAssembly.compile(
+            await wasmResponse.arrayBuffer(),
+          )
+          const vectorExtensionBundlePath = new URL('vector.tar.gz', baseUrl)
+
+          return { fsBundle, wasmModule, vectorExtensionBundlePath }
+        } catch (error) {
+          lastError = error
+        }
+      }
+
+      if (lastError) {
+        throw lastError
+      }
+      throw new Error('Failed to resolve PGlite bundle path')
     } catch (error) {
       console.error('Error loading PGlite resources:', error)
       throw error

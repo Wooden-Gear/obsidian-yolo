@@ -410,9 +410,9 @@ export const en: TranslationKeys = {
       aiSubsectionTitle: 'Super Continuation',
       customSubsectionTitle: 'Smart Space',
       tabSubsectionTitle: 'Tab Completion',
-      superContinuation: 'Super Continuation',
+      superContinuation: 'Enable Sparkle View',
       superContinuationDesc:
-        'Enable to unlock the Sparkle sidebar view where you can configure dedicated continuation models, rules, and reference sources. When disabled, only the Chat view is available and continuation reuses the current chat model.',
+        'Enable the Sparkle sidebar view where you can configure dedicated continuation models, parameters, rules, and reference sources. When disabled, only the Chat view is available.',
       continuationModel: 'Sparkle continuation model',
       continuationModelDesc:
         'Select the model used for continuation while Sparkle mode is enabled.',
@@ -516,7 +516,7 @@ export const en: TranslationKeys = {
           continue: {
             label: 'Continue writing',
             instruction:
-              'Continue the current passage and keep the tone consistent.',
+              'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
           },
         },
       },

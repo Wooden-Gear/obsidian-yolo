@@ -46,9 +46,6 @@ const Composer: React.FC<ComposerProps> = (_props) => {
     settings.continuationOptions.continuationModelId ??
     orderedEnabledModels[0]?.id ??
     settings.chatModelId
-  const enableSuperContinuation = Boolean(
-    settings.continuationOptions.enableSuperContinuation,
-  )
   const continuationTemperature = settings.continuationOptions.temperature
   const continuationTopP = settings.continuationOptions.topP
   const continuationStreamEnabled = settings.continuationOptions.stream ?? true
@@ -96,7 +93,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
             <div className="smtcmp-composer-heading-title">
               {t(
                 'sidebar.composer.sections.modelWithPrompt.title',
-                '模型选择与提示词',
+                '模型选择',
               )}
             </div>
             <div className="smtcmp-composer-heading-desc">
@@ -127,24 +124,6 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                 onChange={(value) =>
                   updateContinuationOptions({ continuationModelId: value })
                 }
-                disabled={!enableSuperContinuation}
-              />
-            </div>
-          </div>
-
-          <div className="smtcmp-composer-option">
-            <div className="smtcmp-composer-option-info">
-              <div className="smtcmp-composer-option-title">
-                {t('sidebar.composer.continuationPrompt', '续写系统提示词')}
-              </div>
-            </div>
-            <div className="smtcmp-composer-option-control smtcmp-composer-option-control--full">
-              <ObsidianTextArea
-                value={settings.continuationOptions.defaultSystemPrompt ?? ''}
-                onChange={(value) =>
-                  updateContinuationOptions({ defaultSystemPrompt: value })
-                }
-                disabled={!enableSuperContinuation}
               />
             </div>
           </div>

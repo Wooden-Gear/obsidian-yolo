@@ -27,12 +27,6 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
     [settings.chatModels],
   )
 
-  const enableSuperContinuation = Boolean(
-    settings.continuationOptions.enableSuperContinuation,
-  )
-  const enableKeywordTrigger = Boolean(
-    settings.continuationOptions.enableKeywordTrigger,
-  )
   const enableSmartSpace =
     settings.continuationOptions.enableSmartSpace ?? true
   const enableTabCompletion = Boolean(
@@ -89,70 +83,6 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       <div className="smtcmp-settings-header">
         {t('settings.continuation.title')}
       </div>
-      <div className="smtcmp-settings-sub-header">
-        {t('settings.continuation.aiSubsectionTitle')}
-      </div>
-      <ObsidianSetting
-        name={t('settings.continuation.superContinuation')}
-        desc={t('settings.continuation.superContinuationDesc')}
-      >
-        <ObsidianToggle
-          value={enableSuperContinuation}
-          onChange={async (value) => {
-            const nextContinuationModelId =
-              settings.continuationOptions.continuationModelId ??
-              defaultContinuationModelId
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                enableSuperContinuation: value,
-                continuationModelId: nextContinuationModelId,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.continuation.keywordTrigger')}
-        desc={t('settings.continuation.keywordTriggerDesc')}
-      >
-        <ObsidianToggle
-          value={enableKeywordTrigger}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                enableKeywordTrigger: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      {enableKeywordTrigger && (
-        <ObsidianSetting
-          name={t('settings.continuation.triggerKeyword')}
-          desc={t('settings.continuation.triggerKeywordDesc')}
-        >
-          <ObsidianTextInput
-            value={settings.continuationOptions.triggerKeyword}
-            placeholder={'cc'}
-            onChange={async (value) => {
-              await setSettings({
-                ...settings,
-                continuationOptions: {
-                  ...settings.continuationOptions,
-                  triggerKeyword: value,
-                },
-              })
-            }}
-          />
-        </ObsidianSetting>
-      )}
-
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.customSubsectionTitle')}
       </div>

@@ -4,7 +4,6 @@ import {
   DEFAULT_APPLY_MODEL_ID,
   DEFAULT_CHAT_MODELS,
   DEFAULT_CHAT_MODEL_ID,
-  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
@@ -190,18 +189,10 @@ export const smartComposerSettingsSchema = z.object({
   // Continuation (续写) options
   continuationOptions: z
     .object({
-      // enable advanced continuation workflow that unlocks Composer
-      enableSuperContinuation: z.boolean().optional(),
-      // dedicated continuation model used when super continuation is enabled
+      // dedicated continuation model
       continuationModelId: z.string().optional(),
-      // default system prompt for continuation
-      defaultSystemPrompt: z.string().optional(),
       // enable smart space quick invoke
       enableSmartSpace: z.boolean().optional(),
-      // enable keyword trigger for continuation
-      enableKeywordTrigger: z.boolean(),
-      // the keyword to trigger continuation, default to 'cc'
-      triggerKeyword: z.string(),
       // enable manual context selection for continuation
       manualContextEnabled: z.boolean().optional(),
       // manual context folders picked by user from the vault
@@ -240,14 +231,10 @@ export const smartComposerSettingsSchema = z.object({
       ).optional(),
     })
     .catch({
-      enableSuperContinuation: true,
       continuationModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
-      defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
       enableSmartSpace: true,
-      enableKeywordTrigger: true,
-      triggerKeyword: 'cc',
       manualContextEnabled: false,
       manualContextFolders: [],
       referenceRuleFolders: [],
