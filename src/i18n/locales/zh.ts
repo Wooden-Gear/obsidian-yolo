@@ -392,9 +392,10 @@ export const zh: TranslationKeys = {
       continuationModel: 'Sparkle 续写模型',
       continuationModelDesc: '指定在 Sparkle 模式下用于续写的模型。',
       smartSpaceDescription:
-        'Smart Space 会在写作时提供一个轻量的悬浮输入框。默认在空白行按下空格时唤出，输入后按 Enter 提交，Esc 关闭。',
+        'Smart Space 会在写作时提供一个轻量的悬浮输入框。默认在空白行按下空格，或任意位置输入 “/” 后紧接空格即可唤出；输入后连续按两次 Enter 提交，Esc 关闭。',
       smartSpaceToggle: '启用 Smart Space',
-      smartSpaceToggleDesc: '当关闭时，空格将不再唤出 Smart Space 悬浮输入框。',
+      smartSpaceToggleDesc:
+        '当关闭时，空格或 “/”+空格 将不再唤出 Smart Space 悬浮输入框。',
       keywordTrigger: '启用关键词触发AI续写',
       keywordTriggerDesc:
         '在编辑器中检测到指定关键词时自动触发续写。建议使用"cc"。',

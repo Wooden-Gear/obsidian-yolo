@@ -417,10 +417,10 @@ export const en: TranslationKeys = {
       continuationModelDesc:
         'Select the model used for continuation while Sparkle mode is enabled.',
       smartSpaceDescription:
-        'Smart Space offers a lightweight floating composer while you write. By default it appears when you press Space on an empty line. Press Enter to submit and Esc to close.',
+        'Smart Space offers a lightweight floating composer while you write. By default it appears when you press Space on an empty line, or type “/” followed by Space anywhere. Press Enter twice to submit and Esc to close.',
       smartSpaceToggle: 'Enable Smart Space',
       smartSpaceToggleDesc:
-        'When disabled, pressing Space will no longer summon the Smart Space floating composer.',
+        'When disabled, Space or “/”+Space will no longer summon the Smart Space floating composer.',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc:
         'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: cc.',

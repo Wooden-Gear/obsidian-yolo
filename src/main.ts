@@ -1,6 +1,7 @@
 import {
   type Extension,
   Prec,
+  EditorSelection,
   StateEffect,
   StateField,
 } from '@codemirror/state'
@@ -196,6 +197,9 @@ export default class SmartComposerPlugin extends Plugin {
     pos: number
     close: () => void
   } | null = null
+  private lastSmartSpaceSlash:
+    | { view: EditorView; pos: number; timestamp: number }
+    | null = null
 
   private resolvePgliteResourcePath(): string {
     if (!this.pgliteResourcePath) {
@@ -299,23 +303,94 @@ export default class SmartComposerPlugin extends Plugin {
         keydown: (event, view) => {
           const smartSpaceEnabled =
             this.settings.continuationOptions?.enableSmartSpace ?? true
-          if (!smartSpaceEnabled) return false
-          if (event.defaultPrevented) return false
-          if (event.key !== ' ') return false
-          if (event.altKey || event.metaKey || event.ctrlKey) return false
+          if (!smartSpaceEnabled) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+          if (event.defaultPrevented) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          const isSlash = event.key === '/' || event.code === 'Slash'
+          const isSpace =
+            event.key === ' ' ||
+            event.key === 'Spacebar' ||
+            event.key === 'Space' ||
+            event.code === 'Space'
+          const handledKey = isSlash || isSpace
+
+          if (!handledKey) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+          if (event.altKey || event.metaKey || event.ctrlKey) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
 
           const selection = view.state.selection.main
-          if (!selection.empty) return false
-
-          const line = view.state.doc.lineAt(selection.head)
-          if (line.text.trim().length > 0) return false
+          if (!selection.empty) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
 
           const markdownView =
             this.app.workspace.getActiveViewOfType(MarkdownView)
           const editor = markdownView?.editor
-          if (!editor) return false
+          if (!editor) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
           const cm = (editor as any)?.cm
-          if (cm && cm !== view) return false
+          if (cm && cm !== view) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          if (isSlash) {
+            this.lastSmartSpaceSlash = {
+              view,
+              pos: selection.head,
+              timestamp: Date.now(),
+            }
+            return false
+          }
+
+          // Space handling (either legacy single-space trigger, or slash + space)
+          const now = Date.now()
+          const lastSlash = this.lastSmartSpaceSlash
+          let selectionAfterRemoval = selection
+          let triggeredBySlashCombo = false
+          if (
+            lastSlash &&
+            lastSlash.view === view &&
+            now - lastSlash.timestamp <= 600
+          ) {
+            const slashChar = view.state.doc.sliceString(
+              lastSlash.pos,
+              lastSlash.pos + 1,
+            )
+            if (slashChar === '/') {
+              view.dispatch({
+                changes: { from: lastSlash.pos, to: lastSlash.pos + 1 },
+                selection: EditorSelection.cursor(lastSlash.pos),
+              })
+              selectionAfterRemoval = view.state.selection.main
+              triggeredBySlashCombo = true
+            }
+            this.lastSmartSpaceSlash = null
+          } else {
+            this.lastSmartSpaceSlash = null
+            selectionAfterRemoval = view.state.selection.main
+          }
+
+          if (!triggeredBySlashCombo) {
+            const line = view.state.doc.lineAt(selectionAfterRemoval.head)
+            if (line.text.trim().length > 0) {
+              return false
+            }
+          }
 
           event.preventDefault()
           event.stopPropagation()
