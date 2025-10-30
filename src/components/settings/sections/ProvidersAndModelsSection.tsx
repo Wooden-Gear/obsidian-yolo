@@ -123,21 +123,28 @@ export function ProvidersAndModelsSection({
     }
 
     // Clear embeddings for associated embedding models
-    const vectorManager = (await plugin.getDbManager()).getVectorManager()
-    const embeddingStats = await vectorManager.getEmbeddingStats()
+    const vectorManager = await plugin.tryGetVectorManager()
 
-    for (const embeddingModel of associatedEmbeddingModels) {
-      const embeddingStat = embeddingStats.find(
-        (v) => v.model === embeddingModel.id,
-      )
+    if (vectorManager) {
+      const embeddingStats = await vectorManager.getEmbeddingStats()
 
-      if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-        const embeddingModelClient = getEmbeddingModelClient({
-          settings,
-          embeddingModelId: embeddingModel.id,
-        })
-        await vectorManager.clearAllVectors(embeddingModelClient)
+      for (const embeddingModel of associatedEmbeddingModels) {
+        const embeddingStat = embeddingStats.find(
+          (v) => v.model === embeddingModel.id,
+        )
+
+        if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+          const embeddingModelClient = getEmbeddingModelClient({
+            settings,
+            embeddingModelId: embeddingModel.id,
+          })
+          await vectorManager.clearAllVectors(embeddingModelClient)
+        }
       }
+    } else {
+      console.warn(
+        '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+      )
     }
 
     // Delete provider and associated models
@@ -179,17 +186,23 @@ export function ProvidersAndModelsSection({
     }
 
     // Delete immediately without confirmation
-    const vectorManager = (await plugin.getDbManager()).getVectorManager()
-    const embeddingStats = await vectorManager.getEmbeddingStats()
-    const embeddingStat = embeddingStats.find((v) => v.model === modelId)
-    const rowCount = embeddingStat?.rowCount || 0
+    const vectorManager = await plugin.tryGetVectorManager()
+    if (vectorManager) {
+      const embeddingStats = await vectorManager.getEmbeddingStats()
+      const embeddingStat = embeddingStats.find((v) => v.model === modelId)
+      const rowCount = embeddingStat?.rowCount || 0
 
-    if (rowCount > 0) {
-      const embeddingModelClient = getEmbeddingModelClient({
-        settings,
-        embeddingModelId: modelId,
-      })
-      await vectorManager.clearAllVectors(embeddingModelClient)
+      if (rowCount > 0) {
+        const embeddingModelClient = getEmbeddingModelClient({
+          settings,
+          embeddingModelId: modelId,
+        })
+        await vectorManager.clearAllVectors(embeddingModelClient)
+      }
+    } else {
+      console.warn(
+        '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+      )
     }
     await setSettings({
       ...settings,

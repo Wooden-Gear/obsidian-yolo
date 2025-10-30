@@ -44,23 +44,30 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
       message: message,
       ctaText: 'Delete',
       onConfirm: async () => {
-        const vectorManager = (await plugin.getDbManager()).getVectorManager()
-        const embeddingStats = await vectorManager.getEmbeddingStats()
+        const vectorManager = await plugin.tryGetVectorManager()
 
-        // Clear embeddings for each associated embedding model
-        for (const embeddingModel of associatedEmbeddingModels) {
-          const embeddingStat = embeddingStats.find(
-            (v) => v.model === embeddingModel.id,
-          )
+        if (vectorManager) {
+          const embeddingStats = await vectorManager.getEmbeddingStats()
 
-          if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-            // only clear when there's data
-            const embeddingModelClient = getEmbeddingModelClient({
-              settings,
-              embeddingModelId: embeddingModel.id,
-            })
-            await vectorManager.clearAllVectors(embeddingModelClient)
+          // Clear embeddings for each associated embedding model
+          for (const embeddingModel of associatedEmbeddingModels) {
+            const embeddingStat = embeddingStats.find(
+              (v) => v.model === embeddingModel.id,
+            )
+
+            if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+              // only clear when there's data
+              const embeddingModelClient = getEmbeddingModelClient({
+                settings,
+                embeddingModelId: embeddingModel.id,
+              })
+              await vectorManager.clearAllVectors(embeddingModelClient)
+            }
           }
+        } else {
+          console.warn(
+            '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+          )
         }
 
         await setSettings({

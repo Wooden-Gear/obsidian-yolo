@@ -208,14 +208,19 @@ export class DatabaseManager {
           return
         }
         try {
-          const url =
-            candidate instanceof URL ? candidate : new URL(candidate)
-          const key = url.href.endsWith('/') ? url.href : `${url.href}/`
+          const rawUrl =
+            candidate instanceof URL ? new URL(candidate.href) : new URL(candidate)
+          // Obsidian 会追加缓存参数 (?123)，需要移除查询与哈希，避免相对路径被错误解析
+          rawUrl.search = ''
+          rawUrl.hash = ''
+
+          const href = rawUrl.href.endsWith('/')
+            ? rawUrl.href
+            : `${rawUrl.href}/`
+          const key = href
           if (!seen.has(key)) {
             seen.add(key)
-            candidateBaseUrls.push(
-              url.href.endsWith('/') ? url : new URL(key),
-            )
+            candidateBaseUrls.push(new URL(key))
           }
         } catch {
           // ignore invalid candidate
@@ -227,18 +232,27 @@ export class DatabaseManager {
           return
         }
         try {
-          addCandidateUrl(this.app.vault.adapter.getResourcePath(path))
-        } catch {
-          // ignore adapter resolution failures
+          const resourcePath = this.app.vault.adapter.getResourcePath(path)
+          console.log(`[PGlite] Resolving resource path:`, path, '→', resourcePath)
+          addCandidateUrl(resourcePath)
+        } catch (error) {
+          console.warn(`[PGlite] Failed to resolve resource path:`, path, error)
         }
       }
 
+      // 优先使用传入的 pgliteResourcePath（基于 manifest.id）
       addFromResourcePath(this.pgliteResourcePath)
-      addFromResourcePath(
-        normalizePath(
-          `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/vendor/pglite`,
-        ),
-      )
+      
+      // 作为备选，尝试使用固定的插件 ID（向后兼容旧版本）
+      if (this.pgliteResourcePath && !this.pgliteResourcePath.includes(PLUGIN_ID)) {
+        addFromResourcePath(
+          normalizePath(
+            `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/vendor/pglite`,
+          ),
+        )
+      }
+      
+      // 最后尝试使用相对路径（开发模式）
       addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
 
       let lastError: unknown = null
@@ -275,11 +289,15 @@ export class DatabaseManager {
       }
 
       if (lastError) {
+        console.error('All PGlite resource paths failed. Attempted URLs:', 
+          candidateBaseUrls.map(u => u.href))
         throw lastError
       }
-      throw new Error('Failed to resolve PGlite bundle path')
+      throw new Error('Failed to resolve PGlite bundle path - no candidate URLs generated')
     } catch (error) {
       console.error('Error loading PGlite resources:', error)
+      console.error('Plugin resource path:', this.pgliteResourcePath)
+      console.error('Vault config dir:', this.app.vault.configDir)
       throw error
     }
   }

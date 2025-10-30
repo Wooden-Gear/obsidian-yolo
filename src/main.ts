@@ -34,6 +34,7 @@ import { McpManager } from './core/mcp/mcpManager'
 import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
+import type { VectorManager } from './database/modules/vector/VectorManager'
 import { createTranslationFunction } from './i18n'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
@@ -198,11 +199,18 @@ export default class SmartComposerPlugin extends Plugin {
 
   private resolvePgliteResourcePath(): string {
     if (!this.pgliteResourcePath) {
-      const pluginFolder = this.manifest.dir ?? this.manifest.id
-      const configDir = this.app.vault.configDir
-      this.pgliteResourcePath = normalizePath(
-        `${configDir}/plugins/${pluginFolder}/vendor/pglite`,
-      )
+      // manifest.dir 已经包含完整的插件目录路径（相对于 vault）
+      // 例如：.obsidian/plugins/obsidian-smart-composer 或 .obsidian/plugins/yolo
+      const pluginDir = this.manifest.dir
+      if (pluginDir) {
+        this.pgliteResourcePath = normalizePath(`${pluginDir}/vendor/pglite`)
+      } else {
+        // 如果 manifest.dir 不存在，使用 manifest.id 作为后备
+        const configDir = this.app.vault.configDir
+        this.pgliteResourcePath = normalizePath(
+          `${configDir}/plugins/${this.manifest.id}/vendor/pglite`,
+        )
+      }
     }
     return this.pgliteResourcePath
   }
@@ -1314,6 +1322,19 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
     // if initialization is running, wait for it to complete instead of creating a new initialization promise
     return this.dbManagerInitPromise
+  }
+
+  async tryGetVectorManager(): Promise<VectorManager | null> {
+    try {
+      const dbManager = await this.getDbManager()
+      return dbManager.getVectorManager()
+    } catch (error) {
+      console.warn(
+        '[Smart Composer] Failed to initialize vector manager, skip vector-dependent operations.',
+        error,
+      )
+      return null
+    }
   }
 
   async getRAGEngine(): Promise<RAGEngine> {
