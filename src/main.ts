@@ -1583,8 +1583,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ? `Instruction:\n${userInstruction}\n\n`
         : ''
 
-      const systemPrompt =
-        'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
+      const systemPrompt = (this.settings.systemPrompt ?? '').trim()
 
       const activeFileForTitle = this.app.workspace.getActiveFile()
       const fileTitle = activeFileForTitle?.basename?.trim() ?? ''
@@ -1677,14 +1676,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         : `${basePromptSection}${titleLine}${instructionSection}${combinedContextSection}`
 
       const requestMessages = [
-        ...(isBaseModel
-          ? []
-          : ([
+        ...(!isBaseModel && systemPrompt.length > 0
+          ? ([
               {
                 role: 'system' as const,
                 content: systemPrompt,
               },
-            ] as const)),
+            ] as const)
+          : []),
         {
           role: 'user' as const,
           content: userMessageContent,
