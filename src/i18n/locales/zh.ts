@@ -478,6 +478,8 @@ export const zh: TranslationKeys = {
     modeLearning: '学习模式',
     customContinuePromptLabel: '续写指令',
     customContinuePromptPlaceholder: '询问 AI...',
+    customContinueHint: '⏎ 提交',
+    customContinueConfirmHint: '⏎ 是否确认提交？',
     customContinueProcessing: '思考中',
     customContinueError: '生成失败，请稍后重试。',
     customContinueSections: {

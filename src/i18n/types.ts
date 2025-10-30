@@ -447,6 +447,8 @@ export type TranslationKeys = {
     modeLearning?: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
+    customContinueHint?: string
+    customContinueConfirmHint?: string
     customRewritePromptPlaceholder?: string
     customContinueProcessing?: string
     customContinueError?: string

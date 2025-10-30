@@ -507,6 +507,8 @@ export const en: TranslationKeys = {
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
     customContinuePromptPlaceholder: 'Ask AI...',
+    customContinueHint: '⏎ Press Enter to submit',
+    customContinueConfirmHint: '⏎ Press Enter again to confirm',
     customContinueProcessing: 'Thinking',
     customContinueError: 'Generation failed. Please try again soon.',
     customContinueSections: {

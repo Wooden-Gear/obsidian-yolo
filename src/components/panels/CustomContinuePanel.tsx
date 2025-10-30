@@ -39,6 +39,7 @@ function CustomContinuePanelBody({
   const [error, setError] = useState<string | null>(null)
   const [useWebSearch, setUseWebSearch] = useState(false)
   const [useUrlContext, setUseUrlContext] = useState(false)
+  const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
@@ -70,6 +71,10 @@ function CustomContinuePanelBody({
       const maxHeight = 200 // 最大高度约 8-10 行
       textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
     }
+  }, [instruction])
+
+  useEffect(() => {
+    setIsSubmitConfirmPending(false)
   }, [instruction])
 
   const sections = useMemo(() => {
@@ -311,6 +316,7 @@ function CustomContinuePanelBody({
     if (isSubmitting) return
     setIsSubmitting(true)
     setError(null)
+    setIsSubmitConfirmPending(false)
     const payload = (value ?? instruction).trim()
     try {
       const geminiTools = hasGeminiTools
@@ -332,10 +338,20 @@ function CustomContinuePanelBody({
   }
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter（含 Cmd/Ctrl+Enter）直接提交
+    // 普通回车需二次确认；Cmd/Ctrl+Enter 仍可立即提交
     if (event.key === 'Enter') {
       event.preventDefault()
-      void handleSubmit()
+      if (event.metaKey || event.ctrlKey) {
+        setIsSubmitConfirmPending(false)
+        void handleSubmit()
+        return
+      }
+      if (isSubmitConfirmPending) {
+        setIsSubmitConfirmPending(false)
+        void handleSubmit()
+      } else {
+        setIsSubmitConfirmPending(true)
+      }
     } else if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
@@ -393,9 +409,11 @@ function CustomContinuePanelBody({
                   disabled={isSubmitting}
                   rows={1}
                 />
-                {instruction.length > 0 && (
+                {(instruction.length > 0 || isSubmitConfirmPending) && (
                   <div className="smtcmp-custom-continue-input-hint">
-                    {t('chat.customContinueHint', '⏎ 提交')}
+                    {isSubmitConfirmPending
+                      ? t('chat.customContinueConfirmHint', '⏎ 是否确认提交？')
+                      : t('chat.customContinueHint', '⏎ 提交')}
                   </div>
                 )}
               </div>
