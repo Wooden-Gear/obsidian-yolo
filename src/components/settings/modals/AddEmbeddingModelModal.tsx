@@ -21,6 +21,7 @@ import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
+import { SearchableDropdown } from '../../common/SearchableDropdown'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type AddEmbeddingModelModalComponentProps = {
@@ -91,6 +92,16 @@ function AddEmbeddingModelModalComponent({
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
+      
+      // Check cache first
+      const cachedModels = plugin.getCachedModelList(selectedProvider.id)
+      if (cachedModels) {
+        const sorted = sortModelsForEmbedding(cachedModels)
+        setAvailableModels(sorted)
+        setLoadingModels(false)
+        return
+      }
+      
       setLoadingModels(true)
       setLoadError(null)
       try {
@@ -173,6 +184,8 @@ function AddEmbeddingModelModalComponent({
                 const unique = Array.from(new Set(buckets))
                 const sorted = sortModelsForEmbedding(unique)
                 setAvailableModels(sorted)
+                // Cache the result (unsorted for consistency)
+                plugin.setCachedModelList(selectedProvider.id, unique)
                 fetched = true
                 break
               } catch (e) {
@@ -208,6 +221,8 @@ function AddEmbeddingModelModalComponent({
           const unique = Array.from(new Set(names))
           const sorted = sortModelsForEmbedding(unique)
           setAvailableModels(sorted)
+          // Cache the result (unsorted for consistency)
+          plugin.setCachedModelList(selectedProvider.id, unique)
           return
         }
       } catch (err: any) {
@@ -316,19 +331,20 @@ function AddEmbeddingModelModalComponent({
             : t('settings.models.embeddingModelsFirst')
         }
       >
-        <ObsidianDropdown
+        <SearchableDropdown
           value={formData.model || ''}
-          options={Object.fromEntries(availableModels.map((m) => [m, m]))}
+          options={availableModels}
           onChange={(value: string) => {
-            // When a model is selected, set API model id; if display name empty, prefill with the same
+            // When a model is selected, set API model id and also update display name
             setFormData((prev) => ({
               ...prev,
               model: value,
-              name:
-                prev.name && prev.name.trim().length > 0 ? prev.name : value,
+              name: value, // Always update display name with the selected model
             }))
           }}
           disabled={loadingModels || availableModels.length === 0}
+          loading={loadingModels}
+          placeholder={t('settings.models.searchModels') || 'Search models...'}
         />
       </ObsidianSetting>
 
