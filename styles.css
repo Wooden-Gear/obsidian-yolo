@@ -4023,6 +4023,30 @@ button.smtcmp-chat-input-model-select {
   margin-top: var(--size-4-3);
 }
 
+/* Group Header */
+.smtcmp-quick-actions-group-header {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  padding: var(--size-4-2) var(--size-4-1);
+  margin-top: var(--size-4-3);
+  margin-bottom: var(--size-4-2);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.smtcmp-quick-actions-group-header:first-child {
+  margin-top: 0;
+}
+
+/* Group Divider */
+.smtcmp-quick-actions-group-divider {
+  height: 1px;
+  background: transparent;
+  border-top: 1px dashed var(--background-modifier-border);
+  margin: var(--size-4-4) 0;
+}
+
 .smtcmp-quick-action-item {
   display: flex;
   align-items: stretch;
