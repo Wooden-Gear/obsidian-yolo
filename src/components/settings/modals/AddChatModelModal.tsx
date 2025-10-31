@@ -81,6 +81,15 @@ function AddChatModelModalComponent({
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
+      
+      // Check cache first
+      const cachedModels = plugin.getCachedModelList(selectedProvider.id)
+      if (cachedModels) {
+        setAvailableModels(cachedModels)
+        setLoadingModels(false)
+        return
+      }
+      
       setLoadingModels(true)
       setLoadError(null)
       try {
@@ -162,6 +171,8 @@ function AddChatModelModalComponent({
                 }
                 const unique = Array.from(new Set(buckets)).sort()
                 setAvailableModels(unique)
+                // Cache the result
+                plugin.setCachedModelList(selectedProvider.id, unique)
                 fetched = true
                 break
               } catch (e) {
@@ -191,6 +202,8 @@ function AddChatModelModalComponent({
           // De-dup and sort for UX
           const unique = Array.from(new Set(names)).sort()
           setAvailableModels(unique)
+          // Cache the result
+          plugin.setCachedModelList(selectedProvider.id, unique)
           return
         }
       } catch (err: any) {

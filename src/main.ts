@@ -200,6 +200,33 @@ export default class SmartComposerPlugin extends Plugin {
   private lastSmartSpaceSlash:
     | { view: EditorView; pos: number; timestamp: number }
     | null = null
+  // Model list cache for provider model fetching
+  private modelListCache: Map<
+    string,
+    { models: string[]; timestamp: number }
+  > = new Map()
+
+  // Get cached model list for a provider
+  getCachedModelList(providerId: string): string[] | null {
+    const cached = this.modelListCache.get(providerId)
+    if (cached) {
+      return cached.models
+    }
+    return null
+  }
+
+  // Set model list cache for a provider
+  setCachedModelList(providerId: string, models: string[]): void {
+    this.modelListCache.set(providerId, {
+      models,
+      timestamp: Date.now(),
+    })
+  }
+
+  // Clear all model list cache (called when settings modal closes)
+  clearModelListCache(): void {
+    this.modelListCache.clear()
+  }
 
   private resolvePgliteResourcePath(): string {
     if (!this.pgliteResourcePath) {
