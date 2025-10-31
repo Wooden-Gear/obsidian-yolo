@@ -122,6 +122,7 @@ type CustomContinueWidgetPayload = {
     editor: Editor
     view: EditorView
     onClose: () => void
+    showQuickActions?: boolean
   }
 }
 
@@ -304,7 +305,11 @@ export default class SmartComposerPlugin extends Plugin {
     state.view.focus()
   }
 
-  private showCustomContinueWidget(editor: Editor, view: EditorView) {
+  private showCustomContinueWidget(
+    editor: Editor,
+    view: EditorView,
+    showQuickActions = true,
+  ) {
     const selection = view.state.selection.main
     const pos = selection.head
 
@@ -330,6 +335,7 @@ export default class SmartComposerPlugin extends Plugin {
             editor,
             view,
             onClose: close,
+            showQuickActions,
           },
         }),
       ],
@@ -481,7 +487,8 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Show custom continue widget for user to input rewrite instruction
-    this.showCustomContinueWidget(editor, cmEditor)
+    // Don't show quick actions for rewrite - user should input custom instruction
+    this.showCustomContinueWidget(editor, cmEditor, false)
   }
 
   private async explainSelection(editor: Editor) {

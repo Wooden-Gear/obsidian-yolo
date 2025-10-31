@@ -24,11 +24,13 @@ import DotLoader from '../common/DotLoader'
 type CustomContinuePanelProps = {
   editor: Editor
   onClose: () => void
+  showQuickActions?: boolean // Whether to show quick action buttons
 }
 
 function CustomContinuePanelBody({
   editor,
   onClose,
+  showQuickActions = true,
 }: CustomContinuePanelProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
@@ -450,7 +452,7 @@ function CustomContinuePanelBody({
               {error}
             </div>
           )}
-          {sections.length > 0 && (
+          {showQuickActions && sections.length > 0 && (
             <div className="smtcmp-custom-continue-section-card">
               <div className="smtcmp-custom-continue-section-list">
                 {(() => {
@@ -528,6 +530,7 @@ export class CustomContinueWidget extends WidgetType {
       editor: Editor
       view: EditorView
       onClose: () => void
+      showQuickActions?: boolean
     },
   ) {
     super()
@@ -643,6 +646,7 @@ export class CustomContinueWidget extends WidgetType {
           <CustomContinuePanelBody
             editor={this.options.editor}
             onClose={this.closeWithAnimation}
+            showQuickActions={this.options.showQuickActions}
           />
         </LanguageProvider>
       </PluginProvider>,
