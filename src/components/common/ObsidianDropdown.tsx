@@ -3,9 +3,18 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useObsidianSetting } from './ObsidianSetting'
 
+export type ObsidianDropdownOptionGroup = {
+  label: string
+  options: Array<{
+    value: string
+    label: string
+  }>
+}
+
 type ObsidianDropdownProps = {
   value: string
-  options: Record<string, string>
+  options?: Record<string, string>
+  groupedOptions?: ObsidianDropdownOptionGroup[]
   onChange: (value: string) => void
   disabled?: boolean
 }
@@ -13,6 +22,7 @@ type ObsidianDropdownProps = {
 export function ObsidianDropdown({
   value,
   options,
+  groupedOptions,
   onChange,
   disabled = false,
 }: ObsidianDropdownProps) {
@@ -55,11 +65,37 @@ export function ObsidianDropdown({
   useEffect(() => {
     if (!dropdownComponent) return
 
-    dropdownComponent.selectEl.empty()
-    dropdownComponent.addOptions(options)
+    const selectEl = dropdownComponent.selectEl
+    selectEl.empty()
+
+    if (groupedOptions && groupedOptions.length > 0) {
+      groupedOptions.forEach((group) => {
+        if (!group || group.options.length === 0) return
+        const optgroupEl = document.createElement('optgroup')
+        optgroupEl.label = group.label
+        optgroupEl.style.paddingInlineStart = '0'
+        optgroupEl.style.paddingLeft = '0'
+        optgroupEl.style.marginLeft = '0'
+        optgroupEl.style.textIndent = '0'
+        group.options.forEach(({ value: optionValue, label: optionLabel }) => {
+          const optionEl = document.createElement('option')
+          optionEl.value = optionValue
+          optionEl.textContent = optionLabel
+          optionEl.style.paddingInlineStart = '0'
+          optionEl.style.paddingLeft = '0'
+          optionEl.style.textIndent = '0'
+          optionEl.style.marginLeft = '0'
+          optgroupEl.appendChild(optionEl)
+        })
+        selectEl.appendChild(optgroupEl)
+      })
+    } else {
+      dropdownComponent.addOptions(options ?? {})
+    }
+
     dropdownComponent.setValue(value)
-    dropdownComponent.selectEl.disabled = !!disabled
-  }, [dropdownComponent, options, value, disabled])
+    selectEl.disabled = !!disabled
+  }, [dropdownComponent, options, groupedOptions, value, disabled])
 
   return <div ref={containerRef} />
 }
