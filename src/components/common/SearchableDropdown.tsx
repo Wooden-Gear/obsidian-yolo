@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
+import { useObsidianSetting } from './ObsidianSetting'
 
 export type SearchableDropdownProps = {
   value: string
@@ -25,6 +26,22 @@ export function SearchableDropdown({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const { setting } = useObsidianSetting()
+
+  // Mount component to setting's control area if setting exists
+  useEffect(() => {
+    if (setting && containerRef.current) {
+      // Move our container to the setting's control element
+      setting.controlEl.appendChild(containerRef.current)
+      
+      return () => {
+        // Clean up on unmount
+        if (containerRef.current && setting.controlEl.contains(containerRef.current)) {
+          setting.controlEl.removeChild(containerRef.current)
+        }
+      }
+    }
+  }, [setting])
 
   // Filter options based on search query (case-insensitive fuzzy match)
   const filteredOptions = options.filter((option) =>
