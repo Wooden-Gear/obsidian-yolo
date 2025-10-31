@@ -17,6 +17,7 @@ import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
+import { SearchableDropdown } from '../../common/SearchableDropdown'
 
 type AddChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
@@ -299,16 +300,15 @@ function AddChatModelModalComponent({
             : undefined
         }
       >
-        <ObsidianDropdown
+        <SearchableDropdown
           value={formData.model || ''}
-          options={Object.fromEntries(availableModels.map((m) => [m, m]))}
+          options={availableModels}
           onChange={(value: string) => {
-            // When a model is selected, set API model id; if display name empty, prefill with the same
+            // When a model is selected, set API model id and also update display name
             setFormData((prev) => ({
               ...prev,
               model: value,
-              name:
-                prev.name && prev.name.trim().length > 0 ? prev.name : value,
+              name: value, // Always update display name with the selected model
             }))
             if (autoDetectReasoning) {
               const detected = detectReasoningTypeFromModelId(value)
@@ -316,6 +316,8 @@ function AddChatModelModalComponent({
             }
           }}
           disabled={loadingModels || availableModels.length === 0}
+          loading={loadingModels}
+          placeholder={t('settings.models.searchModels') || 'Search models...'}
         />
       </ObsidianSetting>
 

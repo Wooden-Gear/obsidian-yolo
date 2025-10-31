@@ -35,6 +35,7 @@ export type TranslationKeys = {
     default?: string
     on?: string
     off?: string
+    noResults?: string
   }
 
   sidebar?: {
@@ -200,6 +201,7 @@ export type TranslationKeys = {
       modelNamePlaceholder: string
       // auto-fetched models helper labels
       availableModelsAuto?: string
+      searchModels?: string
       fetchModelsFailed?: string
       embeddingModelsFirst?: string
       // reasoning UI

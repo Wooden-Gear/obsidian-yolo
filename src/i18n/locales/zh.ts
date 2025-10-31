@@ -32,6 +32,7 @@ export const zh: TranslationKeys = {
     default: '默认',
     on: '开',
     off: '关',
+    noResults: '未找到匹配项',
   },
 
   sidebar: {
@@ -242,6 +243,7 @@ export const zh: TranslationKeys = {
       modelName: '展示名称',
       modelNamePlaceholder: '输入用于展示的名称',
       availableModelsAuto: '可用模型（自动获取）',
+      searchModels: '搜索模型...',
       fetchModelsFailed: '获取模型失败',
       embeddingModelsFirst: '嵌入模型优先显示',
       reasoningType: '模型类型',

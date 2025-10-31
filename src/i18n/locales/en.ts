@@ -32,6 +32,7 @@ export const en: TranslationKeys = {
     default: 'Default',
     on: 'On',
     off: 'Off',
+    noResults: 'No matches found',
   },
 
   sidebar: {
@@ -260,6 +261,7 @@ export const en: TranslationKeys = {
       modelName: 'Display name',
       modelNamePlaceholder: 'Enter a display name',
       availableModelsAuto: 'Available models (auto-fetched)',
+      searchModels: 'Search models...',
       fetchModelsFailed: 'Failed to fetch models',
       embeddingModelsFirst: 'Embedding models are listed first',
       reasoningType: 'Model type',
