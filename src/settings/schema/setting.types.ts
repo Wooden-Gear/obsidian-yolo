@@ -193,6 +193,8 @@ export const smartComposerSettingsSchema = z.object({
       continuationModelId: z.string().optional(),
       // enable smart space quick invoke
       enableSmartSpace: z.boolean().optional(),
+      // enable selection chat (Cursor-like text selection actions)
+      enableSelectionChat: z.boolean().optional(),
       // enable manual context selection for continuation
       manualContextEnabled: z.boolean().optional(),
       // manual context folders picked by user from the vault
@@ -235,6 +237,7 @@ export const smartComposerSettingsSchema = z.object({
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
       enableSmartSpace: true,
+      enableSelectionChat: true,
       manualContextEnabled: false,
       manualContextFolders: [],
       referenceRuleFolders: [],

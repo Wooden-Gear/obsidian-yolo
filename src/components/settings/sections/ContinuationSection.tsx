@@ -111,6 +111,24 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         <SmartSpaceQuickActionsSettings />
       )}
 
+      <ObsidianSetting
+        name={t('settings.continuation.selectionChatToggle')}
+        desc={t('settings.continuation.selectionChatToggleDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableSelectionChat ?? true}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                enableSelectionChat: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
+
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.tabSubsectionTitle')}
       </div>

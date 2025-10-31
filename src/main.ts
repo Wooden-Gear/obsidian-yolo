@@ -348,10 +348,18 @@ export default class SmartComposerPlugin extends Plugin {
 
   // Selection Chat methods
   private initializeSelectionManager() {
+    // Check if Selection Chat is enabled
+    const enableSelectionChat = this.settings.continuationOptions?.enableSelectionChat ?? true
+    
     // Clean up existing manager
     if (this.selectionManager) {
       this.selectionManager.destroy()
       this.selectionManager = null
+    }
+
+    // Don't initialize if disabled
+    if (!enableSelectionChat) {
+      return
     }
 
     // Get the active editor container
@@ -1502,6 +1510,17 @@ export default class SmartComposerPlugin extends Plugin {
 
     // Initialize selection chat
     this.initializeSelectionManager()
+
+    // Listen for settings changes to reinitialize Selection Chat
+    this.addSettingsChangeListener((newSettings) => {
+      const enableSelectionChat = newSettings.continuationOptions?.enableSelectionChat ?? true
+      const wasEnabled = this.selectionManager !== null
+      
+      if (enableSelectionChat !== wasEnabled) {
+        // Re-initialize when the setting changes
+        this.initializeSelectionManager()
+      }
+    })
   }
 
   onunload() {
