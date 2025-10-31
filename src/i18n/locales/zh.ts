@@ -465,7 +465,6 @@ export const zh: TranslationKeys = {
       addToChat: '添加到对话',
       rewrite: 'AI 改写',
       explain: '深入解释',
-      continue: '继续写作',
     },
   },
 

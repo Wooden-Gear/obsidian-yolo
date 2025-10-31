@@ -92,7 +92,6 @@ export const en: TranslationKeys = {
       addToChat: 'Add to Chat',
       rewrite: 'AI Rewrite',
       explain: 'Explain in Depth',
-      continue: 'Continue Writing',
     },
   },
 

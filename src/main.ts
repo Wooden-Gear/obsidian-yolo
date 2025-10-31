@@ -206,6 +206,12 @@ export default class SmartComposerPlugin extends Plugin {
   // Selection chat state
   private selectionManager: any | null = null
   private selectionChatWidget: any | null = null
+  private pendingSelectionRewrite: {
+    editor: Editor
+    selectedText: string
+    from: { line: number; ch: number }
+    to: { line: number; ch: number }
+  } | null = null
   // Model list cache for provider model fetching
   private modelListCache: Map<
     string,
@@ -282,6 +288,9 @@ export default class SmartComposerPlugin extends Plugin {
     
     // 先清除状态，避免重复关闭
     this.customContinueWidgetState = null
+    
+    // Clear pending selection rewrite if user closes without submitting
+    this.pendingSelectionRewrite = null
     
     // 尝试触发关闭动画
     const hasAnimation = CustomContinueWidget.closeCurrentWithAnimation()
@@ -408,15 +417,8 @@ export default class SmartComposerPlugin extends Plugin {
         break
 
       case 'explain':
-        // Add explanation request to chat
-        await this.addTextToChat(
-          `${this.t('selection.actions.explain', 'Explain in depth')}:\n\n${selectedText}`,
-        )
-        break
-
-      case 'continue':
-        // Continue writing from selection
-        await this.continueFromSelection(editor, selectedText)
+        // Add selection as badge and pre-fill explanation prompt
+        await this.explainSelection(editor)
         break
 
       default:
@@ -458,20 +460,67 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   private async rewriteSelection(editor: Editor, selectedText: string) {
-    // Trigger the existing rewrite functionality
-    // Simply select the text and let user provide rewrite instruction
+    // Show Smart Space-like input for rewrite instruction
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!view) return
 
-    // We'll just open chat with a rewrite request
-    const rewritePrompt = `${this.t('selection.actions.rewrite', 'AI Rewrite')}:\n\n${selectedText}`
-    await this.addTextToChat(rewritePrompt)
+    // Get CodeMirror view
+    const cmEditor = (editor as any).cm as EditorView
+    if (!cmEditor) return
+
+    // Save selection positions before they get lost
+    const from = editor.getCursor('from')
+    const to = editor.getCursor('to')
+
+    // Set pending rewrite state so continueWriting knows to call handleCustomRewrite
+    this.pendingSelectionRewrite = {
+      editor,
+      selectedText,
+      from,
+      to,
+    }
+
+    // Show custom continue widget for user to input rewrite instruction
+    this.showCustomContinueWidget(editor, cmEditor)
   }
 
-  private async continueFromSelection(editor: Editor, selectedText: string) {
-    // Continue writing after the selection
-    const instruction = `${this.t('selection.actions.continue', 'Continue writing')} based on:\n\n${selectedText}`
-    await this.continueWriting(editor, instruction)
+  private async explainSelection(editor: Editor) {
+    // Add selection as badge to chat and pre-fill explanation prompt
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!editor || !view) {
+      new Notice('无法获取当前编辑器')
+      return
+    }
+
+    // Create mentionable block data from selection
+    const data = await getMentionableBlockData(editor, view)
+    if (!data) {
+      new Notice('无法创建选区数据')
+      return
+    }
+
+    // Get or open chat view
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView({
+        selectedBlock: data,
+      })
+      // After opening, insert the prompt
+      const newLeaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+      if (newLeaves.length > 0 && newLeaves[0].view instanceof ChatView) {
+        const chatView = newLeaves[0].view
+        chatView.insertTextToInput(this.t('selection.actions.explain', '请深入解释') + '：')
+        chatView.focusMessage()
+      }
+      return
+    }
+
+    // Use existing chat view
+    await this.app.workspace.revealLeaf(leaves[0])
+    const chatView = leaves[0].view
+    chatView.addSelectionToChat(data)
+    chatView.insertTextToInput(this.t('selection.actions.explain', '请深入解释') + '：')
+    chatView.focusMessage()
   }
 
   private createCustomContinueTriggerExtension(): Extension {
@@ -1150,12 +1199,21 @@ export default class SmartComposerPlugin extends Plugin {
     this.scheduleTabCompletion(editor)
   }
 
-  private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
-    const selected = editor.getSelection()
+  private async handleCustomRewrite(
+    editor: Editor,
+    customPrompt?: string,
+    preSelectedText?: string,
+    preSelectionFrom?: { line: number; ch: number },
+  ) {
+    // Use pre-selected text if provided (from Selection Chat), otherwise get current selection
+    const selected = preSelectedText ?? editor.getSelection()
     if (!selected || selected.trim().length === 0) {
       new Notice('请先选择要改写的文本。')
       return
     }
+
+    // Use pre-saved selection start position if provided, otherwise get current
+    const from = preSelectionFrom ?? editor.getCursor('from')
 
     const notice = new Notice('正在生成改写...', 0)
     let controller: AbortController | null = null
@@ -1259,7 +1317,6 @@ export default class SmartComposerPlugin extends Plugin {
         return
       }
 
-      const from = editor.getCursor('from')
       const head = editor.getRange({ line: 0, ch: 0 }, from)
       const originalContent = await readTFileContent(activeFile, this.app.vault)
       const tail = originalContent.slice(head.length + selected.length)
@@ -1725,6 +1782,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
   ) {
+    // Check if this is actually a rewrite request from Selection Chat
+    if (this.pendingSelectionRewrite) {
+      const { editor: rewriteEditor, selectedText, from } = this.pendingSelectionRewrite
+      this.pendingSelectionRewrite = null // Clear the pending state
+      
+      // Pass the pre-saved selectedText and position directly to handleCustomRewrite
+      // No need to re-select or check current selection
+      await this.handleCustomRewrite(rewriteEditor, customPrompt, selectedText, from)
+      return
+    }
     return this.handleContinueWriting(editor, customPrompt, geminiTools)
   }
 

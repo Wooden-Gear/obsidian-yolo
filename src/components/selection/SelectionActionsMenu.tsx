@@ -55,12 +55,6 @@ export function SelectionActionsMenu({
       icon: <BookOpen size={14} />,
       handler: () => onAction('explain'),
     },
-    {
-      id: 'continue',
-      label: t('selection.actions.continue', '继续写作'),
-      icon: <Sparkles size={14} />,
-      handler: () => onAction('continue'),
-    },
   ]
 
   useEffect(() => {

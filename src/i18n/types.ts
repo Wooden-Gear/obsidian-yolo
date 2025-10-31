@@ -433,7 +433,6 @@ export type TranslationKeys = {
       addToChat?: string
       rewrite?: string
       explain?: string
-      continue?: string
     }
   }
 
