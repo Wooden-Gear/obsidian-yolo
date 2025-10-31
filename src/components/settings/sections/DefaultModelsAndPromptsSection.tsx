@@ -5,13 +5,75 @@ import {
 } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
+import { useCallback, useMemo } from 'react'
+
+import {
+  ObsidianDropdown,
+  type ObsidianDropdownOptionGroup,
+} from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 
 export function DefaultModelsAndPromptsSection() {
   const { settings, setSettings } = useSettings()
   const { t, language } = useLanguage()
+  const enabledChatModels = useMemo(
+    () => settings.chatModels.filter(({ enable }) => enable ?? true),
+    [settings.chatModels],
+  )
+
+  const orderedProviderIds = useMemo(() => {
+    const providerOrder = settings.providers.map((p) => p.id)
+    const providerIdsInModels = Array.from(
+      new Set(enabledChatModels.map((m) => m.providerId)),
+    )
+    return [
+      ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
+      ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
+    ]
+  }, [enabledChatModels, settings.providers])
+
+  const buildGroupedChatOptions = useCallback(
+    (recommendedModelIds: string[]) => {
+      const recommendedBadge =
+        t('settings.defaults.recommendedBadge') ?? '(Recommended)'
+      return orderedProviderIds
+        .map<ObsidianDropdownOptionGroup | null>((providerId) => {
+          const groupModels = enabledChatModels.filter(
+            (model) => model.providerId === providerId,
+          )
+          if (groupModels.length === 0) return null
+          return {
+            label: providerId,
+            options: groupModels.map((chatModel) => {
+              const labelBase =
+                chatModel.name || chatModel.model || chatModel.id
+              const badge = recommendedModelIds.includes(chatModel.id)
+                ? ` ${recommendedBadge}`
+                : ''
+              return {
+                value: chatModel.id,
+                label: `${labelBase}${badge}`.trim(),
+              }
+            }),
+          }
+        })
+        .filter(
+          (group): group is ObsidianDropdownOptionGroup => group !== null,
+        )
+    },
+    [enabledChatModels, orderedProviderIds, t],
+  )
+
+  const chatModelGroupedOptions = useMemo(
+    () => buildGroupedChatOptions(RECOMMENDED_MODELS_FOR_CHAT),
+    [buildGroupedChatOptions],
+  )
+
+  const applyModelGroupedOptions = useMemo(
+    () => buildGroupedChatOptions(RECOMMENDED_MODELS_FOR_APPLY),
+    [buildGroupedChatOptions],
+  )
 
   const defaultTitlePrompt =
     DEFAULT_CHAT_TITLE_PROMPT[language] ?? DEFAULT_CHAT_TITLE_PROMPT.en
@@ -36,19 +98,7 @@ export function DefaultModelsAndPromptsSection() {
       >
         <ObsidianDropdown
           value={settings.chatModelId}
-          options={Object.fromEntries(
-            settings.chatModels
-              .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => {
-                const labelBase =
-                  chatModel.name || chatModel.model || chatModel.id
-                const badge = RECOMMENDED_MODELS_FOR_CHAT.includes(chatModel.id)
-                  ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
-                  : ''
-                const label = `${labelBase}${badge}`.trim()
-                return [chatModel.id, label]
-              }),
-          )}
+          groupedOptions={chatModelGroupedOptions}
           onChange={async (value) => {
             await setSettings({
               ...settings,
@@ -64,21 +114,7 @@ export function DefaultModelsAndPromptsSection() {
       >
         <ObsidianDropdown
           value={settings.applyModelId}
-          options={Object.fromEntries(
-            settings.chatModels
-              .filter(({ enable }) => enable ?? true)
-              .map((chatModel) => {
-                const labelBase =
-                  chatModel.name || chatModel.model || chatModel.id
-                const badge = RECOMMENDED_MODELS_FOR_APPLY.includes(
-                  chatModel.id,
-                )
-                  ? ` ${t('settings.defaults.recommendedBadge') ?? '(Recommended)'}`
-                  : ''
-                const label = `${labelBase}${badge}`.trim()
-                return [chatModel.id, label]
-              }),
-          )}
+          groupedOptions={applyModelGroupedOptions}
           onChange={async (value) => {
             await setSettings({
               ...settings,

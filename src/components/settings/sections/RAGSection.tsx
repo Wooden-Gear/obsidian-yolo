@@ -13,7 +13,10 @@ import {
 } from '../../../utils/rag-utils'
 import { IndexProgress } from '../../chat-view/QueryProgress'
 import { ObsidianButton } from '../../common/ObsidianButton'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
+import {
+  ObsidianDropdown,
+  type ObsidianDropdownOptionGroup,
+} from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
@@ -91,6 +94,45 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
     return { exactConflicts, includeUnderExcluded, excludeWithinIncluded }
   }, [includeFolders, excludeFolders])
 
+  const embeddingModelOptionGroups = useMemo<
+    ObsidianDropdownOptionGroup[]
+  >(() => {
+    const providerOrder = settings.providers.map((p) => p.id)
+    const providerIdsInModels = Array.from(
+      new Set(settings.embeddingModels.map((model) => model.providerId)),
+    )
+    const orderedProviderIds = [
+      ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
+      ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
+    ]
+    const recommendedBadge =
+      t('settings.defaults.recommendedBadge') ?? '(Recommended)'
+
+    return orderedProviderIds
+      .map<ObsidianDropdownOptionGroup | null>((providerId) => {
+        const groupModels = settings.embeddingModels.filter(
+          (model) => model.providerId === providerId,
+        )
+        if (groupModels.length === 0) return null
+        return {
+          label: providerId,
+          options: groupModels.map((model) => {
+            const baseLabel = model.name || model.model || model.id
+            const badge = RECOMMENDED_MODELS_FOR_EMBEDDING.includes(model.id)
+              ? ` ${recommendedBadge}`
+              : ''
+            return {
+              value: model.id,
+              label: `${baseLabel}${badge}`.trim(),
+            }
+          }),
+        }
+      })
+      .filter(
+        (group): group is ObsidianDropdownOptionGroup => group !== null,
+      )
+  }, [settings.embeddingModels, settings.providers, t])
+
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header">{t('settings.rag.title')}</div>
@@ -121,12 +163,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           >
             <ObsidianDropdown
               value={settings.embeddingModelId}
-              options={Object.fromEntries(
-                settings.embeddingModels.map((embeddingModel) => [
-                  embeddingModel.id,
-                  `${embeddingModel.id}${RECOMMENDED_MODELS_FOR_EMBEDDING.includes(embeddingModel.id) ? ' (Recommended)' : ''}`,
-                ]),
-              )}
+              groupedOptions={embeddingModelOptionGroups}
               onChange={async (value) => {
                 await setSettings({
                   ...settings,
