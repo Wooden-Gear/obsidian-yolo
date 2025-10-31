@@ -311,7 +311,9 @@ export default class SmartComposerPlugin extends Plugin {
     showQuickActions = true,
   ) {
     const selection = view.state.selection.main
-    const pos = selection.head
+    // Use the end of selection (max of head and anchor) to always position at the visual end
+    // This ensures the widget appears below the selection regardless of selection direction
+    const pos = Math.max(selection.head, selection.anchor)
 
     this.closeCustomContinueWidget()
 
