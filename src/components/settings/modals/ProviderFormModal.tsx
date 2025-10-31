@@ -61,7 +61,12 @@ function ProviderFormComponent({
   )
   const [formData, setFormData] = useState<LLMProvider>(
     provider
-      ? { ...provider }
+      ? ({
+          ...provider,
+          additionalSettings: provider.additionalSettings
+            ? { ...provider.additionalSettings }
+            : undefined,
+        } as LLMProvider)
       : {
           type: 'openai-compatible',
           id: '',
@@ -69,16 +74,15 @@ function ProviderFormComponent({
           baseUrl: '',
         },
   )
-
   const handleSubmit = async () => {
     if (provider) {
-      const newProviders = [...plugin.settings.providers]
-      const currentProviderIndex = newProviders.findIndex(
-        (v) => v.id === formData.id,
-      )
-
-      if (currentProviderIndex === -1) {
-        new Notice(`No provider found with this ID`)
+      if (
+        plugin.settings.providers.some(
+          (p: LLMProvider) =>
+            p.id === formData.id && p.id !== provider.id,
+        )
+      ) {
+        new Notice('Provider with this ID already exists. Try a different ID.')
         return
       }
 
@@ -90,13 +94,61 @@ function ProviderFormComponent({
         return
       }
 
+      const providerIndex = plugin.settings.providers.findIndex(
+        (v) => v.id === provider.id,
+      )
+
+      if (providerIndex === -1) {
+        new Notice(`No provider found with this ID`)
+        return
+      }
+
+      const validatedProvider = validationResult.data
+      const providerIdChanged = provider.id !== validatedProvider.id
+      const providerTypeChanged = provider.type !== validatedProvider.type
+
+      const updatedProviders = [...plugin.settings.providers]
+      updatedProviders[providerIndex] = validatedProvider
+
+      const updatedChatModels =
+        providerIdChanged || providerTypeChanged
+          ? plugin.settings.chatModels.map((model) =>
+              model.providerId === provider.id
+                ? {
+                    ...model,
+                    ...(providerIdChanged
+                      ? { providerId: validatedProvider.id }
+                      : {}),
+                    ...(providerTypeChanged
+                      ? { providerType: validatedProvider.type }
+                      : {}),
+                  }
+                : model,
+            )
+          : plugin.settings.chatModels
+
+      const updatedEmbeddingModels =
+        providerIdChanged || providerTypeChanged
+          ? plugin.settings.embeddingModels.map((model) =>
+              model.providerId === provider.id
+                ? {
+                    ...model,
+                    ...(providerIdChanged
+                      ? { providerId: validatedProvider.id }
+                      : {}),
+                    ...(providerTypeChanged
+                      ? { providerType: validatedProvider.type }
+                      : {}),
+                  }
+                : model,
+            )
+          : plugin.settings.embeddingModels
+
       await plugin.setSettings({
         ...plugin.settings,
-        providers: [
-          ...plugin.settings.providers.slice(0, currentProviderIndex),
-          formData,
-          ...plugin.settings.providers.slice(currentProviderIndex + 1),
-        ],
+        providers: updatedProviders,
+        chatModels: updatedChatModels,
+        embeddingModels: updatedEmbeddingModels,
       })
     } else {
       if (
@@ -114,9 +166,10 @@ function ProviderFormComponent({
         return
       }
 
+      const validatedProvider = validationResult.data
       await plugin.setSettings({
         ...plugin.settings,
-        providers: [...plugin.settings.providers, formData],
+        providers: [...plugin.settings.providers, validatedProvider],
       })
     }
 
@@ -127,45 +180,41 @@ function ProviderFormComponent({
 
   return (
     <>
-      {!provider && (
-        <>
-          <ObsidianSetting
-            name="ID"
-            desc="Choose an ID to identify this provider in your settings. This is just for your reference."
-            required
-          >
-            <ObsidianTextInput
-              value={formData.id}
-              placeholder="my-custom-provider"
-              onChange={(value: string) =>
-                setFormData((prev) => ({ ...prev, id: value }))
-              }
-            />
-          </ObsidianSetting>
+      <ObsidianSetting
+        name="ID"
+        desc="Choose an ID to identify this provider in your settings. This is just for your reference."
+        required
+      >
+        <ObsidianTextInput
+          value={formData.id}
+          placeholder="my-custom-provider"
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, id: value }))
+          }
+        />
+      </ObsidianSetting>
 
-          <ObsidianSetting name="Provider Type" required>
-            <ObsidianDropdown
-              value={formData.type}
-              options={Object.fromEntries(
-                Object.entries(PROVIDER_TYPES_INFO).map(([key, info]) => [
-                  key,
-                  info.label,
-                ]),
-              )}
-              onChange={(value: string) =>
-                setFormData(
-                  (prev) =>
-                    ({
-                      ...prev,
-                      type: value,
-                      additionalSettings: {},
-                    }) as LLMProvider,
-                )
-              }
-            />
-          </ObsidianSetting>
-        </>
-      )}
+      <ObsidianSetting name="Provider Type" required>
+        <ObsidianDropdown
+          value={formData.type}
+          options={Object.fromEntries(
+            Object.entries(PROVIDER_TYPES_INFO).map(([key, info]) => [
+              key,
+              info.label,
+            ]),
+          )}
+          onChange={(value: string) =>
+            setFormData(
+              (prev) =>
+                ({
+                  ...prev,
+                  type: value,
+                  additionalSettings: {},
+                }) as LLMProvider,
+            )
+          }
+        />
+      </ObsidianSetting>
 
       <ObsidianSetting
         name={t('settings.providers.apiKey')}
