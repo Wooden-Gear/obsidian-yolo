@@ -4028,9 +4028,9 @@ button.smtcmp-chat-input-model-select {
   font-size: var(--font-ui-small);
   font-weight: var(--font-semibold);
   color: var(--text-muted);
-  padding: var(--size-4-2) var(--size-4-1);
-  margin-top: var(--size-4-3);
-  margin-bottom: var(--size-4-2);
+  padding: var(--size-2-3) var(--size-4-1);
+  margin-top: 0;
+  margin-bottom: var(--size-4-1);
   text-transform: none;
   letter-spacing: 0.02em;
 }
@@ -4044,7 +4044,7 @@ button.smtcmp-chat-input-model-select {
   height: 1px;
   background: transparent;
   border-top: 1px dashed var(--background-modifier-border);
-  margin: var(--size-4-4) 0;
+  margin: var(--size-4-2) 0 var(--size-4-1) 0;
 }
 
 .smtcmp-quick-action-item {
