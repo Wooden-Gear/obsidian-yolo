@@ -221,16 +221,20 @@ export const smartComposerSettingsSchema = z.object({
       // override system prompt for tab completion
       tabCompletionSystemPrompt: z.string().optional(),
       // Smart Space custom quick actions
-      smartSpaceQuickActions: z.array(
-        z.object({
-          id: z.string(),
-          label: z.string(),
-          instruction: z.string(),
-          icon: z.string().optional(),
-          category: z.enum(['suggestions', 'writing', 'thinking', 'custom']).optional(),
-          enabled: z.boolean().default(true),
-        })
-      ).optional(),
+      smartSpaceQuickActions: z
+        .array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            instruction: z.string(),
+            icon: z.string().optional(),
+            category: z
+              .enum(['suggestions', 'writing', 'thinking', 'custom'])
+              .optional(),
+            enabled: z.boolean().default(true),
+          }),
+        )
+        .optional(),
     })
     .catch({
       continuationModelId:

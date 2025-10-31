@@ -3422,11 +3422,13 @@ button.smtcmp-chat-input-model-select {
   position: absolute;
   pointer-events: none;
   z-index: 9999;
-  animation: smtcmp-smart-space-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: smtcmp-smart-space-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1)
+    forwards;
 }
 
 .smtcmp-custom-continue-overlay.closing {
-  animation: smtcmp-smart-space-fade-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: smtcmp-smart-space-fade-out 0.2s cubic-bezier(0.4, 0, 1, 1)
+    forwards;
 }
 
 /* Smart Space 弹出动画 */
@@ -3489,14 +3491,23 @@ button.smtcmp-chat-input-model-select {
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-l, 0 4px 12px rgba(0, 0, 0, 0.08));
   overflow: visible;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s backwards;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+    0.05s backwards;
   pointer-events: auto;
 }
 
 .smtcmp-custom-continue-input-card:focus-within {
   border-color: var(--h1-color, var(--interactive-accent));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 20%, transparent),
+  box-shadow:
+    0 0 0 2px
+      color-mix(
+        in srgb,
+        var(--h1-color, var(--interactive-accent)) 20%,
+        transparent
+      ),
     var(--shadow-l, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
@@ -3520,7 +3531,11 @@ button.smtcmp-chat-input-model-select {
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 16%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--h1-color, var(--interactive-accent)) 16%,
+    transparent
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3598,7 +3613,8 @@ button.smtcmp-chat-input-model-select {
   overflow: visible;
   width: min(420px, 100%);
   align-self: flex-start;
-  animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+  animation: smtcmp-smart-space-item-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+    0.1s backwards;
   pointer-events: auto;
 }
 
@@ -3655,18 +3671,35 @@ button.smtcmp-chat-input-model-select {
   transition:
     background 0.15s ease,
     transform 0.1s ease;
-  animation: smtcmp-smart-space-item-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: smtcmp-smart-space-item-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1)
+    backwards;
 }
 
 /* 为不同的选项添加渐进式延迟 */
-.smtcmp-custom-continue-item:nth-child(1) { animation-delay: 0.15s; }
-.smtcmp-custom-continue-item:nth-child(2) { animation-delay: 0.18s; }
-.smtcmp-custom-continue-item:nth-child(3) { animation-delay: 0.21s; }
-.smtcmp-custom-continue-item:nth-child(4) { animation-delay: 0.24s; }
-.smtcmp-custom-continue-item:nth-child(5) { animation-delay: 0.27s; }
-.smtcmp-custom-continue-item:nth-child(6) { animation-delay: 0.30s; }
-.smtcmp-custom-continue-item:nth-child(7) { animation-delay: 0.33s; }
-.smtcmp-custom-continue-item:nth-child(8) { animation-delay: 0.36s; }
+.smtcmp-custom-continue-item:nth-child(1) {
+  animation-delay: 0.15s;
+}
+.smtcmp-custom-continue-item:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.smtcmp-custom-continue-item:nth-child(3) {
+  animation-delay: 0.21s;
+}
+.smtcmp-custom-continue-item:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.smtcmp-custom-continue-item:nth-child(5) {
+  animation-delay: 0.27s;
+}
+.smtcmp-custom-continue-item:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.smtcmp-custom-continue-item:nth-child(7) {
+  animation-delay: 0.33s;
+}
+.smtcmp-custom-continue-item:nth-child(8) {
+  animation-delay: 0.36s;
+}
 
 .smtcmp-custom-continue-item:hover,
 .smtcmp-custom-continue-item:focus-visible {
@@ -3684,7 +3717,11 @@ button.smtcmp-chat-input-model-select {
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 12%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--h1-color, var(--interactive-accent)) 12%,
+    transparent
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4069,7 +4106,11 @@ button.smtcmp-chat-input-model-select {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: none;
-  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-primary));
+  background: color-mix(
+    in srgb,
+    var(--interactive-accent) 5%,
+    var(--background-primary)
+  );
 }
 
 .smtcmp-quick-action-item.disabled {
@@ -4113,7 +4154,11 @@ button.smtcmp-chat-input-model-select {
     background: var(--background-primary);
   }
   50% {
-    background: color-mix(in srgb, var(--interactive-accent) 20%, var(--background-primary));
+    background: color-mix(
+      in srgb,
+      var(--interactive-accent) 20%,
+      var(--background-primary)
+    );
   }
   100% {
     background: var(--background-primary);
@@ -4141,7 +4186,8 @@ button.smtcmp-chat-input-model-select {
   justify-content: center;
 }
 
-.smtcmp-quick-action-drag-handle .smtcmp-drag-handle.smtcmp-drag-handle--active {
+.smtcmp-quick-action-drag-handle
+  .smtcmp-drag-handle.smtcmp-drag-handle--active {
   color: var(--interactive-accent);
 }
 
@@ -4422,7 +4468,13 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-selection-indicator:hover {
   background: var(--background-modifier-hover);
   border-color: var(--interactive-accent-hover);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 20%, transparent),
+  box-shadow:
+    0 0 0 2px
+      color-mix(
+        in srgb,
+        var(--h1-color, var(--interactive-accent)) 20%,
+        transparent
+      ),
     var(--shadow-s);
   transform: scale(1.05);
 }

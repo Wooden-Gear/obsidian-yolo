@@ -27,8 +27,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
     [settings.chatModels],
   )
 
-  const enableSmartSpace =
-    settings.continuationOptions.enableSmartSpace ?? true
+  const enableSmartSpace = settings.continuationOptions.enableSmartSpace ?? true
   const enableTabCompletion = Boolean(
     settings.continuationOptions.enableTabCompletion,
   )
@@ -46,12 +45,6 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         ...DEFAULT_TAB_COMPLETION_OPTIONS,
         ...(settings.continuationOptions.tabCompletionOptions ?? {}),
       }
-  const defaultContinuationModelId =
-    settings.continuationOptions.continuationModelId ??
-    settings.continuationOptions.tabCompletionModelId ??
-    enabledChatModels[0]?.id ??
-    settings.chatModelId
-
   const updateTabCompletionOptions = async (
     updates: Partial<typeof tabCompletionOptions>,
   ) => {
@@ -107,9 +100,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      {enableSmartSpace && (
-        <SmartSpaceQuickActionsSettings />
-      )}
+      {enableSmartSpace && <SmartSpaceQuickActionsSettings />}
 
       <ObsidianSetting
         name={t('settings.continuation.selectionChatToggle')}

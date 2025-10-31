@@ -83,9 +83,10 @@ function EditEmbeddingModelModalComponent({
       embeddingModels[modelIndex] = {
         ...embeddingModels[modelIndex],
         model: formData.model,
-        name: formData.name && formData.name.trim().length > 0
-          ? formData.name
-          : formData.model,
+        name:
+          formData.name && formData.name.trim().length > 0
+            ? formData.name
+            : formData.model,
         dimension: dimension!,
       }
 

@@ -1,7 +1,7 @@
 import {
+  EditorSelection,
   type Extension,
   Prec,
-  EditorSelection,
   StateEffect,
   StateField,
 } from '@codemirror/state'
@@ -29,9 +29,9 @@ import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
 import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
+import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
 import { SelectionManager } from './components/selection/SelectionManager'
 import type { SelectionInfo } from './components/selection/SelectionManager'
-import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
@@ -201,9 +201,11 @@ export default class SmartComposerPlugin extends Plugin {
     pos: number
     close: () => void
   } | null = null
-  private lastSmartSpaceSlash:
-    | { view: EditorView; pos: number; timestamp: number }
-    | null = null
+  private lastSmartSpaceSlash: {
+    view: EditorView
+    pos: number
+    timestamp: number
+  } | null = null
   // Selection chat state
   private selectionManager: any | null = null
   private selectionChatWidget: any | null = null
@@ -214,10 +216,8 @@ export default class SmartComposerPlugin extends Plugin {
     to: { line: number; ch: number }
   } | null = null
   // Model list cache for provider model fetching
-  private modelListCache: Map<
-    string,
-    { models: string[]; timestamp: number }
-  > = new Map()
+  private modelListCache: Map<string, { models: string[]; timestamp: number }> =
+    new Map()
 
   // Get cached model list for a provider
   getCachedModelList(providerId: string): string[] | null {
@@ -286,22 +286,22 @@ export default class SmartComposerPlugin extends Plugin {
   private closeCustomContinueWidget() {
     const state = this.customContinueWidgetState
     if (!state) return
-    
+
     // 先清除状态，避免重复关闭
     this.customContinueWidgetState = null
-    
+
     // Clear pending selection rewrite if user closes without submitting
     this.pendingSelectionRewrite = null
-    
+
     // 尝试触发关闭动画
     const hasAnimation = CustomContinueWidget.closeCurrentWithAnimation()
-    
+
     if (!hasAnimation) {
       // 如果没有动画实例，直接分发关闭效果
       state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
     }
     // 如果有动画，widget 会在动画结束后自己调用 onClose 来分发关闭效果
-    
+
     state.view.focus()
   }
 
@@ -319,7 +319,10 @@ export default class SmartComposerPlugin extends Plugin {
 
     const close = () => {
       // 检查是否是当前的 widget（允许状态为 null，因为可能在动画期间被清除）
-      if (this.customContinueWidgetState && this.customContinueWidgetState.view !== view) {
+      if (
+        this.customContinueWidgetState &&
+        this.customContinueWidgetState.view !== view
+      ) {
         return
       }
       this.customContinueWidgetState = null
@@ -349,8 +352,9 @@ export default class SmartComposerPlugin extends Plugin {
   // Selection Chat methods
   private initializeSelectionManager() {
     // Check if Selection Chat is enabled
-    const enableSelectionChat = this.settings.continuationOptions?.enableSelectionChat ?? true
-    
+    const enableSelectionChat =
+      this.settings.continuationOptions?.enableSelectionChat ?? true
+
     // Clean up existing manager
     if (this.selectionManager) {
       this.selectionManager.destroy()
@@ -370,11 +374,14 @@ export default class SmartComposerPlugin extends Plugin {
     if (!editorContainer) return
 
     // Create new selection manager
-    this.selectionManager = new SelectionManager(editorContainer as HTMLElement, {
-      enabled: true,
-      minSelectionLength: 6,
-      debounceDelay: 300,
-    })
+    this.selectionManager = new SelectionManager(
+      editorContainer as HTMLElement,
+      {
+        enabled: true,
+        minSelectionLength: 6,
+        debounceDelay: 300,
+      },
+    )
 
     // Initialize with callback
     this.selectionManager.init((selection: SelectionInfo | null) => {
@@ -382,7 +389,10 @@ export default class SmartComposerPlugin extends Plugin {
     })
   }
 
-  private handleSelectionChange(selection: SelectionInfo | null, editor: Editor) {
+  private handleSelectionChange(
+    selection: SelectionInfo | null,
+    editor: Editor,
+  ) {
     // Close existing widget
     if (this.selectionChatWidget) {
       this.selectionChatWidget.destroy()
@@ -442,11 +452,11 @@ export default class SmartComposerPlugin extends Plugin {
     }
   }
 
-  private async addTextToChat(text: string) {
+  private async addTextToChat(_text: string) {
     // Get current file and editor info for context
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     const editor = view?.editor
-    
+
     if (!editor || !view) {
       new Notice('无法获取当前编辑器')
       return
@@ -526,7 +536,9 @@ export default class SmartComposerPlugin extends Plugin {
       const newLeaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
       if (newLeaves.length > 0 && newLeaves[0].view instanceof ChatView) {
         const chatView = newLeaves[0].view
-        chatView.insertTextToInput(this.t('selection.actions.explain', '请深入解释') + '：')
+        chatView.insertTextToInput(
+          this.t('selection.actions.explain', '请深入解释') + '：',
+        )
         chatView.focusMessage()
       }
       return
@@ -536,7 +548,9 @@ export default class SmartComposerPlugin extends Plugin {
     await this.app.workspace.revealLeaf(leaves[0])
     const chatView = leaves[0].view
     chatView.addSelectionToChat(data)
-    chatView.insertTextToInput(this.t('selection.actions.explain', '请深入解释') + '：')
+    chatView.insertTextToInput(
+      this.t('selection.actions.explain', '请深入解释') + '：',
+    )
     chatView.focusMessage()
   }
 
@@ -1513,9 +1527,10 @@ export default class SmartComposerPlugin extends Plugin {
 
     // Listen for settings changes to reinitialize Selection Chat
     this.addSettingsChangeListener((newSettings) => {
-      const enableSelectionChat = newSettings.continuationOptions?.enableSelectionChat ?? true
+      const enableSelectionChat =
+        newSettings.continuationOptions?.enableSelectionChat ?? true
       const wasEnabled = this.selectionManager !== null
-      
+
       if (enableSelectionChat !== wasEnabled) {
         // Re-initialize when the setting changes
         this.initializeSelectionManager()
@@ -1525,7 +1540,7 @@ export default class SmartComposerPlugin extends Plugin {
 
   onunload() {
     this.closeCustomContinueWidget()
-    
+
     // Selection chat cleanup
     if (this.selectionChatWidget) {
       this.selectionChatWidget.destroy()
@@ -1535,7 +1550,7 @@ export default class SmartComposerPlugin extends Plugin {
       this.selectionManager.destroy()
       this.selectionManager = null
     }
-    
+
     // clear all timers
     this.timeoutIds.forEach((id) => clearTimeout(id))
     this.timeoutIds = []
@@ -1812,12 +1827,21 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   ) {
     // Check if this is actually a rewrite request from Selection Chat
     if (this.pendingSelectionRewrite) {
-      const { editor: rewriteEditor, selectedText, from } = this.pendingSelectionRewrite
+      const {
+        editor: rewriteEditor,
+        selectedText,
+        from,
+      } = this.pendingSelectionRewrite
       this.pendingSelectionRewrite = null // Clear the pending state
-      
+
       // Pass the pre-saved selectedText and position directly to handleCustomRewrite
       // No need to re-select or check current selection
-      await this.handleCustomRewrite(rewriteEditor, customPrompt, selectedText, from)
+      await this.handleCustomRewrite(
+        rewriteEditor,
+        customPrompt,
+        selectedText,
+        from,
+      )
       return
     }
     return this.handleContinueWriting(editor, customPrompt, geminiTools)

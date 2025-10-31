@@ -46,8 +46,7 @@ export const zh: TranslationKeys = {
       backToChat: '返回 Chat',
       modelSectionTitle: '模型设置',
       continuationModel: '续写模型',
-      continuationModelDesc:
-        '在开启超级续写时，Sparkle 将使用该模型处理续写。',
+      continuationModelDesc: '在开启超级续写时，Sparkle 将使用该模型处理续写。',
       contextSectionTitle: '上下文来源',
       ragToggle: '启用 RAG 检索',
       ragToggleDesc: '续写前通过 embedding 召回相似的笔记片段。',
@@ -117,7 +116,8 @@ export const zh: TranslationKeys = {
       actionLabelPlaceholder: '例如：继续编写',
       actionInstruction: '提示词',
       actionInstructionDesc: '发送给 AI 的指令',
-      actionInstructionPlaceholder: '例如：请继续扩展当前段落，保持原有语气与风格。',
+      actionInstructionPlaceholder:
+        '例如：请继续扩展当前段落，保持原有语气与风格。',
       actionCategory: '分类',
       actionCategoryDesc: '选项所属的分类',
       actionIcon: '图标',
@@ -405,8 +405,7 @@ export const zh: TranslationKeys = {
       keywordTriggerDesc:
         '在编辑器中检测到指定关键词时自动触发续写。建议使用"cc"。',
       triggerKeyword: '触发关键词',
-      triggerKeywordDesc:
-        '当光标前的文本等于该关键词时触发续写（默认：cc）',
+      triggerKeywordDesc: '当光标前的文本等于该关键词时触发续写（默认：cc）',
       tabCompletion: '启用 Tab 补全',
       tabCompletionDesc:
         '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',
@@ -502,7 +501,8 @@ export const zh: TranslationKeys = {
         items: {
           continue: {
             label: '继续编写',
-            instruction: '您是一位乐于助人的写作助理。请根据提供的上下文继续写作，不要重复或转述上下文。保持语气、语言和风格一致。只输出续写文本。',
+            instruction:
+              '您是一位乐于助人的写作助理。请根据提供的上下文继续写作，不要重复或转述上下文。保持语气、语言和风格一致。只输出续写文本。',
           },
         },
       },

@@ -1,26 +1,21 @@
-import {
-  MessageCircle,
-  PenLine,
-  Sparkles,
-  BookOpen,
-} from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import { BookOpen, MessageCircle, PenLine } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
+
 import type { SelectionInfo } from './SelectionManager'
 
-export interface SelectionAction {
+export type SelectionAction = {
   id: string
   label: string
   icon: React.ReactNode
   handler: () => void | Promise<void>
 }
 
-interface SelectionActionsMenuProps {
+type SelectionActionsMenuProps = {
   selection: SelectionInfo
   indicatorPosition: { left: number; top: number }
   onAction: (actionId: string) => void | Promise<void>
-  onClose: () => void
   onHoverChange: (isHovering: boolean) => void
 }
 
@@ -28,7 +23,6 @@ export function SelectionActionsMenu({
   selection,
   indicatorPosition,
   onAction,
-  onClose,
   onHoverChange,
 }: SelectionActionsMenuProps) {
   const { t } = useLanguage()
@@ -36,41 +30,36 @@ export function SelectionActionsMenu({
   const [position, setPosition] = useState({ left: 0, top: 0 })
   const [isVisible, setIsVisible] = useState(false)
 
-  const actions: SelectionAction[] = [
-    {
-      id: 'add-to-chat',
-      label: t('selection.actions.addToChat', '添加到对话'),
-      icon: <MessageCircle size={14} />,
-      handler: () => onAction('add-to-chat'),
-    },
-    {
-      id: 'rewrite',
-      label: t('selection.actions.rewrite', 'AI 改写'),
-      icon: <PenLine size={14} />,
-      handler: () => onAction('rewrite'),
-    },
-    {
-      id: 'explain',
-      label: t('selection.actions.explain', '深入解释'),
-      icon: <BookOpen size={14} />,
-      handler: () => onAction('explain'),
-    },
-  ]
+  const actions: SelectionAction[] = useMemo(
+    () => [
+      {
+        id: 'add-to-chat',
+        label: t('selection.actions.addToChat', '添加到对话'),
+        icon: <MessageCircle size={14} />,
+        handler: () => onAction('add-to-chat'),
+      },
+      {
+        id: 'rewrite',
+        label: t('selection.actions.rewrite', 'AI 改写'),
+        icon: <PenLine size={14} />,
+        handler: () => onAction('rewrite'),
+      },
+      {
+        id: 'explain',
+        label: t('selection.actions.explain', '深入解释'),
+        icon: <BookOpen size={14} />,
+        handler: () => onAction('explain'),
+      },
+    ],
+    [onAction, t],
+  )
 
-  useEffect(() => {
-    updatePosition()
-    // Fade in after positioning
-    const timer = window.setTimeout(() => setIsVisible(true), 50)
-    
-    return () => window.clearTimeout(timer)
-  }, [selection, indicatorPosition])
-
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     // Position menu relative to indicator
     const menuWidth = 200 // Approximate menu width
     const menuHeight = 44 * actions.length + 16 // Approximate height
     const offset = 8
-    
+
     let left = indicatorPosition.left + 28 + offset // 28px is indicator width
     let top = indicatorPosition.top
 
@@ -94,7 +83,15 @@ export function SelectionActionsMenu({
     }
 
     setPosition({ left, top })
-  }
+  }, [actions.length, indicatorPosition.left, indicatorPosition.top])
+
+  useEffect(() => {
+    updatePosition()
+    // Fade in after positioning
+    const timer = window.setTimeout(() => setIsVisible(true), 50)
+
+    return () => window.clearTimeout(timer)
+  }, [selection, updatePosition])
 
   const handleMouseEnter = () => {
     onHoverChange(true)

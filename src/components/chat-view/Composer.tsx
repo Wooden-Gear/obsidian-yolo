@@ -6,7 +6,6 @@ import { useSettings } from '../../contexts/settings-context'
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import { getModelDisplayName } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
-import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ObsidianToggle } from '../common/ObsidianToggle'
 import { FolderSelectionList } from '../settings/inputs/FolderSelectionList'
 
@@ -91,10 +90,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
         <section className="smtcmp-composer-section">
           <header className="smtcmp-composer-heading">
             <div className="smtcmp-composer-heading-title">
-              {t(
-                'sidebar.composer.sections.modelWithPrompt.title',
-                '模型选择',
-              )}
+              {t('sidebar.composer.sections.modelWithPrompt.title', '模型选择')}
             </div>
             <div className="smtcmp-composer-heading-desc">
               {t(

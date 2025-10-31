@@ -1,9 +1,9 @@
 import { Sparkles } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { SelectionInfo } from './SelectionManager'
 
-interface SelectionIndicatorProps {
+type SelectionIndicatorProps = {
   selection: SelectionInfo
   onHoverChange: (isHovering: boolean) => void
   offset?: number
@@ -18,18 +18,10 @@ export function SelectionIndicator({
   const [position, setPosition] = useState({ left: 0, top: 0 })
   const [isVisible, setIsVisible] = useState(false)
 
-  useEffect(() => {
-    updatePosition()
-    // Fade in after positioning
-    const timer = window.setTimeout(() => setIsVisible(true), 10)
-    
-    return () => window.clearTimeout(timer)
-  }, [selection])
-
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     const { rect } = selection
     const isRTL = document.dir === 'rtl'
-    
+
     let left: number
     let top: number
 
@@ -40,7 +32,7 @@ export function SelectionIndicator({
       // For LTR, position to the right of the selection
       left = rect.right + offset
     }
-    
+
     top = rect.bottom + offset
 
     // Ensure the indicator stays within viewport
@@ -60,7 +52,15 @@ export function SelectionIndicator({
     }
 
     setPosition({ left, top })
-  }
+  }, [offset, selection])
+
+  useEffect(() => {
+    updatePosition()
+    // Fade in after positioning
+    const timer = window.setTimeout(() => setIsVisible(true), 10)
+
+    return () => window.clearTimeout(timer)
+  }, [selection, updatePosition])
 
   const handleMouseEnter = () => {
     onHoverChange(true)

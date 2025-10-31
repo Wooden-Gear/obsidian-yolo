@@ -1,3 +1,5 @@
+import { useCallback, useMemo } from 'react'
+
 import {
   DEFAULT_CHAT_TITLE_PROMPT,
   RECOMMENDED_MODELS_FOR_APPLY,
@@ -5,8 +7,6 @@ import {
 } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { useCallback, useMemo } from 'react'
-
 import {
   ObsidianDropdown,
   type ObsidianDropdownOptionGroup,
@@ -58,9 +58,7 @@ export function DefaultModelsAndPromptsSection() {
             }),
           }
         })
-        .filter(
-          (group): group is ObsidianDropdownOptionGroup => group !== null,
-        )
+        .filter((group): group is ObsidianDropdownOptionGroup => group !== null)
     },
     [enabledChatModels, orderedProviderIds, t],
   )

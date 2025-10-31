@@ -127,16 +127,19 @@ export const en: TranslationKeys = {
     },
     smartSpace: {
       quickActionsTitle: 'Smart Space Quick Actions',
-      quickActionsDesc: 'Customize the quick actions and prompts displayed in Smart Space',
+      quickActionsDesc:
+        'Customize the quick actions and prompts displayed in Smart Space',
       addAction: 'Add Action',
       resetToDefault: 'Reset to Default',
-      confirmReset: 'Are you sure you want to reset to default quick actions? This will delete all custom settings.',
+      confirmReset:
+        'Are you sure you want to reset to default quick actions? This will delete all custom settings.',
       actionLabel: 'Action Label',
       actionLabelDesc: 'Text displayed in the quick action',
       actionLabelPlaceholder: 'e.g., Continue writing',
       actionInstruction: 'Prompt',
       actionInstructionDesc: 'Instruction sent to AI',
-      actionInstructionPlaceholder: 'e.g., Please continue expanding the current paragraph, maintaining the original tone and style.',
+      actionInstructionPlaceholder:
+        'e.g., Please continue expanding the current paragraph, maintaining the original tone and style.',
       actionCategory: 'Category',
       actionCategoryDesc: 'Category this action belongs to',
       actionIcon: 'Icon',

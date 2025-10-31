@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
+
 import { useObsidianSetting } from './ObsidianSetting'
 
 export type SearchableDropdownProps = {
@@ -30,22 +32,37 @@ export function SearchableDropdown({
 
   // Mount component to setting's control area if setting exists
   useEffect(() => {
-    if (setting && containerRef.current) {
-      // Move our container to the setting's control element
-      setting.controlEl.appendChild(containerRef.current)
-      
-      return () => {
-        // Clean up on unmount
-        if (containerRef.current && setting.controlEl.contains(containerRef.current)) {
-          setting.controlEl.removeChild(containerRef.current)
-        }
+    if (!setting) return
+
+    const container = containerRef.current
+    if (!container) return
+
+    setting.controlEl.appendChild(container)
+
+    return () => {
+      if (setting.controlEl.contains(container)) {
+        setting.controlEl.removeChild(container)
       }
     }
   }, [setting])
 
   // Filter options based on search query (case-insensitive fuzzy match)
-  const filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOptions = useMemo(
+    () =>
+      options.filter((option) =>
+        option.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [options, searchQuery],
+  )
+
+  const handleSelect = useCallback(
+    (selectedValue: string) => {
+      onChange(selectedValue)
+      setSearchQuery('')
+      setSelectedIndex(-1)
+      setIsOpen(false)
+    },
+    [onChange],
   )
 
   // Handle click outside to close dropdown
@@ -76,7 +93,7 @@ export function SearchableDropdown({
         case 'ArrowDown':
           event.preventDefault()
           setSelectedIndex((prev) =>
-            prev < filteredOptions.length - 1 ? prev + 1 : prev
+            prev < filteredOptions.length - 1 ? prev + 1 : prev,
           )
           break
         case 'ArrowUp':
@@ -102,7 +119,7 @@ export function SearchableDropdown({
         document.removeEventListener('keydown', handleKeyDown)
       }
     }
-  }, [isOpen, selectedIndex, filteredOptions])
+  }, [filteredOptions, handleSelect, isOpen, selectedIndex])
 
   // Scroll selected item into view
   useEffect(() => {
@@ -124,18 +141,11 @@ export function SearchableDropdown({
     setSelectedIndex(-1)
   }, [searchQuery])
 
-  const handleSelect = (selectedValue: string) => {
-    onChange(selectedValue)
-    setSearchQuery('')
-    setSelectedIndex(-1)
-    setIsOpen(false)
-  }
-
   const handleInputFocus = () => {
     setIsOpen(true)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
     setIsOpen(true)
   }
@@ -157,11 +167,7 @@ export function SearchableDropdown({
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         placeholder={
-          disabled
-            ? 'Disabled'
-            : loading
-              ? 'Loading...'
-              : placeholder
+          disabled ? 'Disabled' : loading ? 'Loading...' : placeholder
         }
         disabled={disabled || loading}
       />

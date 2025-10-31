@@ -94,12 +94,13 @@ function CustomContinuePanelBody({
     }
 
     // Get custom quick actions from settings if available
-    const customActions = plugin.settings?.continuationOptions?.smartSpaceQuickActions
-    
+    const customActions =
+      plugin.settings?.continuationOptions?.smartSpaceQuickActions
+
     if (customActions && customActions.length > 0) {
       // Use custom actions
-      const enabledActions = customActions.filter(action => action.enabled)
-      
+      const enabledActions = customActions.filter((action) => action.enabled)
+
       // Group actions by category
       const categorizedActions = {
         suggestions: [] as SectionItem[],
@@ -107,7 +108,7 @@ function CustomContinuePanelBody({
         thinking: [] as SectionItem[],
         custom: [] as SectionItem[],
       }
-      
+
       const iconMap = {
         sparkles: Sparkles,
         filetext: FileText,
@@ -119,28 +120,37 @@ function CustomContinuePanelBody({
         brain: Brain,
         messagecircle: MessageCircle,
       } as const
-      
+
       for (const action of enabledActions) {
-        const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Sparkles
+        const IconComponent =
+          iconMap[action.icon as keyof typeof iconMap] || Sparkles
         const item: SectionItem = {
           id: action.id,
           label: action.label,
           instruction: action.instruction,
-          icon: <IconComponent className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+          icon: (
+            <IconComponent
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />
+          ),
         }
         const category = action.category || 'custom'
         categorizedActions[category].push(item)
       }
-      
+
       const sections: Section[] = []
-      
+
       const categoryTitles: Record<string, string> = {
         suggestions: t('chat.customContinueSections.suggestions.title', '建议'),
         writing: t('chat.customContinueSections.writing.title', '撰写'),
-        thinking: t('chat.customContinueSections.thinking.title', '思考 · 询问 · 对话'),
+        thinking: t(
+          'chat.customContinueSections.thinking.title',
+          '思考 · 询问 · 对话',
+        ),
         custom: t('chat.customContinueSections.custom.title', '自定义'),
       }
-      
+
       for (const [category, items] of Object.entries(categorizedActions)) {
         if (items.length > 0) {
           sections.push({
@@ -150,7 +160,7 @@ function CustomContinuePanelBody({
           })
         }
       }
-      
+
       return sections
     } else {
       // Use default actions
@@ -172,7 +182,9 @@ function CustomContinuePanelBody({
         items: (SectionItem | null)[],
       ): Section | null => {
         const title = t(titleKey, '')
-        const resolvedItems = items.filter((item): item is SectionItem => !!item)
+        const resolvedItems = items.filter(
+          (item): item is SectionItem => !!item,
+        )
         if (!title || resolvedItems.length === 0) return null
         return { id, title, items: resolvedItems }
       }
@@ -225,7 +237,10 @@ function CustomContinuePanelBody({
             'table',
             'chat.customContinueSections.writing.items.table.label',
             'chat.customContinueSections.writing.items.table.instruction',
-            <Table className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+            <Table
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
           ),
           makeItem(
             'freewrite',
@@ -251,7 +266,10 @@ function CustomContinuePanelBody({
             'analyze',
             'chat.customContinueSections.thinking.items.analyze.label',
             'chat.customContinueSections.thinking.items.analyze.instruction',
-            <Brain className="smtcmp-custom-continue-item-icon-svg" size={14} />,
+            <Brain
+              className="smtcmp-custom-continue-item-icon-svg"
+              size={14}
+            />,
           ),
           makeItem(
             'dialogue',
@@ -274,7 +292,9 @@ function CustomContinuePanelBody({
 
   useEffect(() => {
     if (itemRefs.current.length !== totalItems) {
-      const nextRefs = new Array<HTMLButtonElement | null>(totalItems).fill(null)
+      const nextRefs = new Array<HTMLButtonElement | null>(totalItems).fill(
+        null,
+      )
       for (let i = 0; i < totalItems; i += 1) {
         nextRefs[i] = itemRefs.current[i] ?? null
       }
@@ -339,7 +359,9 @@ function CustomContinuePanelBody({
     }
   }
 
-  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleInputKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
     // 普通回车需二次确认；Cmd/Ctrl+Enter 仍可立即提交
     if (event.key === 'Enter') {
       event.preventDefault()
@@ -423,12 +445,18 @@ function CustomContinuePanelBody({
                 <div className="smtcmp-custom-continue-tools">
                   <button
                     type="button"
-                    className={`smtcmp-custom-continue-tool-button ${ 
+                    className={`smtcmp-custom-continue-tool-button ${
                       useWebSearch ? 'active' : ''
                     }`}
                     onClick={() => setUseWebSearch(!useWebSearch)}
-                    title={t('chat.conversationSettings.webSearch', 'Web Search')}
-                    aria-label={t('chat.conversationSettings.webSearch', 'Web Search')}
+                    title={t(
+                      'chat.conversationSettings.webSearch',
+                      'Web Search',
+                    )}
+                    aria-label={t(
+                      'chat.conversationSettings.webSearch',
+                      'Web Search',
+                    )}
                   >
                     <Globe size={14} />
                   </button>
@@ -438,8 +466,14 @@ function CustomContinuePanelBody({
                       useUrlContext ? 'active' : ''
                     }`}
                     onClick={() => setUseUrlContext(!useUrlContext)}
-                    title={t('chat.conversationSettings.urlContext', 'URL Context')}
-                    aria-label={t('chat.conversationSettings.urlContext', 'URL Context')}
+                    title={t(
+                      'chat.conversationSettings.urlContext',
+                      'URL Context',
+                    )}
+                    aria-label={t(
+                      'chat.conversationSettings.urlContext',
+                      'URL Context',
+                    )}
                   >
                     <Link size={14} />
                   </button>
@@ -474,9 +508,15 @@ function CustomContinuePanelBody({
                               key={item.id}
                               type="button"
                               className="smtcmp-custom-continue-item"
-                              onClick={() => void handleSubmit(item.instruction)}
+                              onClick={() =>
+                                void handleSubmit(item.instruction)
+                              }
                               onKeyDown={(event) =>
-                                handleItemKeyDown(event, currentIndex, item.instruction)
+                                handleItemKeyDown(
+                                  event,
+                                  currentIndex,
+                                  item.instruction,
+                                )
                               }
                               disabled={isSubmitting}
                               ref={(element) => {
@@ -521,7 +561,7 @@ export class CustomContinueWidget extends WidgetType {
   private cleanupCallbacks: (() => void)[] = []
   private rafId: number | null = null
   private resizeObserver: ResizeObserver | null = null
-  private isClosing: boolean = false
+  private isClosing = false
   private closeAnimationTimeout: number | null = null
 
   constructor(
@@ -727,16 +767,18 @@ export class CustomContinueWidget extends WidgetType {
 
     const scrollDom = this.options.view.scrollDOM
     const scrollRect = scrollDom?.getBoundingClientRect()
-    const sizer = scrollDom?.querySelector('.cm-sizer') as HTMLElement | null
+    const sizer = scrollDom?.querySelector('.cm-sizer')
     const sizerRect = sizer?.getBoundingClientRect()
 
     const fallbackWidth = parseInt(
-      getComputedStyle(document.documentElement)
-        .getPropertyValue('--file-line-width') || '720',
+      getComputedStyle(document.documentElement).getPropertyValue(
+        '--file-line-width',
+      ) || '720',
       10,
     )
 
-    const editorContentWidth = sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
+    const editorContentWidth =
+      sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
     const maxPanelWidth = Math.max(
       120,
       Math.min(editorContentWidth, viewportWidth - margin * 2),

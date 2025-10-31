@@ -1,6 +1,6 @@
 import { Editor } from 'obsidian'
 
-export interface SelectionInfo {
+export type SelectionInfo = {
   text: string
   range: Range
   rect: DOMRect
@@ -17,10 +17,12 @@ export type SelectionAction = {
 export class SelectionManager {
   private debounceTimer: number | null = null
   private currentSelection: SelectionInfo | null = null
-  private onSelectionChange: ((selection: SelectionInfo | null) => void) | null = null
-  private isEnabled: boolean = true
-  private minSelectionLength: number = 6
-  private debounceDelay: number = 300
+  private onSelectionChange:
+    | ((selection: SelectionInfo | null) => void)
+    | null = null
+  private isEnabled = true
+  private minSelectionLength = 6
+  private debounceDelay = 300
   private editorContainer: HTMLElement | null = null
 
   constructor(
@@ -93,7 +95,7 @@ export class SelectionManager {
     }
 
     const text = selection.toString().trim()
-    
+
     // Check minimum length
     if (!this.shouldShowIndicator(text, selection)) {
       this.clearSelection()
@@ -103,7 +105,7 @@ export class SelectionManager {
     try {
       const range = selection.getRangeAt(0)
       const rects = range.getClientRects()
-      
+
       if (rects.length === 0) {
         this.clearSelection()
         return

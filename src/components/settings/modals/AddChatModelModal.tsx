@@ -81,7 +81,7 @@ function AddChatModelModalComponent({
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
-      
+
       // Check cache first
       const cachedModels = plugin.getCachedModelList(selectedProvider.id)
       if (cachedModels) {
@@ -89,7 +89,7 @@ function AddChatModelModalComponent({
         setLoadingModels(false)
         return
       }
-      
+
       setLoadingModels(true)
       setLoadError(null)
       try {

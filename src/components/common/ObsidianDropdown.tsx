@@ -5,10 +5,10 @@ import { useObsidianSetting } from './ObsidianSetting'
 
 export type ObsidianDropdownOptionGroup = {
   label: string
-  options: Array<{
+  options: {
     value: string
     label: string
-  }>
+  }[]
 }
 
 type ObsidianDropdownProps = {

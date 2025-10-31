@@ -11,15 +11,15 @@ import {
   Table,
   Workflow,
 } from 'lucide-react'
-import React, { useMemo, useState, useRef, type DragEvent } from 'react'
+import React, { type DragEvent, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
-import { ObsidianTextInput } from '../common/ObsidianTextInput'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
+import { ObsidianTextInput } from '../common/ObsidianTextInput'
 
 type QuickAction = {
   id: string
@@ -103,7 +103,8 @@ const DEFAULT_ACTION_CONFIGS: DefaultActionConfig[] = [
     labelFallback: '继续编写',
     instructionKey:
       'chat.customContinueSections.suggestions.items.continue.instruction',
-    instructionFallback: 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
+    instructionFallback:
+      'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.',
   },
   {
     id: 'summarize',
@@ -188,7 +189,9 @@ const DEFAULT_ACTION_CONFIGS: DefaultActionConfig[] = [
 ]
 
 const DEFAULT_ACTION_LOOKUP: Record<string, DefaultActionConfig> =
-  Object.fromEntries(DEFAULT_ACTION_CONFIGS.map((config) => [config.id, config]))
+  Object.fromEntries(
+    DEFAULT_ACTION_CONFIGS.map((config) => [config.id, config]),
+  )
 
 // Generate unique ID
 const generateId = () => {
@@ -335,10 +338,10 @@ export function SmartSpaceQuickActionsSettings() {
     if (isAddingAction) {
       newActions = [...quickActions, { ...editingAction, enabled: true }]
     } else {
-      newActions = quickActions.map(action =>
+      newActions = quickActions.map((action) =>
         action.id === editingAction.id
           ? { ...editingAction, enabled: true }
-          : { ...action, enabled: true }
+          : { ...action, enabled: true },
       )
     }
 
@@ -348,7 +351,7 @@ export function SmartSpaceQuickActionsSettings() {
   }
 
   const handleDeleteAction = async (id: string) => {
-    const newActions = quickActions.filter(action => action.id !== id)
+    const newActions = quickActions.filter((action) => action.id !== id)
     await handleSaveActions(newActions)
   }
 
@@ -365,7 +368,9 @@ export function SmartSpaceQuickActionsSettings() {
 
   const triggerDropSuccess = (movedId: string) => {
     const tryFind = (attempt = 0) => {
-      const movedItem = document.querySelector(`div[data-action-id="${movedId}"]`)
+      const movedItem = document.querySelector(
+        `div[data-action-id="${movedId}"]`,
+      )
       if (movedItem) {
         movedItem.classList.add('smtcmp-quick-action-drop-success')
         window.setTimeout(() => {
@@ -378,9 +383,15 @@ export function SmartSpaceQuickActionsSettings() {
     requestAnimationFrame(() => tryFind())
   }
 
-  const handleDragStart = (event: DragEvent<HTMLDivElement>, globalIndex: number) => {
+  const handleDragStart = (
+    event: DragEvent<HTMLDivElement>,
+    globalIndex: number,
+  ) => {
     dragIndexRef.current = globalIndex
-    event.dataTransfer?.setData('text/plain', quickActions[globalIndex]?.id ?? '')
+    event.dataTransfer?.setData(
+      'text/plain',
+      quickActions[globalIndex]?.id ?? '',
+    )
     event.dataTransfer.effectAllowed = 'move'
 
     const item = event.currentTarget
@@ -389,7 +400,10 @@ export function SmartSpaceQuickActionsSettings() {
     if (handle) handle.classList.add('smtcmp-drag-handle--active')
   }
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>, targetGlobalIndex: number) => {
+  const handleDragOver = (
+    event: DragEvent<HTMLDivElement>,
+    targetGlobalIndex: number,
+  ) => {
     event.preventDefault()
 
     const item = event.currentTarget
@@ -397,9 +411,15 @@ export function SmartSpaceQuickActionsSettings() {
     const rel = (event.clientY - rect.top) / rect.height
 
     if (dragIndexRef.current === targetGlobalIndex) {
-      item.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+      item.classList.remove(
+        'smtcmp-quick-action-drag-over-before',
+        'smtcmp-quick-action-drag-over-after',
+      )
       if (dragOverItemRef.current && dragOverItemRef.current !== item) {
-        dragOverItemRef.current.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+        dragOverItemRef.current.classList.remove(
+          'smtcmp-quick-action-drag-over-before',
+          'smtcmp-quick-action-drag-over-after',
+        )
       }
       dragOverItemRef.current = item
       lastDropPosRef.current = null
@@ -427,11 +447,19 @@ export function SmartSpaceQuickActionsSettings() {
     }
 
     if (dragOverItemRef.current) {
-      dragOverItemRef.current.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+      dragOverItemRef.current.classList.remove(
+        'smtcmp-quick-action-drag-over-before',
+        'smtcmp-quick-action-drag-over-after',
+      )
     }
 
-    const desiredClass = dropAfter ? 'smtcmp-quick-action-drag-over-after' : 'smtcmp-quick-action-drag-over-before'
-    item.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+    const desiredClass = dropAfter
+      ? 'smtcmp-quick-action-drag-over-after'
+      : 'smtcmp-quick-action-drag-over-before'
+    item.classList.remove(
+      'smtcmp-quick-action-drag-over-before',
+      'smtcmp-quick-action-drag-over-after',
+    )
     item.classList.add(desiredClass)
     dragOverItemRef.current = item
     lastDropPosRef.current = dropAfter ? 'after' : 'before'
@@ -441,18 +469,28 @@ export function SmartSpaceQuickActionsSettings() {
   const handleDragEnd = () => {
     dragIndexRef.current = null
     if (dragOverItemRef.current) {
-      dragOverItemRef.current.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+      dragOverItemRef.current.classList.remove(
+        'smtcmp-quick-action-drag-over-before',
+        'smtcmp-quick-action-drag-over-after',
+      )
       dragOverItemRef.current = null
     }
     lastDropPosRef.current = null
     lastInsertIndexRef.current = null
     const dragging = document.querySelector('.smtcmp-quick-action-dragging')
     if (dragging) dragging.classList.remove('smtcmp-quick-action-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active')
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
-  const handleDrop = async (event: DragEvent<HTMLDivElement>, targetGlobalIndex: number, targetCategory: QuickAction['category']) => {
+  const handleDrop = async (
+    event: DragEvent<HTMLDivElement>,
+    targetGlobalIndex: number,
+    targetCategory: QuickAction['category'],
+  ) => {
     event.preventDefault()
     const itemEl = event.currentTarget as HTMLDivElement
     const sourceIndex = dragIndexRef.current
@@ -490,11 +528,17 @@ export function SmartSpaceQuickActionsSettings() {
 
     await handleSaveActions(updatedActions)
 
-    itemEl?.classList.remove('smtcmp-quick-action-drag-over-before', 'smtcmp-quick-action-drag-over-after')
+    itemEl?.classList.remove(
+      'smtcmp-quick-action-drag-over-before',
+      'smtcmp-quick-action-drag-over-after',
+    )
     const dragging = document.querySelector('.smtcmp-quick-action-dragging')
     if (dragging) dragging.classList.remove('smtcmp-quick-action-dragging')
-    const activeHandle = document.querySelector('.smtcmp-drag-handle.smtcmp-drag-handle--active')
-    if (activeHandle) activeHandle.classList.remove('smtcmp-drag-handle--active')
+    const activeHandle = document.querySelector(
+      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
 
     dragOverItemRef.current = null
     lastDropPosRef.current = null
@@ -504,7 +548,14 @@ export function SmartSpaceQuickActionsSettings() {
   }
 
   const handleResetToDefault = async () => {
-    if (confirm(t('settings.smartSpace.confirmReset', '确定要恢复默认的快捷选项吗？这将删除所有自定义设置。'))) {
+    if (
+      confirm(
+        t(
+          'settings.smartSpace.confirmReset',
+          '确定要恢复默认的快捷选项吗？这将删除所有自定义设置。',
+        ),
+      )
+    ) {
       await setSettings({
         ...settings,
         continuationOptions: {
@@ -518,8 +569,14 @@ export function SmartSpaceQuickActionsSettings() {
   return (
     <div className="smtcmp-smart-space-settings">
       <ObsidianSetting
-        name={t('settings.smartSpace.quickActionsTitle', 'Smart Space 快捷选项')}
-        desc={t('settings.smartSpace.quickActionsDesc', '自定义 Smart Space 中显示的快捷选项和提示词')}
+        name={t(
+          'settings.smartSpace.quickActionsTitle',
+          'Smart Space 快捷选项',
+        )}
+        desc={t(
+          'settings.smartSpace.quickActionsDesc',
+          '自定义 Smart Space 中显示的快捷选项和提示词',
+        )}
       >
         <ObsidianButton
           text={t('settings.smartSpace.addAction', '添加选项')}
@@ -536,25 +593,41 @@ export function SmartSpaceQuickActionsSettings() {
         <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-new">
           <ObsidianSetting
             name={t('settings.smartSpace.actionLabel', '选项名称')}
-            desc={t('settings.smartSpace.actionLabelDesc', '显示在快捷选项中的文本')}
+            desc={t(
+              'settings.smartSpace.actionLabelDesc',
+              '显示在快捷选项中的文本',
+            )}
           >
             <ObsidianTextInput
               value={editingAction.label}
-              placeholder={t('settings.smartSpace.actionLabelPlaceholder', '例如：继续编写')}
-              onChange={(value) => setEditingAction({ ...editingAction, label: value })}
+              placeholder={t(
+                'settings.smartSpace.actionLabelPlaceholder',
+                '例如：继续编写',
+              )}
+              onChange={(value) =>
+                setEditingAction({ ...editingAction, label: value })
+              }
             />
           </ObsidianSetting>
 
           <ObsidianSetting
             name={t('settings.smartSpace.actionInstruction', '提示词')}
-            desc={t('settings.smartSpace.actionInstructionDesc', '发送给 AI 的指令')}
+            desc={t(
+              'settings.smartSpace.actionInstructionDesc',
+              '发送给 AI 的指令',
+            )}
             className="smtcmp-settings-textarea-header"
           />
           <ObsidianSetting className="smtcmp-settings-textarea">
             <ObsidianTextArea
               value={editingAction.instruction}
-              placeholder={t('settings.smartSpace.actionInstructionPlaceholder', '例如：请继续扩展当前段落，保持原有语气与风格。')}
-              onChange={(value) => setEditingAction({ ...editingAction, instruction: value })}
+              placeholder={t(
+                'settings.smartSpace.actionInstructionPlaceholder',
+                '例如：请继续扩展当前段落，保持原有语气与风格。',
+              )}
+              onChange={(value) =>
+                setEditingAction({ ...editingAction, instruction: value })
+              }
             />
           </ObsidianSetting>
 
@@ -565,7 +638,9 @@ export function SmartSpaceQuickActionsSettings() {
             <ObsidianDropdown
               value={editingAction.category || 'custom'}
               options={categoryOptions}
-              onChange={(value) => setEditingAction({ ...editingAction, category: value as any })}
+              onChange={(value) =>
+                setEditingAction({ ...editingAction, category: value as any })
+              }
             />
           </ObsidianSetting>
 
@@ -576,7 +651,9 @@ export function SmartSpaceQuickActionsSettings() {
             <ObsidianDropdown
               value={editingAction.icon || 'sparkles'}
               options={iconOptions}
-              onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
+              onChange={(value) =>
+                setEditingAction({ ...editingAction, icon: value })
+              }
             />
           </ObsidianSetting>
 
@@ -617,8 +694,11 @@ export function SmartSpaceQuickActionsSettings() {
               {/* Group Items */}
               {group.actions.map((action, localIndex) => {
                 const globalIndex = globalStartIndex + localIndex
-                const IconComponent = ICON_OPTIONS[action.icon as keyof typeof ICON_OPTIONS]?.component || Sparkles
-                const isEditing = !isAddingAction && editingAction?.id === action.id
+                const IconComponent =
+                  ICON_OPTIONS[action.icon as keyof typeof ICON_OPTIONS]
+                    ?.component || Sparkles
+                const isEditing =
+                  !isAddingAction && editingAction?.id === action.id
 
                 return (
                   <React.Fragment key={action.id}>
@@ -626,23 +706,35 @@ export function SmartSpaceQuickActionsSettings() {
                       data-action-id={action.id}
                       className={`smtcmp-quick-action-item ${isEditing ? 'editing' : ''}`}
                       draggable={!isEditing}
-                      onDragStart={(event) => handleDragStart(event, globalIndex)}
+                      onDragStart={(event) =>
+                        handleDragStart(event, globalIndex)
+                      }
                       onDragOver={(event) => handleDragOver(event, globalIndex)}
-                      onDrop={(event) => void handleDrop(event, globalIndex, group.category)}
+                      onDrop={(event) =>
+                        void handleDrop(event, globalIndex, group.category)
+                      }
                       onDragEnd={handleDragEnd}
                     >
                       <div className="smtcmp-quick-action-drag-handle">
                         <span
                           className="smtcmp-drag-handle"
-                          aria-label={t('settings.smartSpace.dragHandleAria', '拖拽排序')}
+                          aria-label={t(
+                            'settings.smartSpace.dragHandleAria',
+                            '拖拽排序',
+                          )}
                         >
                           <GripVertical size={16} />
                         </span>
                       </div>
                       <div className="smtcmp-quick-action-content">
                         <div className="smtcmp-quick-action-header">
-                          <IconComponent size={16} className="smtcmp-quick-action-icon" />
-                          <span className="smtcmp-quick-action-label">{action.label}</span>
+                          <IconComponent
+                            size={16}
+                            className="smtcmp-quick-action-icon"
+                          />
+                          <span className="smtcmp-quick-action-label">
+                            {action.label}
+                          </span>
                         </div>
                       </div>
                       <div className="smtcmp-quick-action-controls">
@@ -656,7 +748,11 @@ export function SmartSpaceQuickActionsSettings() {
                             }
                           }}
                           icon={isEditing ? 'x' : 'pencil'}
-                          tooltip={isEditing ? t('common.cancel', '取消') : t('common.edit', '编辑')}
+                          tooltip={
+                            isEditing
+                              ? t('common.cancel', '取消')
+                              : t('common.edit', '编辑')
+                          }
                         />
                         <ObsidianButton
                           onClick={() => handleDuplicateAction(action)}
@@ -675,48 +771,92 @@ export function SmartSpaceQuickActionsSettings() {
                     {isEditing && (
                       <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-inline">
                         <ObsidianSetting
-                          name={t('settings.smartSpace.actionLabel', '选项名称')}
-                          desc={t('settings.smartSpace.actionLabelDesc', '显示在快捷选项中的文本')}
+                          name={t(
+                            'settings.smartSpace.actionLabel',
+                            '选项名称',
+                          )}
+                          desc={t(
+                            'settings.smartSpace.actionLabelDesc',
+                            '显示在快捷选项中的文本',
+                          )}
                         >
                           <ObsidianTextInput
                             value={editingAction.label}
-                            placeholder={t('settings.smartSpace.actionLabelPlaceholder', '例如：继续编写')}
-                            onChange={(value) => setEditingAction({ ...editingAction, label: value })}
+                            placeholder={t(
+                              'settings.smartSpace.actionLabelPlaceholder',
+                              '例如：继续编写',
+                            )}
+                            onChange={(value) =>
+                              setEditingAction({
+                                ...editingAction,
+                                label: value,
+                              })
+                            }
                           />
                         </ObsidianSetting>
 
                         <ObsidianSetting
-                          name={t('settings.smartSpace.actionInstruction', '提示词')}
-                          desc={t('settings.smartSpace.actionInstructionDesc', '发送给 AI 的指令')}
+                          name={t(
+                            'settings.smartSpace.actionInstruction',
+                            '提示词',
+                          )}
+                          desc={t(
+                            'settings.smartSpace.actionInstructionDesc',
+                            '发送给 AI 的指令',
+                          )}
                           className="smtcmp-settings-textarea-header"
                         />
                         <ObsidianSetting className="smtcmp-settings-textarea">
                           <ObsidianTextArea
                             value={editingAction.instruction}
-                            placeholder={t('settings.smartSpace.actionInstructionPlaceholder', '例如：请继续扩展当前段落，保持原有语气与风格。')}
-                            onChange={(value) => setEditingAction({ ...editingAction, instruction: value })}
+                            placeholder={t(
+                              'settings.smartSpace.actionInstructionPlaceholder',
+                              '例如：请继续扩展当前段落，保持原有语气与风格。',
+                            )}
+                            onChange={(value) =>
+                              setEditingAction({
+                                ...editingAction,
+                                instruction: value,
+                              })
+                            }
                           />
                         </ObsidianSetting>
 
                         <ObsidianSetting
                           name={t('settings.smartSpace.actionCategory', '分类')}
-                          desc={t('settings.smartSpace.actionCategoryDesc', '选项所属的分类')}
+                          desc={t(
+                            'settings.smartSpace.actionCategoryDesc',
+                            '选项所属的分类',
+                          )}
                         >
                           <ObsidianDropdown
                             value={editingAction.category || 'custom'}
                             options={categoryOptions}
-                            onChange={(value) => setEditingAction({ ...editingAction, category: value as any })}
+                            onChange={(value) =>
+                              setEditingAction({
+                                ...editingAction,
+                                category: value as any,
+                              })
+                            }
                           />
                         </ObsidianSetting>
 
                         <ObsidianSetting
                           name={t('settings.smartSpace.actionIcon', '图标')}
-                          desc={t('settings.smartSpace.actionIconDesc', '选择一个图标')}
+                          desc={t(
+                            'settings.smartSpace.actionIconDesc',
+                            '选择一个图标',
+                          )}
                         >
                           <ObsidianDropdown
                             value={editingAction.icon || 'sparkles'}
                             options={iconOptions}
-                            onChange={(value) => setEditingAction({ ...editingAction, icon: value })}
+                            onChange={(value) =>
+                              setEditingAction({
+                                ...editingAction,
+                                icon: value,
+                              })
+                            }
                           />
                         </ObsidianSetting>
 
@@ -725,7 +865,9 @@ export function SmartSpaceQuickActionsSettings() {
                             text={t('common.save', '保存')}
                             onClick={handleSaveAction}
                             cta
-                            disabled={!editingAction.label || !editingAction.instruction}
+                            disabled={
+                              !editingAction.label || !editingAction.instruction
+                            }
                           />
                           <ObsidianButton
                             text={t('common.cancel', '取消')}

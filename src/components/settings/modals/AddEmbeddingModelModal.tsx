@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai'
 import { App, Notice } from 'obsidian'
 import { useEffect, useState } from 'react'
 
-import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
+import { DEFAULT_PROVIDERS } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { getProviderClient } from '../../../core/llm/manager'
 import { supportedDimensionsForIndex } from '../../../database/schema'
@@ -13,11 +13,10 @@ import {
 } from '../../../types/embedding-model.types'
 import { LLMProvider } from '../../../types/provider.types'
 import {
-  generateModelId,
   ensureUniqueModelId,
+  generateModelId,
 } from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ReactModal } from '../../common/ReactModal'
@@ -89,7 +88,7 @@ function AddEmbeddingModelModalComponent({
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
-      
+
       // Check cache first
       const cachedModels = plugin.getCachedModelList(selectedProvider.id)
       if (cachedModels) {
@@ -98,7 +97,7 @@ function AddEmbeddingModelModalComponent({
         setLoadingModels(false)
         return
       }
-      
+
       setLoadingModels(true)
       setLoadError(null)
       try {
@@ -237,7 +236,10 @@ function AddEmbeddingModelModalComponent({
   const handleSubmit = async () => {
     try {
       // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
-      const baseInternalId = generateModelId(formData.providerId, formData.model)
+      const baseInternalId = generateModelId(
+        formData.providerId,
+        formData.model,
+      )
       const existingIds = plugin.settings.embeddingModels.map((m) => m.id)
       const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
 

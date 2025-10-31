@@ -1,6 +1,7 @@
 # compiled output
 main.js
 /node_modules
+/vendor
 
 # Logs
 logs

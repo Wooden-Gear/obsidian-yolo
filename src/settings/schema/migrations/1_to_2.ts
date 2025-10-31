@@ -582,22 +582,24 @@ export const migrateFrom1To2: SettingMigration['migrate'] = (
   const providers: LLMProvider[] = [...V2_DEFAULT_PROVIDERS]
   const chatModels: ChatModel[] = [...V2_DEFAULT_CHAT_MODELS]
   const ollamaChatModelData = data.ollamaChatModel ?? { baseUrl: '', model: '' }
-  const ollamaApplyModelData =
-    data.ollamaApplyModel ?? { baseUrl: '', model: '' }
-  const ollamaEmbeddingModelData =
-    data.ollamaEmbeddingModel ?? { baseUrl: '', model: '' }
-  const openAICompatibleChatModelData =
-    data.openAICompatibleChatModel ?? {
-      baseUrl: '',
-      apiKey: '',
-      model: '',
-    }
-  const openAICompatibleApplyModelData =
-    data.openAICompatibleApplyModel ?? {
-      baseUrl: '',
-      apiKey: '',
-      model: '',
-    }
+  const ollamaApplyModelData = data.ollamaApplyModel ?? {
+    baseUrl: '',
+    model: '',
+  }
+  const ollamaEmbeddingModelData = data.ollamaEmbeddingModel ?? {
+    baseUrl: '',
+    model: '',
+  }
+  const openAICompatibleChatModelData = data.openAICompatibleChatModel ?? {
+    baseUrl: '',
+    apiKey: '',
+    model: '',
+  }
+  const openAICompatibleApplyModelData = data.openAICompatibleApplyModel ?? {
+    baseUrl: '',
+    apiKey: '',
+    model: '',
+  }
 
   // Map old model IDs to new model IDs
   const MODEL_ID_MAP: Record<string, string> = {

@@ -128,9 +128,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           }),
         }
       })
-      .filter(
-        (group): group is ObsidianDropdownOptionGroup => group !== null,
-      )
+      .filter((group): group is ObsidianDropdownOptionGroup => group !== null)
   }, [settings.embeddingModels, settings.providers, t])
 
   return (

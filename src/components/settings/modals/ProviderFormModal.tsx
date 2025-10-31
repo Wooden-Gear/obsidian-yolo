@@ -78,8 +78,7 @@ function ProviderFormComponent({
     if (provider) {
       if (
         plugin.settings.providers.some(
-          (p: LLMProvider) =>
-            p.id === formData.id && p.id !== provider.id,
+          (p: LLMProvider) => p.id === formData.id && p.id !== provider.id,
         )
       ) {
         new Notice('Provider with this ID already exists. Try a different ID.')

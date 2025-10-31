@@ -209,7 +209,9 @@ export class DatabaseManager {
         }
         try {
           const rawUrl =
-            candidate instanceof URL ? new URL(candidate.href) : new URL(candidate)
+            candidate instanceof URL
+              ? new URL(candidate.href)
+              : new URL(candidate)
           // Obsidian 会追加缓存参数 (?123)，需要移除查询与哈希，避免相对路径被错误解析
           rawUrl.search = ''
           rawUrl.hash = ''
@@ -233,7 +235,12 @@ export class DatabaseManager {
         }
         try {
           const resourcePath = this.app.vault.adapter.getResourcePath(path)
-          console.log(`[PGlite] Resolving resource path:`, path, '→', resourcePath)
+          console.log(
+            `[PGlite] Resolving resource path:`,
+            path,
+            '→',
+            resourcePath,
+          )
           addCandidateUrl(resourcePath)
         } catch (error) {
           console.warn(`[PGlite] Failed to resolve resource path:`, path, error)
@@ -242,16 +249,19 @@ export class DatabaseManager {
 
       // 优先使用传入的 pgliteResourcePath（基于 manifest.id）
       addFromResourcePath(this.pgliteResourcePath)
-      
+
       // 作为备选，尝试使用固定的插件 ID（向后兼容旧版本）
-      if (this.pgliteResourcePath && !this.pgliteResourcePath.includes(PLUGIN_ID)) {
+      if (
+        this.pgliteResourcePath &&
+        !this.pgliteResourcePath.includes(PLUGIN_ID)
+      ) {
         addFromResourcePath(
           normalizePath(
             `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/vendor/pglite`,
           ),
         )
       }
-      
+
       // 最后尝试使用相对路径（开发模式）
       addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
 
@@ -289,11 +299,17 @@ export class DatabaseManager {
       }
 
       if (lastError) {
-        console.error('All PGlite resource paths failed. Attempted URLs:', 
-          candidateBaseUrls.map(u => u.href))
-        throw lastError
+        console.error(
+          'All PGlite resource paths failed. Attempted URLs:',
+          candidateBaseUrls.map((u) => u.href),
+        )
+        throw lastError instanceof Error
+          ? lastError
+          : new Error(String(lastError))
       }
-      throw new Error('Failed to resolve PGlite bundle path - no candidate URLs generated')
+      throw new Error(
+        'Failed to resolve PGlite bundle path - no candidate URLs generated',
+      )
     } catch (error) {
       console.error('Error loading PGlite resources:', error)
       console.error('Plugin resource path:', this.pgliteResourcePath)

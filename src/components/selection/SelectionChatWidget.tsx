@@ -4,11 +4,12 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
-import { SelectionIndicator } from './SelectionIndicator'
+
 import { SelectionActionsMenu } from './SelectionActionsMenu'
+import { SelectionIndicator } from './SelectionIndicator'
 import type { SelectionInfo } from './SelectionManager'
 
-interface SelectionChatWidgetProps {
+type SelectionChatWidgetProps = {
   plugin: any
   editor: Editor
   selection: SelectionInfo
@@ -17,8 +18,8 @@ interface SelectionChatWidgetProps {
 }
 
 function SelectionChatWidgetBody({
-  plugin,
-  editor,
+  plugin: _plugin,
+  editor: _editor,
   selection,
   onClose,
   onAction,
@@ -28,17 +29,20 @@ function SelectionChatWidgetBody({
   const [isHoveringMenu, setIsHoveringMenu] = useState(false)
   const hideTimeoutRef = useRef<number | null>(null)
   const showTimeoutRef = useRef<number | null>(null)
-  const [indicatorPosition, setIndicatorPosition] = useState({ left: 0, top: 0 })
+  const [indicatorPosition, setIndicatorPosition] = useState({
+    left: 0,
+    top: 0,
+  })
 
   useEffect(() => {
     // Calculate indicator position for menu positioning
     const { rect } = selection
     const offset = 8
     const isRTL = document.dir === 'rtl'
-    
-    let left = isRTL ? rect.left - 28 - offset : rect.right + offset
-    let top = rect.bottom + offset
-    
+
+    const left = isRTL ? rect.left - 28 - offset : rect.right + offset
+    const top = rect.bottom + offset
+
     setIndicatorPosition({ left, top })
   }, [selection])
 
@@ -95,7 +99,6 @@ function SelectionChatWidgetBody({
           selection={selection}
           indicatorPosition={indicatorPosition}
           onAction={handleAction}
-          onClose={onClose}
           onHoverChange={setIsHoveringMenu}
         />
       )}
@@ -116,7 +119,10 @@ export class SelectionChatWidget {
       editor: Editor
       selection: SelectionInfo
       onClose: () => void
-      onAction: (actionId: string, selection: SelectionInfo) => void | Promise<void>
+      onAction: (
+        actionId: string,
+        selection: SelectionInfo,
+      ) => void | Promise<void>
     },
   ) {}
 
@@ -187,7 +193,7 @@ export class SelectionChatWidget {
       const target = event.target as Node | null
       if (!target) return
       if (this.overlayContainer?.contains(target)) return
-      
+
       // Close if clicking outside
       this.handleClose()
     }

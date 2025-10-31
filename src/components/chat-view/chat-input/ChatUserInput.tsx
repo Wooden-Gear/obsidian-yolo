@@ -103,7 +103,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       },
       insertText: (text: string) => {
         if (!editorRef.current) return
-        
+
         editorRef.current.update(() => {
           const selection = $getSelection()
           if ($isRangeSelection(selection)) {
@@ -118,7 +118,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             }
           }
         })
-        
+
         // Focus the editor after inserting
         contentEditableRef.current?.focus()
       },
