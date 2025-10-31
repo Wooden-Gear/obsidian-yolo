@@ -427,6 +427,16 @@ export type TranslationKeys = {
     }
   }
 
+  // Selection Chat
+  selection?: {
+    actions?: {
+      addToChat?: string
+      rewrite?: string
+      explain?: string
+      continue?: string
+    }
+  }
+
   // Chat Interface
   chat: {
     placeholder: string

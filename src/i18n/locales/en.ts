@@ -87,6 +87,15 @@ export const en: TranslationKeys = {
     urlContext: 'URL',
   },
 
+  selection: {
+    actions: {
+      addToChat: 'Add to Chat',
+      rewrite: 'AI Rewrite',
+      explain: 'Explain in Depth',
+      continue: 'Continue Writing',
+    },
+  },
+
   settings: {
     title: 'YOLO Settings',
     supportSmartComposer: {

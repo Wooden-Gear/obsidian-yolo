@@ -4372,3 +4372,141 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
+
+/* ============================================
+   Selection Chat - Cursor-like text selection actions
+   ============================================ */
+
+/* Overlay root container */
+.smtcmp-selection-chat-overlay-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9997;
+}
+
+.smtcmp-selection-chat-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Selection Indicator - small floating capsule */
+.smtcmp-selection-indicator {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--background-primary);
+  border: 1px solid var(--h1-color, var(--interactive-accent));
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 9998;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.smtcmp-selection-indicator.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.smtcmp-selection-indicator:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent-hover);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 20%, transparent),
+    var(--shadow-s);
+  transform: scale(1.05);
+}
+
+.smtcmp-selection-indicator svg {
+  width: 14px;
+  height: 14px;
+  color: var(--h1-color, var(--interactive-accent));
+}
+
+/* Selection Actions Menu */
+.smtcmp-selection-menu {
+  position: fixed;
+  min-width: 200px;
+  max-width: 280px;
+  pointer-events: auto;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.smtcmp-selection-menu.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.smtcmp-selection-menu-content {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l, 0 4px 16px rgba(0, 0, 0, 0.12));
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.smtcmp-selection-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.smtcmp-selection-menu-item:hover,
+.smtcmp-selection-menu-item:focus-visible {
+  background: var(--background-modifier-hover);
+  outline: none;
+}
+
+.smtcmp-selection-menu-item:active {
+  transform: scale(0.98);
+}
+
+.smtcmp-selection-menu-item-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  color: var(--interactive-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.smtcmp-selection-menu-item-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.smtcmp-selection-menu-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

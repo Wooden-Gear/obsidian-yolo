@@ -29,6 +29,9 @@ import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
 import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
+import { SelectionManager } from './components/selection/SelectionManager'
+import type { SelectionInfo } from './components/selection/SelectionManager'
+import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
@@ -200,6 +203,9 @@ export default class SmartComposerPlugin extends Plugin {
   private lastSmartSpaceSlash:
     | { view: EditorView; pos: number; timestamp: number }
     | null = null
+  // Selection chat state
+  private selectionManager: any | null = null
+  private selectionChatWidget: any | null = null
   // Model list cache for provider model fetching
   private modelListCache: Map<
     string,
@@ -321,6 +327,127 @@ export default class SmartComposerPlugin extends Plugin {
     })
 
     this.customContinueWidgetState = { view, pos, close }
+  }
+
+  // Selection Chat methods
+  private initializeSelectionManager() {
+    // Clean up existing manager
+    if (this.selectionManager) {
+      this.selectionManager.destroy()
+      this.selectionManager = null
+    }
+
+    // Get the active editor container
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!view) return
+
+    const editorContainer = view.containerEl.querySelector('.cm-editor')
+    if (!editorContainer) return
+
+    // Create new selection manager
+    this.selectionManager = new SelectionManager(editorContainer as HTMLElement, {
+      enabled: true,
+      minSelectionLength: 6,
+      debounceDelay: 300,
+    })
+
+    // Initialize with callback
+    this.selectionManager.init((selection: SelectionInfo | null) => {
+      this.handleSelectionChange(selection, view.editor)
+    })
+  }
+
+  private handleSelectionChange(selection: SelectionInfo | null, editor: Editor) {
+    // Close existing widget
+    if (this.selectionChatWidget) {
+      this.selectionChatWidget.destroy()
+      this.selectionChatWidget = null
+    }
+
+    // Don't show if Smart Space is active
+    if (this.customContinueWidgetState) {
+      return
+    }
+
+    // Show new widget if selection is valid
+    if (selection) {
+      this.selectionChatWidget = new SelectionChatWidget({
+        plugin: this,
+        editor,
+        selection,
+        onClose: () => {
+          if (this.selectionChatWidget) {
+            this.selectionChatWidget.destroy()
+            this.selectionChatWidget = null
+          }
+        },
+        onAction: async (actionId: string, sel: SelectionInfo) => {
+          await this.handleSelectionAction(actionId, sel, editor)
+        },
+      })
+      this.selectionChatWidget.mount()
+    }
+  }
+
+  private async handleSelectionAction(
+    actionId: string,
+    selection: SelectionInfo,
+    editor: Editor,
+  ) {
+    const selectedText = selection.text
+
+    switch (actionId) {
+      case 'add-to-chat':
+        // Add selected text to chat
+        await this.addTextToChat(selectedText)
+        break
+
+      case 'rewrite':
+        // Trigger rewrite with selected text
+        await this.rewriteSelection(editor, selectedText)
+        break
+
+      case 'explain':
+        // Add explanation request to chat
+        await this.addTextToChat(
+          `${this.t('selection.actions.explain', 'Explain in depth')}:\n\n${selectedText}`,
+        )
+        break
+
+      case 'continue':
+        // Continue writing from selection
+        await this.continueFromSelection(editor, selectedText)
+        break
+
+      default:
+        console.warn('Unknown selection action:', actionId)
+    }
+  }
+
+  private async addTextToChat(text: string) {
+    // Open chat view
+    await this.openChatView(true)
+    
+    // Copy text to clipboard and notify user
+    await navigator.clipboard.writeText(text)
+    new Notice(this.t('common.copy', 'Copied') + ': ' + text.slice(0, 50) + '...')
+  }
+
+  private async rewriteSelection(editor: Editor, selectedText: string) {
+    // Trigger the existing rewrite functionality
+    // Simply select the text and let user provide rewrite instruction
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!view) return
+
+    // We'll just open chat with a rewrite request
+    const rewritePrompt = `${this.t('selection.actions.rewrite', 'AI Rewrite')}:\n\n${selectedText}`
+    await this.addTextToChat(rewritePrompt)
+  }
+
+  private async continueFromSelection(editor: Editor, selectedText: string) {
+    // Continue writing after the selection
+    const instruction = `${this.t('selection.actions.continue', 'Continue writing')} based on:\n\n${selectedText}`
+    await this.continueWriting(editor, instruction)
   }
 
   private createCustomContinueTriggerExtension(): Extension {
@@ -1269,19 +1396,37 @@ export default class SmartComposerPlugin extends Plugin {
 
     // Handle tab completion trigger
     this.registerEvent(
-      this.app.workspace.on('editor-change', (editor) => {
+      this.app.workspace.on('active-leaf-change', () => {
         try {
+          const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+          const editor = view?.editor
           if (!editor) return
           this.handleTabCompletionEditorChange(editor)
+          // Update selection manager with new editor container
+          this.initializeSelectionManager()
         } catch (err) {
           console.error('Editor change handler error:', err)
         }
       }),
     )
+
+    // Initialize selection chat
+    this.initializeSelectionManager()
   }
 
   onunload() {
     this.closeCustomContinueWidget()
+    
+    // Selection chat cleanup
+    if (this.selectionChatWidget) {
+      this.selectionChatWidget.destroy()
+      this.selectionChatWidget = null
+    }
+    if (this.selectionManager) {
+      this.selectionManager.destroy()
+      this.selectionManager = null
+    }
+    
     // clear all timers
     this.timeoutIds.forEach((id) => clearTimeout(id))
     this.timeoutIds = []

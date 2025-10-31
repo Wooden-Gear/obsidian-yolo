@@ -460,6 +460,15 @@ export const zh: TranslationKeys = {
     urlContext: 'URL',
   },
 
+  selection: {
+    actions: {
+      addToChat: '添加到对话',
+      rewrite: 'AI 改写',
+      explain: '深入解释',
+      continue: '继续写作',
+    },
+  },
+
   chat: {
     placeholder: '询问关于你的库的任何问题...',
     sendMessage: '发送消息',
