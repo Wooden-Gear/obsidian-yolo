@@ -130,6 +130,10 @@ export class ChatView extends ItemView {
     this.chatRef.current?.addSelectionToChat(selectedBlock)
   }
 
+  insertTextToInput(text: string) {
+    this.chatRef.current?.insertTextToInput(text)
+  }
+
   focusMessage() {
     this.chatRef.current?.focusMessage()
   }

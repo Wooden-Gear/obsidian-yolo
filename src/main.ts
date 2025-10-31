@@ -425,12 +425,36 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   private async addTextToChat(text: string) {
-    // Open chat view
-    await this.openChatView(true)
+    // Get current file and editor info for context
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    const editor = view?.editor
     
-    // Copy text to clipboard and notify user
-    await navigator.clipboard.writeText(text)
-    new Notice(this.t('common.copy', 'Copied') + ': ' + text.slice(0, 50) + '...')
+    if (!editor || !view) {
+      new Notice('无法获取当前编辑器')
+      return
+    }
+
+    // Create mentionable block data from selection
+    const data = await getMentionableBlockData(editor, view)
+    if (!data) {
+      new Notice('无法创建选区数据')
+      return
+    }
+
+    // Get or open chat view
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView({
+        selectedBlock: data,
+      })
+      return
+    }
+
+    // Use existing chat view
+    await this.app.workspace.revealLeaf(leaves[0])
+    const chatView = leaves[0].view
+    chatView.addSelectionToChat(data)
+    chatView.focusMessage()
   }
 
   private async rewriteSelection(editor: Editor, selectedText: string) {

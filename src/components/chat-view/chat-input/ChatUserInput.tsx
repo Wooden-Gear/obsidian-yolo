@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { $nodesOfType, LexicalEditor, SerializedEditorState } from 'lexical'
+import {
+  $getRoot,
+  $getSelection,
+  $isRangeSelection,
+  $nodesOfType,
+  LexicalEditor,
+  SerializedEditorState,
+} from 'lexical'
 import {
   forwardRef,
   useCallback,
@@ -36,6 +43,7 @@ import ToolBadge from './ToolBadge'
 
 export type ChatUserInputRef = {
   focus: () => void
+  insertText: (text: string) => void
 }
 
 export type ChatUserInputProps = {
@@ -91,6 +99,27 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
     useImperativeHandle(ref, () => ({
       focus: () => {
+        contentEditableRef.current?.focus()
+      },
+      insertText: (text: string) => {
+        if (!editorRef.current) return
+        
+        editorRef.current.update(() => {
+          const selection = $getSelection()
+          if ($isRangeSelection(selection)) {
+            selection.insertText(text)
+          } else {
+            // If no selection, insert at the end
+            const root = $getRoot()
+            root.selectEnd()
+            const newSelection = $getSelection()
+            if ($isRangeSelection(newSelection)) {
+              newSelection.insertText(text)
+            }
+          }
+        })
+        
+        // Focus the editor after inserting
         contentEditableRef.current?.focus()
       },
     }))

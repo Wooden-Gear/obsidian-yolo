@@ -92,6 +92,7 @@ const getNewInputMessage = (
 export type ChatRef = {
   openNewChat: (selectedBlock?: MentionableBlockData) => void
   addSelectionToChat: (selectedBlock: MentionableBlockData) => void
+  insertTextToInput: (text: string) => void
   focusMessage: () => void
   getCurrentConversationOverrides: () =>
     | ConversationOverrideSettings
@@ -732,6 +733,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             return message
           }),
         )
+      }
+    },
+    insertTextToInput: (text: string) => {
+      if (!focusedMessageId) return
+      const inputRef = chatUserInputRefs.current.get(focusedMessageId)
+      if (inputRef) {
+        inputRef.insertText(text)
       }
     },
     focusMessage: () => {
