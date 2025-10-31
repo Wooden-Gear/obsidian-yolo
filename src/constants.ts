@@ -97,7 +97,7 @@ export const PROVIDER_TYPES_INFO = {
     defaultProviderId: 'openrouter',
     requireApiKey: true,
     requireBaseUrl: false,
-    supportEmbedding: false,
+    supportEmbedding: true,
     additionalSettings: [],
   },
   ollama: {

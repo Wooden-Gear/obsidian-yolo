@@ -50,11 +50,8 @@ function AddEmbeddingModelModalComponent({
   provider,
 }: AddEmbeddingModelModalComponentProps) {
   const { t } = useLanguage()
-  const firstEmbeddingCapable = plugin.settings.providers.find(
-    (p) => PROVIDER_TYPES_INFO[p.type].supportEmbedding,
-  )
   const selectedProvider: LLMProvider | undefined =
-    provider ?? firstEmbeddingCapable ?? plugin.settings.providers[0]
+    provider ?? plugin.settings.providers[0]
   const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
   const initialProviderType =
     selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
