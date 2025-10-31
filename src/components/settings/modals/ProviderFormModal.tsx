@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { PROVIDER_TYPES_INFO } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import SmartComposerPlugin from '../../../main'
+import { chatModelSchema } from '../../../types/chat-model.types'
+import { embeddingModelSchema } from '../../../types/embedding-model.types'
 import { LLMProvider, llmProviderSchema } from '../../../types/provider.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
@@ -111,36 +113,44 @@ function ProviderFormComponent({
 
       const updatedChatModels =
         providerIdChanged || providerTypeChanged
-          ? plugin.settings.chatModels.map((model) =>
-              model.providerId === provider.id
-                ? {
-                    ...model,
-                    ...(providerIdChanged
-                      ? { providerId: validatedProvider.id }
-                      : {}),
-                    ...(providerTypeChanged
-                      ? { providerType: validatedProvider.type }
-                      : {}),
-                  }
-                : model,
-            )
+          ? plugin.settings.chatModels.map((model) => {
+              if (model.providerId !== provider.id) {
+                return model
+              }
+              const updatedModel = {
+                ...model,
+                ...(providerIdChanged
+                  ? { providerId: validatedProvider.id }
+                  : {}),
+                ...(providerTypeChanged
+                  ? { providerType: validatedProvider.type }
+                  : {}),
+              }
+              return providerTypeChanged
+                ? chatModelSchema.parse(updatedModel)
+                : updatedModel
+            })
           : plugin.settings.chatModels
 
       const updatedEmbeddingModels =
         providerIdChanged || providerTypeChanged
-          ? plugin.settings.embeddingModels.map((model) =>
-              model.providerId === provider.id
-                ? {
-                    ...model,
-                    ...(providerIdChanged
-                      ? { providerId: validatedProvider.id }
-                      : {}),
-                    ...(providerTypeChanged
-                      ? { providerType: validatedProvider.type }
-                      : {}),
-                  }
-                : model,
-            )
+          ? plugin.settings.embeddingModels.map((model) => {
+              if (model.providerId !== provider.id) {
+                return model
+              }
+              const updatedModel = {
+                ...model,
+                ...(providerIdChanged
+                  ? { providerId: validatedProvider.id }
+                  : {}),
+                ...(providerTypeChanged
+                  ? { providerType: validatedProvider.type }
+                  : {}),
+              }
+              return providerTypeChanged
+                ? embeddingModelSchema.parse(updatedModel)
+                : updatedModel
+            })
           : plugin.settings.embeddingModels
 
       await plugin.setSettings({
