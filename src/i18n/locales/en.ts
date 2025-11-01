@@ -300,11 +300,6 @@ export const en: TranslationKeys = {
       customParametersKeyPlaceholder: 'Key, e.g., thinking',
       customParametersValuePlaceholder:
         'Value, plain text or JSON. Example: {"type":"enabled"} or 0.7',
-      promptLevel: 'Prompt Level',
-      promptLevelDesc:
-        'Choose how complex the system prompt should be. Select "simple" for small models that ignore user questions and just repeat back instructions.',
-      promptLevelDefault: 'default',
-      promptLevelSimple: 'simple',
       dimension: 'Dimension',
       dimensionDesc: 'The dimension of the embedding model (optional)',
       dimensionPlaceholder: '1536',

@@ -22,7 +22,6 @@ import {
   MentionableUrl,
   MentionableVault,
 } from '../../types/mentionable'
-import { PromptLevel } from '../../types/prompt-level.types'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { tokenCount } from '../llm/token'
 import {
@@ -138,9 +137,7 @@ export class PromptGenerator {
         messages: compiledMessages,
         maxContextOverride,
       }),
-      ...(shouldUseRAG &&
-      !isBaseModel &&
-      this.getModelPromptLevel() == PromptLevel.Default
+      ...(shouldUseRAG && !isBaseModel
         ? [this.getRagInstructionMessage()]
         : []),
     ]
@@ -379,13 +376,10 @@ ${message.annotations
         filePrompt = `## Potentially Relevant Snippets from the current vault
 ${similaritySearchResults
   .map(({ path, content, metadata }) => {
-    const newContent =
-      this.getModelPromptLevel() == PromptLevel.Default
-        ? this.addLineNumbersToContent({
-            content,
-            startLine: metadata.startLine,
-          })
-        : content
+    const newContent = this.addLineNumbersToContent({
+      content,
+      startLine: metadata.startLine,
+    })
     return `\`\`\`${path}\n${newContent}\n\`\`\`\n`
   })
   .join('')}\n`
@@ -467,12 +461,10 @@ ${await this.getWebsiteContent(url)}
     shouldUseRAG: boolean,
     hasTools = false,
   ): RequestMessage {
-    const modelPromptLevel = this.getModelPromptLevel()
-
     // When both RAG and tools are available, prioritize based on context
     const useRAGPrompt = shouldUseRAG && !hasTools
 
-    const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has${modelPromptLevel == PromptLevel.Default ? `, particularly about editing and organizing markdown files in Obsidian` : ''}.
+    const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has, particularly about editing and organizing markdown files in Obsidian.
 
 1. Format your response in markdown.
 
@@ -486,9 +478,7 @@ ${
     : ''
 }
 
-${
-  modelPromptLevel == PromptLevel.Default
-    ? `${hasTools ? '4' : '2'}. Respond in the same language as the user's message.
+${hasTools ? '4' : '2'}. Respond in the same language as the user's message.
 
 ${hasTools ? '5' : '2'}. When writing out new markdown blocks, also wrap them with <smtcmp_block> tags. For example:
 <smtcmp_block language="markdown">
@@ -513,10 +503,8 @@ ${hasTools ? '7' : '4'}. When the user is asking for edits to their markdown, pl
 </smtcmp_block>
 The user has full access to the file, so they prefer seeing only the changes in the markdown. Often this will mean that the start/end of the file will be skipped, but that's okay! Rewrite the entire file only if specifically requested. Always provide a brief explanation of the updates, except when the user specifically asks for just the content.
 `
-    : ''
-}`
 
-    const systemPromptRAG = `You are an intelligent assistant to help answer any questions that the user has${modelPromptLevel == PromptLevel.Default ? `, particularly about editing and organizing markdown files in Obsidian` : ''}. You will be given your conversation history with them and potentially relevant blocks of markdown content from the current vault.
+    const systemPromptRAG = `You are an intelligent assistant to help answer any questions that the user has, particularly about editing and organizing markdown files in Obsidian. You will be given your conversation history with them and potentially relevant blocks of markdown content from the current vault.
       
 1. Do not lie or make up facts.
 
@@ -532,9 +520,7 @@ ${
     : ''
 }
 
-${
-  modelPromptLevel == PromptLevel.Default
-    ? `${hasTools ? '5' : '3'}. Respond in the same language as the user's message.
+${hasTools ? '5' : '3'}. Respond in the same language as the user's message.
 
 ${hasTools ? '6' : '4'}. When referencing markdown blocks in your answer, keep the following guidelines in mind:
 
@@ -551,9 +537,8 @@ ${hasTools ? '6' : '4'}. When referencing markdown blocks in your answer, keep t
   </smtcmp_block>
 
   d. When referencing a markdown block the user gives you, only add the startLine and endLine attributes to the <smtcmp_block> tags. Write related content outside of the <smtcmp_block> tags. The content inside the <smtcmp_block> tags will be ignored and replaced with the actual content of the markdown block. For example:
-  <smtcmp_block filename="path/to/file.md" language="markdown" startLine="2" endLine="30"></smtcmp_block>`
-    : ''
-}`
+  <smtcmp_block filename="path/to/file.md" language="markdown" startLine="2" endLine="30"></smtcmp_block>
+`
 
     return {
       role: 'system',
@@ -679,9 +664,4 @@ ${transcript.map((t) => `${t.offset}: ${t.text}`).join('\n')}`
     return htmlToMarkdown(response.text)
   }
 
-  private getModelPromptLevel(): PromptLevel {
-    // Simplify prompt level design: always use Default
-    // This also ensures backward compatibility (any saved Simple will be treated as Default)
-    return PromptLevel.Default
-  }
 }

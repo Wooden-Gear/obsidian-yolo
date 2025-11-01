@@ -225,10 +225,6 @@ export type TranslationKeys = {
       customParametersAdd?: string
       customParametersKeyPlaceholder?: string
       customParametersValuePlaceholder?: string
-      promptLevel: string
-      promptLevelDesc: string
-      promptLevelDefault: string
-      promptLevelSimple: string
       dimension: string
       dimensionDesc: string
       dimensionPlaceholder: string

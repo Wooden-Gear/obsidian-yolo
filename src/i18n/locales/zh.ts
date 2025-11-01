@@ -271,11 +271,6 @@ export const zh: TranslationKeys = {
       customParametersKeyPlaceholder: '参数名，例如 thinking',
       customParametersValuePlaceholder:
         '参数值，支持 JSON，如 {"type":"enabled"} 或 0.7',
-      promptLevel: '提示级别',
-      promptLevelDesc:
-        '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
-      promptLevelDefault: '默认',
-      promptLevelSimple: '简单',
       dimension: '维度',
       dimensionDesc: '嵌入模型的维度（可选）',
       dimensionPlaceholder: '1536',

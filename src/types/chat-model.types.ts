@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import { PromptLevel } from './prompt-level.types'
-
 const baseChatModelSchema = z.object({
   providerId: z
     .string({
@@ -20,10 +18,6 @@ const baseChatModelSchema = z.object({
     .min(1, 'model is required'),
   // Optional display name for UI. When absent, UI should fallback to showing `model`.
   name: z.string().optional(),
-  promptLevel: z
-    .nativeEnum(PromptLevel)
-    .default(PromptLevel.Default)
-    .optional(),
   enable: z.boolean().default(true).optional(),
   isBaseModel: z.boolean().default(false).optional(),
   customParameters: z
