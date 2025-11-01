@@ -447,10 +447,18 @@ function SmartSpacePanelBody({
   ) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      moveFocus(index, 1)
+      if (index === totalItems - 1) {
+        inputRef.current?.focus({ preventScroll: true })
+      } else {
+        moveFocus(index, 1)
+      }
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
-      moveFocus(index, -1)
+      if (index === 0) {
+        inputRef.current?.focus({ preventScroll: true })
+      } else {
+        moveFocus(index, -1)
+      }
     } else if (event.key === 'Enter') {
       event.preventDefault()
       void handleSubmit(instructionText)
