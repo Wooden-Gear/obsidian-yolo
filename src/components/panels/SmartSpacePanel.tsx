@@ -511,6 +511,11 @@ function SmartSpacePanelBody({
                         })
                       }
                     }}
+                    onModelSelected={() => {
+                      window.setTimeout(() => {
+                        inputRef.current?.focus({ preventScroll: true })
+                      }, 0)
+                    }}
                     onKeyDown={(event, isMenuOpen) => {
                       // 如果菜单已打开，只处理 Escape，其他键交给 Radix UI
                       if (isMenuOpen) {

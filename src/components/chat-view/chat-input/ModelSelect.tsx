@@ -10,6 +10,7 @@ export const ModelSelect = forwardRef<
   {
     modelId?: string
     onChange?: (modelId: string) => void
+    onModelSelected?: (modelId: string) => void
     side?: 'top' | 'bottom' | 'left' | 'right'
     sideOffset?: number
     align?: 'start' | 'center' | 'end'
@@ -23,6 +24,7 @@ export const ModelSelect = forwardRef<
     {
       modelId: externalModelId,
       onChange,
+      onModelSelected,
       side = 'bottom',
       sideOffset = 4,
       align = 'end',
@@ -158,6 +160,7 @@ export const ModelSelect = forwardRef<
                             chatModelId: chatModelOption.id,
                           })
                         }
+                        onModelSelected?.(chatModelOption.id)
                       }}
                     >
                       {displayName}
