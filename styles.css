@@ -4067,8 +4067,8 @@ button.smtcmp-chat-input-model-select {
         transparent
       );
   backdrop-filter: none;
-  width: var(--radix-dropdown-menu-trigger-width, auto);
-  min-width: var(--radix-dropdown-menu-trigger-width, 220px);
+  width: auto;
+  min-width: max(var(--radix-dropdown-menu-trigger-width, 0px), 280px);
   max-height: 400px;
   overflow: hidden;
 }
