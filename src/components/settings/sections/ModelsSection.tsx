@@ -14,7 +14,7 @@ type ModelsSectionProps = {
 
 export function ModelsSection({ app, plugin }: ModelsSectionProps) {
   const { t } = useLanguage()
-  
+
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header">{t('settings.models.title')}</div>

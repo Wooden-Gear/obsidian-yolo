@@ -1,8 +1,8 @@
 import { PGlite } from '@electric-sql/pglite'
 import { PgliteDatabase, drizzle } from 'drizzle-orm/pglite'
-import { App, normalizePath, requestUrl } from 'obsidian'
+import { App, normalizePath } from 'obsidian'
 
-import { PGLITE_DB_PATH } from '../constants'
+import { PGLITE_DB_PATH, PLUGIN_ID } from '../constants'
 
 import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
@@ -11,6 +11,7 @@ import { VectorManager } from './modules/vector/VectorManager'
 export class DatabaseManager {
   private app: App
   private dbPath: string
+  private pgliteResourcePath: string
   private pgClient: PGlite | null = null
   private db: PgliteDatabase | null = null
   // WeakMap to prevent circular references
@@ -19,13 +20,21 @@ export class DatabaseManager {
     { vectorManager?: VectorManager }
   >()
 
-  constructor(app: App, dbPath: string) {
+  constructor(app: App, dbPath: string, pgliteResourcePath: string) {
     this.app = app
     this.dbPath = dbPath
+    this.pgliteResourcePath = normalizePath(pgliteResourcePath)
   }
 
-  static async create(app: App): Promise<DatabaseManager> {
-    const dbManager = new DatabaseManager(app, normalizePath(PGLITE_DB_PATH))
+  static async create(
+    app: App,
+    pgliteResourcePath: string,
+  ): Promise<DatabaseManager> {
+    const dbManager = new DatabaseManager(
+      app,
+      normalizePath(PGLITE_DB_PATH),
+      pgliteResourcePath,
+    )
     dbManager.db = await dbManager.loadExistingDatabase()
     if (!dbManager.db) {
       dbManager.db = await dbManager.createNewDatabase()
@@ -191,27 +200,120 @@ export class DatabaseManager {
     vectorExtensionBundlePath: URL
   }> {
     try {
-      const PGLITE_VERSION = '0.2.12'
-      const [fsBundleResponse, wasmResponse] = await Promise.all([
-        requestUrl(
-          `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/postgres.data`,
-        ),
-        requestUrl(
-          `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/postgres.wasm`,
-        ),
-      ])
+      const candidateBaseUrls: URL[] = []
+      const seen = new Set<string>()
 
-      const fsBundle = new Blob([fsBundleResponse.arrayBuffer], {
-        type: 'application/octet-stream',
-      })
-      const wasmModule = await WebAssembly.compile(wasmResponse.arrayBuffer)
-      const vectorExtensionBundlePath = new URL(
-        `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/vector.tar.gz`,
+      const addCandidateUrl = (candidate: string | URL | null | undefined) => {
+        if (!candidate) {
+          return
+        }
+        try {
+          const rawUrl =
+            candidate instanceof URL
+              ? new URL(candidate.href)
+              : new URL(candidate)
+          // Obsidian 会追加缓存参数 (?123)，需要移除查询与哈希，避免相对路径被错误解析
+          rawUrl.search = ''
+          rawUrl.hash = ''
+
+          const href = rawUrl.href.endsWith('/')
+            ? rawUrl.href
+            : `${rawUrl.href}/`
+          const key = href
+          if (!seen.has(key)) {
+            seen.add(key)
+            candidateBaseUrls.push(new URL(key))
+          }
+        } catch {
+          // ignore invalid candidate
+        }
+      }
+
+      const addFromResourcePath = (path: string | undefined) => {
+        if (!path) {
+          return
+        }
+        try {
+          const resourcePath = this.app.vault.adapter.getResourcePath(path)
+          console.log(
+            `[PGlite] Resolving resource path:`,
+            path,
+            '→',
+            resourcePath,
+          )
+          addCandidateUrl(resourcePath)
+        } catch (error) {
+          console.warn(`[PGlite] Failed to resolve resource path:`, path, error)
+        }
+      }
+
+      // 优先使用传入的 pgliteResourcePath（基于 manifest.id）
+      addFromResourcePath(this.pgliteResourcePath)
+
+      // 作为备选，尝试使用固定的插件 ID（向后兼容旧版本）
+      if (
+        this.pgliteResourcePath &&
+        !this.pgliteResourcePath.includes(PLUGIN_ID)
+      ) {
+        addFromResourcePath(
+          normalizePath(
+            `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/vendor/pglite`,
+          ),
+        )
+      }
+
+      // 最后尝试使用相对路径（开发模式）
+      addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
+
+      let lastError: unknown = null
+
+      for (const baseUrl of candidateBaseUrls) {
+        try {
+          const fsUrl = new URL('postgres.data', baseUrl)
+          const wasmUrl = new URL('postgres.wasm', baseUrl)
+
+          const [fsResponse, wasmResponse] = await Promise.all([
+            fetch(fsUrl.href),
+            fetch(wasmUrl.href),
+          ])
+
+          if (!fsResponse.ok || !wasmResponse.ok) {
+            lastError = new Error(
+              'Failed to load PGlite assets from local bundle',
+            )
+            continue
+          }
+
+          const fsBundle = new Blob([await fsResponse.arrayBuffer()], {
+            type: 'application/octet-stream',
+          })
+          const wasmModule = await WebAssembly.compile(
+            await wasmResponse.arrayBuffer(),
+          )
+          const vectorExtensionBundlePath = new URL('vector.tar.gz', baseUrl)
+
+          return { fsBundle, wasmModule, vectorExtensionBundlePath }
+        } catch (error) {
+          lastError = error
+        }
+      }
+
+      if (lastError) {
+        console.error(
+          'All PGlite resource paths failed. Attempted URLs:',
+          candidateBaseUrls.map((u) => u.href),
+        )
+        throw lastError instanceof Error
+          ? lastError
+          : new Error(String(lastError))
+      }
+      throw new Error(
+        'Failed to resolve PGlite bundle path - no candidate URLs generated',
       )
-
-      return { fsBundle, wasmModule, vectorExtensionBundlePath }
     } catch (error) {
       console.error('Error loading PGlite resources:', error)
+      console.error('Plugin resource path:', this.pgliteResourcePath)
+      console.error('Vault config dir:', this.app.vault.configDir)
       throw error
     }
   }

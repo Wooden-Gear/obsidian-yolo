@@ -106,8 +106,8 @@ export class VectorManager {
     let filesToIndex: TFile[]
     let newFilesCount = 0
     let updatedFilesCount = 0
-    let removedFilesCount = 0
-    
+    const removedFilesCount = 0
+
     if (options.reindexAll) {
       filesToIndex = await this.getFilesToIndex({
         embeddingModel: embeddingModel,
@@ -119,14 +119,14 @@ export class VectorManager {
       newFilesCount = filesToIndex.length // 全量重建时都算新文件
     } else {
       await this.deleteVectorsForDeletedFiles(embeddingModel)
-      
+
       // 获取需要索引的文件，并分类统计
       const allFilesToCheck = await this.getFilesToIndex({
         embeddingModel: embeddingModel,
         excludePatterns: options.excludePatterns,
         includePatterns: options.includePatterns,
       })
-      
+
       // 分类文件：新文件 vs 更新文件
       for (const file of allFilesToCheck) {
         const existingChunks = await this.repository.getVectorsByFilePath(
@@ -139,7 +139,7 @@ export class VectorManager {
           updatedFilesCount++
         }
       }
-      
+
       filesToIndex = allFilesToCheck
       await this.repository.deleteVectorsForMultipleFiles(
         filesToIndex.map((file) => file.path),
@@ -150,11 +150,11 @@ export class VectorManager {
     if (filesToIndex.length === 0) {
       return
     }
-    
+
     // 按文件夹分组文件
-    const folderGroups: { [folder: string]: TFile[] } = {}
+    const folderGroups: Record<string, TFile[]> = {}
     for (const file of filesToIndex) {
-      const folderPath = file.path.includes('/') 
+      const folderPath = file.path.includes('/')
         ? file.path.substring(0, file.path.lastIndexOf('/'))
         : ''
       if (!folderGroups[folderPath]) {
@@ -162,7 +162,7 @@ export class VectorManager {
       }
       folderGroups[folderPath].push(file)
     }
-    
+
     // 工具方法：返回当前文件夹及其向上的所有父级（不含根空字符串）
     const getSelfAndAncestors = (folderPath: string): string[] => {
       if (!folderPath) return []
@@ -175,13 +175,16 @@ export class VectorManager {
     }
 
     // 初始化文件夹进度
-    const folderProgress: { [folder: string]: { 
-      completedFiles: number
-      totalFiles: number
-      completedChunks: number
-      totalChunks: number
-    }} = {}
-    
+    const folderProgress: Record<
+      string,
+      {
+        completedFiles: number
+        totalFiles: number
+        completedChunks: number
+        totalChunks: number
+      }
+    > = {}
+
     for (const folder in folderGroups) {
       // 自身初始化
       folderProgress[folder] = {
@@ -217,15 +220,15 @@ export class VectorManager {
 
     const failedFiles: { path: string; error: string }[] = []
     let completedFilesCount = 0
-    
+
     // 处理文件并生成chunks
     const contentChunks: Omit<InsertEmbedding, 'model' | 'dimension'>[] = []
-    
+
     for (const file of filesToIndex) {
-      const currentFolder = file.path.includes('/') 
+      const currentFolder = file.path.includes('/')
         ? file.path.substring(0, file.path.lastIndexOf('/'))
         : ''
-      
+
       // 更新当前处理的文件和文件夹
       updateProgress?.({
         completedChunks: 0,
@@ -239,7 +242,7 @@ export class VectorManager {
         updatedFilesCount,
         removedFilesCount,
       })
-      
+
       try {
         const fileContent = await this.app.vault.cachedRead(file)
         // Remove null bytes from the content
@@ -249,7 +252,7 @@ export class VectorManager {
         const fileDocuments = await textSplitter.createDocuments([
           sanitizedContent,
         ])
-        
+
         const fileChunks = fileDocuments.map(
           (chunk): Omit<InsertEmbedding, 'model' | 'dimension'> => {
             return {
@@ -263,9 +266,9 @@ export class VectorManager {
             }
           },
         )
-        
+
         contentChunks.push(...fileChunks)
-        
+
         // 更新文件夹进度（自身 + 父级聚合）
         folderProgress[currentFolder].completedFiles++
         folderProgress[currentFolder].totalChunks += fileChunks.length
@@ -275,7 +278,6 @@ export class VectorManager {
           }
         }
         completedFilesCount++
-        
       } catch (error) {
         failedFiles.push({
           path: file.path,
@@ -420,11 +422,11 @@ export class VectorManager {
           )
         }
         await this.repository.insertVectors(validEmbeddingChunks)
-        
+
         // 更新文件夹的 chunk 完成进度（全局 completedChunks 已在获取 embedding 时逐个增加）
         // 更新每个文件夹的 chunk 完成进度
         for (const chunk of validEmbeddingChunks) {
-          const folderPath = chunk.path.includes('/') 
+          const folderPath = chunk.path.includes('/')
             ? chunk.path.substring(0, chunk.path.lastIndexOf('/'))
             : ''
           const lineage = getSelfAndAncestors(folderPath)
@@ -437,7 +439,7 @@ export class VectorManager {
             }
           }
         }
-        
+
         // 更新进度
         updateProgress?.({
           completedChunks,

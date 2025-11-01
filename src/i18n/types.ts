@@ -1,6 +1,6 @@
 export type Language = 'en' | 'zh'
 
-export interface TranslationKeys {
+export type TranslationKeys = {
   // Commands
   commands: {
     openChat: string
@@ -12,7 +12,7 @@ export interface TranslationKeys {
     customContinueWriting: string
     customRewrite: string
   }
-  
+
   // UI Common
   common: {
     save: string
@@ -35,6 +35,7 @@ export interface TranslationKeys {
     default?: string
     on?: string
     off?: string
+    noResults?: string
   }
 
   sidebar?: {
@@ -77,6 +78,12 @@ export interface TranslationKeys {
       knowledgeBasePlaceholder?: string
       knowledgeBaseHint?: string
     }
+  }
+
+  // Smart Space UI
+  smartSpace?: {
+    webSearch?: string
+    urlContext?: string
   }
 
   // Settings
@@ -194,6 +201,7 @@ export interface TranslationKeys {
       modelNamePlaceholder: string
       // auto-fetched models helper labels
       availableModelsAuto?: string
+      searchModels?: string
       fetchModelsFailed?: string
       embeddingModelsFirst?: string
       // reasoning UI
@@ -212,6 +220,11 @@ export interface TranslationKeys {
       toolTypeDesc?: string
       toolTypeNone?: string
       toolTypeGemini?: string
+      customParameters?: string
+      customParametersDesc?: string
+      customParametersAdd?: string
+      customParametersKeyPlaceholder?: string
+      customParametersValuePlaceholder?: string
       promptLevel: string
       promptLevelDesc: string
       promptLevelDefault: string
@@ -318,14 +331,15 @@ export interface TranslationKeys {
       superContinuationDesc: string
       continuationModel: string
       continuationModelDesc: string
+      smartSpaceDescription: string
+      smartSpaceToggle: string
+      smartSpaceToggleDesc: string
+      selectionChatToggle: string
+      selectionChatToggleDesc: string
       keywordTrigger: string
       keywordTriggerDesc: string
       triggerKeyword: string
       triggerKeywordDesc: string
-      floatingPanelKeywordTrigger: string
-      floatingPanelKeywordTriggerDesc: string
-      floatingPanelTriggerKeyword: string
-      floatingPanelTriggerKeywordDesc: string
       tabCompletion: string
       tabCompletionDesc: string
       tabCompletionModel: string
@@ -366,9 +380,61 @@ export interface TranslationKeys {
       resetProvidersConfirm?: string
       resetProvidersSuccess?: string
     }
+    smartSpace?: {
+      quickActionsTitle: string
+      quickActionsDesc: string
+      addAction: string
+      resetToDefault: string
+      confirmReset: string
+      actionLabel: string
+      actionLabelDesc: string
+      actionLabelPlaceholder: string
+      actionInstruction: string
+      actionInstructionDesc: string
+      actionInstructionPlaceholder: string
+      actionCategory: string
+      actionCategoryDesc: string
+      actionIcon: string
+      actionIconDesc: string
+      actionEnabled: string
+      actionEnabledDesc: string
+      moveUp: string
+      moveDown: string
+      duplicate: string
+      disabled: string
+      categories?: {
+        suggestions: string
+        writing: string
+        thinking: string
+        custom: string
+      }
+      iconLabels?: {
+        sparkles: string
+        file: string
+        todo: string
+        workflow: string
+        table: string
+        pen: string
+        lightbulb: string
+        brain: string
+        message: string
+        settings: string
+      }
+      copySuffix?: string
+      dragHandleAria?: string
+    }
     language: {
       title: string
       select: string
+    }
+  }
+
+  // Selection Chat
+  selection?: {
+    actions?: {
+      addToChat?: string
+      rewrite?: string
+      explain?: string
     }
   }
 
@@ -394,7 +460,45 @@ export interface TranslationKeys {
     modeLearning?: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
+    customContinueHint?: string
+    customContinueConfirmHint?: string
     customRewritePromptPlaceholder?: string
+    customContinueProcessing?: string
+    customContinueError?: string
+    customContinuePresets?: {
+      continue?: { label: string; instruction: string }
+      summarize?: { label: string; instruction: string }
+      flowchart?: { label: string; instruction: string }
+    }
+    customContinueSections?: {
+      suggestions?: {
+        title: string
+        items?: {
+          continue?: { label: string; instruction: string }
+        }
+      }
+      writing?: {
+        title: string
+        items?: {
+          summarize?: { label: string; instruction: string }
+          todo?: { label: string; instruction: string }
+          flowchart?: { label: string; instruction: string }
+          table?: { label: string; instruction: string }
+          freewrite?: { label: string; instruction: string }
+        }
+      }
+      thinking?: {
+        title: string
+        items?: {
+          brainstorm?: { label: string; instruction: string }
+          analyze?: { label: string; instruction: string }
+          dialogue?: { label: string; instruction: string }
+        }
+      }
+      custom?: {
+        title: string
+      }
+    }
     showMore?: string
     showLess?: string
     // conversation settings popover

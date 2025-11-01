@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 
 import { useSettings } from '../../../contexts/settings-context'
-import { getModelDisplayNameWithProvider, getModelDisplayName } from '../../../utils/model-id-utils'
+import { getModelDisplayName } from '../../../utils/model-id-utils'
 
 export function ModelSelect({
   modelId: externalModelId,
@@ -14,14 +14,18 @@ export function ModelSelect({
 } = {}) {
   const { settings, setSettings } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
-  
+
   // Get provider name for current model
   const getCurrentModelDisplay = () => {
     const effectiveModelId = externalModelId ?? settings.chatModelId
-    const currentModel = settings.chatModels.find(m => m.id === effectiveModelId)
+    const currentModel = settings.chatModels.find(
+      (m) => m.id === effectiveModelId,
+    )
     if (currentModel) {
       // 优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
-      const provider = settings.providers.find(p => p.id === currentModel.providerId)
+      const provider = settings.providers.find(
+        (p) => p.id === currentModel.providerId,
+      )
       const display = currentModel.name || currentModel.model || currentModel.id
       // 使用 provider 展示后缀
       const suffix = provider?.id ? ` (${provider.id})` : ''
@@ -29,7 +33,7 @@ export function ModelSelect({
     }
     return effectiveModelId
   }
-  
+
   return (
     <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenu.Trigger className="smtcmp-chat-input-model-select">
@@ -45,27 +49,43 @@ export function ModelSelect({
         <DropdownMenu.Content className="smtcmp-popover">
           <ul className="smtcmp-model-select-list">
             {(() => {
-              const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
-              const providerOrder = settings.providers.map(p => p.id)
-              const providerIdsInModels = Array.from(new Set(enabledModels.map(m => m.providerId)))
+              const enabledModels = settings.chatModels.filter(
+                ({ enable }) => enable ?? true,
+              )
+              const providerOrder = settings.providers.map((p) => p.id)
+              const providerIdsInModels = Array.from(
+                new Set(enabledModels.map((m) => m.providerId)),
+              )
               const orderedProviderIds = [
-                ...providerOrder.filter(id => providerIdsInModels.includes(id)),
-                ...providerIdsInModels.filter(id => !providerOrder.includes(id)),
+                ...providerOrder.filter((id) =>
+                  providerIdsInModels.includes(id),
+                ),
+                ...providerIdsInModels.filter(
+                  (id) => !providerOrder.includes(id),
+                ),
               ]
 
               return orderedProviderIds.flatMap((pid, groupIndex) => {
-                const groupModels = enabledModels.filter(m => m.providerId === pid)
+                const groupModels = enabledModels.filter(
+                  (m) => m.providerId === pid,
+                )
                 if (groupModels.length === 0) return []
 
                 const groupHeader = (
-                  <DropdownMenu.Label key={`label-${pid}`} className="smtcmp-popover-group-label">
+                  <DropdownMenu.Label
+                    key={`label-${pid}`}
+                    className="smtcmp-popover-group-label"
+                  >
                     {pid}
                   </DropdownMenu.Label>
                 )
 
                 const items = groupModels.map((chatModelOption) => {
                   // 列表项名称：优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
-                  const displayName = chatModelOption.name || chatModelOption.model || getModelDisplayName(chatModelOption.id)
+                  const displayName =
+                    chatModelOption.name ||
+                    chatModelOption.model ||
+                    getModelDisplayName(chatModelOption.id)
                   return (
                     <DropdownMenu.Item
                       key={chatModelOption.id}
@@ -89,7 +109,14 @@ export function ModelSelect({
                 return [
                   groupHeader,
                   ...items,
-                  ...(groupIndex < orderedProviderIds.length - 1 ? [<DropdownMenu.Separator key={`sep-${pid}`} className="smtcmp-popover-group-separator" />] : []),
+                  ...(groupIndex < orderedProviderIds.length - 1
+                    ? [
+                        <DropdownMenu.Separator
+                          key={`sep-${pid}`}
+                          className="smtcmp-popover-group-separator"
+                        />,
+                      ]
+                    : []),
                 ]
               })
             })()}
@@ -99,4 +126,3 @@ export function ModelSelect({
     </DropdownMenu.Root>
   )
 }
-

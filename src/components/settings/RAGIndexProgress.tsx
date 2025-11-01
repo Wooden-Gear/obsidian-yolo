@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+
 import { IndexProgress } from '../chat-view/QueryProgress'
 
-interface RAGIndexProgressProps {
+type RAGIndexProgressProps = {
   progress: IndexProgress | null
   isIndexing: boolean
   // Optional: provide a way to list markdown files under a folder path
@@ -11,9 +12,14 @@ interface RAGIndexProgressProps {
 
 const LS_KEY = 'smtcmp_rag_last_progress'
 
-export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolder }: RAGIndexProgressProps) {
+export function RAGIndexProgress({
+  progress,
+  isIndexing,
+  getMarkdownFilesInFolder,
+}: RAGIndexProgressProps) {
   // local persisted progress
-  const [persistedProgress, setPersistedProgress] = useState<IndexProgress | null>(null)
+  const [persistedProgress, setPersistedProgress] =
+    useState<IndexProgress | null>(null)
   // expanded folders
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -82,7 +88,10 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
       nodes.set(p, {
         path: p,
         name,
-        info: { completedChunks: info.completedChunks || 0, totalChunks: info.totalChunks || 0 },
+        info: {
+          completedChunks: info.completedChunks || 0,
+          totalChunks: info.totalChunks || 0,
+        },
         children: [],
       })
     }
@@ -133,9 +142,14 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
   })()
 
   const renderNode = (node: FolderNode, depth: number) => {
-    const progressPercent = formatProgress(node.info.completedChunks, node.info.totalChunks)
+    const progressPercent = formatProgress(
+      node.info.completedChunks,
+      node.info.totalChunks,
+    )
     const isOpen = expanded.has(node.path)
-    const files = getMarkdownFilesInFolder ? getMarkdownFilesInFolder(node.path) : []
+    const files = getMarkdownFilesInFolder
+      ? getMarkdownFilesInFolder(node.path)
+      : []
 
     return (
       <div key={node.path}>
@@ -181,7 +195,9 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
 
             {/* 当前层级文件 */}
             {files.length > 0 ? (
-              <ul className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}>
+              <ul
+                className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}
+              >
                 {files.map((f) => (
                   <li key={f} title={f}>
                     {f.split('/').pop()}
@@ -189,8 +205,12 @@ export function RAGIndexProgress({ progress, isIndexing, getMarkdownFilesInFolde
                 ))}
               </ul>
             ) : node.children.length === 0 ? (
-              <div className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}>
-                <span className="smtcmp-text-faint-small">暂无 Markdown 文件（仅当前层级）</span>
+              <div
+                className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}
+              >
+                <span className="smtcmp-text-faint-small">
+                  暂无 Markdown 文件（仅当前层级）
+                </span>
               </div>
             ) : null}
           </div>

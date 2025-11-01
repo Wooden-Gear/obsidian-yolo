@@ -50,10 +50,12 @@ export class DeepSeekStudioProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest = {
+    let formattedRequest = {
       ...request,
       messages: formatMessages(request.messages),
     }
+
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
 
     return this.adapter.generateResponse(this.client, formattedRequest, options)
   }
@@ -72,10 +74,12 @@ export class DeepSeekStudioProvider extends BaseLLMProvider<
       )
     }
 
-    const formattedRequest = {
+    let formattedRequest = {
       ...request,
       messages: formatMessages(request.messages),
     }
+
+    formattedRequest = this.applyCustomModelParameters(model, formattedRequest)
 
     return this.adapter.streamResponse(this.client, formattedRequest, options)
   }

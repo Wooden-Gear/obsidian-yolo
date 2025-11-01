@@ -42,7 +42,9 @@ export class AzureOpenAIProvider extends BaseLLMProvider<
       throw new Error('Model is not an Azure OpenAI model')
     }
 
-    return this.adapter.generateResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.generateResponse(this.client, mergedRequest, options)
   }
 
   async streamResponse(
@@ -54,7 +56,9 @@ export class AzureOpenAIProvider extends BaseLLMProvider<
       throw new Error('Model is not an Azure OpenAI model')
     }
 
-    return this.adapter.streamResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.streamResponse(this.client, mergedRequest, options)
   }
 
   async getEmbedding(_model: string, _text: string): Promise<number[]> {

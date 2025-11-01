@@ -4,7 +4,6 @@ import {
   DEFAULT_APPLY_MODEL_ID,
   DEFAULT_CHAT_MODELS,
   DEFAULT_CHAT_MODEL_ID,
-  DEFAULT_CONTINUATION_SYSTEM_PROMPT,
   DEFAULT_EMBEDDING_MODELS,
   DEFAULT_PROVIDERS,
 } from '../../constants'
@@ -42,7 +41,7 @@ type TabCompletionOptionDefaults = {
 }
 
 export const DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT =
-  'You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user\'s cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary.'
+  "You are a helpful assistant providing inline writing suggestions. Predict a concise continuation after the user's cursor. Do not repeat existing text. Return only the suggested continuation without quotes or extra commentary."
 
 export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
   triggerDelayMs: 3000,
@@ -57,7 +56,11 @@ export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
 
 const tabCompletionOptionsSchema = z
   .object({
-    triggerDelayMs: z.number().min(200).max(30000).catch(DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs),
+    triggerDelayMs: z
+      .number()
+      .min(200)
+      .max(30000)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs),
     minContextLength: z
       .number()
       .min(0)
@@ -182,24 +185,16 @@ export const smartComposerSettingsSchema = z.object({
       chatTitlePrompt: '',
       baseModelSpecialPrompt: '',
     }),
-  
+
   // Continuation (续写) options
   continuationOptions: z
     .object({
-      // enable advanced continuation workflow that unlocks Composer
-      enableSuperContinuation: z.boolean().optional(),
-      // dedicated continuation model used when super continuation is enabled
+      // dedicated continuation model
       continuationModelId: z.string().optional(),
-      // default system prompt for continuation
-      defaultSystemPrompt: z.string().optional(),
-      // enable keyword trigger for continuation
-      enableKeywordTrigger: z.boolean(),
-      // the keyword to trigger continuation, default to double space
-      triggerKeyword: z.string(),
-      // enable keyword trigger for opening floating panel (custom continue panel)
-      enableFloatingPanelKeywordTrigger: z.boolean().optional(),
-      // the keyword to trigger floating panel
-      floatingPanelTriggerKeyword: z.string().optional(),
+      // enable smart space quick invoke
+      enableSmartSpace: z.boolean().optional(),
+      // enable selection chat (Cursor-like text selection actions)
+      enableSelectionChat: z.boolean().optional(),
       // enable manual context selection for continuation
       manualContextEnabled: z.boolean().optional(),
       // manual context folders picked by user from the vault
@@ -225,17 +220,28 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionOptions: tabCompletionOptionsSchema.optional(),
       // override system prompt for tab completion
       tabCompletionSystemPrompt: z.string().optional(),
+      // Smart Space custom quick actions
+      smartSpaceQuickActions: z
+        .array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            instruction: z.string(),
+            icon: z.string().optional(),
+            category: z
+              .enum(['suggestions', 'writing', 'thinking', 'custom'])
+              .optional(),
+            enabled: z.boolean().default(true),
+          }),
+        )
+        .optional(),
     })
     .catch({
-      enableSuperContinuation: true,
       continuationModelId:
         DEFAULT_CHAT_MODELS.find((v) => v.id === DEFAULT_APPLY_MODEL_ID)?.id ??
         DEFAULT_CHAT_MODELS[0].id,
-      defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
-      enableKeywordTrigger: true,
-      triggerKeyword: '  ',
-      enableFloatingPanelKeywordTrigger: false,
-      floatingPanelTriggerKeyword: '',
+      enableSmartSpace: true,
+      enableSelectionChat: true,
       manualContextEnabled: false,
       manualContextFolders: [],
       referenceRuleFolders: [],
@@ -249,11 +255,12 @@ export const smartComposerSettingsSchema = z.object({
         DEFAULT_CHAT_MODELS[0].id,
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
+      smartSpaceQuickActions: undefined,
     }),
-  
+
   // Assistant list
   assistants: z.array(assistantSchema).catch([]),
-  
+
   // Currently selected assistant ID
   currentAssistantId: z.string().optional(),
 

@@ -1,8 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react'
 import { App, TFile, TFolder, Vault } from 'obsidian'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 
-import { FolderPickerModal } from '../modals/FolderPickerModal'
 import { useLanguage } from '../../../contexts/language-context'
+import { FolderPickerModal } from '../modals/FolderPickerModal'
 
 export type FolderSelectionListProps = {
   app: App
@@ -32,31 +32,34 @@ export function FolderSelectionList({
   const overIndexRef = useRef<number | null>(null)
 
   // Normalize any incoming folder values to avoid duplicates like '/', '**', 'path/'
-  const normalize = (p: string): string => {
-    if (!p) return ''
-    const trimmed = p.replace(/^\/+/, '').replace(/\/+$/, '')
-    if (allowFiles) {
-      const abstract = vault.getAbstractFileByPath(trimmed)
-      if (abstract instanceof TFile) {
-        return abstract.path
+  const normalize = useCallback(
+    (p: string): string => {
+      if (!p) return ''
+      const trimmed = p.replace(/^\/+/, '').replace(/\/+$/, '')
+      if (allowFiles) {
+        const abstract = vault.getAbstractFileByPath(trimmed)
+        if (abstract instanceof TFile) {
+          return abstract.path
+        }
+        if (abstract instanceof TFolder) {
+          return abstract.path.replace(/^\/+/, '').replace(/\/+$/, '')
+        }
+        if (trimmed.includes('*')) return ''
+        return trimmed
       }
-      if (abstract instanceof TFolder) {
-        return abstract.path.replace(/^\/+/, '').replace(/\/+$/, '')
-      }
+
+      if (trimmed === '' || trimmed === '**') return ''
+      const m1 = trimmed.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
+      if (m1) return m1[1].replace(/^\/+/, '').replace(/\/+$/, '')
+      const m2 = trimmed.match(/^(.*)\/\*\.md$/)
+      if (m2) return m2[1].replace(/^\/+/, '').replace(/\/+$/, '')
       if (trimmed.includes('*')) return ''
       return trimmed
-    }
+    },
+    [allowFiles, vault],
+  )
 
-    if (trimmed === '' || trimmed === '**') return ''
-    const m1 = trimmed.match(/^(.*)\/\*\*\/(?:\*|\*\.md)$/)
-    if (m1) return m1[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    const m2 = trimmed.match(/^(.*)\/\*\.md$/)
-    if (m2) return m2[1].replace(/^\/+/, '').replace(/\/+$/, '')
-    if (trimmed.includes('*')) return ''
-    return trimmed
-  }
-
-  const items = useMemo(() => value.map(normalize), [value])
+  const items = useMemo(() => value.map(normalize), [normalize, value])
 
   const absorbByParent = (list: string[]): string[] => {
     // Keep shortest ancestors; remove descendants covered by any kept parent
@@ -97,7 +100,14 @@ export function FolderSelectionList({
   }
 
   const moveItem = (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return
+    if (
+      from === to ||
+      from < 0 ||
+      to < 0 ||
+      from >= items.length ||
+      to >= items.length
+    )
+      return
     const next = items.slice()
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
@@ -159,13 +169,22 @@ export function FolderSelectionList({
         </div>
       </div>
 
-      <div onClick={onContainerClick} className="smtcmp-folder-selection-picker">
+      <div
+        onClick={onContainerClick}
+        className="smtcmp-folder-selection-picker"
+      >
         {items.length === 0 ? (
           <div className="smtcmp-folder-selection-empty">
             {placeholder ??
               (allowFiles
-                ? t('settings.rag.selectFilesOrFoldersPlaceholder', '点击此处选择文件或文件夹（留空表示全库）')
-                : t('settings.rag.selectFoldersPlaceholder', '点击此处选择文件夹（留空则默认包含全部）'))}
+                ? t(
+                    'settings.rag.selectFilesOrFoldersPlaceholder',
+                    '点击此处选择文件或文件夹（留空表示全库）',
+                  )
+                : t(
+                    'settings.rag.selectFoldersPlaceholder',
+                    '点击此处选择文件夹（留空则默认包含全部）',
+                  ))}
           </div>
         ) : (
           <div className="smtcmp-folder-selection-list">
@@ -180,7 +199,9 @@ export function FolderSelectionList({
                 className="smtcmp-folder-selection-chip"
               >
                 <span className="smtcmp-folder-selection-chip-handle">⋮⋮</span>
-                <span className="smtcmp-folder-selection-chip-path">{p === '' ? '/' : p}</span>
+                <span className="smtcmp-folder-selection-chip-path">
+                  {p === '' ? '/' : p}
+                </span>
                 <span
                   role="button"
                   aria-label={t('common.remove', '移除')}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { MessageCircle, PenLine } from 'lucide-react'
+import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 
@@ -15,7 +15,9 @@ const ViewToggle: React.FC<ViewToggleProps> = ({
   disabled = false,
 }) => {
   const { t } = useLanguage()
-  const [hoveredView, setHoveredView] = useState<'chat' | 'composer' | null>(null)
+  const [hoveredView, setHoveredView] = useState<'chat' | 'composer' | null>(
+    null,
+  )
 
   const chatLabel = t('sidebar.tabs.chat', 'Chat')
   const composerLabel = t('sidebar.tabs.composer', 'Composer')

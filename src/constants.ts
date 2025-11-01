@@ -6,13 +6,17 @@ export const CHAT_VIEW_TYPE = 'smtcmp-chat-view'
 export const APPLY_VIEW_TYPE = 'smtcmp-apply-view'
 
 export const PGLITE_DB_PATH = '.smtcmp_vector_db.tar.gz'
+export const PLUGIN_ID = 'obsidian-smart-composer'
 
 // Default model ids (with provider prefix)
 export const DEFAULT_CHAT_MODEL_ID = 'openai/gpt-5'
 export const DEFAULT_APPLY_MODEL_ID = 'openai/gpt-4.1-mini'
 
 // Recommended model ids (with provider prefix)
-export const RECOMMENDED_MODELS_FOR_CHAT = ['anthropic/claude-sonnet-4.0', 'openai/gpt-4.1']
+export const RECOMMENDED_MODELS_FOR_CHAT = [
+  'anthropic/claude-sonnet-4.0',
+  'openai/gpt-4.1',
+]
 export const RECOMMENDED_MODELS_FOR_APPLY = ['openai/gpt-4.1-mini']
 export const RECOMMENDED_MODELS_FOR_EMBEDDING = [
   'openai/text-embedding-3-small',
@@ -93,7 +97,7 @@ export const PROVIDER_TYPES_INFO = {
     defaultProviderId: 'openrouter',
     requireApiKey: true,
     requireBaseUrl: false,
-    supportEmbedding: false,
+    supportEmbedding: true,
     additionalSettings: [],
   },
   ollama: {

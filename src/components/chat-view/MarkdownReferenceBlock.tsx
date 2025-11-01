@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Eye, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Eye } from 'lucide-react'
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react'
 
 import { useApp } from '../../contexts/app-context'
@@ -58,9 +58,12 @@ export default function MarkdownReferenceBlock({
     openMarkdownFile(app, filename, startLine)
   }
 
-  const lines = useMemo(() => (blockContent ? blockContent.split('\n') : []), [blockContent])
+  const lines = useMemo(
+    () => (blockContent ? blockContent.split('\n') : []),
+    [blockContent],
+  )
   const displayContent = useMemo(
-    () => (collapsed ? lines.slice(0, 3).join('\n') : blockContent ?? ''),
+    () => (collapsed ? lines.slice(0, 3).join('\n') : (blockContent ?? '')),
     [collapsed, lines, blockContent],
   )
 

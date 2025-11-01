@@ -6,8 +6,6 @@ import { useSettings } from '../../contexts/settings-context'
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import { getModelDisplayName } from '../../utils/model-id-utils'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
-import { ObsidianSetting } from '../common/ObsidianSetting'
-import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ObsidianToggle } from '../common/ObsidianToggle'
 import { FolderSelectionList } from '../settings/inputs/FolderSelectionList'
 
@@ -21,9 +19,13 @@ const Composer: React.FC<ComposerProps> = (_props) => {
   const { settings, setSettings } = useSettings()
 
   const orderedEnabledModels = useMemo(() => {
-    const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
+    const enabledModels = settings.chatModels.filter(
+      ({ enable }) => enable ?? true,
+    )
     const providerOrder = settings.providers.map((p) => p.id)
-    const providerIdsInModels = Array.from(new Set(enabledModels.map((m) => m.providerId)))
+    const providerIdsInModels = Array.from(
+      new Set(enabledModels.map((m) => m.providerId)),
+    )
     const orderedProviderIds = [
       ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
       ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
@@ -35,20 +37,17 @@ const Composer: React.FC<ComposerProps> = (_props) => {
 
   const referenceRuleFolders =
     settings.continuationOptions.referenceRuleFolders ??
-    settings.continuationOptions.manualContextFolders ?? []
+    settings.continuationOptions.manualContextFolders ??
+    []
   const knowledgeBaseFolders =
     settings.continuationOptions.knowledgeBaseFolders ?? []
   const continuationModelId =
     settings.continuationOptions.continuationModelId ??
     orderedEnabledModels[0]?.id ??
     settings.chatModelId
-  const enableSuperContinuation = Boolean(
-    settings.continuationOptions.enableSuperContinuation,
-  )
   const continuationTemperature = settings.continuationOptions.temperature
   const continuationTopP = settings.continuationOptions.topP
-  const continuationStreamEnabled =
-    settings.continuationOptions.stream ?? true
+  const continuationStreamEnabled = settings.continuationOptions.stream ?? true
   const continuationUseVaultSearch =
     settings.continuationOptions.useVaultSearch ??
     Boolean(settings.ragOptions.enabled)
@@ -56,9 +55,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
     settings.continuationOptions.maxContinuationChars ?? 8000
 
   const updateContinuationOptions = useCallback(
-    (
-      updates: Partial<SmartComposerSettings['continuationOptions']>,
-    ) => {
+    (updates: Partial<SmartComposerSettings['continuationOptions']>) => {
       void setSettings({
         ...settings,
         continuationOptions: {
@@ -93,15 +90,17 @@ const Composer: React.FC<ComposerProps> = (_props) => {
         <section className="smtcmp-composer-section">
           <header className="smtcmp-composer-heading">
             <div className="smtcmp-composer-heading-title">
-              {t('sidebar.composer.sections.modelWithPrompt.title', '模型选择与提示词')}
+              {t('sidebar.composer.sections.modelWithPrompt.title', '模型选择')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t('sidebar.composer.sections.model.desc', '选择用于续写任务的模型。')}
+              {t(
+                'sidebar.composer.sections.model.desc',
+                '选择用于续写任务的模型。',
+              )}
             </div>
           </header>
           <div className="smtcmp-composer-option smtcmp-composer-option--model">
-            <div className="smtcmp-composer-option-info">
-            </div>
+            <div className="smtcmp-composer-option-info"></div>
             <div className="smtcmp-composer-option-control">
               <ObsidianDropdown
                 value={continuationModelId}
@@ -110,32 +109,17 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                     const provider = settings.providers.find(
                       (p) => p.id === m.providerId,
                     )
-                    const baseName = m.name?.trim() || m.model || getModelDisplayName(m.id)
-                    const providerSuffix = provider?.id ? ` (${provider.id})` : ''
+                    const baseName =
+                      m.name?.trim() || m.model || getModelDisplayName(m.id)
+                    const providerSuffix = provider?.id
+                      ? ` (${provider.id})`
+                      : ''
                     return [m.id, `${baseName}${providerSuffix}`]
                   }),
                 )}
                 onChange={(value) =>
                   updateContinuationOptions({ continuationModelId: value })
                 }
-                disabled={!enableSuperContinuation}
-              />
-            </div>
-          </div>
-
-          <div className="smtcmp-composer-option">
-            <div className="smtcmp-composer-option-info">
-              <div className="smtcmp-composer-option-title">
-                {t('sidebar.composer.continuationPrompt', '续写系统提示词')}
-              </div>
-            </div>
-            <div className="smtcmp-composer-option-control smtcmp-composer-option-control--full">
-              <ObsidianTextArea
-                value={settings.continuationOptions.defaultSystemPrompt ?? ''}
-                onChange={(value) =>
-                  updateContinuationOptions({ defaultSystemPrompt: value })
-                }
-                disabled={!enableSuperContinuation}
               />
             </div>
           </div>
@@ -147,7 +131,10 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.parameters.title', '参数设置')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t('sidebar.composer.sections.parameters.desc', '针对续写行为的核心开关。')}
+              {t(
+                'sidebar.composer.sections.parameters.desc',
+                '针对续写行为的核心开关。',
+              )}
             </div>
           </header>
           <div className="smtcmp-composer-option">
@@ -240,12 +227,17 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                 onChange={(event) => {
                   const raw = event.currentTarget.value
                   if (raw === '') {
-                    updateContinuationOptions({ maxContinuationChars: undefined })
+                    updateContinuationOptions({
+                      maxContinuationChars: undefined,
+                    })
                     return
                   }
                   const value = Number(raw)
                   if (Number.isNaN(value)) return
-                  const clamped = Math.max(0, Math.min(20000, Math.round(value)))
+                  const clamped = Math.max(
+                    0,
+                    Math.min(20000, Math.round(value)),
+                  )
                   updateContinuationOptions({
                     maxContinuationChars: clamped,
                   })
@@ -277,7 +269,10 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               {t('sidebar.composer.sections.context.title', '上下文管理')}
             </div>
             <div className="smtcmp-composer-heading-desc">
-              {t('sidebar.composer.sections.context.desc', '定义续写时优先参考的内容来源。')}
+              {t(
+                'sidebar.composer.sections.context.desc',
+                '定义续写时优先参考的内容来源。',
+              )}
             </div>
           </header>
           <div className="smtcmp-composer-context-picker">
@@ -288,10 +283,7 @@ const Composer: React.FC<ComposerProps> = (_props) => {
               onChange={(folders) =>
                 updateContinuationOptions({ referenceRuleFolders: folders })
               }
-              title={t(
-                'sidebar.composer.referenceRulesTitle',
-                '参考规则',
-              )}
+              title={t('sidebar.composer.referenceRulesTitle', '参考规则')}
               placeholder={t(
                 'sidebar.composer.referenceRulesPlaceholder',
                 '点击选择需要完整注入上下文的文件夹。',

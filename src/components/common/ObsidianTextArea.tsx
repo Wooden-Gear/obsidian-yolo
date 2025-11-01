@@ -83,7 +83,9 @@ export function ObsidianTextArea({
       const len = el.value.length
       try {
         el.setSelectionRange(len, len)
-      } catch {}
+      } catch {
+        // Some input implementations may not support setSelectionRange; ignore errors.
+      }
     }
   }, [textAreaComponent, autoFocus])
 
@@ -98,5 +100,10 @@ export function ObsidianTextArea({
     }
   }, [textAreaComponent, onKeyDown])
 
-  return <div ref={containerRef} className={`smtcmp-textarea-container${containerClassName ? ' ' + containerClassName : ''}`} />
+  return (
+    <div
+      ref={containerRef}
+      className={`smtcmp-textarea-container${containerClassName ? ' ' + containerClassName : ''}`}
+    />
+  )
 }

@@ -1,7 +1,7 @@
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
-import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { useLanguage } from '../../../contexts/language-context'
 import { Language } from '../../../i18n'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
+import { ObsidianSetting } from '../../common/ObsidianSetting'
 
 const languageOptions: Record<string, string> = {
   en: 'English',

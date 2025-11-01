@@ -27,7 +27,6 @@ export function DatabaseProvider({
     return (await getDatabaseManager()).getVectorManager()
   }, [getDatabaseManager])
 
-
   useEffect(() => {
     // start initialization of dbManager in the background
     void getDatabaseManager()

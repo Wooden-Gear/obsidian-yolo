@@ -58,7 +58,11 @@ const AssistantTextRenderer = React.memo(function AssistantTextRenderer({
             <ObsidianMarkdown content={block.content} scale="sm" />
           </div>
         ) : block.type === 'think' ? (
-          <AssistantMessageReasoning key={index} reasoning={block.content} content={children} />
+          <AssistantMessageReasoning
+            key={index}
+            reasoning={block.content}
+            content={children}
+          />
         ) : block.startLine && block.endLine && block.filename ? (
           <MarkdownReferenceBlock
             key={index}

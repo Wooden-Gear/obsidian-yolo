@@ -30,4 +30,42 @@ export abstract class BaseLLMProvider<P extends LLMProvider> {
   ): Promise<AsyncIterable<LLMResponseStreaming>>
 
   abstract getEmbedding(model: string, text: string): Promise<number[]>
+
+  protected applyCustomModelParameters<T extends Record<string, unknown>>(
+    model: ChatModel,
+    request: T,
+  ): T {
+    const entries = Array.isArray((model as any).customParameters)
+      ? ((model as any).customParameters as {
+          key?: string
+          value?: string
+        }[])
+      : []
+
+    if (entries.length === 0) {
+      return request
+    }
+
+    const next: Record<string, unknown> = { ...request }
+    for (const entry of entries) {
+      const key = typeof entry?.key === 'string' ? entry.key.trim() : ''
+      if (!key) continue
+      const rawValue = typeof entry?.value === 'string' ? entry.value : ''
+      next[key] = parseCustomParameterValue(rawValue)
+    }
+    return next as T
+  }
+}
+
+function parseCustomParameterValue(raw: string): unknown {
+  const trimmed = raw.trim()
+  if (trimmed.length === 0) {
+    return raw
+  }
+
+  try {
+    return JSON.parse(trimmed)
+  } catch (error) {
+    return raw
+  }
 }

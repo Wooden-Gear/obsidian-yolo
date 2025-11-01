@@ -102,29 +102,34 @@ export const getMigratedEmbeddingModels = (
   defaultEmbeddingModelsForVersion: DefaultEmbeddingModels,
 ) => {
   if (
-    !('embeddingModels' in existingData && Array.isArray(existingData.embeddingModels))
+    !(
+      'embeddingModels' in existingData &&
+      Array.isArray(existingData.embeddingModels)
+    )
   ) {
     return defaultEmbeddingModelsForVersion
   }
 
-  const defaultEmbeddingModels = defaultEmbeddingModelsForVersion.map((model) => {
-    const existingModel = (existingData.embeddingModels as unknown[]).find(
-      (m: unknown) => {
-        return (m as { id: string }).id === model.id
-      },
-    )
-    if (existingModel) {
-      return Object.assign(existingModel, model)
-    }
-    return model
-  })
-  const customEmbeddingModels = (existingData.embeddingModels as unknown[]).filter(
-    (m: unknown) => {
-      return !defaultEmbeddingModels.some(
-        (dm: unknown) => (dm as { id: string }).id === (m as { id: string }).id,
+  const defaultEmbeddingModels = defaultEmbeddingModelsForVersion.map(
+    (model) => {
+      const existingModel = (existingData.embeddingModels as unknown[]).find(
+        (m: unknown) => {
+          return (m as { id: string }).id === model.id
+        },
       )
+      if (existingModel) {
+        return Object.assign(existingModel, model)
+      }
+      return model
     },
   )
+  const customEmbeddingModels = (
+    existingData.embeddingModels as unknown[]
+  ).filter((m: unknown) => {
+    return !defaultEmbeddingModels.some(
+      (dm: unknown) => (dm as { id: string }).id === (m as { id: string }).id,
+    )
+  })
 
   return [...defaultEmbeddingModels, ...customEmbeddingModels]
 }

@@ -30,9 +30,10 @@ export const migrateFrom15To16: SettingMigration['migrate'] = (data) => {
   if (typeof continuationOptions.continuationModelId !== 'string') {
     let fallback: unknown = continuationOptions.fixedModelId
     if (typeof fallback !== 'string') {
-      fallback = typeof newData.chatModelId === 'string'
-        ? newData.chatModelId
-        : getDefaultContinuationModelId()
+      fallback =
+        typeof newData.chatModelId === 'string'
+          ? newData.chatModelId
+          : getDefaultContinuationModelId()
     }
     continuationOptions.continuationModelId = fallback as string
   }

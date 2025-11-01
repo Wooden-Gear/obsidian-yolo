@@ -40,7 +40,9 @@ export class LmStudioProvider extends BaseLLMProvider<
       throw new Error('Model is not an LM Studio model')
     }
 
-    return this.adapter.generateResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.generateResponse(this.client, mergedRequest, options)
   }
 
   async streamResponse(
@@ -52,7 +54,9 @@ export class LmStudioProvider extends BaseLLMProvider<
       throw new Error('Model is not an LM Studio model')
     }
 
-    return this.adapter.streamResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.streamResponse(this.client, mergedRequest, options)
   }
 
   async getEmbedding(model: string, text: string): Promise<number[]> {

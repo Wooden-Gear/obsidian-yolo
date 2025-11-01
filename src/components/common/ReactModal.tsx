@@ -31,19 +31,21 @@ export class ReactModal<T> extends Modal {
   onOpen() {
     if (this.options?.title) this.titleEl.setText(this.options.title)
     this.root = createRoot(this.contentEl)
-    
-    const ComponentWithContext = () => (
+
+    const ComponentWithContext = () =>
       this.plugin ? (
         <PluginProvider plugin={this.plugin}>
           <LanguageProvider>
-            <this.Component {...(this.props as T)} onClose={() => this.close()} />
+            <this.Component
+              {...(this.props as T)}
+              onClose={() => this.close()}
+            />
           </LanguageProvider>
         </PluginProvider>
       ) : (
         <this.Component {...(this.props as T)} onClose={() => this.close()} />
       )
-    )
-    
+
     this.root.render(<ComponentWithContext />)
   }
 

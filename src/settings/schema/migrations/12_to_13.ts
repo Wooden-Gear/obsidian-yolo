@@ -30,7 +30,7 @@ export const migrateFrom12To13: SettingMigration['migrate'] = (data) => {
   if (typeof continuationOptions.tabCompletionModelId !== 'string') {
     const fallbackModelId =
       typeof continuationOptions.fixedModelId === 'string'
-        ? (continuationOptions.fixedModelId as string)
+        ? continuationOptions.fixedModelId
         : getDefaultTabCompletionModelId()
     continuationOptions.tabCompletionModelId = fallbackModelId
   }
@@ -39,4 +39,3 @@ export const migrateFrom12To13: SettingMigration['migrate'] = (data) => {
 
   return newData
 }
-

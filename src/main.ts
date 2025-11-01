@@ -1,23 +1,45 @@
-import { Prec, StateEffect, StateField } from '@codemirror/state'
-import { Decoration, DecorationSet, EditorView, WidgetType, keymap } from '@codemirror/view'
-import { Editor, MarkdownView, Notice, Plugin, TAbstractFile, TFile, TFolder } from 'obsidian'
+import {
+  EditorSelection,
+  type Extension,
+  Prec,
+  StateEffect,
+  StateField,
+} from '@codemirror/state'
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  WidgetType,
+  keymap,
+} from '@codemirror/view'
 import { minimatch } from 'minimatch'
+import {
+  Editor,
+  MarkdownView,
+  Notice,
+  Plugin,
+  TAbstractFile,
+  TFile,
+  TFolder,
+  normalizePath,
+} from 'obsidian'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
+import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
+import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
+import { SelectionManager } from './components/selection/SelectionManager'
+import type { SelectionInfo } from './components/selection/SelectionManager'
 import { APPLY_VIEW_TYPE, CHAT_VIEW_TYPE } from './constants'
 import { getChatModelClient } from './core/llm/manager'
 import { McpManager } from './core/mcp/mcpManager'
 import { RAGEngine } from './core/rag/ragEngine'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
+import type { VectorManager } from './database/modules/vector/VectorManager'
 import { createTranslationFunction } from './i18n'
-import { CustomContinueModal } from './components/modals/CustomContinueModal'
-import { CustomContinuePanel } from './components/panels/CustomContinuePanel'
-import { CustomRewritePanel } from './components/panels/CustomRewritePanel'
-import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
@@ -26,6 +48,7 @@ import {
 } from './settings/schema/setting.types'
 import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
+import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -35,7 +58,8 @@ import {
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
-const inlineSuggestionGhostEffect = StateEffect.define<InlineSuggestionGhostPayload>()
+const inlineSuggestionGhostEffect =
+  StateEffect.define<InlineSuggestionGhostPayload>()
 
 class InlineSuggestionGhostWidget extends WidgetType {
   constructor(private readonly text: string) {
@@ -91,6 +115,46 @@ const inlineSuggestionGhostField = StateField.define<DecorationSet>({
 
 const inlineSuggestionExtensionViews = new WeakSet<EditorView>()
 
+type CustomContinueWidgetPayload = {
+  pos: number
+  options: {
+    plugin: SmartComposerPlugin
+    editor: Editor
+    view: EditorView
+    onClose: () => void
+    showQuickActions?: boolean
+  }
+}
+
+const customContinueWidgetEffect =
+  StateEffect.define<CustomContinueWidgetPayload | null>()
+
+const customContinueWidgetField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(decorations, tr) {
+    let updated = decorations.map(tr.changes)
+    for (const effect of tr.effects) {
+      if (effect.is(customContinueWidgetEffect)) {
+        updated = Decoration.none
+        const payload = effect.value
+        if (payload) {
+          updated = Decoration.set([
+            Decoration.widget({
+              widget: new CustomContinueWidget(payload.options),
+              side: 1,
+              block: false,
+            }).range(payload.pos),
+          ])
+        }
+      }
+    }
+    return updated
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
   initialChatProps?: ChatProps // TODO: change this to use view state like ApplyView
@@ -101,8 +165,8 @@ export default class SmartComposerPlugin extends Plugin {
   private dbManagerInitPromise: Promise<DatabaseManager> | null = null
   private ragEngineInitPromise: Promise<RAGEngine> | null = null
   private timeoutIds: ReturnType<typeof setTimeout>[] = [] // Use ReturnType instead of number
+  private pgliteResourcePath?: string
   private isContinuationInProgress = false
-  private continuationTriggerKeyword = '  '
   private autoUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private isAutoUpdating = false
   private activeAbortControllers: Set<AbortController> = new Set()
@@ -132,23 +196,483 @@ export default class SmartComposerPlugin extends Plugin {
     editor: Editor
     cursorOffset: number
   } | null = null
+  private customContinueWidgetState: {
+    view: EditorView
+    pos: number
+    close: () => void
+  } | null = null
+  private lastSmartSpaceSlash: {
+    view: EditorView
+    pos: number
+    timestamp: number
+  } | null = null
+  // Selection chat state
+  private selectionManager: any | null = null
+  private selectionChatWidget: any | null = null
+  private pendingSelectionRewrite: {
+    editor: Editor
+    selectedText: string
+    from: { line: number; ch: number }
+    to: { line: number; ch: number }
+  } | null = null
+  // Model list cache for provider model fetching
+  private modelListCache: Map<string, { models: string[]; timestamp: number }> =
+    new Map()
+
+  // Get cached model list for a provider
+  getCachedModelList(providerId: string): string[] | null {
+    const cached = this.modelListCache.get(providerId)
+    if (cached) {
+      return cached.models
+    }
+    return null
+  }
+
+  // Set model list cache for a provider
+  setCachedModelList(providerId: string, models: string[]): void {
+    this.modelListCache.set(providerId, {
+      models,
+      timestamp: Date.now(),
+    })
+  }
+
+  // Clear all model list cache (called when settings modal closes)
+  clearModelListCache(): void {
+    this.modelListCache.clear()
+  }
+
+  private resolvePgliteResourcePath(): string {
+    if (!this.pgliteResourcePath) {
+      // manifest.dir 已经包含完整的插件目录路径（相对于 vault）
+      // 例如：.obsidian/plugins/obsidian-smart-composer 或 .obsidian/plugins/yolo
+      const pluginDir = this.manifest.dir
+      if (pluginDir) {
+        this.pgliteResourcePath = normalizePath(`${pluginDir}/vendor/pglite`)
+      } else {
+        // 如果 manifest.dir 不存在，使用 manifest.id 作为后备
+        const configDir = this.app.vault.configDir
+        this.pgliteResourcePath = normalizePath(
+          `${configDir}/plugins/${this.manifest.id}/vendor/pglite`,
+        )
+      }
+    }
+    return this.pgliteResourcePath
+  }
 
   // Compute a robust panel anchor position just below the caret line
-  private getCaretPanelPosition(editor: Editor, dy = 8): { x: number; y: number } | undefined {
+  private getCaretPanelPosition(
+    editor: Editor,
+    dy = 8,
+  ): { x: number; y: number } | undefined {
     try {
-      // CM6: use selection head to get viewport coords
       const cm: any = (editor as any).cm
       const head: number | undefined = cm?.state?.selection?.main?.head
       if (cm?.coordsAtPos && typeof head === 'number') {
         const rect = cm.coordsAtPos(head)
         if (rect) {
-          const y = (rect.bottom ?? rect.top) + dy
-          return { x: rect.left, y }
+          const base = rect.bottom ?? rect.top
+          if (typeof base === 'number') {
+            const y = base + dy
+            return { x: rect.left, y }
+          }
         }
       }
-    } catch {}
-    // Fallback: center (handled by caller when returning undefined)
+    } catch {
+      // ignore
+    }
     return undefined
+  }
+
+  private closeCustomContinueWidget() {
+    const state = this.customContinueWidgetState
+    if (!state) return
+
+    // 先清除状态，避免重复关闭
+    this.customContinueWidgetState = null
+
+    // Clear pending selection rewrite if user closes without submitting
+    this.pendingSelectionRewrite = null
+
+    // 尝试触发关闭动画
+    const hasAnimation = CustomContinueWidget.closeCurrentWithAnimation()
+
+    if (!hasAnimation) {
+      // 如果没有动画实例，直接分发关闭效果
+      state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+    }
+    // 如果有动画，widget 会在动画结束后自己调用 onClose 来分发关闭效果
+
+    state.view.focus()
+  }
+
+  private showCustomContinueWidget(
+    editor: Editor,
+    view: EditorView,
+    showQuickActions = true,
+  ) {
+    const selection = view.state.selection.main
+    // Use the end of selection (max of head and anchor) to always position at the visual end
+    // This ensures the widget appears below the selection regardless of selection direction
+    const pos = Math.max(selection.head, selection.anchor)
+
+    this.closeCustomContinueWidget()
+
+    const close = () => {
+      // 检查是否是当前的 widget（允许状态为 null，因为可能在动画期间被清除）
+      if (
+        this.customContinueWidgetState &&
+        this.customContinueWidgetState.view !== view
+      ) {
+        return
+      }
+      this.customContinueWidgetState = null
+      view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+      view.focus()
+    }
+
+    view.dispatch({
+      effects: [
+        customContinueWidgetEffect.of(null),
+        customContinueWidgetEffect.of({
+          pos,
+          options: {
+            plugin: this,
+            editor,
+            view,
+            onClose: close,
+            showQuickActions,
+          },
+        }),
+      ],
+    })
+
+    this.customContinueWidgetState = { view, pos, close }
+  }
+
+  // Selection Chat methods
+  private initializeSelectionManager() {
+    // Check if Selection Chat is enabled
+    const enableSelectionChat =
+      this.settings.continuationOptions?.enableSelectionChat ?? true
+
+    // Clean up existing manager
+    if (this.selectionManager) {
+      this.selectionManager.destroy()
+      this.selectionManager = null
+    }
+
+    // Don't initialize if disabled
+    if (!enableSelectionChat) {
+      return
+    }
+
+    // Get the active editor container
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!view) return
+
+    const editorContainer = view.containerEl.querySelector('.cm-editor')
+    if (!editorContainer) return
+
+    // Create new selection manager
+    this.selectionManager = new SelectionManager(
+      editorContainer as HTMLElement,
+      {
+        enabled: true,
+        minSelectionLength: 6,
+        debounceDelay: 300,
+      },
+    )
+
+    // Initialize with callback
+    this.selectionManager.init((selection: SelectionInfo | null) => {
+      this.handleSelectionChange(selection, view.editor)
+    })
+  }
+
+  private handleSelectionChange(
+    selection: SelectionInfo | null,
+    editor: Editor,
+  ) {
+    // Close existing widget
+    if (this.selectionChatWidget) {
+      this.selectionChatWidget.destroy()
+      this.selectionChatWidget = null
+    }
+
+    // Don't show if Smart Space is active
+    if (this.customContinueWidgetState) {
+      return
+    }
+
+    // Show new widget if selection is valid
+    if (selection) {
+      this.selectionChatWidget = new SelectionChatWidget({
+        plugin: this,
+        editor,
+        selection,
+        onClose: () => {
+          if (this.selectionChatWidget) {
+            this.selectionChatWidget.destroy()
+            this.selectionChatWidget = null
+          }
+        },
+        onAction: async (actionId: string, sel: SelectionInfo) => {
+          await this.handleSelectionAction(actionId, sel, editor)
+        },
+      })
+      this.selectionChatWidget.mount()
+    }
+  }
+
+  private async handleSelectionAction(
+    actionId: string,
+    selection: SelectionInfo,
+    editor: Editor,
+  ) {
+    const selectedText = selection.text
+
+    switch (actionId) {
+      case 'add-to-chat':
+        // Add selected text to chat
+        await this.addTextToChat(selectedText)
+        break
+
+      case 'rewrite':
+        // Trigger rewrite with selected text
+        await this.rewriteSelection(editor, selectedText)
+        break
+
+      case 'explain':
+        // Add selection as badge and pre-fill explanation prompt
+        await this.explainSelection(editor)
+        break
+
+      default:
+        console.warn('Unknown selection action:', actionId)
+    }
+  }
+
+  private async addTextToChat(_text: string) {
+    // Get current file and editor info for context
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    const editor = view?.editor
+
+    if (!editor || !view) {
+      new Notice('无法获取当前编辑器')
+      return
+    }
+
+    // Create mentionable block data from selection
+    const data = await getMentionableBlockData(editor, view)
+    if (!data) {
+      new Notice('无法创建选区数据')
+      return
+    }
+
+    // Get or open chat view
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView({
+        selectedBlock: data,
+      })
+      return
+    }
+
+    // Use existing chat view
+    await this.app.workspace.revealLeaf(leaves[0])
+    const chatView = leaves[0].view
+    chatView.addSelectionToChat(data)
+    chatView.focusMessage()
+  }
+
+  private async rewriteSelection(editor: Editor, selectedText: string) {
+    // Show Smart Space-like input for rewrite instruction
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!view) return
+
+    // Get CodeMirror view
+    const cmEditor = (editor as any).cm as EditorView
+    if (!cmEditor) return
+
+    // Save selection positions before they get lost
+    const from = editor.getCursor('from')
+    const to = editor.getCursor('to')
+
+    // Set pending rewrite state so continueWriting knows to call handleCustomRewrite
+    this.pendingSelectionRewrite = {
+      editor,
+      selectedText,
+      from,
+      to,
+    }
+
+    // Show custom continue widget for user to input rewrite instruction
+    // Don't show quick actions for rewrite - user should input custom instruction
+    this.showCustomContinueWidget(editor, cmEditor, false)
+  }
+
+  private async explainSelection(editor: Editor) {
+    // Add selection as badge to chat and pre-fill explanation prompt
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!editor || !view) {
+      new Notice('无法获取当前编辑器')
+      return
+    }
+
+    // Create mentionable block data from selection
+    const data = await getMentionableBlockData(editor, view)
+    if (!data) {
+      new Notice('无法创建选区数据')
+      return
+    }
+
+    // Get or open chat view
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView({
+        selectedBlock: data,
+      })
+      // After opening, insert the prompt
+      const newLeaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+      if (newLeaves.length > 0 && newLeaves[0].view instanceof ChatView) {
+        const chatView = newLeaves[0].view
+        chatView.insertTextToInput(
+          this.t('selection.actions.explain', '请深入解释') + '：',
+        )
+        chatView.focusMessage()
+      }
+      return
+    }
+
+    // Use existing chat view
+    await this.app.workspace.revealLeaf(leaves[0])
+    const chatView = leaves[0].view
+    chatView.addSelectionToChat(data)
+    chatView.insertTextToInput(
+      this.t('selection.actions.explain', '请深入解释') + '：',
+    )
+    chatView.focusMessage()
+  }
+
+  private createCustomContinueTriggerExtension(): Extension {
+    return [
+      customContinueWidgetField,
+      EditorView.domEventHandlers({
+        keydown: (event, view) => {
+          const smartSpaceEnabled =
+            this.settings.continuationOptions?.enableSmartSpace ?? true
+          if (!smartSpaceEnabled) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+          if (event.defaultPrevented) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          const isSlash = event.key === '/' || event.code === 'Slash'
+          const isSpace =
+            event.key === ' ' ||
+            event.key === 'Spacebar' ||
+            event.key === 'Space' ||
+            event.code === 'Space'
+          const handledKey = isSlash || isSpace
+
+          if (!handledKey) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+          if (event.altKey || event.metaKey || event.ctrlKey) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          const selection = view.state.selection.main
+          if (!selection.empty) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          const markdownView =
+            this.app.workspace.getActiveViewOfType(MarkdownView)
+          const editor = markdownView?.editor
+          if (!editor) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+          const cm = (editor as any)?.cm
+          if (cm && cm !== view) {
+            this.lastSmartSpaceSlash = null
+            return false
+          }
+
+          if (isSlash) {
+            this.lastSmartSpaceSlash = {
+              view,
+              pos: selection.head,
+              timestamp: Date.now(),
+            }
+            return false
+          }
+
+          // Space handling (either legacy single-space trigger, or slash + space)
+          const now = Date.now()
+          const lastSlash = this.lastSmartSpaceSlash
+          let selectionAfterRemoval = selection
+          let triggeredBySlashCombo = false
+          if (
+            lastSlash &&
+            lastSlash.view === view &&
+            now - lastSlash.timestamp <= 600
+          ) {
+            const slashChar = view.state.doc.sliceString(
+              lastSlash.pos,
+              lastSlash.pos + 1,
+            )
+            if (slashChar === '/') {
+              view.dispatch({
+                changes: { from: lastSlash.pos, to: lastSlash.pos + 1 },
+                selection: EditorSelection.cursor(lastSlash.pos),
+              })
+              selectionAfterRemoval = view.state.selection.main
+              triggeredBySlashCombo = true
+            }
+            this.lastSmartSpaceSlash = null
+          } else {
+            this.lastSmartSpaceSlash = null
+            selectionAfterRemoval = view.state.selection.main
+          }
+
+          if (!triggeredBySlashCombo) {
+            const line = view.state.doc.lineAt(selectionAfterRemoval.head)
+            if (line.text.trim().length > 0) {
+              return false
+            }
+          }
+
+          event.preventDefault()
+          event.stopPropagation()
+
+          this.showCustomContinueWidget(editor, view)
+          return true
+        },
+      }),
+      EditorView.updateListener.of((update) => {
+        const state = this.customContinueWidgetState
+        if (!state || state.view !== update.view) return
+
+        if (update.docChanged) {
+          state.pos = update.changes.mapPos(state.pos)
+        }
+
+        if (update.selectionSet) {
+          const head = update.state.selection.main
+          if (!head.empty || head.head !== state.pos) {
+            this.closeCustomContinueWidget()
+          }
+        }
+      }),
+    ]
   }
 
   private getActiveConversationOverrides():
@@ -210,9 +734,7 @@ export default class SmartComposerPlugin extends Plugin {
     return { temperature, topP, stream }
   }
 
-  private resolveContinuationParams(
-    overrides?: ConversationOverrideSettings,
-  ): {
+  private resolveContinuationParams(overrides?: ConversationOverrideSettings): {
     temperature?: number
     topP?: number
     stream: boolean
@@ -269,7 +791,9 @@ export default class SmartComposerPlugin extends Plugin {
     for (const controller of Array.from(this.activeAbortControllers)) {
       try {
         controller.abort()
-      } catch {}
+      } catch {
+        // Ignore abort errors; controllers may already be settled.
+      }
     }
     this.activeAbortControllers.clear()
     this.isContinuationInProgress = false
@@ -292,6 +816,14 @@ export default class SmartComposerPlugin extends Plugin {
             {
               key: 'Tab',
               run: (v) => this.tryAcceptInlineSuggestionFromView(v),
+            },
+            {
+              key: 'Shift-Tab',
+              run: (v) => this.tryRejectInlineSuggestionFromView(v),
+            },
+            {
+              key: 'Escape',
+              run: (v) => this.tryRejectInlineSuggestionFromView(v),
             },
           ]),
         ),
@@ -327,7 +859,9 @@ export default class SmartComposerPlugin extends Plugin {
     if (!this.tabCompletionAbortController) return
     try {
       this.tabCompletionAbortController.abort()
-    } catch {}
+    } catch {
+      // Ignore abort errors; controller might already be closed.
+    }
     this.activeAbortControllers.delete(this.tabCompletionAbortController)
     this.tabCompletionAbortController = null
   }
@@ -366,6 +900,14 @@ export default class SmartComposerPlugin extends Plugin {
     return false
   }
 
+  private tryRejectInlineSuggestionFromView(view: EditorView): boolean {
+    const suggestion = this.activeInlineSuggestion
+    if (!suggestion) return false
+    if (suggestion.view !== view) return false
+    this.clearInlineSuggestion()
+    return true
+  }
+
   private scheduleTabCompletion(editor: Editor) {
     if (!this.settings.continuationOptions?.enableTabCompletion) return
     const view = this.getEditorView(editor)
@@ -386,7 +928,10 @@ export default class SmartComposerPlugin extends Plugin {
     }, delay)
   }
 
-  private async runTabCompletion(editor: Editor, scheduledCursorOffset: number) {
+  private async runTabCompletion(
+    editor: Editor,
+    scheduledCursorOffset: number,
+  ) {
     try {
       if (!this.settings.continuationOptions?.enableTabCompletion) return
       if (this.isContinuationInProgress) return
@@ -427,16 +972,18 @@ export default class SmartComposerPlugin extends Plugin {
 
       const fileTitle = this.app.workspace.getActiveFile()?.basename?.trim()
       const titleSection = fileTitle ? `File title: ${fileTitle}\n\n` : ''
-      const customSystemPrompt =
-        (this.settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
+      const customSystemPrompt = (
+        this.settings.continuationOptions.tabCompletionSystemPrompt ?? ''
+      ).trim()
       const systemPrompt =
         customSystemPrompt.length > 0
           ? customSystemPrompt
           : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
@@ -488,7 +1035,7 @@ export default class SmartComposerPlugin extends Plugin {
       const attempts = Math.max(0, Math.floor(options.maxRetries)) + 1
 
       this.cancelTabCompletionRequest()
-          this.clearInlineSuggestion()
+      this.clearInlineSuggestion()
       this.tabCompletionPending = null
 
       for (let attempt = 0; attempt < attempts; attempt++) {
@@ -525,7 +1072,8 @@ export default class SmartComposerPlugin extends Plugin {
 
           const currentView = this.getEditorView(editor)
           if (!currentView) return
-          if (currentView.state.selection.main.head !== scheduledCursorOffset) return
+          if (currentView.state.selection.main.head !== scheduledCursorOffset)
+            return
           if (editor.getSelection()?.length) return
 
           this.setInlineSuggestionGhost(currentView, {
@@ -549,13 +1097,14 @@ export default class SmartComposerPlugin extends Plugin {
         } catch (error) {
           if (timeoutHandle) clearTimeout(timeoutHandle)
 
-          const aborted = controller.signal.aborted || (error as any)?.name === 'AbortError'
+          const aborted =
+            controller.signal.aborted || error?.name === 'AbortError'
           if (attempt < attempts - 1 && aborted) {
             this.activeAbortControllers.delete(controller)
             this.tabCompletionAbortController = null
             continue
           }
-          if ((error as any)?.name === 'AbortError') {
+          if (error?.name === 'AbortError') {
             return
           }
           console.error('Tab completion failed:', error)
@@ -570,7 +1119,7 @@ export default class SmartComposerPlugin extends Plugin {
         }
       }
     } catch (error) {
-      if ((error as any)?.name === 'AbortError') return
+      if (error?.name === 'AbortError') return
       console.error('Tab completion failed:', error)
     } finally {
       if (this.tabCompletionAbortController) {
@@ -592,7 +1141,7 @@ export default class SmartComposerPlugin extends Plugin {
 
     const editor = suggestion.editor
     if (this.getEditorView(editor) !== view) {
-          this.clearInlineSuggestion()
+      this.clearInlineSuggestion()
       return false
     }
 
@@ -681,12 +1230,21 @@ export default class SmartComposerPlugin extends Plugin {
     this.scheduleTabCompletion(editor)
   }
 
-  private async handleCustomRewrite(editor: Editor, customPrompt?: string) {
-    const selected = editor.getSelection()
+  private async handleCustomRewrite(
+    editor: Editor,
+    customPrompt?: string,
+    preSelectedText?: string,
+    preSelectionFrom?: { line: number; ch: number },
+  ) {
+    // Use pre-selected text if provided (from Selection Chat), otherwise get current selection
+    const selected = preSelectedText ?? editor.getSelection()
     if (!selected || selected.trim().length === 0) {
       new Notice('请先选择要改写的文本。')
       return
     }
+
+    // Use pre-saved selection start position if provided, otherwise get current
+    const from = preSelectionFrom ?? editor.getCursor('from')
 
     const notice = new Notice('正在生成改写...', 0)
     let controller: AbortController | null = null
@@ -698,13 +1256,9 @@ export default class SmartComposerPlugin extends Plugin {
         stream: streamPreference,
       } = this.resolveContinuationParams(sidebarOverrides)
 
-      const superContinuationEnabled = Boolean(
-        this.settings.continuationOptions?.enableSuperContinuation,
-      )
-      const rewriteModelId = superContinuationEnabled
-        ? this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId
-        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+      const rewriteModelId =
+        this.settings.continuationOptions?.continuationModelId ??
+        this.settings.chatModelId
 
       const { providerClient, model } = getChatModelClient({
         settings: this.settings,
@@ -716,8 +1270,9 @@ export default class SmartComposerPlugin extends Plugin {
 
       const instruction = (customPrompt ?? '').trim()
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
@@ -749,7 +1304,8 @@ export default class SmartComposerPlugin extends Plugin {
       const stripFences = (s: string) => {
         const lines = (s ?? '').split('\n')
         if (lines.length > 0 && lines[0].startsWith('```')) lines.shift()
-        if (lines.length > 0 && lines[lines.length - 1].startsWith('```')) lines.pop()
+        if (lines.length > 0 && lines[lines.length - 1].startsWith('```'))
+          lines.pop()
         return lines.join('\n')
       }
 
@@ -774,7 +1330,9 @@ export default class SmartComposerPlugin extends Plugin {
           { ...rewriteRequestBase, stream: false },
           { signal: controller.signal },
         )
-        rewritten = stripFences(response.choices?.[0]?.message?.content ?? '').trim()
+        rewritten = stripFences(
+          response.choices?.[0]?.message?.content ?? '',
+        ).trim()
       }
       if (!rewritten) {
         notice.setMessage('未生成改写内容。')
@@ -790,7 +1348,6 @@ export default class SmartComposerPlugin extends Plugin {
         return
       }
 
-      const from = editor.getCursor('from')
       const head = editor.getRange({ line: 0, ch: 0 }, from)
       const originalContent = await readTFileContent(activeFile, this.app.vault)
       const tail = originalContent.slice(head.length + selected.length)
@@ -809,7 +1366,7 @@ export default class SmartComposerPlugin extends Plugin {
       notice.setMessage('改写结果已生成。')
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
-      if ((error as any)?.name === 'AbortError') {
+      if (error?.name === 'AbortError') {
         notice.setMessage('已取消生成。')
         this.registerTimeout(() => notice.hide(), 1000)
       } else {
@@ -824,18 +1381,11 @@ export default class SmartComposerPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings()
-    // initialize keyword from settings
-    this.continuationTriggerKeyword =
-      this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
-
-    // keep keyword in sync with settings changes
-    this.addSettingsChangeListener((newSettings) => {
-      this.continuationTriggerKeyword =
-        newSettings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
-    })
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
+
+    this.registerEditorExtension(this.createCustomContinueTriggerExtension())
 
     // This creates an icon in the left ribbon.
     this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () =>
@@ -864,15 +1414,23 @@ export default class SmartComposerPlugin extends Plugin {
         this.addSelectionToChat(editor, view)
       },
     })
-    
+
     // Auto update: listen to vault file changes and schedule incremental index updates
-    this.registerEvent(this.app.vault.on('create', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('modify', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('delete', (file) => this.onVaultFileChanged(file)))
-    this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-      this.onVaultFileChanged(file)
-      if (oldPath) this.onVaultPathChanged(oldPath)
-    }))
+    this.registerEvent(
+      this.app.vault.on('create', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('modify', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('delete', (file) => this.onVaultFileChanged(file)),
+    )
+    this.registerEvent(
+      this.app.vault.on('rename', (file, oldPath) => {
+        this.onVaultFileChanged(file)
+        if (oldPath) this.onVaultPathChanged(oldPath)
+      }),
+    )
 
     this.addCommand({
       id: 'rebuild-vault-index',
@@ -948,106 +1506,51 @@ export default class SmartComposerPlugin extends Plugin {
 
     // removed templates JSON migration
 
-    // Editor context menu: AI Continue Writing
+    // Handle tab completion trigger
     this.registerEvent(
-      this.app.workspace.on('editor-menu', (menu, editor) => {
-        const hasSelection = (() => {
-          try {
-            const sel = editor?.getSelection?.()
-            return !!sel && sel.trim().length > 0
-          } catch {
-            return false
-          }
-        })()
-
-        // Custom continuation via floating panel
-        menu.addItem((item) =>
-          item
-            .setTitle(this.t('commands.customContinueWriting'))
-            .setIcon('wand-sparkles')
-            .onClick(() => {
-              const position = this.getCaretPanelPosition(editor, 8)
-              new CustomContinuePanel({ plugin: this, editor, position }).open()
-            }),
-        )
-
-        // Custom rewrite via floating panel (only when there is a selection)
-        if (hasSelection) {
-          menu.addItem((item) =>
-            item
-              .setTitle(this.t('commands.customRewrite'))
-              .setIcon('wand-sparkles')
-              .onClick(() => {
-                const position = this.getCaretPanelPosition(editor, 8)
-                new CustomRewritePanel({ plugin: this, editor, position }).open()
-              }),
-          )
-        }
-      }),
-    )
-
-    // Keyword triggers: floating panel (custom continue) and inline continuation
-    this.registerEvent(
-      this.app.workspace.on('editor-change', (editor) => {
+      this.app.workspace.on('active-leaf-change', () => {
         try {
+          const view = this.app.workspace.getActiveViewOfType(MarkdownView)
+          const editor = view?.editor
           if (!editor) return
           this.handleTabCompletionEditorChange(editor)
-          if (this.isContinuationInProgress) return
-          const selection = editor.getSelection()
-          const cursor = editor.getCursor()
-
-          // 1) Floating panel trigger (optional)
-          const enablePanel =
-            this.settings.continuationOptions?.enableFloatingPanelKeywordTrigger ?? false
-          const panelKeyword = this.settings.continuationOptions?.floatingPanelTriggerKeyword ?? ''
-          if (enablePanel && panelKeyword && panelKeyword.length > 0) {
-            const klen = panelKeyword.length
-            const start = { line: cursor.line, ch: Math.max(0, cursor.ch - klen) }
-            const before = editor.getRange(start, cursor)
-            if (before === panelKeyword) {
-              // remove keyword and open panel near caret
-              editor.replaceRange('', start, cursor)
-              {
-                const position = this.getCaretPanelPosition(editor, 8)
-                const hasSel = !!selection && selection.trim().length > 0
-                if (hasSel) {
-                  new CustomRewritePanel({ plugin: this, editor, position }).open()
-                } else {
-                  new CustomContinuePanel({ plugin: this, editor, position }).open()
-                }
-              }
-              return
-            }
-          }
-
-          // 2) Continuation trigger (inline)
-          if (!this.settings.continuationOptions?.enableKeywordTrigger) return
-          // Only run inline continuation when there is NO selection
-          if (selection && selection.length > 0) return
-          const keyword =
-            this.settings.continuationOptions?.triggerKeyword ?? this.continuationTriggerKeyword
-          if (!keyword || keyword.length === 0) return
-          const keyLen = keyword.length
-          const start = { line: cursor.line, ch: Math.max(0, cursor.ch - keyLen) }
-          const before = editor.getRange(start, cursor)
-          if (before === keyword) {
-            // Mark in-progress first to suppress re-entrancy from subsequent editor-change
-            this.isContinuationInProgress = true
-            // Remove the trigger keyword before starting streaming continuation
-            editor.replaceRange('', start, cursor)
-            // Defer continuation to next tick to avoid interfering with current input transaction
-            setTimeout(() => {
-              void this.handleContinueWriting(editor)
-            }, 0)
-          }
+          // Update selection manager with new editor container
+          this.initializeSelectionManager()
         } catch (err) {
-          console.error('Keyword trigger error:', err)
+          console.error('Editor change handler error:', err)
         }
       }),
     )
+
+    // Initialize selection chat
+    this.initializeSelectionManager()
+
+    // Listen for settings changes to reinitialize Selection Chat
+    this.addSettingsChangeListener((newSettings) => {
+      const enableSelectionChat =
+        newSettings.continuationOptions?.enableSelectionChat ?? true
+      const wasEnabled = this.selectionManager !== null
+
+      if (enableSelectionChat !== wasEnabled) {
+        // Re-initialize when the setting changes
+        this.initializeSelectionManager()
+      }
+    })
   }
 
   onunload() {
+    this.closeCustomContinueWidget()
+
+    // Selection chat cleanup
+    if (this.selectionChatWidget) {
+      this.selectionChatWidget.destroy()
+      this.selectionChatWidget = null
+    }
+    if (this.selectionManager) {
+      this.selectionManager.destroy()
+      this.selectionManager = null
+    }
+
     // clear all timers
     this.timeoutIds.forEach((id) => clearTimeout(id))
     this.timeoutIds = []
@@ -1173,7 +1676,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     if (!this.dbManagerInitPromise) {
       this.dbManagerInitPromise = (async () => {
         try {
-          this.dbManager = await DatabaseManager.create(this.app)
+          this.dbManager = await DatabaseManager.create(
+            this.app,
+            this.resolvePgliteResourcePath(),
+          )
           return this.dbManager
         } catch (error) {
           this.dbManagerInitPromise = null
@@ -1187,6 +1693,19 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
     // if initialization is running, wait for it to complete instead of creating a new initialization promise
     return this.dbManagerInitPromise
+  }
+
+  async tryGetVectorManager(): Promise<VectorManager | null> {
+    try {
+      const dbManager = await this.getDbManager()
+      return dbManager.getVectorManager()
+    } catch (error) {
+      console.warn(
+        '[Smart Composer] Failed to initialize vector manager, skip vector-dependent operations.',
+        error,
+      )
+      return null
+    }
   }
 
   async getRAGEngine(): Promise<RAGEngine> {
@@ -1246,14 +1765,17 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       if (file instanceof TFile || file instanceof TFolder) {
         this.onVaultPathChanged(file.path)
       }
-    } catch {}
+    } catch {
+      // Ignore unexpected file type changes during event handling.
+    }
   }
 
   private onVaultPathChanged(path: string) {
     if (!this.settings?.ragOptions?.autoUpdateEnabled) return
     if (!this.isPathSelectedByIncludeExclude(path)) return
     // Check minimal interval
-    const intervalMs = (this.settings.ragOptions.autoUpdateIntervalHours ?? 24) * 60 * 60 * 1000
+    const intervalMs =
+      (this.settings.ragOptions.autoUpdateIntervalHours ?? 24) * 60 * 60 * 1000
     const last = this.settings.ragOptions.lastAutoUpdateAt ?? 0
     const now = Date.now()
     if (now - last < intervalMs) {
@@ -1266,7 +1788,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   private isPathSelectedByIncludeExclude(path: string): boolean {
-    const { includePatterns = [], excludePatterns = [] } = this.settings?.ragOptions ?? {}
+    const { includePatterns = [], excludePatterns = [] } =
+      this.settings?.ragOptions ?? {}
     // Exclude has priority
     if (excludePatterns.some((p) => minimatch(path, p))) return false
     if (!includePatterns || includePatterns.length === 0) return true
@@ -1278,10 +1801,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.isAutoUpdating = true
     try {
       const ragEngine = await this.getRAGEngine()
-      await ragEngine.updateVaultIndex(
-        { reindexAll: false },
-        undefined,
-      )
+      await ragEngine.updateVaultIndex({ reindexAll: false }, undefined)
       await this.setSettings({
         ...this.settings,
         ragOptions: {
@@ -1300,8 +1820,31 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   // Public wrapper for use in React modal
-  async continueWriting(editor: Editor, customPrompt?: string) {
-    return this.handleContinueWriting(editor, customPrompt)
+  async continueWriting(
+    editor: Editor,
+    customPrompt?: string,
+    geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+  ) {
+    // Check if this is actually a rewrite request from Selection Chat
+    if (this.pendingSelectionRewrite) {
+      const {
+        editor: rewriteEditor,
+        selectedText,
+        from,
+      } = this.pendingSelectionRewrite
+      this.pendingSelectionRewrite = null // Clear the pending state
+
+      // Pass the pre-saved selectedText and position directly to handleCustomRewrite
+      // No need to re-select or check current selection
+      await this.handleCustomRewrite(
+        rewriteEditor,
+        customPrompt,
+        selectedText,
+        from,
+      )
+      return
+    }
+    return this.handleContinueWriting(editor, customPrompt, geminiTools)
   }
 
   // Public wrapper for use in React panel
@@ -1309,7 +1852,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     return this.handleCustomRewrite(editor, customPrompt)
   }
 
-  private async handleContinueWriting(editor: Editor, customPrompt?: string) {
+  private async handleContinueWriting(
+    editor: Editor,
+    customPrompt?: string,
+    geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+  ) {
     let controller: AbortController | null = null
     try {
       const notice = new Notice('Generating continuation...', 0)
@@ -1321,7 +1868,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const hasSelection = !!selected && selected.trim().length > 0
       const baseContext = hasSelection ? selected : headText
       const fallbackInstruction = (customPrompt ?? '').trim()
-      const fileTitleCandidate = this.app.workspace.getActiveFile()?.basename?.trim() ?? ''
+      const fileTitleCandidate =
+        this.app.workspace.getActiveFile()?.basename?.trim() ?? ''
 
       if (!baseContext || baseContext.trim().length === 0) {
         // 没有前文时，如果既没有自定义指令也没有文件标题，则提示无法续写；
@@ -1342,34 +1890,34 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       if (referenceRuleFolders.length > 0) {
         try {
           const referenceFilesMap = new Map<string, TFile>()
-      const isSupportedReferenceFile = (file: TFile) => {
-        const ext = file.extension?.toLowerCase?.() ?? ''
-        return ext === 'md' || ext === 'markdown' || ext === 'txt'
-      }
+          const isSupportedReferenceFile = (file: TFile) => {
+            const ext = file.extension?.toLowerCase?.() ?? ''
+            return ext === 'md' || ext === 'markdown' || ext === 'txt'
+          }
 
-      for (const rawPath of referenceRuleFolders) {
-        const folderPath = rawPath.trim()
-        if (!folderPath) continue
-        const abstract = this.app.vault.getAbstractFileByPath(folderPath)
-        if (abstract instanceof TFolder) {
-          for (const file of getNestedFiles(abstract, this.app.vault)) {
-            if (isSupportedReferenceFile(file)) {
-              referenceFilesMap.set(file.path, file)
+          for (const rawPath of referenceRuleFolders) {
+            const folderPath = rawPath.trim()
+            if (!folderPath) continue
+            const abstract = this.app.vault.getAbstractFileByPath(folderPath)
+            if (abstract instanceof TFolder) {
+              for (const file of getNestedFiles(abstract, this.app.vault)) {
+                if (isSupportedReferenceFile(file)) {
+                  referenceFilesMap.set(file.path, file)
+                }
+              }
+            } else if (abstract instanceof TFile) {
+              if (isSupportedReferenceFile(abstract)) {
+                referenceFilesMap.set(abstract.path, abstract)
+              }
             }
           }
-        } else if (abstract instanceof TFile) {
-          if (isSupportedReferenceFile(abstract)) {
-            referenceFilesMap.set(abstract.path, abstract)
-          }
-        }
-      }
 
-      const referenceFiles = Array.from(referenceFilesMap.values())
-      if (referenceFiles.length > 0) {
-        const referenceContents = await readMultipleTFiles(
-          referenceFiles,
-          this.app.vault,
-        )
+          const referenceFiles = Array.from(referenceFilesMap.values())
+          if (referenceFiles.length > 0) {
+            const referenceContents = await readMultipleTFiles(
+              referenceFiles,
+              this.app.vault,
+            )
             const referenceLabel = this.t(
               'sidebar.composer.referenceRulesTitle',
               'Reference rules',
@@ -1384,7 +1932,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             }
           }
         } catch (error) {
-          console.warn('Failed to load reference rule folders for continuation', error)
+          console.warn(
+            'Failed to load reference rule folders for continuation',
+            error,
+          )
         }
       }
 
@@ -1400,13 +1951,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             ? ''
             : baseContext
 
-      const superContinuationEnabled = Boolean(
-        this.settings.continuationOptions?.enableSuperContinuation,
-      )
-      const continuationModelId = superContinuationEnabled
-        ? this.settings.continuationOptions?.continuationModelId ??
-          this.settings.chatModelId
-        : this.getActiveConversationModelId() ?? this.settings.chatModelId
+      const continuationModelId =
+        this.settings.continuationOptions?.continuationModelId ??
+        this.settings.chatModelId
 
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1422,15 +1969,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       })
 
       const userInstruction = (customPrompt ?? '').trim()
-      const instructionSuffix = userInstruction
-        ? `\n\nInstruction: ${userInstruction}`
+      const instructionSection = userInstruction
+        ? `Instruction:\n${userInstruction}\n\n`
         : ''
 
-      const systemPrompt =
-        this.settings.continuationOptions?.defaultSystemPrompt?.trim() &&
-        (this.settings.continuationOptions.defaultSystemPrompt as string).trim().length > 0
-          ? (this.settings.continuationOptions.defaultSystemPrompt as string).trim()
-          : 'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
+      const systemPrompt = (this.settings.systemPrompt ?? '').trim()
 
       const activeFileForTitle = this.app.workspace.getActiveFile()
       const fileTitle = activeFileForTitle?.basename?.trim() ?? ''
@@ -1455,7 +1998,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const ragGloballyEnabled = Boolean(this.settings.ragOptions?.enabled)
       if (useVaultSearch && ragGloballyEnabled) {
         try {
-          const querySource = (baseContext || userInstruction || fileTitle).trim()
+          const querySource = (
+            baseContext ||
+            userInstruction ||
+            fileTitle
+          ).trim()
           if (querySource.length > 0) {
             const ragEngine = await this.getRAGEngine()
             const ragResults = await ragEngine.processQuery({
@@ -1478,7 +2025,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
                 .map((snippet, index) => {
                   const content = (snippet.content ?? '').trim()
                   const truncated =
-                    content.length > 600 ? `${content.slice(0, 600)}...` : content
+                    content.length > 600
+                      ? `${content.slice(0, 600)}...`
+                      : content
                   return `Snippet ${index + 1} (from ${snippet.path}):\n${truncated}`
                 })
                 .join('\n\n')
@@ -1501,36 +2050,33 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         referenceRulesSection
       }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
       const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
-      const continueText = hasSelection || hasContext
-        ? 'Continue writing from here.'
-        : 'Start writing this document.'
 
       const isBaseModel = Boolean((model as any).isBaseModel)
-      const baseModelSpecialPrompt =
-        (this.settings.chatOptions.baseModelSpecialPrompt ?? '').trim()
+      const baseModelSpecialPrompt = (
+        this.settings.chatOptions.baseModelSpecialPrompt ?? ''
+      ).trim()
       const basePromptSection =
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
           : ''
-      const baseModelCoreContent = `${basePromptSection}${titleLine}${baseModelContextSection}`
-      const baseModelInstructionSuffix = userInstruction
-        ? `${baseModelCoreContent.trim().length > 0 ? '\n\n' : ''}Instruction: ${userInstruction}`
-        : ''
+      const baseModelCoreContent = `${basePromptSection}${titleLine}${instructionSection}${baseModelContextSection}`
+
+      const userMessageContent = isBaseModel
+        ? `${baseModelCoreContent}`
+        : `${basePromptSection}${titleLine}${instructionSection}${combinedContextSection}`
 
       const requestMessages = [
-        ...(isBaseModel
-          ? []
-          : ([
+        ...(!isBaseModel && systemPrompt.length > 0
+          ? ([
               {
                 role: 'system' as const,
                 content: systemPrompt,
               },
-            ] as const)),
+            ] as const)
+          : []),
         {
           role: 'user' as const,
-          content: isBaseModel
-            ? `${baseModelCoreContent}${baseModelInstructionSuffix}`
-            : `${basePromptSection}${titleLine}${combinedContextSection}${continueText}${instructionSuffix}`,
+          content: userMessageContent,
         },
       ] as const
 
@@ -1546,6 +2092,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
       this.ensureInlineSuggestionExtension(view)
       this.clearInlineSuggestion()
+
+      let hasClosedSmartSpaceWidget = false
+      const closeSmartSpaceWidgetOnce = () => {
+        if (!hasClosedSmartSpaceWidget) {
+          this.closeCustomContinueWidget()
+          hasClosedSmartSpaceWidget = true
+        }
+      }
 
       // Stream response and progressively update ghost suggestion
       controller = new AbortController()
@@ -1602,7 +2156,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         const streamIterator = await providerClient.streamResponse(
           model,
           { ...baseRequest, stream: true },
-          { signal: controller.signal },
+          { signal: controller.signal, geminiTools },
         )
 
         for await (const chunk of streamIterator) {
@@ -1611,18 +2165,20 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           if (!piece) continue
 
           suggestionText += piece
+          closeSmartSpaceWidgetOnce()
           updateContinuationSuggestion(suggestionText)
         }
       } else {
         const response = await providerClient.generateResponse(
           model,
           { ...baseRequest, stream: false },
-          { signal: controller.signal },
+          { signal: controller.signal, geminiTools },
         )
 
         const fullText = response.choices?.[0]?.message?.content ?? ''
         if (fullText) {
           suggestionText = fullText
+          closeSmartSpaceWidgetOnce()
           updateContinuationSuggestion(suggestionText)
         }
       }
@@ -1636,7 +2192,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.registerTimeout(() => notice.hide(), 1200)
     } catch (error) {
       this.clearInlineSuggestion()
-      if ((error as any)?.name === 'AbortError') {
+      if (error?.name === 'AbortError') {
         const n = new Notice('已取消生成。')
         this.registerTimeout(() => n.hide(), 1000)
       } else {

@@ -1,6 +1,7 @@
 import * as Popover from '@radix-ui/react-popover'
-import React, { useCallback, useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+
 import { useLanguage } from '../../contexts/language-context'
 
 export function ChatModeDropdown({
@@ -23,25 +24,32 @@ export function ChatModeDropdown({
   const { t } = useLanguage()
   type ModeKey = 'rag' | 'brute'
   type ModeItem = { key: ModeKey; label: string }
-  const modeItems: ModeItem[] = [
-    { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
-    ...(showBruteOption
-      ? ([{ key: 'brute', label: t('chat.modeBrute') ?? 'Brute' }] as ModeItem[])
-      : []),
-  ]
+  const modeItems = useMemo<ModeItem[]>(
+    () => [
+      { key: 'rag', label: t('chat.modeRAG') ?? 'RAG' },
+      ...(showBruteOption
+        ? ([
+            { key: 'brute', label: t('chat.modeBrute') ?? 'Brute' },
+          ] as ModeItem[])
+        : []),
+    ],
+    [showBruteOption, t],
+  )
 
-  const getIndexByMode = (m: ModeKey) => {
-    const idx = modeItems.findIndex((mi) => mi.key === m)
-    return idx >= 0 ? idx : 0
-  }
+  const getIndexByMode = useCallback(
+    (m: ModeKey) => {
+      const idx = modeItems.findIndex((mi) => mi.key === m)
+      return idx >= 0 ? idx : 0
+    },
+    [modeItems],
+  )
 
   const [open, setOpen] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState<number>(getIndexByMode(mode))
 
   useEffect(() => {
     setFocusedIndex(getIndexByMode(mode))
-    // include showBruteOption since it changes the available items
-  }, [mode, showBruteOption])
+  }, [getIndexByMode, mode])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -54,7 +62,7 @@ export function ChatModeDropdown({
         onChange(modeItems[idx].key)
       }
     },
-    [focusedIndex, onChange, modeItems.length],
+    [focusedIndex, onChange, modeItems],
   )
 
   const triggerAriaLabel = `${t('chat.modeTitle') ?? 'Chat mode'}: ${
@@ -64,10 +72,7 @@ export function ChatModeDropdown({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button
-          className="clickable-icon"
-          aria-label={triggerAriaLabel}
-        >
+        <button className="clickable-icon" aria-label={triggerAriaLabel}>
           {children}
         </button>
       </Popover.Trigger>

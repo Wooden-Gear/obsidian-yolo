@@ -81,15 +81,15 @@ export class GeminiProvider extends BaseLLMProvider<
       if ((model as any).thinking?.enabled) {
         const budget = (model as any).thinking.thinking_budget
         config.thinkingConfig = { thinkingBudget: budget }
-        if (/2\.5/.test(request.model)) {
-          ;(config.thinkingConfig as any).includeThoughts = true
+        if (request.model.includes('2.5')) {
+          config.thinkingConfig.includeThoughts = true
         }
       }
 
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      const result: any = await this.client.models.generateContent({
+      let payload: Record<string, unknown> = {
         model: request.model,
         contents: request.messages
           .map((message) => GeminiProvider.parseRequestMessage(message))
@@ -98,10 +98,24 @@ export class GeminiProvider extends BaseLLMProvider<
           ...config,
           ...(tools ? { tools } : {}),
         },
-      })
+      }
+
+      if (systemInstruction) {
+        payload.systemInstruction = systemInstruction
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const result: any = await this.client.models.generateContent(
+        payload as any,
+      )
 
       const messageId = crypto.randomUUID()
-      return GeminiProvider.parseNonStreamingResponse(result, request.model, messageId)
+      return GeminiProvider.parseNonStreamingResponse(
+        result,
+        request.model,
+        messageId,
+      )
     } catch (error) {
       const isInvalidApiKey =
         error.message?.includes('API_KEY_INVALID') ||
@@ -147,15 +161,15 @@ export class GeminiProvider extends BaseLLMProvider<
       if ((model as any).thinking?.enabled) {
         const budget = (model as any).thinking.thinking_budget
         config.thinkingConfig = { thinkingBudget: budget }
-        if (/2\.5/.test(request.model)) {
-          ;(config.thinkingConfig as any).includeThoughts = true
+        if (request.model.includes('2.5')) {
+          config.thinkingConfig.includeThoughts = true
         }
       }
 
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      const stream = await this.client.models.generateContentStream({
+      let payload: Record<string, unknown> = {
         model: request.model,
         contents: request.messages
           .map((message) => GeminiProvider.parseRequestMessage(message))
@@ -164,10 +178,24 @@ export class GeminiProvider extends BaseLLMProvider<
           ...config,
           ...(tools ? { tools } : {}),
         },
-      })
+      }
+
+      if (systemInstruction) {
+        payload.systemInstruction = systemInstruction
+      }
+
+      payload = this.applyCustomModelParameters(model, payload)
+
+      const stream = await this.client.models.generateContentStream(
+        payload as any,
+      )
 
       const messageId = crypto.randomUUID()
-      return this.streamResponseGenerator(stream as any, request.model, messageId)
+      return this.streamResponseGenerator(
+        stream as any,
+        request.model,
+        messageId,
+      )
     } catch (error) {
       const isInvalidApiKey =
         error.message?.includes('API_KEY_INVALID') ||
@@ -181,11 +209,18 @@ export class GeminiProvider extends BaseLLMProvider<
       }
       // Fallback: some networks/proxies can break streaming ("protocol error: unexpected EOF").
       // Try non-streaming once and adapt it into a single-chunk async iterable.
-      const shouldFallback =
-        /protocol error|unexpected EOF/i.test(String((error as any)?.message ?? ''))
+      const shouldFallback = /protocol error|unexpected EOF/i.test(
+        String(error?.message ?? ''),
+      )
       if (shouldFallback) {
-        const nonStream = await this.generateResponse(model, request as any, options)
-        async function* singleChunk(resp: LLMResponseNonStreaming): AsyncIterable<LLMResponseStreaming> {
+        const nonStream = await this.generateResponse(
+          model,
+          request as any,
+          options,
+        )
+        const singleChunk = async function* (
+          resp: LLMResponseNonStreaming,
+        ): AsyncIterable<LLMResponseStreaming> {
           yield {
             id: resp.id,
             created: resp.created,
@@ -216,7 +251,7 @@ export class GeminiProvider extends BaseLLMProvider<
     messageId: string,
   ): AsyncIterable<LLMResponseStreaming> {
     for await (const chunk of stream as any) {
-      yield GeminiProvider.parseStreamingResponseChunk(chunk as any, model, messageId)
+      yield GeminiProvider.parseStreamingResponseChunk(chunk, model, messageId)
     }
   }
 
@@ -315,19 +350,25 @@ export class GeminiProvider extends BaseLLMProvider<
         const thoughtPieces = parts
           .filter((p: any) => p?.thought && typeof p?.text === 'string')
           .map((p: any) => p.text)
-        reasoningText = thoughtPieces.length > 0 ? thoughtPieces.join('') : undefined
+        reasoningText =
+          thoughtPieces.length > 0 ? thoughtPieces.join('') : undefined
       }
-    } catch {}
+    } catch {
+      // Ignore parsing issues for optional reasoning metadata.
+    }
     return {
       id: messageId,
       choices: [
         {
-          finish_reason: (response.response?.candidates?.[0]?.finishReason ?? null) as any,
+          finish_reason:
+            response.response?.candidates?.[0]?.finishReason ?? null,
           message: {
             content: (response.text ?? response.response?.text?.()) as string,
             reasoning: reasoningText ?? null,
             role: 'assistant',
-            tool_calls: (response.functionCalls ?? response.response?.functionCalls?.())?.map((f: any) => ({
+            tool_calls: (
+              response.functionCalls ?? response.response?.functionCalls?.()
+            )?.map((f: any) => ({
               id: uuidv4(),
               type: 'function',
               function: {
@@ -341,13 +382,20 @@ export class GeminiProvider extends BaseLLMProvider<
       created: Date.now(),
       model: model,
       object: 'chat.completion',
-      usage: (response.response?.usageMetadata ?? response.usageMetadata)
-        ? {
-            prompt_tokens: (response.response?.usageMetadata?.promptTokenCount ?? response.usageMetadata?.promptTokenCount) as number,
-            completion_tokens: (response.response?.usageMetadata?.candidatesTokenCount ?? response.usageMetadata?.candidatesTokenCount) as number,
-            total_tokens: (response.response?.usageMetadata?.totalTokenCount ?? response.usageMetadata?.totalTokenCount) as number,
-          }
-        : undefined,
+      usage:
+        (response.response?.usageMetadata ?? response.usageMetadata)
+          ? {
+              prompt_tokens: (response.response?.usageMetadata
+                ?.promptTokenCount ??
+                response.usageMetadata?.promptTokenCount) as number,
+              completion_tokens: (response.response?.usageMetadata
+                ?.candidatesTokenCount ??
+                response.usageMetadata?.candidatesTokenCount) as number,
+              total_tokens: (response.response?.usageMetadata
+                ?.totalTokenCount ??
+                response.usageMetadata?.totalTokenCount) as number,
+            }
+          : undefined,
     }
   }
 
@@ -368,16 +416,26 @@ export class GeminiProvider extends BaseLLMProvider<
           else contentPiece += p.text
         }
       }
-    } catch {}
+    } catch {
+      // Ignore parsing issues for partial chunk metadata.
+    }
     return {
       id: messageId,
       choices: [
         {
-          finish_reason: (chunk.candidates?.[0]?.finishReason ?? null) as any,
+          finish_reason: chunk.candidates?.[0]?.finishReason ?? null,
           delta: {
-            content: ((contentPiece || (typeof chunk.text === 'function' ? chunk.text() : chunk.text)) ?? ''),
+            content:
+              (contentPiece ||
+                (typeof chunk.text === 'function'
+                  ? chunk.text()
+                  : chunk.text)) ??
+              '',
             reasoning: reasoningPiece || undefined,
-            tool_calls: (typeof chunk.functionCalls === 'function' ? chunk.functionCalls() : chunk.functionCalls)?.map((f: any, index: number) => ({
+            tool_calls: (typeof chunk.functionCalls === 'function'
+              ? chunk.functionCalls()
+              : chunk.functionCalls
+            )?.map((f: any, index: number) => ({
               index,
               id: uuidv4(),
               type: 'function',
@@ -493,27 +551,29 @@ export class GeminiProvider extends BaseLLMProvider<
     options?: LLMOptions,
   ): any[] | undefined {
     const tools: any[] = []
-    
+
     // Add Gemini native tools if enabled
     if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
       const geminiTools = (options as any).geminiTools
-      
+
       // Add Google Search tool
       if (geminiTools.useWebSearch) {
         tools.push({ googleSearch: {} })
       }
-      
+
       // Add URL Context tool
       if (geminiTools.useUrlContext) {
         tools.push({ urlContext: {} })
       }
     }
-    
+
     // Add function calling tools if provided
     if (request.tools && request.tools.length > 0) {
-      tools.push(...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)))
+      tools.push(
+        ...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)),
+      )
     }
-    
+
     return tools.length > 0 ? tools : undefined
   }
 }

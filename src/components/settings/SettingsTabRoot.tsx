@@ -1,21 +1,21 @@
 import { App } from 'obsidian'
 
-import SmartComposerPlugin from '../../main'
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
 import { SettingsProvider } from '../../contexts/settings-context'
+import SmartComposerPlugin from '../../main'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 
 import { AssistantsSection } from './sections/AssistantsSection'
+import { ChatPreferencesSection } from './sections/ChatPreferencesSection'
+import { ContinuationSection } from './sections/ContinuationSection'
 import { DefaultModelsAndPromptsSection } from './sections/DefaultModelsAndPromptsSection'
 import { EtcSection } from './sections/EtcSection'
 import { LanguageSection } from './sections/LanguageSection'
 import { McpSection } from './sections/McpSection'
 import { ProvidersAndModelsSection } from './sections/ProvidersAndModelsSection'
 import { RAGSection } from './sections/RAGSection'
-import { ContinuationSection } from './sections/ContinuationSection'
-import { ChatPreferencesSection } from './sections/ChatPreferencesSection'
 
 type SettingsTabRootProps = {
   app: App
@@ -36,9 +36,7 @@ function SettingsContent({ app, plugin }: SettingsTabRootProps) {
       >
         <ObsidianButton
           text={t('settings.supportSmartComposer.buyMeACoffee')}
-          onClick={() =>
-            window.open('https://afdian.com/a/lapis0x0', '_blank')
-          }
+          onClick={() => window.open('https://afdian.com/a/lapis0x0', '_blank')}
           cta
         />
       </ObsidianSetting>
@@ -61,7 +59,9 @@ export function SettingsTabRoot({ app, plugin }: SettingsTabRootProps) {
         <SettingsProvider
           settings={plugin.settings}
           setSettings={plugin.setSettings.bind(plugin)}
-          addSettingsChangeListener={plugin.addSettingsChangeListener.bind(plugin)}
+          addSettingsChangeListener={plugin.addSettingsChangeListener.bind(
+            plugin,
+          )}
         >
           <SettingsContent app={app} plugin={plugin} />
         </SettingsProvider>

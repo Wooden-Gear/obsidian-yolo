@@ -1,8 +1,8 @@
+import { GoogleGenAI } from '@google/genai'
 import { App, Notice } from 'obsidian'
 import { useEffect, useState } from 'react'
 
-import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
-import { GoogleGenAI } from '@google/genai'
+import { DEFAULT_PROVIDERS } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { getProviderClient } from '../../../core/llm/manager'
 import { supportedDimensionsForIndex } from '../../../database/schema'
@@ -12,11 +12,15 @@ import {
   embeddingModelSchema,
 } from '../../../types/embedding-model.types'
 import { LLMProvider } from '../../../types/provider.types'
+import {
+  ensureUniqueModelId,
+  generateModelId,
+} from '../../../utils/model-id-utils'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ReactModal } from '../../common/ReactModal'
+import { SearchableDropdown } from '../../common/SearchableDropdown'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type AddEmbeddingModelModalComponentProps = {
@@ -45,18 +49,17 @@ function AddEmbeddingModelModalComponent({
   provider,
 }: AddEmbeddingModelModalComponentProps) {
   const { t } = useLanguage()
-  const firstEmbeddingCapable = plugin.settings.providers.find(
-    (p) => PROVIDER_TYPES_INFO[p.type].supportEmbedding,
-  )
   const selectedProvider: LLMProvider | undefined =
-    provider ?? firstEmbeddingCapable ?? plugin.settings.providers[0]
+    provider ?? plugin.settings.providers[0]
   const initialProviderId = selectedProvider?.id ?? DEFAULT_PROVIDERS[0].id
-  const initialProviderType = selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
+  const initialProviderType =
+    selectedProvider?.type ?? DEFAULT_PROVIDERS[0].type
   const [formData, setFormData] = useState<Omit<EmbeddingModel, 'dimension'>>({
     providerId: initialProviderId,
     providerType: initialProviderType,
     id: '',
     model: '',
+    name: undefined,
   })
 
   // Auto-fetch available models via OpenAI-compatible GET /v1/models
@@ -69,26 +72,36 @@ function AddEmbeddingModelModalComponent({
     const embeddingKeywords = ['embedding', 'embed', 'text-embedding']
     const embeddingModels: string[] = []
     const otherModels: string[] = []
-    
-    models.forEach(model => {
+
+    models.forEach((model) => {
       const modelLower = model.toLowerCase()
-      if (embeddingKeywords.some(keyword => modelLower.includes(keyword))) {
+      if (embeddingKeywords.some((keyword) => modelLower.includes(keyword))) {
         embeddingModels.push(model)
       } else {
         otherModels.push(model)
       }
     })
-    
+
     return [...embeddingModels.sort(), ...otherModels.sort()]
   }
 
   useEffect(() => {
     const fetchModels = async () => {
       if (!selectedProvider) return
+
+      // Check cache first
+      const cachedModels = plugin.getCachedModelList(selectedProvider.id)
+      if (cachedModels) {
+        const sorted = sortModelsForEmbedding(cachedModels)
+        setAvailableModels(sorted)
+        setLoadingModels(false)
+        return
+      }
+
       setLoadingModels(true)
       setLoadError(null)
       try {
-        const isOpenAIStyle = (
+        const isOpenAIStyle =
           selectedProvider.type === 'openai' ||
           selectedProvider.type === 'openai-compatible' ||
           selectedProvider.type === 'openrouter' ||
@@ -96,22 +109,23 @@ function AddEmbeddingModelModalComponent({
           selectedProvider.type === 'mistral' ||
           selectedProvider.type === 'perplexity' ||
           selectedProvider.type === 'deepseek'
-        )
 
         if (isOpenAIStyle) {
           const base = ((): string => {
             // default OpenAI base when not provided
             const cleaned = selectedProvider.baseUrl?.replace(/\/+$/, '')
             if (cleaned && cleaned.length > 0) return cleaned
-            if (selectedProvider.type === 'openai') return 'https://api.openai.com/v1'
-            if (selectedProvider.type === 'openrouter') return 'https://openrouter.ai/api/v1'
+            if (selectedProvider.type === 'openai')
+              return 'https://api.openai.com/v1'
+            if (selectedProvider.type === 'openrouter')
+              return 'https://openrouter.ai/api/v1'
             return '' // no base => skip
           })()
 
           if (base) {
             const baseNorm = base.replace(/\/+$/, '')
             const urlCandidates: string[] = []
-            if (/\/v1$/.test(baseNorm)) {
+            if (baseNorm.endsWith('/v1')) {
               // Try with v1 first, then without v1
               urlCandidates.push(`${baseNorm}/models`)
               urlCandidates.push(`${baseNorm.replace(/\/v1$/, '')}/models`)
@@ -145,13 +159,18 @@ function AddEmbeddingModelModalComponent({
                     .map((v: any) =>
                       typeof v === 'string'
                         ? v
-                        : (v?.id as string) || (v?.name as string) || (v?.model as string) || null,
+                        : (v?.id as string) ||
+                          (v?.name as string) ||
+                          (v?.model as string) ||
+                          null,
                     )
                     .filter((v: string | null): v is string => !!v)
 
                 const buckets: string[] = []
-                if (Array.isArray(json?.data)) buckets.push(...collectFrom(json.data))
-                if (Array.isArray(json?.models)) buckets.push(...collectFrom(json.models))
+                if (Array.isArray(json?.data))
+                  buckets.push(...collectFrom(json.data))
+                if (Array.isArray(json?.models))
+                  buckets.push(...collectFrom(json.models))
                 if (Array.isArray(json)) buckets.push(...collectFrom(json))
 
                 if (buckets.length === 0) {
@@ -161,6 +180,8 @@ function AddEmbeddingModelModalComponent({
                 const unique = Array.from(new Set(buckets))
                 const sorted = sortModelsForEmbedding(unique)
                 setAvailableModels(sorted)
+                // Cache the result (unsorted for consistency)
+                plugin.setCachedModelList(selectedProvider.id, unique)
                 fetched = true
                 break
               } catch (e) {
@@ -169,7 +190,9 @@ function AddEmbeddingModelModalComponent({
               }
             }
             if (fetched) return
-            throw lastErr ?? new Error('Failed to fetch models from all endpoints')
+            throw (
+              lastErr ?? new Error('Failed to fetch models from all endpoints')
+            )
           }
         }
 
@@ -183,7 +206,10 @@ function AddEmbeddingModelModalComponent({
             // Normalize like "models/text-embedding-004" -> "text-embedding-004"
             const norm = raw.includes('/') ? raw.split('/').pop()! : raw
             // Keep embedding models and general gemini models
-            if (norm.toLowerCase().includes('embedding') || norm.toLowerCase().includes('gemini')) {
+            if (
+              norm.toLowerCase().includes('embedding') ||
+              norm.toLowerCase().includes('gemini')
+            ) {
               names.push(norm)
             }
           }
@@ -191,6 +217,8 @@ function AddEmbeddingModelModalComponent({
           const unique = Array.from(new Set(names))
           const sorted = sortModelsForEmbedding(unique)
           setAvailableModels(sorted)
+          // Cache the result (unsorted for consistency)
+          plugin.setCachedModelList(selectedProvider.id, unique)
           return
         }
       } catch (err: any) {
@@ -207,11 +235,13 @@ function AddEmbeddingModelModalComponent({
 
   const handleSubmit = async () => {
     try {
-      if (plugin.settings.embeddingModels.some((p) => p.id === formData.id)) {
-        throw new Error(
-          'Model with this ID already exists. Try a different ID.',
-        )
-      }
+      // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
+      const baseInternalId = generateModelId(
+        formData.providerId,
+        formData.model,
+      )
+      const existingIds = plugin.settings.embeddingModels.map((m) => m.id)
+      const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
 
       if (
         !plugin.settings.providers.some(
@@ -256,6 +286,11 @@ function AddEmbeddingModelModalComponent({
 
       const embeddingModel: EmbeddingModel = {
         ...formData,
+        id: modelIdWithPrefix,
+        name:
+          formData.name && formData.name.trim().length > 0
+            ? formData.name
+            : formData.model,
         dimension,
       }
 
@@ -284,44 +319,54 @@ function AddEmbeddingModelModalComponent({
     <>
       {/* Available models dropdown (moved above other fields) */}
       <ObsidianSetting
-        name={loadingModels ? t('common.loading') : t('settings.models.availableModelsAuto')}
-        desc={loadError ? `${t('settings.models.fetchModelsFailed')}：${loadError}` : t('settings.models.embeddingModelsFirst')}
+        name={
+          loadingModels
+            ? t('common.loading')
+            : t('settings.models.availableModelsAuto')
+        }
+        desc={
+          loadError
+            ? `${t('settings.models.fetchModelsFailed')}：${loadError}`
+            : t('settings.models.embeddingModelsFirst')
+        }
       >
-        <ObsidianDropdown
+        <SearchableDropdown
           value={formData.model || ''}
-          options={Object.fromEntries(availableModels.map((m) => [m, m]))}
+          options={availableModels}
           onChange={(value: string) => {
-            // When a model is selected, set both model name and generate ID
+            // When a model is selected, set API model id and also update display name
             setFormData((prev) => ({
               ...prev,
               model: value,
-              id: prev.id && prev.id.trim().length > 0 ? prev.id : value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+              name: value, // Always update display name with the selected model
             }))
           }}
           disabled={loadingModels || availableModels.length === 0}
+          loading={loadingModels}
+          placeholder={t('settings.models.searchModels') || 'Search models...'}
         />
       </ObsidianSetting>
 
+      {/* Display name (moved right below modelId) */}
+      <ObsidianSetting name={t('settings.models.modelName')}>
+        <ObsidianTextInput
+          value={formData.name ?? ''}
+          placeholder={t('settings.models.modelNamePlaceholder')}
+          onChange={(value: string) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+        />
+      </ObsidianSetting>
+
+      {/* Model calling ID */}
       <ObsidianSetting
         name={t('settings.models.modelId')}
         desc={t('settings.models.modelIdDesc')}
         required
       >
         <ObsidianTextInput
-          value={formData.id}
-          placeholder="my-custom-embedding-model"
-          onChange={(value: string) =>
-            setFormData((prev) => ({ ...prev, id: value }))
-          }
-        />
-      </ObsidianSetting>
-
-      {/* Provider is derived from the current group context; field removed intentionally */}
-
-      <ObsidianSetting name={t('settings.models.modelName')} required>
-        <ObsidianTextInput
           value={formData.model}
-          placeholder={t('settings.models.modelNamePlaceholder')}
+          placeholder={t('settings.models.modelIdPlaceholder')}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, model: value }))
           }

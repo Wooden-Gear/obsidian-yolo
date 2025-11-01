@@ -3,52 +3,37 @@ import { useMemo } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { ObsidianDropdown } from '../../common/ObsidianDropdown'
-import { ObsidianSetting } from '../../common/ObsidianSetting'
-import { ObsidianToggle } from '../../common/ObsidianToggle'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
-import { getModelDisplayNameWithProvider } from '../../../utils/model-id-utils'
-import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
 } from '../../../settings/schema/setting.types'
+import { ObsidianDropdown } from '../../common/ObsidianDropdown'
+import { ObsidianSetting } from '../../common/ObsidianSetting'
+import { ObsidianTextArea } from '../../common/ObsidianTextArea'
+import { ObsidianTextInput } from '../../common/ObsidianTextInput'
+import { ObsidianToggle } from '../../common/ObsidianToggle'
+import { SmartSpaceQuickActionsSettings } from '../SmartSpaceQuickActionsSettings'
 
 type ContinuationSectionProps = {
   app: App
 }
 
-export function ContinuationSection({ app }: ContinuationSectionProps) {
+export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
-  const orderedEnabledModels = useMemo(() => {
-    const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
-    const providerOrder = settings.providers.map((p) => p.id)
-    const providerIdsInModels = Array.from(new Set(enabledModels.map((m) => m.providerId)))
-    const orderedProviderIds = [
-      ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
-      ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
-    ]
-    return orderedProviderIds.flatMap((pid) =>
-      enabledModels.filter((m) => m.providerId === pid),
-    )
-  }, [settings.chatModels, settings.providers])
+  const enabledChatModels = useMemo(
+    () => settings.chatModels.filter(({ enable }) => enable ?? true),
+    [settings.chatModels],
+  )
 
-  const enableSuperContinuation = Boolean(
-    settings.continuationOptions.enableSuperContinuation,
-  )
-  const enableKeywordTrigger = Boolean(
-    settings.continuationOptions.enableKeywordTrigger,
-  )
-  const enableFloatingPanelKeywordTrigger = Boolean(
-    settings.continuationOptions.enableFloatingPanelKeywordTrigger,
-  )
+  const enableSmartSpace = settings.continuationOptions.enableSmartSpace ?? true
   const enableTabCompletion = Boolean(
     settings.continuationOptions.enableTabCompletion,
   )
   const tabCompletionSystemPromptValue =
-    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim().length > 0
+    (settings.continuationOptions.tabCompletionSystemPrompt ?? '').trim()
+      .length > 0
       ? settings.continuationOptions.tabCompletionSystemPrompt!
       : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
   const tabCompletionOptions = enableTabCompletion
@@ -60,12 +45,6 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
         ...DEFAULT_TAB_COMPLETION_OPTIONS,
         ...(settings.continuationOptions.tabCompletionOptions ?? {}),
       }
-  const defaultContinuationModelId =
-    settings.continuationOptions.continuationModelId ??
-    settings.continuationOptions.tabCompletionModelId ??
-    orderedEnabledModels[0]?.id ??
-    settings.chatModelId
-
   const updateTabCompletionOptions = async (
     updates: Partial<typeof tabCompletionOptions>,
   ) => {
@@ -94,112 +73,52 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
 
   return (
     <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">{t('settings.continuation.title')}</div>
-      <div className="smtcmp-settings-sub-header">
-        {t('settings.continuation.aiSubsectionTitle')}
+      <div className="smtcmp-settings-header">
+        {t('settings.continuation.title')}
       </div>
-      <ObsidianSetting
-        name={t('settings.continuation.superContinuation')}
-        desc={t('settings.continuation.superContinuationDesc')}
-      >
-        <ObsidianToggle
-          value={enableSuperContinuation}
-          onChange={async (value) => {
-            const nextContinuationModelId =
-              settings.continuationOptions.continuationModelId ??
-              defaultContinuationModelId
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                enableSuperContinuation: value,
-                continuationModelId: nextContinuationModelId,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.continuation.keywordTrigger')}
-        desc={t('settings.continuation.keywordTriggerDesc')}
-      >
-        <ObsidianToggle
-          value={enableKeywordTrigger}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
-                enableKeywordTrigger: value,
-              },
-            })
-          }}
-        />
-      </ObsidianSetting>
-
-      {enableKeywordTrigger && (
-        <ObsidianSetting
-          name={t('settings.continuation.triggerKeyword')}
-          desc={t('settings.continuation.triggerKeywordDesc')}
-        >
-          <ObsidianTextInput
-            value={settings.continuationOptions.triggerKeyword}
-            placeholder={'  '}
-            onChange={async (value) => {
-              await setSettings({
-                ...settings,
-                continuationOptions: {
-                  ...settings.continuationOptions,
-                  triggerKeyword: value,
-                },
-              })
-            }}
-          />
-        </ObsidianSetting>
-      )}
-
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.customSubsectionTitle')}
       </div>
+      <div className="smtcmp-settings-desc smtcmp-settings-callout">
+        {t('settings.continuation.smartSpaceDescription')}
+      </div>
       <ObsidianSetting
-        name={t('settings.continuation.floatingPanelKeywordTrigger')}
-        desc={t('settings.continuation.floatingPanelKeywordTriggerDesc')}
+        name={t('settings.continuation.smartSpaceToggle')}
+        desc={t('settings.continuation.smartSpaceToggleDesc')}
       >
         <ObsidianToggle
-          value={enableFloatingPanelKeywordTrigger}
+          value={enableSmartSpace}
           onChange={async (value) => {
             await setSettings({
               ...settings,
               continuationOptions: {
                 ...settings.continuationOptions,
-                enableFloatingPanelKeywordTrigger: value,
+                enableSmartSpace: value,
               },
             })
           }}
         />
       </ObsidianSetting>
 
-      {enableFloatingPanelKeywordTrigger && (
-        <ObsidianSetting
-          name={t('settings.continuation.floatingPanelTriggerKeyword')}
-          desc={t('settings.continuation.floatingPanelTriggerKeywordDesc')}
-        >
-          <ObsidianTextInput
-            value={settings.continuationOptions.floatingPanelTriggerKeyword ?? ''}
-            placeholder={''}
-            onChange={async (value) => {
-              await setSettings({
-                ...settings,
-                continuationOptions: {
-                  ...settings.continuationOptions,
-                  floatingPanelTriggerKeyword: value,
-                },
-              })
-            }}
-          />
-        </ObsidianSetting>
-      )}
+      {enableSmartSpace && <SmartSpaceQuickActionsSettings />}
+
+      <ObsidianSetting
+        name={t('settings.continuation.selectionChatToggle')}
+        desc={t('settings.continuation.selectionChatToggleDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableSelectionChat ?? true}
+          onChange={async (value) => {
+            await setSettings({
+              ...settings,
+              continuationOptions: {
+                ...settings.continuationOptions,
+                enableSelectionChat: value,
+              },
+            })
+          }}
+        />
+      </ObsidianSetting>
 
       <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.tabSubsectionTitle')}
@@ -219,7 +138,8 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
                 tabCompletionOptions: value
                   ? {
                       ...DEFAULT_TAB_COMPLETION_OPTIONS,
-                      ...(settings.continuationOptions.tabCompletionOptions ?? {}),
+                      ...(settings.continuationOptions.tabCompletionOptions ??
+                        {}),
                     }
                   : settings.continuationOptions.tabCompletionOptions,
               },
@@ -259,17 +179,16 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               value={
                 settings.continuationOptions.tabCompletionModelId ??
                 settings.continuationOptions.continuationModelId ??
-                orderedEnabledModels[0]?.id ??
+                enabledChatModels[0]?.id ??
                 ''
               }
               options={Object.fromEntries(
-                orderedEnabledModels.map((m) => [
-                  m.id,
-                  getModelDisplayNameWithProvider(
-                    m.id,
-                    settings.providers.find((p) => p.id === m.providerId)?.id,
-                  ),
-                ]),
+                enabledChatModels.map((chatModel) => {
+                  const label = chatModel.name?.trim()
+                    ? chatModel.name.trim()
+                    : chatModel.model || chatModel.id
+                  return [chatModel.id, label]
+                }),
               )}
               onChange={async (value) => {
                 await setSettings({
@@ -351,7 +270,9 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
 
           <ObsidianSetting
             name={t('settings.continuation.tabCompletionMaxSuggestionLength')}
-            desc={t('settings.continuation.tabCompletionMaxSuggestionLengthDesc')}
+            desc={t(
+              'settings.continuation.tabCompletionMaxSuggestionLengthDesc',
+            )}
           >
             <ObsidianTextInput
               type="number"
@@ -456,10 +377,8 @@ export function ContinuationSection({ app }: ContinuationSectionProps) {
               }}
             />
           </ObsidianSetting>
-
         </>
       )}
-
     </div>
   )
 }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { Editor } from 'obsidian'
+import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
@@ -20,7 +20,10 @@ function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
 
   const handleConfirm = async () => {
     onClose()
-    await plugin.customRewrite(editor, instruction.trim().length > 0 ? instruction : undefined)
+    await plugin.customRewrite(
+      editor,
+      instruction.trim().length > 0 ? instruction : undefined,
+    )
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +57,11 @@ function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
 
       {/* 底部轻量工具条 */}
       <ObsidianSetting>
-        <ObsidianButton text={t('common.confirm')} onClick={handleConfirm} cta />
+        <ObsidianButton
+          text={t('common.confirm')}
+          onClick={handleConfirm}
+          cta
+        />
         <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
@@ -64,7 +71,15 @@ function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
 export class CustomRewritePanel {
   private panel: ReactFloatingPanel<CustomRewritePanelProps>
 
-  constructor({ plugin, editor, position }: { plugin: any; editor: Editor; position?: { x: number; y: number } }) {
+  constructor({
+    plugin,
+    editor,
+    position,
+  }: {
+    plugin: any
+    editor: Editor
+    position?: { x: number; y: number }
+  }) {
     this.panel = new ReactFloatingPanel<CustomRewritePanelProps>({
       Component: CustomRewritePanelBody,
       props: { editor },

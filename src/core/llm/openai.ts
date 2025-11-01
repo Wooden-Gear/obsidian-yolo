@@ -54,14 +54,21 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<
       )
     }
     try {
+      let formattedRequest = {
+        ...request,
+        reasoning_effort: model.reasoning?.enabled
+          ? (model.reasoning.reasoning_effort as ReasoningEffort)
+          : undefined,
+      }
+
+      formattedRequest = this.applyCustomModelParameters(
+        model,
+        formattedRequest,
+      )
+
       const response = await this.adapter.generateResponse(
         this.client,
-        {
-          ...request,
-          reasoning_effort: model.reasoning?.enabled
-            ? (model.reasoning.reasoning_effort as ReasoningEffort)
-            : undefined,
-        },
+        formattedRequest,
         options,
       )
 
@@ -115,14 +122,21 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<
       )
     }
     try {
+      let formattedRequest = {
+        ...request,
+        reasoning_effort: model.reasoning?.enabled
+          ? (model.reasoning.reasoning_effort as ReasoningEffort)
+          : undefined,
+      }
+
+      formattedRequest = this.applyCustomModelParameters(
+        model,
+        formattedRequest,
+      )
+
       return await this.adapter.streamResponse(
         this.client,
-        {
-          ...request,
-          reasoning_effort: model.reasoning?.enabled
-            ? (model.reasoning.reasoning_effort as ReasoningEffort)
-            : undefined,
-        },
+        formattedRequest,
         options,
       )
     } catch (error) {

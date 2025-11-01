@@ -3,6 +3,9 @@ import esbuild from 'esbuild'
 import process from 'process'
 import builtins from 'builtin-modules'
 import fs from 'fs'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 const nodeBuiltins = [...builtins, ...builtins.map((mod) => `node:${mod}`)]
 
@@ -74,7 +77,40 @@ const context = await esbuild.context({
   outfile: 'main.js',
   minify: prod,
   metafile: true,
-  plugins: [pgliteShimPlugin],
+  plugins: [
+    pgliteShimPlugin,
+    {
+      name: 'copy-pglite-assets',
+      setup(build) {
+        build.onStart(async () => {
+          const distEntryPath = require.resolve('@electric-sql/pglite')
+          const srcDir = path.dirname(distEntryPath)
+          const destDir = path.join(process.cwd(), 'vendor', 'pglite')
+
+          await fs.promises.rm(destDir, { recursive: true, force: true })
+          await fs.promises.mkdir(destDir, { recursive: true })
+
+          const copyRecursive = async (source, destination) => {
+            const stats = await fs.promises.stat(source)
+            if (stats.isDirectory()) {
+              await fs.promises.mkdir(destination, { recursive: true })
+              const entries = await fs.promises.readdir(source)
+              for (const entry of entries) {
+                await copyRecursive(
+                  path.join(source, entry),
+                  path.join(destination, entry),
+                )
+              }
+            } else {
+              await fs.promises.copyFile(source, destination)
+            }
+          }
+
+          await copyRecursive(srcDir, destDir)
+        })
+      },
+    },
+  ],
 })
 
 if (prod) {

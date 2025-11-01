@@ -40,5 +40,7 @@ export class SmartComposerSettingTab extends PluginSettingTab {
       this.root.unmount()
       this.root = null
     }
+    // Clear model list cache when settings page closes
+    this.plugin.clearModelListCache()
   }
 }

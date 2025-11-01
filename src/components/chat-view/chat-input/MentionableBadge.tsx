@@ -159,12 +159,10 @@ function CurrentFileBadge({
             className="smtcmp-chat-user-input-file-badge-name-icon"
           />
         )}
-        <span
-          className={clsx(
-            !mentionable.file && 'smtcmp-excluded-content',
-          )}
-        >
-          {mentionable.file?.name ?? app.workspace.getActiveFile()?.name ?? 'Current File'}
+        <span className={clsx(!mentionable.file && 'smtcmp-excluded-content')}>
+          {mentionable.file?.name ??
+            app.workspace.getActiveFile()?.name ??
+            'Current File'}
         </span>
       </div>
       <div
@@ -179,11 +177,7 @@ function CurrentFileBadge({
         className="smtcmp-chat-user-input-file-badge-eye"
         onClick={handleCurrentFileToggle}
       >
-        {mentionable.file ? (
-          <Eye size={12} />
-        ) : (
-          <EyeOff size={12} />
-        )}
+        {mentionable.file ? <Eye size={12} /> : <EyeOff size={12} />}
       </div>
     </BadgeBase>
   )
@@ -321,7 +315,7 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
-          onToggleVisibility={() => onToggleVisibility && onToggleVisibility()}
+          onToggleVisibility={() => onToggleVisibility?.()}
         />
       )
     case 'block':

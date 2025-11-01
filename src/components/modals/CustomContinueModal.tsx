@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { App, Editor } from 'obsidian'
+import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
@@ -13,14 +13,20 @@ export type CustomContinueModalProps = {
   onClose: () => void
 }
 
-function CustomContinueComponent({ editor, onClose }: CustomContinueModalProps) {
+function CustomContinueComponent({
+  editor,
+  onClose,
+}: CustomContinueModalProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
 
   const handleConfirm = async () => {
     onClose()
-    await plugin.continueWriting(editor, instruction.trim().length > 0 ? instruction : undefined)
+    await plugin.continueWriting(
+      editor,
+      instruction.trim().length > 0 ? instruction : undefined,
+    )
   }
 
   return (
@@ -35,7 +41,11 @@ function CustomContinueComponent({ editor, onClose }: CustomContinueModalProps) 
       </div>
 
       <ObsidianSetting>
-        <ObsidianButton text={t('common.confirm')} onClick={handleConfirm} cta />
+        <ObsidianButton
+          text={t('common.confirm')}
+          onClick={handleConfirm}
+          cta
+        />
         <ObsidianButton text={t('common.cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
@@ -43,7 +53,15 @@ function CustomContinueComponent({ editor, onClose }: CustomContinueModalProps) 
 }
 
 export class CustomContinueModal extends ReactModal<CustomContinueModalProps> {
-  constructor({ app, plugin, editor }: { app: App; plugin: any; editor: Editor }) {
+  constructor({
+    app,
+    plugin,
+    editor,
+  }: {
+    app: App
+    plugin: any
+    editor: Editor
+  }) {
     super({
       app,
       Component: CustomContinueComponent,

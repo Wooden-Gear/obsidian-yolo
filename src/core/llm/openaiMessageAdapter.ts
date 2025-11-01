@@ -125,7 +125,7 @@ export class OpenAIMessageAdapter {
         // Remove tool_choice when using Gemini tools to avoid conflicts
         delete base.tool_choice
       }
-      
+
       // Pass-through other extra_body fields for gateways that need them
       const { tools: _, ...otherExtraBody } = reqAny.extra_body
       if (Object.keys(otherExtraBody).length > 0) {

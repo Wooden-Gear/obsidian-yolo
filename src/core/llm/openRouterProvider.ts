@@ -42,7 +42,9 @@ export class OpenRouterProvider extends BaseLLMProvider<
       throw new Error('Model is not an OpenRouter model')
     }
 
-    return this.adapter.generateResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.generateResponse(this.client, mergedRequest, options)
   }
 
   async streamResponse(
@@ -54,12 +56,22 @@ export class OpenRouterProvider extends BaseLLMProvider<
       throw new Error('Model is not an OpenRouter model')
     }
 
-    return this.adapter.streamResponse(this.client, request, options)
+    const mergedRequest = this.applyCustomModelParameters(model, request)
+
+    return this.adapter.streamResponse(this.client, mergedRequest, options)
   }
 
-  async getEmbedding(_model: string, _text: string): Promise<number[]> {
-    throw new Error(
-      `Provider ${this.provider.id} does not support embeddings. Please use a different provider.`,
-    )
+  async getEmbedding(model: string, text: string): Promise<number[]> {
+    try {
+      const embedding = await this.client.embeddings.create({
+        model: model,
+        input: text,
+      })
+      return embedding.data[0].embedding
+    } catch (error) {
+      throw new Error(
+        `Failed to get embedding from OpenRouter: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
+    }
   }
 }

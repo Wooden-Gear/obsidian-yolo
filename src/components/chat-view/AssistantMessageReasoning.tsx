@@ -1,9 +1,9 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 
+import { parseTagContents } from '../../utils/chat/parse-tag-content'
 import DotLoader from '../common/DotLoader'
 
-import { parseTagContents } from '../../utils/chat/parse-tag-content'
 import { ObsidianMarkdown } from './ObsidianMarkdown'
 
 const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
@@ -27,13 +27,20 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
     })
   }, [content])
 
-  const hasReasoningText = useMemo(() => reasoning.trim().length > 0, [reasoning])
+  const hasReasoningText = useMemo(
+    () => reasoning.trim().length > 0,
+    [reasoning],
+  )
   const previousHasReasoningText = useRef(hasReasoningText)
   const previousReasoning = useRef(reasoning)
   const [showLoader, setShowLoader] = useState(() => !hasAnswerContent)
 
   useEffect(() => {
-    if (!hasUserInteracted.current && !previousHasReasoningText.current && hasReasoningText) {
+    if (
+      !hasUserInteracted.current &&
+      !previousHasReasoningText.current &&
+      hasReasoningText
+    ) {
       setIsExpanded(true)
     }
     previousHasReasoningText.current = hasReasoningText
@@ -86,7 +93,9 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
         className="smtcmp-assistant-message-metadata-toggle"
         onClick={handleToggle}
       >
-        <span>{showLoader ? 'Reasoning' : 'Reasoned'} {showLoader && <DotLoader />}</span>
+        <span>
+          {showLoader ? 'Reasoning' : 'Reasoned'} {showLoader && <DotLoader />}
+        </span>
         {isExpanded ? (
           <ChevronUp className="smtcmp-assistant-message-metadata-toggle-icon" />
         ) : (
