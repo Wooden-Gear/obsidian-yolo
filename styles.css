@@ -4069,7 +4069,10 @@ button.smtcmp-chat-input-model-select {
   backdrop-filter: none;
   width: var(--radix-dropdown-menu-trigger-width, auto);
   min-width: var(--radix-dropdown-menu-trigger-width, 220px);
+  max-height: 400px;
+  overflow: hidden;
 }
+
 
 @keyframes smtcmp-smart-space-popover-fade-in {
   0% {
@@ -4082,26 +4085,28 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
-.smtcmp-smart-space-popover ul {
-  padding: 8px;
-  list-style: none;
-  margin: 0;
+
+/* 模型选择列表滚动样式 - 应用到 RadioGroup */
+.smtcmp-smart-space-popover .smtcmp-model-select-list,
+.smtcmp-chat-sidebar-popover .smtcmp-model-select-list {
   max-height: 380px;
   overflow-y: auto;
   scrollbar-width: thin;
+  padding: 8px;
 }
 
-/* 自定义滚动条样式 */
-.smtcmp-smart-space-popover ul::-webkit-scrollbar {
+.smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar,
+.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar {
   width: 8px;
 }
 
-.smtcmp-smart-space-popover ul::-webkit-scrollbar-track {
+.smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar-track,
+.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-track {
   background: transparent;
   margin: 8px 0;
 }
 
-.smtcmp-smart-space-popover ul::-webkit-scrollbar-thumb {
+.smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb {
   background: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 25%,
@@ -4112,10 +4117,30 @@ button.smtcmp-chat-input-model-select {
   background-clip: padding-box;
 }
 
-.smtcmp-smart-space-popover ul::-webkit-scrollbar-thumb:hover {
+.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb {
+  background: color-mix(
+    in srgb,
+    var(--text-muted) 30%,
+    transparent
+  );
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
   background: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 40%,
+    transparent
+  );
+  background-clip: padding-box;
+}
+
+.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(
+    in srgb,
+    var(--text-muted) 50%,
     transparent
   );
   background-clip: padding-box;
