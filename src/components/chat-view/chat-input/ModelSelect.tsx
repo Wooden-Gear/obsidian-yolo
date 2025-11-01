@@ -71,6 +71,12 @@ export const ModelSelect = forwardRef<
     const target = itemRefs.current[selectedModelId]
     if (!target) return
     target.focus({ preventScroll: true })
+    
+    // 手动滚动到选中项，确保其在可视区域内
+    target.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    })
   }, [selectedModelId])
 
   useEffect(() => {
