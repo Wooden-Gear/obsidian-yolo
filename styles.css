@@ -3943,13 +3943,18 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-smart-space-popover {
   z-index: 10000;
   background: var(--background-primary);
-  border: 1.5px solid var(--h1-color, var(--interactive-accent));
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--background-modifier-border) 65%,
+      transparent
+    );
   border-radius: 12px;
   box-shadow:
     0 0 0 3px
       color-mix(
         in srgb,
-        var(--h1-color, var(--interactive-accent)) 12%,
+        var(--background-modifier-border) 20%,
         transparent
       ),
     0 12px 32px -8px rgba(0, 0, 0, 0.2),
