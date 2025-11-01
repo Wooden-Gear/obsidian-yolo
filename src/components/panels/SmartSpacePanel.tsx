@@ -26,17 +26,17 @@ import {
 } from '../../utils/dom/dynamicStyleManager'
 import DotLoader from '../common/DotLoader'
 
-type CustomContinuePanelProps = {
+type SmartSpacePanelProps = {
   editor: Editor
   onClose: () => void
   showQuickActions?: boolean // Whether to show quick action buttons
 }
 
-function CustomContinuePanelBody({
+function SmartSpacePanelBody({
   editor,
   onClose,
   showQuickActions = true,
-}: CustomContinuePanelProps) {
+}: SmartSpacePanelProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -93,8 +93,8 @@ function CustomContinuePanelBody({
   }, [instruction])
 
   const textareaClassName = useDynamicStyleClass(
-    'smtcmp-custom-continue-input',
-    'smtcmp-custom-continue-input-height',
+    'smtcmp-smart-space-input',
+    'smtcmp-smart-space-input-height',
     textareaHeight !== null ? { height: `${textareaHeight}px` } : {},
   )
 
@@ -149,7 +149,7 @@ function CustomContinuePanelBody({
           instruction: action.instruction,
           icon: (
             <IconComponent
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />
           ),
@@ -218,7 +218,7 @@ function CustomContinuePanelBody({
               'chat.customContinueSections.suggestions.items.continue.label',
               'chat.customContinueSections.suggestions.items.continue.instruction',
               <Sparkles
-                className="smtcmp-custom-continue-item-icon-svg"
+                className="smtcmp-smart-space-item-icon-svg"
                 size={14}
               />,
             ),
@@ -230,7 +230,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.writing.items.summarize.label',
             'chat.customContinueSections.writing.items.summarize.instruction',
             <FileText
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -239,7 +239,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.writing.items.todo.label',
             'chat.customContinueSections.writing.items.todo.instruction',
             <ListTodo
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -248,7 +248,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.writing.items.flowchart.label',
             'chat.customContinueSections.writing.items.flowchart.instruction',
             <Workflow
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -257,7 +257,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.writing.items.table.label',
             'chat.customContinueSections.writing.items.table.instruction',
             <Table
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -266,7 +266,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.writing.items.freewrite.label',
             'chat.customContinueSections.writing.items.freewrite.instruction',
             <PenLine
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -277,7 +277,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.thinking.items.brainstorm.label',
             'chat.customContinueSections.thinking.items.brainstorm.instruction',
             <Lightbulb
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -286,7 +286,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.thinking.items.analyze.label',
             'chat.customContinueSections.thinking.items.analyze.instruction',
             <Brain
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -295,7 +295,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.thinking.items.dialogue.label',
             'chat.customContinueSections.thinking.items.dialogue.instruction',
             <MessageCircle
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -370,7 +370,7 @@ function CustomContinuePanelBody({
       )
       onClose()
     } catch (err) {
-      console.error('Custom continue failed', err)
+      console.error('Smart Space failed', err)
       setIsSubmitting(false)
       setError(
         t('chat.customContinueError', 'Generation failed. Please try again.'),
@@ -430,15 +430,15 @@ function CustomContinuePanelBody({
   }
 
   return (
-    <div className="smtcmp-custom-continue-panel">
+    <div className="smtcmp-smart-space-panel">
       {!isSubmitting ? (
         <>
-          <div className="smtcmp-custom-continue-input-card">
-            <div className="smtcmp-custom-continue-header">
-              <div className="smtcmp-custom-continue-avatar">
+          <div className="smtcmp-smart-space-input-card">
+            <div className="smtcmp-smart-space-header">
+              <div className="smtcmp-smart-space-avatar">
                 <Sparkles size={14} />
               </div>
-              <div className="smtcmp-custom-continue-input-wrapper">
+              <div className="smtcmp-smart-space-input-wrapper">
                 <textarea
                   ref={inputRef}
                   className={textareaClassName}
@@ -453,7 +453,7 @@ function CustomContinuePanelBody({
                   rows={1}
                 />
                 {(instruction.length > 0 || isSubmitConfirmPending) && (
-                  <div className="smtcmp-custom-continue-input-hint">
+                  <div className="smtcmp-smart-space-input-hint">
                     {isSubmitConfirmPending
                       ? t('chat.customContinueConfirmHint', '⏎ 是否确认提交？')
                       : t('chat.customContinueHint', '⏎ 提交')}
@@ -461,10 +461,10 @@ function CustomContinuePanelBody({
                 )}
               </div>
               {hasGeminiTools && (
-                <div className="smtcmp-custom-continue-tools">
+                <div className="smtcmp-smart-space-tools">
                   <button
                     type="button"
-                    className={`smtcmp-custom-continue-tool-button ${
+                    className={`smtcmp-smart-space-tool-button ${
                       useWebSearch ? 'active' : ''
                     }`}
                     onClick={() => setUseWebSearch(!useWebSearch)}
@@ -481,7 +481,7 @@ function CustomContinuePanelBody({
                   </button>
                   <button
                     type="button"
-                    className={`smtcmp-custom-continue-tool-button ${
+                    className={`smtcmp-smart-space-tool-button ${
                       useUrlContext ? 'active' : ''
                     }`}
                     onClick={() => setUseUrlContext(!useUrlContext)}
@@ -501,24 +501,24 @@ function CustomContinuePanelBody({
             </div>
           </div>
           {error && (
-            <div className="smtcmp-custom-continue-error" role="alert">
+            <div className="smtcmp-smart-space-error" role="alert">
               {error}
             </div>
           )}
           {showQuickActions && sections.length > 0 && (
-            <div className="smtcmp-custom-continue-section-card">
-              <div className="smtcmp-custom-continue-section-list">
+            <div className="smtcmp-smart-space-section-card">
+              <div className="smtcmp-smart-space-section-list">
                 {(() => {
                   let itemIndex = -1
                   return sections.map((section) => (
                     <div
-                      className="smtcmp-custom-continue-section"
+                      className="smtcmp-smart-space-section"
                       key={section.id}
                     >
-                      <div className="smtcmp-custom-continue-section-title">
+                      <div className="smtcmp-smart-space-section-title">
                         {section.title}
                       </div>
-                      <div className="smtcmp-custom-continue-section-items">
+                      <div className="smtcmp-smart-space-section-items">
                         {section.items.map((item) => {
                           itemIndex += 1
                           const currentIndex = itemIndex
@@ -526,7 +526,7 @@ function CustomContinuePanelBody({
                             <button
                               key={item.id}
                               type="button"
-                              className="smtcmp-custom-continue-item"
+                              className="smtcmp-smart-space-item"
                               onClick={() =>
                                 void handleSubmit(item.instruction)
                               }
@@ -542,10 +542,10 @@ function CustomContinuePanelBody({
                                 itemRefs.current[currentIndex] = element
                               }}
                             >
-                              <span className="smtcmp-custom-continue-item-icon">
+                              <span className="smtcmp-smart-space-item-icon">
                                 {item.icon}
                               </span>
-                              <span className="smtcmp-custom-continue-item-label">
+                              <span className="smtcmp-smart-space-item-label">
                                 {item.label}
                               </span>
                             </button>
@@ -560,7 +560,7 @@ function CustomContinuePanelBody({
           )}
         </>
       ) : (
-        <div className="smtcmp-custom-continue-status" aria-live="polite">
+        <div className="smtcmp-smart-space-status" aria-live="polite">
           <span>{t('chat.customContinueProcessing', 'Thinking')}</span>
           <DotLoader />
         </div>
@@ -569,9 +569,9 @@ function CustomContinuePanelBody({
   )
 }
 
-export class CustomContinueWidget extends WidgetType {
+export class SmartSpaceWidget extends WidgetType {
   private static overlayRoot: HTMLElement | null = null
-  private static currentInstance: CustomContinueWidget | null = null
+  private static currentInstance: SmartSpaceWidget | null = null
 
   private root: Root | null = null
   private overlayContainer: HTMLDivElement | null = null
@@ -601,12 +601,12 @@ export class CustomContinueWidget extends WidgetType {
 
   toDOM(): HTMLElement {
     const anchor = document.createElement('span')
-    anchor.className = 'smtcmp-custom-continue-inline-anchor'
+    anchor.className = 'smtcmp-smart-space-inline-anchor'
     anchor.setAttribute('aria-hidden', 'true')
     this.anchor = anchor
 
     // 保存当前实例的引用
-    CustomContinueWidget.currentInstance = this
+    SmartSpaceWidget.currentInstance = this
 
     this.mountOverlay()
     this.setupGlobalListeners()
@@ -617,8 +617,8 @@ export class CustomContinueWidget extends WidgetType {
 
   destroy(): void {
     // 清除当前实例引用
-    if (CustomContinueWidget.currentInstance === this) {
-      CustomContinueWidget.currentInstance = null
+    if (SmartSpaceWidget.currentInstance === this) {
+      SmartSpaceWidget.currentInstance = null
     }
 
     if (this.closeAnimationTimeout !== null) {
@@ -660,19 +660,19 @@ export class CustomContinueWidget extends WidgetType {
   }
 
   private static getOverlayRoot(): HTMLElement {
-    if (CustomContinueWidget.overlayRoot)
-      return CustomContinueWidget.overlayRoot
+    if (SmartSpaceWidget.overlayRoot)
+      return SmartSpaceWidget.overlayRoot
     const root = document.createElement('div')
-    root.className = 'smtcmp-custom-continue-overlay-root'
+    root.className = 'smtcmp-smart-space-overlay-root'
     document.body.appendChild(root)
-    CustomContinueWidget.overlayRoot = root
+    SmartSpaceWidget.overlayRoot = root
     return root
   }
 
   // 静态方法：从外部触发当前实例的关闭动画
   static closeCurrentWithAnimation(): boolean {
-    if (CustomContinueWidget.currentInstance) {
-      CustomContinueWidget.currentInstance.closeWithAnimation()
+    if (SmartSpaceWidget.currentInstance) {
+      SmartSpaceWidget.currentInstance.closeWithAnimation()
       return true
     }
     return false
@@ -695,9 +695,9 @@ export class CustomContinueWidget extends WidgetType {
   }
 
   private mountOverlay() {
-    const overlayRoot = CustomContinueWidget.getOverlayRoot()
+    const overlayRoot = SmartSpaceWidget.getOverlayRoot()
     const overlayContainer = document.createElement('div')
-    overlayContainer.className = 'smtcmp-custom-continue-overlay'
+    overlayContainer.className = 'smtcmp-smart-space-overlay'
     overlayRoot.appendChild(overlayContainer)
     this.overlayContainer = overlayContainer
 
@@ -705,7 +705,7 @@ export class CustomContinueWidget extends WidgetType {
     this.root.render(
       <PluginProvider plugin={this.options.plugin}>
         <LanguageProvider>
-          <CustomContinuePanelBody
+          <SmartSpacePanelBody
             editor={this.options.editor}
             onClose={this.closeWithAnimation}
             showQuickActions={this.options.showQuickActions}
@@ -819,7 +819,7 @@ export class CustomContinueWidget extends WidgetType {
 
     updateDynamicStyleClass(
       this.overlayContainer,
-      'smtcmp-custom-continue-overlay-pos',
+      'smtcmp-smart-space-overlay-pos',
       {
         width: maxPanelWidth,
         left: Math.round(left),

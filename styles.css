@@ -3490,7 +3490,7 @@ button.smtcmp-chat-input-model-select {
 }
 
 /* Custom continue inline panel */
-.smtcmp-custom-continue-overlay-root {
+.smtcmp-smart-space-overlay-root {
   position: fixed;
   top: 0;
   left: 0;
@@ -3499,7 +3499,7 @@ button.smtcmp-chat-input-model-select {
   z-index: 9998;
 }
 
-.smtcmp-custom-continue-overlay {
+.smtcmp-smart-space-overlay {
   position: absolute;
   pointer-events: none;
   z-index: 9999;
@@ -3507,7 +3507,7 @@ button.smtcmp-chat-input-model-select {
     forwards;
 }
 
-.smtcmp-custom-continue-overlay.closing {
+.smtcmp-smart-space-overlay.closing {
   animation: smtcmp-smart-space-fade-out 0.2s cubic-bezier(0.4, 0, 1, 1)
     forwards;
 }
@@ -3548,14 +3548,14 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
-.smtcmp-custom-continue-inline-anchor {
+.smtcmp-smart-space-inline-anchor {
   display: inline-block;
   width: 0;
   height: 0;
   line-height: 0;
 }
 
-.smtcmp-custom-continue-panel {
+.smtcmp-smart-space-panel {
   position: relative;
   width: 100%;
   max-width: min(var(--file-line-width, 720px), 92vw);
@@ -3566,7 +3566,7 @@ button.smtcmp-chat-input-model-select {
   pointer-events: none;
 }
 
-.smtcmp-custom-continue-input-card {
+.smtcmp-smart-space-input-card {
   background: var(--background-primary);
   border: 1px solid var(--h1-color, var(--interactive-accent));
   border-radius: var(--radius-l);
@@ -3580,7 +3580,7 @@ button.smtcmp-chat-input-model-select {
   pointer-events: auto;
 }
 
-.smtcmp-custom-continue-input-card:focus-within {
+.smtcmp-smart-space-input-card:focus-within {
   border-color: var(--h1-color, var(--interactive-accent));
   box-shadow:
     0 0 0 2px
@@ -3592,11 +3592,11 @@ button.smtcmp-chat-input-model-select {
     var(--shadow-l, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
-.smtcmp-custom-continue-input-card:hover {
+.smtcmp-smart-space-input-card:hover {
   background: var(--background-primary) !important;
 }
 
-.smtcmp-custom-continue-header {
+.smtcmp-smart-space-header {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -3604,11 +3604,11 @@ button.smtcmp-chat-input-model-select {
   padding: 12px 16px;
 }
 
-.smtcmp-custom-continue-header:hover {
+.smtcmp-smart-space-header:hover {
   background: transparent !important;
 }
 
-.smtcmp-custom-continue-avatar {
+.smtcmp-smart-space-avatar {
   width: 24px;
   height: 24px;
   border-radius: 999px;
@@ -3625,7 +3625,7 @@ button.smtcmp-chat-input-model-select {
   margin-top: 2px;
 }
 
-.smtcmp-custom-continue-input-wrapper {
+.smtcmp-smart-space-input-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -3633,11 +3633,11 @@ button.smtcmp-chat-input-model-select {
   min-width: 0;
 }
 
-.smtcmp-custom-continue-input-wrapper:hover {
+.smtcmp-smart-space-input-wrapper:hover {
   background: transparent !important;
 }
 
-.smtcmp-custom-continue-input {
+.smtcmp-smart-space-input {
   width: 100%;
   border: none !important;
   outline: none !important;
@@ -3653,25 +3653,25 @@ button.smtcmp-chat-input-model-select {
   box-shadow: none !important;
 }
 
-.smtcmp-custom-continue-input::placeholder {
+.smtcmp-smart-space-input::placeholder {
   color: var(--text-muted);
 }
 
-.smtcmp-custom-continue-input:disabled {
+.smtcmp-smart-space-input:disabled {
   opacity: 0.6;
 }
 
-.smtcmp-custom-continue-input:focus,
-.smtcmp-custom-continue-input:focus-visible,
-.smtcmp-custom-continue-input:active,
-.smtcmp-custom-continue-input:hover {
+.smtcmp-smart-space-input:focus,
+.smtcmp-smart-space-input:focus-visible,
+.smtcmp-smart-space-input:active,
+.smtcmp-smart-space-input:hover {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
 }
 
-.smtcmp-custom-continue-input-hint {
+.smtcmp-smart-space-input-hint {
   font-size: var(--font-ui-smaller);
   color: var(--text-faint);
   display: flex;
@@ -3681,7 +3681,7 @@ button.smtcmp-chat-input-model-select {
   opacity: 0.8;
 }
 
-.smtcmp-custom-continue-section-card {
+.smtcmp-smart-space-section-card {
   flex: 1;
   min-height: 0;
   background: var(--background-primary);
@@ -3699,7 +3699,7 @@ button.smtcmp-chat-input-model-select {
   pointer-events: auto;
 }
 
-.smtcmp-custom-continue-section-list {
+.smtcmp-smart-space-section-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -3709,18 +3709,18 @@ button.smtcmp-chat-input-model-select {
   padding-right: 4px;
 }
 
-.smtcmp-custom-continue-section {
+.smtcmp-smart-space-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.smtcmp-custom-continue-section + .smtcmp-custom-continue-section {
+.smtcmp-smart-space-section + .smtcmp-smart-space-section {
   padding-top: 10px;
   border-top: 1px solid var(--background-modifier-border);
 }
 
-.smtcmp-custom-continue-section-title {
+.smtcmp-smart-space-section-title {
   font-size: var(--font-ui-smaller);
   font-weight: var(--font-semibold);
   color: var(--text-muted);
@@ -3728,7 +3728,7 @@ button.smtcmp-chat-input-model-select {
   letter-spacing: 0.04em;
 }
 
-.smtcmp-custom-continue-section-items {
+.smtcmp-smart-space-section-items {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3736,7 +3736,7 @@ button.smtcmp-chat-input-model-select {
   padding-right: 2px;
 }
 
-.smtcmp-custom-continue-item {
+.smtcmp-smart-space-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3757,44 +3757,44 @@ button.smtcmp-chat-input-model-select {
 }
 
 /* 为不同的选项添加渐进式延迟 */
-.smtcmp-custom-continue-item:nth-child(1) {
+.smtcmp-smart-space-item:nth-child(1) {
   animation-delay: 0.15s;
 }
-.smtcmp-custom-continue-item:nth-child(2) {
+.smtcmp-smart-space-item:nth-child(2) {
   animation-delay: 0.18s;
 }
-.smtcmp-custom-continue-item:nth-child(3) {
+.smtcmp-smart-space-item:nth-child(3) {
   animation-delay: 0.21s;
 }
-.smtcmp-custom-continue-item:nth-child(4) {
+.smtcmp-smart-space-item:nth-child(4) {
   animation-delay: 0.24s;
 }
-.smtcmp-custom-continue-item:nth-child(5) {
+.smtcmp-smart-space-item:nth-child(5) {
   animation-delay: 0.27s;
 }
-.smtcmp-custom-continue-item:nth-child(6) {
+.smtcmp-smart-space-item:nth-child(6) {
   animation-delay: 0.3s;
 }
-.smtcmp-custom-continue-item:nth-child(7) {
+.smtcmp-smart-space-item:nth-child(7) {
   animation-delay: 0.33s;
 }
-.smtcmp-custom-continue-item:nth-child(8) {
+.smtcmp-smart-space-item:nth-child(8) {
   animation-delay: 0.36s;
 }
 
-.smtcmp-custom-continue-item:hover,
-.smtcmp-custom-continue-item:focus-visible {
+.smtcmp-smart-space-item:hover,
+.smtcmp-smart-space-item:focus-visible {
   background: var(--background-modifier-hover);
   outline: none;
 }
 
-.smtcmp-custom-continue-item:disabled {
+.smtcmp-smart-space-item:disabled {
   opacity: 0.6;
   cursor: default;
   transform: none;
 }
 
-.smtcmp-custom-continue-item-icon {
+.smtcmp-smart-space-item-icon {
   width: 24px;
   height: 24px;
   border-radius: 999px;
@@ -3810,12 +3810,12 @@ button.smtcmp-chat-input-model-select {
   flex-shrink: 0;
 }
 
-.smtcmp-custom-continue-item-icon-svg {
+.smtcmp-smart-space-item-icon-svg {
   width: 14px;
   height: 14px;
 }
 
-.smtcmp-custom-continue-item-label {
+.smtcmp-smart-space-item-label {
   flex: 1;
   font-size: var(--font-ui-small);
   color: var(--text-normal);
@@ -3824,7 +3824,7 @@ button.smtcmp-chat-input-model-select {
   white-space: nowrap;
 }
 
-.smtcmp-custom-continue-status {
+.smtcmp-smart-space-status {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3832,14 +3832,14 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-muted);
 }
 
-.smtcmp-custom-continue-error {
+.smtcmp-smart-space-error {
   font-size: var(--font-ui-smaller);
   color: var(--text-error);
   padding-left: 8px;
 }
 
 /* Smart Space Gemini Tools */
-.smtcmp-custom-continue-tools {
+.smtcmp-smart-space-tools {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3847,7 +3847,7 @@ button.smtcmp-chat-input-model-select {
   flex-shrink: 0;
 }
 
-.smtcmp-custom-continue-tool-button {
+.smtcmp-smart-space-tool-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3863,17 +3863,17 @@ button.smtcmp-chat-input-model-select {
   transition: all 0.15s ease;
 }
 
-.smtcmp-custom-continue-tool-button:hover {
+.smtcmp-smart-space-tool-button:hover {
   color: var(--text-normal);
   background: transparent;
 }
 
-.smtcmp-custom-continue-tool-button.active {
+.smtcmp-smart-space-tool-button.active {
   color: var(--interactive-accent);
   background: transparent;
 }
 
-.smtcmp-custom-continue-tool-button.active:hover {
+.smtcmp-smart-space-tool-button.active:hover {
   color: var(--interactive-accent-hover);
   background: transparent;
 }
