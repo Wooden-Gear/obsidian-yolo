@@ -3976,12 +3976,18 @@ button.smtcmp-chat-input-model-select {
   background: transparent !important;
   border: 1px solid transparent !important;
   box-shadow: none !important;
-  color: var(--text-normal) !important;
+  color: var(--text-muted) !important;
   gap: 8px;
   font-size: var(--font-ui-smaller) !important;
   font-weight: var(--font-medium) !important;
   min-height: 30px;
   transition: all 0.18s ease;
+}
+
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:hover,
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus,
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus-visible {
+  color: var(--text-normal) !important;
 }
 
 
