@@ -498,6 +498,37 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 text={t('settings.rag.rebuildIndex', '重建索引')}
                 disabled={isIndexing}
                 onClick={async () => {
+                  // 预检查 PGlite 资源
+                  try {
+                    const dbManager = await plugin.getDbManager()
+                    const resourceCheck =
+                      await dbManager.checkPGliteResources()
+
+                    if (!resourceCheck.available) {
+                      new Notice(
+                        t(
+                          'notices.pgliteUnavailable',
+                          'PGlite resources unavailable. Please check your network connection.',
+                        ),
+                        5000,
+                      )
+                      return
+                    }
+
+                    if (resourceCheck.needsDownload && resourceCheck.fromCDN) {
+                      new Notice(
+                        t(
+                          'notices.downloadingPglite',
+                          'Downloading PGlite dependencies (~20MB). This may take a moment...',
+                        ),
+                        5000,
+                      )
+                    }
+                  } catch (error) {
+                    console.warn('Failed to check PGlite resources:', error)
+                    // 继续执行，让实际的加载逻辑处理错误
+                  }
+
                   setIsIndexing(true)
                   setIndexProgress(null)
                   try {

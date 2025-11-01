@@ -523,6 +523,8 @@ export type TranslationKeys = {
     rebuildingIndex: string
     rebuildComplete: string
     rebuildFailed: string
+    pgliteUnavailable: string
+    downloadingPglite: string
     updatingIndex: string
     indexUpdated: string
     indexUpdateFailed: string

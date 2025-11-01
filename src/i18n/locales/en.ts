@@ -613,6 +613,10 @@ export const en: TranslationKeys = {
     rebuildingIndex: 'Rebuilding vault index...',
     rebuildComplete: 'Rebuilding vault index complete',
     rebuildFailed: 'Rebuilding vault index failed',
+    pgliteUnavailable:
+      'PGlite resources unavailable. Please check your network connection.',
+    downloadingPglite:
+      'Downloading PGlite dependencies from CDN (~20MB). This may take a moment...',
     updatingIndex: 'Updating vault index...',
     indexUpdated: 'Vault index updated',
     indexUpdateFailed: 'Vault index update failed',

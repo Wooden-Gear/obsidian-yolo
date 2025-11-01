@@ -8,6 +8,13 @@ import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
 import { VectorManager } from './modules/vector/VectorManager'
 
+// PGlite 版本和 CDN 备用地址
+const PGLITE_VERSION = '0.2.12'
+const PGLITE_CDN_URLS = [
+  `https://cdn.jsdelivr.net/npm/@electric-sql/pglite@${PGLITE_VERSION}/dist/`,
+  `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/`,
+]
+
 export class DatabaseManager {
   private app: App
   private dbPath: string
@@ -174,10 +181,8 @@ export class DatabaseManager {
     }
     try {
       const blob: Blob = await this.pgClient.dumpDataDir('gzip')
-      await this.app.vault.adapter.writeBinary(
-        this.dbPath,
-        Buffer.from(await blob.arrayBuffer()),
-      )
+      const arrayBuffer = await blob.arrayBuffer()
+      await this.app.vault.adapter.writeBinary(this.dbPath, arrayBuffer)
     } catch (error) {
       console.error('Error saving database:', error)
     }
@@ -191,6 +196,59 @@ export class DatabaseManager {
     await this.pgClient?.close()
     this.pgClient = null
     this.db = null
+  }
+
+  /**
+   * 检查是否需要首次下载 PGlite 资源
+   * 逻辑：如果数据库文件不存在，说明是首次使用，需要提示下载
+   * @returns { available: boolean, needsDownload: boolean, fromCDN: boolean }
+   */
+  async checkPGliteResources(): Promise<{
+    available: boolean
+    needsDownload: boolean
+    fromCDN: boolean
+  }> {
+    try {
+      // 检查数据库文件是否存在
+      const dbExists = await this.app.vault.adapter.exists(this.dbPath)
+      
+      // 如果数据库已存在，说明之前已经初始化过，资源已经缓存
+      if (dbExists) {
+        return { available: true, needsDownload: false, fromCDN: false }
+      }
+
+      // 数据库不存在，检查是否有本地资源
+      try {
+        const localPath = this.app.vault.adapter.getResourcePath(
+          this.pgliteResourcePath,
+        )
+        const localUrl = new URL('postgres.wasm', localPath)
+        const response = await fetch(localUrl.href, { method: 'HEAD' })
+        if (response.ok) {
+          return { available: true, needsDownload: false, fromCDN: false }
+        }
+      } catch {
+        // 本地不可用，继续检查 CDN
+      }
+
+      // 检查 CDN 是否可用（首次使用需要从 CDN 下载）
+      for (const cdnUrl of PGLITE_CDN_URLS) {
+        try {
+          const wasmUrl = new URL('postgres.wasm', cdnUrl)
+          const response = await fetch(wasmUrl.href, { method: 'HEAD' })
+          if (response.ok) {
+            return { available: true, needsDownload: true, fromCDN: true }
+          }
+        } catch {
+          continue
+        }
+      }
+
+      return { available: false, needsDownload: false, fromCDN: false }
+    } catch (error) {
+      console.error('Error checking PGlite resources:', error)
+      return { available: false, needsDownload: false, fromCDN: false }
+    }
   }
 
   // TODO: This function is a temporary workaround chosen due to the difficulty of bundling postgres.wasm and postgres.data from node_modules into a single JS file. The ultimate goal is to bundle everything into one JS file in the future.
@@ -264,6 +322,11 @@ export class DatabaseManager {
 
       // 最后尝试使用相对路径（开发模式）
       addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
+
+      // 添加 CDN 备用方案
+      for (const cdnUrl of PGLITE_CDN_URLS) {
+        addCandidateUrl(cdnUrl)
+      }
 
       let lastError: unknown = null
 

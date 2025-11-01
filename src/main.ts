@@ -1015,12 +1015,12 @@ export default class SmartComposerPlugin extends Plugin {
           ? []
           : [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]),
         {
-          role: 'user',
+          role: 'user' as const,
           content: userContent,
         },
       ]
@@ -1300,12 +1300,12 @@ export default class SmartComposerPlugin extends Plugin {
           ? []
           : [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]),
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ]
@@ -1459,6 +1459,36 @@ export default class SmartComposerPlugin extends Plugin {
       id: 'rebuild-vault-index',
       name: this.t('commands.rebuildVaultIndex'),
       callback: async () => {
+        // 预检查 PGlite 资源
+        try {
+          const dbManager = await this.getDbManager()
+          const resourceCheck = await dbManager.checkPGliteResources()
+
+          if (!resourceCheck.available) {
+            new Notice(
+              this.t(
+                'notices.pgliteUnavailable',
+                'PGlite resources unavailable. Please check your network connection.',
+              ),
+              5000,
+            )
+            return
+          }
+
+          if (resourceCheck.needsDownload && resourceCheck.fromCDN) {
+            new Notice(
+              this.t(
+                'notices.downloadingPglite',
+                'Downloading PGlite dependencies (~20MB). This may take a moment...',
+              ),
+              5000,
+            )
+          }
+        } catch (error) {
+          console.warn('Failed to check PGlite resources:', error)
+          // 继续执行，让实际的加载逻辑处理错误
+        }
+
         const notice = new Notice(this.t('notices.rebuildingIndex'), 0)
         try {
           const ragEngine = await this.getRAGEngine()
@@ -2092,13 +2122,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ...(!isBaseModel && systemPrompt.length > 0
           ? [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]
           : []),
         {
-          role: 'user',
+          role: 'user' as const,
           content: userMessageContent,
         },
       ]

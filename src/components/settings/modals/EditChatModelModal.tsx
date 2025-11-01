@@ -28,7 +28,8 @@ type EditableChatModel = ChatModel & {
   }
   thinking?: {
     enabled: boolean
-    thinking_budget: number
+    thinking_budget?: number // Gemini, OpenRouter
+    budget_tokens?: number // Anthropic
   }
   toolType?: 'none' | 'gemini'
   isBaseModel?: boolean
