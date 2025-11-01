@@ -509,8 +509,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Show custom continue widget for user to input rewrite instruction
-    // Don't show quick actions for rewrite - user should input custom instruction
-    this.showCustomContinueWidget(editor, cmEditor, false)
+    this.showCustomContinueWidget(editor, cmEditor, true)
   }
 
   private async explainSelection(editor: Editor) {
