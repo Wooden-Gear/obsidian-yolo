@@ -2,6 +2,7 @@ import { BookOpen, MessageCircle, PenLine } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
+import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 
 import type { SelectionInfo } from './SelectionManager'
 
@@ -105,14 +106,26 @@ export function SelectionActionsMenu({
     await action.handler()
   }
 
+  const positionStyles = useMemo(
+    () => ({
+      left: `${Math.round(position.left)}px`,
+      top: `${Math.round(position.top)}px`,
+    }),
+    [position.left, position.top],
+  )
+
+  const menuClassName = useDynamicStyleClass(
+    'smtcmp-selection-menu',
+    'smtcmp-selection-menu-pos',
+    positionStyles,
+  )
+
+  const menuClasses = `${menuClassName} ${isVisible ? 'visible' : ''}`.trim()
+
   return (
     <div
       ref={menuRef}
-      className={`smtcmp-selection-menu ${isVisible ? 'visible' : ''}`}
-      style={{
-        left: `${position.left}px`,
-        top: `${position.top}px`,
-      }}
+      className={menuClasses}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

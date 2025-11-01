@@ -23,8 +23,8 @@
 
 .smtcmp-chat-input-settings-outer {
   position: absolute;
-  top: -14px; /* above input border */
-  right: -14px; /* outside right border */
+  top: -23px;
+  right: -3px;
   left: auto !important; /* cancel any left: 0 from other rules */
   z-index: 3;
 }
@@ -2352,6 +2352,32 @@ button.smtcmp-chat-input-model-select {
   }
 }
 
+.smtcmp-syntax-highlighter {
+  margin: 0;
+  padding: var(--size-4-2);
+  font-size: var(--font-ui-small);
+  font-family: inherit;
+}
+
+.smtcmp-syntax-highlighter--standalone {
+  border-radius: var(--radius-s);
+}
+
+.smtcmp-syntax-highlighter--with-filename {
+  border-bottom-left-radius: var(--radius-s);
+  border-bottom-right-radius: var(--radius-s);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.smtcmp-syntax-highlighter--markdown {
+  font-family: var(--font-interface);
+}
+
+.smtcmp-syntax-highlighter-line-wrap {
+  white-space: pre-wrap !important;
+}
+
 /* ============== Shared utility & overrides (audit fixes) ============== */
 
 /* Typeahead menu container positioned via CSS variables */
@@ -4346,6 +4372,14 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-searchable-dropdown {
   position: relative;
   width: 100%;
+}
+
+.smtcmp-obsidian-dropdown-optgroup,
+.smtcmp-obsidian-dropdown-option {
+  padding-inline-start: 0;
+  padding-left: 0;
+  margin-left: 0;
+  text-indent: 0;
 }
 
 .smtcmp-searchable-dropdown__input {

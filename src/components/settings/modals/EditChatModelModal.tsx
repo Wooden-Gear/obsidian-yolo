@@ -21,6 +21,20 @@ type EditChatModelModalComponentProps = {
   model: ChatModel
 }
 
+type EditableChatModel = ChatModel & {
+  reasoning?: {
+    enabled: boolean
+    reasoning_effort?: string
+  }
+  thinking?: {
+    enabled: boolean
+    thinking_budget: number
+  }
+  toolType?: 'none' | 'gemini'
+  isBaseModel?: boolean
+  customParameters?: { key: string; value: string }[]
+}
+
 export class EditChatModelModal extends ReactModal<EditChatModelModalComponentProps> {
   constructor(app: App, plugin: SmartComposerPlugin, model: ChatModel) {
     super({
@@ -41,6 +55,33 @@ function EditChatModelModalComponent({
   model,
 }: EditChatModelModalComponentProps) {
   const { t } = useLanguage()
+  const editableModel: EditableChatModel = model
+
+  const normalizeReasoningType = (
+    value: string,
+  ): 'none' | 'openai' | 'gemini' | 'base' => {
+    if (value === 'openai' || value === 'gemini' || value === 'base') {
+      return value
+    }
+    return 'none'
+  }
+
+  const normalizeReasoningEffort = (
+    value: string,
+  ): 'minimal' | 'low' | 'medium' | 'high' => {
+    switch (value) {
+      case 'minimal':
+      case 'low':
+      case 'medium':
+      case 'high':
+        return value
+      default:
+        return 'medium'
+    }
+  }
+
+  const normalizeToolType = (value: string): 'none' | 'gemini' =>
+    value === 'gemini' ? 'gemini' : 'none'
 
   // Update modal title
   React.useEffect(() => {
@@ -58,9 +99,9 @@ function EditChatModelModalComponent({
   })
 
   const initialReasoningType: 'none' | 'openai' | 'gemini' | 'base' = (() => {
-    if ((model as any).isBaseModel) return 'base'
-    if ((model as any).reasoning?.enabled) return 'openai'
-    if ((model as any).thinking?.enabled) return 'gemini'
+    if (editableModel.isBaseModel) return 'base'
+    if (editableModel.reasoning?.enabled) return 'openai'
+    if (editableModel.thinking?.enabled) return 'gemini'
     return 'none'
   })()
 
@@ -74,20 +115,26 @@ function EditChatModelModalComponent({
   )
   const [openaiEffort, setOpenaiEffort] = useState<
     'minimal' | 'low' | 'medium' | 'high'
-  >((model as any).reasoning?.reasoning_effort || 'medium')
-  const [geminiBudget, setGeminiBudget] = useState<string>(
-    `${(model as any).thinking?.thinking_budget ?? -1}`,
+  >(() =>
+    normalizeReasoningEffort(
+      editableModel.reasoning?.reasoning_effort ?? 'medium',
+    ),
+  )
+  const [geminiBudget, setGeminiBudget] = useState<string>(() =>
+    typeof editableModel.thinking?.thinking_budget === 'number'
+      ? `${editableModel.thinking.thinking_budget}`
+      : '-1',
   )
 
   // Tool type state
   const [toolType, setToolType] = useState<'none' | 'gemini'>(
-    (model as any).toolType ?? 'none',
+    normalizeToolType(editableModel.toolType ?? 'none'),
   )
   const [customParameters, setCustomParameters] = useState<
     { key: string; value: string }[]
   >(() =>
-    Array.isArray((model as any).customParameters)
-      ? (model as any).customParameters
+    Array.isArray(editableModel.customParameters)
+      ? editableModel.customParameters
       : [],
   )
 
@@ -115,7 +162,7 @@ function EditChatModelModalComponent({
       const newInternalId = ensureUniqueModelId(existingIds, baseInternalId)
 
       // Compose reasoning/thinking fields based on selection and provider
-      const updatedModel = {
+      const updatedModel: EditableChatModel = {
         ...chatModels[modelIndex],
         id: newInternalId,
         model: formData.model,
@@ -123,7 +170,7 @@ function EditChatModelModalComponent({
           formData.name && formData.name.trim().length > 0
             ? formData.name
             : undefined,
-      } as any
+      }
 
       // Apply according to selected reasoningType only (not limited by providerType)
       if (reasoningType === 'base') {
@@ -229,7 +276,7 @@ function EditChatModelModalComponent({
             base: t('settings.models.reasoningTypeBase'),
           }}
           onChange={(v: string) => {
-            setReasoningType(v as any)
+            setReasoningType(normalizeReasoningType(v))
             setAutoDetectReasoning(false)
           }}
         />
@@ -255,7 +302,9 @@ function EditChatModelModalComponent({
               medium: 'medium',
               high: 'high',
             }}
-            onChange={(v: string) => setOpenaiEffort(v as any)}
+            onChange={(v: string) =>
+              setOpenaiEffort(normalizeReasoningEffort(v))
+            }
           />
         </ObsidianSetting>
       )}
@@ -285,7 +334,7 @@ function EditChatModelModalComponent({
             none: t('settings.models.toolTypeNone'),
             gemini: t('settings.models.toolTypeGemini'),
           }}
-          onChange={(v: string) => setToolType(v as any)}
+          onChange={(v: string) => setToolType(normalizeToolType(v))}
         />
       </ObsidianSetting>
 

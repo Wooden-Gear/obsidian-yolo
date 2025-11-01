@@ -156,7 +156,6 @@ export function SearchableDropdown({
     <div
       ref={containerRef}
       className="smtcmp-searchable-dropdown"
-      style={{ position: 'relative' }}
     >
       {/* Input field */}
       <input

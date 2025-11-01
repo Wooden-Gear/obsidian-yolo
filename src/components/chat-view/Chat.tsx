@@ -1022,14 +1022,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           </button>
         )}
       </div>
-      <div
-        className="smtcmp-chat-input-wrapper"
-        style={{ position: 'relative', width: '100%' }}
-      >
-        <div
-          className="smtcmp-chat-input-settings-outer"
-          style={{ position: 'absolute', top: -23, right: -3, zIndex: 3 }}
-        >
+      <div className="smtcmp-chat-input-wrapper">
+        <div className="smtcmp-chat-input-settings-outer">
           <ChatSettingsButton
             overrides={conversationOverrides}
             onChange={(next) => {

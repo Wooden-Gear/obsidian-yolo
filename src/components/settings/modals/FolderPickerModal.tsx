@@ -47,8 +47,8 @@ function FolderPickerModalComponent({
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['']))
   const allFolders = useMemo(() => listAllFolderPaths(vault), [vault])
-  const allFiles = useMemo(() => {
-    if (!allowFiles) return [] as TFile[]
+  const allFiles = useMemo<TFile[]>(() => {
+    if (!allowFiles) return []
     try {
       const all = vault.getAllLoadedFiles?.()
       if (all && Array.isArray(all)) {
@@ -57,7 +57,8 @@ function FolderPickerModalComponent({
     } catch {
       // Ignore errors when fallback APIs are unavailable.
     }
-    return vault.getMarkdownFiles?.() ?? []
+    const fallback = vault.getMarkdownFiles?.()
+    return Array.isArray(fallback) ? fallback : []
   }, [vault, allowFiles])
 
   type Node = {
