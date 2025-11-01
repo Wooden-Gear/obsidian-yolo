@@ -40,6 +40,15 @@ export const ModelSelect = forwardRef<
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const selectedModelId = externalModelId ?? settings.chatModelId
 
+  const enabledModels = settings.chatModels.filter(({ enable }) => enable ?? true)
+  const totalModels = enabledModels.length
+  const providerOrder = settings.providers.map((p) => p.id)
+  const providerIdsInModels = Array.from(new Set(enabledModels.map((m) => m.providerId)))
+  const orderedProviderIds = [
+    ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
+    ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
+  ]
+
   // Get provider name for current model
   const getCurrentModelDisplay = () => {
     const currentModel = settings.chatModels.find(
@@ -139,21 +148,7 @@ export const ModelSelect = forwardRef<
             }}
           >
             {(() => {
-              const enabledModels = settings.chatModels.filter(
-                ({ enable }) => enable ?? true,
-              )
-              const providerOrder = settings.providers.map((p) => p.id)
-              const providerIdsInModels = Array.from(
-                new Set(enabledModels.map((m) => m.providerId)),
-              )
-              const orderedProviderIds = [
-                ...providerOrder.filter((id) =>
-                  providerIdsInModels.includes(id),
-                ),
-                ...providerIdsInModels.filter(
-                  (id) => !providerOrder.includes(id),
-                ),
-              ]
+              let runningIndex = 0
 
               return orderedProviderIds.flatMap((pid, groupIndex) => {
                 const groupModels = enabledModels.filter(
@@ -176,6 +171,9 @@ export const ModelSelect = forwardRef<
                     chatModelOption.name ||
                     chatModelOption.model ||
                     getModelDisplayName(chatModelOption.id)
+                  const currentIndex = runningIndex
+                  runningIndex += 1
+                  const isLastItem = currentIndex === totalModels - 1
                   return (
                     <DropdownMenu.RadioItem
                       key={chatModelOption.id}
@@ -183,6 +181,13 @@ export const ModelSelect = forwardRef<
                       value={chatModelOption.id}
                       ref={(element) => {
                         itemRefs.current[chatModelOption.id] = element
+                      }}
+                      onKeyDown={(event) => {
+                        if (isLastItem && event.key === 'ArrowDown') {
+                          event.preventDefault()
+                          setIsOpen(false)
+                          onModelSelected?.(selectedModelId)
+                        }
                       }}
                     >
                       {displayName}
