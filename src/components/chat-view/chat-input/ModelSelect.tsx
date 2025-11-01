@@ -117,7 +117,11 @@ export const ModelSelect = forwardRef<
 
       <DropdownMenu.Portal container={container}>
         <DropdownMenu.Content
-          className={contentClassName || 'smtcmp-popover'}
+          className={
+            contentClassName
+              ? `smtcmp-popover ${contentClassName}`
+              : 'smtcmp-popover smtcmp-smart-space-popover'
+          }
           side={side}
           sideOffset={sideOffset}
           align={align}
