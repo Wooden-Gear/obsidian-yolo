@@ -1263,7 +1263,10 @@ export default class SmartComposerPlugin extends Plugin {
     const from = preSelectionFrom ?? editor.getCursor('from')
 
     const notice = new Notice('正在生成改写...', 0)
-    let controller: AbortController | null = null
+    // 立即创建并注册 AbortController
+    const controller = new AbortController()
+    this.activeAbortControllers.add(controller)
+    
     try {
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1308,9 +1311,6 @@ export default class SmartComposerPlugin extends Plugin {
         },
       ]
 
-      controller = new AbortController()
-      this.activeAbortControllers.add(controller)
-
       const rewriteRequestBase: LLMRequestBase = {
         model: model.model,
         messages: requestMessages,
@@ -1339,6 +1339,11 @@ export default class SmartComposerPlugin extends Plugin {
         )
         let accumulated = ''
         for await (const chunk of streamIterator) {
+          // 每次循环都检查是否已被中止
+          if (controller.signal.aborted) {
+            break
+          }
+          
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue
@@ -1396,7 +1401,7 @@ export default class SmartComposerPlugin extends Plugin {
         this.registerTimeout(() => notice.hide(), 1200)
       }
     } finally {
-      if (controller) this.activeAbortControllers.delete(controller)
+      this.activeAbortControllers.delete(controller)
     }
   }
 
@@ -1908,7 +1913,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
   ) {
-    let controller: AbortController | null = null
+    // 立即创建并注册 AbortController，确保整个流程都能被中止
+    const controller = new AbortController()
+    this.activeAbortControllers.add(controller)
+    
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
@@ -2092,6 +2100,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         }
       }
 
+      // 检查是否已被中止（RAG 查询可能耗时较长）
+      if (controller.signal.aborted) {
+        return
+      }
+
       const limitedContextHasContent = limitedContext.trim().length > 0
       const contextSection =
         hasContext && limitedContextHasContent
@@ -2153,9 +2166,6 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
 
       // Stream response and progressively update ghost suggestion
-      controller = new AbortController()
-      this.activeAbortControllers.add(controller)
-
       const baseRequest: LLMRequestBase = {
         model: model.model,
         messages: requestMessages,
@@ -2211,6 +2221,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         )
 
         for await (const chunk of streamIterator) {
+          // 每次循环都检查是否已被中止
+          if (controller.signal.aborted) {
+            break
+          }
+          
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue
@@ -2252,7 +2267,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
     } finally {
       this.isContinuationInProgress = false
-      if (controller) this.activeAbortControllers.delete(controller)
+      this.activeAbortControllers.delete(controller)
     }
   }
 
