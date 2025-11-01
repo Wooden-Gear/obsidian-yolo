@@ -8,9 +8,21 @@ import { getModelDisplayName } from '../../../utils/model-id-utils'
 export function ModelSelect({
   modelId: externalModelId,
   onChange,
+  side = 'bottom',
+  sideOffset = 4,
+  align = 'end',
+  alignOffset = 0,
+  container,
+  contentClassName,
 }: {
   modelId?: string
   onChange?: (modelId: string) => void
+  side?: 'top' | 'bottom' | 'left' | 'right'
+  sideOffset?: number
+  align?: 'start' | 'center' | 'end'
+  alignOffset?: number
+  container?: HTMLElement
+  contentClassName?: string
 } = {}) {
   const { settings, setSettings } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
@@ -45,8 +57,19 @@ export function ModelSelect({
         </div>
       </DropdownMenu.Trigger>
 
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content className="smtcmp-popover">
+      <DropdownMenu.Portal container={container}>
+        <DropdownMenu.Content
+          className={contentClassName || 'smtcmp-popover'}
+          side={side}
+          sideOffset={sideOffset}
+          align={align}
+          alignOffset={alignOffset}
+          collisionPadding={8}
+          onPointerDownOutside={(e) => {
+            // 阻止事件冒泡，防止关闭父容器
+            e.stopPropagation()
+          }}
+        >
           <ul className="smtcmp-model-select-list">
             {(() => {
               const enabledModels = settings.chatModels.filter(

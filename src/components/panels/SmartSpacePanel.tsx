@@ -18,12 +18,17 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
+import {
+  SettingsProvider,
+  useSettings,
+} from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
 import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
+import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
 import DotLoader from '../common/DotLoader'
 
 type SmartSpacePanelProps = {
@@ -36,9 +41,11 @@ function SmartSpacePanelBody({
   editor,
   onClose,
   showQuickActions = true,
-}: SmartSpacePanelProps) {
+  containerRef,
+}: SmartSpacePanelProps & { containerRef?: React.RefObject<HTMLDivElement> }) {
   const plugin = usePlugin()
   const { t } = useLanguage()
+  const { settings, setSettings } = useSettings()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const [instruction, setInstruction] = useState('')
@@ -48,6 +55,11 @@ function SmartSpacePanelBody({
   const [useUrlContext, setUseUrlContext] = useState(false)
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
   const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
+  const [selectedModelId, setSelectedModelId] = useState<string>(
+    settings?.continuationOptions?.continuationModelId ??
+      settings?.chatModelId ??
+      '',
+  )
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
@@ -430,7 +442,10 @@ function SmartSpacePanelBody({
   }
 
   return (
-    <div className="smtcmp-smart-space-panel">
+    <div
+      className="smtcmp-smart-space-panel"
+      ref={containerRef as React.RefObject<HTMLDivElement>}
+    >
       {!isSubmitting ? (
         <>
           <div className="smtcmp-smart-space-input-card">
@@ -460,44 +475,71 @@ function SmartSpacePanelBody({
                   </div>
                 )}
               </div>
-              {hasGeminiTools && (
-                <div className="smtcmp-smart-space-tools">
-                  <button
-                    type="button"
-                    className={`smtcmp-smart-space-tool-button ${
-                      useWebSearch ? 'active' : ''
-                    }`}
-                    onClick={() => setUseWebSearch(!useWebSearch)}
-                    title={t(
-                      'chat.conversationSettings.webSearch',
-                      'Web Search',
-                    )}
-                    aria-label={t(
-                      'chat.conversationSettings.webSearch',
-                      'Web Search',
-                    )}
-                  >
-                    <Globe size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`smtcmp-smart-space-tool-button ${
-                      useUrlContext ? 'active' : ''
-                    }`}
-                    onClick={() => setUseUrlContext(!useUrlContext)}
-                    title={t(
-                      'chat.conversationSettings.urlContext',
-                      'URL Context',
-                    )}
-                    aria-label={t(
-                      'chat.conversationSettings.urlContext',
-                      'URL Context',
-                    )}
-                  >
-                    <Link size={14} />
-                  </button>
+              <div className="smtcmp-smart-space-controls">
+                <div className="smtcmp-smart-space-model-select">
+                  <ModelSelect
+                    modelId={selectedModelId}
+                    onChange={(modelId) => {
+                      setSelectedModelId(modelId)
+                      if (settings) {
+                        setSettings({
+                          ...settings,
+                          continuationOptions: {
+                            ...settings.continuationOptions,
+                            continuationModelId: modelId,
+                          },
+                        })
+                      }
+                    }}
+                    side="top"
+                    align="end"
+                    // 24 = 12px 卡片内边距 + 12px 面板间距，保证与下方快捷选项的间距一致
+                    sideOffset={24}
+                    // 负偏移让弹层右侧与输入框右缘（16px 内边距）保持对齐
+                    alignOffset={-16}
+                    container={containerRef?.current ?? undefined}
+                    contentClassName="smtcmp-smart-space-popover"
+                  />
                 </div>
-              )}
+                {hasGeminiTools && (
+                  <div className="smtcmp-smart-space-tools">
+                    <button
+                      type="button"
+                      className={`smtcmp-smart-space-tool-button ${
+                        useWebSearch ? 'active' : ''
+                      }`}
+                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      title={t(
+                        'chat.conversationSettings.webSearch',
+                        'Web Search',
+                      )}
+                      aria-label={t(
+                        'chat.conversationSettings.webSearch',
+                        'Web Search',
+                      )}
+                    >
+                      <Globe size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={`smtcmp-smart-space-tool-button ${
+                        useUrlContext ? 'active' : ''
+                      }`}
+                      onClick={() => setUseUrlContext(!useUrlContext)}
+                      title={t(
+                        'chat.conversationSettings.urlContext',
+                        'URL Context',
+                      )}
+                      aria-label={t(
+                        'chat.conversationSettings.urlContext',
+                        'URL Context',
+                      )}
+                    >
+                      <Link size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {error && (
@@ -582,6 +624,8 @@ export class SmartSpaceWidget extends WidgetType {
   private resizeObserver: ResizeObserver | null = null
   private isClosing = false
   private closeAnimationTimeout: number | null = null
+  private containerRef: React.RefObject<HTMLDivElement> =
+    React.createRef<HTMLDivElement>()
 
   constructor(
     private readonly options: {
@@ -704,13 +748,24 @@ export class SmartSpaceWidget extends WidgetType {
     this.root = createRoot(overlayContainer)
     this.root.render(
       <PluginProvider plugin={this.options.plugin}>
-        <LanguageProvider>
-          <SmartSpacePanelBody
-            editor={this.options.editor}
-            onClose={this.closeWithAnimation}
-            showQuickActions={this.options.showQuickActions}
-          />
-        </LanguageProvider>
+        <SettingsProvider
+          settings={this.options.plugin.settings}
+          setSettings={(newSettings) =>
+            this.options.plugin.setSettings(newSettings)
+          }
+          addSettingsChangeListener={(listener) =>
+            this.options.plugin.addSettingsChangeListener(listener)
+          }
+        >
+          <LanguageProvider>
+            <SmartSpacePanelBody
+              editor={this.options.editor}
+              onClose={this.closeWithAnimation}
+              showQuickActions={this.options.showQuickActions}
+              containerRef={this.containerRef}
+            />
+          </LanguageProvider>
+        </SettingsProvider>
       </PluginProvider>,
     )
 
