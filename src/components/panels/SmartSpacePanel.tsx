@@ -48,6 +48,9 @@ function SmartSpacePanelBody({
   const { settings, setSettings } = useSettings()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const modelSelectRef = useRef<HTMLButtonElement>(null)
+  const webSearchButtonRef = useRef<HTMLButtonElement>(null)
+  const urlContextButtonRef = useRef<HTMLButtonElement>(null)
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -418,6 +421,22 @@ function SmartSpacePanelBody({
       if (totalItems === 0) return
       event.preventDefault()
       focusLastItem()
+    } else if (event.key === 'ArrowRight') {
+      // 支持右方向键切换到模型选择框或工具按钮
+      event.preventDefault()
+      if (modelSelectRef.current) {
+        modelSelectRef.current.focus()
+      }
+    } else if (event.key === 'ArrowLeft') {
+      // 左方向键从输入框循环到最后一个控件
+      event.preventDefault()
+      if (urlContextButtonRef.current) {
+        urlContextButtonRef.current.focus()
+      } else if (webSearchButtonRef.current) {
+        webSearchButtonRef.current.focus()
+      } else if (modelSelectRef.current) {
+        modelSelectRef.current.focus()
+      }
     }
   }
 
@@ -478,6 +497,7 @@ function SmartSpacePanelBody({
               <div className="smtcmp-smart-space-controls">
                 <div className="smtcmp-smart-space-model-select">
                   <ModelSelect
+                    ref={modelSelectRef}
                     modelId={selectedModelId}
                     onChange={(modelId) => {
                       setSelectedModelId(modelId)
@@ -489,6 +509,35 @@ function SmartSpacePanelBody({
                             continuationModelId: modelId,
                           },
                         })
+                      }
+                    }}
+                    onKeyDown={(event, isMenuOpen) => {
+                      // 如果菜单已打开，只处理 Escape，其他键交给 Radix UI
+                      if (isMenuOpen) {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        }
+                        return
+                      }
+                      
+                      // 菜单未打开时的键盘导航
+                      if (event.key === 'Escape') {
+                        event.preventDefault()
+                        onClose()
+                      } else if (event.key === 'ArrowLeft') {
+                        // 左方向键返回输入框
+                        event.preventDefault()
+                        inputRef.current?.focus()
+                      } else if (event.key === 'ArrowRight') {
+                        // 右方向键移动到工具按钮（如果存在）
+                        event.preventDefault()
+                        if (webSearchButtonRef.current) {
+                          webSearchButtonRef.current.focus()
+                        } else {
+                          // 如果没有工具按钮，回到输入框
+                          inputRef.current?.focus()
+                        }
                       }
                     }}
                     side="top"
@@ -504,11 +553,26 @@ function SmartSpacePanelBody({
                 {hasGeminiTools && (
                   <div className="smtcmp-smart-space-tools">
                     <button
+                      ref={webSearchButtonRef}
                       type="button"
                       className={`smtcmp-smart-space-tool-button ${
                         useWebSearch ? 'active' : ''
                       }`}
                       onClick={() => setUseWebSearch(!useWebSearch)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        } else if (event.key === 'ArrowLeft') {
+                          // 左方向键返回模型选择框
+                          event.preventDefault()
+                          modelSelectRef.current?.focus()
+                        } else if (event.key === 'ArrowRight') {
+                          // 右方向键移动到下一个工具按钮
+                          event.preventDefault()
+                          urlContextButtonRef.current?.focus()
+                        }
+                      }}
                       title={t(
                         'chat.conversationSettings.webSearch',
                         'Web Search',
@@ -521,11 +585,26 @@ function SmartSpacePanelBody({
                       <Globe size={14} />
                     </button>
                     <button
+                      ref={urlContextButtonRef}
                       type="button"
                       className={`smtcmp-smart-space-tool-button ${
                         useUrlContext ? 'active' : ''
                       }`}
                       onClick={() => setUseUrlContext(!useUrlContext)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        } else if (event.key === 'ArrowLeft') {
+                          // 左方向键返回上一个工具按钮
+                          event.preventDefault()
+                          webSearchButtonRef.current?.focus()
+                        } else if (event.key === 'ArrowRight') {
+                          // 右方向键返回输入框（循环）
+                          event.preventDefault()
+                          inputRef.current?.focus()
+                        }
+                      }}
                       title={t(
                         'chat.conversationSettings.urlContext',
                         'URL Context',

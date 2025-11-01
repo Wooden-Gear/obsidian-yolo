@@ -1,29 +1,38 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
+import { forwardRef, useState } from 'react'
 
 import { useSettings } from '../../../contexts/settings-context'
 import { getModelDisplayName } from '../../../utils/model-id-utils'
 
-export function ModelSelect({
-  modelId: externalModelId,
-  onChange,
-  side = 'bottom',
-  sideOffset = 4,
-  align = 'end',
-  alignOffset = 0,
-  container,
-  contentClassName,
-}: {
-  modelId?: string
-  onChange?: (modelId: string) => void
-  side?: 'top' | 'bottom' | 'left' | 'right'
-  sideOffset?: number
-  align?: 'start' | 'center' | 'end'
-  alignOffset?: number
-  container?: HTMLElement
-  contentClassName?: string
-} = {}) {
+export const ModelSelect = forwardRef<
+  HTMLButtonElement,
+  {
+    modelId?: string
+    onChange?: (modelId: string) => void
+    side?: 'top' | 'bottom' | 'left' | 'right'
+    sideOffset?: number
+    align?: 'start' | 'center' | 'end'
+    alignOffset?: number
+    container?: HTMLElement
+    contentClassName?: string
+    onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>, isMenuOpen: boolean) => void
+  }
+>(
+  (
+    {
+      modelId: externalModelId,
+      onChange,
+      side = 'bottom',
+      sideOffset = 4,
+      align = 'end',
+      alignOffset = 0,
+      container,
+      contentClassName,
+      onKeyDown,
+    } = {},
+    ref,
+  ) => {
   const { settings, setSettings } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -46,9 +55,32 @@ export function ModelSelect({
     return effectiveModelId
   }
 
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    // 处理键盘导航
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      // 如果下拉菜单未打开，按上下方向键时打开它
+      if (!isOpen) {
+        event.preventDefault()
+        setIsOpen(true)
+        return
+      }
+      // 如果菜单已打开，不要阻止事件，让 Radix UI 接管
+      return
+    }
+    
+    // 调用传入的 onKeyDown 处理器来处理其他导航键
+    if (onKeyDown) {
+      onKeyDown(event, isOpen)
+    }
+  }
+
   return (
     <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenu.Trigger className="smtcmp-chat-input-model-select">
+      <DropdownMenu.Trigger
+        ref={ref}
+        className="smtcmp-chat-input-model-select"
+        onKeyDown={handleTriggerKeyDown}
+      >
         <div className="smtcmp-chat-input-model-select__model-name">
           {getCurrentModelDisplay()}
         </div>
@@ -69,8 +101,12 @@ export function ModelSelect({
             // 阻止事件冒泡，防止关闭父容器
             e.stopPropagation()
           }}
+          onCloseAutoFocus={(e) => {
+            // 防止关闭后自动聚焦，保持焦点在触发器上
+            e.preventDefault()
+          }}
         >
-          <ul className="smtcmp-model-select-list">
+          <div className="smtcmp-model-select-list">
             {(() => {
               const enabledModels = settings.chatModels.filter(
                 ({ enable }) => enable ?? true,
@@ -112,6 +148,7 @@ export function ModelSelect({
                   return (
                     <DropdownMenu.Item
                       key={chatModelOption.id}
+                      className="smtcmp-popover-item"
                       onSelect={() => {
                         if (onChange) {
                           onChange(chatModelOption.id)
@@ -122,9 +159,8 @@ export function ModelSelect({
                           })
                         }
                       }}
-                      asChild
                     >
-                      <li>{displayName}</li>
+                      {displayName}
                     </DropdownMenu.Item>
                   )
                 })
@@ -143,9 +179,11 @@ export function ModelSelect({
                 ]
               })
             })()}
-          </ul>
+          </div>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   )
-}
+})
+
+ModelSelect.displayName = 'ModelSelect'

@@ -843,7 +843,7 @@
 }
 
 /* Final override: Make model items indent to align with group label text */
-.smtcmp-popover .smtcmp-model-select-list > li {
+.smtcmp-popover .smtcmp-model-select-list > .smtcmp-popover-item {
   padding-left: calc(var(--size-4-2) + 8px);
 }
 
@@ -904,7 +904,7 @@
 }
 
 /* Must come after the generic li padding shorthand above */
-.smtcmp-popover .smtcmp-model-select-list > li {
+.smtcmp-popover .smtcmp-model-select-list > .smtcmp-popover-item {
   padding-left: calc(var(--size-4-2) + 8px);
 }
 
@@ -3853,41 +3853,37 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select {
-  font-size: var(--font-ui-smaller);
-  padding: 5px 9px 5px 10px;
-  height: auto;
+  font-size: var(--font-ui-smaller) !important;
+  padding: 5px 9px 5px 10px !important;
+  height: auto !important;
   min-height: 26px;
   border-radius: 8px;
-  border: 1px solid transparent;
-  background: color-mix(
-    in srgb,
-    var(--background-secondary) 70%,
-    transparent
-  );
-  color: var(--text-normal);
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--text-normal) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: none !important;
 }
 
-.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover {
+.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover,
+.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus,
+.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus-visible {
   background: color-mix(
     in srgb,
     var(--background-modifier-hover) 85%,
     transparent
-  );
+  ) !important;
   border-color: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 35%,
     transparent
-  );
+  ) !important;
   box-shadow: 
     0 2px 6px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   transform: translateY(-0.5px);
+  outline: none;
 }
 
 .smtcmp-smart-space-model-select
@@ -3928,6 +3924,10 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover
+  .smtcmp-chat-input-model-select__icon,
+.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus
+  .smtcmp-chat-input-model-select__icon,
+.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus-visible
   .smtcmp-chat-input-model-select__icon {
   opacity: 0.75;
 }
@@ -4043,7 +4043,7 @@ button.smtcmp-chat-input-model-select {
   margin: 6px 0;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > li {
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item {
   position: relative;
   padding: 8px 12px;
   margin: 2px 0;
@@ -4057,9 +4057,10 @@ button.smtcmp-chat-input-model-select {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.4;
+  outline: none;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > li::before {
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item::before {
   content: '';
   position: absolute;
   left: 0;
@@ -4073,18 +4074,20 @@ button.smtcmp-chat-input-model-select {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > li:hover {
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:hover,
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item[data-highlighted] {
   background: color-mix(in srgb, var(--background-modifier-hover) 80%, transparent);
   color: var(--text-normal);
   padding-left: 16px;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > li:hover::before {
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:hover::before,
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item[data-highlighted]::before {
   opacity: 1;
   transform: translateX(0);
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > li:active {
+.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:active {
   transform: scale(0.98);
 }
 
@@ -4112,9 +4115,16 @@ button.smtcmp-chat-input-model-select {
   transition: all 0.15s ease;
 }
 
-.smtcmp-smart-space-tool-button:hover {
+.smtcmp-smart-space-tool-button:hover,
+.smtcmp-smart-space-tool-button:focus,
+.smtcmp-smart-space-tool-button:focus-visible {
   color: var(--text-normal);
-  background: transparent;
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 50%,
+    transparent
+  ) !important;
+  outline: none;
 }
 
 .smtcmp-smart-space-tool-button.active {
@@ -4122,9 +4132,16 @@ button.smtcmp-chat-input-model-select {
   background: transparent;
 }
 
-.smtcmp-smart-space-tool-button.active:hover {
+.smtcmp-smart-space-tool-button.active:hover,
+.smtcmp-smart-space-tool-button.active:focus,
+.smtcmp-smart-space-tool-button.active:focus-visible {
   color: var(--interactive-accent-hover);
-  background: transparent;
+  background: color-mix(
+    in srgb,
+    var(--interactive-accent) 10%,
+    transparent
+  ) !important;
+  outline: none;
 }
 
 /* Floating Panel */
