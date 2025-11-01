@@ -50,6 +50,12 @@ export function ProvidersAndModelsSection({
   const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
   const lastInsertIndexRef = React.useRef<number | null>(null)
+  
+  // Provider drag state
+  const dragProviderRef = React.useRef<number | null>(null)
+  const dragOverProviderRef = React.useRef<HTMLDivElement | null>(null)
+  const lastProviderDropPosRef = React.useRef<'before' | 'after' | null>(null)
+  const lastProviderInsertIndexRef = React.useRef<number | null>(null)
 
   // Robustly highlight the moved row after DOM re-render
   const triggerProviderDropSuccess = (providerId: string, movedId: string) => {
@@ -434,6 +440,191 @@ export function ProvidersAndModelsSection({
 
   const isEnabled = (enable: boolean | undefined | null) => enable ?? true
 
+  // Provider drag handlers
+  const handleProviderDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    index: number,
+  ) => {
+    dragProviderRef.current = index
+    event.dataTransfer?.setData('text/plain', `${index}`)
+    event.dataTransfer.effectAllowed = 'move'
+
+    const section = event.currentTarget
+    section.classList.add('smtcmp-provider-dragging')
+    const handle = section.querySelector('.smtcmp-provider-drag-handle')
+    if (handle) handle.classList.add('smtcmp-drag-handle--active')
+  }
+
+  const handleProviderDragEnd = () => {
+    dragProviderRef.current = null
+    if (dragOverProviderRef.current) {
+      dragOverProviderRef.current.classList.remove(
+        'smtcmp-provider-drag-over-before',
+        'smtcmp-provider-drag-over-after',
+      )
+      dragOverProviderRef.current = null
+    }
+    lastProviderDropPosRef.current = null
+    lastProviderInsertIndexRef.current = null
+    const dragging = document.querySelector('.smtcmp-provider-dragging')
+    if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
+    const activeHandle = document.querySelector(
+      '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
+  }
+
+  const handleProviderDragOver = (
+    event: React.DragEvent<HTMLDivElement>,
+    targetIndex: number,
+  ) => {
+    event.preventDefault()
+
+    if (dragProviderRef.current === null) {
+      return
+    }
+
+    const section = event.currentTarget
+    const rect = section.getBoundingClientRect()
+    const rel = (event.clientY - rect.top) / rect.height
+
+    // If hovering the section being dragged, suppress indicator
+    if (dragProviderRef.current === targetIndex) {
+      section.classList.remove(
+        'smtcmp-provider-drag-over-before',
+        'smtcmp-provider-drag-over-after',
+      )
+      if (dragOverProviderRef.current && dragOverProviderRef.current !== section) {
+        dragOverProviderRef.current.classList.remove(
+          'smtcmp-provider-drag-over-before',
+          'smtcmp-provider-drag-over-after',
+        )
+      }
+      dragOverProviderRef.current = section
+      lastProviderDropPosRef.current = null
+      lastProviderInsertIndexRef.current = null
+      return
+    }
+
+    // Hysteresis around the midline
+    const HYSTERESIS = 0.05
+    let dropAfter: boolean
+    if (lastProviderDropPosRef.current) {
+      if (rel > 0.5 + HYSTERESIS) dropAfter = true
+      else if (rel < 0.5 - HYSTERESIS) dropAfter = false
+      else dropAfter = lastProviderDropPosRef.current === 'after'
+    } else {
+      dropAfter = rel > 0.5
+    }
+
+    const sourceIndex = dragProviderRef.current
+    let insertIndex = targetIndex
+    if (dropAfter) insertIndex += 1
+    if (sourceIndex < targetIndex) insertIndex -= 1
+
+    if (lastProviderInsertIndexRef.current === insertIndex) {
+      return
+    }
+
+    if (dragOverProviderRef.current) {
+      dragOverProviderRef.current.classList.remove(
+        'smtcmp-provider-drag-over-before',
+        'smtcmp-provider-drag-over-after',
+      )
+    }
+
+    const desiredClass = dropAfter
+      ? 'smtcmp-provider-drag-over-after'
+      : 'smtcmp-provider-drag-over-before'
+    section.classList.remove(
+      'smtcmp-provider-drag-over-before',
+      'smtcmp-provider-drag-over-after',
+    )
+    section.classList.add(desiredClass)
+    dragOverProviderRef.current = section
+    lastProviderDropPosRef.current = dropAfter ? 'after' : 'before'
+    lastProviderInsertIndexRef.current = insertIndex
+  }
+
+  const handleProviderDrop = async (
+    event: React.DragEvent<HTMLDivElement>,
+    targetIndex: number,
+  ) => {
+    event.preventDefault()
+    const sectionEl = event.currentTarget as HTMLDivElement
+    const dragInfo = dragProviderRef.current
+    dragProviderRef.current = null
+    
+    if (dragInfo === null) {
+      return
+    }
+
+    const updatedProviders = [...settings.providers]
+    const [moved] = updatedProviders.splice(dragInfo, 1)
+    if (!moved) {
+      return
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const dropAfter = event.clientY - rect.top > rect.height / 2
+
+    let insertIndex = targetIndex + (dropAfter ? 1 : 0)
+    if (dragInfo < insertIndex) {
+      insertIndex -= 1
+    }
+    if (insertIndex < 0) {
+      insertIndex = 0
+    }
+    if (insertIndex > updatedProviders.length) {
+      insertIndex = updatedProviders.length
+    }
+
+    updatedProviders.splice(insertIndex, 0, moved)
+
+    await setSettings({
+      ...settings,
+      providers: updatedProviders,
+    })
+
+    // clear visuals
+    sectionEl?.classList.remove(
+      'smtcmp-provider-drag-over-before',
+      'smtcmp-provider-drag-over-after',
+    )
+    const dragging = document.querySelector('.smtcmp-provider-dragging')
+    if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
+    const activeHandle = document.querySelector(
+      '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
+    )
+    if (activeHandle)
+      activeHandle.classList.remove('smtcmp-drag-handle--active')
+
+    dragOverProviderRef.current = null
+    lastProviderDropPosRef.current = null
+    lastProviderInsertIndexRef.current = null
+
+    // success feedback on moved provider
+    triggerProviderDropSuccessFeedback(moved.id)
+  }
+
+  const triggerProviderDropSuccessFeedback = (movedId: string) => {
+    const tryFind = (attempt = 0) => {
+      const movedSection = document.querySelector(
+        `.smtcmp-provider-section[data-provider-id="${movedId}"]`,
+      )
+      if (movedSection) {
+        movedSection.classList.add('smtcmp-provider-drop-success')
+        window.setTimeout(() => {
+          movedSection.classList.remove('smtcmp-provider-drop-success')
+        }, 700)
+      } else if (attempt < 8) {
+        window.setTimeout(() => tryFind(attempt + 1), 50)
+      }
+    }
+    requestAnimationFrame(() => tryFind())
+  }
+
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header">
@@ -453,7 +644,7 @@ export function ProvidersAndModelsSection({
       </div>
 
       <div className="smtcmp-providers-models-container">
-        {settings.providers.map((provider) => {
+        {settings.providers.map((provider, index) => {
           const isExpanded = expandedProviders.has(provider.id)
           const chatModels = settings.chatModels.filter(
             (m) => m.providerId === provider.id,
@@ -463,7 +654,16 @@ export function ProvidersAndModelsSection({
           )
 
           return (
-            <div key={provider.id} className="smtcmp-provider-section">
+            <div 
+              key={provider.id} 
+              className="smtcmp-provider-section"
+              data-provider-id={provider.id}
+              draggable
+              onDragStart={(event) => handleProviderDragStart(event, index)}
+              onDragOver={(event) => handleProviderDragOver(event, index)}
+              onDrop={(event) => void handleProviderDrop(event, index)}
+              onDragEnd={handleProviderDragEnd}
+            >
               <div
                 className="smtcmp-provider-header smtcmp-clickable"
                 onClick={() => toggleProvider(provider.id)}
@@ -476,6 +676,15 @@ export function ProvidersAndModelsSection({
                   }
                 }}
               >
+                <span 
+                  className="smtcmp-provider-drag-handle"
+                  aria-label="Drag to reorder"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <GripVertical />
+                </span>
+                
                 <div className="smtcmp-provider-expand-btn">
                   {isExpanded ? (
                     <ChevronDown size={16} />

@@ -2747,6 +2747,61 @@ button.smtcmp-chat-input-model-select {
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   overflow: hidden;
+  cursor: grab;
+}
+
+.smtcmp-provider-section:active {
+  cursor: grabbing;
+}
+
+/* Provider drag visual feedback */
+.smtcmp-provider-dragging {
+  background-color: var(--background-modifier-hover);
+  transform: translateX(2px) scale(0.995);
+  opacity: 0.98;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.smtcmp-provider-drag-over-before {
+  border-top: 2px solid var(--interactive-accent);
+  transition: border-top 120ms ease;
+}
+
+.smtcmp-provider-drag-over-after {
+  border-bottom: 2px solid var(--interactive-accent);
+  transition: border-bottom 120ms ease;
+}
+
+.smtcmp-provider-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  cursor: grab;
+  user-select: none;
+  padding: 0;
+  transition:
+    transform 120ms ease,
+    color 120ms ease;
+}
+
+.smtcmp-provider-drag-handle:hover {
+  color: var(--text-normal);
+}
+
+.smtcmp-provider-drag-handle:active {
+  cursor: grabbing;
+}
+
+.smtcmp-provider-drag-handle svg {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  stroke-width: var(--icon-stroke);
+}
+
+/* Provider drop success animation - reuse existing drop-flash animation */
+.smtcmp-provider-drop-success {
+  animation: smtcmp-drop-flash 650ms ease-out;
 }
 
 .smtcmp-provider-header {
