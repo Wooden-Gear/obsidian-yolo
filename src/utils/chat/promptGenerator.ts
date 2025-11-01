@@ -464,7 +464,7 @@ ${await this.getWebsiteContent(url)}
     // When both RAG and tools are available, prioritize based on context
     const useRAGPrompt = shouldUseRAG && !hasTools
 
-    const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has, particularly about editing and organizing markdown files in Obsidian.
+    const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has.
 
 1. Format your response in markdown.
 
@@ -504,7 +504,7 @@ ${hasTools ? '7' : '4'}. When the user is asking for edits to their markdown, pl
 The user has full access to the file, so they prefer seeing only the changes in the markdown. Often this will mean that the start/end of the file will be skipped, but that's okay! Rewrite the entire file only if specifically requested. Always provide a brief explanation of the updates, except when the user specifically asks for just the content.
 `
 
-    const systemPromptRAG = `You are an intelligent assistant to help answer any questions that the user has, particularly about editing and organizing markdown files in Obsidian. You will be given your conversation history with them and potentially relevant blocks of markdown content from the current vault.
+    const systemPromptRAG = `You are an intelligent assistant to help answer any questions that the user has. You will be given your conversation history with them and potentially relevant blocks of markdown content from the current vault.
       
 1. Do not lie or make up facts.
 
