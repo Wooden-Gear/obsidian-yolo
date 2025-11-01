@@ -3960,6 +3960,63 @@ button.smtcmp-chat-input-model-select {
   color: var(--h1-color, var(--interactive-accent));
 }
 
+.smtcmp-chat-sidebar-model-select {
+  flex: 1;
+  display: flex;
+  margin-left: -6px;
+}
+
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100% !important;
+  padding: 6px 10px 6px 6px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  color: var(--text-normal) !important;
+  gap: 8px;
+  font-size: var(--font-ui-smaller) !important;
+  font-weight: var(--font-medium) !important;
+  min-height: 30px;
+  transition: all 0.18s ease;
+}
+
+
+
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select__model-name {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select__icon {
+  margin-left: 6px;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  transition: opacity 0.18s ease;
+}
+
+*** End Patch
+
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select:hover
+  .smtcmp-chat-input-model-select__icon,
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select:focus
+  .smtcmp-chat-input-model-select__icon,
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select:focus-visible
+  .smtcmp-chat-input-model-select__icon {
+  opacity: 0.85;
+}
+
 /* Smart Space Model Popover - 精致美观的设计 */
 .smtcmp-smart-space-popover {
   z-index: 10000;
@@ -3986,6 +4043,26 @@ button.smtcmp-chat-input-model-select {
   animation: smtcmp-smart-space-popover-fade-in 0.25s
     cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(16px);
+}
+
+.smtcmp-chat-sidebar-popover {
+  background: var(--huisede1, var(--background-secondary));
+  border-color: color-mix(
+    in srgb,
+    var(--background-modifier-border) 75%,
+    transparent
+  );
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.12),
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--background-modifier-border) 35%,
+        transparent
+      );
+  backdrop-filter: none;
+  width: var(--radix-dropdown-menu-trigger-width, auto);
+  min-width: var(--radix-dropdown-menu-trigger-width, 220px);
 }
 
 @keyframes smtcmp-smart-space-popover-fade-in {
@@ -4051,6 +4128,10 @@ button.smtcmp-chat-input-model-select {
   opacity: 0.8;
 }
 
+.smtcmp-chat-sidebar-popover .smtcmp-popover-group-label {
+  color: color-mix(in srgb, var(--text-muted) 75%, transparent);
+}
+
 .smtcmp-smart-space-popover .smtcmp-popover-group-separator {
   height: 1px;
   background: linear-gradient(
@@ -4106,6 +4187,15 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item[data-highlighted]::before {
   opacity: 1;
   transform: translateX(0);
+}
+
+.smtcmp-chat-sidebar-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item:hover,
+.smtcmp-chat-sidebar-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item[data-highlighted] {
+  background: color-mix(in srgb, var(--background-modifier-hover) 90%, transparent);
 }
 
 .smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:active {
