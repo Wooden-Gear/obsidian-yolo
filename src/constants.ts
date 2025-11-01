@@ -51,9 +51,6 @@ export const DEFAULT_LEARNING_MODE_PROMPT = `user现在正在学习，user要求
 
 **禁止直接给答案或替用户做作业**。若用户提问数学/逻辑题，或上传题目图片，**首次回复不得解答**。应与用户逐步讨论问题，每次只提一个问题，等待用户回应后再继续。`
 
-export const DEFAULT_CONTINUATION_SYSTEM_PROMPT =
-  'You are a helpful writing assistant. Continue writing from the provided context without repeating or paraphrasing the context. Match the tone, language, and style. Output only the continuation text.'
-
 export const DEFAULT_CHAT_TITLE_PROMPT = {
   en: "You are a title generator. Generate a concise conversation title (max 10 chars) from the user's first message; remove extra punctuation/quotes; avoid generic or sensitive content. Output the title only.",
   zh: '你是一个标题生成器。请基于用户的第一条消息生成一个简洁的会话标题，最多 10 个字符；去除多余标点与引号；避免过于泛化或敏感内容。直接输出标题本身。',

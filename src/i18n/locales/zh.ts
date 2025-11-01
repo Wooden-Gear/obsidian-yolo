@@ -430,9 +430,6 @@ export const zh: TranslationKeys = {
         '若补全请求超过该时间仍未返回则强制中止。',
       tabCompletionMaxRetries: '最大重试次数',
       tabCompletionMaxRetriesDesc: '补全请求超时后自动重试的次数上限。',
-      defaultSystemPrompt: '默认续写系统提示词',
-      defaultSystemPromptDesc:
-        '此提示将作为系统提示用于 AI 续写。留空则使用内置默认值。',
     },
     etc: {
       title: '其他',

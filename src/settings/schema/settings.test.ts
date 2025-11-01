@@ -1,5 +1,3 @@
-import { DEFAULT_CONTINUATION_SYSTEM_PROMPT } from '../../constants'
-
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
@@ -61,7 +59,6 @@ describe('parseSmartComposerSettings', () => {
 
     expect(result.continuationOptions).toMatchObject({
       enableSuperContinuation: true,
-      defaultSystemPrompt: DEFAULT_CONTINUATION_SYSTEM_PROMPT,
       enableSmartSpace: true,
       enableKeywordTrigger: true,
       triggerKeyword: 'cc',

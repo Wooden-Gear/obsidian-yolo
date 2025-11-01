@@ -360,8 +360,6 @@ export type TranslationKeys = {
       tabCompletionRequestTimeoutDesc: string
       tabCompletionMaxRetries: string
       tabCompletionMaxRetriesDesc: string
-      defaultSystemPrompt: string
-      defaultSystemPromptDesc: string
     }
     etc: {
       title: string
