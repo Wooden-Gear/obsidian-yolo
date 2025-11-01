@@ -54,8 +54,12 @@ function SmartSpacePanelBody({
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [useWebSearch, setUseWebSearch] = useState(false)
-  const [useUrlContext, setUseUrlContext] = useState(false)
+  const [useWebSearch, setUseWebSearch] = useState(
+    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false
+  )
+  const [useUrlContext, setUseUrlContext] = useState(
+    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
+  )
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
   const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
   const [selectedModelId, setSelectedModelId] = useState<string>(
@@ -571,7 +575,19 @@ function SmartSpacePanelBody({
                       className={`smtcmp-smart-space-tool-button ${
                         useWebSearch ? 'active' : ''
                       }`}
-                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      onClick={() => {
+                        const newValue = !useWebSearch
+                        setUseWebSearch(newValue)
+                        if (settings) {
+                          setSettings({
+                            ...settings,
+                            continuationOptions: {
+                              ...settings.continuationOptions,
+                              smartSpaceUseWebSearch: newValue,
+                            },
+                          })
+                        }
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === 'Escape') {
                           event.preventDefault()
@@ -603,7 +619,19 @@ function SmartSpacePanelBody({
                       className={`smtcmp-smart-space-tool-button ${
                         useUrlContext ? 'active' : ''
                       }`}
-                      onClick={() => setUseUrlContext(!useUrlContext)}
+                      onClick={() => {
+                        const newValue = !useUrlContext
+                        setUseUrlContext(newValue)
+                        if (settings) {
+                          setSettings({
+                            ...settings,
+                            continuationOptions: {
+                              ...settings.continuationOptions,
+                              smartSpaceUseUrlContext: newValue,
+                            },
+                          })
+                        }
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === 'Escape') {
                           event.preventDefault()

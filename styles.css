@@ -4108,7 +4108,7 @@ button.smtcmp-chat-input-model-select {
   padding: 0;
   color: var(--text-muted);
   background: transparent !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   box-shadow: none !important;
   border-radius: var(--radius-s);
   cursor: pointer;
@@ -4124,12 +4124,18 @@ button.smtcmp-chat-input-model-select {
     var(--background-modifier-hover) 50%,
     transparent
   ) !important;
+  border-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 50%,
+    transparent
+  ) !important;
   outline: none;
 }
 
 .smtcmp-smart-space-tool-button.active {
   color: var(--interactive-accent);
   background: transparent;
+  border-color: var(--interactive-accent) !important;
 }
 
 .smtcmp-smart-space-tool-button.active:hover,
@@ -4141,6 +4147,7 @@ button.smtcmp-chat-input-model-select {
     var(--interactive-accent) 10%,
     transparent
   ) !important;
+  border-color: var(--interactive-accent-hover) !important;
   outline: none;
 }
 
