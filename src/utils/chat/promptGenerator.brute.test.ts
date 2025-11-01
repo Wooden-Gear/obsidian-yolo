@@ -1,7 +1,9 @@
 /**
  * Minimal tests for PromptGenerator brute mode behavior
  */
-import { App, TFile } from 'obsidian'
+import { App } from 'obsidian'
+import type { RAGEngine } from '../../core/rag/ragEngine'
+import type { ContentPart } from '../../types/llm/request'
 
 import { PromptGenerator } from './promptGenerator'
 
@@ -24,10 +26,16 @@ describe('PromptGenerator brute mode', () => {
       assistants: [],
     }
 
-    const gen = new PromptGenerator(async () => ({}) as any, fakeApp, settings)
+    const gen = new PromptGenerator(
+      async (): Promise<RAGEngine> => {
+        throw new Error('RAG engine should not be used in brute mode tests')
+      },
+      fakeApp,
+      settings,
+    )
 
-    const file1 = { path: 'a.md' } as unknown as TFile
-    const file2 = { path: 'b.md' } as unknown as TFile
+    const file1 = { path: 'a.md' }
+    const file2 = { path: 'b.md' }
 
     const message: any = {
       role: 'user',
@@ -45,8 +53,14 @@ describe('PromptGenerator brute mode', () => {
     })
 
     expect(shouldUseRAG).toBe(false)
-    const textPart = (promptContent as any[]).find((p) => p.type === 'text')
-    expect(textPart.text).toContain('```a.md')
-    expect(textPart.text).toContain('```b.md')
+    if (!Array.isArray(promptContent)) {
+      throw new Error('Expected promptContent to be an array')
+    }
+    type TextPart = Extract<ContentPart, { type: 'text' }>
+    const textPart = promptContent.find(
+      (part): part is TextPart => part.type === 'text',
+    )
+    expect(textPart?.text).toContain('```a.md')
+    expect(textPart?.text).toContain('```b.md')
   })
 })

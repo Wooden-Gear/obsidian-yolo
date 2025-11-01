@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
+import { useDynamicStyleClass } from '../../../hooks/useDynamicStyleClass'
 
 export default function ChatSettingsButton({
   overrides,
@@ -68,6 +69,17 @@ export default function ChatSettingsButton({
     }
   }, [])
 
+  const popoverWidthStyle = useMemo(() => {
+    if (typeof panelWidth !== 'number') return {}
+    return { width: `${panelWidth}px` }
+  }, [panelWidth])
+
+  const popoverClassName = useDynamicStyleClass(
+    'smtcmp-popover-content smtcmp-chat-settings-content',
+    'smtcmp-chat-settings-width',
+    popoverWidthStyle,
+  )
+
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -83,11 +95,10 @@ export default function ChatSettingsButton({
         </button>
       </Popover.Trigger>
       <Popover.Content
-        className="smtcmp-popover-content smtcmp-chat-settings-content"
+        className={popoverClassName}
         side="bottom"
         align="end"
         sideOffset={6}
-        style={{ width: panelWidth }}
       >
         <div className="smtcmp-chat-settings">
           <div className="smtcmp-chat-settings-section">

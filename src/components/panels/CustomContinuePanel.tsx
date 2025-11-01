@@ -19,6 +19,11 @@ import { Root, createRoot } from 'react-dom/client'
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { getChatModelClient } from '../../core/llm/manager'
+import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
+import {
+  clearDynamicStyleClass,
+  updateDynamicStyleClass,
+} from '../../utils/dom/dynamicStyleManager'
 import DotLoader from '../common/DotLoader'
 
 type CustomContinuePanelProps = {
@@ -42,6 +47,7 @@ function CustomContinuePanelBody({
   const [useWebSearch, setUseWebSearch] = useState(false)
   const [useUrlContext, setUseUrlContext] = useState(false)
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
+  const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
@@ -66,18 +72,31 @@ function CustomContinuePanelBody({
 
   // 自动调整 textarea 高度
   useEffect(() => {
-    const textarea = inputRef.current
-    if (textarea) {
-      textarea.style.height = 'auto'
+    let rafId: number | null = null
+    setTextareaHeight(null)
+    rafId = window.requestAnimationFrame(() => {
+      const textarea = inputRef.current
+      if (!textarea) return
       const scrollHeight = textarea.scrollHeight
-      const maxHeight = 200 // 最大高度约 8-10 行
-      textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
+      const maxHeight = 200
+      setTextareaHeight(Math.min(scrollHeight, maxHeight))
+    })
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId)
+      }
     }
   }, [instruction])
 
   useEffect(() => {
     setIsSubmitConfirmPending(false)
   }, [instruction])
+
+  const textareaClassName = useDynamicStyleClass(
+    'smtcmp-custom-continue-input',
+    'smtcmp-custom-continue-input-height',
+    textareaHeight !== null ? { height: `${textareaHeight}px` } : {},
+  )
 
   const sections = useMemo(() => {
     type SectionItem = {
@@ -422,7 +441,7 @@ function CustomContinuePanelBody({
               <div className="smtcmp-custom-continue-input-wrapper">
                 <textarea
                   ref={inputRef}
-                  className="smtcmp-custom-continue-input"
+                  className={textareaClassName}
                   placeholder={t(
                     'chat.customContinuePromptPlaceholder',
                     'Ask AI...',
@@ -633,6 +652,9 @@ export class CustomContinueWidget extends WidgetType {
     if (this.overlayContainer?.parentNode) {
       this.overlayContainer.parentNode.removeChild(this.overlayContainer)
     }
+    if (this.overlayContainer) {
+      clearDynamicStyleClass(this.overlayContainer)
+    }
     this.overlayContainer = null
     this.anchor = null
   }
@@ -795,8 +817,14 @@ export class CustomContinueWidget extends WidgetType {
 
     const top = anchorRect.bottom + offsetY
 
-    this.overlayContainer.style.width = `${maxPanelWidth}px`
-    this.overlayContainer.style.left = `${Math.round(left)}px`
-    this.overlayContainer.style.top = `${Math.round(top)}px`
+    updateDynamicStyleClass(
+      this.overlayContainer,
+      'smtcmp-custom-continue-overlay-pos',
+      {
+        width: maxPanelWidth,
+        left: Math.round(left),
+        top: Math.round(top),
+      },
+    )
   }
 }

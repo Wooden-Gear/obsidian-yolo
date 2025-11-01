@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
+import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 
 export type FloatingPanelOptions = {
   title?: string
@@ -67,16 +68,35 @@ export class ReactFloatingPanel<T> {
         height: number | undefined
       } | null>(null)
       const panelRef = useRef<HTMLDivElement>(null)
+      const panelStyleVars = useMemo(() => {
+        const vars: Record<string, string | undefined> = {
+          '--smtcmp-panel-top': `${Math.round(pos.y)}px`,
+          '--smtcmp-panel-left': `${Math.round(pos.x)}px`,
+          '--smtcmp-panel-width': `${Math.round(size.width)}px`,
+        }
+        vars['--smtcmp-panel-height'] =
+          typeof size.height === 'number'
+            ? `${Math.round(size.height)}px`
+            : undefined
+        return vars
+      }, [pos.x, pos.y, size.height, size.width])
+
+      const panelClassName = useDynamicStyleClass(
+        'smtcmp-floating-panel',
+        'smtcmp-floating-panel-state',
+        panelStyleVars,
+      )
 
       useEffect(() => {
-        function onKeyDown(e: KeyboardEvent) {
-          if (e.key === 'Escape' && (options?.closeOnEscape ?? true)) onClose()
+        if (!(options?.closeOnEscape ?? true)) {
+          return
         }
-        if (options?.closeOnEscape ?? true) {
-          document.addEventListener('keydown', onKeyDown as any)
-          return () => document.removeEventListener('keydown', onKeyDown as any)
+        const onKeyDown = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') onClose()
         }
-      }, [onClose])
+        document.addEventListener('keydown', onKeyDown)
+        return () => document.removeEventListener('keydown', onKeyDown)
+      }, [onClose, options?.closeOnEscape])
 
       // Close on outside click
       useEffect(() => {
@@ -144,18 +164,7 @@ export class ReactFloatingPanel<T> {
       return (
         <PluginProvider plugin={this.plugin}>
           <LanguageProvider>
-            <div
-              ref={panelRef}
-              className="smtcmp-floating-panel"
-              style={
-                {
-                  '--smtcmp-panel-top': `${pos.y}px`,
-                  '--smtcmp-panel-left': `${pos.x}px`,
-                  '--smtcmp-panel-width': `${size.width}px`,
-                  '--smtcmp-panel-height': `${size.height}px`,
-                } as React.CSSProperties
-              }
-            >
+            <div ref={panelRef} className={panelClassName}>
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
                 <div

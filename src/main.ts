@@ -55,6 +55,11 @@ import {
   readMultipleTFiles,
   readTFileContent,
 } from './utils/obsidian'
+import {
+  LLMRequestBase,
+  LLMRequestNonStreaming,
+  RequestMessage,
+} from './types/llm/request'
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
@@ -265,18 +270,15 @@ export default class SmartComposerPlugin extends Plugin {
     dy = 8,
   ): { x: number; y: number } | undefined {
     try {
-      const cm: any = (editor as any).cm
-      const head: number | undefined = cm?.state?.selection?.main?.head
-      if (cm?.coordsAtPos && typeof head === 'number') {
-        const rect = cm.coordsAtPos(head)
-        if (rect) {
-          const base = rect.bottom ?? rect.top
-          if (typeof base === 'number') {
-            const y = base + dy
-            return { x: rect.left, y }
-          }
-        }
-      }
+      const view = this.getEditorView(editor)
+      if (!view) return undefined
+      const head = view.state.selection.main.head
+      const rect = view.coordsAtPos(head)
+      if (!rect) return undefined
+      const base = typeof rect.bottom === 'number' ? rect.bottom : rect.top
+      if (typeof base !== 'number') return undefined
+      const y = base + dy
+      return { x: rect.left, y }
     } catch {
       // ignore
     }
@@ -491,7 +493,7 @@ export default class SmartComposerPlugin extends Plugin {
     if (!view) return
 
     // Get CodeMirror view
-    const cmEditor = (editor as any).cm as EditorView
+    const cmEditor = this.getEditorView(editor)
     if (!cmEditor) return
 
     // Save selection positions before they get lost
@@ -600,8 +602,8 @@ export default class SmartComposerPlugin extends Plugin {
             this.lastSmartSpaceSlash = null
             return false
           }
-          const cm = (editor as any)?.cm
-          if (cm && cm !== view) {
+          const activeView = this.getEditorView(editor)
+          if (activeView && activeView !== view) {
             this.lastSmartSpaceSlash = null
             return false
           }
@@ -802,8 +804,24 @@ export default class SmartComposerPlugin extends Plugin {
 
   private getEditorView(editor: Editor | null | undefined): EditorView | null {
     if (!editor) return null
-    const view = (editor as any)?.cm as EditorView | undefined
-    return view ?? null
+    if (this.isEditorWithCodeMirror(editor)) {
+      const { cm } = editor
+      if (cm instanceof EditorView) {
+        return cm
+      }
+    }
+    return null
+  }
+
+  private isEditorWithCodeMirror(
+    editor: Editor,
+  ): editor is Editor & { cm?: EditorView } {
+    return (
+      typeof editor === 'object' &&
+      editor !== null &&
+      'cm' in editor &&
+      typeof (editor as Record<string, unknown>)['cm'] !== 'undefined'
+    )
   }
 
   private ensureInlineSuggestionExtension(view: EditorView) {
@@ -980,7 +998,7 @@ export default class SmartComposerPlugin extends Plugin {
           ? customSystemPrompt
           : DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT
 
-      const isBaseModel = Boolean((model as any).isBaseModel)
+      const isBaseModel = Boolean(model.isBaseModel)
       const baseModelSpecialPrompt = (
         this.settings.chatOptions.baseModelSpecialPrompt ?? ''
       ).trim()
@@ -992,17 +1010,17 @@ export default class SmartComposerPlugin extends Plugin {
         ? `${basePromptSection}${systemPrompt}\n\n${context}\n\nPredict the next words that continue naturally.`
         : `${basePromptSection}${titleSection}Recent context:\n\n${context}\n\nProvide the next words that would help continue naturally.`
 
-      const requestMessages = [
+      const requestMessages: RequestMessage[] = [
         ...(isBaseModel
           ? []
-          : ([
+          : [
               {
-                role: 'system' as const,
+                role: 'system',
                 content: systemPrompt,
               },
-            ] as const)),
+            ]),
         {
-          role: 'user' as const,
+          role: 'user',
           content: userContent,
         },
       ]
@@ -1015,9 +1033,9 @@ export default class SmartComposerPlugin extends Plugin {
       this.tabCompletionAbortController = controller
       this.activeAbortControllers.add(controller)
 
-      const baseRequest: any = {
+      const baseRequest: LLMRequestNonStreaming = {
         model: model.model,
-        messages: requestMessages as unknown as any,
+        messages: requestMessages,
         stream: false,
         max_tokens: Math.max(16, Math.min(options.maxTokens, 2000)),
       }
@@ -1269,7 +1287,7 @@ export default class SmartComposerPlugin extends Plugin {
         'You are an intelligent assistant that rewrites ONLY the provided markdown text according to the instruction. Preserve the original meaning, structure, and any markdown (links, emphasis, code) unless explicitly told otherwise. Output ONLY the rewritten text without code fences or extra explanations.'
 
       const instruction = (customPrompt ?? '').trim()
-      const isBaseModel = Boolean((model as any).isBaseModel)
+      const isBaseModel = Boolean(model.isBaseModel)
       const baseModelSpecialPrompt = (
         this.settings.chatOptions.baseModelSpecialPrompt ?? ''
       ).trim()
@@ -1277,22 +1295,27 @@ export default class SmartComposerPlugin extends Plugin {
         isBaseModel && baseModelSpecialPrompt.length > 0
           ? `${baseModelSpecialPrompt}\n\n`
           : ''
-      const requestMessages = [
+      const requestMessages: RequestMessage[] = [
         ...(isBaseModel
           ? []
-          : ([{ role: 'system' as const, content: systemPrompt }] as const)),
+          : [
+              {
+                role: 'system',
+                content: systemPrompt,
+              },
+            ]),
         {
-          role: 'user' as const,
+          role: 'user',
           content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
-      ] as const
+      ]
 
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const rewriteRequestBase: any = {
+      const rewriteRequestBase: LLMRequestBase = {
         model: model.model,
-        messages: requestMessages as unknown as any,
+        messages: requestMessages,
       }
       if (typeof temperature === 'number') {
         rewriteRequestBase.temperature = temperature
@@ -2051,7 +2074,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
       const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
 
-      const isBaseModel = Boolean((model as any).isBaseModel)
+      const isBaseModel = Boolean(model.isBaseModel)
       const baseModelSpecialPrompt = (
         this.settings.chatOptions.baseModelSpecialPrompt ?? ''
       ).trim()
@@ -2065,20 +2088,20 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ? `${baseModelCoreContent}`
         : `${basePromptSection}${titleLine}${instructionSection}${combinedContextSection}`
 
-      const requestMessages = [
+      const requestMessages: RequestMessage[] = [
         ...(!isBaseModel && systemPrompt.length > 0
-          ? ([
+          ? [
               {
-                role: 'system' as const,
+                role: 'system',
                 content: systemPrompt,
               },
-            ] as const)
+            ]
           : []),
         {
-          role: 'user' as const,
+          role: 'user',
           content: userMessageContent,
         },
-      ] as const
+      ]
 
       // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
       this.isContinuationInProgress = true
@@ -2105,9 +2128,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       controller = new AbortController()
       this.activeAbortControllers.add(controller)
 
-      const baseRequest: any = {
+      const baseRequest: LLMRequestBase = {
         model: model.model,
-        messages: requestMessages as unknown as any,
+        messages: requestMessages,
       }
       if (typeof temperature === 'number') {
         baseRequest.temperature = temperature

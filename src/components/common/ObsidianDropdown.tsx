@@ -73,18 +73,12 @@ export function ObsidianDropdown({
         if (!group || group.options.length === 0) return
         const optgroupEl = document.createElement('optgroup')
         optgroupEl.label = group.label
-        optgroupEl.style.paddingInlineStart = '0'
-        optgroupEl.style.paddingLeft = '0'
-        optgroupEl.style.marginLeft = '0'
-        optgroupEl.style.textIndent = '0'
+        optgroupEl.classList.add('smtcmp-obsidian-dropdown-optgroup')
         group.options.forEach(({ value: optionValue, label: optionLabel }) => {
           const optionEl = document.createElement('option')
           optionEl.value = optionValue
           optionEl.textContent = optionLabel
-          optionEl.style.paddingInlineStart = '0'
-          optionEl.style.paddingLeft = '0'
-          optionEl.style.textIndent = '0'
-          optionEl.style.marginLeft = '0'
+          optionEl.classList.add('smtcmp-obsidian-dropdown-option')
           optgroupEl.appendChild(optionEl)
         })
         selectEl.appendChild(optgroupEl)

@@ -122,7 +122,7 @@ export const applyChangesToFile = async ({
   providerClient: BaseLLMProvider<LLMProvider>
   model: ChatModel
 }): Promise<string | null> => {
-  const isBaseModel = Boolean((model as any).isBaseModel)
+  const isBaseModel = Boolean(model.isBaseModel)
   const requestMessages: RequestMessage[] = []
 
   if (!isBaseModel) {

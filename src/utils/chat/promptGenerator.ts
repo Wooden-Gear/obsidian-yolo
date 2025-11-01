@@ -101,7 +101,7 @@ export class PromptGenerator {
     }
     const shouldUseRAG = lastUserMessage.similaritySearchResults !== undefined
 
-    const isBaseModel = Boolean((model as any).isBaseModel)
+    const isBaseModel = Boolean(model.isBaseModel)
     const baseModelSpecialPrompt = (
       this.settings.chatOptions.baseModelSpecialPrompt ?? ''
     ).trim()
@@ -631,7 +631,7 @@ When writing out new markdown blocks, remember not to include "line_number|" at 
   }
 
   private getLearningModeMessage(): RequestMessage {
-    const custom = (this.settings.chatOptions as any)?.learningModePrompt
+    const custom = this.settings.chatOptions?.learningModePrompt
     const defaultContent = DEFAULT_LEARNING_MODE_PROMPT
     const content =
       custom && `${custom}`.trim().length > 0 ? custom : defaultContent

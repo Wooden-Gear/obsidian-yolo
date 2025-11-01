@@ -35,6 +35,10 @@ import {
   useRef,
   useState,
 } from 'react'
+import {
+  clearDynamicStyleClass,
+  updateDynamicStyleClass,
+} from '../../../../../utils/dom/dynamicStyleManager'
 
 export type MenuTextMatch = {
   leadOffset: number
@@ -487,7 +491,7 @@ export function useMenuAnchorRef(
   const [editor] = useLexicalComposerContext()
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'))
   const positionMenu = useCallback(() => {
-    // 通过行内样式固定定位弹窗容器
+    // 通过动态样式类固定定位弹窗容器
     const containerDiv = anchorElementRef.current
     containerDiv.classList.remove(
       'smtcmp-menu-above',
@@ -495,7 +499,7 @@ export function useMenuAnchorRef(
     )
 
     const rootElement = editor.getRootElement()
-    const menuEle = containerDiv.firstChild as HTMLElement
+    const menuEle = containerDiv.firstChild as HTMLElement | null
 
     if (rootElement !== null && resolution !== null) {
       const rect = resolution.getRect()
@@ -546,28 +550,33 @@ export function useMenuAnchorRef(
           const menuWidth = rect.width + ring * 2
           const menuTop = rect.top - offsetTop
 
-          containerDiv.style.position = 'fixed'
-          containerDiv.style.left = `${menuLeft}px`
-          containerDiv.style.top = `${menuTop}px`
-          containerDiv.style.width = `${menuWidth}px`
-          containerDiv.style.right = ''
-          containerDiv.style.bottom = ''
-          containerDiv.style.zIndex = '1000'
+          updateDynamicStyleClass(
+            containerDiv,
+            'smtcmp-typeahead-menu-pos',
+            {
+              position: 'fixed',
+              left: Math.round(menuLeft),
+              top: Math.round(menuTop),
+              width: Math.round(menuWidth),
+              zIndex: '1000',
+            },
+          )
 
           if (menuEle) {
-            const pop = menuEle
-            pop.style.position = 'absolute'
-            pop.style.left = '0px'
-            pop.style.right = '0px'
-            pop.style.bottom = '0px'
-            pop.style.top = ''
-            pop.style.width = '100%'
-            pop.style.maxWidth = 'none'
-            pop.style.boxSizing = 'border-box'
-            pop.style.overflowY = 'auto'
-            // Limit height to available space above the input
             const available = Math.max(margin, Math.floor(rect.top - margin))
-            pop.style.maxHeight = `${available}px`
+            updateDynamicStyleClass(menuEle, 'smtcmp-typeahead-pop', {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              maxWidth: 'none',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
+              maxHeight: available,
+            })
+            // Limit height to available space above the input
+            // Top cleared automatically by omission
           }
           return
         }
@@ -580,18 +589,32 @@ export function useMenuAnchorRef(
         )
         const topPos = Math.max(margin, top - offsetTop - estimatedH)
         if (!containerDiv.isConnected) parent.append(containerDiv)
-        containerDiv.style.position = 'fixed'
-        containerDiv.style.left = `${Math.round(leftPos)}px`
-        containerDiv.style.top = `${Math.round(topPos)}px`
-        containerDiv.style.width = '360px'
-        containerDiv.style.zIndex = '1000'
+        updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+          position: 'fixed',
+          left: Math.round(leftPos),
+          top: Math.round(topPos),
+          width: 360,
+          zIndex: '1000',
+        })
         // Avoid adding smtcmp-menu-above here; topPos is already computed above the caret
         if (menuEle) {
-          menuEle.style.width = '100%'
+          updateDynamicStyleClass(menuEle, 'smtcmp-typeahead-pop', {
+            width: '100%',
+          })
           requestAnimationFrame(() => {
             const finalH = menuEle.getBoundingClientRect().height || estimatedH
             const t2 = Math.max(margin, top - offsetTop - finalH)
-            containerDiv.style.top = `${Math.round(t2)}px`
+            updateDynamicStyleClass(
+              containerDiv,
+              'smtcmp-typeahead-menu-pos',
+              {
+                position: 'fixed',
+                left: Math.round(leftPos),
+                top: Math.round(t2),
+                width: 360,
+                zIndex: '1000',
+              },
+            )
           })
         }
       }
@@ -613,7 +636,11 @@ export function useMenuAnchorRef(
 
         const containerDiv = anchorElementRef.current
         if (containerDiv?.isConnected) {
+          clearDynamicStyleClass(containerDiv)
           containerDiv.remove()
+        }
+        if (containerDiv?.firstChild instanceof HTMLElement) {
+          clearDynamicStyleClass(containerDiv.firstChild)
         }
       }
     }

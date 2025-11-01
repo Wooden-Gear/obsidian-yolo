@@ -18,27 +18,26 @@ function SyntaxHighlighterWrapper({
   wrapLines: boolean
   children: string
 }) {
+  const className = [
+    'smtcmp-syntax-highlighter',
+    hasFilename
+      ? 'smtcmp-syntax-highlighter--with-filename'
+      : 'smtcmp-syntax-highlighter--standalone',
+    language === 'markdown' ? 'smtcmp-syntax-highlighter--markdown' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <SyntaxHighlighter
       language={language}
       style={isDarkMode ? oneDark : oneLight}
-      customStyle={{
-        borderRadius: hasFilename
-          ? '0 0 var(--radius-s) var(--radius-s)'
-          : 'var(--radius-s)',
-        margin: 0,
-        padding: 'var(--size-4-2)',
-        fontSize: 'var(--font-ui-small)',
-        fontFamily:
-          language === 'markdown' ? 'var(--font-interface)' : 'inherit',
-      }}
+      className={className}
       wrapLines={wrapLines}
       lineProps={
-        // Wrapping should work without lineProps, but Obsidian's default CSS seems to override SyntaxHighlighter's styles.
-        // We manually override the white-space property to ensure proper wrapping.
         wrapLines
           ? {
-              style: { whiteSpace: 'pre-wrap' },
+              className: 'smtcmp-syntax-highlighter-line-wrap',
             }
           : undefined
       }
