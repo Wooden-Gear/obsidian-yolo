@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { forwardRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSettings } from '../../../contexts/settings-context'
 import { getModelDisplayName } from '../../../utils/model-id-utils'
@@ -9,8 +9,8 @@ export const ModelSelect = forwardRef<
   HTMLButtonElement,
   {
     modelId?: string
-    onChange?: (modelId: string) => void
     onModelSelected?: (modelId: string) => void
+    onChange?: (modelId: string) => void
     side?: 'top' | 'bottom' | 'left' | 'right'
     sideOffset?: number
     align?: 'start' | 'center' | 'end'
@@ -23,8 +23,8 @@ export const ModelSelect = forwardRef<
   (
     {
       modelId: externalModelId,
-      onChange,
       onModelSelected,
+      onChange,
       side = 'bottom',
       sideOffset = 4,
       align = 'end',
@@ -37,12 +37,13 @@ export const ModelSelect = forwardRef<
   ) => {
   const { settings, setSettings } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const selectedModelId = externalModelId ?? settings.chatModelId
 
   // Get provider name for current model
   const getCurrentModelDisplay = () => {
-    const effectiveModelId = externalModelId ?? settings.chatModelId
     const currentModel = settings.chatModels.find(
-      (m) => m.id === effectiveModelId,
+      (m) => m.id === selectedModelId,
     )
     if (currentModel) {
       // 优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
@@ -54,8 +55,22 @@ export const ModelSelect = forwardRef<
       const suffix = provider?.id ? ` (${provider.id})` : ''
       return `${display}${suffix}`
     }
-    return effectiveModelId
+    return selectedModelId
   }
+
+  const focusSelectedItem = useCallback(() => {
+    const target = itemRefs.current[selectedModelId]
+    if (!target) return
+    target.focus({ preventScroll: true })
+  }, [selectedModelId])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const rafId = window.requestAnimationFrame(() => {
+      focusSelectedItem()
+    })
+    return () => window.cancelAnimationFrame(rafId)
+  }, [isOpen, focusSelectedItem])
 
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     // 处理键盘导航
@@ -108,7 +123,21 @@ export const ModelSelect = forwardRef<
             e.preventDefault()
           }}
         >
-          <div className="smtcmp-model-select-list">
+          <DropdownMenu.RadioGroup
+            className="smtcmp-model-select-list"
+            value={selectedModelId}
+            onValueChange={(modelId: string) => {
+              if (onChange) {
+                onChange(modelId)
+              } else {
+                setSettings({
+                  ...settings,
+                  chatModelId: modelId,
+                })
+              }
+              onModelSelected?.(modelId)
+            }}
+          >
             {(() => {
               const enabledModels = settings.chatModels.filter(
                 ({ enable }) => enable ?? true,
@@ -148,23 +177,16 @@ export const ModelSelect = forwardRef<
                     chatModelOption.model ||
                     getModelDisplayName(chatModelOption.id)
                   return (
-                    <DropdownMenu.Item
+                    <DropdownMenu.RadioItem
                       key={chatModelOption.id}
                       className="smtcmp-popover-item"
-                      onSelect={() => {
-                        if (onChange) {
-                          onChange(chatModelOption.id)
-                        } else {
-                          setSettings({
-                            ...settings,
-                            chatModelId: chatModelOption.id,
-                          })
-                        }
-                        onModelSelected?.(chatModelOption.id)
+                      value={chatModelOption.id}
+                      ref={(element) => {
+                        itemRefs.current[chatModelOption.id] = element
                       }}
                     >
                       {displayName}
-                    </DropdownMenu.Item>
+                    </DropdownMenu.RadioItem>
                   )
                 })
 
@@ -182,7 +204,7 @@ export const ModelSelect = forwardRef<
                 ]
               })
             })()}
-          </div>
+          </DropdownMenu.RadioGroup>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
