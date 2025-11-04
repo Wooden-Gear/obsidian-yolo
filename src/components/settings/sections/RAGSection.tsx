@@ -25,7 +25,6 @@ import { EmbeddingDbManageModal } from '../modals/EmbeddingDbManageModal'
 import { ExcludedFilesModal } from '../modals/ExcludedFilesModal'
 import { IncludedFilesModal } from '../modals/IncludedFilesModal'
 import { RAGIndexProgress } from '../RAGIndexProgress'
-import '../RAGIndexProgress.css'
 
 type RAGSectionProps = {
   app: App
