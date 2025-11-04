@@ -23,7 +23,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
-  const handleDeleteProvider = async (provider: LLMProvider) => {
+  const handleDeleteProvider = (provider: LLMProvider) => {
     // Get associated models
     const associatedChatModels = settings.chatModels.filter(
       (m) => m.providerId === provider.id,

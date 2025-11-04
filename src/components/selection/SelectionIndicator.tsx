@@ -2,7 +2,6 @@ import { Sparkles } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 
 import type { SelectionInfo } from './SelectionManager'
-import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 
 type SelectionIndicatorProps = {
   selection: SelectionInfo
@@ -79,18 +78,14 @@ export function SelectionIndicator({
     [position.left, position.top],
   )
 
-  const indicatorClassName = useDynamicStyleClass(
-    'smtcmp-selection-indicator',
-    'smtcmp-selection-indicator-pos',
-    positionStyles,
-  )
-
-  const classes = `${indicatorClassName} ${isVisible ? 'visible' : ''}`.trim()
+  const classes =
+    `smtcmp-selection-indicator ${isVisible ? 'visible' : ''}`.trim()
 
   return (
     <div
       ref={indicatorRef}
       className={classes}
+      style={positionStyles}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

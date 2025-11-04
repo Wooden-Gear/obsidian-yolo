@@ -28,21 +28,24 @@ export class ApplyView extends View {
     return `Applying: ${this.state?.file?.name ?? ''}`
   }
 
-  async setState(state: ApplyViewState) {
+  setState(state: ApplyViewState): Promise<void> {
     this.state = state
     // Should render here because onOpen is called before setState
     this.render()
+    return Promise.resolve()
   }
 
-  async onOpen() {
+  onOpen(): Promise<void> {
     this.root = createRoot(this.containerEl)
+    return Promise.resolve()
   }
 
-  async onClose() {
+  onClose(): Promise<void> {
     this.root?.unmount()
+    return Promise.resolve()
   }
 
-  async render() {
+  private render() {
     if (!this.root || !this.state) return
     this.root.render(
       <AppProvider app={this.app}>

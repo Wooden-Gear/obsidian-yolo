@@ -3,7 +3,6 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
-import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 
 export type FloatingPanelOptions = {
   title?: string
@@ -81,11 +80,7 @@ export class ReactFloatingPanel<T> {
         return vars
       }, [pos.x, pos.y, size.height, size.width])
 
-      const panelClassName = useDynamicStyleClass(
-        'smtcmp-floating-panel',
-        'smtcmp-floating-panel-state',
-        panelStyleVars,
-      )
+      const panelClassName = 'smtcmp-floating-panel'
 
       useEffect(() => {
         if (!(options?.closeOnEscape ?? true)) {
@@ -164,7 +159,11 @@ export class ReactFloatingPanel<T> {
       return (
         <PluginProvider plugin={this.plugin}>
           <LanguageProvider>
-            <div ref={panelRef} className={panelClassName}>
+            <div
+              ref={panelRef}
+              className={panelClassName}
+              style={panelStyleVars}
+            >
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
                 <div

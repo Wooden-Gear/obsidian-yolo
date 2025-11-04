@@ -440,7 +440,7 @@ export default class SmartComposerPlugin extends Plugin {
 
       case 'rewrite':
         // Trigger rewrite with selected text
-        await this.rewriteSelection(editor, selectedText)
+        this.rewriteSelection(editor, selectedText)
         break
 
       case 'explain':
@@ -486,7 +486,7 @@ export default class SmartComposerPlugin extends Plugin {
     chatView.focusMessage()
   }
 
-  private async rewriteSelection(editor: Editor, selectedText: string) {
+  private rewriteSelection(editor: Editor, selectedText: string) {
     // Show Smart Space-like input for rewrite instruction
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!view) return
@@ -1266,7 +1266,7 @@ export default class SmartComposerPlugin extends Plugin {
     // 立即创建并注册 AbortController
     const controller = new AbortController()
     this.activeAbortControllers.add(controller)
-    
+
     try {
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1343,7 +1343,7 @@ export default class SmartComposerPlugin extends Plugin {
           if (controller.signal.aborted) {
             break
           }
-          
+
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue
@@ -1916,7 +1916,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     // 立即创建并注册 AbortController，确保整个流程都能被中止
     const controller = new AbortController()
     this.activeAbortControllers.add(controller)
-    
+
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
@@ -2225,7 +2225,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           if (controller.signal.aborted) {
             break
           }
-          
+
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue

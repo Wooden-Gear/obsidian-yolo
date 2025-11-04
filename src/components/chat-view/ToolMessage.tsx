@@ -267,7 +267,7 @@ function useToolCall(
       allowAutoExecution: true,
     }
 
-    setSettings({
+    await setSettings({
       ...settings,
       mcp: {
         ...settings.mcp,
@@ -283,7 +283,7 @@ function useToolCall(
     })
   }, [request, settings, setSettings])
 
-  const handleReject = useCallback(async () => {
+  const handleReject = useCallback(() => {
     onResponseUpdate({
       status: ToolCallResponseStatus.Rejected,
     })

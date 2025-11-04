@@ -8,13 +8,13 @@ import type { ContentPart } from '../../types/llm/request'
 import { PromptGenerator } from './promptGenerator'
 
 jest.mock('../llm/token', () => ({
-  tokenCount: jest.fn(async () => 999999), // force threshold exceed
+  tokenCount: jest.fn(() => Promise.resolve(999999)), // force threshold exceed
 }))
 
 jest.mock('../obsidian', () => ({
-  readMultipleTFiles: jest.fn(async () => ['A', 'B']),
+  readMultipleTFiles: jest.fn(() => Promise.resolve(['A', 'B'])),
   getNestedFiles: jest.fn((_folder: any) => []),
-  readTFileContent: jest.fn(async () => 'X'),
+  readTFileContent: jest.fn(() => Promise.resolve('X')),
 }))
 
 describe('PromptGenerator brute mode', () => {

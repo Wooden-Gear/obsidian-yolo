@@ -55,12 +55,6 @@ function ProviderFormComponent({
 }: ProviderFormComponentProps) {
   const { t } = useLanguage()
 
-  // Debug: log translation function
-  console.log(
-    'Translation test:',
-    t('common.save'),
-    t('settings.providers.apiKey'),
-  )
   const [formData, setFormData] = useState<LLMProvider>(
     provider
       ? ({

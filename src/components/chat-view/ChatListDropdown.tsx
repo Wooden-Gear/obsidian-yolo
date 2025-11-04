@@ -9,7 +9,7 @@ function TitleInput({
   onSubmit,
 }: {
   title: string
-  onSubmit: (title: string) => Promise<void>
+  onSubmit: (title: string) => void
 }) {
   const [value, setValue] = useState(title)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -55,10 +55,10 @@ function ChatListItem({
   isFocused: boolean
   isEditing: boolean
   onMouseEnter: () => void
-  onSelect: () => Promise<void>
-  onDelete: () => Promise<void>
+  onSelect: () => void
+  onDelete: () => void
   onStartEdit: () => void
-  onFinishEdit: (title: string) => Promise<void>
+  onFinishEdit: (title: string) => void
 }) {
   const itemRef = useRef<HTMLLIElement>(null)
 
@@ -73,7 +73,9 @@ function ChatListItem({
   return (
     <li
       ref={itemRef}
-      onClick={onSelect}
+      onClick={() => {
+        onSelect()
+      }}
       onMouseEnter={onMouseEnter}
       className={isFocused ? 'selected' : ''}
     >
@@ -93,9 +95,9 @@ function ChatListItem({
           <Pencil />
         </button>
         <button
-          onClick={async (e) => {
+          onClick={(e) => {
             e.stopPropagation()
-            await onDelete()
+            onDelete()
           }}
           className="clickable-icon smtcmp-chat-list-dropdown-item-icon"
         >
@@ -142,8 +144,15 @@ export function ChatListDropdown({
       } else if (e.key === 'ArrowDown') {
         setFocusedIndex(Math.min(chatList.length - 1, focusedIndex + 1))
       } else if (e.key === 'Enter') {
-        onSelect(chatList[focusedIndex].id)
-        setOpen(false)
+        const conversationId = chatList[focusedIndex]?.id
+        if (!conversationId) return
+        onSelect(conversationId)
+          .then(() => {
+            setOpen(false)
+          })
+          .catch((error) => {
+            console.error('Failed to select conversation from list', error)
+          })
       }
     },
     [chatList, focusedIndex, setFocusedIndex, onSelect],
@@ -177,19 +186,34 @@ export function ChatListDropdown({
                   onMouseEnter={() => {
                     setFocusedIndex(index)
                   }}
-                  onSelect={async () => {
-                    await onSelect(chat.id)
-                    setOpen(false)
+                  onSelect={() => {
+                    onSelect(chat.id)
+                      .then(() => {
+                        setOpen(false)
+                      })
+                      .catch((error) => {
+                        console.error('Failed to select conversation', error)
+                      })
                   }}
-                  onDelete={async () => {
-                    await onDelete(chat.id)
+                  onDelete={() => {
+                    onDelete(chat.id).catch((error) => {
+                      console.error('Failed to delete conversation', error)
+                    })
                   }}
                   onStartEdit={() => {
                     setEditingId(chat.id)
                   }}
-                  onFinishEdit={async (title) => {
-                    await onUpdateTitle(chat.id, title)
-                    setEditingId(null)
+                  onFinishEdit={(title) => {
+                    onUpdateTitle(chat.id, title)
+                      .then(() => {
+                        setEditingId(null)
+                      })
+                      .catch((error) => {
+                        console.error(
+                          'Failed to update conversation title',
+                          error,
+                        )
+                      })
                   }}
                 />
               ))

@@ -14,12 +14,14 @@ import {
 import React, { type DragEvent, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
+import { usePlugin } from '../../contexts/plugin-context'
 import { useSettings } from '../../contexts/settings-context'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../common/ObsidianTextInput'
+import { ConfirmModal } from '../modals/ConfirmModal'
 
 type QuickAction = {
   id: string
@@ -223,6 +225,7 @@ type GroupedActions = {
 }
 
 export function SmartSpaceQuickActionsSettings() {
+  const plugin = usePlugin()
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
   const categoryOptions = useMemo(
@@ -547,15 +550,26 @@ export function SmartSpaceQuickActionsSettings() {
     triggerDropSuccess(moved.id)
   }
 
-  const handleResetToDefault = async () => {
-    if (
-      confirm(
-        t(
-          'settings.smartSpace.confirmReset',
-          '确定要恢复默认的快捷选项吗？这将删除所有自定义设置。',
-        ),
-      )
-    ) {
+  const handleResetToDefault = () => {
+    let confirmed = false
+
+    const modal = new ConfirmModal(plugin.app, {
+      title: t(
+        'settings.smartSpace.resetConfirmTitle',
+        'Reset Smart Space actions',
+      ),
+      message: t(
+        'settings.smartSpace.confirmReset',
+        '确定要恢复默认的快捷选项吗？这将删除所有自定义设置。',
+      ),
+      ctaText: t('common.confirm'),
+      onConfirm: () => {
+        confirmed = true
+      },
+    })
+
+    modal.onClose = async () => {
+      if (!confirmed) return
       await setSettings({
         ...settings,
         continuationOptions: {
@@ -564,6 +578,8 @@ export function SmartSpaceQuickActionsSettings() {
         },
       })
     }
+
+    modal.open()
   }
 
   return (

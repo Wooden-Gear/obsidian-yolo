@@ -42,7 +42,7 @@ export function ChatModelsSubSection({
     requestAnimationFrame(() => tryFind())
   }
 
-  const handleDeleteChatModel = async (modelId: string) => {
+  const handleDeleteChatModel = (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
         'Cannot remove model that is currently selected as Chat Model or Tool Model',
@@ -315,9 +315,13 @@ export function ChatModelsSubSection({
                 <td>
                   <ObsidianToggle
                     value={isEnabled(chatModel.enable)}
-                    onChange={(value) =>
-                      handleToggleEnableChatModel(chatModel.id, value)
-                    }
+                    onChange={(value) => {
+                      handleToggleEnableChatModel(chatModel.id, value).catch(
+                        (error) => {
+                          console.error('Failed to toggle chat model', error)
+                        },
+                      )
+                    }}
                   />
                 </td>
                 <td>

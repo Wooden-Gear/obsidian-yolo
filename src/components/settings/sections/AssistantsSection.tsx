@@ -143,7 +143,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     })
   }
 
-  const handleDeleteAssistant = async (id: string) => {
+  const handleDeleteAssistant = (id: string) => {
     const assistantToDelete = assistants.find((a) => a.id === id)
     if (!assistantToDelete) return
 

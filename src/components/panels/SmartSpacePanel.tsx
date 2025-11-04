@@ -18,12 +18,8 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
-import {
-  SettingsProvider,
-  useSettings,
-} from '../../contexts/settings-context'
+import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
-import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
@@ -55,10 +51,10 @@ function SmartSpacePanelBody({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [useWebSearch, setUseWebSearch] = useState(
-    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false
+    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false,
   )
   const [useUrlContext, setUseUrlContext] = useState(
-    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
+    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false,
   )
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
   const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
@@ -111,10 +107,12 @@ function SmartSpacePanelBody({
     setIsSubmitConfirmPending(false)
   }, [instruction])
 
-  const textareaClassName = useDynamicStyleClass(
-    'smtcmp-smart-space-input',
-    'smtcmp-smart-space-input-height',
-    textareaHeight !== null ? { height: `${textareaHeight}px` } : {},
+  const textareaStyle = useMemo(
+    () =>
+      textareaHeight !== null
+        ? ({ height: `${textareaHeight}px` } as React.CSSProperties)
+        : undefined,
+    [textareaHeight],
   )
 
   const sections = useMemo(() => {
@@ -248,46 +246,31 @@ function SmartSpacePanelBody({
             'summarize',
             'chat.customContinueSections.writing.items.summarize.label',
             'chat.customContinueSections.writing.items.summarize.instruction',
-            <FileText
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <FileText className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'todo',
             'chat.customContinueSections.writing.items.todo.label',
             'chat.customContinueSections.writing.items.todo.instruction',
-            <ListTodo
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <ListTodo className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'flowchart',
             'chat.customContinueSections.writing.items.flowchart.label',
             'chat.customContinueSections.writing.items.flowchart.instruction',
-            <Workflow
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <Workflow className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'table',
             'chat.customContinueSections.writing.items.table.label',
             'chat.customContinueSections.writing.items.table.instruction',
-            <Table
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <Table className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'freewrite',
             'chat.customContinueSections.writing.items.freewrite.label',
             'chat.customContinueSections.writing.items.freewrite.instruction',
-            <PenLine
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <PenLine className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
         ]),
         makeSection('thinking', 'chat.customContinueSections.thinking.title', [
@@ -304,10 +287,7 @@ function SmartSpacePanelBody({
             'analyze',
             'chat.customContinueSections.thinking.items.analyze.label',
             'chat.customContinueSections.thinking.items.analyze.instruction',
-            <Brain
-              className="smtcmp-smart-space-item-icon-svg"
-              size={14}
-            />,
+            <Brain className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'dialogue',
@@ -487,7 +467,8 @@ function SmartSpacePanelBody({
               <div className="smtcmp-smart-space-input-wrapper">
                 <textarea
                   ref={inputRef}
-                  className={textareaClassName}
+                  className="smtcmp-smart-space-input"
+                  style={textareaStyle}
                   placeholder={t(
                     'chat.customContinuePromptPlaceholder',
                     'Ask AI...',
@@ -537,7 +518,7 @@ function SmartSpacePanelBody({
                         }
                         return
                       }
-                      
+
                       // 菜单未打开时的键盘导航
                       if (event.key === 'Escape') {
                         event.preventDefault()
@@ -824,8 +805,7 @@ export class SmartSpaceWidget extends WidgetType {
   }
 
   private static getOverlayRoot(): HTMLElement {
-    if (SmartSpaceWidget.overlayRoot)
-      return SmartSpaceWidget.overlayRoot
+    if (SmartSpaceWidget.overlayRoot) return SmartSpaceWidget.overlayRoot
     const root = document.createElement('div')
     root.className = 'smtcmp-smart-space-overlay-root'
     document.body.appendChild(root)

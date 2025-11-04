@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { App, Notice } from 'obsidian'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { RECOMMENDED_MODELS_FOR_EMBEDDING } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
@@ -36,29 +36,52 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null)
+  const [persistedProgress, setPersistedProgress] =
+    useState<IndexProgress | null>(null)
   const [isIndexing, setIsIndexing] = useState(false)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const isRagEnabled = settings.ragOptions.enabled ?? true
+  const effectiveProgress = indexProgress ?? persistedProgress
+
+  useEffect(() => {
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const raw = await app.loadLocalStorage('smtcmp_rag_last_progress')
+        if (!raw || cancelled) return
+        const parsed = JSON.parse(raw) as IndexProgress
+        setPersistedProgress(parsed)
+      } catch (error) {
+        console.warn('Failed to load cached RAG progress', error)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [app])
+
+  useEffect(() => {
+    if (!indexProgress) return
+    const json = JSON.stringify(indexProgress)
+    void app
+      .saveLocalStorage('smtcmp_rag_last_progress', json)
+      .catch((error) => {
+        console.warn('Failed to persist RAG progress', error)
+      })
+    setPersistedProgress(indexProgress)
+  }, [app, indexProgress])
   const headerPercent = useMemo(() => {
-    if (indexProgress && indexProgress.totalChunks > 0) {
+    if (effectiveProgress && effectiveProgress.totalChunks > 0) {
       const pct = Math.round(
-        (indexProgress.completedChunks / indexProgress.totalChunks) * 100,
+        (effectiveProgress.completedChunks / effectiveProgress.totalChunks) *
+          100,
       )
       return Math.max(0, Math.min(100, pct))
     }
-    try {
-      const raw = localStorage.getItem('smtcmp_rag_last_progress')
-      if (!raw) return null
-      const p = JSON.parse(raw)
-      if (p && typeof p.totalChunks === 'number' && p.totalChunks > 0) {
-        const pct = Math.round((p.completedChunks / p.totalChunks) * 100)
-        return Math.max(0, Math.min(100, pct))
-      }
-    } catch {
-      // Ignore JSON parsing errors from outdated cached data.
-    }
     return null
-  }, [indexProgress])
+  }, [effectiveProgress])
 
   const includeFolders = useMemo(
     () => includePatternsToFolderPaths(settings.ragOptions.includePatterns),
@@ -177,13 +200,17 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           >
             <ObsidianButton
               text={t('settings.rag.testPatterns')}
-              onClick={async () => {
-                const patterns = settings.ragOptions.includePatterns
-                const includedFiles = await findFilesMatchingPatterns(
-                  patterns,
-                  plugin.app.vault,
-                )
-                new IncludedFilesModal(app, includedFiles, patterns).open()
+              onClick={() => {
+                void (async () => {
+                  const patterns = settings.ragOptions.includePatterns
+                  const includedFiles = await findFilesMatchingPatterns(
+                    patterns,
+                    plugin.app.vault,
+                  )
+                  new IncludedFilesModal(app, includedFiles, patterns).open()
+                })().catch((error) => {
+                  console.error('Failed to test include patterns', error)
+                })
               }}
             />
           </ObsidianSetting>
@@ -213,13 +240,17 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           >
             <ObsidianButton
               text={t('settings.rag.testPatterns')}
-              onClick={async () => {
-                const patterns = settings.ragOptions.excludePatterns
-                const excludedFiles = await findFilesMatchingPatterns(
-                  patterns,
-                  plugin.app.vault,
-                )
-                new ExcludedFilesModal(app, excludedFiles).open()
+              onClick={() => {
+                void (async () => {
+                  const patterns = settings.ragOptions.excludePatterns
+                  const excludedFiles = await findFilesMatchingPatterns(
+                    patterns,
+                    plugin.app.vault,
+                  )
+                  new ExcludedFilesModal(app, excludedFiles).open()
+                })().catch((error) => {
+                  console.error('Failed to test exclude patterns', error)
+                })
               }}
             />
           </ObsidianSetting>
@@ -452,36 +483,38 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianButton
               text={t('settings.rag.manualUpdateNow', '立即更新')}
               disabled={isIndexing}
-              onClick={async () => {
-                setIsIndexing(true)
-                setIndexProgress(null)
-                try {
-                  const ragEngine = await plugin.getRAGEngine()
-                  await ragEngine.updateVaultIndex(
-                    { reindexAll: false },
-                    (queryProgress) => {
-                      if (queryProgress.type === 'indexing') {
-                        handleIndexProgress(queryProgress.indexProgress)
-                      }
-                    },
-                  )
-                  // 记录更新时间
-                  await plugin.setSettings({
-                    ...plugin.settings,
-                    ragOptions: {
-                      ...plugin.settings.ragOptions,
-                      lastAutoUpdateAt: Date.now(),
-                    },
-                  })
-                  // i18n notice
-                  new Notice(t('notices.indexUpdated'))
-                } catch (error) {
-                  console.error('Failed to update index:', error)
-                  new Notice(t('notices.indexUpdateFailed'))
-                } finally {
-                  setIsIndexing(false)
-                  setTimeout(() => setIndexProgress(null), 3000)
-                }
+              onClick={() => {
+                void (async () => {
+                  setIsIndexing(true)
+                  setIndexProgress(null)
+                  try {
+                    const ragEngine = await plugin.getRAGEngine()
+                    await ragEngine.updateVaultIndex(
+                      { reindexAll: false },
+                      (queryProgress) => {
+                        if (queryProgress.type === 'indexing') {
+                          handleIndexProgress(queryProgress.indexProgress)
+                        }
+                      },
+                    )
+                    // 记录更新时间
+                    await plugin.setSettings({
+                      ...plugin.settings,
+                      ragOptions: {
+                        ...plugin.settings.ragOptions,
+                        lastAutoUpdateAt: Date.now(),
+                      },
+                    })
+                    // i18n notice
+                    new Notice(t('notices.indexUpdated'))
+                  } catch (error) {
+                    console.error('Failed to update index:', error)
+                    new Notice(t('notices.indexUpdateFailed'))
+                  } finally {
+                    setIsIndexing(false)
+                    setTimeout(() => setIndexProgress(null), 3000)
+                  }
+                })()
               }}
             />
           </ObsidianSetting>
@@ -490,72 +523,77 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <div className="smtcmp-flex-row-gap-8">
               <ObsidianButton
                 text={t('settings.rag.manage')}
-                onClick={async () => {
+                onClick={() => {
                   new EmbeddingDbManageModal(app, plugin).open()
                 }}
               />
               <ObsidianButton
                 text={t('settings.rag.rebuildIndex', '重建索引')}
                 disabled={isIndexing}
-                onClick={async () => {
-                  // 预检查 PGlite 资源
-                  try {
-                    const dbManager = await plugin.getDbManager()
-                    const resourceCheck =
-                      await dbManager.checkPGliteResources()
+                onClick={() => {
+                  void (async () => {
+                    // 预检查 PGlite 资源
+                    try {
+                      const dbManager = await plugin.getDbManager()
+                      const resourceCheck =
+                        await dbManager.checkPGliteResources()
 
-                    if (!resourceCheck.available) {
-                      new Notice(
-                        t(
-                          'notices.pgliteUnavailable',
-                          'PGlite resources unavailable. Please check your network connection.',
-                        ),
-                        5000,
-                      )
-                      return
+                      if (!resourceCheck.available) {
+                        new Notice(
+                          t(
+                            'notices.pgliteUnavailable',
+                            'PGlite resources unavailable. Please check your network connection.',
+                          ),
+                          5000,
+                        )
+                        return
+                      }
+
+                      if (
+                        resourceCheck.needsDownload &&
+                        resourceCheck.fromCDN
+                      ) {
+                        new Notice(
+                          t(
+                            'notices.downloadingPglite',
+                            'Downloading PGlite dependencies (~20MB). This may take a moment...',
+                          ),
+                          5000,
+                        )
+                      }
+                    } catch (error) {
+                      console.warn('Failed to check PGlite resources:', error)
+                      // 继续执行，让实际的加载逻辑处理错误
                     }
 
-                    if (resourceCheck.needsDownload && resourceCheck.fromCDN) {
-                      new Notice(
-                        t(
-                          'notices.downloadingPglite',
-                          'Downloading PGlite dependencies (~20MB). This may take a moment...',
-                        ),
-                        5000,
+                    setIsIndexing(true)
+                    setIndexProgress(null)
+                    try {
+                      const ragEngine = await plugin.getRAGEngine()
+                      await ragEngine.updateVaultIndex(
+                        { reindexAll: true },
+                        (queryProgress) => {
+                          if (queryProgress.type === 'indexing') {
+                            handleIndexProgress(queryProgress.indexProgress)
+                          }
+                        },
                       )
+                      new Notice(t('notices.rebuildComplete'))
+                      await plugin.setSettings({
+                        ...plugin.settings,
+                        ragOptions: {
+                          ...plugin.settings.ragOptions,
+                          lastAutoUpdateAt: Date.now(),
+                        },
+                      })
+                    } catch (error) {
+                      console.error('Failed to rebuild index:', error)
+                      new Notice(t('notices.rebuildFailed'))
+                    } finally {
+                      setIsIndexing(false)
+                      setTimeout(() => setIndexProgress(null), 3000)
                     }
-                  } catch (error) {
-                    console.warn('Failed to check PGlite resources:', error)
-                    // 继续执行，让实际的加载逻辑处理错误
-                  }
-
-                  setIsIndexing(true)
-                  setIndexProgress(null)
-                  try {
-                    const ragEngine = await plugin.getRAGEngine()
-                    await ragEngine.updateVaultIndex(
-                      { reindexAll: true },
-                      (queryProgress) => {
-                        if (queryProgress.type === 'indexing') {
-                          handleIndexProgress(queryProgress.indexProgress)
-                        }
-                      },
-                    )
-                    new Notice(t('notices.rebuildComplete'))
-                    await plugin.setSettings({
-                      ...plugin.settings,
-                      ragOptions: {
-                        ...plugin.settings.ragOptions,
-                        lastAutoUpdateAt: Date.now(),
-                      },
-                    })
-                  } catch (error) {
-                    console.error('Failed to rebuild index:', error)
-                    new Notice(t('notices.rebuildFailed'))
-                  } finally {
-                    setIsIndexing(false)
-                    setTimeout(() => setIndexProgress(null), 3000)
-                  }
+                  })()
                 }}
               />
             </div>
@@ -602,7 +640,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             {isProgressOpen && (
               <div className="smtcmp-provider-models">
                 <RAGIndexProgress
-                  progress={indexProgress}
+                  progress={effectiveProgress}
                   isIndexing={isIndexing}
                   getMarkdownFilesInFolder={(folderPath: string) => {
                     const files = plugin.app.vault.getMarkdownFiles()

@@ -221,7 +221,7 @@ export class GeminiProvider extends BaseLLMProvider<
         const singleChunk = async function* (
           resp: LLMResponseNonStreaming,
         ): AsyncIterable<LLMResponseStreaming> {
-          yield {
+          const chunk = await Promise.resolve({
             id: resp.id,
             created: resp.created,
             model: resp.model,
@@ -237,7 +237,8 @@ export class GeminiProvider extends BaseLLMProvider<
               },
             ],
             usage: resp.usage,
-          }
+          })
+          yield chunk
         }
         return singleChunk(nonStream)
       }

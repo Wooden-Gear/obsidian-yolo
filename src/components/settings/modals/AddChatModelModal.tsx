@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { App, Notice } from 'obsidian'
+import { App, Notice, requestUrl } from 'obsidian'
 import { useEffect, useState } from 'react'
 
 import { DEFAULT_PROVIDERS } from '../../../constants'
@@ -131,7 +131,8 @@ function AddChatModelModalComponent({
             let lastErr: any = null
             for (const url of urlCandidates) {
               try {
-                const res = await fetch(url, {
+                const response = await requestUrl({
+                  url,
                   method: 'GET',
                   headers: {
                     ...(selectedProvider.apiKey
@@ -140,11 +141,13 @@ function AddChatModelModalComponent({
                     Accept: 'application/json',
                   },
                 })
-                if (!res.ok) {
-                  lastErr = new Error(`Failed to fetch models: ${res.status}`)
+                if (response.status < 200 || response.status >= 300) {
+                  lastErr = new Error(
+                    `Failed to fetch models: ${response.status}`,
+                  )
                   continue
                 }
-                const json = await res.json()
+                const json = response.json ?? JSON.parse(response.text)
                 // Robust extraction: support data[], models[], or array root; prefer id, fallback to name/model
                 const collectFrom = (arr: any[]): string[] =>
                   arr

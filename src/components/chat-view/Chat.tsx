@@ -449,7 +449,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   )
 
   const handleToolMessageUpdate = useCallback(
-    async (toolMessage: ChatToolMessage) => {
+    (toolMessage: ChatToolMessage) => {
       const toolMessageIndex = chatMessages.findIndex(
         (message) => message.id === toolMessage.id,
       )
@@ -550,7 +550,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const updateConversationAsync = async () => {
       try {
         if (chatMessages.length > 0) {
-          createOrUpdateConversation(
+          await createOrUpdateConversation(
             currentConversationId,
             chatMessages,
             conversationOverrides ?? null,

@@ -19,7 +19,7 @@ export function EmbeddingModelsSubSection({
 }: EmbeddingModelsSubSectionProps) {
   const { settings, setSettings } = useSettings()
 
-  const handleDeleteEmbeddingModel = async (modelId: string) => {
+  const handleDeleteEmbeddingModel = (modelId: string) => {
     if (modelId === settings.embeddingModelId) {
       new Notice(
         'Cannot remove model that is currently selected as Embedding Model',

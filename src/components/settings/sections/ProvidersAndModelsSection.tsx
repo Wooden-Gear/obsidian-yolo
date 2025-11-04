@@ -50,7 +50,7 @@ export function ProvidersAndModelsSection({
   const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
   const lastInsertIndexRef = React.useRef<number | null>(null)
-  
+
   // Provider drag state
   const dragProviderRef = React.useRef<number | null>(null)
   const dragOverProviderRef = React.useRef<HTMLDivElement | null>(null)
@@ -495,7 +495,10 @@ export function ProvidersAndModelsSection({
         'smtcmp-provider-drag-over-before',
         'smtcmp-provider-drag-over-after',
       )
-      if (dragOverProviderRef.current && dragOverProviderRef.current !== section) {
+      if (
+        dragOverProviderRef.current &&
+        dragOverProviderRef.current !== section
+      ) {
         dragOverProviderRef.current.classList.remove(
           'smtcmp-provider-drag-over-before',
           'smtcmp-provider-drag-over-after',
@@ -555,7 +558,7 @@ export function ProvidersAndModelsSection({
     const sectionEl = event.currentTarget as HTMLDivElement
     const dragInfo = dragProviderRef.current
     dragProviderRef.current = null
-    
+
     if (dragInfo === null) {
       return
     }
@@ -654,8 +657,8 @@ export function ProvidersAndModelsSection({
           )
 
           return (
-            <div 
-              key={provider.id} 
+            <div
+              key={provider.id}
               className="smtcmp-provider-section"
               data-provider-id={provider.id}
               draggable
@@ -676,7 +679,7 @@ export function ProvidersAndModelsSection({
                   }
                 }}
               >
-                <span 
+                <span
                   className="smtcmp-provider-drag-handle"
                   aria-label="Drag to reorder"
                   onClick={(e) => e.stopPropagation()}
@@ -684,7 +687,7 @@ export function ProvidersAndModelsSection({
                 >
                   <GripVertical />
                 </span>
-                
+
                 <div className="smtcmp-provider-expand-btn">
                   {isExpanded ? (
                     <ChevronDown size={16} />
@@ -815,9 +818,17 @@ export function ProvidersAndModelsSection({
                               <td>
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}
-                                  onChange={(value) =>
-                                    handleToggleEnableChatModel(model.id, value)
-                                  }
+                                  onChange={(value) => {
+                                    handleToggleEnableChatModel(
+                                      model.id,
+                                      value,
+                                    ).catch((error) => {
+                                      console.error(
+                                        'Failed to toggle chat model',
+                                        error,
+                                      )
+                                    })
+                                  }}
                                 />
                               </td>
                               <td>
@@ -843,9 +854,16 @@ export function ProvidersAndModelsSection({
                                       v.providerId === model.providerId,
                                   ) && (
                                     <button
-                                      onClick={() =>
-                                        handleDeleteChatModel(model.id)
-                                      }
+                                      onClick={() => {
+                                        handleDeleteChatModel(model.id).catch(
+                                          (error) => {
+                                            console.error(
+                                              'Failed to delete chat model',
+                                              error,
+                                            )
+                                          },
+                                        )
+                                      }}
                                       className="clickable-icon"
                                     >
                                       <Trash2 />
@@ -932,9 +950,16 @@ export function ProvidersAndModelsSection({
                                         <Edit />
                                       </button>
                                       <button
-                                        onClick={() =>
-                                          handleDeleteEmbeddingModel(model.id)
-                                        }
+                                        onClick={() => {
+                                          handleDeleteEmbeddingModel(
+                                            model.id,
+                                          ).catch((error) => {
+                                            console.error(
+                                              'Failed to delete embedding model',
+                                              error,
+                                            )
+                                          })
+                                        }}
                                         className="clickable-icon"
                                       >
                                         <Trash2 />

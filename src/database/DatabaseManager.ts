@@ -1,6 +1,6 @@
 import { PGlite } from '@electric-sql/pglite'
 import { PgliteDatabase, drizzle } from 'drizzle-orm/pglite'
-import { App, normalizePath } from 'obsidian'
+import { App, normalizePath, requestUrl } from 'obsidian'
 
 import { PGLITE_DB_PATH, PLUGIN_ID } from '../constants'
 
@@ -63,7 +63,7 @@ export class DatabaseManager {
 
     DatabaseManager.managers.set(dbManager, managers)
 
-    console.log('Smart composer database initialized.', dbManager)
+    console.debug('Smart composer database initialized.', dbManager)
 
     return dbManager
   }
@@ -109,7 +109,7 @@ export class DatabaseManager {
       const db = drizzle(this.pgClient)
       return db
     } catch (error) {
-      console.log('createNewDatabase error', error)
+      console.error('createNewDatabase error', error)
       if (
         error instanceof Error &&
         error.message.includes(
@@ -145,7 +145,7 @@ export class DatabaseManager {
       })
       return drizzle(this.pgClient)
     } catch (error) {
-      console.log('loadExistingDatabase error', error)
+      console.error('loadExistingDatabase error', error)
       if (
         error instanceof Error &&
         error.message.includes(
@@ -211,7 +211,7 @@ export class DatabaseManager {
     try {
       // 检查数据库文件是否存在
       const dbExists = await this.app.vault.adapter.exists(this.dbPath)
-      
+
       // 如果数据库已存在，说明之前已经初始化过，资源已经缓存
       if (dbExists) {
         return { available: true, needsDownload: false, fromCDN: false }
@@ -223,8 +223,11 @@ export class DatabaseManager {
           this.pgliteResourcePath,
         )
         const localUrl = new URL('postgres.wasm', localPath)
-        const response = await fetch(localUrl.href, { method: 'HEAD' })
-        if (response.ok) {
+        const response = await requestUrl({
+          url: localUrl.href,
+          method: 'HEAD',
+        })
+        if (response.status >= 200 && response.status < 300) {
           return { available: true, needsDownload: false, fromCDN: false }
         }
       } catch {
@@ -235,8 +238,11 @@ export class DatabaseManager {
       for (const cdnUrl of PGLITE_CDN_URLS) {
         try {
           const wasmUrl = new URL('postgres.wasm', cdnUrl)
-          const response = await fetch(wasmUrl.href, { method: 'HEAD' })
-          if (response.ok) {
+          const response = await requestUrl({
+            url: wasmUrl.href,
+            method: 'HEAD',
+          })
+          if (response.status >= 200 && response.status < 300) {
             return { available: true, needsDownload: true, fromCDN: true }
           }
         } catch {
@@ -293,7 +299,7 @@ export class DatabaseManager {
         }
         try {
           const resourcePath = this.app.vault.adapter.getResourcePath(path)
-          console.log(
+          console.debug(
             `[PGlite] Resolving resource path:`,
             path,
             '→',
@@ -336,11 +342,16 @@ export class DatabaseManager {
           const wasmUrl = new URL('postgres.wasm', baseUrl)
 
           const [fsResponse, wasmResponse] = await Promise.all([
-            fetch(fsUrl.href),
-            fetch(wasmUrl.href),
+            requestUrl({ url: fsUrl.href }),
+            requestUrl({ url: wasmUrl.href }),
           ])
 
-          if (!fsResponse.ok || !wasmResponse.ok) {
+          if (
+            fsResponse.status < 200 ||
+            fsResponse.status >= 300 ||
+            wasmResponse.status < 200 ||
+            wasmResponse.status >= 300
+          ) {
             lastError = new Error(
               'Failed to load PGlite assets from local bundle',
             )
