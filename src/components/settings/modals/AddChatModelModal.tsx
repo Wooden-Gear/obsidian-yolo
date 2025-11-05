@@ -89,11 +89,7 @@ type ReasoningConfigurableModel = Extract<
 type ThinkingConfigurableModel = Extract<
   ChatModel,
   {
-    providerType:
-      | 'anthropic'
-      | 'gemini'
-      | 'openrouter'
-      | 'openai-compatible'
+    providerType: 'anthropic' | 'gemini' | 'openrouter' | 'openai-compatible'
   }
 >
 
@@ -378,10 +374,7 @@ function AddChatModelModalComponent({
               } as Extract<
                 ChatModel,
                 {
-                  providerType:
-                    | 'gemini'
-                    | 'openrouter'
-                    | 'openai-compatible'
+                  providerType: 'gemini' | 'openrouter' | 'openai-compatible'
                 }
               >)
       }

@@ -88,10 +88,10 @@ export const en: TranslationKeys = {
   },
 
   selection: {
-      actions: {
-        addToChat: 'Add to chat',
-        rewrite: 'AI rewrite',
-        explain: 'Explain in depth',
+    actions: {
+      addToChat: 'Add to chat',
+      rewrite: 'AI rewrite',
+      explain: 'Explain in depth',
     },
   },
 

@@ -80,8 +80,8 @@ function AssistantItem({ assistant, onUpdate, onDelete }: AssistantItemProps) {
             />
           </div>
 
-        <ObsidianSetting
-          name={t('settings.assistants.systemPrompt', 'System prompt')}
+          <ObsidianSetting
+            name={t('settings.assistants.systemPrompt', 'System prompt')}
             desc={t(
               'settings.assistants.systemPromptDesc',
               'This prompt will be added to the beginning of every chat.',

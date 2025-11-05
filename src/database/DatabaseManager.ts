@@ -361,9 +361,7 @@ export class DatabaseManager {
           const fsBundle = new Blob([fsResponse.arrayBuffer], {
             type: 'application/octet-stream',
           })
-          const wasmModule = await WebAssembly.compile(
-            wasmResponse.arrayBuffer,
-          )
+          const wasmModule = await WebAssembly.compile(wasmResponse.arrayBuffer)
           const vectorExtensionBundlePath = new URL('vector.tar.gz', baseUrl)
 
           return { fsBundle, wasmModule, vectorExtensionBundlePath }

@@ -59,14 +59,9 @@ export const migrateFrom11To12: SettingMigration['migrate'] = (data) => {
     const chatModels = Array.isArray(newData.chatModels)
       ? newData.chatModels.filter(isModelWithProvider)
       : []
-    const chatModel = chatModels.find((model) =>
-      model.id.endsWith(chatModelId),
-    )
+    const chatModel = chatModels.find((model) => model.id.endsWith(chatModelId))
     if (chatModel) {
-      newData.chatModelId = migrateModelId(
-        chatModelId,
-        chatModel.providerId,
-      )
+      newData.chatModelId = migrateModelId(chatModelId, chatModel.providerId)
     } else {
       // Fallback: assume it's an OpenAI model if not found
       newData.chatModelId = migrateModelId(chatModelId, 'openai')
@@ -83,10 +78,7 @@ export const migrateFrom11To12: SettingMigration['migrate'] = (data) => {
       model.id.endsWith(applyModelId),
     )
     if (applyModel) {
-      newData.applyModelId = migrateModelId(
-        applyModelId,
-        applyModel.providerId,
-      )
+      newData.applyModelId = migrateModelId(applyModelId, applyModel.providerId)
     } else {
       // Fallback: assume it's an OpenAI model if not found
       newData.applyModelId = migrateModelId(applyModelId, 'openai')
@@ -112,10 +104,7 @@ export const migrateFrom11To12: SettingMigration['migrate'] = (data) => {
       )
     } else {
       // Fallback: assume it's an OpenAI model if not found
-      newData.embeddingModelId = migrateModelId(
-        embeddingModelId,
-        'openai',
-      )
+      newData.embeddingModelId = migrateModelId(embeddingModelId, 'openai')
     }
   }
 
