@@ -161,7 +161,7 @@ export function useChatHistory(): UseChatHistory {
 
                 await chatManager.updateChat(id, { title: nextSafeTitle })
                 await fetchChatList()
-              } catch (_) {
+              } catch {
                 // Ignore failures/timeouts; keep fallback title
               }
             })()

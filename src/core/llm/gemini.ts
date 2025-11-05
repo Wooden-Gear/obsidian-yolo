@@ -471,10 +471,8 @@ export class GeminiProvider extends BaseLLMProvider<
       return schema.map((item) => this.removeAdditionalProperties(item))
     }
 
-    const { additionalProperties: _, ...rest } = schema as Record<
-      string,
-      unknown
-    >
+    const rest = { ...(schema as Record<string, unknown>) }
+    delete rest.additionalProperties
 
     return Object.fromEntries(
       Object.entries(rest).map(([key, value]) => [

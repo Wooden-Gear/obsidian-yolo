@@ -39,7 +39,7 @@ export function ProvidersAndModelsSection({
   plugin,
 }: ProvidersAndModelsSectionProps) {
   const { settings, setSettings } = useSettings()
-  const { t, language: _language } = useLanguage()
+  const { t } = useLanguage()
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
     new Set(),
   )
