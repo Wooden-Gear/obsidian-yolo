@@ -31,6 +31,43 @@ type RAGSectionProps = {
   plugin: SmartComposerPlugin
 }
 
+type AppWithLocalStorage = App & {
+  loadLocalStorage?: (key: string) => string | null | Promise<string | null>
+  saveLocalStorage?: (key: string, value: string) => void | Promise<void>
+}
+
+const isPromiseLike = <T,>(value: T | Promise<T>): value is Promise<T> =>
+  typeof value === 'object' &&
+  value !== null &&
+  'then' in (value as Record<string, unknown>) &&
+  typeof (value as { then?: unknown }).then === 'function'
+
+const loadAppLocalStorage = async (
+  app: App,
+  key: string,
+): Promise<string | null> => {
+  const { loadLocalStorage } = app as AppWithLocalStorage
+  if (typeof loadLocalStorage === 'function') {
+    const result = loadLocalStorage.call(app, key)
+    return isPromiseLike(result) ? await result : result
+  }
+  return null
+}
+
+const saveAppLocalStorage = async (
+  app: App,
+  key: string,
+  value: string,
+): Promise<void> => {
+  const { saveLocalStorage } = app as AppWithLocalStorage
+  if (typeof saveLocalStorage === 'function') {
+    const result = saveLocalStorage.call(app, key, value)
+    if (isPromiseLike(result)) {
+      await result
+    }
+  }
+}
+
 export function RAGSection({ app, plugin }: RAGSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
@@ -47,11 +84,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
 
     ;(async () => {
       try {
-        const raw = await app.loadLocalStorage('smtcmp_rag_last_progress')
+        const raw = await loadAppLocalStorage(app, 'smtcmp_rag_last_progress')
         if (!raw || cancelled) return
         const parsed = JSON.parse(raw) as IndexProgress
         setPersistedProgress(parsed)
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Failed to load cached RAG progress', error)
       }
     })()
@@ -64,11 +101,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   useEffect(() => {
     if (!indexProgress) return
     const json = JSON.stringify(indexProgress)
-    void app
-      .saveLocalStorage('smtcmp_rag_last_progress', json)
-      .catch((error) => {
+    void saveAppLocalStorage(app, 'smtcmp_rag_last_progress', json).catch(
+      (error: unknown) => {
         console.warn('Failed to persist RAG progress', error)
-      })
+      },
+    )
     setPersistedProgress(indexProgress)
   }, [app, indexProgress])
   const headerPercent = useMemo(() => {

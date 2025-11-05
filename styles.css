@@ -3900,7 +3900,7 @@ button.smtcmp-chat-input-model-select {
     var(--h1-color, var(--interactive-accent)) 35%,
     transparent
   ) !important;
-  box-shadow: 
+  box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   transform: translateY(-0.5px);
@@ -3915,7 +3915,7 @@ button.smtcmp-chat-input-model-select {
     var(--background-modifier-hover) 90%,
     transparent
   );
-  box-shadow: 
+  box-shadow:
     0 0 0 2px
       color-mix(
         in srgb,
@@ -3944,11 +3944,14 @@ button.smtcmp-chat-input-model-select {
   transition: all 0.2s ease;
 }
 
-.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover
+.smtcmp-smart-space-model-select
+  .smtcmp-chat-input-model-select:hover
   .smtcmp-chat-input-model-select__icon,
-.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus
+.smtcmp-smart-space-model-select
+  .smtcmp-chat-input-model-select:focus
   .smtcmp-chat-input-model-select__icon,
-.smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:focus-visible
+.smtcmp-smart-space-model-select
+  .smtcmp-chat-input-model-select:focus-visible
   .smtcmp-chat-input-model-select__icon {
   opacity: 0.75;
 }
@@ -3986,22 +3989,19 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:hover,
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus,
-.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus-visible {
+.smtcmp-chat-sidebar-model-select
+  .smtcmp-chat-input-model-select:focus-visible {
   color: var(--text-normal) !important;
 }
 
-
-
-.smtcmp-chat-sidebar-model-select
-  .smtcmp-chat-input-model-select__model-name {
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select__model-name {
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.smtcmp-chat-sidebar-model-select
-  .smtcmp-chat-input-model-select__icon {
+.smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select__icon {
   margin-left: 6px;
   display: flex;
   align-items: center;
@@ -4009,9 +4009,10 @@ button.smtcmp-chat-input-model-select {
   transition: opacity 0.18s ease;
 }
 
-*** End Patch
-
-.smtcmp-chat-sidebar-model-select
+***
+  End
+  Patch
+  .smtcmp-chat-sidebar-model-select
   .smtcmp-chat-input-model-select:hover
   .smtcmp-chat-input-model-select__icon,
 .smtcmp-chat-sidebar-model-select
@@ -4028,19 +4029,11 @@ button.smtcmp-chat-input-model-select {
   z-index: 10000;
   background: var(--background-primary);
   border: 1px solid
-    color-mix(
-      in srgb,
-      var(--background-modifier-border) 65%,
-      transparent
-    );
+    color-mix(in srgb, var(--background-modifier-border) 65%, transparent);
   border-radius: 12px;
   box-shadow:
     0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--background-modifier-border) 20%,
-        transparent
-      ),
+      color-mix(in srgb, var(--background-modifier-border) 20%, transparent),
     0 12px 32px -8px rgba(0, 0, 0, 0.2),
     0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -4061,18 +4054,13 @@ button.smtcmp-chat-input-model-select {
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.12),
     0 0 0 1px
-      color-mix(
-        in srgb,
-        var(--background-modifier-border) 35%,
-        transparent
-      );
+      color-mix(in srgb, var(--background-modifier-border) 35%, transparent);
   backdrop-filter: none;
   width: auto;
   min-width: max(var(--radix-dropdown-menu-trigger-width, 0px), 280px);
   max-height: 400px;
   overflow: hidden;
 }
-
 
 @keyframes smtcmp-smart-space-popover-fade-in {
   0% {
@@ -4084,7 +4072,6 @@ button.smtcmp-chat-input-model-select {
     transform: translateY(0) scale(1);
   }
 }
-
 
 /* 模型选择列表滚动样式 - 应用到 RadioGroup */
 .smtcmp-smart-space-popover .smtcmp-model-select-list,
@@ -4101,7 +4088,8 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar-track,
-.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-track {
+.smtcmp-chat-sidebar-popover
+  .smtcmp-model-select-list::-webkit-scrollbar-track {
   background: transparent;
   margin: 8px 0;
 }
@@ -4117,18 +4105,16 @@ button.smtcmp-chat-input-model-select {
   background-clip: padding-box;
 }
 
-.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb {
-  background: color-mix(
-    in srgb,
-    var(--text-muted) 30%,
-    transparent
-  );
+.smtcmp-chat-sidebar-popover
+  .smtcmp-model-select-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
   background: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 40%,
@@ -4137,12 +4123,9 @@ button.smtcmp-chat-input-model-select {
   background-clip: padding-box;
 }
 
-.smtcmp-chat-sidebar-popover .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
-  background: color-mix(
-    in srgb,
-    var(--text-muted) 50%,
-    transparent
-  );
+.smtcmp-chat-sidebar-popover
+  .smtcmp-model-select-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-muted) 50%, transparent);
   background-clip: padding-box;
 }
 
@@ -4193,7 +4176,9 @@ button.smtcmp-chat-input-model-select {
   outline: none;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item::before {
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item::before {
   content: '';
   position: absolute;
   left: 0;
@@ -4207,15 +4192,27 @@ button.smtcmp-chat-input-model-select {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:hover,
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item[data-highlighted] {
-  background: color-mix(in srgb, var(--background-modifier-hover) 80%, transparent);
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item:hover,
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item[data-highlighted] {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 80%,
+    transparent
+  );
   color: var(--text-normal);
   padding-left: 16px;
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:hover::before,
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item[data-highlighted]::before {
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item:hover::before,
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item[data-highlighted]::before {
   opacity: 1;
   transform: translateX(0);
 }
@@ -4226,10 +4223,16 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-chat-sidebar-popover
   .smtcmp-model-select-list
   > .smtcmp-popover-item[data-highlighted] {
-  background: color-mix(in srgb, var(--background-modifier-hover) 90%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 90%,
+    transparent
+  );
 }
 
-.smtcmp-smart-space-popover .smtcmp-model-select-list > .smtcmp-popover-item:active {
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-popover-item:active {
   transform: scale(0.98);
 }
 
@@ -5008,9 +5011,10 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-selection-menu-content {
   background: color-mix(in srgb, var(--background-primary) 95%, transparent);
-  border: 1px solid color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--interactive-accent) 30%, transparent);
   border-radius: var(--radius-m);
-  box-shadow: 
+  box-shadow:
     0 0 0 1px color-mix(in srgb, var(--interactive-accent) 8%, transparent),
     0 8px 24px rgba(0, 0, 0, 0.15);
   padding: 6px;
@@ -5064,7 +5068,11 @@ button.smtcmp-chat-input-model-select {
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--h1-color, var(--interactive-accent)) 12%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--h1-color, var(--interactive-accent)) 12%,
+    transparent
+  );
   color: var(--h1-color, var(--interactive-accent));
   display: flex;
   align-items: center;

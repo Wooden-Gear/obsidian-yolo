@@ -566,8 +566,7 @@ export const zh: TranslationKeys = {
     rebuildingIndex: '正在重建库索引...',
     rebuildComplete: '重建库索引完成',
     rebuildFailed: '重建库索引失败',
-    pgliteUnavailable:
-      'PGlite 资源不可用，请检查网络连接或稍后重试',
+    pgliteUnavailable: 'PGlite 资源不可用，请检查网络连接或稍后重试',
     downloadingPglite:
       '正在从 CDN 下载 PGlite 依赖 (~20MB)，首次使用需要一点时间...',
     updatingIndex: '正在更新库索引...',

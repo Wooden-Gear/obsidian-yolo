@@ -453,10 +453,7 @@ function SmartSpacePanelBody({
   }
 
   return (
-    <div
-      className="smtcmp-smart-space-panel"
-      ref={containerRef as React.RefObject<HTMLDivElement>}
-    >
+    <div className="smtcmp-smart-space-panel" ref={containerRef ?? undefined}>
       {!isSubmitting ? (
         <>
           <div className="smtcmp-smart-space-input-card">

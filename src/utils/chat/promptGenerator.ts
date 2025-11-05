@@ -663,5 +663,4 @@ ${transcript.map((t) => `${t.offset}: ${t.text}`).join('\n')}`
     const response = await requestUrl({ url })
     return htmlToMarkdown(response.text)
   }
-
 }

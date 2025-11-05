@@ -13,10 +13,7 @@ export type SmartSpaceModalProps = {
   onClose: () => void
 }
 
-function SmartSpaceComponent({
-  editor,
-  onClose,
-}: SmartSpaceModalProps) {
+function SmartSpaceComponent({ editor, onClose }: SmartSpaceModalProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')

@@ -81,9 +81,11 @@ export class ReactFloatingPanel<T> {
       }, [pos.x, pos.y, size.height, size.width])
 
       const panelClassName = 'smtcmp-floating-panel'
+      const shouldCloseOnEscape = options?.closeOnEscape ?? true
+      const shouldCloseOnOutsideClick = options?.closeOnOutsideClick ?? true
 
       useEffect(() => {
-        if (!(options?.closeOnEscape ?? true)) {
+        if (!shouldCloseOnEscape) {
           return
         }
         const onKeyDown = (e: KeyboardEvent) => {
@@ -91,11 +93,11 @@ export class ReactFloatingPanel<T> {
         }
         document.addEventListener('keydown', onKeyDown)
         return () => document.removeEventListener('keydown', onKeyDown)
-      }, [onClose, options?.closeOnEscape])
+      }, [onClose, shouldCloseOnEscape])
 
       // Close on outside click
       useEffect(() => {
-        if (!(options?.closeOnOutsideClick ?? true)) return
+        if (!shouldCloseOnOutsideClick) return
         const onMouseDown = (e: MouseEvent) => {
           const el = panelRef.current
           if (el && !el.contains(e.target as Node)) {
@@ -104,7 +106,7 @@ export class ReactFloatingPanel<T> {
         }
         document.addEventListener('mousedown', onMouseDown)
         return () => document.removeEventListener('mousedown', onMouseDown)
-      }, [onClose])
+      }, [onClose, shouldCloseOnOutsideClick])
 
       const onHeaderPointerDown = (e: React.PointerEvent) => {
         setDragging(true)

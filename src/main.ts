@@ -50,16 +50,16 @@ import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
+  LLMRequestBase,
+  LLMRequestNonStreaming,
+  RequestMessage,
+} from './types/llm/request'
+import {
   getMentionableBlockData,
   getNestedFiles,
   readMultipleTFiles,
   readTFileContent,
 } from './utils/obsidian'
-import {
-  LLMRequestBase,
-  LLMRequestNonStreaming,
-  RequestMessage,
-} from './types/llm/request'
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
@@ -814,12 +814,11 @@ export default class SmartComposerPlugin extends Plugin {
   private isEditorWithCodeMirror(
     editor: Editor,
   ): editor is Editor & { cm?: EditorView } {
-    return (
-      typeof editor === 'object' &&
-      editor !== null &&
-      'cm' in editor &&
-      typeof (editor as Record<string, unknown>)['cm'] !== 'undefined'
-    )
+    if (typeof editor !== 'object' || editor === null || !('cm' in editor)) {
+      return false
+    }
+    const maybeEditor = editor as Editor & { cm?: EditorView }
+    return maybeEditor.cm instanceof EditorView
   }
 
   private ensureInlineSuggestionExtension(view: EditorView) {

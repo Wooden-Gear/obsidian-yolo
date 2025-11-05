@@ -32,6 +32,18 @@ type QuickAction = {
   enabled: boolean
 }
 
+type QuickActionCategory = NonNullable<QuickAction['category']>
+
+const QUICK_ACTION_CATEGORIES: QuickActionCategory[] = [
+  'suggestions',
+  'writing',
+  'thinking',
+  'custom',
+]
+
+const isQuickActionCategory = (value: string): value is QuickActionCategory =>
+  QUICK_ACTION_CATEGORIES.includes(value as QuickActionCategory)
+
 // Available icons mapping
 const ICON_OPTIONS = {
   sparkles: {
@@ -212,12 +224,7 @@ const getDefaultQuickActions = (t: any): QuickAction[] => {
 }
 
 // Category display order
-const CATEGORY_ORDER: QuickAction['category'][] = [
-  'suggestions',
-  'writing',
-  'thinking',
-  'custom',
-]
+const CATEGORY_ORDER: QuickAction['category'][] = [...QUICK_ACTION_CATEGORIES]
 
 type GroupedActions = {
   category: QuickAction['category']
@@ -655,7 +662,10 @@ export function SmartSpaceQuickActionsSettings() {
               value={editingAction.category || 'custom'}
               options={categoryOptions}
               onChange={(value) =>
-                setEditingAction({ ...editingAction, category: value as any })
+                setEditingAction({
+                  ...editingAction,
+                  category: isQuickActionCategory(value) ? value : 'custom',
+                })
               }
             />
           </ObsidianSetting>
@@ -851,7 +861,9 @@ export function SmartSpaceQuickActionsSettings() {
                             onChange={(value) =>
                               setEditingAction({
                                 ...editingAction,
-                                category: value as any,
+                                category: isQuickActionCategory(value)
+                                  ? value
+                                  : 'custom',
                               })
                             }
                           />

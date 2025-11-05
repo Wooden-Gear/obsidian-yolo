@@ -35,6 +35,7 @@ import {
   useRef,
   useState,
 } from 'react'
+
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
@@ -550,17 +551,13 @@ export function useMenuAnchorRef(
           const menuWidth = rect.width + ring * 2
           const menuTop = rect.top - offsetTop
 
-          updateDynamicStyleClass(
-            containerDiv,
-            'smtcmp-typeahead-menu-pos',
-            {
-              position: 'fixed',
-              left: Math.round(menuLeft),
-              top: Math.round(menuTop),
-              width: Math.round(menuWidth),
-              zIndex: '1000',
-            },
-          )
+          updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+            position: 'fixed',
+            left: Math.round(menuLeft),
+            top: Math.round(menuTop),
+            width: Math.round(menuWidth),
+            zIndex: '1000',
+          })
 
           if (menuEle) {
             const available = Math.max(margin, Math.floor(rect.top - margin))
@@ -604,17 +601,13 @@ export function useMenuAnchorRef(
           requestAnimationFrame(() => {
             const finalH = menuEle.getBoundingClientRect().height || estimatedH
             const t2 = Math.max(margin, top - offsetTop - finalH)
-            updateDynamicStyleClass(
-              containerDiv,
-              'smtcmp-typeahead-menu-pos',
-              {
-                position: 'fixed',
-                left: Math.round(leftPos),
-                top: Math.round(t2),
-                width: 360,
-                zIndex: '1000',
-              },
-            )
+            updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+              position: 'fixed',
+              left: Math.round(leftPos),
+              top: Math.round(t2),
+              width: 360,
+              zIndex: '1000',
+            })
           })
         }
       }

@@ -25,6 +25,92 @@ type AddChatModelModalComponentProps = {
   provider?: LLMProvider
 }
 
+const MODEL_IDENTIFIER_KEYS = ['id', 'name', 'model'] as const
+
+const OPENAI_REASONING_EFFORTS = ['minimal', 'low', 'medium', 'high'] as const
+type OpenAIReasoningEffort = (typeof OPENAI_REASONING_EFFORTS)[number]
+
+const REASONING_TYPES = ['none', 'openai', 'gemini', 'base'] as const
+type ReasoningType = (typeof REASONING_TYPES)[number]
+
+const GEMINI_TOOL_TYPES = ['none', 'gemini'] as const
+
+const REASONING_CONFIG_PROVIDER_TYPES = [
+  'openai',
+  'openrouter',
+  'openai-compatible',
+] as const
+const THINKING_CONFIG_PROVIDER_TYPES = [
+  'anthropic',
+  'gemini',
+  'openrouter',
+  'openai-compatible',
+] as const
+
+const extractModelIdentifier = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const record = value as Record<string, unknown>
+  for (const key of MODEL_IDENTIFIER_KEYS) {
+    const candidate = record[key]
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      return candidate
+    }
+  }
+  return null
+}
+
+const collectModelIdentifiers = (values: unknown[]): string[] =>
+  values
+    .map((entry) => extractModelIdentifier(entry))
+    .filter((id): id is string => Boolean(id))
+
+const isReasoningType = (value: string): value is ReasoningType =>
+  REASONING_TYPES.includes(value as ReasoningType)
+
+const isOpenAIReasoningEffort = (
+  value: string,
+): value is OpenAIReasoningEffort =>
+  OPENAI_REASONING_EFFORTS.includes(value as OpenAIReasoningEffort)
+
+const isGeminiToolType = (
+  value: string,
+): value is (typeof GEMINI_TOOL_TYPES)[number] =>
+  GEMINI_TOOL_TYPES.includes(value as (typeof GEMINI_TOOL_TYPES)[number])
+
+type ReasoningConfigurableModel = Extract<
+  ChatModel,
+  { providerType: 'openai' | 'openrouter' | 'openai-compatible' }
+>
+type ThinkingConfigurableModel = Extract<
+  ChatModel,
+  {
+    providerType:
+      | 'anthropic'
+      | 'gemini'
+      | 'openrouter'
+      | 'openai-compatible'
+  }
+>
+
+const isReasoningConfigurable = (
+  model: ChatModel,
+): model is ReasoningConfigurableModel =>
+  (REASONING_CONFIG_PROVIDER_TYPES as readonly string[]).includes(
+    model.providerType,
+  )
+
+const isThinkingConfigurable = (
+  model: ChatModel,
+): model is ThinkingConfigurableModel =>
+  (THINKING_CONFIG_PROVIDER_TYPES as readonly string[]).includes(
+    model.providerType,
+  )
+
 export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProps> {
   constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
     super({
@@ -63,17 +149,15 @@ function AddChatModelModalComponent({
   const [loadingModels, setLoadingModels] = useState<boolean>(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   // Reasoning type selection: none | openai | gemini
-  const [reasoningType, setReasoningType] = useState<
-    'none' | 'openai' | 'gemini' | 'base'
-  >(() => 'none')
+  const [reasoningType, setReasoningType] = useState<ReasoningType>('none')
   // When user manually changes reasoning type, stop auto-detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
-  const [openaiEffort, setOpenaiEffort] = useState<
-    'minimal' | 'low' | 'medium' | 'high'
-  >('medium')
+  const [openaiEffort, setOpenaiEffort] =
+    useState<OpenAIReasoningEffort>('medium')
   const [geminiBudget, setGeminiBudget] = useState<string>('-1')
   // Tool type (only meaningful for Gemini provider)
-  const [toolType, setToolType] = useState<'none' | 'gemini'>('none')
+  const [toolType, setToolType] =
+    useState<(typeof GEMINI_TOOL_TYPES)[number]>('none')
   const [customParameters, setCustomParameters] = useState<
     { key: string; value: string }[]
   >([])
@@ -128,7 +212,7 @@ function AddChatModelModalComponent({
             }
 
             let fetched = false
-            let lastErr: any = null
+            let lastErr: unknown = null
             for (const url of urlCandidates) {
               try {
                 const response = await requestUrl({
@@ -149,17 +233,8 @@ function AddChatModelModalComponent({
                 }
                 const json = response.json ?? JSON.parse(response.text)
                 // Robust extraction: support data[], models[], or array root; prefer id, fallback to name/model
-                const collectFrom = (arr: any[]): string[] =>
-                  arr
-                    .map((v: any) =>
-                      typeof v === 'string'
-                        ? v
-                        : (v?.id as string) ||
-                          (v?.name as string) ||
-                          (v?.model as string) ||
-                          null,
-                    )
-                    .filter((v: string | null): v is string => !!v)
+                const collectFrom = (arr: unknown[]): string[] =>
+                  collectModelIdentifiers(arr)
 
                 const buckets: string[] = []
                 if (Array.isArray(json?.data))
@@ -178,15 +253,16 @@ function AddChatModelModalComponent({
                 plugin.setCachedModelList(selectedProvider.id, unique)
                 fetched = true
                 break
-              } catch (e) {
-                lastErr = e
+              } catch (error) {
+                lastErr = error
                 continue
               }
             }
             if (fetched) return
-            throw (
-              lastErr ?? new Error('Failed to fetch models from all endpoints')
-            )
+            if (lastErr instanceof Error) {
+              throw lastErr
+            }
+            throw new Error('Failed to fetch models from all endpoints')
           }
         }
 
@@ -194,8 +270,8 @@ function AddChatModelModalComponent({
           const ai = new GoogleGenAI({ apiKey: selectedProvider.apiKey ?? '' })
           const pager = await ai.models.list()
           const names: string[] = []
-          for await (const m of pager as any) {
-            const raw = (m?.name || m?.model || '') as string
+          for await (const entry of pager) {
+            const raw = extractModelIdentifier(entry) ?? ''
             if (!raw) continue
             // Normalize like "models/gemini-2.5-pro" -> "gemini-2.5-pro"
             const norm = raw.includes('/') ? raw.split('/').pop()! : raw
@@ -209,9 +285,11 @@ function AddChatModelModalComponent({
           plugin.setCachedModelList(selectedProvider.id, unique)
           return
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to auto fetch models', err)
-        setLoadError(err?.message ?? 'unknown error')
+        const errorMessage =
+          err instanceof Error ? err.message : 'unknown error'
+        setLoadError(errorMessage)
       } finally {
         setLoadingModels(false)
       }
@@ -232,38 +310,12 @@ function AddChatModelModalComponent({
     const baseInternalId = generateModelId(formData.providerId, formData.model)
     const existingIds = plugin.settings.chatModels.map((m) => m.id)
     const modelIdWithPrefix = ensureUniqueModelId(existingIds, baseInternalId)
-    // Compose reasoning/thinking fields based on selection ONLY (provider-agnostic)
-    const reasoningPatch: Partial<ChatModel> = {}
-    if (reasoningType === 'base') {
-      ;(reasoningPatch as any).isBaseModel = true
-    } else if (reasoningType === 'openai') {
-      ;(reasoningPatch as any).reasoning = {
-        enabled: true,
-        reasoning_effort: openaiEffort,
-      }
-    } else if (reasoningType === 'gemini') {
-      const budget = parseInt(geminiBudget, 10)
-      if (Number.isNaN(budget)) {
-        new Notice(t('common.error'))
-        return
-      }
-      ;(reasoningPatch as any).thinking = {
-        enabled: true,
-        thinking_budget: budget,
-      }
-    }
-
-    if (reasoningType !== 'base') {
-      delete (reasoningPatch as any).isBaseModel
-    }
-
     const sanitizedCustomParameters = customParameters
       .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
       .filter((entry) => entry.key.length > 0)
 
-    const modelDataWithPrefix: ChatModel = {
+    let modelDataWithPrefix: ChatModel = {
       ...formData,
-      ...(reasoningPatch as any),
       id: modelIdWithPrefix,
       name:
         formData.name && formData.name.trim().length > 0
@@ -274,6 +326,65 @@ function AddChatModelModalComponent({
       ...(sanitizedCustomParameters.length > 0
         ? { customParameters: sanitizedCustomParameters }
         : {}),
+    }
+
+    if (reasoningType === 'base') {
+      modelDataWithPrefix = {
+        ...modelDataWithPrefix,
+        isBaseModel: true,
+      }
+    } else {
+      const { isBaseModel: _ignored, ...withoutBaseFlag } =
+        modelDataWithPrefix as Record<string, unknown>
+      modelDataWithPrefix = withoutBaseFlag as ChatModel
+
+      if (reasoningType === 'openai') {
+        if (!isReasoningConfigurable(modelDataWithPrefix)) {
+          new Notice(t('common.error'))
+          return
+        }
+        modelDataWithPrefix = {
+          ...modelDataWithPrefix,
+          reasoning: {
+            enabled: true,
+            reasoning_effort: openaiEffort,
+          },
+        }
+      } else if (reasoningType === 'gemini') {
+        const budget = parseInt(geminiBudget, 10)
+        if (Number.isNaN(budget)) {
+          new Notice(t('common.error'))
+          return
+        }
+        if (!isThinkingConfigurable(modelDataWithPrefix)) {
+          new Notice(t('common.error'))
+          return
+        }
+        modelDataWithPrefix =
+          modelDataWithPrefix.providerType === 'anthropic'
+            ? ({
+                ...modelDataWithPrefix,
+                thinking: {
+                  enabled: true,
+                  budget_tokens: budget,
+                },
+              } as Extract<ChatModel, { providerType: 'anthropic' }>)
+            : ({
+                ...modelDataWithPrefix,
+                thinking: {
+                  enabled: true,
+                  thinking_budget: budget,
+                },
+              } as Extract<
+                ChatModel,
+                {
+                  providerType:
+                    | 'gemini'
+                    | 'openrouter'
+                    | 'openai-compatible'
+                }
+              >)
+      }
     }
 
     // Allow duplicates of the same calling ID by uniquifying internal id; no blocking here
@@ -377,8 +488,10 @@ function AddChatModelModalComponent({
             gemini: t('settings.models.reasoningTypeGemini'),
             base: t('settings.models.reasoningTypeBase'),
           }}
-          onChange={(v: string) => {
-            setReasoningType(v as any)
+          onChange={(value: string) => {
+            setReasoningType(
+              isReasoningType(value) ? value : REASONING_TYPES[0],
+            )
             setAutoDetectReasoning(false)
           }}
         />
@@ -404,7 +517,13 @@ function AddChatModelModalComponent({
               medium: 'medium',
               high: 'high',
             }}
-            onChange={(v: string) => setOpenaiEffort(v as any)}
+            onChange={(value: string) =>
+              setOpenaiEffort(
+                isOpenAIReasoningEffort(value)
+                  ? value
+                  : OPENAI_REASONING_EFFORTS[2],
+              )
+            }
           />
         </ObsidianSetting>
       )}
@@ -435,7 +554,11 @@ function AddChatModelModalComponent({
               none: t('settings.models.toolTypeNone'),
               gemini: t('settings.models.toolTypeGemini'),
             }}
-            onChange={(v: string) => setToolType(v as any)}
+            onChange={(value: string) =>
+              setToolType(
+                isGeminiToolType(value) ? value : GEMINI_TOOL_TYPES[0],
+              )
+            }
           />
         </ObsidianSetting>
       )}

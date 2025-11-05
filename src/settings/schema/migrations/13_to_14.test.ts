@@ -1,5 +1,8 @@
 import { migrateFrom13To14 } from './13_to_14'
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 describe('migrateFrom13To14', () => {
   it('should populate default tab completion options when missing', () => {
     const result = migrateFrom13To14({
@@ -9,8 +12,14 @@ describe('migrateFrom13To14', () => {
 
     expect(result.version).toBe(14)
     expect(result.continuationOptions).toHaveProperty('tabCompletionOptions')
-    const options = (result.continuationOptions as any).tabCompletionOptions
-    expect(options).toMatchObject({
+    if (!isRecord(result.continuationOptions)) {
+      throw new Error('Expected continuationOptions to be an object')
+    }
+    const tabOptions = result.continuationOptions.tabCompletionOptions
+    if (!isRecord(tabOptions)) {
+      throw new Error('Expected tabCompletionOptions to be an object')
+    }
+    expect(tabOptions).toMatchObject({
       triggerDelayMs: 3000,
       minContextLength: 20,
       maxContextChars: 4000,
@@ -38,8 +47,14 @@ describe('migrateFrom13To14', () => {
     })
 
     expect(result.version).toBe(14)
-    const options = (result.continuationOptions as any).tabCompletionOptions
-    expect(options).toMatchObject({
+    if (!isRecord(result.continuationOptions)) {
+      throw new Error('Expected continuationOptions to be an object')
+    }
+    const tabOptions = result.continuationOptions.tabCompletionOptions
+    if (!isRecord(tabOptions)) {
+      throw new Error('Expected tabCompletionOptions to be an object')
+    }
+    expect(tabOptions).toMatchObject({
       triggerDelayMs: 5000,
       minContextLength: 5,
       maxContextChars: 8000,

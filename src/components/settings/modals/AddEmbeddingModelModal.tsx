@@ -29,6 +29,30 @@ type AddEmbeddingModelModalComponentProps = {
   provider?: LLMProvider
 }
 
+const MODEL_IDENTIFIER_KEYS = ['id', 'name', 'model'] as const
+
+const extractModelIdentifier = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const record = value as Record<string, unknown>
+  for (const key of MODEL_IDENTIFIER_KEYS) {
+    const candidate = record[key]
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      return candidate
+    }
+  }
+  return null
+}
+
+const collectModelIdentifiers = (values: unknown[]): string[] =>
+  values
+    .map((entry) => extractModelIdentifier(entry))
+    .filter((id): id is string => Boolean(id))
+
 export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalComponentProps> {
   constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
     super({
@@ -136,7 +160,7 @@ function AddEmbeddingModelModalComponent({
             }
 
             let fetched = false
-            let lastErr: any = null
+            let lastErr: unknown = null
             for (const url of urlCandidates) {
               try {
                 const response = await requestUrl({
@@ -157,17 +181,8 @@ function AddEmbeddingModelModalComponent({
                 }
                 const json = response.json ?? JSON.parse(response.text)
                 // Robust extraction: support data[], models[], or array root; prefer id, fallback to name/model
-                const collectFrom = (arr: any[]): string[] =>
-                  arr
-                    .map((v: any) =>
-                      typeof v === 'string'
-                        ? v
-                        : (v?.id as string) ||
-                          (v?.name as string) ||
-                          (v?.model as string) ||
-                          null,
-                    )
-                    .filter((v: string | null): v is string => !!v)
+                const collectFrom = (arr: unknown[]): string[] =>
+                  collectModelIdentifiers(arr)
 
                 const buckets: string[] = []
                 if (Array.isArray(json?.data))
@@ -187,15 +202,16 @@ function AddEmbeddingModelModalComponent({
                 plugin.setCachedModelList(selectedProvider.id, unique)
                 fetched = true
                 break
-              } catch (e) {
-                lastErr = e
+              } catch (error) {
+                lastErr = error
                 continue
               }
             }
             if (fetched) return
-            throw (
-              lastErr ?? new Error('Failed to fetch models from all endpoints')
-            )
+            if (lastErr instanceof Error) {
+              throw lastErr
+            }
+            throw new Error('Failed to fetch models from all endpoints')
           }
         }
 
@@ -203,8 +219,8 @@ function AddEmbeddingModelModalComponent({
           const ai = new GoogleGenAI({ apiKey: selectedProvider.apiKey ?? '' })
           const pager = await ai.models.list()
           const names: string[] = []
-          for await (const m of pager as any) {
-            const raw = (m?.name || m?.model || '') as string
+          for await (const entry of pager) {
+            const raw = extractModelIdentifier(entry) ?? ''
             if (!raw) continue
             // Normalize like "models/text-embedding-004" -> "text-embedding-004"
             const norm = raw.includes('/') ? raw.split('/').pop()! : raw
@@ -224,9 +240,11 @@ function AddEmbeddingModelModalComponent({
           plugin.setCachedModelList(selectedProvider.id, unique)
           return
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to auto fetch embedding models', err)
-        setLoadError(err?.message ?? 'unknown error')
+        const errorMessage =
+          err instanceof Error ? err.message : 'unknown error'
+        setLoadError(errorMessage)
       } finally {
         setLoadingModels(false)
       }

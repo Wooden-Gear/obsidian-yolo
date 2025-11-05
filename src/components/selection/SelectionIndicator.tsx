@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SelectionInfo } from './SelectionManager'
 
