@@ -1253,6 +1253,81 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-faint);
 }
 
+/* OpenAI-Style Thinking Loader - OpenAI 风格思考动画 */
+.smtcmp-thinking-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 内联思考指示器 - 在编辑器中显示 */
+.smtcmp-thinking-indicator-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: baseline;
+  line-height: 1;
+}
+
+/* 旋转的 Sparkles 图标 */
+.smtcmp-thinking-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  box-shadow: 
+    0 0 0 1px color-mix(in srgb, var(--interactive-accent) 20%, transparent),
+    0 1px 4px color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
+
+.smtcmp-thinking-icon-svg {
+  color: var(--interactive-accent);
+  animation: smtcmp-thinking-icon-spin 3s linear infinite;
+}
+
+@keyframes smtcmp-thinking-icon-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 高光流动的文字 */
+.smtcmp-thinking-text {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-normal);
+  letter-spacing: 0.02em;
+  background: linear-gradient(
+    90deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 30%,
+    var(--text-normal) 50%,
+    var(--text-muted) 70%,
+    var(--text-muted) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: smtcmp-thinking-text-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes smtcmp-thinking-text-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+/* 保留旧的 dot-loader 作为后备 */
 .smtcmp-dot-loader {
   display: inline-block;
   text-align: left;
@@ -3848,9 +3923,20 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-smart-space-status {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: var(--font-ui-small);
-  color: var(--text-muted);
+  padding: 4px 0;
+  margin-top: -6px;
+  animation: smtcmp-status-fade-in 0.3s ease;
+}
+
+@keyframes smtcmp-status-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .smtcmp-smart-space-error {

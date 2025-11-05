@@ -66,6 +66,111 @@ type InlineSuggestionGhostPayload = { from: number; text: string } | null
 const inlineSuggestionGhostEffect =
   StateEffect.define<InlineSuggestionGhostPayload>()
 
+type ThinkingIndicatorPayload = { from: number; text: string } | null
+
+const thinkingIndicatorEffect =
+  StateEffect.define<ThinkingIndicatorPayload>()
+
+class ThinkingIndicatorWidget extends WidgetType {
+  constructor(private readonly text: string) {
+    super()
+  }
+
+  eq(other: ThinkingIndicatorWidget) {
+    return this.text === other.text
+  }
+
+  ignoreEvent(): boolean {
+    return true
+  }
+
+  toDOM(): HTMLElement {
+    const container = document.createElement('span')
+    container.className = 'smtcmp-thinking-indicator-inline'
+    
+    // 创建思考动画容器
+    const loader = document.createElement('span')
+    loader.className = 'smtcmp-thinking-loader'
+    
+    // 图标容器
+    const icon = document.createElement('span')
+    icon.className = 'smtcmp-thinking-icon'
+    
+    // SVG 图标 (Sparkles)
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('width', '12')
+    svg.setAttribute('height', '12')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('stroke-width', '2')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+    svg.classList.add('smtcmp-thinking-icon-svg')
+    
+    const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path1.setAttribute('d', 'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z')
+    const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path2.setAttribute('d', 'M5 3v4')
+    const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path3.setAttribute('d', 'M19 17v4')
+    const path4 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path4.setAttribute('d', 'M3 5h4')
+    const path5 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path5.setAttribute('d', 'M17 19h4')
+    
+    svg.appendChild(path1)
+    svg.appendChild(path2)
+    svg.appendChild(path3)
+    svg.appendChild(path4)
+    svg.appendChild(path5)
+    
+    icon.appendChild(svg)
+    
+    // 文字
+    const textEl = document.createElement('span')
+    textEl.className = 'smtcmp-thinking-text'
+    textEl.textContent = this.text
+    
+    loader.appendChild(icon)
+    loader.appendChild(textEl)
+    container.appendChild(loader)
+    
+    return container
+  }
+}
+
+const thinkingIndicatorField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(value, tr) {
+    let decorations = value.map(tr.changes)
+
+    for (const effect of tr.effects) {
+      if (effect.is(thinkingIndicatorEffect)) {
+        const payload = effect.value
+        if (!payload) {
+          decorations = Decoration.none
+          continue
+        }
+        const widget = Decoration.widget({
+          widget: new ThinkingIndicatorWidget(payload.text),
+          side: 1,
+        }).range(payload.from)
+        decorations = Decoration.set([widget])
+      }
+    }
+
+    if (tr.docChanged) {
+      decorations = Decoration.none
+    }
+
+    return decorations
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
 class InlineSuggestionGhostWidget extends WidgetType {
   constructor(private readonly text: string) {
     super()
@@ -826,6 +931,7 @@ export default class SmartComposerPlugin extends Plugin {
     view.dispatch({
       effects: StateEffect.appendConfig.of([
         inlineSuggestionGhostField,
+        thinkingIndicatorField,
         Prec.high(
           keymap.of([
             {
@@ -853,6 +959,19 @@ export default class SmartComposerPlugin extends Plugin {
   ) {
     this.ensureInlineSuggestionExtension(view)
     view.dispatch({ effects: inlineSuggestionGhostEffect.of(payload) })
+  }
+
+  private showThinkingIndicator(
+    view: EditorView,
+    from: number,
+    text: string,
+  ) {
+    this.ensureInlineSuggestionExtension(view)
+    view.dispatch({ effects: thinkingIndicatorEffect.of({ from, text }) })
+  }
+
+  private hideThinkingIndicator(view: EditorView) {
+    view.dispatch({ effects: thinkingIndicatorEffect.of(null) })
   }
 
   private getTabCompletionOptions() {
@@ -1915,6 +2034,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     // 立即创建并注册 AbortController，确保整个流程都能被中止
     const controller = new AbortController()
     this.activeAbortControllers.add(controller)
+    let view: EditorView | null = null
 
     try {
       const notice = new Notice('Generating continuation...', 0)
@@ -2145,8 +2265,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
       // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
       this.isContinuationInProgress = true
-
-      const view = this.getEditorView(editor)
+      
+      view = this.getEditorView(editor)
       if (!view) {
         notice.setMessage('Unable to access editor view.')
         this.registerTimeout(() => notice.hide(), 1200)
@@ -2156,6 +2276,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.ensureInlineSuggestionExtension(view)
       this.clearInlineSuggestion()
 
+      // 在光标位置显示思考指示器
+      const currentCursor = editor.getCursor()
+      const line = view.state.doc.line(currentCursor.line + 1)
+      const cursorOffset = line.from + currentCursor.ch
+      const thinkingText = this.t('chat.customContinueProcessing', 'Thinking')
+      this.showThinkingIndicator(view, cursorOffset, thinkingText)
+
       let hasClosedSmartSpaceWidget = false
       const closeSmartSpaceWidgetOnce = () => {
         if (!hasClosedSmartSpaceWidget) {
@@ -2163,6 +2290,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           hasClosedSmartSpaceWidget = true
         }
       }
+
+      // 立即关闭 Smart Space 面板，避免与内联指示器重复显示
+      closeSmartSpaceWidgetOnce()
 
       // Stream response and progressively update ghost suggestion
       const baseRequest: LLMRequestBase = {
@@ -2193,19 +2323,26 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       const startLine = view.state.doc.line(insertStart.line + 1)
       const startOffset = startLine.from + insertStart.ch
       let suggestionText = ''
+      let hasHiddenThinkingIndicator = false
+      const nonNullView = view // TypeScript 类型细化
 
       const updateContinuationSuggestion = (text: string) => {
-        this.setInlineSuggestionGhost(view, { from: startOffset, text })
+        // 首次接收到内容时隐藏思考指示器
+        if (!hasHiddenThinkingIndicator) {
+          this.hideThinkingIndicator(nonNullView)
+          hasHiddenThinkingIndicator = true
+        }
+        this.setInlineSuggestionGhost(nonNullView, { from: startOffset, text })
         this.activeInlineSuggestion = {
           source: 'continuation',
           editor,
-          view,
+          view: nonNullView,
           fromOffset: startOffset,
           text,
         }
         this.continuationInlineSuggestion = {
           editor,
-          view,
+          view: nonNullView,
           text,
           fromOffset: startOffset,
           startPos: insertStart,
@@ -2265,6 +2402,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         new Notice('Failed to generate continuation.')
       }
     } finally {
+      // 确保思考指示器被移除
+      if (view) {
+        this.hideThinkingIndicator(view)
+      }
       this.isContinuationInProgress = false
       this.activeAbortControllers.delete(controller)
     }

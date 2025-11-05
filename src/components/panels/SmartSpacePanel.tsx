@@ -699,12 +699,7 @@ function SmartSpacePanelBody({
             </div>
           )}
         </>
-      ) : (
-        <div className="smtcmp-smart-space-status" aria-live="polite">
-          <span>{t('chat.customContinueProcessing', 'Thinking')}</span>
-          <DotLoader />
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
