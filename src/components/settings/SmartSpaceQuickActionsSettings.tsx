@@ -209,7 +209,7 @@ const DEFAULT_ACTION_LOOKUP: Record<string, DefaultActionConfig> =
 
 // Generate unique ID
 const generateId = () => {
-  return `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  return `action_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
 const getDefaultQuickActions = (t: any): QuickAction[] => {
