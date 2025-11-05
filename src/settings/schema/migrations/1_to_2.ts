@@ -577,8 +577,9 @@ export const V2_DEFAULT_EMBEDDING_MODELS: readonly EmbeddingModel[] = [
 ]
 
 export const migrateFrom1To2: SettingMigration['migrate'] = (
-  data: SmartComposerSettingsV1,
+  rawData: SmartComposerSettingsV1,
 ) => {
+  const data = smartComposerSettingsSchemaV1.parse(rawData)
   const providers: LLMProvider[] = [...V2_DEFAULT_PROVIDERS]
   const chatModels: ChatModel[] = [...V2_DEFAULT_CHAT_MODELS]
   const ollamaChatModelData = data.ollamaChatModel ?? { baseUrl: '', model: '' }

@@ -3,7 +3,6 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
-import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 
 export type FloatingPanelOptions = {
   title?: string
@@ -81,14 +80,12 @@ export class ReactFloatingPanel<T> {
         return vars
       }, [pos.x, pos.y, size.height, size.width])
 
-      const panelClassName = useDynamicStyleClass(
-        'smtcmp-floating-panel',
-        'smtcmp-floating-panel-state',
-        panelStyleVars,
-      )
+      const panelClassName = 'smtcmp-floating-panel'
+      const shouldCloseOnEscape = options?.closeOnEscape ?? true
+      const shouldCloseOnOutsideClick = options?.closeOnOutsideClick ?? true
 
       useEffect(() => {
-        if (!(options?.closeOnEscape ?? true)) {
+        if (!shouldCloseOnEscape) {
           return
         }
         const onKeyDown = (e: KeyboardEvent) => {
@@ -96,11 +93,11 @@ export class ReactFloatingPanel<T> {
         }
         document.addEventListener('keydown', onKeyDown)
         return () => document.removeEventListener('keydown', onKeyDown)
-      }, [onClose, options?.closeOnEscape])
+      }, [onClose, shouldCloseOnEscape])
 
       // Close on outside click
       useEffect(() => {
-        if (!(options?.closeOnOutsideClick ?? true)) return
+        if (!shouldCloseOnOutsideClick) return
         const onMouseDown = (e: MouseEvent) => {
           const el = panelRef.current
           if (el && !el.contains(e.target as Node)) {
@@ -109,7 +106,7 @@ export class ReactFloatingPanel<T> {
         }
         document.addEventListener('mousedown', onMouseDown)
         return () => document.removeEventListener('mousedown', onMouseDown)
-      }, [onClose])
+      }, [onClose, shouldCloseOnOutsideClick])
 
       const onHeaderPointerDown = (e: React.PointerEvent) => {
         setDragging(true)
@@ -164,7 +161,11 @@ export class ReactFloatingPanel<T> {
       return (
         <PluginProvider plugin={this.plugin}>
           <LanguageProvider>
-            <div ref={panelRef} className={panelClassName}>
+            <div
+              ref={panelRef}
+              className={panelClassName}
+              style={panelStyleVars}
+            >
               {/* Minimal headerless mode: add a thin drag handle on top */}
               {options?.minimal ? (
                 <div

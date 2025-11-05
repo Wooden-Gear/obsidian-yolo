@@ -449,7 +449,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   )
 
   const handleToolMessageUpdate = useCallback(
-    async (toolMessage: ChatToolMessage) => {
+    (toolMessage: ChatToolMessage) => {
       const toolMessageIndex = chatMessages.findIndex(
         (message) => message.id === toolMessage.id,
       )
@@ -550,7 +550,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const updateConversationAsync = async () => {
       try {
         if (chatMessages.length > 0) {
-          createOrUpdateConversation(
+          await createOrUpdateConversation(
             currentConversationId,
             chatMessages,
             conversationOverrides ?? null,
@@ -1011,14 +1011,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               className="smtcmp-continue-response-button"
               onClick={handleContinueResponse}
             >
-              <div>Continue Response</div>
+              <div>Continue response</div>
             </button>
           </div>
         )}
         {submitChatMutation.isPending && (
           <button onClick={abortActiveStreams} className="smtcmp-stop-gen-btn">
             <CircleStop size={16} />
-            <div>Stop Generation</div>
+            <div>Stop generation</div>
           </button>
         )}
       </div>

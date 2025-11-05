@@ -42,17 +42,17 @@ export function ChatModelsSubSection({
     requestAnimationFrame(() => tryFind())
   }
 
-  const handleDeleteChatModel = async (modelId: string) => {
+  const handleDeleteChatModel = (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Chat Model or Tool Model',
+        'Cannot remove model that is currently selected as chat model or tool model',
       )
       return
     }
 
     const message = `Are you sure you want to delete model "${modelId}"?`
     new ConfirmModal(app, {
-      title: 'Delete Chat Model',
+      title: 'Delete chat model',
       message: message,
       ctaText: 'Delete',
       onConfirm: async () => {
@@ -73,7 +73,7 @@ export function ChatModelsSubSection({
       (modelId === settings.chatModelId || modelId === settings.applyModelId)
     ) {
       new Notice(
-        'Cannot disable model that is currently selected as Chat Model or Tool Model',
+        'Cannot disable model that is currently selected as chat model or tool model',
       )
 
       // to trigger re-render
@@ -267,7 +267,7 @@ export function ChatModelsSubSection({
 
   return (
     <div>
-      <div className="smtcmp-settings-sub-header">Chat Models</div>
+      <div className="smtcmp-settings-sub-header">Chat models</div>
       <div className="smtcmp-settings-desc">Models used for chat and apply</div>
 
       <div className="smtcmp-settings-table-container">
@@ -315,9 +315,13 @@ export function ChatModelsSubSection({
                 <td>
                   <ObsidianToggle
                     value={isEnabled(chatModel.enable)}
-                    onChange={(value) =>
-                      handleToggleEnableChatModel(chatModel.id, value)
-                    }
+                    onChange={(value) => {
+                      handleToggleEnableChatModel(chatModel.id, value).catch(
+                        (error) => {
+                          console.error('Failed to toggle chat model', error)
+                        },
+                      )
+                    }}
                   />
                 </td>
                 <td>

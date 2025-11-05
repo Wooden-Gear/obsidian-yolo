@@ -162,7 +162,7 @@ function CurrentFileBadge({
         <span className={clsx(!mentionable.file && 'smtcmp-excluded-content')}>
           {mentionable.file?.name ??
             app.workspace.getActiveFile()?.name ??
-            'Current File'}
+            'Current file'}
         </span>
       </div>
       <div
@@ -171,7 +171,7 @@ function CurrentFileBadge({
           !mentionable.file && 'smtcmp-excluded-content',
         )}
       >
-        {' (Current File)'}
+        {' (Current file)'}
       </div>
       <div
         className="smtcmp-chat-user-input-file-badge-eye"

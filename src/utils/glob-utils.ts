@@ -1,12 +1,13 @@
 import { minimatch } from 'minimatch'
-import { Vault } from 'obsidian'
+import { TFile, Vault } from 'obsidian'
 
-export const findFilesMatchingPatterns = async (
+export const findFilesMatchingPatterns = (
   patterns: string[],
   vault: Vault,
-) => {
+): Promise<TFile[]> => {
   const files = vault.getMarkdownFiles()
-  return files.filter((file) => {
+  const matchedFiles = files.filter((file) => {
     return patterns.some((pattern) => minimatch(file.path, pattern))
   })
+  return Promise.resolve(matchedFiles)
 }

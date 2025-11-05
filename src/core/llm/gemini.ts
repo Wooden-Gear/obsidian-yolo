@@ -221,7 +221,7 @@ export class GeminiProvider extends BaseLLMProvider<
         const singleChunk = async function* (
           resp: LLMResponseNonStreaming,
         ): AsyncIterable<LLMResponseStreaming> {
-          yield {
+          const chunk: LLMResponseStreaming = {
             id: resp.id,
             created: resp.created,
             model: resp.model,
@@ -238,6 +238,7 @@ export class GeminiProvider extends BaseLLMProvider<
             ],
             usage: resp.usage,
           }
+          yield chunk
         }
         return singleChunk(nonStream)
       }
@@ -470,10 +471,8 @@ export class GeminiProvider extends BaseLLMProvider<
       return schema.map((item) => this.removeAdditionalProperties(item))
     }
 
-    const { additionalProperties: _, ...rest } = schema as Record<
-      string,
-      unknown
-    >
+    const rest = { ...(schema as Record<string, unknown>) }
+    delete rest.additionalProperties
 
     return Object.fromEntries(
       Object.entries(rest).map(([key, value]) => [

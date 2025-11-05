@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
-import { useDynamicStyleClass } from '../../../hooks/useDynamicStyleClass'
 
 export default function ChatSettingsButton({
   overrides,
@@ -74,11 +73,7 @@ export default function ChatSettingsButton({
     return { width: `${panelWidth}px` }
   }, [panelWidth])
 
-  const popoverClassName = useDynamicStyleClass(
-    'smtcmp-popover-content smtcmp-chat-settings-content',
-    'smtcmp-chat-settings-width',
-    popoverWidthStyle,
-  )
+  const popoverClassName = 'smtcmp-popover-content smtcmp-chat-settings-content'
 
   return (
     <Popover.Root>
@@ -96,6 +91,7 @@ export default function ChatSettingsButton({
       </Popover.Trigger>
       <Popover.Content
         className={popoverClassName}
+        style={popoverWidthStyle}
         side="bottom"
         align="end"
         sideOffset={6}
@@ -103,11 +99,11 @@ export default function ChatSettingsButton({
         <div className="smtcmp-chat-settings">
           <div className="smtcmp-chat-settings-section">
             <div className="smtcmp-chat-settings-section-title">
-              {t('chat.conversationSettings.chatMemory', 'Chat Memory')}
+              {t('chat.conversationSettings.chatMemory', 'Chat memory')}
             </div>
             <div className="smtcmp-chat-settings-row2">
               <div className="smtcmp-chat-settings-label">
-                {t('chat.conversationSettings.maxContext', 'Max Context')}
+                {t('chat.conversationSettings.maxContext', 'Max context')}
               </div>
               <input
                 type="number"
@@ -131,7 +127,7 @@ export default function ChatSettingsButton({
 
           <div className="smtcmp-chat-settings-section">
             <div className="smtcmp-chat-settings-section-title">
-              {t('chat.conversationSettings.sampling', 'Sampling Parameters')}
+              {t('chat.conversationSettings.sampling', 'Sampling parameters')}
             </div>
             <div className="smtcmp-chat-settings-row2">
               <div className="smtcmp-chat-settings-label">
@@ -208,11 +204,11 @@ export default function ChatSettingsButton({
 
           <div className="smtcmp-chat-settings-section">
             <div className="smtcmp-chat-settings-section-title">
-              {t('chat.conversationSettings.vaultSearch', 'Vault Search')}
+              {t('chat.conversationSettings.vaultSearch', 'Vault search')}
             </div>
             <div className="smtcmp-chat-settings-row-inline">
               <div className="smtcmp-chat-settings-label">
-                {t('chat.conversationSettings.useVaultSearch', 'RAG Search')}
+                {t('chat.conversationSettings.useVaultSearch', 'RAG search')}
               </div>
               <div className="smtcmp-segmented">
                 <button
@@ -234,11 +230,11 @@ export default function ChatSettingsButton({
           {hasGeminiTools && (
             <div className="smtcmp-chat-settings-section">
               <div className="smtcmp-chat-settings-section-title">
-                {t('chat.conversationSettings.geminiTools', 'Gemini Tools')}
+                {t('chat.conversationSettings.geminiTools', 'Gemini tools')}
               </div>
               <div className="smtcmp-chat-settings-row-inline">
                 <div className="smtcmp-chat-settings-label">
-                  {t('chat.conversationSettings.webSearch', 'Web Search')}
+                  {t('chat.conversationSettings.webSearch', 'Web search')}
                 </div>
                 <div className="smtcmp-segmented">
                   <button
@@ -257,7 +253,7 @@ export default function ChatSettingsButton({
               </div>
               <div className="smtcmp-chat-settings-row-inline">
                 <div className="smtcmp-chat-settings-label">
-                  {t('chat.conversationSettings.urlContext', 'URL Context')}
+                  {t('chat.conversationSettings.urlContext', 'URL context')}
                 </div>
                 <div className="smtcmp-segmented">
                   <button

@@ -153,10 +153,7 @@ export function SearchableDropdown({
   const { t } = useLanguage()
 
   return (
-    <div
-      ref={containerRef}
-      className="smtcmp-searchable-dropdown"
-    >
+    <div ref={containerRef} className="smtcmp-searchable-dropdown">
       {/* Input field */}
       <input
         ref={inputRef}

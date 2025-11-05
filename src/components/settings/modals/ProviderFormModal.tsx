@@ -27,7 +27,7 @@ export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
       Component: ProviderFormComponent,
       props: { plugin, provider: null },
       options: {
-        title: 'Add Custom Provider', // Will be translated in component
+        title: 'Add custom provider', // Will be translated in component
       },
       plugin: plugin,
     })
@@ -41,7 +41,7 @@ export class EditProviderModal extends ReactModal<ProviderFormComponentProps> {
       Component: ProviderFormComponent,
       props: { plugin, provider },
       options: {
-        title: `Edit Provider: ${provider.id}`, // Will be translated in component
+        title: `Edit provider: ${provider.id}`, // Will be translated in component
       },
       plugin: plugin,
     })
@@ -55,12 +55,6 @@ function ProviderFormComponent({
 }: ProviderFormComponentProps) {
   const { t } = useLanguage()
 
-  // Debug: log translation function
-  console.log(
-    'Translation test:',
-    t('common.save'),
-    t('settings.providers.apiKey'),
-  )
   const [formData, setFormData] = useState<LLMProvider>(
     provider
       ? ({
@@ -203,7 +197,7 @@ function ProviderFormComponent({
         />
       </ObsidianSetting>
 
-      <ObsidianSetting name="Provider Type" required>
+      <ObsidianSetting name="Provider type" required>
         <ObsidianDropdown
           value={formData.type}
           options={Object.fromEntries(

@@ -18,36 +18,51 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
+import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
-import { useDynamicStyleClass } from '../../hooks/useDynamicStyleClass'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
+import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
 import DotLoader from '../common/DotLoader'
 
-type CustomContinuePanelProps = {
+type SmartSpacePanelProps = {
   editor: Editor
   onClose: () => void
   showQuickActions?: boolean // Whether to show quick action buttons
 }
 
-function CustomContinuePanelBody({
+function SmartSpacePanelBody({
   editor,
   onClose,
   showQuickActions = true,
-}: CustomContinuePanelProps) {
+  containerRef,
+}: SmartSpacePanelProps & { containerRef?: React.RefObject<HTMLDivElement> }) {
   const plugin = usePlugin()
   const { t } = useLanguage()
+  const { settings, setSettings } = useSettings()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const modelSelectRef = useRef<HTMLButtonElement>(null)
+  const webSearchButtonRef = useRef<HTMLButtonElement>(null)
+  const urlContextButtonRef = useRef<HTMLButtonElement>(null)
   const [instruction, setInstruction] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [useWebSearch, setUseWebSearch] = useState(false)
-  const [useUrlContext, setUseUrlContext] = useState(false)
+  const [useWebSearch, setUseWebSearch] = useState(
+    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false,
+  )
+  const [useUrlContext, setUseUrlContext] = useState(
+    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false,
+  )
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
   const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
+  const [selectedModelId, setSelectedModelId] = useState<string>(
+    settings?.continuationOptions?.continuationModelId ??
+      settings?.chatModelId ??
+      '',
+  )
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
@@ -92,10 +107,12 @@ function CustomContinuePanelBody({
     setIsSubmitConfirmPending(false)
   }, [instruction])
 
-  const textareaClassName = useDynamicStyleClass(
-    'smtcmp-custom-continue-input',
-    'smtcmp-custom-continue-input-height',
-    textareaHeight !== null ? { height: `${textareaHeight}px` } : {},
+  const textareaStyle = useMemo(
+    () =>
+      textareaHeight !== null
+        ? ({ height: `${textareaHeight}px` } as React.CSSProperties)
+        : undefined,
+    [textareaHeight],
   )
 
   const sections = useMemo(() => {
@@ -149,7 +166,7 @@ function CustomContinuePanelBody({
           instruction: action.instruction,
           icon: (
             <IconComponent
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />
           ),
@@ -218,7 +235,7 @@ function CustomContinuePanelBody({
               'chat.customContinueSections.suggestions.items.continue.label',
               'chat.customContinueSections.suggestions.items.continue.instruction',
               <Sparkles
-                className="smtcmp-custom-continue-item-icon-svg"
+                className="smtcmp-smart-space-item-icon-svg"
                 size={14}
               />,
             ),
@@ -229,46 +246,31 @@ function CustomContinuePanelBody({
             'summarize',
             'chat.customContinueSections.writing.items.summarize.label',
             'chat.customContinueSections.writing.items.summarize.instruction',
-            <FileText
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <FileText className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'todo',
             'chat.customContinueSections.writing.items.todo.label',
             'chat.customContinueSections.writing.items.todo.instruction',
-            <ListTodo
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <ListTodo className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'flowchart',
             'chat.customContinueSections.writing.items.flowchart.label',
             'chat.customContinueSections.writing.items.flowchart.instruction',
-            <Workflow
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <Workflow className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'table',
             'chat.customContinueSections.writing.items.table.label',
             'chat.customContinueSections.writing.items.table.instruction',
-            <Table
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <Table className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'freewrite',
             'chat.customContinueSections.writing.items.freewrite.label',
             'chat.customContinueSections.writing.items.freewrite.instruction',
-            <PenLine
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <PenLine className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
         ]),
         makeSection('thinking', 'chat.customContinueSections.thinking.title', [
@@ -277,7 +279,7 @@ function CustomContinuePanelBody({
             'chat.customContinueSections.thinking.items.brainstorm.label',
             'chat.customContinueSections.thinking.items.brainstorm.instruction',
             <Lightbulb
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -285,17 +287,14 @@ function CustomContinuePanelBody({
             'analyze',
             'chat.customContinueSections.thinking.items.analyze.label',
             'chat.customContinueSections.thinking.items.analyze.instruction',
-            <Brain
-              className="smtcmp-custom-continue-item-icon-svg"
-              size={14}
-            />,
+            <Brain className="smtcmp-smart-space-item-icon-svg" size={14} />,
           ),
           makeItem(
             'dialogue',
             'chat.customContinueSections.thinking.items.dialogue.label',
             'chat.customContinueSections.thinking.items.dialogue.instruction',
             <MessageCircle
-              className="smtcmp-custom-continue-item-icon-svg"
+              className="smtcmp-smart-space-item-icon-svg"
               size={14}
             />,
           ),
@@ -370,7 +369,7 @@ function CustomContinuePanelBody({
       )
       onClose()
     } catch (err) {
-      console.error('Custom continue failed', err)
+      console.error('Smart Space failed', err)
       setIsSubmitting(false)
       setError(
         t('chat.customContinueError', 'Generation failed. Please try again.'),
@@ -406,6 +405,22 @@ function CustomContinuePanelBody({
       if (totalItems === 0) return
       event.preventDefault()
       focusLastItem()
+    } else if (event.key === 'ArrowRight') {
+      // 支持右方向键切换到模型选择框或工具按钮
+      event.preventDefault()
+      if (modelSelectRef.current) {
+        modelSelectRef.current.focus()
+      }
+    } else if (event.key === 'ArrowLeft') {
+      // 左方向键从输入框循环到最后一个控件
+      event.preventDefault()
+      if (urlContextButtonRef.current) {
+        urlContextButtonRef.current.focus()
+      } else if (webSearchButtonRef.current) {
+        webSearchButtonRef.current.focus()
+      } else if (modelSelectRef.current) {
+        modelSelectRef.current.focus()
+      }
     }
   }
 
@@ -416,10 +431,18 @@ function CustomContinuePanelBody({
   ) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      moveFocus(index, 1)
+      if (index === totalItems - 1) {
+        inputRef.current?.focus({ preventScroll: true })
+      } else {
+        moveFocus(index, 1)
+      }
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
-      moveFocus(index, -1)
+      if (index === 0) {
+        inputRef.current?.focus({ preventScroll: true })
+      } else {
+        moveFocus(index, -1)
+      }
     } else if (event.key === 'Enter') {
       event.preventDefault()
       void handleSubmit(instructionText)
@@ -430,18 +453,19 @@ function CustomContinuePanelBody({
   }
 
   return (
-    <div className="smtcmp-custom-continue-panel">
+    <div className="smtcmp-smart-space-panel" ref={containerRef ?? undefined}>
       {!isSubmitting ? (
         <>
-          <div className="smtcmp-custom-continue-input-card">
-            <div className="smtcmp-custom-continue-header">
-              <div className="smtcmp-custom-continue-avatar">
+          <div className="smtcmp-smart-space-input-card">
+            <div className="smtcmp-smart-space-header">
+              <div className="smtcmp-smart-space-avatar">
                 <Sparkles size={14} />
               </div>
-              <div className="smtcmp-custom-continue-input-wrapper">
+              <div className="smtcmp-smart-space-input-wrapper">
                 <textarea
                   ref={inputRef}
-                  className={textareaClassName}
+                  className="smtcmp-smart-space-input"
+                  style={textareaStyle}
                   placeholder={t(
                     'chat.customContinuePromptPlaceholder',
                     'Ask AI...',
@@ -453,72 +477,188 @@ function CustomContinuePanelBody({
                   rows={1}
                 />
                 {(instruction.length > 0 || isSubmitConfirmPending) && (
-                  <div className="smtcmp-custom-continue-input-hint">
+                  <div className="smtcmp-smart-space-input-hint">
                     {isSubmitConfirmPending
                       ? t('chat.customContinueConfirmHint', '⏎ 是否确认提交？')
                       : t('chat.customContinueHint', '⏎ 提交')}
                   </div>
                 )}
               </div>
-              {hasGeminiTools && (
-                <div className="smtcmp-custom-continue-tools">
-                  <button
-                    type="button"
-                    className={`smtcmp-custom-continue-tool-button ${
-                      useWebSearch ? 'active' : ''
-                    }`}
-                    onClick={() => setUseWebSearch(!useWebSearch)}
-                    title={t(
-                      'chat.conversationSettings.webSearch',
-                      'Web Search',
-                    )}
-                    aria-label={t(
-                      'chat.conversationSettings.webSearch',
-                      'Web Search',
-                    )}
-                  >
-                    <Globe size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`smtcmp-custom-continue-tool-button ${
-                      useUrlContext ? 'active' : ''
-                    }`}
-                    onClick={() => setUseUrlContext(!useUrlContext)}
-                    title={t(
-                      'chat.conversationSettings.urlContext',
-                      'URL Context',
-                    )}
-                    aria-label={t(
-                      'chat.conversationSettings.urlContext',
-                      'URL Context',
-                    )}
-                  >
-                    <Link size={14} />
-                  </button>
+              <div className="smtcmp-smart-space-controls">
+                <div className="smtcmp-smart-space-model-select">
+                  <ModelSelect
+                    ref={modelSelectRef}
+                    modelId={selectedModelId}
+                    onChange={(modelId) => {
+                      setSelectedModelId(modelId)
+                      if (settings) {
+                        setSettings({
+                          ...settings,
+                          continuationOptions: {
+                            ...settings.continuationOptions,
+                            continuationModelId: modelId,
+                          },
+                        })
+                      }
+                    }}
+                    onModelSelected={() => {
+                      window.setTimeout(() => {
+                        inputRef.current?.focus({ preventScroll: true })
+                      }, 0)
+                    }}
+                    onKeyDown={(event, isMenuOpen) => {
+                      // 如果菜单已打开，只处理 Escape，其他键交给 Radix UI
+                      if (isMenuOpen) {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        }
+                        return
+                      }
+
+                      // 菜单未打开时的键盘导航
+                      if (event.key === 'Escape') {
+                        event.preventDefault()
+                        onClose()
+                      } else if (event.key === 'ArrowLeft') {
+                        // 左方向键返回输入框
+                        event.preventDefault()
+                        inputRef.current?.focus()
+                      } else if (event.key === 'ArrowRight') {
+                        // 右方向键移动到工具按钮（如果存在）
+                        event.preventDefault()
+                        if (webSearchButtonRef.current) {
+                          webSearchButtonRef.current.focus()
+                        } else {
+                          // 如果没有工具按钮，回到输入框
+                          inputRef.current?.focus()
+                        }
+                      }
+                    }}
+                    side="top"
+                    align="end"
+                    // 24 = 12px 卡片内边距 + 12px 面板间距，保证与下方快捷选项的间距一致
+                    sideOffset={24}
+                    // 负偏移让弹层右侧与输入框右缘（16px 内边距）保持对齐
+                    alignOffset={-16}
+                    container={containerRef?.current ?? undefined}
+                    contentClassName="smtcmp-smart-space-popover"
+                  />
                 </div>
-              )}
+                {hasGeminiTools && (
+                  <div className="smtcmp-smart-space-tools">
+                    <button
+                      ref={webSearchButtonRef}
+                      type="button"
+                      className={`smtcmp-smart-space-tool-button ${
+                        useWebSearch ? 'active' : ''
+                      }`}
+                      onClick={() => {
+                        const newValue = !useWebSearch
+                        setUseWebSearch(newValue)
+                        if (settings) {
+                          setSettings({
+                            ...settings,
+                            continuationOptions: {
+                              ...settings.continuationOptions,
+                              smartSpaceUseWebSearch: newValue,
+                            },
+                          })
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        } else if (event.key === 'ArrowLeft') {
+                          // 左方向键返回模型选择框
+                          event.preventDefault()
+                          modelSelectRef.current?.focus()
+                        } else if (event.key === 'ArrowRight') {
+                          // 右方向键移动到下一个工具按钮
+                          event.preventDefault()
+                          urlContextButtonRef.current?.focus()
+                        }
+                      }}
+                      title={t(
+                        'chat.conversationSettings.webSearch',
+                        'Web search',
+                      )}
+                      aria-label={t(
+                        'chat.conversationSettings.webSearch',
+                        'Web search',
+                      )}
+                    >
+                      <Globe size={14} />
+                    </button>
+                    <button
+                      ref={urlContextButtonRef}
+                      type="button"
+                      className={`smtcmp-smart-space-tool-button ${
+                        useUrlContext ? 'active' : ''
+                      }`}
+                      onClick={() => {
+                        const newValue = !useUrlContext
+                        setUseUrlContext(newValue)
+                        if (settings) {
+                          setSettings({
+                            ...settings,
+                            continuationOptions: {
+                              ...settings.continuationOptions,
+                              smartSpaceUseUrlContext: newValue,
+                            },
+                          })
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          onClose()
+                        } else if (event.key === 'ArrowLeft') {
+                          // 左方向键返回上一个工具按钮
+                          event.preventDefault()
+                          webSearchButtonRef.current?.focus()
+                        } else if (event.key === 'ArrowRight') {
+                          // 右方向键返回输入框（循环）
+                          event.preventDefault()
+                          inputRef.current?.focus()
+                        }
+                      }}
+                      title={t(
+                        'chat.conversationSettings.urlContext',
+                        'URL Context',
+                      )}
+                      aria-label={t(
+                        'chat.conversationSettings.urlContext',
+                        'URL Context',
+                      )}
+                    >
+                      <Link size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {error && (
-            <div className="smtcmp-custom-continue-error" role="alert">
+            <div className="smtcmp-smart-space-error" role="alert">
               {error}
             </div>
           )}
           {showQuickActions && sections.length > 0 && (
-            <div className="smtcmp-custom-continue-section-card">
-              <div className="smtcmp-custom-continue-section-list">
+            <div className="smtcmp-smart-space-section-card">
+              <div className="smtcmp-smart-space-section-list">
                 {(() => {
                   let itemIndex = -1
                   return sections.map((section) => (
                     <div
-                      className="smtcmp-custom-continue-section"
+                      className="smtcmp-smart-space-section"
                       key={section.id}
                     >
-                      <div className="smtcmp-custom-continue-section-title">
+                      <div className="smtcmp-smart-space-section-title">
                         {section.title}
                       </div>
-                      <div className="smtcmp-custom-continue-section-items">
+                      <div className="smtcmp-smart-space-section-items">
                         {section.items.map((item) => {
                           itemIndex += 1
                           const currentIndex = itemIndex
@@ -526,7 +666,7 @@ function CustomContinuePanelBody({
                             <button
                               key={item.id}
                               type="button"
-                              className="smtcmp-custom-continue-item"
+                              className="smtcmp-smart-space-item"
                               onClick={() =>
                                 void handleSubmit(item.instruction)
                               }
@@ -542,10 +682,10 @@ function CustomContinuePanelBody({
                                 itemRefs.current[currentIndex] = element
                               }}
                             >
-                              <span className="smtcmp-custom-continue-item-icon">
+                              <span className="smtcmp-smart-space-item-icon">
                                 {item.icon}
                               </span>
-                              <span className="smtcmp-custom-continue-item-label">
+                              <span className="smtcmp-smart-space-item-label">
                                 {item.label}
                               </span>
                             </button>
@@ -560,7 +700,7 @@ function CustomContinuePanelBody({
           )}
         </>
       ) : (
-        <div className="smtcmp-custom-continue-status" aria-live="polite">
+        <div className="smtcmp-smart-space-status" aria-live="polite">
           <span>{t('chat.customContinueProcessing', 'Thinking')}</span>
           <DotLoader />
         </div>
@@ -569,9 +709,9 @@ function CustomContinuePanelBody({
   )
 }
 
-export class CustomContinueWidget extends WidgetType {
+export class SmartSpaceWidget extends WidgetType {
   private static overlayRoot: HTMLElement | null = null
-  private static currentInstance: CustomContinueWidget | null = null
+  private static currentInstance: SmartSpaceWidget | null = null
 
   private root: Root | null = null
   private overlayContainer: HTMLDivElement | null = null
@@ -582,6 +722,8 @@ export class CustomContinueWidget extends WidgetType {
   private resizeObserver: ResizeObserver | null = null
   private isClosing = false
   private closeAnimationTimeout: number | null = null
+  private containerRef: React.RefObject<HTMLDivElement> =
+    React.createRef<HTMLDivElement>()
 
   constructor(
     private readonly options: {
@@ -601,12 +743,12 @@ export class CustomContinueWidget extends WidgetType {
 
   toDOM(): HTMLElement {
     const anchor = document.createElement('span')
-    anchor.className = 'smtcmp-custom-continue-inline-anchor'
+    anchor.className = 'smtcmp-smart-space-inline-anchor'
     anchor.setAttribute('aria-hidden', 'true')
     this.anchor = anchor
 
     // 保存当前实例的引用
-    CustomContinueWidget.currentInstance = this
+    SmartSpaceWidget.currentInstance = this
 
     this.mountOverlay()
     this.setupGlobalListeners()
@@ -617,8 +759,8 @@ export class CustomContinueWidget extends WidgetType {
 
   destroy(): void {
     // 清除当前实例引用
-    if (CustomContinueWidget.currentInstance === this) {
-      CustomContinueWidget.currentInstance = null
+    if (SmartSpaceWidget.currentInstance === this) {
+      SmartSpaceWidget.currentInstance = null
     }
 
     if (this.closeAnimationTimeout !== null) {
@@ -660,19 +802,18 @@ export class CustomContinueWidget extends WidgetType {
   }
 
   private static getOverlayRoot(): HTMLElement {
-    if (CustomContinueWidget.overlayRoot)
-      return CustomContinueWidget.overlayRoot
+    if (SmartSpaceWidget.overlayRoot) return SmartSpaceWidget.overlayRoot
     const root = document.createElement('div')
-    root.className = 'smtcmp-custom-continue-overlay-root'
+    root.className = 'smtcmp-smart-space-overlay-root'
     document.body.appendChild(root)
-    CustomContinueWidget.overlayRoot = root
+    SmartSpaceWidget.overlayRoot = root
     return root
   }
 
   // 静态方法：从外部触发当前实例的关闭动画
   static closeCurrentWithAnimation(): boolean {
-    if (CustomContinueWidget.currentInstance) {
-      CustomContinueWidget.currentInstance.closeWithAnimation()
+    if (SmartSpaceWidget.currentInstance) {
+      SmartSpaceWidget.currentInstance.closeWithAnimation()
       return true
     }
     return false
@@ -695,22 +836,33 @@ export class CustomContinueWidget extends WidgetType {
   }
 
   private mountOverlay() {
-    const overlayRoot = CustomContinueWidget.getOverlayRoot()
+    const overlayRoot = SmartSpaceWidget.getOverlayRoot()
     const overlayContainer = document.createElement('div')
-    overlayContainer.className = 'smtcmp-custom-continue-overlay'
+    overlayContainer.className = 'smtcmp-smart-space-overlay'
     overlayRoot.appendChild(overlayContainer)
     this.overlayContainer = overlayContainer
 
     this.root = createRoot(overlayContainer)
     this.root.render(
       <PluginProvider plugin={this.options.plugin}>
-        <LanguageProvider>
-          <CustomContinuePanelBody
-            editor={this.options.editor}
-            onClose={this.closeWithAnimation}
-            showQuickActions={this.options.showQuickActions}
-          />
-        </LanguageProvider>
+        <SettingsProvider
+          settings={this.options.plugin.settings}
+          setSettings={(newSettings) =>
+            this.options.plugin.setSettings(newSettings)
+          }
+          addSettingsChangeListener={(listener) =>
+            this.options.plugin.addSettingsChangeListener(listener)
+          }
+        >
+          <LanguageProvider>
+            <SmartSpacePanelBody
+              editor={this.options.editor}
+              onClose={this.closeWithAnimation}
+              showQuickActions={this.options.showQuickActions}
+              containerRef={this.containerRef}
+            />
+          </LanguageProvider>
+        </SettingsProvider>
       </PluginProvider>,
     )
 
@@ -819,7 +971,7 @@ export class CustomContinueWidget extends WidgetType {
 
     updateDynamicStyleClass(
       this.overlayContainer,
-      'smtcmp-custom-continue-overlay-pos',
+      'smtcmp-smart-space-overlay-pos',
       {
         width: maxPanelWidth,
         left: Math.round(left),

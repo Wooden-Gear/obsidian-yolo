@@ -23,7 +23,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
-  const handleDeleteProvider = async (provider: LLMProvider) => {
+  const handleDeleteProvider = (provider: LLMProvider) => {
     // Get associated models
     const associatedChatModels = settings.chatModels.filter(
       (m) => m.providerId === provider.id,
@@ -40,7 +40,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
       `All embeddings generated using the associated embedding models will also be deleted.`
 
     new ConfirmModal(app, {
-      title: 'Delete Provider',
+      title: 'Delete provider',
       message: message,
       ctaText: 'Delete',
       onConfirm: async () => {

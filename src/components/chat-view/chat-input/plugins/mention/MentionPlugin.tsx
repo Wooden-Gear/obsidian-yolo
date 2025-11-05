@@ -10,6 +10,7 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $createTextNode, COMMAND_PRIORITY_NORMAL, TextNode } from 'lexical'
 import { useCallback, useMemo, useState } from 'react'
+import type { ReactElement } from 'react'
 import { createPortal } from 'react-dom'
 
 import { Mentionable } from '../../../../../types/mentionable'
@@ -173,7 +174,7 @@ export default function NewMentionsPlugin({
   searchResultByQuery,
 }: {
   searchResultByQuery: (query: string) => SearchableMentionable[]
-}): JSX.Element | null {
+}): ReactElement | null {
   const [editor] = useLexicalComposerContext()
 
   const [queryString, setQueryString] = useState<string | null>(null)

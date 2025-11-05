@@ -107,7 +107,7 @@ export default function MarkdownReferenceBlock({
               }}
             >
               <Eye size={12} />
-              {isPreviewMode ? 'View Raw Text' : 'View Formatted'}
+              {isPreviewMode ? 'View raw text' : 'View formatted'}
             </button>
           </div>
         </div>

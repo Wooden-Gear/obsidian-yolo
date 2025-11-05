@@ -1,12 +1,19 @@
 import { PGlite } from '@electric-sql/pglite'
 import { PgliteDatabase, drizzle } from 'drizzle-orm/pglite'
-import { App, normalizePath } from 'obsidian'
+import { App, normalizePath, requestUrl } from 'obsidian'
 
 import { PGLITE_DB_PATH, PLUGIN_ID } from '../constants'
 
 import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
 import { VectorManager } from './modules/vector/VectorManager'
+
+// PGlite 版本和 CDN 备用地址
+const PGLITE_VERSION = '0.2.12'
+const PGLITE_CDN_URLS = [
+  `https://cdn.jsdelivr.net/npm/@electric-sql/pglite@${PGLITE_VERSION}/dist/`,
+  `https://unpkg.com/@electric-sql/pglite@${PGLITE_VERSION}/dist/`,
+]
 
 export class DatabaseManager {
   private app: App
@@ -56,7 +63,7 @@ export class DatabaseManager {
 
     DatabaseManager.managers.set(dbManager, managers)
 
-    console.log('Smart composer database initialized.', dbManager)
+    console.debug('Smart composer database initialized.', dbManager)
 
     return dbManager
   }
@@ -102,7 +109,7 @@ export class DatabaseManager {
       const db = drizzle(this.pgClient)
       return db
     } catch (error) {
-      console.log('createNewDatabase error', error)
+      console.error('createNewDatabase error', error)
       if (
         error instanceof Error &&
         error.message.includes(
@@ -138,7 +145,7 @@ export class DatabaseManager {
       })
       return drizzle(this.pgClient)
     } catch (error) {
-      console.log('loadExistingDatabase error', error)
+      console.error('loadExistingDatabase error', error)
       if (
         error instanceof Error &&
         error.message.includes(
@@ -174,10 +181,8 @@ export class DatabaseManager {
     }
     try {
       const blob: Blob = await this.pgClient.dumpDataDir('gzip')
-      await this.app.vault.adapter.writeBinary(
-        this.dbPath,
-        Buffer.from(await blob.arrayBuffer()),
-      )
+      const arrayBuffer = await blob.arrayBuffer()
+      await this.app.vault.adapter.writeBinary(this.dbPath, arrayBuffer)
     } catch (error) {
       console.error('Error saving database:', error)
     }
@@ -191,6 +196,65 @@ export class DatabaseManager {
     await this.pgClient?.close()
     this.pgClient = null
     this.db = null
+  }
+
+  /**
+   * 检查是否需要首次下载 PGlite 资源
+   * 逻辑：如果数据库文件不存在，说明是首次使用，需要提示下载
+   * @returns { available: boolean, needsDownload: boolean, fromCDN: boolean }
+   */
+  async checkPGliteResources(): Promise<{
+    available: boolean
+    needsDownload: boolean
+    fromCDN: boolean
+  }> {
+    try {
+      // 检查数据库文件是否存在
+      const dbExists = await this.app.vault.adapter.exists(this.dbPath)
+
+      // 如果数据库已存在，说明之前已经初始化过，资源已经缓存
+      if (dbExists) {
+        return { available: true, needsDownload: false, fromCDN: false }
+      }
+
+      // 数据库不存在，检查是否有本地资源
+      try {
+        const localPath = this.app.vault.adapter.getResourcePath(
+          this.pgliteResourcePath,
+        )
+        const localUrl = new URL('postgres.wasm', localPath)
+        const response = await requestUrl({
+          url: localUrl.href,
+          method: 'HEAD',
+        })
+        if (response.status >= 200 && response.status < 300) {
+          return { available: true, needsDownload: false, fromCDN: false }
+        }
+      } catch {
+        // 本地不可用，继续检查 CDN
+      }
+
+      // 检查 CDN 是否可用（首次使用需要从 CDN 下载）
+      for (const cdnUrl of PGLITE_CDN_URLS) {
+        try {
+          const wasmUrl = new URL('postgres.wasm', cdnUrl)
+          const response = await requestUrl({
+            url: wasmUrl.href,
+            method: 'HEAD',
+          })
+          if (response.status >= 200 && response.status < 300) {
+            return { available: true, needsDownload: true, fromCDN: true }
+          }
+        } catch {
+          continue
+        }
+      }
+
+      return { available: false, needsDownload: false, fromCDN: false }
+    } catch (error) {
+      console.error('Error checking PGlite resources:', error)
+      return { available: false, needsDownload: false, fromCDN: false }
+    }
   }
 
   // TODO: This function is a temporary workaround chosen due to the difficulty of bundling postgres.wasm and postgres.data from node_modules into a single JS file. The ultimate goal is to bundle everything into one JS file in the future.
@@ -235,7 +299,7 @@ export class DatabaseManager {
         }
         try {
           const resourcePath = this.app.vault.adapter.getResourcePath(path)
-          console.log(
+          console.debug(
             `[PGlite] Resolving resource path:`,
             path,
             '→',
@@ -265,6 +329,11 @@ export class DatabaseManager {
       // 最后尝试使用相对路径（开发模式）
       addCandidateUrl(new URL('./vendor/pglite/', import.meta.url))
 
+      // 添加 CDN 备用方案
+      for (const cdnUrl of PGLITE_CDN_URLS) {
+        addCandidateUrl(cdnUrl)
+      }
+
       let lastError: unknown = null
 
       for (const baseUrl of candidateBaseUrls) {
@@ -273,23 +342,26 @@ export class DatabaseManager {
           const wasmUrl = new URL('postgres.wasm', baseUrl)
 
           const [fsResponse, wasmResponse] = await Promise.all([
-            fetch(fsUrl.href),
-            fetch(wasmUrl.href),
+            requestUrl({ url: fsUrl.href }),
+            requestUrl({ url: wasmUrl.href }),
           ])
 
-          if (!fsResponse.ok || !wasmResponse.ok) {
+          if (
+            fsResponse.status < 200 ||
+            fsResponse.status >= 300 ||
+            wasmResponse.status < 200 ||
+            wasmResponse.status >= 300
+          ) {
             lastError = new Error(
               'Failed to load PGlite assets from local bundle',
             )
             continue
           }
 
-          const fsBundle = new Blob([await fsResponse.arrayBuffer()], {
+          const fsBundle = new Blob([fsResponse.arrayBuffer], {
             type: 'application/octet-stream',
           })
-          const wasmModule = await WebAssembly.compile(
-            await wasmResponse.arrayBuffer(),
-          )
+          const wasmModule = await WebAssembly.compile(wasmResponse.arrayBuffer)
           const vectorExtensionBundlePath = new URL('vector.tar.gz', baseUrl)
 
           return { fsBundle, wasmModule, vectorExtensionBundlePath }

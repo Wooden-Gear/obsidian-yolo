@@ -1,42 +1,11 @@
 type StyleRecord = Record<string, string | number | undefined>
 
-const STYLE_ELEMENT_ID = 'smtcmp-dynamic-style-rules'
-
-let cachedSheet: CSSStyleSheet | null = null
-let elementCounter = 0
-
 type ElementState = {
-  key: string
-  className: string
-  uid: string
+  properties: Set<string>
+  prefix?: string
 }
 
 const elementState = new WeakMap<HTMLElement, ElementState>()
-
-function ensureStyleSheet(): CSSStyleSheet | null {
-  if (typeof document === 'undefined') return null
-  if (cachedSheet) return cachedSheet
-  let styleEl = document.getElementById(STYLE_ELEMENT_ID) as
-    | HTMLStyleElement
-    | null
-  if (!styleEl) {
-    styleEl = document.createElement('style')
-    styleEl.id = STYLE_ELEMENT_ID
-    document.head.appendChild(styleEl)
-  }
-  cachedSheet = styleEl.sheet as CSSStyleSheet | null
-  return cachedSheet
-}
-
-function hashString(input: string): string {
-  let hash = 0
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash << 5) - hash + input.charCodeAt(i)
-    hash |= 0
-  }
-  if (hash === 0) return '0'
-  return (hash < 0 ? `n${Math.abs(hash).toString(36)}` : hash.toString(36))
-}
 
 function toKebabCase(property: string): string {
   if (property.startsWith('--')) return property
@@ -46,49 +15,28 @@ function toKebabCase(property: string): string {
     .toLowerCase()
 }
 
-function removeRule(sheet: CSSStyleSheet, className: string) {
-  const selector = `.${className}`
-  for (let i = sheet.cssRules.length - 1; i >= 0; i -= 1) {
-    const rule = sheet.cssRules[i]
-    const isStyleRule =
-      typeof CSSStyleRule !== 'undefined'
-        ? rule instanceof CSSStyleRule
-        : 'selectorText' in rule
-    const maybeStyleRule = rule as CSSStyleRule
-    if (
-      isStyleRule &&
-      typeof maybeStyleRule.selectorText === 'string' &&
-      maybeStyleRule.selectorText.includes(selector)
-    ) {
-      sheet.deleteRule(i)
-      break
-    }
+function normalizeStyles(styles: StyleRecord): Map<string, string> {
+  const normalized = new Map<string, string>()
+  for (const [property, value] of Object.entries(styles)) {
+    if (value === undefined || value === null) continue
+    const cssProperty = toKebabCase(property)
+    const stringValue =
+      typeof value === 'number' && !property.startsWith('--')
+        ? `${value}px`
+        : String(value)
+    normalized.set(cssProperty, stringValue)
   }
+  return normalized
 }
 
-function normalizeStyles(styles: StyleRecord) {
-  const entries = Object.entries(styles)
-    .filter(([, value]) => value !== undefined && value !== null)
-    .sort(([a], [b]) => (a > b ? 1 : a < b ? -1 : 0))
-
-  if (entries.length === 0) {
-    return { key: '', declarations: '' }
-  }
-
-  const declarations = entries
-    .map(([property, value]) => {
-      const propName = toKebabCase(property)
-      const propValue =
-        typeof value === 'number' ? `${value}px` : String(value)
-      return `${propName}: ${propValue};`
-    })
-    .join(' ')
-
-  const key = entries
-    .map(([property, value]) => `${property}:${value}`)
-    .join(';')
-
-  return { key, declarations }
+function removePrefixedClasses(element: HTMLElement, prefix: string) {
+  if (!prefix) return
+  const prefixPattern = `${prefix}-`
+  element.classList.forEach((className) => {
+    if (className.startsWith(prefixPattern)) {
+      element.classList.remove(className)
+    }
+  })
 }
 
 export function updateDynamicStyleClass(
@@ -96,62 +44,48 @@ export function updateDynamicStyleClass(
   prefix: string,
   styles: StyleRecord,
 ): void {
-  const sheet = ensureStyleSheet()
-  const previous = elementState.get(element)
+  if (!element) return
+
   const normalized = normalizeStyles(styles)
+  const previousState = elementState.get(element)
 
-  if (!normalized.key || !normalized.declarations) {
-    if (sheet && previous) {
-      removeRule(sheet, previous.className)
+  if (!previousState || previousState.prefix !== prefix) {
+    removePrefixedClasses(element, prefix)
+  }
+
+  const previousProperties = previousState?.properties ?? new Set<string>()
+  const nextProperties = new Set<string>()
+
+  // Remove properties that are no longer present
+  previousProperties.forEach((property) => {
+    if (!normalized.has(property)) {
+      element.style.removeProperty(property)
     }
-    if (previous) {
-      element.classList.remove(previous.className)
-      elementState.delete(element)
-    }
+  })
+
+  // Apply current styles
+  normalized.forEach((value, property) => {
+    element.style.setProperty(property, value)
+    nextProperties.add(property)
+  })
+
+  if (nextProperties.size === 0) {
+    elementState.delete(element)
     return
   }
 
-  if (!sheet) {
-    return
-  }
-
-  let state = previous
-  if (!state) {
-    elementCounter += 1
-    const uid = elementCounter.toString(36)
-    state = { key: '', className: '', uid }
-  }
-
-  const nextClass = `${prefix}-${state.uid}-${hashString(normalized.key)}`
-
-  if (state.key !== normalized.key || state.className !== nextClass) {
-    if (state.className) {
-      element.classList.remove(state.className)
-      removeRule(sheet, state.className)
-    }
-    try {
-      sheet.insertRule(
-        `.${nextClass} { ${normalized.declarations} }`,
-        sheet.cssRules.length,
-      )
-    } catch {
-      // ignore insert errors (e.g., invalid CSS values)
-    }
-    element.classList.add(nextClass)
-    elementState.set(element, {
-      key: normalized.key,
-      className: nextClass,
-      uid: state.uid,
-    })
-  }
+  elementState.set(element, { properties: nextProperties, prefix })
 }
 
 export function clearDynamicStyleClass(element: HTMLElement): void {
-  const sheet = cachedSheet
   const state = elementState.get(element)
   if (!state) return
-  if (sheet) removeRule(sheet, state.className)
-  element.classList.remove(state.className)
+
+  state.properties.forEach((property) => {
+    element.style.removeProperty(property)
+  })
+  if (state.prefix) {
+    removePrefixedClasses(element, state.prefix)
+  }
   elementState.delete(element)
 }
-

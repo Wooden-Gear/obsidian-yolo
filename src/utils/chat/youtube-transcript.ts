@@ -13,6 +13,60 @@ const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)'
 const RE_XML_TRANSCRIPT = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g
 
+type CaptionTrack = {
+  baseUrl: string
+  languageCode: string
+  name?: { simpleText?: string }
+  vssId?: string
+  [key: string]: unknown
+}
+
+type PlayerCaptionsRenderer = {
+  captionTracks?: CaptionTrack[]
+}
+
+type CaptionsPayload = {
+  playerCaptionsTracklistRenderer?: PlayerCaptionsRenderer
+}
+
+const isCaptionTrack = (value: unknown): value is CaptionTrack => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const track = value as Record<string, unknown>
+  return (
+    typeof track.baseUrl === 'string' && typeof track.languageCode === 'string'
+  )
+}
+
+const parseCaptionsRenderer = (
+  rawPayload: string,
+): PlayerCaptionsRenderer | null => {
+  try {
+    const parsed: CaptionsPayload = JSON.parse(rawPayload)
+    const renderer = parsed.playerCaptionsTracklistRenderer
+
+    if (!renderer || typeof renderer !== 'object') {
+      return null
+    }
+
+    if (!renderer.captionTracks) {
+      return renderer
+    }
+
+    if (!Array.isArray(renderer.captionTracks)) {
+      return { captionTracks: [] }
+    }
+
+    return {
+      ...renderer,
+      captionTracks: renderer.captionTracks.filter(isCaptionTrack),
+    }
+  } catch {
+    return null
+  }
+}
+
 export function isYoutubeUrl(url: string) {
   return RE_YOUTUBE.test(url)
 }
@@ -115,48 +169,44 @@ export class YoutubeTranscript {
       throw new YoutubeTranscriptDisabledError(videoId)
     }
 
-    const captions = (() => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return JSON.parse(
-          splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''),
-        )
-      } catch (e) {
-        return undefined
-      }
-    })()?.playerCaptionsTracklistRenderer
+    const captionsRaw = splittedHTML[1]
+      .split(',"videoDetails')[0]
+      .replace('\n', '')
+    const captionsRenderer = parseCaptionsRenderer(captionsRaw)
 
-    if (!captions) {
+    if (!captionsRenderer) {
       throw new YoutubeTranscriptDisabledError(videoId)
     }
 
-    if (!('captionTracks' in captions)) {
+    const captionTracks = captionsRenderer.captionTracks
+
+    if (!captionTracks || captionTracks.length === 0) {
       throw new YoutubeTranscriptNotAvailableError(videoId)
     }
 
+    const availableLanguages = captionTracks.map((track) => track.languageCode)
+
     if (
       config?.lang &&
-      !captions.captionTracks.some(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (track: any) => track.languageCode === config?.lang,
-      )
+      !captionTracks.some((track) => track.languageCode === config.lang)
     ) {
       throw new YoutubeTranscriptNotAvailableLanguageError(
         config?.lang,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-        captions.captionTracks.map((track: any) => track.languageCode),
+        availableLanguages,
         videoId,
       )
     }
 
-    const transcriptURL: string = (
-      config?.lang
-        ? captions.captionTracks.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (track: any) => track.languageCode === config?.lang,
-          )
-        : captions.captionTracks[0]
-    ).baseUrl
+    const selectedTrack =
+      config?.lang !== undefined
+        ? captionTracks.find((track) => track.languageCode === config.lang)
+        : captionTracks[0]
+
+    if (!selectedTrack) {
+      throw new YoutubeTranscriptNotAvailableError(videoId)
+    }
+
+    const transcriptURL: string = selectedTrack.baseUrl
 
     const transcriptResponse = await requestUrl({
       url: transcriptURL,
@@ -176,7 +226,7 @@ export class YoutubeTranscript {
         text: result[3],
         duration: parseFloat(result[2]),
         offset: parseFloat(result[1]),
-        lang: config?.lang ?? captions.captionTracks[0].languageCode,
+        lang: config?.lang ?? captionTracks[0].languageCode,
       })),
     }
   }

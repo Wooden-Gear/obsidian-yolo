@@ -235,6 +235,9 @@ export const smartComposerSettingsSchema = z.object({
           }),
         )
         .optional(),
+      // Smart Space Gemini tools default state
+      smartSpaceUseWebSearch: z.boolean().optional(),
+      smartSpaceUseUrlContext: z.boolean().optional(),
     })
     .catch({
       continuationModelId:
@@ -256,6 +259,8 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
       smartSpaceQuickActions: undefined,
+      smartSpaceUseWebSearch: false,
+      smartSpaceUseUrlContext: false,
     }),
 
   // Assistant list

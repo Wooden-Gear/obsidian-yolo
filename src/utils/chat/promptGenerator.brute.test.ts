@@ -1,28 +1,41 @@
 /**
  * Minimal tests for PromptGenerator brute mode behavior
  */
-import { App } from 'obsidian'
+import { App, type TFile } from 'obsidian'
+
 import type { RAGEngine } from '../../core/rag/ragEngine'
+import type { SmartComposerSettings } from '../../settings/schema/setting.types'
+import { parseSmartComposerSettings } from '../../settings/schema/settings'
+import type { ChatUserMessage } from '../../types/chat'
 import type { ContentPart } from '../../types/llm/request'
 
 import { PromptGenerator } from './promptGenerator'
 
 jest.mock('../llm/token', () => ({
-  tokenCount: jest.fn(async () => 999999), // force threshold exceed
+  tokenCount: jest.fn(() => Promise.resolve(999999)), // force threshold exceed
 }))
 
 jest.mock('../obsidian', () => ({
-  readMultipleTFiles: jest.fn(async () => ['A', 'B']),
-  getNestedFiles: jest.fn((_folder: any) => []),
-  readTFileContent: jest.fn(async () => 'X'),
+  readMultipleTFiles: jest.fn(() => Promise.resolve(['A', 'B'])),
+  getNestedFiles: jest.fn((_folder: unknown) => []),
+  readTFileContent: jest.fn(() => Promise.resolve('X')),
 }))
 
 describe('PromptGenerator brute mode', () => {
   it('forces non-RAG and concatenates all mentioned files', async () => {
     const fakeApp = { vault: {} } as unknown as App
-    const settings: any = {
-      ragOptions: { thresholdTokens: 10 },
-      chatOptions: { includeCurrentFileContent: false, maxContextMessages: 0 },
+    const baseSettings = parseSmartComposerSettings({})
+    const settings: SmartComposerSettings = {
+      ...baseSettings,
+      ragOptions: {
+        ...baseSettings.ragOptions,
+        thresholdTokens: 10,
+      },
+      chatOptions: {
+        ...baseSettings.chatOptions,
+        includeCurrentFileContent: false,
+        maxContextMessages: 0,
+      },
       assistants: [],
     }
 
@@ -34,14 +47,16 @@ describe('PromptGenerator brute mode', () => {
       settings,
     )
 
-    const file1 = { path: 'a.md' }
-    const file2 = { path: 'b.md' }
+    const file1 = { path: 'a.md' } as unknown as TFile
+    const file2 = { path: 'b.md' } as unknown as TFile
 
-    const message: any = {
+    const message: ChatUserMessage = {
       role: 'user',
+      id: 'user-message',
       content: {
         root: { children: [{ type: 'paragraph', children: [{ text: 'Q' }] }] },
-      },
+      } as unknown as ChatUserMessage['content'],
+      promptContent: null,
       mentionables: [
         { type: 'file', file: file1 },
         { type: 'file', file: file2 },

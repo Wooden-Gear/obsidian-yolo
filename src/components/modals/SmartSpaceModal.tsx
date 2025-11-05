@@ -8,15 +8,12 @@ import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ReactModal } from '../common/ReactModal'
 
-export type CustomContinueModalProps = {
+export type SmartSpaceModalProps = {
   editor: Editor
   onClose: () => void
 }
 
-function CustomContinueComponent({
-  editor,
-  onClose,
-}: CustomContinueModalProps) {
+function SmartSpaceComponent({ editor, onClose }: SmartSpaceModalProps) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
@@ -52,7 +49,7 @@ function CustomContinueComponent({
   )
 }
 
-export class CustomContinueModal extends ReactModal<CustomContinueModalProps> {
+export class SmartSpaceModal extends ReactModal<SmartSpaceModalProps> {
   constructor({
     app,
     plugin,
@@ -64,7 +61,7 @@ export class CustomContinueModal extends ReactModal<CustomContinueModalProps> {
   }) {
     super({
       app,
-      Component: CustomContinueComponent,
+      Component: SmartSpaceComponent,
       props: { editor },
       options: { title: plugin.t('commands.customContinueWriting') },
       plugin,

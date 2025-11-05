@@ -28,7 +28,7 @@ import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
-import { CustomContinueWidget } from './components/panels/CustomContinuePanel'
+import { SmartSpaceWidget } from './components/panels/SmartSpacePanel'
 import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
 import { SelectionManager } from './components/selection/SelectionManager'
 import type { SelectionInfo } from './components/selection/SelectionManager'
@@ -50,16 +50,16 @@ import { parseSmartComposerSettings } from './settings/schema/settings'
 import { SmartComposerSettingTab } from './settings/SettingTab'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import {
+  LLMRequestBase,
+  LLMRequestNonStreaming,
+  RequestMessage,
+} from './types/llm/request'
+import {
   getMentionableBlockData,
   getNestedFiles,
   readMultipleTFiles,
   readTFileContent,
 } from './utils/obsidian'
-import {
-  LLMRequestBase,
-  LLMRequestNonStreaming,
-  RequestMessage,
-} from './types/llm/request'
 
 type InlineSuggestionGhostPayload = { from: number; text: string } | null
 
@@ -120,7 +120,7 @@ const inlineSuggestionGhostField = StateField.define<DecorationSet>({
 
 const inlineSuggestionExtensionViews = new WeakSet<EditorView>()
 
-type CustomContinueWidgetPayload = {
+type SmartSpaceWidgetPayload = {
   pos: number
   options: {
     plugin: SmartComposerPlugin
@@ -131,23 +131,23 @@ type CustomContinueWidgetPayload = {
   }
 }
 
-const customContinueWidgetEffect =
-  StateEffect.define<CustomContinueWidgetPayload | null>()
+const smartSpaceWidgetEffect =
+  StateEffect.define<SmartSpaceWidgetPayload | null>()
 
-const customContinueWidgetField = StateField.define<DecorationSet>({
+const smartSpaceWidgetField = StateField.define<DecorationSet>({
   create() {
     return Decoration.none
   },
   update(decorations, tr) {
     let updated = decorations.map(tr.changes)
     for (const effect of tr.effects) {
-      if (effect.is(customContinueWidgetEffect)) {
+      if (effect.is(smartSpaceWidgetEffect)) {
         updated = Decoration.none
         const payload = effect.value
         if (payload) {
           updated = Decoration.set([
             Decoration.widget({
-              widget: new CustomContinueWidget(payload.options),
+              widget: new SmartSpaceWidget(payload.options),
               side: 1,
               block: false,
             }).range(payload.pos),
@@ -201,7 +201,7 @@ export default class SmartComposerPlugin extends Plugin {
     editor: Editor
     cursorOffset: number
   } | null = null
-  private customContinueWidgetState: {
+  private smartSpaceWidgetState: {
     view: EditorView
     pos: number
     close: () => void
@@ -285,29 +285,28 @@ export default class SmartComposerPlugin extends Plugin {
     return undefined
   }
 
-  private closeCustomContinueWidget() {
-    const state = this.customContinueWidgetState
+  private closeSmartSpace() {
+    const state = this.smartSpaceWidgetState
     if (!state) return
 
     // 先清除状态，避免重复关闭
-    this.customContinueWidgetState = null
+    this.smartSpaceWidgetState = null
 
     // Clear pending selection rewrite if user closes without submitting
     this.pendingSelectionRewrite = null
 
     // 尝试触发关闭动画
-    const hasAnimation = CustomContinueWidget.closeCurrentWithAnimation()
+    const hasAnimation = SmartSpaceWidget.closeCurrentWithAnimation()
 
     if (!hasAnimation) {
       // 如果没有动画实例，直接分发关闭效果
-      state.view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+      state.view.dispatch({ effects: smartSpaceWidgetEffect.of(null) })
     }
-    // 如果有动画，widget 会在动画结束后自己调用 onClose 来分发关闭效果
 
     state.view.focus()
   }
 
-  private showCustomContinueWidget(
+  private showSmartSpace(
     editor: Editor,
     view: EditorView,
     showQuickActions = true,
@@ -317,25 +316,25 @@ export default class SmartComposerPlugin extends Plugin {
     // This ensures the widget appears below the selection regardless of selection direction
     const pos = Math.max(selection.head, selection.anchor)
 
-    this.closeCustomContinueWidget()
+    this.closeSmartSpace()
 
     const close = () => {
       // 检查是否是当前的 widget（允许状态为 null，因为可能在动画期间被清除）
       if (
-        this.customContinueWidgetState &&
-        this.customContinueWidgetState.view !== view
+        this.smartSpaceWidgetState &&
+        this.smartSpaceWidgetState.view !== view
       ) {
         return
       }
-      this.customContinueWidgetState = null
-      view.dispatch({ effects: customContinueWidgetEffect.of(null) })
+      this.smartSpaceWidgetState = null
+      view.dispatch({ effects: smartSpaceWidgetEffect.of(null) })
       view.focus()
     }
 
     view.dispatch({
       effects: [
-        customContinueWidgetEffect.of(null),
-        customContinueWidgetEffect.of({
+        smartSpaceWidgetEffect.of(null),
+        smartSpaceWidgetEffect.of({
           pos,
           options: {
             plugin: this,
@@ -348,7 +347,7 @@ export default class SmartComposerPlugin extends Plugin {
       ],
     })
 
-    this.customContinueWidgetState = { view, pos, close }
+    this.smartSpaceWidgetState = { view, pos, close }
   }
 
   // Selection Chat methods
@@ -402,7 +401,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Don't show if Smart Space is active
-    if (this.customContinueWidgetState) {
+    if (this.smartSpaceWidgetState) {
       return
     }
 
@@ -441,7 +440,7 @@ export default class SmartComposerPlugin extends Plugin {
 
       case 'rewrite':
         // Trigger rewrite with selected text
-        await this.rewriteSelection(editor, selectedText)
+        this.rewriteSelection(editor, selectedText)
         break
 
       case 'explain':
@@ -487,7 +486,7 @@ export default class SmartComposerPlugin extends Plugin {
     chatView.focusMessage()
   }
 
-  private async rewriteSelection(editor: Editor, selectedText: string) {
+  private rewriteSelection(editor: Editor, selectedText: string) {
     // Show Smart Space-like input for rewrite instruction
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!view) return
@@ -509,8 +508,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Show custom continue widget for user to input rewrite instruction
-    // Don't show quick actions for rewrite - user should input custom instruction
-    this.showCustomContinueWidget(editor, cmEditor, false)
+    this.showSmartSpace(editor, cmEditor, true)
   }
 
   private async explainSelection(editor: Editor) {
@@ -556,9 +554,9 @@ export default class SmartComposerPlugin extends Plugin {
     chatView.focusMessage()
   }
 
-  private createCustomContinueTriggerExtension(): Extension {
+  private createSmartSpaceTriggerExtension(): Extension {
     return [
-      customContinueWidgetField,
+      smartSpaceWidgetField,
       EditorView.domEventHandlers({
         keydown: (event, view) => {
           const smartSpaceEnabled =
@@ -655,12 +653,12 @@ export default class SmartComposerPlugin extends Plugin {
           event.preventDefault()
           event.stopPropagation()
 
-          this.showCustomContinueWidget(editor, view)
+          this.showSmartSpace(editor, view)
           return true
         },
       }),
       EditorView.updateListener.of((update) => {
-        const state = this.customContinueWidgetState
+        const state = this.smartSpaceWidgetState
         if (!state || state.view !== update.view) return
 
         if (update.docChanged) {
@@ -670,7 +668,7 @@ export default class SmartComposerPlugin extends Plugin {
         if (update.selectionSet) {
           const head = update.state.selection.main
           if (!head.empty || head.head !== state.pos) {
-            this.closeCustomContinueWidget()
+            this.closeSmartSpace()
           }
         }
       }),
@@ -816,12 +814,11 @@ export default class SmartComposerPlugin extends Plugin {
   private isEditorWithCodeMirror(
     editor: Editor,
   ): editor is Editor & { cm?: EditorView } {
-    return (
-      typeof editor === 'object' &&
-      editor !== null &&
-      'cm' in editor &&
-      typeof (editor as Record<string, unknown>)['cm'] !== 'undefined'
-    )
+    if (typeof editor !== 'object' || editor === null || !('cm' in editor)) {
+      return false
+    }
+    const maybeEditor = editor as Editor & { cm?: EditorView }
+    return maybeEditor.cm instanceof EditorView
   }
 
   private ensureInlineSuggestionExtension(view: EditorView) {
@@ -1015,12 +1012,12 @@ export default class SmartComposerPlugin extends Plugin {
           ? []
           : [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]),
         {
-          role: 'user',
+          role: 'user' as const,
           content: userContent,
         },
       ]
@@ -1265,7 +1262,10 @@ export default class SmartComposerPlugin extends Plugin {
     const from = preSelectionFrom ?? editor.getCursor('from')
 
     const notice = new Notice('正在生成改写...', 0)
-    let controller: AbortController | null = null
+    // 立即创建并注册 AbortController
+    const controller = new AbortController()
+    this.activeAbortControllers.add(controller)
+
     try {
       const sidebarOverrides = this.getActiveConversationOverrides()
       const {
@@ -1300,18 +1300,15 @@ export default class SmartComposerPlugin extends Plugin {
           ? []
           : [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]),
         {
-          role: 'user',
+          role: 'user' as const,
           content: `${basePromptSection}Instruction:\n${instruction}\n\nSelected text:\n${selected}\n\nRewrite the selected text accordingly. Output only the rewritten text.`,
         },
       ]
-
-      controller = new AbortController()
-      this.activeAbortControllers.add(controller)
 
       const rewriteRequestBase: LLMRequestBase = {
         model: model.model,
@@ -1341,6 +1338,11 @@ export default class SmartComposerPlugin extends Plugin {
         )
         let accumulated = ''
         for await (const chunk of streamIterator) {
+          // 每次循环都检查是否已被中止
+          if (controller.signal.aborted) {
+            break
+          }
+
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue
@@ -1398,7 +1400,7 @@ export default class SmartComposerPlugin extends Plugin {
         this.registerTimeout(() => notice.hide(), 1200)
       }
     } finally {
-      if (controller) this.activeAbortControllers.delete(controller)
+      this.activeAbortControllers.delete(controller)
     }
   }
 
@@ -1408,7 +1410,7 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
 
-    this.registerEditorExtension(this.createCustomContinueTriggerExtension())
+    this.registerEditorExtension(this.createSmartSpaceTriggerExtension())
 
     // This creates an icon in the left ribbon.
     this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () =>
@@ -1459,6 +1461,36 @@ export default class SmartComposerPlugin extends Plugin {
       id: 'rebuild-vault-index',
       name: this.t('commands.rebuildVaultIndex'),
       callback: async () => {
+        // 预检查 PGlite 资源
+        try {
+          const dbManager = await this.getDbManager()
+          const resourceCheck = await dbManager.checkPGliteResources()
+
+          if (!resourceCheck.available) {
+            new Notice(
+              this.t(
+                'notices.pgliteUnavailable',
+                'PGlite resources unavailable. Please check your network connection.',
+              ),
+              5000,
+            )
+            return
+          }
+
+          if (resourceCheck.needsDownload && resourceCheck.fromCDN) {
+            new Notice(
+              this.t(
+                'notices.downloadingPglite',
+                'Downloading PGlite dependencies (~20MB). This may take a moment...',
+              ),
+              5000,
+            )
+          }
+        } catch (error) {
+          console.warn('Failed to check PGlite resources:', error)
+          // 继续执行，让实际的加载逻辑处理错误
+        }
+
         const notice = new Notice(this.t('notices.rebuildingIndex'), 0)
         try {
           const ragEngine = await this.getRAGEngine()
@@ -1562,7 +1594,7 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   onunload() {
-    this.closeCustomContinueWidget()
+    this.closeSmartSpace()
 
     // Selection chat cleanup
     if (this.selectionChatWidget) {
@@ -1880,7 +1912,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
   ) {
-    let controller: AbortController | null = null
+    // 立即创建并注册 AbortController，确保整个流程都能被中止
+    const controller = new AbortController()
+    this.activeAbortControllers.add(controller)
+
     try {
       const notice = new Notice('Generating continuation...', 0)
       const cursor = editor.getCursor()
@@ -2064,6 +2099,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         }
       }
 
+      // 检查是否已被中止（RAG 查询可能耗时较长）
+      if (controller.signal.aborted) {
+        return
+      }
+
       const limitedContextHasContent = limitedContext.trim().length > 0
       const contextSection =
         hasContext && limitedContextHasContent
@@ -2092,13 +2132,13 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         ...(!isBaseModel && systemPrompt.length > 0
           ? [
               {
-                role: 'system',
+                role: 'system' as const,
                 content: systemPrompt,
               },
             ]
           : []),
         {
-          role: 'user',
+          role: 'user' as const,
           content: userMessageContent,
         },
       ]
@@ -2119,15 +2159,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       let hasClosedSmartSpaceWidget = false
       const closeSmartSpaceWidgetOnce = () => {
         if (!hasClosedSmartSpaceWidget) {
-          this.closeCustomContinueWidget()
+          this.closeSmartSpace()
           hasClosedSmartSpaceWidget = true
         }
       }
 
       // Stream response and progressively update ghost suggestion
-      controller = new AbortController()
-      this.activeAbortControllers.add(controller)
-
       const baseRequest: LLMRequestBase = {
         model: model.model,
         messages: requestMessages,
@@ -2183,6 +2220,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         )
 
         for await (const chunk of streamIterator) {
+          // 每次循环都检查是否已被中止
+          if (controller.signal.aborted) {
+            break
+          }
+
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
           if (!piece) continue
@@ -2224,7 +2266,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
     } finally {
       this.isContinuationInProgress = false
-      if (controller) this.activeAbortControllers.delete(controller)
+      this.activeAbortControllers.delete(controller)
     }
   }
 

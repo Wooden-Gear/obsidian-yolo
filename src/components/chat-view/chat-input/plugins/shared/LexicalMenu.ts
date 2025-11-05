@@ -35,6 +35,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { ReactElement } from 'react'
+
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
@@ -78,7 +80,7 @@ export type MenuRenderFn<TOption extends MenuOption> = (
     options: TOption[]
   },
   matchingString: string | null,
-) => ReactPortal | JSX.Element | null
+) => ReactPortal | ReactElement | null
 
 const scrollIntoViewIfNeeded = (target: HTMLElement) => {
   const typeaheadContainerNode = document.getElementById('typeahead-menu')
@@ -114,7 +116,7 @@ function getFullMatchOffset(
 ): number {
   let triggerOffset = offset
   for (let i = triggerOffset; i <= entryText.length; i++) {
-    if (documentText.substr(-i) === entryText.substr(0, i)) {
+    if (documentText.endsWith(entryText.slice(0, i))) {
       triggerOffset = i
     }
   }
@@ -283,7 +285,7 @@ export function LexicalMenu<TOption extends MenuOption>({
     matchingString: string,
   ) => void
   commandPriority?: CommandListenerPriority
-}): JSX.Element | null {
+}): ReactElement | null {
   const [selectedIndex, setHighlightedIndex] = useState<null | number>(null)
 
   const matchingString = resolution.match?.matchingString
@@ -550,17 +552,13 @@ export function useMenuAnchorRef(
           const menuWidth = rect.width + ring * 2
           const menuTop = rect.top - offsetTop
 
-          updateDynamicStyleClass(
-            containerDiv,
-            'smtcmp-typeahead-menu-pos',
-            {
-              position: 'fixed',
-              left: Math.round(menuLeft),
-              top: Math.round(menuTop),
-              width: Math.round(menuWidth),
-              zIndex: '1000',
-            },
-          )
+          updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+            position: 'fixed',
+            left: Math.round(menuLeft),
+            top: Math.round(menuTop),
+            width: Math.round(menuWidth),
+            zIndex: '1000',
+          })
 
           if (menuEle) {
             const available = Math.max(margin, Math.floor(rect.top - margin))
@@ -604,17 +602,13 @@ export function useMenuAnchorRef(
           requestAnimationFrame(() => {
             const finalH = menuEle.getBoundingClientRect().height || estimatedH
             const t2 = Math.max(margin, top - offsetTop - finalH)
-            updateDynamicStyleClass(
-              containerDiv,
-              'smtcmp-typeahead-menu-pos',
-              {
-                position: 'fixed',
-                left: Math.round(leftPos),
-                top: Math.round(t2),
-                width: 360,
-                zIndex: '1000',
-              },
-            )
+            updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+              position: 'fixed',
+              left: Math.round(leftPos),
+              top: Math.round(t2),
+              width: 360,
+              zIndex: '1000',
+            })
           })
         }
       }

@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 
 import { IndexProgress } from '../chat-view/QueryProgress'
 
@@ -10,51 +10,14 @@ type RAGIndexProgressProps = {
   getMarkdownFilesInFolder?: (folderPath: string) => string[]
 }
 
-const LS_KEY = 'smtcmp_rag_last_progress'
-
 export function RAGIndexProgress({
   progress,
   isIndexing,
   getMarkdownFilesInFolder,
 }: RAGIndexProgressProps) {
-  // local persisted progress
-  const [persistedProgress, setPersistedProgress] =
-    useState<IndexProgress | null>(null)
   // expanded folders
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-
-  // load last progress once when component mounts
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY)
-      if (raw) {
-        const obj = JSON.parse(raw)
-        setPersistedProgress(obj)
-      }
-    } catch (e) {
-      // ignore
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // persist current progress whenever it changes (with shallow guard)
-  const lastPersistedRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (!progress) return
-    try {
-      const json = JSON.stringify(progress)
-      if (lastPersistedRef.current !== json) {
-        localStorage.setItem(LS_KEY, json)
-        lastPersistedRef.current = json
-        setPersistedProgress(progress)
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [progress])
-
-  const effectiveProgress = progress ?? persistedProgress
-  const noProgressYet = !effectiveProgress
+  const noProgressYet = !progress
 
   const formatFolderName = (path: string) => {
     if (path === '') return '根目录'
@@ -78,7 +41,7 @@ export function RAGIndexProgress({
   }
 
   const treeRoots: FolderNode[] = (() => {
-    const fp = effectiveProgress?.folderProgress || {}
+    const fp = progress?.folderProgress || {}
     const entries = Object.entries(fp)
     const nodes = new Map<string, FolderNode>()
 

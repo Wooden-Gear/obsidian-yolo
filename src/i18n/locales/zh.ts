@@ -271,11 +271,6 @@ export const zh: TranslationKeys = {
       customParametersKeyPlaceholder: '参数名，例如 thinking',
       customParametersValuePlaceholder:
         '参数值，支持 JSON，如 {"type":"enabled"} 或 0.7',
-      promptLevel: '提示级别',
-      promptLevelDesc:
-        '选择系统提示的复杂程度。对于忽略用户问题并只是重复指令的小模型，请选择"简单"。',
-      promptLevelDefault: '默认',
-      promptLevelSimple: '简单',
       dimension: '维度',
       dimensionDesc: '嵌入模型的维度（可选）',
       dimensionPlaceholder: '1536',
@@ -430,9 +425,6 @@ export const zh: TranslationKeys = {
         '若补全请求超过该时间仍未返回则强制中止。',
       tabCompletionMaxRetries: '最大重试次数',
       tabCompletionMaxRetriesDesc: '补全请求超时后自动重试的次数上限。',
-      defaultSystemPrompt: '默认续写系统提示词',
-      defaultSystemPromptDesc:
-        '此提示将作为系统提示用于 AI 续写。留空则使用内置默认值。',
     },
     etc: {
       title: '其他',
@@ -572,8 +564,11 @@ export const zh: TranslationKeys = {
 
   notices: {
     rebuildingIndex: '正在重建库索引...',
-    rebuildComplete: '库索引重建完成',
-    rebuildFailed: '库索引重建失败',
+    rebuildComplete: '重建库索引完成',
+    rebuildFailed: '重建库索引失败',
+    pgliteUnavailable: 'PGlite 资源不可用，请检查网络连接或稍后重试',
+    downloadingPglite:
+      '正在从 CDN 下载 PGlite 依赖 (~20MB)，首次使用需要一点时间...',
     updatingIndex: '正在更新库索引...',
     indexUpdated: '库索引已更新',
     indexUpdateFailed: '库索引更新失败',

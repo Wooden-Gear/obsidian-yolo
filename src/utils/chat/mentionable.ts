@@ -153,7 +153,7 @@ export function getMentionableName(mentionable: Mentionable): string {
     case 'vault':
       return 'Vault'
     case 'current-file':
-      return mentionable.file?.name ?? 'Current File'
+      return mentionable.file?.name ?? 'Current file'
     case 'block':
       return `${mentionable.file.name} (${mentionable.startLine}:${mentionable.endLine})`
     case 'url':

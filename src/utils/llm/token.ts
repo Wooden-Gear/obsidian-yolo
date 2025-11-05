@@ -5,7 +5,8 @@ import { getEncoding } from 'js-tiktoken'
 
 // Caution: tokenCount is computationally expensive for large inputs.
 // Frequent use, especially on large files, may significantly impact performance.
-export async function tokenCount(text: string): Promise<number> {
+export function tokenCount(text: string): Promise<number> {
   const encoder = getEncoding('cl100k_base')
-  return encoder.encode(text).length
+  const length = encoder.encode(text).length
+  return Promise.resolve(length)
 }

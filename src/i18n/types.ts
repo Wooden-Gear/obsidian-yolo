@@ -225,10 +225,6 @@ export type TranslationKeys = {
       customParametersAdd?: string
       customParametersKeyPlaceholder?: string
       customParametersValuePlaceholder?: string
-      promptLevel: string
-      promptLevelDesc: string
-      promptLevelDefault: string
-      promptLevelSimple: string
       dimension: string
       dimensionDesc: string
       dimensionPlaceholder: string
@@ -360,8 +356,6 @@ export type TranslationKeys = {
       tabCompletionRequestTimeoutDesc: string
       tabCompletionMaxRetries: string
       tabCompletionMaxRetriesDesc: string
-      defaultSystemPrompt: string
-      defaultSystemPromptDesc: string
     }
     etc: {
       title: string
@@ -523,6 +517,8 @@ export type TranslationKeys = {
     rebuildingIndex: string
     rebuildComplete: string
     rebuildFailed: string
+    pgliteUnavailable: string
+    downloadingPglite: string
     updatingIndex: string
     indexUpdated: string
     indexUpdateFailed: string

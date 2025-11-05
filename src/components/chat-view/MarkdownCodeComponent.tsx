@@ -65,7 +65,7 @@ export default function MarkdownCodeComponent({
             }}
           >
             <Eye size={12} />
-            {isPreviewMode ? 'View Raw Text' : 'View Formatted'}
+            {isPreviewMode ? 'View raw text' : 'View formatted'}
           </button>
           <button
             className="clickable-icon smtcmp-code-block-header-button"

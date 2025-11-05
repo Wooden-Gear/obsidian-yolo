@@ -131,7 +131,18 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
           )}
 
           <ObsidianSetting>
-            <ObsidianButton text="Save" onClick={handleSubmit} cta />
+            <ObsidianButton
+              text="Save"
+              onClick={() => {
+                handleSubmit().catch((error) => {
+                  console.error(
+                    'Failed to save anthropic model settings',
+                    error,
+                  )
+                })
+              }}
+              cta
+            />
             <ObsidianButton text="Cancel" onClick={onClose} />
           </ObsidianSetting>
         </>
@@ -200,7 +211,18 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
           </ObsidianSetting>
 
           <ObsidianSetting>
-            <ObsidianButton text="Save" onClick={handleSubmit} cta />
+            <ObsidianButton
+              text="Save"
+              onClick={() => {
+                handleSubmit().catch((error) => {
+                  console.error(
+                    'Failed to save perplexity model settings',
+                    error,
+                  )
+                })
+              }}
+              cta
+            />
             <ObsidianButton text="Cancel" onClick={onClose} />
           </ObsidianSetting>
         </>

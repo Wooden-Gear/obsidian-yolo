@@ -14,7 +14,7 @@ export function ConversationModeSelector({
   return (
     <div className="smtcmp-chat-mode-selector">
       <span className="smtcmp-chat-mode-label">
-        {t('chat.modeTitle') ?? 'Chat Mode'}
+        {t('chat.modeTitle') ?? 'Chat mode'}
       </span>
       <div className="smtcmp-chat-mode-selector-buttons">
         <button

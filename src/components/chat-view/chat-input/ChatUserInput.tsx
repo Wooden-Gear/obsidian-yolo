@@ -329,8 +329,14 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         />
 
         <div className="smtcmp-chat-user-input-controls">
-          <div className="smtcmp-chat-user-input-controls__model-select-container">
-            <ModelSelect modelId={modelId} onChange={onModelChange} />
+          <div className="smtcmp-chat-user-input-controls__model-select-container smtcmp-chat-sidebar-model-select">
+            <ModelSelect
+              modelId={modelId}
+              onChange={onModelChange}
+              align="start"
+              sideOffset={8}
+              contentClassName="smtcmp-smart-space-popover smtcmp-chat-sidebar-popover"
+            />
           </div>
           <div className="smtcmp-chat-user-input-controls__buttons">
             <ImageUploadButton onUpload={handleUploadImages} />

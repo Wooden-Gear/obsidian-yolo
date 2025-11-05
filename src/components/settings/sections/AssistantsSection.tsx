@@ -81,7 +81,7 @@ function AssistantItem({ assistant, onUpdate, onDelete }: AssistantItemProps) {
           </div>
 
           <ObsidianSetting
-            name={t('settings.assistants.systemPrompt', 'System Prompt')}
+            name={t('settings.assistants.systemPrompt', 'System prompt')}
             desc={t(
               'settings.assistants.systemPromptDesc',
               'This prompt will be added to the beginning of every chat.',
@@ -119,7 +119,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
   const handleAddAssistant = async () => {
     const newAssistant: Assistant = {
       id: crypto.randomUUID(),
-      name: `${t('settings.assistants.defaultAssistantName', 'New Assistant')} ${assistants.length + 1}`,
+      name: `${t('settings.assistants.defaultAssistantName', 'New assistant')} ${assistants.length + 1}`,
       description: '',
       systemPrompt: '',
     }
@@ -143,7 +143,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     })
   }
 
-  const handleDeleteAssistant = async (id: string) => {
+  const handleDeleteAssistant = (id: string) => {
     const assistantToDelete = assistants.find((a) => a.id === id)
     if (!assistantToDelete) return
 
@@ -152,7 +152,7 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
     const modal = new ConfirmModal(app, {
       title: t(
         'settings.assistants.deleteConfirmTitle',
-        'Confirm Delete Assistant',
+        'Confirm delete assistant',
       ),
       message: `${t('settings.assistants.deleteConfirmMessagePrefix', 'Are you sure you want to delete assistant')} "${assistantToDelete.name}"${t('settings.assistants.deleteConfirmMessageSuffix', '? This action cannot be undone.')}`,
       ctaText: t('common.delete'),
