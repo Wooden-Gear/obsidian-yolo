@@ -48,7 +48,7 @@ export const en: TranslationKeys = {
       modelSectionTitle: 'Model',
       continuationModel: 'Continuation model',
       continuationModelDesc:
-        'When Super Continuation is enabled, Sparkle will use this model for continuation tasks.',
+        'When super continuation is enabled, Sparkle will use this model for continuation tasks.',
       contextSectionTitle: 'Context sources',
       ragToggle: 'Enable RAG retrieval',
       ragToggleDesc:
@@ -58,7 +58,7 @@ export const en: TranslationKeys = {
           title: 'Model & Prompt',
         },
         model: {
-          title: 'Model Selection',
+          title: 'Model selection',
           desc: 'Choose which model powers Sparkle tasks.',
         },
         parameters: {
@@ -66,7 +66,7 @@ export const en: TranslationKeys = {
           desc: 'Adjust parameters for the model used by Sparkle.',
         },
         context: {
-          title: 'Context Management',
+          title: 'Context management',
           desc: 'Prioritize the content sources referenced when Sparkle runs.',
         },
       },
@@ -88,22 +88,22 @@ export const en: TranslationKeys = {
   },
 
   selection: {
-    actions: {
-      addToChat: 'Add to Chat',
-      rewrite: 'AI Rewrite',
-      explain: 'Explain in Depth',
+      actions: {
+        addToChat: 'Add to chat',
+        rewrite: 'AI rewrite',
+        explain: 'Explain in depth',
     },
   },
 
   settings: {
-    title: 'YOLO Settings',
+    title: 'YOLO settings',
     supportSmartComposer: {
       name: 'Support YOLO',
       desc: 'If you find YOLO valuable, consider supporting its development!',
-      buyMeACoffee: 'Buy Me a Coffee',
+      buyMeACoffee: 'Buy me a coffee',
     },
     defaults: {
-      title: 'Default Models & Prompts',
+      title: 'Default models & prompts',
       defaultChatModel: 'Default chat model',
       defaultChatModelDesc:
         'Choose the model you want to use for sidebar chat.',
@@ -126,14 +126,14 @@ export const en: TranslationKeys = {
         'System message applied when generating Tab completion suggestions. Leave empty to use the built-in default.',
     },
     smartSpace: {
-      quickActionsTitle: 'Smart Space Quick Actions',
+      quickActionsTitle: 'Smart Space quick actions',
       quickActionsDesc:
         'Customize the quick actions and prompts displayed in Smart Space',
-      addAction: 'Add Action',
+      addAction: 'Add action',
       resetToDefault: 'Reset to Default',
       confirmReset:
         'Are you sure you want to reset to default quick actions? This will delete all custom settings.',
-      actionLabel: 'Action Label',
+      actionLabel: 'Action label',
       actionLabelDesc: 'Text displayed in the quick action',
       actionLabelPlaceholder: 'e.g., Continue writing',
       actionInstruction: 'Prompt',
@@ -146,8 +146,8 @@ export const en: TranslationKeys = {
       actionIconDesc: 'Choose an icon',
       actionEnabled: 'Enabled',
       actionEnabledDesc: 'Whether to show this action in Smart Space',
-      moveUp: 'Move Up',
-      moveDown: 'Move Down',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
       duplicate: 'Duplicate',
       disabled: 'Disabled',
       categories: {
@@ -176,15 +176,15 @@ export const en: TranslationKeys = {
       includeCurrentFile: 'Auto-include current page',
       includeCurrentFileDesc:
         'Automatically include the content of your current file in chats.',
-      enableBruteMode: 'Enable Brute Mode',
+      enableBruteMode: 'Enable brute mode',
       enableBruteModeDesc:
         'Show chat mode switch in chat view to include entire folders verbatim (may exceed token limits).',
-      enableLearningMode: 'Learning Mode',
+      enableLearningMode: 'Learning mode',
       enableLearningModeDesc:
         'Add tutoring rules on top of the system/assistant prompt.',
       learningModePrompt: 'Default learning prompt',
       learningModePromptDesc:
-        'This text is appended when Learning Mode is enabled. View or customize as needed.',
+        'This text is appended when learning mode is enabled. View or customize as needed.',
       enableTools: 'Enable tools',
       enableToolsDesc: 'Allow the AI to use MCP tools.',
       maxAutoIterations: 'Max auto tool requests',
@@ -196,26 +196,26 @@ export const en: TranslationKeys = {
       defaultTemperature: 'Default temperature',
       defaultTemperatureDesc:
         'Default temperature for new conversations (0.0-2.0). Leave empty to use model default.',
-      defaultTopP: 'Default Top P',
+      defaultTopP: 'Default top P',
       defaultTopPDesc:
-        'Default Top P for new conversations (0.0-1.0). Leave empty to use model default.',
+        'Default top P for new conversations (0.0-1.0). Leave empty to use model default.',
     },
     assistants: {
       title: 'Assistants',
       desc: 'Create and manage custom AI assistants',
-      addAssistant: 'Add Assistant',
-      editAssistant: 'Edit Assistant',
-      deleteAssistant: 'Delete Assistant',
+      addAssistant: 'Add assistant',
+      editAssistant: 'Edit assistant',
+      deleteAssistant: 'Delete assistant',
       name: 'Name',
       description: 'Description',
-      systemPrompt: 'System Prompt',
+      systemPrompt: 'System prompt',
       systemPromptDesc:
         'This prompt will be added to the beginning of every chat.',
       systemPromptPlaceholder:
         "Enter system prompt to define assistant's behavior and capabilities",
       namePlaceholder: 'Enter assistant name',
-      defaultAssistantName: 'New Assistant',
-      deleteConfirmTitle: 'Confirm Delete Assistant',
+      defaultAssistantName: 'New assistant',
+      deleteConfirmTitle: 'Confirm delete assistant',
       deleteConfirmMessagePrefix: 'Are you sure you want to delete assistant',
       deleteConfirmMessageSuffix: '? This action cannot be undone.',
       addAssistantAria: 'Add new assistant',
@@ -225,46 +225,46 @@ export const en: TranslationKeys = {
         'If set, this assistant will use this number of previous chat messages, overriding the global default.',
       noAssistants: 'No assistants available',
       noAssistant: 'Default',
-      selectAssistant: 'Select Assistant',
+      selectAssistant: 'Select assistant',
     },
     providers: {
       title: 'Providers',
       desc: 'Enter your API keys for the providers you want to use',
       howToGetApiKeys: 'How to obtain API keys',
-      addProvider: 'Add Provider',
-      editProvider: 'Edit Provider',
-      deleteProvider: 'Delete Provider',
+      addProvider: 'Add provider',
+      editProvider: 'Edit provider',
+      deleteProvider: 'Delete provider',
       deleteConfirm: 'Are you sure you want to delete provider',
       deleteWarning: 'This will also delete',
       chatModels: 'chat models',
       embeddingModels: 'embedding models',
       embeddingsWillBeDeleted:
         'All embeddings generated using the related embedding models will also be deleted.',
-      addCustomProvider: 'Add Custom Provider',
-      editProviderTitle: 'Edit Provider',
-      apiKey: 'API Key',
+      addCustomProvider: 'Add custom provider',
+      editProviderTitle: 'Edit provider',
+      apiKey: 'API key',
       apiKeyDesc: '(Leave empty if not required)',
       apiKeyPlaceholder: 'Enter your API key',
       baseUrl: 'Base URL',
       baseUrlDesc:
         'API endpoint for third-party services, e.g.: https://api.example.com/v1 or https://your-proxy.com/openai (Leave empty to use default)',
       baseUrlPlaceholder: 'https://api.example.com/v1',
-      noStainlessHeaders: 'No Stainless Headers',
+      noStainlessHeaders: 'No Stainless headers',
       noStainlessHeadersDesc:
         'Enable this if you encounter CORS errors related to Stainless headers (x-stainless-os, etc.)',
     },
     models: {
       title: 'Models',
-      chatModels: 'Chat Models',
-      embeddingModels: 'Embedding Models',
-      addChatModel: 'Add Chat Model',
-      addEmbeddingModel: 'Add Embedding Model',
-      addCustomChatModel: 'Add Custom Chat Model',
-      addCustomEmbeddingModel: 'Add Custom Embedding Model',
-      editChatModel: 'Edit Chat Model',
-      editEmbeddingModel: 'Edit Embedding Model',
-      editCustomChatModel: 'Edit Custom Chat Model',
-      editCustomEmbeddingModel: 'Edit Custom Embedding Model',
+      chatModels: 'Chat models',
+      embeddingModels: 'Embedding models',
+      addChatModel: 'Add chat model',
+      addEmbeddingModel: 'Add embedding model',
+      addCustomChatModel: 'Add custom chat model',
+      addCustomEmbeddingModel: 'Add custom embedding model',
+      editChatModel: 'Edit chat model',
+      editEmbeddingModel: 'Edit embedding model',
+      editCustomChatModel: 'Edit custom chat model',
+      editCustomEmbeddingModel: 'Edit custom embedding model',
       modelId: 'Model ID',
       modelIdDesc:
         'API model identifier used for requests (e.g., gpt-4o-mini, claude-3-5-sonnet)',
@@ -278,7 +278,7 @@ export const en: TranslationKeys = {
       reasoningType: 'Model type',
       reasoningTypeNone: 'No special configuration',
       reasoningTypeOpenAI: 'OpenAI Reasoning (o3 / o4-mini / GPT-5)',
-      reasoningTypeGemini: 'Gemini Reasoning (2.5 Pro / Flash / Flash-Lite)',
+      reasoningTypeGemini: 'Gemini reasoning (2.5 Pro / Flash / Flash-Lite)',
       reasoningTypeBase: 'Special: base model',
       baseModelWarning:
         'When enabled, no system prompts (including assistant prompts) will be injected for this model. Enable only if you understand how base models behave.',
@@ -289,10 +289,10 @@ export const en: TranslationKeys = {
       geminiThinkingBudgetDesc:
         'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
       geminiThinkingBudgetPlaceholder: 'e.g., -1 (dynamic, 0=off)',
-      toolType: 'Tool Type',
+      toolType: 'Tool type',
       toolTypeDesc: 'Select the tool type supported by the model',
-      toolTypeNone: 'No Tools',
-      toolTypeGemini: 'Gemini Tools',
+      toolTypeNone: 'No tools',
+      toolTypeGemini: 'Gemini tools',
       customParameters: 'Custom parameters',
       customParametersDesc:
         'Attach additional request fields. Values accept plain text or JSON (e.g., {"thinking": {"type": "enabled"}}).',
@@ -311,30 +311,30 @@ export const en: TranslationKeys = {
       enableRag: 'Show RAG settings',
       enableRagDesc:
         'Toggle visibility of the retrieval-augmented generation options below.',
-      embeddingModel: 'Embedding Model',
+      embeddingModel: 'Embedding model',
       embeddingModelDesc: 'Choose the model you want to use for embeddings',
-      chunkSize: 'Chunk Size',
+      chunkSize: 'Chunk size',
       chunkSizeDesc:
         "Set the chunk size for text splitting. After changing this, please re-index the vault using the 'Rebuild entire vault index' command.",
-      thresholdTokens: 'Threshold Tokens',
+      thresholdTokens: 'Threshold tokens',
       thresholdTokensDesc:
         'Maximum number of tokens before switching to RAG. If the total tokens from mentioned files exceed this, RAG will be used instead of including all file contents.',
-      minSimilarity: 'Minimum Similarity',
+      minSimilarity: 'Minimum similarity',
       minSimilarityDesc:
         'Minimum similarity score for RAG results. Higher values return more relevant but potentially fewer results.',
       limit: 'Limit',
       limitDesc:
         'Maximum number of RAG results to include in the prompt. Higher values provide more context but increase token usage.',
-      includePatterns: 'Include Patterns',
+      includePatterns: 'Include patterns',
       includePatternsDesc:
         "Specify glob patterns to include files in indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to include all files. Requires 'Rebuild entire vault index' after changes.",
-      excludePatterns: 'Exclude Patterns',
+      excludePatterns: 'Exclude patterns',
       excludePatternsDesc:
         "Specify glob patterns to exclude files from indexing (one per line). Example: use 'notes/**' for all files in the notes folder. Leave empty to exclude nothing. Requires 'Rebuild entire vault index' after changes.",
-      testPatterns: 'Test Patterns',
-      manageEmbeddingDatabase: 'Manage Embedding Database',
+      testPatterns: 'Test patterns',
+      manageEmbeddingDatabase: 'Manage embedding database',
       manage: 'Manage',
-      rebuildIndex: 'Rebuild Index',
+      rebuildIndex: 'Rebuild index',
       // UI additions
       selectedFolders: 'Selected folders',
       excludedFolders: 'Excluded folders',
@@ -361,11 +361,11 @@ export const en: TranslationKeys = {
       autoUpdateInterval: 'Minimum interval (hours)',
       autoUpdateIntervalDesc:
         'Only trigger auto update after this interval to avoid frequent re-indexing.',
-      manualUpdateNow: 'Update Now',
+      manualUpdateNow: 'Update now',
       manualUpdateNowDesc:
         'Run an incremental update immediately and record the last updated time.',
       // Index progress header/status
-      indexProgressTitle: 'RAG Index Progress',
+      indexProgressTitle: 'RAG index progress',
       indexing: 'In progress',
       notStarted: 'Not started',
     },
@@ -375,9 +375,9 @@ export const en: TranslationKeys = {
       warning:
         'When using tools, the tool response is passed to the language model (LLM). If the tool result contains a large amount of content, this can significantly increase LLM usage and associated costs. Please be mindful when enabling or using tools that may return long outputs.',
       notSupportedOnMobile: 'MCP is not supported on mobile devices',
-      mcpServers: 'MCP Servers',
-      addServer: 'Add MCP Server',
-      serverName: 'Server Name',
+      mcpServers: 'MCP servers',
+      addServer: 'Add MCP server',
+      serverName: 'Server name',
       command: 'Command',
       server: 'Server',
       status: 'Status',
@@ -390,7 +390,7 @@ export const en: TranslationKeys = {
       connecting: 'Connecting...',
       disconnected: 'Disconnected',
       autoExecute: 'Auto-execute',
-      deleteServer: 'Delete MCP Server',
+      deleteServer: 'Delete MCP server',
       deleteServerConfirm: 'Are you sure you want to delete MCP server',
       edit: 'Edit',
       delete: 'Delete',
@@ -402,23 +402,23 @@ export const en: TranslationKeys = {
       desc: 'Create reusable prompt templates',
       howToUse:
         'Create templates with reusable content that you can quickly insert into your chat. Type /template-name in the chat input to trigger template insertion. You can also drag and select text in the chat input to reveal a "Create template" button for quick template creation.',
-      savedTemplates: 'Saved Templates',
-      addTemplate: 'Add Prompt Template',
-      templateName: 'Template Name',
+      savedTemplates: 'Saved templates',
+      addTemplate: 'Add prompt template',
+      templateName: 'Template name',
       noTemplates: 'No templates found',
       loading: 'Loading templates...',
-      deleteTemplate: 'Delete Template',
+      deleteTemplate: 'Delete template',
       deleteTemplateConfirm: 'Are you sure you want to delete template',
-      editTemplate: 'Edit Template',
+      editTemplate: 'Edit template',
       name: 'Name',
       actions: 'Actions',
     },
     continuation: {
-      title: 'Sparkle Mode',
-      aiSubsectionTitle: 'Super Continuation',
+      title: 'Sparkle mode',
+      aiSubsectionTitle: 'Super continuation',
       customSubsectionTitle: 'Smart Space',
-      tabSubsectionTitle: 'Tab Completion',
-      superContinuation: 'Enable Sparkle View',
+      tabSubsectionTitle: 'Tab completion',
+      superContinuation: 'Enable Sparkle view',
       superContinuationDesc:
         'Enable the Sparkle sidebar view where you can configure dedicated continuation models, parameters, rules, and reference sources. When disabled, only the Chat view is available.',
       continuationModel: 'Sparkle continuation model',
@@ -429,27 +429,27 @@ export const en: TranslationKeys = {
       smartSpaceToggle: 'Enable Smart Space',
       smartSpaceToggleDesc:
         'When disabled, Space or "/"+Space will no longer summon the Smart Space floating composer.',
-      selectionChatToggle: 'Enable Cursor Chat',
+      selectionChatToggle: 'Enable cursor chat',
       selectionChatToggleDesc:
-        'Show a small indicator at the bottom-right of selected text with actions (Add to Chat, AI Rewrite, Explain in Depth).',
+        'Show a small indicator at the bottom-right of selected text with actions (Add to chat, AI rewrite, Explain in depth).',
       keywordTrigger: 'Enable keyword trigger for AI continuation',
       keywordTriggerDesc:
         'Automatically trigger continuation when the specified keyword is detected in the editor. Recommended: cc.',
       triggerKeyword: 'Trigger keyword',
       triggerKeywordDesc:
         'Continuation is triggered when the text immediately before the cursor equals this keyword (default: cc).',
-      tabCompletion: 'Enable Tab completion',
+      tabCompletion: 'Enable tab completion',
       tabCompletionDesc:
         'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with Tab.',
       tabCompletionModel: 'Completion model',
       tabCompletionModelDesc:
-        'Choose which model provides Tab completion suggestions.',
+        'Choose which model provides tab completion suggestions.',
       tabCompletionTriggerDelay: 'Trigger delay (ms)',
       tabCompletionTriggerDelayDesc:
         'How long to wait after you stop typing before a prefix completion request is sent.',
       tabCompletionMinContextLength: 'Minimum context length',
       tabCompletionMinContextLengthDesc:
-        'Skip Tab completion unless the text before the cursor contains at least this many characters.',
+        'Skip tab completion unless the text before the cursor contains at least this many characters.',
       tabCompletionMaxContextChars: 'Max context characters',
       tabCompletionMaxContextCharsDesc:
         'Limit how many recent characters are sent to the model for prefix completion.',
@@ -490,7 +490,7 @@ export const en: TranslationKeys = {
     },
     language: {
       title: 'Language',
-      select: 'Select Language',
+      select: 'Select language',
     },
   },
 
@@ -498,8 +498,8 @@ export const en: TranslationKeys = {
     placeholder: 'Ask anything about your vault...',
     sendMessage: 'Send message',
     newChat: 'New chat',
-    continueResponse: 'Continue Response',
-    stopGeneration: 'Stop Generation',
+    continueResponse: 'Continue response',
+    stopGeneration: 'Stop generation',
     vaultSearch: 'Vault search',
     selectModel: 'Select model',
     uploadImage: 'Upload image',
@@ -587,17 +587,17 @@ export const en: TranslationKeys = {
       'Describe how to rewrite the selected text, e.g., "Make it concise and active voice; keep markdown structure". Press Shift+Enter to confirm, Enter for a new line, Esc to close.',
     conversationSettings: {
       openAria: 'Conversation settings',
-      chatMemory: 'Chat Memory',
-      maxContext: 'Max Context',
-      sampling: 'Sampling Parameters',
+      chatMemory: 'Chat memory',
+      maxContext: 'Max context',
+      sampling: 'Sampling parameters',
       temperature: 'Temperature',
       topP: 'Top P',
       streaming: 'Streaming',
-      vaultSearch: 'Vault Search',
-      useVaultSearch: 'RAG Search',
-      geminiTools: 'Gemini Tools',
-      webSearch: 'Web Search',
-      urlContext: 'URL Context',
+      vaultSearch: 'Vault search',
+      useVaultSearch: 'RAG search',
+      geminiTools: 'Gemini tools',
+      webSearch: 'Web search',
+      urlContext: 'URL context',
     },
   },
 

@@ -1011,14 +1011,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               className="smtcmp-continue-response-button"
               onClick={handleContinueResponse}
             >
-              <div>Continue Response</div>
+              <div>Continue response</div>
             </button>
           </div>
         )}
         {submitChatMutation.isPending && (
           <button onClick={abortActiveStreams} className="smtcmp-stop-gen-btn">
             <CircleStop size={16} />
-            <div>Stop Generation</div>
+            <div>Stop generation</div>
           </button>
         )}
       </div>

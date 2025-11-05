@@ -582,11 +582,11 @@ function SmartSpacePanelBody({
                       }}
                       title={t(
                         'chat.conversationSettings.webSearch',
-                        'Web Search',
+                        'Web search',
                       )}
                       aria-label={t(
                         'chat.conversationSettings.webSearch',
-                        'Web Search',
+                        'Web search',
                       )}
                     >
                       <Globe size={14} />

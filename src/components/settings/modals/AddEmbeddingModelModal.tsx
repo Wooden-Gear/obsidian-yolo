@@ -60,7 +60,7 @@ export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalCom
       Component: AddEmbeddingModelModalComponent,
       props: { plugin, provider },
       options: {
-        title: 'Add Custom Embedding Model', // Will be translated in component
+        title: 'Add custom embedding model', // Will be translated in component
       },
       plugin: plugin,
     })
@@ -291,7 +291,7 @@ function AddEmbeddingModelModalComponent({
       if (!supportedDimensionsForIndex.includes(dimension)) {
         const confirmed = await new Promise<boolean>((resolve) => {
           new ConfirmModal(plugin.app, {
-            title: 'Performance Warning',
+            title: 'Performance warning',
             message: `This model outputs ${dimension} dimensions, but the optimized dimensions for database indexing are: ${supportedDimensionsForIndex.join(
               ', ',
             )}.\n\nThis may result in slower search performance.\n\nDo you want to continue anyway?`,

@@ -36,7 +36,7 @@ export class EmbeddingDbManageModal extends ReactModal<EmbeddingDbManagerModalCo
       Component: EmbeddingDbManagerModalComponentWrapper,
       props: { app, plugin },
       options: {
-        title: 'Manage Embedding Database',
+        title: 'Manage embedding database',
       },
     })
     this.modalEl.classList.add('smtcmp-modal--wide')
@@ -182,7 +182,7 @@ function EmbeddingDbManageModalComponent() {
         <thead>
           <tr>
             <th>Model</th>
-            <th>Total Embeddings</th>
+            <th>Total embeddings</th>
             <th>Size (MB)</th>
             <th>Actions</th>
           </tr>

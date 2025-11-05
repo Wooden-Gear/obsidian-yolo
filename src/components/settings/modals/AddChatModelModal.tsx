@@ -118,7 +118,7 @@ export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProp
       Component: AddChatModelModalComponent,
       props: { plugin, provider },
       options: {
-        title: 'Add Custom Chat Model', // Will be translated in component
+        title: 'Add custom chat model', // Will be translated in component
       },
       plugin: plugin,
     })

@@ -43,7 +43,7 @@ export class EditChatModelModal extends ReactModal<EditChatModelModalComponentPr
       Component: EditChatModelModalComponent,
       props: { plugin, model },
       options: {
-        title: 'Edit Custom Chat Model', // Will be translated in component
+        title: 'Edit custom chat model', // Will be translated in component
       },
       plugin: plugin,
     })

@@ -176,7 +176,7 @@ export const PROVIDER_TYPES_INFO = {
     supportEmbedding: true,
     additionalSettings: [
       {
-        label: 'No Stainless Headers',
+        label: 'No Stainless headers',
         key: 'noStainless',
         type: 'toggle',
         required: false,

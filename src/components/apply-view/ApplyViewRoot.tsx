@@ -216,12 +216,12 @@ const DiffBlockView = forwardRef<
         )}
         <div className="smtcmp-diff-block-actions">
           <button onClick={onAcceptIncoming} className="smtcmp-accept">
-            Accept Incoming
+            Accept incoming
           </button>
           <button onClick={onAcceptCurrent} className="smtcmp-exclude">
-            Accept Current
+            Accept current
           </button>
-          <button onClick={onAcceptBoth}>Accept Both</button>
+          <button onClick={onAcceptBoth}>Accept both</button>
         </div>
       </div>
     )

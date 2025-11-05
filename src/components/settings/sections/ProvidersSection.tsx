@@ -40,7 +40,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
       `All embeddings generated using the associated embedding models will also be deleted.`
 
     new ConfirmModal(app, {
-      title: 'Delete Provider',
+      title: 'Delete provider',
       message: message,
       ctaText: 'Delete',
       onConfirm: async () => {

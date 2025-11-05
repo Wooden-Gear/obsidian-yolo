@@ -22,7 +22,7 @@ export class EditEmbeddingModelModal extends ReactModal<EditEmbeddingModelModalC
       Component: EditEmbeddingModelModalComponent,
       props: { plugin, model },
       options: {
-        title: 'Edit Custom Embedding Model', // Will be translated in component
+        title: 'Edit custom embedding model', // Will be translated in component
       },
       plugin: plugin,
     })
