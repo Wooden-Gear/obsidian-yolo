@@ -1300,7 +1300,7 @@ button.smtcmp-chat-input-model-select {
 
 /* 高光流动的文字 */
 .smtcmp-thinking-text {
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-medium);
   font-weight: var(--font-normal);
   letter-spacing: 0.02em;
   background: linear-gradient(
