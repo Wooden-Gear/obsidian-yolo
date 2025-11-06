@@ -571,7 +571,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Create mentionable block data from selection
-    const data = await getMentionableBlockData(editor, view)
+    const data = getMentionableBlockData(editor, view)
     if (!data) {
       new Notice('无法创建选区数据')
       return
@@ -627,7 +627,7 @@ export default class SmartComposerPlugin extends Plugin {
     }
 
     // Create mentionable block data from selection
-    const data = await getMentionableBlockData(editor, view)
+    const data = getMentionableBlockData(editor, view)
     if (!data) {
       new Notice('无法创建选区数据')
       return
@@ -1793,7 +1793,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       this.activateChatView(undefined, openNewChat)
       return
     }
-    const selectedBlockData = await getMentionableBlockData(editor, view)
+    const selectedBlockData = getMentionableBlockData(editor, view)
     this.activateChatView(
       {
         selectedBlock: selectedBlockData ?? undefined,
@@ -1823,7 +1823,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
   }
 
   async addSelectionToChat(editor: Editor, view: MarkdownView) {
-    const data = await getMentionableBlockData(editor, view)
+    const data = getMentionableBlockData(editor, view)
     if (!data) return
 
     const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)

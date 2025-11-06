@@ -283,6 +283,7 @@ export class GeminiProvider extends BaseLLMProvider<
             ],
             usage: resp.usage,
           }
+          await Promise.resolve() // 保持异步迭代语义，避免同步调用时阻塞
           yield chunk
         }
         return singleChunk(nonStream)

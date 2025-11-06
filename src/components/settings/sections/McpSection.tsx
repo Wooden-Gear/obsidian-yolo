@@ -8,7 +8,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { App } from 'obsidian'
+import { App, Notice } from 'obsidian'
 import { useCallback, useEffect, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
@@ -159,6 +159,7 @@ function McpServerComponent({
             })
           } catch (error: unknown) {
             console.error('Failed to delete MCP server', error)
+            new Notice('Failed to delete MCP server.')
           }
         })()
       },

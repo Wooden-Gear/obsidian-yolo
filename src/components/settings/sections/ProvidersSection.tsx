@@ -1,5 +1,5 @@
 import { Settings, Trash2 } from 'lucide-react'
-import { App } from 'obsidian'
+import { App, Notice } from 'obsidian'
 import React from 'react'
 
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
@@ -86,6 +86,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
             })
           } catch (error) {
             console.error('[Smart Composer] Failed to delete provider:', error)
+            new Notice('Failed to delete provider.')
           }
         })()
       },

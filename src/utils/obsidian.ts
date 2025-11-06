@@ -33,12 +33,16 @@ export function getNestedFiles(folder: TFolder, vault: Vault): TFile[] {
 export function getMentionableBlockData(
   editor: Editor,
   view: MarkdownView,
-): Promise<MentionableBlockData | null> {
+): MentionableBlockData | null {
   const file = view.file
-  if (!file) return Promise.resolve(null)
+  if (!file) {
+    return null
+  }
 
   const selection = editor.getSelection()
-  if (!selection) return Promise.resolve(null)
+  if (!selection) {
+    return null
+  }
 
   const startLine = editor.getCursor('from').line
   const endLine = editor.getCursor('to').line
@@ -48,12 +52,12 @@ export function getMentionableBlockData(
     .slice(startLine, endLine + 1)
     .join('\n')
 
-  return Promise.resolve({
+  return {
     content: selectionContent,
     file,
     startLine: startLine + 1, // +1 because startLine is 0-indexed
     endLine: endLine + 1, // +1 because startLine is 0-indexed
-  })
+  }
 }
 
 export function getOpenFiles(app: App): TFile[] {
