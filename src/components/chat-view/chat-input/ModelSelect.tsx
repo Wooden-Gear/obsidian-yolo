@@ -136,7 +136,7 @@ export const ModelSelect = forwardRef<
             className={
               contentClassName
                 ? `smtcmp-popover ${contentClassName}`
-                : 'smtcmp-popover smtcmp-smart-space-popover'
+                : 'smtcmp-popover'
             }
             side={side}
             sideOffset={sideOffset}
@@ -159,10 +159,19 @@ export const ModelSelect = forwardRef<
                 if (onChange) {
                   onChange(modelId)
                 } else {
-                  setSettings({
-                    ...settings,
-                    chatModelId: modelId,
-                  })
+                  void (async () => {
+                    try {
+                      await setSettings({
+                        ...settings,
+                        chatModelId: modelId,
+                      })
+                    } catch (error: unknown) {
+                      console.error(
+                        'Failed to update chat model setting',
+                        error,
+                      )
+                    }
+                  })()
                 }
                 onModelSelected?.(modelId)
               }}

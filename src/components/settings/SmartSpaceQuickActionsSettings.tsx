@@ -34,6 +34,8 @@ type QuickAction = {
 
 type QuickActionCategory = NonNullable<QuickAction['category']>
 
+type TranslateFn = (key: string, fallback?: string) => string
+
 const QUICK_ACTION_CATEGORIES: QuickActionCategory[] = [
   'suggestions',
   'writing',
@@ -212,7 +214,7 @@ const generateId = () => {
   return `action_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
-const getDefaultQuickActions = (t: any): QuickAction[] => {
+const getDefaultQuickActions = (t: TranslateFn): QuickAction[] => {
   return DEFAULT_ACTION_CONFIGS.map((config) => ({
     id: config.id,
     label: t(config.labelKey, config.labelFallback),
@@ -339,7 +341,7 @@ export function SmartSpaceQuickActionsSettings() {
     setIsAddingAction(true)
   }
 
-  const handleSaveAction = async () => {
+  const handleSaveAction = () => {
     if (!editingAction || !editingAction.label || !editingAction.instruction) {
       return
     }
@@ -355,17 +357,29 @@ export function SmartSpaceQuickActionsSettings() {
       )
     }
 
-    await handleSaveActions(newActions)
-    setEditingAction(null)
-    setIsAddingAction(false)
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
+        setEditingAction(null)
+        setIsAddingAction(false)
+      } catch (error: unknown) {
+        console.error('Failed to save Smart Space quick action', error)
+      }
+    })()
   }
 
-  const handleDeleteAction = async (id: string) => {
+  const handleDeleteAction = (id: string) => {
     const newActions = quickActions.filter((action) => action.id !== id)
-    await handleSaveActions(newActions)
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
+      } catch (error: unknown) {
+        console.error('Failed to delete Smart Space quick action', error)
+      }
+    })()
   }
 
-  const handleDuplicateAction = async (action: QuickAction) => {
+  const handleDuplicateAction = (action: QuickAction) => {
     const newAction = {
       ...action,
       id: generateId(),
@@ -373,7 +387,13 @@ export function SmartSpaceQuickActionsSettings() {
       enabled: true,
     }
     const newActions = [...quickActions, newAction]
-    await handleSaveActions(newActions)
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
+      } catch (error: unknown) {
+        console.error('Failed to duplicate Smart Space quick action', error)
+      }
+    })()
   }
 
   const triggerDropSuccess = (movedId: string) => {
@@ -536,25 +556,30 @@ export function SmartSpaceQuickActionsSettings() {
 
     updatedActions.splice(insertIndex, 0, moved)
 
-    await handleSaveActions(updatedActions)
+    void (async () => {
+      try {
+        await handleSaveActions(updatedActions)
+        triggerDropSuccess(moved.id)
+      } catch (error: unknown) {
+        console.error('Failed to reorder Smart Space actions', error)
+      } finally {
+        itemEl?.classList.remove(
+          'smtcmp-quick-action-drag-over-before',
+          'smtcmp-quick-action-drag-over-after',
+        )
+        const dragging = document.querySelector('.smtcmp-quick-action-dragging')
+        if (dragging) dragging.classList.remove('smtcmp-quick-action-dragging')
+        const activeHandle = document.querySelector(
+          '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+        )
+        if (activeHandle)
+          activeHandle.classList.remove('smtcmp-drag-handle--active')
 
-    itemEl?.classList.remove(
-      'smtcmp-quick-action-drag-over-before',
-      'smtcmp-quick-action-drag-over-after',
-    )
-    const dragging = document.querySelector('.smtcmp-quick-action-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-quick-action-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
-
-    dragOverItemRef.current = null
-    lastDropPosRef.current = null
-    lastInsertIndexRef.current = null
-
-    triggerDropSuccess(moved.id)
+        dragOverItemRef.current = null
+        lastDropPosRef.current = null
+        lastInsertIndexRef.current = null
+      }
+    })()
   }
 
   const handleResetToDefault = () => {
@@ -575,15 +600,21 @@ export function SmartSpaceQuickActionsSettings() {
       },
     })
 
-    modal.onClose = async () => {
+    modal.onClose = () => {
       if (!confirmed) return
-      await setSettings({
-        ...settings,
-        continuationOptions: {
-          ...settings.continuationOptions,
-          smartSpaceQuickActions: undefined,
-        },
-      })
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            continuationOptions: {
+              ...settings.continuationOptions,
+              smartSpaceQuickActions: undefined,
+            },
+          })
+        } catch (error: unknown) {
+          console.error('Failed to reset Smart Space quick actions', error)
+        }
+      })()
     }
 
     modal.open()

@@ -182,11 +182,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   // Per-conversation override settings (temperature, top_p, context, stream)
   const conversationOverridesRef = useRef<
-    Map<string, ConversationOverrideSettings>
+    Map<string, ConversationOverrideSettings | null>
   >(new Map())
-  const [conversationOverrides, setConversationOverrides] = useState<
-    ConversationOverrideSettings | undefined
-  >(undefined)
+  const [conversationOverrides, setConversationOverrides] =
+    useState<ConversationOverrideSettings | null>(null)
 
   // Per-conversation model id (do NOT write back to global settings)
   const conversationModelIdRef = useRef<Map<string, string>>(new Map())
@@ -217,7 +216,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     promptGenerator,
     chatMode,
     learningMode,
-    conversationOverrides,
+    conversationOverrides: conversationOverrides ?? undefined,
     modelId: conversationModelId,
   })
 
@@ -244,7 +243,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       const suppressed =
         conversationSuppressionRef.current.get(conversationId) ?? 'none'
       setCurrentFileSuppression(suppressed)
-      setConversationOverrides(conversation.overrides ?? undefined)
+      setConversationOverrides(conversation.overrides ?? null)
       if (conversation.overrides) {
         conversationOverridesRef.current.set(
           conversationId,
@@ -278,7 +277,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setCurrentConversationId(newId)
     conversationSuppressionRef.current.set(newId, 'none')
     setCurrentFileSuppression('none')
-    setConversationOverrides(undefined)
+    setConversationOverrides(null)
     conversationModelIdRef.current.set(newId, settings.chatModelId)
     setConversationModelId(settings.chatModelId)
     setMessageModelMap(new Map())
@@ -535,8 +534,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   useEffect(() => {
     setFocusedMessageId(inputMessage.id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [inputMessage.id])
 
   // Ensure local learningMode state is turned off if the feature is disabled in settings
   useEffect(() => {
@@ -561,7 +559,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         console.error('Failed to save chat history', error)
       }
     }
-    updateConversationAsync()
+    void updateConversationAsync()
   }, [
     currentConversationId,
     chatMessages,
@@ -675,8 +673,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   // React to toggle changes immediately by syncing the current-file mentionable
   useEffect(() => {
     handleActiveLeafChange()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.chatOptions.includeCurrentFileContent])
+  }, [handleActiveLeafChange, settings.chatOptions.includeCurrentFileContent])
 
   useImperativeHandle(ref, () => ({
     openNewChat: (selectedBlock?: MentionableBlockData) =>
@@ -753,7 +750,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (!currentConversationId) {
         return undefined
       }
-      return conversationOverridesRef.current.get(currentConversationId)
+      const stored = conversationOverridesRef.current.get(currentConversationId)
+      return stored ?? undefined
     },
     getCurrentConversationModelId: () => {
       if (conversationModelId) {
@@ -791,25 +789,27 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             <ChatListDropdown
               chatList={chatList}
               currentConversationId={currentConversationId}
-              onSelect={async (conversationId) => {
+              onSelect={(conversationId) => {
                 if (conversationId === currentConversationId) return
-                await handleLoadConversation(conversationId)
+                void handleLoadConversation(conversationId)
               }}
-              onDelete={async (conversationId) => {
-                await deleteConversation(conversationId)
-                if (conversationId === currentConversationId) {
-                  const nextConversation = chatList.find(
-                    (chat) => chat.id !== conversationId,
-                  )
-                  if (nextConversation) {
-                    void handleLoadConversation(nextConversation.id)
-                  } else {
-                    handleNewChat()
+              onDelete={(conversationId) => {
+                void (async () => {
+                  await deleteConversation(conversationId)
+                  if (conversationId === currentConversationId) {
+                    const nextConversation = chatList.find(
+                      (chat) => chat.id !== conversationId,
+                    )
+                    if (nextConversation) {
+                      void handleLoadConversation(nextConversation.id)
+                    } else {
+                      handleNewChat()
+                    }
                   }
-                }
+                })()
               }}
-              onUpdateTitle={async (conversationId, newTitle) => {
-                await updateConversationTitle(conversationId, newTitle)
+              onUpdateTitle={(conversationId, newTitle) => {
+                void updateConversationTitle(conversationId, newTitle)
               }}
             >
               <History size={18} />
@@ -872,7 +872,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 // Use the model mapping for this message if exists, otherwise current conversation model
                 const modelForThisMessage =
                   messageModelMap.get(messageOrGroup.id) ?? conversationModelId
-                handleUserMessageSubmit({
+                void handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
                       .slice(0, index)
@@ -1047,7 +1047,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           }}
           onSubmit={(content, useVaultSearch) => {
             if (editorStateToPlainText(content).trim() === '') return
-            handleUserMessageSubmit({
+            void handleUserMessageSubmit({
               inputChatMessages: [
                 ...chatMessages,
                 { ...inputMessage, content },

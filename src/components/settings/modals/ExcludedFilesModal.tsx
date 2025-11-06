@@ -21,7 +21,8 @@ export class ExcludedFilesModal extends ReactModal<ExcludedFilesModalComponentPr
 
 function ExcludedFilesModalComponent({
   files,
-}: ExcludedFilesModalComponentProps) {
+  onClose: _onClose,
+}: ExcludedFilesModalComponentProps & { onClose: () => void }) {
   return files.length === 0 ? (
     <div>No files match the exclusion patterns</div>
   ) : (

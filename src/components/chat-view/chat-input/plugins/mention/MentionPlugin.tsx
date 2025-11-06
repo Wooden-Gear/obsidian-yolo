@@ -9,8 +9,8 @@
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $createTextNode, COMMAND_PRIORITY_NORMAL, TextNode } from 'lexical'
-import { useCallback, useMemo, useState } from 'react'
-import type { ReactElement } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import type { JSX as ReactJSX } from 'react/jsx-runtime'
 import { createPortal } from 'react-dom'
 
 import { Mentionable } from '../../../../../types/mentionable'
@@ -105,7 +105,7 @@ function getPossibleQueryMatch(text: string): MenuTextMatch | null {
 class MentionTypeaheadOption extends MenuOption {
   name: string
   mentionable: Mentionable
-  icon: React.ReactNode
+  icon: ReactNode
 
   constructor(result: SearchableMentionable) {
     switch (result.type) {
@@ -174,7 +174,7 @@ export default function NewMentionsPlugin({
   searchResultByQuery,
 }: {
   searchResultByQuery: (query: string) => SearchableMentionable[]
-}): ReactElement | null {
+}): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
 
   const [queryString, setQueryString] = useState<string | null>(null)

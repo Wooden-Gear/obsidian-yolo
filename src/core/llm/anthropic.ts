@@ -5,6 +5,8 @@ import {
   Base64ImageSource,
   ContentBlockParam,
   ImageBlockParam,
+  MessageCreateParamsNonStreaming,
+  MessageCreateParamsStreaming,
   MessageParam,
   MessageStreamEvent,
   TextBlockParam,
@@ -72,11 +74,11 @@ export class AnthropicProvider extends BaseLLMProvider<
     )
 
     try {
-      let payload: Record<string, unknown> = {
+      const payloadBase: MessageCreateParamsNonStreaming = {
         model: request.model,
         messages: request.messages
           .map((m) => AnthropicProvider.parseRequestMessage(m))
-          .filter((m) => m !== null),
+          .filter((m): m is MessageParam => m !== null),
         system: systemMessage,
         thinking: model.thinking?.enabled
           ? {
@@ -98,9 +100,13 @@ export class AnthropicProvider extends BaseLLMProvider<
         top_p: request.top_p,
       }
 
-      payload = this.applyCustomModelParameters(model, payload)
+      const payload = this.applyCustomModelParameters<
+        MessageCreateParamsNonStreaming & Record<string, unknown>
+      >(model, {
+        ...payloadBase,
+      })
 
-      const response = await this.client.messages.create(payload as any, {
+      const response = await this.client.messages.create(payload, {
         signal: options?.signal,
       })
 
@@ -165,11 +171,11 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
     )
 
     try {
-      let payload: Record<string, unknown> = {
+      const payloadBase: MessageCreateParamsStreaming = {
         model: request.model,
         messages: request.messages
           .map((m) => AnthropicProvider.parseRequestMessage(m))
-          .filter((m) => m !== null),
+          .filter((m): m is MessageParam => m !== null),
         system: systemMessage,
         thinking: model.thinking?.enabled
           ? {
@@ -192,10 +198,15 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
         stream: true,
       }
 
-      payload = this.applyCustomModelParameters(model, payload)
+      const payload = this.applyCustomModelParameters<
+        MessageCreateParamsStreaming & Record<string, unknown>
+      >(model, {
+        ...payloadBase,
+      })
 
-      const stream = (await this.client.messages.create(payload as any, {
+      const stream = (await this.client.messages.create(payload, {
         signal: options?.signal,
+        stream: true,
       })) as unknown as AsyncIterable<MessageStreamEvent>
 
       return this.streamResponseGenerator(stream)

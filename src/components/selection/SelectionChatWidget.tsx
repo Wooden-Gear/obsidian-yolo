@@ -4,13 +4,14 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
+import SmartComposerPlugin from '../../main'
 
 import { SelectionActionsMenu } from './SelectionActionsMenu'
 import { SelectionIndicator } from './SelectionIndicator'
 import type { SelectionInfo } from './SelectionManager'
 
 type SelectionChatWidgetProps = {
-  plugin: any
+  plugin: SmartComposerPlugin
   editor: Editor
   selection: SelectionInfo
   onClose: () => void
@@ -115,7 +116,7 @@ export class SelectionChatWidget {
 
   constructor(
     private readonly options: {
-      plugin: any
+      plugin: SmartComposerPlugin
       editor: Editor
       selection: SelectionInfo
       onClose: () => void

@@ -8,7 +8,12 @@ export abstract class AbstractJsonRepository<T, M> {
   constructor(app: App, dataDir: string) {
     this.app = app
     this.dataDir = normalizePath(dataDir)
-    this.ensureDirectory()
+    void this.ensureDirectory().catch((error) => {
+      console.error(
+        `[Smart Composer] Failed to ensure data directory "${this.dataDir}":`,
+        error,
+      )
+    })
   }
 
   private async ensureDirectory(): Promise<void> {

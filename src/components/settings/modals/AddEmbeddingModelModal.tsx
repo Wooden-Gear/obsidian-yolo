@@ -25,7 +25,6 @@ import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type AddEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   provider?: LLMProvider
 }
 
@@ -71,7 +70,7 @@ function AddEmbeddingModelModalComponent({
   plugin,
   onClose,
   provider,
-}: AddEmbeddingModelModalComponentProps) {
+}: AddEmbeddingModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
   const selectedProvider: LLMProvider | undefined =
     provider ?? plugin.settings.providers[0]
@@ -111,7 +110,11 @@ function AddEmbeddingModelModalComponent({
 
   useEffect(() => {
     const fetchModels = async () => {
-      if (!selectedProvider) return
+      if (!selectedProvider) {
+        setAvailableModels([])
+        setLoadingModels(false)
+        return
+      }
 
       // Check cache first
       const cachedModels = plugin.getCachedModelList(selectedProvider.id)
@@ -250,12 +253,11 @@ function AddEmbeddingModelModalComponent({
       }
     }
 
-    fetchModels()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvider?.id])
+    void fetchModels()
+  }, [plugin, selectedProvider])
 
-  const handleSubmit = async () => {
-    try {
+  const handleSubmit = () => {
+    const run = async () => {
       // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
       const baseInternalId = generateModelId(
         formData.providerId,
@@ -329,11 +331,13 @@ function AddEmbeddingModelModalComponent({
       })
 
       onClose()
-    } catch (error) {
+    }
+
+    void run().catch((error) => {
       new Notice(
         error instanceof Error ? error.message : 'An unknown error occurred',
       )
-    }
+    })
   }
 
   return (

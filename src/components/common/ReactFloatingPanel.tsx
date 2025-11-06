@@ -3,6 +3,7 @@ import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
+import SmartComposerPlugin from '../../main'
 
 export type FloatingPanelOptions = {
   title?: string
@@ -14,20 +15,20 @@ export type FloatingPanelOptions = {
   minimal?: boolean
 }
 
-type FloatingPanelProps<T> = {
-  Component: React.ComponentType<T>
-  props: Omit<T, 'onClose'>
-  plugin?: any
+type FloatingPanelProps<T extends Record<string, unknown>> = {
+  Component: React.ComponentType<T & { onClose: () => void }>
+  props: T
+  plugin?: SmartComposerPlugin
   options?: FloatingPanelOptions
 }
 
-export class ReactFloatingPanel<T> {
+export class ReactFloatingPanel<T extends Record<string, unknown>> {
   private root: Root | null = null
   private container: HTMLDivElement | null = null
-  private Component: React.ComponentType<T>
-  private props: Omit<T, 'onClose'>
+  private Component: React.ComponentType<T & { onClose: () => void }>
+  private props: T
   private options?: FloatingPanelOptions
-  private plugin?: any
+  private plugin?: SmartComposerPlugin
 
   constructor({ Component, props, options, plugin }: FloatingPanelProps<T>) {
     this.Component = Component
@@ -158,57 +159,62 @@ export class ReactFloatingPanel<T> {
         ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
       }
 
-      return (
-        <PluginProvider plugin={this.plugin}>
-          <LanguageProvider>
-            <div
-              ref={panelRef}
-              className={panelClassName}
-              style={panelStyleVars}
-            >
-              {/* Minimal headerless mode: add a thin drag handle on top */}
-              {options?.minimal ? (
-                <div
-                  className="smtcmp-floating-panel-drag-handle"
-                  onPointerDown={onHeaderPointerDown}
-                  onPointerMove={onHeaderPointerMove}
-                  onPointerUp={onHeaderPointerUp}
-                />
-              ) : (
-                <div
-                  className="smtcmp-floating-panel-header"
-                  onPointerDown={onHeaderPointerDown}
-                  onPointerMove={onHeaderPointerMove}
-                  onPointerUp={onHeaderPointerUp}
-                >
-                  <div className="smtcmp-floating-panel-title">
-                    {options?.title ?? ''}
-                  </div>
-                  <button
-                    aria-label="Close"
-                    className="clickable-icon smtcmp-floating-panel-close"
-                    onClick={onClose}
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              <div className="smtcmp-floating-panel-body">
-                <this.Component {...(this.props as T)} onClose={onClose} />
-              </div>
+      const componentProps = {
+        ...this.props,
+        onClose,
+      } as T & { onClose: () => void }
 
-              {/* Resize handle */}
+      const panelBody = (
+        <LanguageProvider>
+          <div ref={panelRef} className={panelClassName} style={panelStyleVars}>
+            {/* Minimal headerless mode: add a thin drag handle on top */}
+            {options?.minimal ? (
               <div
-                onPointerDown={onResizePointerDown}
-                onPointerMove={onResizePointerMove}
-                onPointerUp={onResizePointerUp}
-                className="smtcmp-floating-panel-resize-handle"
-                aria-label="Resize"
+                className="smtcmp-floating-panel-drag-handle"
+                onPointerDown={onHeaderPointerDown}
+                onPointerMove={onHeaderPointerMove}
+                onPointerUp={onHeaderPointerUp}
               />
+            ) : (
+              <div
+                className="smtcmp-floating-panel-header"
+                onPointerDown={onHeaderPointerDown}
+                onPointerMove={onHeaderPointerMove}
+                onPointerUp={onHeaderPointerUp}
+              >
+                <div className="smtcmp-floating-panel-title">
+                  {options?.title ?? ''}
+                </div>
+                <button
+                  aria-label="Close"
+                  className="clickable-icon smtcmp-floating-panel-close"
+                  onClick={onClose}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <div className="smtcmp-floating-panel-body">
+              <this.Component {...componentProps} />
             </div>
-          </LanguageProvider>
-        </PluginProvider>
+
+            {/* Resize handle */}
+            <div
+              onPointerDown={onResizePointerDown}
+              onPointerMove={onResizePointerMove}
+              onPointerUp={onResizePointerUp}
+              className="smtcmp-floating-panel-resize-handle"
+              aria-label="Resize"
+            />
+          </div>
+        </LanguageProvider>
       )
+
+      if (!this.plugin) {
+        return panelBody
+      }
+
+      return <PluginProvider plugin={this.plugin}>{panelBody}</PluginProvider>
     }
 
     this.root.render(<PanelShell onClose={() => this.close()} />)

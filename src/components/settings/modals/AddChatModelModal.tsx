@@ -21,7 +21,6 @@ import { SearchableDropdown } from '../../common/SearchableDropdown'
 
 type AddChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   provider?: LLMProvider
 }
 
@@ -125,7 +124,7 @@ function AddChatModelModalComponent({
   plugin,
   onClose,
   provider,
-}: AddChatModelModalComponentProps) {
+}: AddChatModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
   const selectedProvider: LLMProvider | undefined =
     provider ?? plugin.settings.providers[0]
@@ -160,7 +159,11 @@ function AddChatModelModalComponent({
 
   useEffect(() => {
     const fetchModels = async () => {
-      if (!selectedProvider) return
+      if (!selectedProvider) {
+        setAvailableModels([])
+        setLoadingModels(false)
+        return
+      }
 
       // Check cache first
       const cachedModels = plugin.getCachedModelList(selectedProvider.id)
@@ -291,11 +294,10 @@ function AddChatModelModalComponent({
       }
     }
 
-    fetchModels()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvider?.id])
+    void fetchModels()
+  }, [plugin, selectedProvider])
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     // Validate required API model id
     if (!formData.model || formData.model.trim().length === 0) {
       new Notice(t('common.error'))
@@ -330,9 +332,12 @@ function AddChatModelModalComponent({
         isBaseModel: true,
       }
     } else {
-      const { isBaseModel: _ignored, ...withoutBaseFlag } =
-        modelDataWithPrefix as Record<string, unknown>
-      modelDataWithPrefix = withoutBaseFlag as ChatModel
+      const withoutBaseFlag = Object.fromEntries(
+        Object.entries(modelDataWithPrefix as Record<string, unknown>).filter(
+          ([key]) => key !== 'isBaseModel',
+        ),
+      ) as ChatModel
+      modelDataWithPrefix = withoutBaseFlag
 
       if (reasoningType === 'openai') {
         if (!isReasoningConfigurable(modelDataWithPrefix)) {
@@ -397,12 +402,18 @@ function AddChatModelModalComponent({
       return
     }
 
-    await plugin.setSettings({
-      ...plugin.settings,
-      chatModels: [...plugin.settings.chatModels, modelDataWithPrefix],
-    })
-
-    onClose()
+    void plugin
+      .setSettings({
+        ...plugin.settings,
+        chatModels: [...plugin.settings.chatModels, modelDataWithPrefix],
+      })
+      .then(() => {
+        onClose()
+      })
+      .catch((error) => {
+        console.error('Failed to add chat model', error)
+        new Notice(t('common.error'))
+      })
   }
 
   return (

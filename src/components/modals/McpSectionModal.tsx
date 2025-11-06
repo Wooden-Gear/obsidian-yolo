@@ -24,7 +24,11 @@ export class McpSectionModal extends ReactModal<McpSectionComponentProps> {
   }
 }
 
-function McpSectionComponent({ app, plugin }: McpSectionComponentProps) {
+function McpSectionComponent({
+  app,
+  plugin,
+  onClose: _onClose,
+}: McpSectionComponentProps & { onClose: () => void }) {
   return (
     <SettingsProvider
       settings={plugin.settings}

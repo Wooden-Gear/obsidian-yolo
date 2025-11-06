@@ -6,10 +6,10 @@ export const en: TranslationKeys = {
     addSelectionToChat: 'Add selection to chat',
     rebuildVaultIndex: 'Rebuild entire vault index',
     updateVaultIndex: 'Update index for modified files',
-    continueWriting: 'AI Continue Writing',
-    continueWritingSelected: 'AI Continue Writing (selection)',
-    customContinueWriting: 'AI Custom Continue',
-    customRewrite: 'AI Custom Rewrite',
+    continueWriting: 'AI continue writing',
+    continueWritingSelected: 'AI continue writing (selection)',
+    customContinueWriting: 'AI custom continue',
+    customRewrite: 'AI custom rewrite',
   },
 
   common: {
@@ -130,7 +130,7 @@ export const en: TranslationKeys = {
       quickActionsDesc:
         'Customize the quick actions and prompts displayed in Smart Space',
       addAction: 'Add action',
-      resetToDefault: 'Reset to Default',
+      resetToDefault: 'Reset to default',
       confirmReset:
         'Are you sure you want to reset to default quick actions? This will delete all custom settings.',
       actionLabel: 'Action label',

@@ -23,7 +23,8 @@ export class IncludedFilesModal extends ReactModal<IncludedFilesModalComponentPr
 function IncludedFilesModalComponent({
   files,
   patterns,
-}: IncludedFilesModalComponentProps) {
+  onClose: _onClose,
+}: IncludedFilesModalComponentProps & { onClose: () => void }) {
   return patterns.length === 0 ? (
     <div>
       No inclusion patterns specified - all files will be included (except those

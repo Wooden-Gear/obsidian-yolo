@@ -137,8 +137,7 @@ export default function ApplyViewRoot({
     if (modifiedBlockIndices.length > 0) {
       scrollToDiffBlock(0)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [modifiedBlockIndices, scrollToDiffBlock])
 
   return (
     <div id="smtcmp-apply-view">

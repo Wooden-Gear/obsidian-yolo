@@ -11,7 +11,6 @@ type ErrorModalComponentProps = {
   app: App
   message: string
   log?: string
-  onClose: () => void
   options: ErrorModalOptions
 }
 
@@ -45,7 +44,7 @@ function ErrorModalComponent({
   log,
   onClose,
   options,
-}: ErrorModalComponentProps) {
+}: ErrorModalComponentProps & { onClose: () => void }) {
   return (
     <div className="smtcmp-error-modal-content">
       <div className="smtcmp-error-modal-message">{message}</div>

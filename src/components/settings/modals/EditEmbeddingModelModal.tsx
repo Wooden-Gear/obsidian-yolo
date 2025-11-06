@@ -11,7 +11,6 @@ import { ReactModal } from '../../common/ReactModal'
 
 type EditEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   model: EmbeddingModel
 }
 
@@ -33,7 +32,7 @@ function EditEmbeddingModelModalComponent({
   plugin,
   onClose,
   model,
-}: EditEmbeddingModelModalComponentProps) {
+}: EditEmbeddingModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
 
   // Update modal title
@@ -51,56 +50,60 @@ function EditEmbeddingModelModalComponent({
   }>({
     id: model.id,
     model: model.model,
-    name: (model as any).name,
+    name: model.name,
     dimension: model.dimension?.toString() || '',
   })
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.model.trim()) {
       new Notice(t('common.error'))
       return
     }
 
-    const dimension = formData.dimension
-      ? parseInt(formData.dimension)
-      : undefined
-    if (formData.dimension && (isNaN(dimension!) || dimension! <= 0)) {
-      new Notice('Invalid dimension value')
-      return
-    }
-
-    try {
-      const settings = plugin.settings
-      const embeddingModels = [...settings.embeddingModels]
-      const modelIndex = embeddingModels.findIndex((m) => m.id === model.id)
-
-      if (modelIndex === -1) {
-        new Notice('Model not found')
+    const execute = async () => {
+      const dimension = formData.dimension
+        ? parseInt(formData.dimension, 10)
+        : undefined
+      if (formData.dimension && (isNaN(dimension!) || dimension! <= 0)) {
+        new Notice('Invalid dimension value')
         return
       }
 
-      // Update the model (keep the original ID, don't allow editing it for existing models)
-      embeddingModels[modelIndex] = {
-        ...embeddingModels[modelIndex],
-        model: formData.model,
-        name:
-          formData.name && formData.name.trim().length > 0
-            ? formData.name
-            : formData.model,
-        dimension: dimension!,
+      try {
+        const settings = plugin.settings
+        const embeddingModels = [...settings.embeddingModels]
+        const modelIndex = embeddingModels.findIndex((m) => m.id === model.id)
+
+        if (modelIndex === -1) {
+          new Notice('Model not found')
+          return
+        }
+
+        // Update the model (keep the original ID, don't allow editing it for existing models)
+        embeddingModels[modelIndex] = {
+          ...embeddingModels[modelIndex],
+          model: formData.model,
+          name:
+            formData.name && formData.name.trim().length > 0
+              ? formData.name
+              : formData.model,
+          dimension: dimension!,
+        }
+
+        await plugin.setSettings({
+          ...settings,
+          embeddingModels,
+        })
+
+        new Notice(t('common.success'))
+        onClose()
+      } catch (error) {
+        console.error('Failed to update embedding model:', error)
+        new Notice(t('common.error'))
       }
-
-      await plugin.setSettings({
-        ...settings,
-        embeddingModels,
-      })
-
-      new Notice(t('common.success'))
-      onClose()
-    } catch (error) {
-      console.error('Failed to update embedding model:', error)
-      new Notice(t('common.error'))
     }
+
+    void execute()
   }
 
   return (

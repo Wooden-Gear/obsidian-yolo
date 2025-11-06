@@ -87,161 +87,194 @@ export function ProvidersAndModelsSection({
     setExpandedProviders(newExpanded)
   }
 
-  const handleDeleteProvider = async (provider: LLMProvider) => {
-    const associatedChatModels = settings.chatModels.filter(
-      (m) => m.providerId === provider.id,
-    )
-    const associatedEmbeddingModels = settings.embeddingModels.filter(
-      (m) => m.providerId === provider.id,
-    )
-
-    // Handle default model reassignment before deletion
-    const newSettings = { ...settings }
-
-    // Find alternative chat models from other providers
-    const otherChatModels = settings.chatModels.filter(
-      (m) => m.providerId !== provider.id && (m.enable ?? true),
-    )
-
-    // Find alternative embedding models from other providers
-    const otherEmbeddingModels = settings.embeddingModels.filter(
-      (m) => m.providerId !== provider.id,
-    )
-
-    // Check if current chat model is from this provider and reassign
-    if (associatedChatModels.some((m) => m.id === settings.chatModelId)) {
-      newSettings.chatModelId =
-        otherChatModels.length > 0 ? otherChatModels[0].id : ''
-    }
-
-    // Check if current apply model is from this provider and reassign
-    if (associatedChatModels.some((m) => m.id === settings.applyModelId)) {
-      newSettings.applyModelId =
-        otherChatModels.length > 0 ? otherChatModels[0].id : ''
-    }
-
-    // Check if current embedding model is from this provider and reassign
-    if (
-      associatedEmbeddingModels.some((m) => m.id === settings.embeddingModelId)
-    ) {
-      newSettings.embeddingModelId =
-        otherEmbeddingModels.length > 0 ? otherEmbeddingModels[0].id : ''
-    }
-
-    // Clear embeddings for associated embedding models
-    const vectorManager = await plugin.tryGetVectorManager()
-
-    if (vectorManager) {
-      const embeddingStats = await vectorManager.getEmbeddingStats()
-
-      for (const embeddingModel of associatedEmbeddingModels) {
-        const embeddingStat = embeddingStats.find(
-          (v) => v.model === embeddingModel.id,
-        )
-
-        if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-          const embeddingModelClient = getEmbeddingModelClient({
-            settings,
-            embeddingModelId: embeddingModel.id,
-          })
-          await vectorManager.clearAllVectors(embeddingModelClient)
-        }
-      }
-    } else {
-      console.warn(
-        '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+  const handleDeleteProvider = (provider: LLMProvider) => {
+    void (async () => {
+      const associatedChatModels = settings.chatModels.filter(
+        (m) => m.providerId === provider.id,
       )
-    }
+      const associatedEmbeddingModels = settings.embeddingModels.filter(
+        (m) => m.providerId === provider.id,
+      )
 
-    // Delete provider and associated models
-    await setSettings({
-      ...newSettings,
-      providers: settings.providers.filter((v) => v.id !== provider.id),
-      chatModels: settings.chatModels.filter(
-        (v) => v.providerId !== provider.id,
-      ),
-      embeddingModels: settings.embeddingModels.filter(
-        (v) => v.providerId !== provider.id,
-      ),
-    })
+      // Handle default model reassignment before deletion
+      const newSettings = { ...settings }
 
-    new Notice(`Provider "${provider.id}" deleted successfully`)
+      // Find alternative chat models from other providers
+      const otherChatModels = settings.chatModels.filter(
+        (m) => m.providerId !== provider.id && (m.enable ?? true),
+      )
+
+      // Find alternative embedding models from other providers
+      const otherEmbeddingModels = settings.embeddingModels.filter(
+        (m) => m.providerId !== provider.id,
+      )
+
+      // Check if current chat model is from this provider and reassign
+      if (associatedChatModels.some((m) => m.id === settings.chatModelId)) {
+        newSettings.chatModelId =
+          otherChatModels.length > 0 ? otherChatModels[0].id : ''
+      }
+
+      // Check if current apply model is from this provider and reassign
+      if (associatedChatModels.some((m) => m.id === settings.applyModelId)) {
+        newSettings.applyModelId =
+          otherChatModels.length > 0 ? otherChatModels[0].id : ''
+      }
+
+      // Check if current embedding model is from this provider and reassign
+      if (
+        associatedEmbeddingModels.some(
+          (m) => m.id === settings.embeddingModelId,
+        )
+      ) {
+        newSettings.embeddingModelId =
+          otherEmbeddingModels.length > 0 ? otherEmbeddingModels[0].id : ''
+      }
+
+      try {
+        const vectorManager = await plugin.tryGetVectorManager()
+
+        if (vectorManager) {
+          const embeddingStats = await vectorManager.getEmbeddingStats()
+
+          for (const embeddingModel of associatedEmbeddingModels) {
+            const embeddingStat = embeddingStats.find(
+              (v) => v.model === embeddingModel.id,
+            )
+
+            if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+              const embeddingModelClient = getEmbeddingModelClient({
+                settings,
+                embeddingModelId: embeddingModel.id,
+              })
+              await vectorManager.clearAllVectors(embeddingModelClient)
+            }
+          }
+        } else {
+          console.warn(
+            '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+          )
+        }
+
+        // Delete provider and associated models
+        await setSettings({
+          ...newSettings,
+          providers: settings.providers.filter((v) => v.id !== provider.id),
+          chatModels: settings.chatModels.filter(
+            (v) => v.providerId !== provider.id,
+          ),
+          embeddingModels: settings.embeddingModels.filter(
+            (v) => v.providerId !== provider.id,
+          ),
+        })
+
+        new Notice(`Provider "${provider.id}" deleted successfully.`)
+      } catch (error) {
+        console.error('[Smart Composer] Failed to delete provider:', error)
+        new Notice('Failed to delete provider.')
+      }
+    })()
   }
 
-  const handleDeleteChatModel = async (modelId: string) => {
+  const handleDeleteChatModel = (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Chat Model or Tool Model',
+        'Cannot remove model that is currently selected as chat model or tool model',
       )
       return
     }
 
-    // Delete immediately without confirmation
-    await setSettings({
-      ...settings,
-      chatModels: settings.chatModels.filter((v) => v.id !== modelId),
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          chatModels: settings.chatModels.filter((v) => v.id !== modelId),
+        })
+      } catch (error: unknown) {
+        console.error('[Smart Composer] Failed to delete chat model:', error)
+        new Notice('Failed to delete chat model.')
+      }
+    })()
   }
 
-  const handleDeleteEmbeddingModel = async (modelId: string) => {
+  const handleDeleteEmbeddingModel = (modelId: string) => {
     if (modelId === settings.embeddingModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Embedding Model',
+        'Cannot remove model that is currently selected as embedding model',
       )
       return
     }
 
-    // Delete immediately without confirmation
-    const vectorManager = await plugin.tryGetVectorManager()
-    if (vectorManager) {
-      const embeddingStats = await vectorManager.getEmbeddingStats()
-      const embeddingStat = embeddingStats.find((v) => v.model === modelId)
-      const rowCount = embeddingStat?.rowCount || 0
+    void (async () => {
+      try {
+        const vectorManager = await plugin.tryGetVectorManager()
+        if (vectorManager) {
+          const embeddingStats = await vectorManager.getEmbeddingStats()
+          const embeddingStat = embeddingStats.find((v) => v.model === modelId)
+          const rowCount = embeddingStat?.rowCount || 0
 
-      if (rowCount > 0) {
-        const embeddingModelClient = getEmbeddingModelClient({
-          settings,
-          embeddingModelId: modelId,
+          if (rowCount > 0) {
+            const embeddingModelClient = getEmbeddingModelClient({
+              settings,
+              embeddingModelId: modelId,
+            })
+            await vectorManager.clearAllVectors(embeddingModelClient)
+          }
+        } else {
+          console.warn(
+            '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+          )
+        }
+        await setSettings({
+          ...settings,
+          embeddingModels: settings.embeddingModels.filter(
+            (v) => v.id !== modelId,
+          ),
         })
-        await vectorManager.clearAllVectors(embeddingModelClient)
+      } catch (error) {
+        console.error(
+          '[Smart Composer] Failed to delete embedding model:',
+          error,
+        )
+        new Notice('Failed to delete embedding model.')
       }
-    } else {
-      console.warn(
-        '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
-      )
-    }
-    await setSettings({
-      ...settings,
-      embeddingModels: settings.embeddingModels.filter((v) => v.id !== modelId),
-    })
+    })()
   }
 
-  const handleToggleEnableChatModel = async (
-    modelId: string,
-    value: boolean,
-  ) => {
-    if (
-      !value &&
-      (modelId === settings.chatModelId || modelId === settings.applyModelId)
-    ) {
-      new Notice(
-        'Cannot disable model that is currently selected as Chat Model or Tool Model',
-      )
-      await setSettings({
-        ...settings,
-        chatModels: settings.chatModels.map((v) =>
-          v.id === modelId ? { ...v, enable: true } : v,
-        ),
-      })
-      return
-    }
+  const handleToggleEnableChatModel = (modelId: string, value: boolean) => {
+    void (async () => {
+      try {
+        if (
+          !value &&
+          (modelId === settings.chatModelId ||
+            modelId === settings.applyModelId)
+        ) {
+          new Notice(
+            'Cannot disable model that is currently selected as chat model or tool model',
+          )
+          await setSettings({
+            ...settings,
+            chatModels: settings.chatModels.map((v) =>
+              v.id === modelId ? { ...v, enable: true } : v,
+            ),
+          })
+          return
+        }
 
-    await setSettings({
-      ...settings,
-      chatModels: settings.chatModels.map((v) =>
-        v.id === modelId ? { ...v, enable: value } : v,
-      ),
-    })
+        await setSettings({
+          ...settings,
+          chatModels: settings.chatModels.map((v) =>
+            v.id === modelId ? { ...v, enable: value } : v,
+          ),
+        })
+      } catch (error: unknown) {
+        console.error(
+          '[Smart Composer] Failed to update chat model state:',
+          error,
+        )
+        new Notice('Failed to update chat model.')
+      }
+    })()
   }
 
   const handleProviderModelDragStart = (
@@ -360,7 +393,7 @@ export function ProvidersAndModelsSection({
     lastInsertIndexRef.current = insertIndex
   }
 
-  const handleProviderModelDrop = async (
+  const handleProviderModelDrop = (
     event: React.DragEvent<HTMLTableRowElement>,
     providerId: string,
     targetIndex: number,
@@ -412,30 +445,34 @@ export function ProvidersAndModelsSection({
 
     updatedChatModels.splice(insertIndex, 0, moved)
 
-    await setSettings({
-      ...settings,
-      chatModels: updatedChatModels,
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          chatModels: updatedChatModels,
+        })
+        triggerProviderDropSuccess(providerId, moved.id)
+      } catch (error) {
+        console.error('[Smart Composer] Failed to reorder chat models:', error)
+        new Notice('Failed to reorder chat models.')
+      } finally {
+        rowEl?.classList.remove(
+          'smtcmp-row-drag-over-before',
+          'smtcmp-row-drag-over-after',
+        )
+        const dragging = document.querySelector('tr.smtcmp-row-dragging')
+        if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+        const activeHandle = document.querySelector(
+          '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+        )
+        if (activeHandle)
+          activeHandle.classList.remove('smtcmp-drag-handle--active')
 
-    // clear visuals
-    rowEl?.classList.remove(
-      'smtcmp-row-drag-over-before',
-      'smtcmp-row-drag-over-after',
-    )
-    const dragging = document.querySelector('tr.smtcmp-row-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
-
-    dragOverRowRef.current = null
-    lastDropPosRef.current = null
-    lastInsertIndexRef.current = null
-
-    // success feedback on moved row
-    triggerProviderDropSuccess(providerId, moved.id)
+        dragOverRowRef.current = null
+        lastDropPosRef.current = null
+        lastInsertIndexRef.current = null
+      }
+    })()
   }
 
   const isEnabled = (enable: boolean | undefined | null) => enable ?? true
@@ -550,7 +587,7 @@ export function ProvidersAndModelsSection({
     lastProviderInsertIndexRef.current = insertIndex
   }
 
-  const handleProviderDrop = async (
+  const handleProviderDrop = (
     event: React.DragEvent<HTMLDivElement>,
     targetIndex: number,
   ) => {
@@ -585,30 +622,36 @@ export function ProvidersAndModelsSection({
 
     updatedProviders.splice(insertIndex, 0, moved)
 
-    await setSettings({
-      ...settings,
-      providers: updatedProviders,
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          providers: updatedProviders,
+        })
 
-    // clear visuals
-    sectionEl?.classList.remove(
-      'smtcmp-provider-drag-over-before',
-      'smtcmp-provider-drag-over-after',
-    )
-    const dragging = document.querySelector('.smtcmp-provider-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
+        // success feedback on moved provider
+        triggerProviderDropSuccessFeedback(moved.id)
+      } catch (error) {
+        console.error('[Smart Composer] Failed to reorder providers:', error)
+        new Notice('Failed to reorder providers.')
+      } finally {
+        sectionEl?.classList.remove(
+          'smtcmp-provider-drag-over-before',
+          'smtcmp-provider-drag-over-after',
+        )
+        const dragging = document.querySelector('.smtcmp-provider-dragging')
+        if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
+        const activeHandle = document.querySelector(
+          '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
+        )
+        if (activeHandle)
+          activeHandle.classList.remove('smtcmp-drag-handle--active')
 
-    dragOverProviderRef.current = null
-    lastProviderDropPosRef.current = null
-    lastProviderInsertIndexRef.current = null
-
-    // success feedback on moved provider
-    triggerProviderDropSuccessFeedback(moved.id)
+        dragOverProviderRef.current = null
+        lastProviderDropPosRef.current = null
+        lastProviderInsertIndexRef.current = null
+      }
+    })()
   }
 
   const triggerProviderDropSuccessFeedback = (movedId: string) => {
@@ -664,7 +707,7 @@ export function ProvidersAndModelsSection({
               draggable
               onDragStart={(event) => handleProviderDragStart(event, index)}
               onDragOver={(event) => handleProviderDragOver(event, index)}
-              onDrop={(event) => void handleProviderDrop(event, index)}
+              onDrop={(event) => handleProviderDrop(event, index)}
               onDragEnd={handleProviderDragEnd}
             >
               <div
@@ -795,7 +838,7 @@ export function ProvidersAndModelsSection({
                                 )
                               }
                               onDrop={(event) =>
-                                void handleProviderModelDrop(
+                                handleProviderModelDrop(
                                   event,
                                   provider.id,
                                   index,
@@ -819,15 +862,7 @@ export function ProvidersAndModelsSection({
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}
                                   onChange={(value) => {
-                                    handleToggleEnableChatModel(
-                                      model.id,
-                                      value,
-                                    ).catch((error) => {
-                                      console.error(
-                                        'Failed to toggle chat model',
-                                        error,
-                                      )
-                                    })
+                                    handleToggleEnableChatModel(model.id, value)
                                   }}
                                 />
                               </td>
@@ -855,14 +890,7 @@ export function ProvidersAndModelsSection({
                                   ) && (
                                     <button
                                       onClick={() => {
-                                        handleDeleteChatModel(model.id).catch(
-                                          (error) => {
-                                            console.error(
-                                              'Failed to delete chat model',
-                                              error,
-                                            )
-                                          },
-                                        )
+                                        handleDeleteChatModel(model.id)
                                       }}
                                       className="clickable-icon"
                                     >
@@ -924,7 +952,7 @@ export function ProvidersAndModelsSection({
                             <tr key={model.id}>
                               <td></td>
                               <td title={model.id}>
-                                {(model as any).name || model.model || model.id}
+                                {model.name ?? model.model ?? model.id}
                               </td>
                               <td title={model.model}>{model.model}</td>
                               <td>{model.dimension}</td>
@@ -951,14 +979,7 @@ export function ProvidersAndModelsSection({
                                       </button>
                                       <button
                                         onClick={() => {
-                                          handleDeleteEmbeddingModel(
-                                            model.id,
-                                          ).catch((error) => {
-                                            console.error(
-                                              'Failed to delete embedding model',
-                                              error,
-                                            )
-                                          })
+                                          handleDeleteEmbeddingModel(model.id)
                                         }}
                                         className="clickable-icon"
                                       >

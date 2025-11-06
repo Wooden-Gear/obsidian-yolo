@@ -179,14 +179,14 @@ function ToolCallItem({
               <SplitButton
                 primaryText="Allow"
                 onPrimaryClick={() => {
-                  handleToolCall()
+                  void handleToolCall()
                   setIsOpen(false)
                 }}
                 menuOptions={[
                   {
                     label: 'Always allow this tool',
                     onClick: () => {
-                      handleToolCall()
+                      void handleToolCall()
                       handleAllowAutoExecution()
                       setIsOpen(false)
                     },
@@ -194,8 +194,8 @@ function ToolCallItem({
                   {
                     label: 'Allow for this chat',
                     onClick: () => {
-                      handleToolCall()
-                      handleAllowForConversation()
+                      void handleToolCall()
+                      void handleAllowForConversation()
                       setIsOpen(false)
                     },
                   },
@@ -213,7 +213,13 @@ function ToolCallItem({
           )}
           {response.status === ToolCallResponseStatus.Running && (
             <div className="smtcmp-toolcall-footer-actions">
-              <button onClick={handleAbort}>Abort</button>
+              <button
+                onClick={() => {
+                  void handleAbort()
+                }}
+              >
+                Abort
+              </button>
             </div>
           )}
         </div>
@@ -248,11 +254,12 @@ function useToolCall(
     mcpManager.allowToolForConversation(request.name, conversationId)
   }, [request, conversationId, getMcpManager])
 
-  const handleAllowAutoExecution = useCallback(async () => {
+  const handleAllowAutoExecution = useCallback(() => {
     const { serverName, toolName } = parseToolName(request.name)
     const server = settings.mcp.servers.find((s) => s.id === serverName)
     if (!server) {
-      throw new Error(`Server ${serverName} not found`)
+      console.error(`Server ${serverName} not found`)
+      return
     }
     const toolOptions = { ...server.toolOptions }
     if (!toolOptions[toolName]) {
@@ -267,20 +274,26 @@ function useToolCall(
       allowAutoExecution: true,
     }
 
-    await setSettings({
-      ...settings,
-      mcp: {
-        ...settings.mcp,
-        servers: settings.mcp.servers.map((s) =>
-          s.id === server.id
-            ? {
-                ...s,
-                toolOptions: toolOptions,
-              }
-            : s,
-        ),
-      },
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          mcp: {
+            ...settings.mcp,
+            servers: settings.mcp.servers.map((s) =>
+              s.id === server.id
+                ? {
+                    ...s,
+                    toolOptions: toolOptions,
+                  }
+                : s,
+            ),
+          },
+        })
+      } catch (error: unknown) {
+        console.error('Failed to allow tool auto execution', error)
+      }
+    })()
   }, [request, settings, setSettings])
 
   const handleReject = useCallback(() => {

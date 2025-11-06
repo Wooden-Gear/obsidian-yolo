@@ -11,22 +11,30 @@ export function getTranslation(language: Language): TranslationKeys {
   return translations[language] || translations.en
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getNestedValue(
+  source: TranslationKeys,
+  path: string[],
+): unknown | undefined {
+  return path.reduce<unknown | undefined>((current, key) => {
+    if (isRecord(current) && key in current) {
+      return current[key]
+    }
+    return undefined
+  }, source)
+}
+
 export function createTranslationFunction(language: Language) {
   const t = getTranslation(language)
 
   return function translate(keyPath: string, fallback?: string): string {
     const keys = keyPath.split('.')
-    let current: any = t
+    const value = getNestedValue(t, keys)
 
-    for (const key of keys) {
-      if (current && typeof current === 'object' && key in current) {
-        current = current[key]
-      } else {
-        return fallback || keyPath
-      }
-    }
-
-    return typeof current === 'string' ? current : fallback || keyPath
+    return typeof value === 'string' ? value : fallback || keyPath
   }
 }
 

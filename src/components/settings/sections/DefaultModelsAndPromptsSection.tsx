@@ -17,6 +17,26 @@ import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 export function DefaultModelsAndPromptsSection() {
   const { settings, setSettings } = useSettings()
   const { t, language } = useLanguage()
+
+  const commitSettingsUpdate = (
+    patch: Partial<typeof settings>,
+    context: string,
+  ) => {
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          ...patch,
+        })
+      } catch (error: unknown) {
+        console.error(
+          `Failed to update default models/settings: ${context}`,
+          error,
+        )
+      }
+    })()
+  }
+
   const enabledChatModels = useMemo(
     () => settings.chatModels.filter(({ enable }) => enable ?? true),
     [settings.chatModels],
@@ -97,11 +117,8 @@ export function DefaultModelsAndPromptsSection() {
         <ObsidianDropdown
           value={settings.chatModelId}
           groupedOptions={chatModelGroupedOptions}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatModelId: value,
-            })
+          onChange={(value) => {
+            commitSettingsUpdate({ chatModelId: value }, 'chatModelId')
           }}
         />
       </ObsidianSetting>
@@ -113,11 +130,8 @@ export function DefaultModelsAndPromptsSection() {
         <ObsidianDropdown
           value={settings.applyModelId}
           groupedOptions={applyModelGroupedOptions}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              applyModelId: value,
-            })
+          onChange={(value) => {
+            commitSettingsUpdate({ applyModelId: value }, 'applyModelId')
           }}
         />
       </ObsidianSetting>
@@ -131,11 +145,8 @@ export function DefaultModelsAndPromptsSection() {
       <ObsidianSetting className="smtcmp-settings-textarea">
         <ObsidianTextArea
           value={settings.systemPrompt}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              systemPrompt: value,
-            })
+          onChange={(value: string) => {
+            commitSettingsUpdate({ systemPrompt: value }, 'systemPrompt')
           }}
         />
       </ObsidianSetting>
@@ -149,14 +160,16 @@ export function DefaultModelsAndPromptsSection() {
       <ObsidianSetting className="smtcmp-settings-textarea">
         <ObsidianTextArea
           value={chatTitlePromptValue}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
-                chatTitlePrompt: value,
+          onChange={(value: string) => {
+            commitSettingsUpdate(
+              {
+                chatOptions: {
+                  ...settings.chatOptions,
+                  chatTitlePrompt: value,
+                },
               },
-            })
+              'chatTitlePrompt',
+            )
           }}
         />
       </ObsidianSetting>
@@ -170,14 +183,16 @@ export function DefaultModelsAndPromptsSection() {
       <ObsidianSetting className="smtcmp-settings-textarea">
         <ObsidianTextArea
           value={baseModelSpecialPromptValue}
-          onChange={async (value: string) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
-                baseModelSpecialPrompt: value,
+          onChange={(value: string) => {
+            commitSettingsUpdate(
+              {
+                chatOptions: {
+                  ...settings.chatOptions,
+                  baseModelSpecialPrompt: value,
+                },
               },
-            })
+              'baseModelSpecialPrompt',
+            )
           }}
         />
       </ObsidianSetting>

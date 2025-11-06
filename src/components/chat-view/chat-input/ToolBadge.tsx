@@ -25,36 +25,57 @@ export default function ToolBadge() {
   const handleToolToggle = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      setSettings({
-        ...settings,
-        chatOptions: {
-          ...settings.chatOptions,
-          enableTools: !settings.chatOptions.enableTools,
-        },
-      })
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            chatOptions: {
+              ...settings.chatOptions,
+              enableTools: !settings.chatOptions.enableTools,
+            },
+          })
+        } catch (error: unknown) {
+          console.error('Failed to toggle tool usage', error)
+        }
+      })()
     },
     [settings, setSettings],
   )
 
   useEffect(() => {
-    const initMCPManager = async () => {
-      const mcpManager = await getMcpManager()
-      setMcpManager(mcpManager)
-
-      const tools = await mcpManager.listAvailableTools()
-      setToolCount(tools.length)
+    let isMounted = true
+    void getMcpManager()
+      .then((manager) => {
+        if (!isMounted) {
+          return
+        }
+        setMcpManager(manager)
+        return manager.listAvailableTools().then((tools) => {
+          if (isMounted) {
+            setToolCount(tools.length)
+          }
+        })
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to initialize MCP manager', error)
+      })
+    return () => {
+      isMounted = false
     }
-    initMCPManager()
   }, [getMcpManager])
 
   useEffect(() => {
     if (mcpManager) {
-      const unsubscribe = mcpManager.subscribeServersChange(
-        async (_servers) => {
-          const tools = await mcpManager.listAvailableTools()
-          setToolCount(tools.length)
-        },
-      )
+      const unsubscribe = mcpManager.subscribeServersChange((_servers) => {
+        void mcpManager
+          .listAvailableTools()
+          .then((tools) => {
+            setToolCount(tools.length)
+          })
+          .catch((error: unknown) => {
+            console.error('Failed to refresh tool list count', error)
+          })
+      })
       return () => {
         unsubscribe()
       }

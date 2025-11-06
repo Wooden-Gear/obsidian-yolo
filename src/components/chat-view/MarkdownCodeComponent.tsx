@@ -30,9 +30,42 @@ export default function MarkdownCodeComponent({
     return !language || ['markdown'].includes(language)
   }, [language])
 
+  const codeContent = useMemo(() => {
+    if (typeof children === 'string') {
+      return children
+    }
+    if (typeof children === 'number' || typeof children === 'boolean') {
+      return String(children)
+    }
+    if (Array.isArray(children)) {
+      return children
+        .map((child) => {
+          if (typeof child === 'string') return child
+          if (typeof child === 'number' || typeof child === 'boolean') {
+            return String(child)
+          }
+          if (child && typeof child === 'object' && 'props' in child) {
+            const nested = (child as { props?: { children?: unknown } }).props
+              ?.children
+            return typeof nested === 'string' ? nested : ''
+          }
+          return ''
+        })
+        .join('')
+    }
+    if (children && typeof children === 'object' && 'props' in children) {
+      const nested = (children as { props?: { children?: unknown } }).props
+        ?.children
+      if (typeof nested === 'string') {
+        return nested
+      }
+    }
+    return ''
+  }, [children])
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(String(children))
+      await navigator.clipboard.writeText(codeContent)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
@@ -91,7 +124,7 @@ export default function MarkdownCodeComponent({
               isApplying
                 ? undefined
                 : () => {
-                    onApply(String(children))
+                    onApply(codeContent)
                   }
             }
             aria-disabled={isApplying}
@@ -112,7 +145,7 @@ export default function MarkdownCodeComponent({
       </div>
       {isPreviewMode ? (
         <div className="smtcmp-code-block-obsidian-markdown">
-          <ObsidianMarkdown content={String(children)} scale="sm" />
+          <ObsidianMarkdown content={codeContent} scale="sm" />
         </div>
       ) : (
         <MemoizedSyntaxHighlighterWrapper
@@ -121,7 +154,7 @@ export default function MarkdownCodeComponent({
           hasFilename={!!filename}
           wrapLines={wrapLines}
         >
-          {String(children)}
+          {codeContent}
         </MemoizedSyntaxHighlighterWrapper>
       )}
     </div>

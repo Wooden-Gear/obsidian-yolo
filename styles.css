@@ -1214,18 +1214,18 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
 }
 
 button.smtcmp-chat-input-model-select {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  padding: 0 !important;
-  font-size: var(--font-smallest) !important;
-  font-weight: var(--font-medium) !important;
-  color: var(--text-muted) !important;
-  cursor: pointer !important;
-  height: auto !important;
+  background-color: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  font-size: var(--font-smallest);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  height: auto;
 
   &:hover {
-    color: var(--text-normal) !important;
+    color: var(--text-normal);
   }
 
   .smtcmp-chat-input-model-select__model-name {
@@ -1253,6 +1253,81 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-faint);
 }
 
+/* OpenAI-Style Thinking Loader - OpenAI 风格思考动画 */
+.smtcmp-thinking-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 内联思考指示器 - 在编辑器中显示 */
+.smtcmp-thinking-indicator-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: baseline;
+  line-height: 1;
+}
+
+/* 旋转的 Sparkles 图标 */
+.smtcmp-thinking-icon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--interactive-accent) 20%, transparent),
+    0 1px 4px color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
+
+.smtcmp-thinking-icon-svg {
+  color: var(--interactive-accent);
+  animation: smtcmp-thinking-icon-spin 3s linear infinite;
+}
+
+@keyframes smtcmp-thinking-icon-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 高光流动的文字 */
+.smtcmp-thinking-text {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-normal);
+  letter-spacing: 0.02em;
+  background: linear-gradient(
+    90deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 30%,
+    var(--text-normal) 50%,
+    var(--text-muted) 70%,
+    var(--text-muted) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: smtcmp-thinking-text-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes smtcmp-thinking-text-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+/* 保留旧的 dot-loader 作为后备 */
 .smtcmp-dot-loader {
   display: inline-block;
   text-align: left;
@@ -3848,9 +3923,20 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-smart-space-status {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: var(--font-ui-small);
-  color: var(--text-muted);
+  padding: 4px 0;
+  margin-top: -6px;
+  animation: smtcmp-status-fade-in 0.3s ease;
+}
+
+@keyframes smtcmp-status-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .smtcmp-smart-space-error {
@@ -3874,17 +3960,17 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select {
-  font-size: var(--font-ui-smaller) !important;
-  padding: 5px 9px 5px 10px !important;
-  height: auto !important;
+  font-size: var(--font-ui-smaller);
+  padding: 5px 9px 5px 10px;
+  height: auto;
   min-height: 26px;
   border-radius: 8px;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: var(--text-normal) !important;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-normal);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover,
@@ -3894,15 +3980,15 @@ button.smtcmp-chat-input-model-select {
     in srgb,
     var(--background-modifier-hover) 85%,
     transparent
-  ) !important;
+  );
   border-color: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 35%,
     transparent
-  ) !important;
+  );
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transform: translateY(-0.5px);
   outline: none;
 }
@@ -3970,19 +4056,19 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select {
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100% !important;
-  padding: 6px 10px 6px 6px !important;
-  border-radius: 10px !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  box-shadow: none !important;
-  color: var(--text-muted) !important;
+  width: 100%;
+  padding: 6px 10px 6px 6px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--text-muted);
   gap: 8px;
-  font-size: var(--font-ui-smaller) !important;
-  font-weight: var(--font-medium) !important;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
   min-height: 30px;
   transition: all 0.18s ease;
 }
@@ -3991,7 +4077,7 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus,
 .smtcmp-chat-sidebar-model-select
   .smtcmp-chat-input-model-select:focus-visible {
-  color: var(--text-normal) !important;
+  color: var(--text-normal);
 }
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select__model-name {
@@ -4009,10 +4095,7 @@ button.smtcmp-chat-input-model-select {
   transition: opacity 0.18s ease;
 }
 
-***
-  End
-  Patch
-  .smtcmp-chat-sidebar-model-select
+.smtcmp-chat-sidebar-model-select
   .smtcmp-chat-input-model-select:hover
   .smtcmp-chat-input-model-select__icon,
 .smtcmp-chat-sidebar-model-select

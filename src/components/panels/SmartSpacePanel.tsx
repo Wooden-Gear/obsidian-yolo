@@ -20,12 +20,12 @@ import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
+import SmartComposerPlugin from '../../main'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
 import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
-import DotLoader from '../common/DotLoader'
 
 type SmartSpacePanelProps = {
   editor: Editor
@@ -64,9 +64,37 @@ function SmartSpacePanelBody({
       '',
   )
 
+  const derivedModelId =
+    settings?.continuationOptions?.continuationModelId ??
+    settings?.chatModelId ??
+    ''
+
+  const derivedUseWebSearch =
+    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false
+  const derivedUseUrlContext =
+    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
+
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
   }, [])
+
+  useEffect(() => {
+    setSelectedModelId((prev) =>
+      prev === derivedModelId ? prev : derivedModelId,
+    )
+  }, [derivedModelId])
+
+  useEffect(() => {
+    setUseWebSearch((prev) =>
+      prev === derivedUseWebSearch ? prev : derivedUseWebSearch,
+    )
+  }, [derivedUseWebSearch])
+
+  useEffect(() => {
+    setUseUrlContext((prev) =>
+      prev === derivedUseUrlContext ? prev : derivedUseUrlContext,
+    )
+  }, [derivedUseUrlContext])
 
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
@@ -79,7 +107,13 @@ function SmartSpacePanelBody({
         settings: plugin.settings,
         modelId: continuationModelId,
       })
-      return (model as any)?.toolType === 'gemini'
+      if (
+        model.providerType === 'gemini' ||
+        model.providerType === 'openai-compatible'
+      ) {
+        return model.toolType === 'gemini'
+      }
+      return false
     } catch {
       return false
     }
@@ -699,12 +733,7 @@ function SmartSpacePanelBody({
             </div>
           )}
         </>
-      ) : (
-        <div className="smtcmp-smart-space-status" aria-live="polite">
-          <span>{t('chat.customContinueProcessing', 'Thinking')}</span>
-          <DotLoader />
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -727,7 +756,7 @@ export class SmartSpaceWidget extends WidgetType {
 
   constructor(
     private readonly options: {
-      plugin: any
+      plugin: SmartComposerPlugin
       editor: Editor
       view: EditorView
       onClose: () => void

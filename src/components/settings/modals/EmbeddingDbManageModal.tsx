@@ -46,7 +46,8 @@ export class EmbeddingDbManageModal extends ReactModal<EmbeddingDbManagerModalCo
 function EmbeddingDbManagerModalComponentWrapper({
   app,
   plugin,
-}: EmbeddingDbManagerModalComponentWrapperProps) {
+  onClose,
+}: EmbeddingDbManagerModalComponentWrapperProps & { onClose: () => void }) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -69,7 +70,7 @@ function EmbeddingDbManagerModalComponentWrapper({
       >
         <DatabaseProvider getDatabaseManager={() => plugin.getDbManager()}>
           <QueryClientProvider client={queryClient}>
-            <EmbeddingDbManageModalComponent />
+            <EmbeddingDbManageModalComponent onClose={onClose} />
           </QueryClientProvider>
         </DatabaseProvider>
       </SettingsProvider>
@@ -77,7 +78,11 @@ function EmbeddingDbManagerModalComponentWrapper({
   )
 }
 
-function EmbeddingDbManageModalComponent() {
+function EmbeddingDbManageModalComponent({
+  onClose: _onClose,
+}: {
+  onClose: () => void
+}) {
   const { getVectorManager } = useDatabase()
   const { settings } = useSettings()
   const [indexProgressMap, setIndexProgressMap] = useState<
@@ -105,57 +110,65 @@ function EmbeddingDbManageModalComponent() {
     },
   })
 
-  const handleRebuildIndex = async (modelId: string) => {
-    try {
-      const embeddingModel = getEmbeddingModelClient({
-        settings,
-        embeddingModelId: modelId,
-      })
+  const handleRebuildIndex = (modelId: string) => {
+    void (async () => {
+      try {
+        const embeddingModel = getEmbeddingModelClient({
+          settings,
+          embeddingModelId: modelId,
+        })
 
-      await (
-        await getVectorManager()
-      ).updateVaultIndex(
-        embeddingModel,
-        {
-          chunkSize: settings.ragOptions.chunkSize,
-          excludePatterns: settings.ragOptions.excludePatterns,
-          includePatterns: settings.ragOptions.includePatterns,
-          reindexAll: true,
-        },
-        (progress) => {
-          setIndexProgressMap((prev) => {
-            const newMap = new Map(prev)
-            newMap.set(modelId, progress)
-            return newMap
-          })
-        },
-      )
-    } catch (error) {
-      console.error(error)
-      new Notice('Failed to rebuild index')
-    } finally {
-      setIndexProgressMap((prev) => {
-        const newMap = new Map(prev)
-        newMap.delete(modelId)
-        return newMap
-      })
-      await refetch()
-    }
+        await (
+          await getVectorManager()
+        ).updateVaultIndex(
+          embeddingModel,
+          {
+            chunkSize: settings.ragOptions.chunkSize,
+            excludePatterns: settings.ragOptions.excludePatterns,
+            includePatterns: settings.ragOptions.includePatterns,
+            reindexAll: true,
+          },
+          (progress) => {
+            setIndexProgressMap((prev) => {
+              const newMap = new Map(prev)
+              newMap.set(modelId, progress)
+              return newMap
+            })
+          },
+        )
+      } catch (error) {
+        console.error(error)
+        new Notice('Failed to rebuild index')
+      } finally {
+        setIndexProgressMap((prev) => {
+          const newMap = new Map(prev)
+          newMap.delete(modelId)
+          return newMap
+        })
+        await refetch().catch((error) => {
+          console.error('Failed to refresh embedding DB stats:', error)
+        })
+      }
+    })()
   }
 
-  const handleRemoveIndex = async (modelId: string) => {
-    try {
-      const embeddingModel = getEmbeddingModelClient({
-        settings,
-        embeddingModelId: modelId,
-      })
-      await (await getVectorManager()).clearAllVectors(embeddingModel)
-    } catch (error) {
-      console.error(error)
-      new Notice('Failed to remove index')
-    } finally {
-      await refetch()
-    }
+  const handleRemoveIndex = (modelId: string) => {
+    void (async () => {
+      try {
+        const embeddingModel = getEmbeddingModelClient({
+          settings,
+          embeddingModelId: modelId,
+        })
+        await (await getVectorManager()).clearAllVectors(embeddingModel)
+      } catch (error) {
+        console.error(error)
+        new Notice('Failed to remove index')
+      } finally {
+        await refetch().catch((error) => {
+          console.error('Failed to refresh embedding DB stats:', error)
+        })
+      }
+    })()
   }
 
   if (isLoading) {
@@ -168,7 +181,11 @@ function EmbeddingDbManageModalComponent() {
         <button
           className="clickable-icon"
           aria-label="Refresh"
-          onClick={() => refetch()}
+          onClick={() => {
+            void refetch().catch((error) => {
+              console.error('Failed to refresh embedding DB stats:', error)
+            })
+          }}
           disabled={isFetching}
         >
           <RefreshCw size={16} className={clsx(isFetching && 'spinner')} />

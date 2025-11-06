@@ -8,6 +8,27 @@ import { PGLiteAbortedException } from './exception'
 import migrations from './migrations.json'
 import { VectorManager } from './modules/vector/VectorManager'
 
+type DrizzleMigratableDatabase = PgliteDatabase & {
+  dialect: {
+    migrate: (
+      migrationData: unknown,
+      session: unknown,
+      options: { migrationsTable: string },
+    ) => Promise<void>
+  }
+  session: unknown
+}
+
+const hasDrizzleMigrationSupport = (
+  database: PgliteDatabase,
+): database is DrizzleMigratableDatabase => {
+  const candidate = database as Partial<DrizzleMigratableDatabase>
+  return (
+    typeof candidate.dialect?.migrate === 'function' &&
+    candidate.session !== undefined
+  )
+}
+
 // PGlite 版本和 CDN 备用地址
 const PGLITE_VERSION = '0.2.12'
 const PGLITE_CDN_URLS = [
@@ -161,11 +182,15 @@ export class DatabaseManager {
 
   private async migrateDatabase(): Promise<void> {
     try {
+      if (!this.db) {
+        throw new Error('Database is not initialized')
+      }
+      if (!hasDrizzleMigrationSupport(this.db)) {
+        throw new Error('Drizzle migration API is unavailable')
+      }
       // Workaround for running Drizzle migrations in a browser environment
       // This method uses an undocumented API to perform migrations
       // See: https://github.com/drizzle-team/drizzle-orm/discussions/2532#discussioncomment-10780523
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       await this.db.dialect.migrate(migrations, this.db.session, {
         migrationsTable: 'drizzle_migrations',
       })

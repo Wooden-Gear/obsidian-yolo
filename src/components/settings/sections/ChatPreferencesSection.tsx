@@ -10,6 +10,25 @@ export function ChatPreferencesSection() {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
+  const updateChatOptions = (
+    patch: Partial<typeof settings.chatOptions>,
+    context: string,
+  ) => {
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          chatOptions: {
+            ...settings.chatOptions,
+            ...patch,
+          },
+        })
+      } catch (error: unknown) {
+        console.error(`Failed to update chat options: ${context}`, error)
+      }
+    })()
+  }
+
   const learningModePromptValue =
     (settings.chatOptions.learningModePrompt ?? '').trim().length > 0
       ? settings.chatOptions.learningModePrompt!
@@ -27,14 +46,13 @@ export function ChatPreferencesSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.includeCurrentFileContent}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+          onChange={(value) => {
+            updateChatOptions(
+              {
                 includeCurrentFileContent: value,
               },
-            })
+              'includeCurrentFileContent',
+            )
           }}
         />
       </ObsidianSetting>
@@ -45,14 +63,13 @@ export function ChatPreferencesSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.enableBruteMode ?? false}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+          onChange={(value) => {
+            updateChatOptions(
+              {
                 enableBruteMode: value,
               },
-            })
+              'enableBruteMode',
+            )
           }}
         />
       </ObsidianSetting>
@@ -63,14 +80,13 @@ export function ChatPreferencesSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.enableLearningMode ?? false}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+          onChange={(value) => {
+            updateChatOptions(
+              {
                 enableLearningMode: value,
               },
-            })
+              'enableLearningMode',
+            )
           }}
         />
       </ObsidianSetting>
@@ -85,14 +101,13 @@ export function ChatPreferencesSection() {
           <ObsidianSetting className="smtcmp-settings-textarea">
             <ObsidianTextArea
               value={learningModePromptValue}
-              onChange={async (value: string) => {
-                await setSettings({
-                  ...settings,
-                  chatOptions: {
-                    ...settings.chatOptions,
+              onChange={(value: string) => {
+                updateChatOptions(
+                  {
                     learningModePrompt: value,
                   },
-                })
+                  'learningModePrompt',
+                )
               }}
             />
           </ObsidianSetting>
@@ -105,14 +120,13 @@ export function ChatPreferencesSection() {
       >
         <ObsidianToggle
           value={settings.chatOptions.enableTools}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+          onChange={(value) => {
+            updateChatOptions(
+              {
                 enableTools: value,
               },
-            })
+              'enableTools',
+            )
           }}
         />
       </ObsidianSetting>
@@ -123,18 +137,17 @@ export function ChatPreferencesSection() {
       >
         <ObsidianTextInput
           value={settings.chatOptions.maxAutoIterations.toString()}
-          onChange={async (value) => {
+          onChange={(value) => {
             const parsedValue = parseInt(value)
             if (isNaN(parsedValue) || parsedValue < 1) {
               return
             }
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+            updateChatOptions(
+              {
                 maxAutoIterations: parsedValue,
               },
-            })
+              'maxAutoIterations',
+            )
           }}
         />
       </ObsidianSetting>
@@ -145,18 +158,17 @@ export function ChatPreferencesSection() {
       >
         <ObsidianTextInput
           value={(settings.chatOptions.maxContextMessages ?? 32).toString()}
-          onChange={async (value) => {
+          onChange={(value) => {
             const parsedValue = parseInt(value)
             if (isNaN(parsedValue) || parsedValue < 0) {
               return
             }
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+            updateChatOptions(
+              {
                 maxContextMessages: parsedValue,
               },
-            })
+              'maxContextMessages',
+            )
           }}
         />
       </ObsidianSetting>
@@ -168,28 +180,26 @@ export function ChatPreferencesSection() {
         <ObsidianTextInput
           value={settings.chatOptions.defaultTemperature?.toString() ?? ''}
           placeholder={t('common.default')}
-          onChange={async (value) => {
+          onChange={(value) => {
             if (value.trim() === '') {
-              await setSettings({
-                ...settings,
-                chatOptions: {
-                  ...settings.chatOptions,
+              updateChatOptions(
+                {
                   defaultTemperature: undefined,
                 },
-              })
+                'defaultTemperature (reset)',
+              )
               return
             }
             const parsedValue = parseFloat(value)
             if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 2) {
               return
             }
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+            updateChatOptions(
+              {
                 defaultTemperature: parsedValue,
               },
-            })
+              'defaultTemperature',
+            )
           }}
         />
       </ObsidianSetting>
@@ -201,28 +211,26 @@ export function ChatPreferencesSection() {
         <ObsidianTextInput
           value={settings.chatOptions.defaultTopP?.toString() ?? ''}
           placeholder={t('common.default')}
-          onChange={async (value) => {
+          onChange={(value) => {
             if (value.trim() === '') {
-              await setSettings({
-                ...settings,
-                chatOptions: {
-                  ...settings.chatOptions,
+              updateChatOptions(
+                {
                   defaultTopP: undefined,
                 },
-              })
+                'defaultTopP (reset)',
+              )
               return
             }
             const parsedValue = parseFloat(value)
             if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 1) {
               return
             }
-            await setSettings({
-              ...settings,
-              chatOptions: {
-                ...settings.chatOptions,
+            updateChatOptions(
+              {
                 defaultTopP: parsedValue,
               },
-            })
+              'defaultTopP',
+            )
           }}
         />
       </ObsidianSetting>

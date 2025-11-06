@@ -35,11 +35,8 @@ export abstract class BaseLLMProvider<P extends LLMProvider> {
     model: ChatModel,
     request: T,
   ): T {
-    const entries = Array.isArray((model as any).customParameters)
-      ? ((model as any).customParameters as {
-          key?: string
-          value?: string
-        }[])
+    const entries = Array.isArray(model.customParameters)
+      ? model.customParameters
       : []
 
     if (entries.length === 0) {

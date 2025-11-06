@@ -1,11 +1,11 @@
+import { ChatModel } from '../../../types/chat-model.types'
+
 import { migrateFrom8To9 } from './8_to_9'
 
 type SettingsData = {
   version: number
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  chatModels?: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  chatModels?: ChatModel[]
+  [key: string]: unknown
 }
 
 describe('migrateFrom8To9', () => {
@@ -96,7 +96,7 @@ describe('migrateFrom8To9', () => {
           model: 'gemini-2.5-pro-preview-03-25',
         },
         {
-          providerType: 'custom',
+          providerType: 'openai-compatible',
           providerId: 'custom-provider',
           id: 'custom-model',
           model: 'custom-model-name',

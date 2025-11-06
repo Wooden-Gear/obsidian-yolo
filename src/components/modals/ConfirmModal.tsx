@@ -15,7 +15,6 @@ type ConfirmModalComponentProps = {
   ctaText?: string
   onConfirm: () => void
   onCancel?: () => void
-  onClose: () => void
 }
 
 export class ConfirmModal extends ReactModal<ConfirmModalComponentProps> {
@@ -42,7 +41,7 @@ function ConfirmModalComponent({
   onConfirm,
   onCancel,
   onClose,
-}: ConfirmModalComponentProps) {
+}: ConfirmModalComponentProps & { onClose: () => void }) {
   return (
     <div>
       <div className="smtcmp-prewrap">{message}</div>

@@ -1,10 +1,12 @@
 import OpenAI from 'openai'
+import type { ReasoningEffort } from 'openai/resources'
 
 import { ChatModel } from '../../types/chat-model.types'
 import {
   LLMOptions,
   LLMRequestNonStreaming,
   LLMRequestStreaming,
+  RequestTool,
 } from '../../types/llm/request'
 import {
   LLMResponseNonStreaming,
@@ -17,6 +19,30 @@ import { BaseLLMProvider } from './base'
 import { LLMBaseUrlNotSetException } from './exception'
 import { NoStainlessOpenAI } from './NoStainlessOpenAI'
 import { OpenAIMessageAdapter } from './openaiMessageAdapter'
+
+type GeminiThinkingConfig = {
+  thinking_budget: number
+  include_thoughts: boolean
+}
+
+type OpenAICompatibleExtras = {
+  thinking_config?: GeminiThinkingConfig
+  thinkingConfig?: {
+    thinkingBudget: number
+    includeThoughts: boolean
+  }
+  reasoning?: {
+    effort: string
+  }
+  extra_body?: Record<string, unknown>
+}
+
+type OpenAICompatibleRequest = LLMRequestNonStreaming &
+  Record<string, unknown> &
+  OpenAICompatibleExtras
+type OpenAICompatibleStreamingRequest = LLMRequestStreaming &
+  Record<string, unknown> &
+  OpenAICompatibleExtras
 
 export class OpenAICompatibleProvider extends BaseLLMProvider<
   Extract<LLMProvider, { type: 'openai-compatible' }>
@@ -52,17 +78,17 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    let formattedRequest: any = {
+    let formattedRequest: OpenAICompatibleRequest = {
       ...request,
       messages: formatMessages(request.messages),
     }
 
     // Handle Gemini tools for OpenAI-compatible gateways
-    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
-      const gemTools = (options as any).geminiTools
-      const openaiTools: any[] = []
+    const geminiToolsSettings = options?.geminiTools
+    if (model.toolType === 'gemini' && geminiToolsSettings) {
+      const openaiTools: RequestTool[] = []
 
-      if (gemTools.useWebSearch) {
+      if (geminiToolsSettings.useWebSearch) {
         openaiTools.push({
           type: 'function',
           function: {
@@ -76,13 +102,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
                   description: 'The search query',
                 },
               },
-              required: ['query'],
             },
           },
         })
       }
 
-      if (gemTools.useUrlContext) {
+      if (geminiToolsSettings.useUrlContext) {
         openaiTools.push({
           type: 'function',
           function: {
@@ -96,7 +121,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
                   description: 'The URL to get context from',
                 },
               },
-              required: ['url'],
             },
           },
         })
@@ -107,13 +131,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       }
     }
     // If toolType is Gemini but no Gemini tools enabled, also ensure top-level tools are unset
-    else if ((model as any).toolType === 'gemini') {
+    else if (model.toolType === 'gemini') {
       delete formattedRequest.tools
     }
 
     // Inject Gemini thinking config for OpenAI-compatible gateways if user selected Gemini reasoning
-    if ((model as any).thinking?.enabled) {
-      const budget = (model as any).thinking.thinking_budget
+    if (model.thinking?.enabled) {
+      const budget = model.thinking.thinking_budget
       // Use both snake_case and camelCase to maximize compatibility
       formattedRequest.thinking_config = {
         thinking_budget: budget,
@@ -125,8 +149,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       }
     }
     // Inject OpenAI reasoning effort for compatible gateways if user enabled OpenAI reasoning
-    if ((model as any).reasoning?.enabled) {
-      const effort = (model as any).reasoning.reasoning_effort
+    if (model.reasoning?.enabled) {
+      const effort = model.reasoning.reasoning_effort as
+        | ReasoningEffort
+        | undefined
       if (effort) {
         // Pass the flat field (widely supported by OpenAI-compatible proxies)
         formattedRequest.reasoning_effort = effort
@@ -153,17 +179,17 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
       )
     }
 
-    let formattedRequest: any = {
+    let formattedRequest: OpenAICompatibleStreamingRequest = {
       ...request,
       messages: formatMessages(request.messages),
     }
 
     // Handle Gemini tools for OpenAI-compatible gateways (streaming)
-    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
-      const gemTools = (options as any).geminiTools
-      const openaiTools: any[] = []
+    const streamingGeminiTools = options?.geminiTools
+    if (model.toolType === 'gemini' && streamingGeminiTools) {
+      const openaiTools: RequestTool[] = []
 
-      if (gemTools.useWebSearch) {
+      if (streamingGeminiTools.useWebSearch) {
         openaiTools.push({
           type: 'function',
           function: {
@@ -177,13 +203,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
                   description: 'The search query',
                 },
               },
-              required: ['query'],
             },
           },
         })
       }
 
-      if (gemTools.useUrlContext) {
+      if (streamingGeminiTools.useUrlContext) {
         openaiTools.push({
           type: 'function',
           function: {
@@ -197,7 +222,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
                   description: 'The URL to get context from',
                 },
               },
-              required: ['url'],
             },
           },
         })
@@ -207,16 +231,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
         formattedRequest.tools = openaiTools
       }
     }
-    if (
-      (model as any).toolType === 'gemini' &&
-      !(options as any)?.geminiTools
-    ) {
+    if (model.toolType === 'gemini' && !options?.geminiTools) {
       // Ensure no top-level tools when Gemini tool type but none enabled
       delete formattedRequest.tools
     }
 
-    if ((model as any).thinking?.enabled) {
-      const budget = (model as any).thinking.thinking_budget
+    if (model.thinking?.enabled) {
+      const budget = model.thinking.thinking_budget
       formattedRequest.thinking_config = {
         thinking_budget: budget,
         include_thoughts: true,
@@ -226,8 +247,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<
         includeThoughts: true,
       }
     }
-    if ((model as any).reasoning?.enabled) {
-      const effort = (model as any).reasoning.reasoning_effort
+    if (model.reasoning?.enabled) {
+      const effort = model.reasoning.reasoning_effort as
+        | ReasoningEffort
+        | undefined
       if (effort) {
         formattedRequest.reasoning_effort = effort
         formattedRequest.reasoning = { effort }

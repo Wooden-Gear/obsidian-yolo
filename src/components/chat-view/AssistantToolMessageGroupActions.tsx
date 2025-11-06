@@ -30,12 +30,18 @@ function CopyButton({ messages }: { messages: AssistantToolMessageGroup }) {
       .join('\n\n')
   }, [messages])
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(content)
-    setCopied(true)
-    setTimeout(() => {
-      setCopied(false)
-    }, 1500)
+  const handleCopy = () => {
+    void navigator.clipboard
+      .writeText(content)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => {
+          setCopied(false)
+        }, 1500)
+      })
+      .catch((error) => {
+        console.error('Failed to copy assistant/tool messages', error)
+      })
   }
 
   return (
@@ -43,7 +49,13 @@ function CopyButton({ messages }: { messages: AssistantToolMessageGroup }) {
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <button
-            onClick={copied ? undefined : handleCopy}
+            onClick={
+              copied
+                ? undefined
+                : () => {
+                    handleCopy()
+                  }
+            }
             className="clickable-icon"
           >
             {copied ? <Check size={12} /> : <CopyIcon size={12} />}

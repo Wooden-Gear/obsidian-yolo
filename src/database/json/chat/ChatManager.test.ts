@@ -3,6 +3,16 @@ import { App } from 'obsidian'
 import { ChatManager } from './ChatManager'
 import { CHAT_SCHEMA_VERSION, ChatConversation } from './types'
 
+class TestableChatManager extends ChatManager {
+  public generateFileNameForTest(chat: ChatConversation): string {
+    return this.generateFileName(chat)
+  }
+
+  public parseFileNameForTest(fileName: string) {
+    return this.parseFileName(fileName)
+  }
+}
+
 const mockAdapter = {
   exists: jest.fn().mockResolvedValue(true),
   mkdir: jest.fn().mockResolvedValue(undefined),
@@ -21,10 +31,10 @@ const mockApp = {
 } as unknown as App
 
 describe('ChatManager', () => {
-  let chatManager: ChatManager
+  let chatManager: TestableChatManager
 
   beforeEach(() => {
-    chatManager = new ChatManager(mockApp)
+    chatManager = new TestableChatManager(mockApp)
   })
 
   describe('filename generation and parsing roundtrip', () => {
@@ -63,10 +73,8 @@ describe('ChatManager', () => {
         schemaVersion: CHAT_SCHEMA_VERSION,
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fileName = (chatManager as any).generateFileName(chat)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const metadata = (chatManager as any).parseFileName(fileName)
+      const fileName = chatManager.generateFileNameForTest(chat)
+      const metadata = chatManager.parseFileNameForTest(fileName)
 
       expect(metadata).not.toBeNull()
       if (metadata) {
