@@ -1790,11 +1790,11 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     const editor = view?.editor
     if (!view || !editor) {
-      this.activateChatView(undefined, openNewChat)
+      await this.activateChatView(undefined, openNewChat)
       return
     }
     const selectedBlockData = getMentionableBlockData(editor, view)
-    this.activateChatView(
+    await this.activateChatView(
       {
         selectedBlock: selectedBlockData ?? undefined,
       },

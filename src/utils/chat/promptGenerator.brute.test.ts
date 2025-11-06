@@ -1,7 +1,7 @@
 /**
  * Minimal tests for PromptGenerator brute mode behavior
  */
-import { App, type TFile } from 'obsidian'
+import { App, TFile, type FileStats } from 'obsidian'
 
 import type { RAGEngine } from '../../core/rag/ragEngine'
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'
@@ -22,6 +22,21 @@ jest.mock('../obsidian', () => ({
 }))
 
 describe('PromptGenerator brute mode', () => {
+  const createMockTFile = (path: string, vault: App['vault']): TFile => {
+    const file: TFile = Object.create(TFile.prototype)
+    const extension = path.split('.').pop() ?? ''
+    const basename = path.split('/').pop() ?? path
+    const defaultStat: FileStats = { ctime: 0, mtime: 0, size: 0 }
+    file.path = path
+    file.name = basename
+    file.basename = basename
+    file.extension = extension
+    file.stat = defaultStat
+    file.vault = vault
+    file.parent = null
+    return file
+  }
+
   it('forces non-RAG and concatenates all mentioned files', async () => {
     const fakeApp = { vault: {} } as unknown as App
     const baseSettings = parseSmartComposerSettings({})
@@ -40,15 +55,16 @@ describe('PromptGenerator brute mode', () => {
     }
 
     const gen = new PromptGenerator(
-      async (): Promise<RAGEngine> => {
-        throw new Error('RAG engine should not be used in brute mode tests')
-      },
+      (): Promise<RAGEngine> =>
+        Promise.reject(
+          new Error('RAG engine should not be used in brute mode tests'),
+        ),
       fakeApp,
       settings,
     )
 
-    const file1 = { path: 'a.md' } as unknown as TFile
-    const file2 = { path: 'b.md' } as unknown as TFile
+    const file1 = createMockTFile('a.md', fakeApp.vault)
+    const file2 = createMockTFile('b.md', fakeApp.vault)
 
     const message: ChatUserMessage = {
       role: 'user',

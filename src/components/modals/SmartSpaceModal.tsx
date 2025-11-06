@@ -21,12 +21,16 @@ function SmartSpaceComponent({
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     onClose()
-    await plugin.continueWriting(
-      editor,
-      instruction.trim().length > 0 ? instruction : undefined,
-    )
+    void plugin
+      .continueWriting(
+        editor,
+        instruction.trim().length > 0 ? instruction : undefined,
+      )
+      .catch((error) => {
+        console.error('Failed to continue writing from SmartSpace modal', error)
+      })
   }
 
   return (
