@@ -21,7 +21,7 @@ import {
   createCommand,
 } from 'lexical'
 import { startTransition, useCallback, useEffect, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { JSX as ReactJSX } from 'react/jsx-runtime'
 
 import {
   LexicalMenu,
@@ -197,7 +197,7 @@ export function LexicalTypeaheadMenuPlugin<TOption extends MenuOption>({
   anchorClassName,
   commandPriority = COMMAND_PRIORITY_LOW,
   parent,
-}: TypeaheadMenuPluginProps<TOption>): ReactElement | null {
+}: TypeaheadMenuPluginProps<TOption>): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
   const [resolution, setResolution] = useState<MenuResolution | null>(null)
   const anchorElementRef = useMenuAnchorRef(

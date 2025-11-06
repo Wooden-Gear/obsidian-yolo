@@ -168,7 +168,7 @@ export function ProvidersAndModelsSection({
           ),
         })
 
-        new Notice(`Provider "${provider.id}" deleted successfully`)
+        new Notice(`Provider "${provider.id}" deleted successfully.`)
       } catch (error) {
         console.error('[Smart Composer] Failed to delete provider:', error)
         new Notice('Failed to delete provider.')
@@ -179,7 +179,7 @@ export function ProvidersAndModelsSection({
   const handleDeleteChatModel = (modelId: string) => {
     if (modelId === settings.chatModelId || modelId === settings.applyModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Chat Model or Tool Model',
+        'Cannot remove model that is currently selected as chat model or tool model',
       )
       return
     }
@@ -200,7 +200,7 @@ export function ProvidersAndModelsSection({
   const handleDeleteEmbeddingModel = (modelId: string) => {
     if (modelId === settings.embeddingModelId) {
       new Notice(
-        'Cannot remove model that is currently selected as Embedding Model',
+        'Cannot remove model that is currently selected as embedding model',
       )
       return
     }
@@ -250,7 +250,7 @@ export function ProvidersAndModelsSection({
             modelId === settings.applyModelId)
         ) {
           new Notice(
-            'Cannot disable model that is currently selected as Chat Model or Tool Model',
+            'Cannot disable model that is currently selected as chat model or tool model',
           )
           await setSettings({
             ...settings,

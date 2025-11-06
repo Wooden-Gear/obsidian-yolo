@@ -42,7 +42,7 @@ export class ChatView extends ItemView {
   }
 
   getDisplayText() {
-    return 'yolo chat'
+    return 'YOLO chat'
   }
 
   onOpen(): Promise<void> {

@@ -27,7 +27,7 @@ import {
 } from 'lexical'
 import {
   MutableRefObject,
-  ReactPortal,
+  type ReactPortal,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -35,7 +35,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { ReactElement } from 'react'
+import type { JSX as ReactJSX } from 'react/jsx-runtime'
 
 import {
   clearDynamicStyleClass,
@@ -80,7 +80,7 @@ export type MenuRenderFn<TOption extends MenuOption> = (
     options: TOption[]
   },
   matchingString: string | null,
-) => ReactPortal | ReactElement | null
+) => ReactPortal | ReactJSX.Element | null
 
 const scrollIntoViewIfNeeded = (target: HTMLElement) => {
   const typeaheadContainerNode = document.getElementById('typeahead-menu')
@@ -285,7 +285,7 @@ export function LexicalMenu<TOption extends MenuOption>({
     matchingString: string,
   ) => void
   commandPriority?: CommandListenerPriority
-}): ReactElement | null {
+}): ReactJSX.Element | null {
   const [selectedIndex, setHighlightedIndex] = useState<null | number>(null)
 
   const matchingString = resolution.match?.matchingString
