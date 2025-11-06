@@ -561,7 +561,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         console.error('Failed to save chat history', error)
       }
     }
-    updateConversationAsync()
+    void updateConversationAsync()
   }, [
     currentConversationId,
     chatMessages,
@@ -791,25 +791,27 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             <ChatListDropdown
               chatList={chatList}
               currentConversationId={currentConversationId}
-              onSelect={async (conversationId) => {
+              onSelect={(conversationId) => {
                 if (conversationId === currentConversationId) return
-                await handleLoadConversation(conversationId)
+                void handleLoadConversation(conversationId)
               }}
-              onDelete={async (conversationId) => {
-                await deleteConversation(conversationId)
-                if (conversationId === currentConversationId) {
-                  const nextConversation = chatList.find(
-                    (chat) => chat.id !== conversationId,
-                  )
-                  if (nextConversation) {
-                    void handleLoadConversation(nextConversation.id)
-                  } else {
-                    handleNewChat()
+              onDelete={(conversationId) => {
+                void (async () => {
+                  await deleteConversation(conversationId)
+                  if (conversationId === currentConversationId) {
+                    const nextConversation = chatList.find(
+                      (chat) => chat.id !== conversationId,
+                    )
+                    if (nextConversation) {
+                      void handleLoadConversation(nextConversation.id)
+                    } else {
+                      handleNewChat()
+                    }
                   }
-                }
+                })()
               }}
-              onUpdateTitle={async (conversationId, newTitle) => {
-                await updateConversationTitle(conversationId, newTitle)
+              onUpdateTitle={(conversationId, newTitle) => {
+                void updateConversationTitle(conversationId, newTitle)
               }}
             >
               <History size={18} />
@@ -872,7 +874,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 // Use the model mapping for this message if exists, otherwise current conversation model
                 const modelForThisMessage =
                   messageModelMap.get(messageOrGroup.id) ?? conversationModelId
-                handleUserMessageSubmit({
+                void handleUserMessageSubmit({
                   inputChatMessages: [
                     ...groupedChatMessages
                       .slice(0, index)
@@ -1047,7 +1049,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           }}
           onSubmit={(content, useVaultSearch) => {
             if (editorStateToPlainText(content).trim() === '') return
-            handleUserMessageSubmit({
+            void handleUserMessageSubmit({
               inputChatMessages: [
                 ...chatMessages,
                 { ...inputMessage, content },

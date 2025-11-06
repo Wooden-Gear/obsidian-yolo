@@ -295,7 +295,7 @@ function AddChatModelModalComponent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider?.id])
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     // Validate required API model id
     if (!formData.model || formData.model.trim().length === 0) {
       new Notice(t('common.error'))
@@ -397,12 +397,18 @@ function AddChatModelModalComponent({
       return
     }
 
-    await plugin.setSettings({
-      ...plugin.settings,
-      chatModels: [...plugin.settings.chatModels, modelDataWithPrefix],
-    })
-
-    onClose()
+    void plugin
+      .setSettings({
+        ...plugin.settings,
+        chatModels: [...plugin.settings.chatModels, modelDataWithPrefix],
+      })
+      .then(() => {
+        onClose()
+      })
+      .catch((error) => {
+        console.error('Failed to add chat model', error)
+        new Notice(t('common.error'))
+      })
   }
 
   return (

@@ -118,9 +118,12 @@ export function ChatListDropdown({
 }: {
   chatList: ChatConversationMetadata[]
   currentConversationId: string
-  onSelect: (conversationId: string) => Promise<void>
-  onDelete: (conversationId: string) => Promise<void>
-  onUpdateTitle: (conversationId: string, newTitle: string) => Promise<void>
+  onSelect: (conversationId: string) => void | Promise<void>
+  onDelete: (conversationId: string) => void | Promise<void>
+  onUpdateTitle: (
+    conversationId: string,
+    newTitle: string,
+  ) => void | Promise<void>
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -146,7 +149,7 @@ export function ChatListDropdown({
       } else if (e.key === 'Enter') {
         const conversationId = chatList[focusedIndex]?.id
         if (!conversationId) return
-        onSelect(conversationId)
+        void Promise.resolve(onSelect(conversationId))
           .then(() => {
             setOpen(false)
           })
@@ -187,7 +190,7 @@ export function ChatListDropdown({
                     setFocusedIndex(index)
                   }}
                   onSelect={() => {
-                    onSelect(chat.id)
+                    void Promise.resolve(onSelect(chat.id))
                       .then(() => {
                         setOpen(false)
                       })
@@ -196,7 +199,7 @@ export function ChatListDropdown({
                       })
                   }}
                   onDelete={() => {
-                    onDelete(chat.id).catch((error) => {
+                    void Promise.resolve(onDelete(chat.id)).catch((error) => {
                       console.error('Failed to delete conversation', error)
                     })
                   }}
@@ -204,7 +207,7 @@ export function ChatListDropdown({
                     setEditingId(chat.id)
                   }}
                   onFinishEdit={(title) => {
-                    onUpdateTitle(chat.id, title)
+                    void Promise.resolve(onUpdateTitle(chat.id, title))
                       .then(() => {
                         setEditingId(null)
                       })

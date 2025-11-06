@@ -39,12 +39,22 @@ export function McpSection({ app, plugin }: McpSectionProps) {
   const [mcpServers, setMcpServers] = useState<McpServerState[]>([])
 
   useEffect(() => {
-    const initMCPManager = async () => {
-      const mcpManager = await plugin.getMcpManager()
-      setMcpManager(mcpManager)
-      setMcpServers(mcpManager.getServers())
+    let isMounted = true
+    void plugin
+      .getMcpManager()
+      .then((manager) => {
+        if (!isMounted) {
+          return
+        }
+        setMcpManager(manager)
+        setMcpServers(manager.getServers())
+      })
+      .catch((error) => {
+        console.error('Failed to initialize MCP manager', error)
+      })
+    return () => {
+      isMounted = false
     }
-    initMCPManager()
   }, [plugin])
 
   useEffect(() => {
@@ -135,13 +145,15 @@ function McpServerComponent({
       title: t('settings.mcp.deleteServer'),
       message: message,
       ctaText: t('settings.mcp.delete'),
-      onConfirm: async () => {
-        await setSettings({
+      onConfirm: () => {
+        void setSettings({
           ...settings,
           mcp: {
             ...settings.mcp,
             servers: settings.mcp.servers.filter((s) => s.id !== server.name),
           },
+        }).catch((error) => {
+          console.error('Failed to delete MCP server', error)
         })
       },
     }).open()
@@ -149,7 +161,7 @@ function McpServerComponent({
 
   const handleToggleEnabled = useCallback(
     (enabled: boolean) => {
-      setSettings({
+      void setSettings({
         ...settings,
         mcp: {
           ...settings.mcp,
@@ -157,6 +169,8 @@ function McpServerComponent({
             s.id === server.name ? { ...s, enabled } : s,
           ),
         },
+      }).catch((error) => {
+        console.error('Failed to toggle MCP server', error)
       })
     },
     [settings, setSettings, server.name],
@@ -294,12 +308,14 @@ function McpToolComponent({
   const allowAutoExecution = toolOption?.allowAutoExecution ?? false
 
   const handleToggleEnabled = (enabled: boolean) => {
-    const toolOptions = server.config.toolOptions
-    toolOptions[tool.name] = {
-      disabled: !enabled,
-      allowAutoExecution: allowAutoExecution,
+    const toolOptions = {
+      ...server.config.toolOptions,
+      [tool.name]: {
+        disabled: !enabled,
+        allowAutoExecution,
+      },
     }
-    setSettings({
+    void setSettings({
       ...settings,
       mcp: {
         ...settings.mcp,
@@ -307,11 +323,13 @@ function McpToolComponent({
           s.id === server.name
             ? {
                 ...s,
-                toolOptions: toolOptions,
+                toolOptions,
               }
             : s,
         ),
       },
+    }).catch((error) => {
+      console.error('Failed to toggle MCP tool enabled state', error)
     })
   }
 
@@ -321,7 +339,7 @@ function McpToolComponent({
       ...toolOptions[tool.name],
       allowAutoExecution: autoExecution,
     }
-    setSettings({
+    void setSettings({
       ...settings,
       mcp: {
         ...settings.mcp,
@@ -329,11 +347,13 @@ function McpToolComponent({
           s.id === server.name
             ? {
                 ...s,
-                toolOptions: toolOptions,
+                toolOptions,
               }
             : s,
         ),
       },
+    }).catch((error) => {
+      console.error('Failed to toggle MCP tool auto execution', error)
     })
   }
 

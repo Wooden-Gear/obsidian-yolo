@@ -45,18 +45,20 @@ export class ChatView extends ItemView {
     return 'yolo chat'
   }
 
-  async onOpen() {
-    await this.render()
+  onOpen(): Promise<void> {
+    this.render()
 
     // Consume chatProps
     this.initialChatProps = undefined
+    return Promise.resolve()
   }
 
-  async onClose() {
+  onClose(): Promise<void> {
     this.root?.unmount()
+    return Promise.resolve()
   }
 
-  async render() {
+  render(): Promise<void> {
     if (!this.root) {
       this.root = createRoot(this.containerEl.children[1])
     }
@@ -116,10 +118,11 @@ export class ChatView extends ItemView {
                 </DarkModeProvider>
               </SettingsProvider>
             </AppProvider>
-          </LanguageProvider>
-        </PluginProvider>
-      </ChatViewProvider>,
-    )
+      </LanguageProvider>
+    </PluginProvider>
+  </ChatViewProvider>,
+)
+    return Promise.resolve()
   }
 
   openNewChat(selectedBlock?: MentionableBlockData) {

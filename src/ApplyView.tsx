@@ -1,4 +1,4 @@
-import { TFile, View, WorkspaceLeaf } from 'obsidian'
+import { TFile, View, ViewStateResult, WorkspaceLeaf } from 'obsidian'
 import { Root, createRoot } from 'react-dom/client'
 
 import ApplyViewRoot from './components/apply-view/ApplyViewRoot'
@@ -28,7 +28,7 @@ export class ApplyView extends View {
     return `Applying: ${this.state?.file?.name ?? ''}`
   }
 
-  setState(state: ApplyViewState): Promise<void> {
+  setState(state: ApplyViewState, _result?: ViewStateResult): Promise<void> {
     this.state = state
     // Should render here because onOpen is called before setState
     this.render()
@@ -37,6 +37,9 @@ export class ApplyView extends View {
 
   onOpen(): Promise<void> {
     this.root = createRoot(this.containerEl)
+    if (this.state) {
+      this.render()
+    }
     return Promise.resolve()
   }
 
@@ -45,7 +48,7 @@ export class ApplyView extends View {
     return Promise.resolve()
   }
 
-  private render() {
+  private render(): void {
     if (!this.root || !this.state) return
     this.root.render(
       <AppProvider app={this.app}>

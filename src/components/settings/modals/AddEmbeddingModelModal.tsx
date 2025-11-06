@@ -254,8 +254,8 @@ function AddEmbeddingModelModalComponent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider?.id])
 
-  const handleSubmit = async () => {
-    try {
+  const handleSubmit = () => {
+    const run = async () => {
       // Generate internal id (provider/model) and ensure uniqueness by suffix if needed
       const baseInternalId = generateModelId(
         formData.providerId,
@@ -329,11 +329,13 @@ function AddEmbeddingModelModalComponent({
       })
 
       onClose()
-    } catch (error) {
+    }
+
+    void run().catch((error) => {
       new Notice(
         error instanceof Error ? error.message : 'An unknown error occurred',
       )
-    }
+    })
   }
 
   return (

@@ -22,6 +22,21 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
+  const updateContinuationOptions = (
+    patch: Partial<typeof settings.continuationOptions>,
+    context: string,
+  ) => {
+    void setSettings({
+      ...settings,
+      continuationOptions: {
+        ...settings.continuationOptions,
+        ...patch,
+      },
+    }).catch((error) => {
+      console.error(`Failed to update continuation options: ${context}`, error)
+    })
+  }
+
   const enabledChatModels = useMemo(
     () => settings.chatModels.filter(({ enable }) => enable ?? true),
     [settings.chatModels],
@@ -45,19 +60,18 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         ...DEFAULT_TAB_COMPLETION_OPTIONS,
         ...(settings.continuationOptions.tabCompletionOptions ?? {}),
       }
-  const updateTabCompletionOptions = async (
+  const updateTabCompletionOptions = (
     updates: Partial<typeof tabCompletionOptions>,
   ) => {
-    await setSettings({
-      ...settings,
-      continuationOptions: {
-        ...settings.continuationOptions,
+    updateContinuationOptions(
+      {
         tabCompletionOptions: {
           ...tabCompletionOptions,
           ...updates,
         },
       },
-    })
+      'tabCompletionOptions',
+    )
   }
 
   const parseNumberOrDefault = (value: string, fallback: number) => {
@@ -88,14 +102,13 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       >
         <ObsidianToggle
           value={enableSmartSpace}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
+          onChange={(value) => {
+            updateContinuationOptions(
+              {
                 enableSmartSpace: value,
               },
-            })
+              'enableSmartSpace',
+            )
           }}
         />
       </ObsidianSetting>
@@ -108,14 +121,13 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       >
         <ObsidianToggle
           value={settings.continuationOptions.enableSelectionChat ?? true}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
+          onChange={(value) => {
+            updateContinuationOptions(
+              {
                 enableSelectionChat: value,
               },
-            })
+              'enableSelectionChat',
+            )
           }}
         />
       </ObsidianSetting>
@@ -129,11 +141,9 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       >
         <ObsidianToggle
           value={enableTabCompletion}
-          onChange={async (value) => {
-            await setSettings({
-              ...settings,
-              continuationOptions: {
-                ...settings.continuationOptions,
+          onChange={(value) => {
+            updateContinuationOptions(
+              {
                 enableTabCompletion: value,
                 tabCompletionOptions: value
                   ? {
@@ -143,7 +153,8 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     }
                   : settings.continuationOptions.tabCompletionOptions,
               },
-            })
+              'enableTabCompletion',
+            )
           }}
         />
       </ObsidianSetting>
@@ -159,14 +170,13 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
           <ObsidianSetting className="smtcmp-settings-textarea">
             <ObsidianTextArea
               value={tabCompletionSystemPromptValue}
-              onChange={async (value: string) => {
-                await setSettings({
-                  ...settings,
-                  continuationOptions: {
-                    ...settings.continuationOptions,
+              onChange={(value: string) => {
+                updateContinuationOptions(
+                  {
                     tabCompletionSystemPrompt: value,
                   },
-                })
+                  'tabCompletionSystemPrompt',
+                )
               }}
             />
           </ObsidianSetting>
@@ -191,13 +201,12 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 }),
               )}
               onChange={async (value) => {
-                await setSettings({
-                  ...settings,
-                  continuationOptions: {
-                    ...settings.continuationOptions,
+                updateContinuationOptions(
+                  {
                     tabCompletionModelId: value,
                   },
-                })
+                  'tabCompletionModelId',
+                )
               }}
             />
           </ObsidianSetting>
@@ -217,7 +226,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     DEFAULT_TAB_COMPLETION_OPTIONS.triggerDelayMs,
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   triggerDelayMs: next,
                 })
               }}
@@ -239,7 +248,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     DEFAULT_TAB_COMPLETION_OPTIONS.minContextLength,
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   minContextLength: next,
                 })
               }}
@@ -261,7 +270,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     DEFAULT_TAB_COMPLETION_OPTIONS.maxContextChars,
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   maxContextChars: next,
                 })
               }}
@@ -285,7 +294,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     DEFAULT_TAB_COMPLETION_OPTIONS.maxSuggestionLength,
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   maxSuggestionLength: next,
                 })
               }}
@@ -310,7 +319,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     ),
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   maxTokens: parsed,
                 })
               }}
@@ -329,7 +338,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   value,
                   DEFAULT_TAB_COMPLETION_OPTIONS.temperature,
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   temperature: Math.min(Math.max(next, 0), 2),
                 })
               }}
@@ -351,7 +360,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     DEFAULT_TAB_COMPLETION_OPTIONS.requestTimeoutMs,
                   ),
                 )
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   requestTimeoutMs: next,
                 })
               }}
@@ -371,7 +380,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   DEFAULT_TAB_COMPLETION_OPTIONS.maxRetries,
                 )
                 const next = Math.max(0, Math.min(5, parsed))
-                await updateTabCompletionOptions({
+                updateTabCompletionOptions({
                   maxRetries: next,
                 })
               }}

@@ -17,13 +17,14 @@ export default function DragDropPaste({
     return editor.registerCommand(
       DRAG_DROP_PASTE, // dispatched in RichTextPlugin
       (files) => {
-        ;(async () => {
-          const images = files.filter((file) => file.type.startsWith('image/'))
-          const mentionableImages = await Promise.all(
-            images.map(async (image) => await fileToMentionableImage(image)),
-          )
-          onCreateImageMentionables?.(mentionableImages)
-        })()
+        const images = files.filter((file) => file.type.startsWith('image/'))
+        void Promise.all(images.map((image) => fileToMentionableImage(image)))
+          .then((mentionableImages) => {
+            onCreateImageMentionables?.(mentionableImages)
+          })
+          .catch((error) => {
+            console.error('Failed to process dropped/pasted images', error)
+          })
         return true
       },
       COMMAND_PRIORITY_LOW,

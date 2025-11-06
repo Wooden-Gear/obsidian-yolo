@@ -19,21 +19,31 @@ export function AssistantSelector() {
   const currentAssistant = assistants.find((a) => a.id === currentAssistantId)
 
   // Handler function for selecting an assistant
-  const handleSelectAssistant = async (assistant: Assistant) => {
-    await setSettings({
+  const handleSelectAssistant = (assistant: Assistant) => {
+    void setSettings({
       ...settings,
       currentAssistantId: assistant.id,
     })
-    setOpen(false)
+      .then(() => {
+        setOpen(false)
+      })
+      .catch((error) => {
+        console.error('Failed to select assistant', error)
+      })
   }
 
   // Handler function for selecting "no assistant"
-  const handleSelectNoAssistant = async () => {
-    await setSettings({
+  const handleSelectNoAssistant = () => {
+    void setSettings({
       ...settings,
       currentAssistantId: undefined,
     })
-    setOpen(false)
+      .then(() => {
+        setOpen(false)
+      })
+      .catch((error) => {
+        console.error('Failed to clear assistant selection', error)
+      })
   }
 
   return (

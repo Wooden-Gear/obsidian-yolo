@@ -159,9 +159,11 @@ export const ModelSelect = forwardRef<
                 if (onChange) {
                   onChange(modelId)
                 } else {
-                  setSettings({
+                  void setSettings({
                     ...settings,
                     chatModelId: modelId,
+                  }).catch((error) => {
+                    console.error('Failed to update chat model setting', error)
                   })
                 }
                 onModelSelected?.(modelId)
