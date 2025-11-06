@@ -136,7 +136,7 @@ export const ModelSelect = forwardRef<
             className={
               contentClassName
                 ? `smtcmp-popover ${contentClassName}`
-                : 'smtcmp-popover smtcmp-smart-space-popover'
+                : 'smtcmp-popover'
             }
             side={side}
             sideOffset={sideOffset}

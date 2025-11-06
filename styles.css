@@ -1214,18 +1214,18 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
 }
 
 button.smtcmp-chat-input-model-select {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  padding: 0 !important;
-  font-size: var(--font-smallest) !important;
-  font-weight: var(--font-medium) !important;
-  color: var(--text-muted) !important;
-  cursor: pointer !important;
-  height: auto !important;
+  background-color: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  font-size: var(--font-smallest);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  height: auto;
 
   &:hover {
-    color: var(--text-normal) !important;
+    color: var(--text-normal);
   }
 
   .smtcmp-chat-input-model-select__model-name {
@@ -3960,17 +3960,17 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select {
-  font-size: var(--font-ui-smaller) !important;
-  padding: 5px 9px 5px 10px !important;
-  height: auto !important;
+  font-size: var(--font-ui-smaller);
+  padding: 5px 9px 5px 10px;
+  height: auto;
   min-height: 26px;
   border-radius: 8px;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: var(--text-normal) !important;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-normal);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select:hover,
@@ -3980,15 +3980,15 @@ button.smtcmp-chat-input-model-select {
     in srgb,
     var(--background-modifier-hover) 85%,
     transparent
-  ) !important;
+  );
   border-color: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 35%,
-    transparent
-  ) !important;
+    transparent,
+  );
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transform: translateY(-0.5px);
   outline: none;
 }
@@ -3999,14 +3999,14 @@ button.smtcmp-chat-input-model-select {
   background: color-mix(
     in srgb,
     var(--background-modifier-hover) 90%,
-    transparent
+    transparent,
   );
   box-shadow:
     0 0 0 2px
       color-mix(
         in srgb,
         var(--h1-color, var(--interactive-accent)) 15%,
-        transparent
+        transparent,
       ),
     0 2px 8px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -4056,19 +4056,19 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select {
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100% !important;
-  padding: 6px 10px 6px 6px !important;
-  border-radius: 10px !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  box-shadow: none !important;
-  color: var(--text-muted) !important;
+  width: 100%;
+  padding: 6px 10px 6px 6px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--text-muted);
   gap: 8px;
-  font-size: var(--font-ui-smaller) !important;
-  font-weight: var(--font-medium) !important;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
   min-height: 30px;
   transition: all 0.18s ease;
 }
@@ -4077,7 +4077,7 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select:focus,
 .smtcmp-chat-sidebar-model-select
   .smtcmp-chat-input-model-select:focus-visible {
-  color: var(--text-normal) !important;
+  color: var(--text-normal);
 }
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select__model-name {
@@ -4095,10 +4095,7 @@ button.smtcmp-chat-input-model-select {
   transition: opacity 0.18s ease;
 }
 
-***
-  End
-  Patch
-  .smtcmp-chat-sidebar-model-select
+.smtcmp-chat-sidebar-model-select
   .smtcmp-chat-input-model-select:hover
   .smtcmp-chat-input-model-select__icon,
 .smtcmp-chat-sidebar-model-select

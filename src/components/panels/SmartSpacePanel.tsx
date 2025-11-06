@@ -64,9 +64,35 @@ function SmartSpacePanelBody({
       '',
   )
 
+  const derivedModelId =
+    settings?.continuationOptions?.continuationModelId ??
+    settings?.chatModelId ??
+    ''
+
+  const derivedUseWebSearch =
+    settings?.continuationOptions?.smartSpaceUseWebSearch ?? false
+  const derivedUseUrlContext =
+    settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
+
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true })
   }, [])
+
+  useEffect(() => {
+    setSelectedModelId((prev) => (prev === derivedModelId ? prev : derivedModelId))
+  }, [derivedModelId])
+
+  useEffect(() => {
+    setUseWebSearch((prev) =>
+      prev === derivedUseWebSearch ? prev : derivedUseWebSearch,
+    )
+  }, [derivedUseWebSearch])
+
+  useEffect(() => {
+    setUseUrlContext((prev) =>
+      prev === derivedUseUrlContext ? prev : derivedUseUrlContext,
+    )
+  }, [derivedUseUrlContext])
 
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
