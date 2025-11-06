@@ -21,7 +21,6 @@ import { SearchableDropdown } from '../../common/SearchableDropdown'
 
 type AddChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   provider?: LLMProvider
 }
 
@@ -125,7 +124,7 @@ function AddChatModelModalComponent({
   plugin,
   onClose,
   provider,
-}: AddChatModelModalComponentProps) {
+}: AddChatModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
   const selectedProvider: LLMProvider | undefined =
     provider ?? plugin.settings.providers[0]

@@ -17,7 +17,6 @@ import { ReactModal } from '../../common/ReactModal'
 
 type EditChatModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   model: ChatModel
 }
 
@@ -54,7 +53,7 @@ function EditChatModelModalComponent({
   plugin,
   onClose,
   model,
-}: EditChatModelModalComponentProps) {
+}: EditChatModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
   const editableModel: EditableChatModel = model
 

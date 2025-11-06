@@ -34,6 +34,8 @@ type QuickAction = {
 
 type QuickActionCategory = NonNullable<QuickAction['category']>
 
+type TranslateFn = (key: string, fallback?: string) => string
+
 const QUICK_ACTION_CATEGORIES: QuickActionCategory[] = [
   'suggestions',
   'writing',
@@ -212,7 +214,7 @@ const generateId = () => {
   return `action_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
-const getDefaultQuickActions = (t: any): QuickAction[] => {
+const getDefaultQuickActions = (t: TranslateFn): QuickAction[] => {
   return DEFAULT_ACTION_CONFIGS.map((config) => ({
     id: config.id,
     label: t(config.labelKey, config.labelFallback),

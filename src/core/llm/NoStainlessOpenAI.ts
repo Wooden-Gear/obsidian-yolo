@@ -18,13 +18,21 @@ export class NoStainlessOpenAI extends OpenAI {
     // Handle Gemini native tools by bypassing OpenAI SDK validation
     if (req.req.body && typeof req.req.body === 'string') {
       try {
-        const body = JSON.parse(req.req.body)
+        const parsed = JSON.parse(req.req.body)
         // If tools contain Gemini native format (e.g., {googleSearch: {}}),
         // the OpenAI SDK validation will fail. We need to bypass this.
-        if (body.tools && Array.isArray(body.tools)) {
-          const hasGeminiTools = body.tools.some(
-            (tool: any) =>
-              tool.googleSearch !== undefined || tool.urlContext !== undefined,
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          'tools' in parsed &&
+          Array.isArray((parsed as { tools?: unknown[] }).tools)
+        ) {
+          const body = parsed as { tools?: unknown[] }
+          const hasGeminiTools = (body.tools ?? []).some(
+            (tool): boolean =>
+              typeof tool === 'object' &&
+              tool !== null &&
+              ('googleSearch' in tool || 'urlContext' in tool),
           )
           if (hasGeminiTools) {
             // For Gemini tools, we bypass SDK validation by reconstructing the request

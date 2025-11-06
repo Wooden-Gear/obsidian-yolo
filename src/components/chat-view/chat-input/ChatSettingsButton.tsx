@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { ChatModel } from '../../../types/chat-model.types'
 import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 
 export default function ChatSettingsButton({
@@ -11,9 +12,9 @@ export default function ChatSettingsButton({
   onChange,
   currentModel,
 }: {
-  overrides?: ConversationOverrideSettings
+  overrides?: ConversationOverrideSettings | null
   onChange?: (overrides: ConversationOverrideSettings) => void
-  currentModel?: any
+  currentModel?: ChatModel
 }) {
   const { t } = useLanguage()
   const { settings } = useSettings()
@@ -33,7 +34,18 @@ export default function ChatSettingsButton({
   }, [overrides])
 
   // Check if current model supports Gemini tools
-  const hasGeminiTools = currentModel?.toolType === 'gemini'
+  const hasGeminiTools = (() => {
+    if (!currentModel) {
+      return false
+    }
+    if (currentModel.providerType === 'gemini') {
+      return currentModel.toolType === 'gemini'
+    }
+    if (currentModel.providerType === 'openai-compatible') {
+      return currentModel.toolType === 'gemini'
+    }
+    return false
+  })()
 
   const update = (patch: Partial<ConversationOverrideSettings>) => {
     const next = { ...value, ...patch }

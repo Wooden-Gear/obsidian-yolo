@@ -46,7 +46,8 @@ export class EmbeddingDbManageModal extends ReactModal<EmbeddingDbManagerModalCo
 function EmbeddingDbManagerModalComponentWrapper({
   app,
   plugin,
-}: EmbeddingDbManagerModalComponentWrapperProps) {
+  onClose,
+}: EmbeddingDbManagerModalComponentWrapperProps & { onClose: () => void }) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -69,7 +70,7 @@ function EmbeddingDbManagerModalComponentWrapper({
       >
         <DatabaseProvider getDatabaseManager={() => plugin.getDbManager()}>
           <QueryClientProvider client={queryClient}>
-            <EmbeddingDbManageModalComponent />
+            <EmbeddingDbManageModalComponent onClose={onClose} />
           </QueryClientProvider>
         </DatabaseProvider>
       </SettingsProvider>
@@ -77,7 +78,11 @@ function EmbeddingDbManagerModalComponentWrapper({
   )
 }
 
-function EmbeddingDbManageModalComponent() {
+function EmbeddingDbManageModalComponent({
+  onClose: _onClose,
+}: {
+  onClose: () => void
+}) {
   const { getVectorManager } = useDatabase()
   const { settings } = useSettings()
   const [indexProgressMap, setIndexProgressMap] = useState<

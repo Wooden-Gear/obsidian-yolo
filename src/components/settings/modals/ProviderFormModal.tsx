@@ -17,7 +17,6 @@ import { ReactModal } from '../../common/ReactModal'
 type ProviderFormComponentProps = {
   plugin: SmartComposerPlugin
   provider: LLMProvider | null // null for new provider
-  onClose: () => void
 }
 
 export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
@@ -52,7 +51,7 @@ function ProviderFormComponent({
   plugin,
   provider,
   onClose,
-}: ProviderFormComponentProps) {
+}: ProviderFormComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
 
   const [formData, setFormData] = useState<LLMProvider>(

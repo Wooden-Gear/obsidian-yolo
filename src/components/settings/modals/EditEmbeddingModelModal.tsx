@@ -11,7 +11,6 @@ import { ReactModal } from '../../common/ReactModal'
 
 type EditEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   model: EmbeddingModel
 }
 
@@ -33,7 +32,7 @@ function EditEmbeddingModelModalComponent({
   plugin,
   onClose,
   model,
-}: EditEmbeddingModelModalComponentProps) {
+}: EditEmbeddingModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
 
   // Update modal title
@@ -51,7 +50,7 @@ function EditEmbeddingModelModalComponent({
   }>({
     id: model.id,
     model: model.model,
-    name: (model as any).name,
+    name: model.name,
     dimension: model.dimension?.toString() || '',
   })
 

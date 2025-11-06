@@ -25,7 +25,6 @@ import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type AddEmbeddingModelModalComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   provider?: LLMProvider
 }
 
@@ -71,7 +70,7 @@ function AddEmbeddingModelModalComponent({
   plugin,
   onClose,
   provider,
-}: AddEmbeddingModelModalComponentProps) {
+}: AddEmbeddingModelModalComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
   const selectedProvider: LLMProvider | undefined =
     provider ?? plugin.settings.providers[0]

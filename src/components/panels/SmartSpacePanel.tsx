@@ -20,6 +20,7 @@ import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
+import SmartComposerPlugin from '../../main'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
@@ -106,7 +107,13 @@ function SmartSpacePanelBody({
         settings: plugin.settings,
         modelId: continuationModelId,
       })
-      return (model as any)?.toolType === 'gemini'
+      if (
+        model.providerType === 'gemini' ||
+        model.providerType === 'openai-compatible'
+      ) {
+        return model.toolType === 'gemini'
+      }
+      return false
     } catch {
       return false
     }
@@ -749,7 +756,7 @@ export class SmartSpaceWidget extends WidgetType {
 
   constructor(
     private readonly options: {
-      plugin: any
+      plugin: SmartComposerPlugin
       editor: Editor
       view: EditorView
       onClose: () => void

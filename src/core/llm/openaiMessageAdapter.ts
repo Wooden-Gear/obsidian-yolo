@@ -21,6 +21,28 @@ import {
   LLMResponseStreaming,
 } from '../../types/llm/response'
 
+function hasObjectProperty<T extends object, K extends PropertyKey>(
+  value: T,
+  key: K,
+): value is T & Record<K, unknown> {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function extractReasoningContent(source: unknown): string | undefined {
+  if (
+    typeof source === 'object' &&
+    source !== null &&
+    'reasoning_content' in source
+  ) {
+    const reasoning = (source as { reasoning_content?: unknown })
+      .reasoning_content
+    if (typeof reasoning === 'string') {
+      return reasoning
+    }
+  }
+  return undefined
+}
+
 export class OpenAIMessageAdapter {
   async generateResponse(
     client: OpenAI,
@@ -82,18 +104,38 @@ export class OpenAIMessageAdapter {
   }):
     | ChatCompletionCreateParamsStreaming
     | ChatCompletionCreateParamsNonStreaming {
-    // Build base params per OpenAI spec
-    const base: any = {
+    if (stream) {
+      const params: ChatCompletionCreateParamsStreaming &
+        Record<string, unknown> = {
+        model: request.model,
+        tools: request.tools,
+        tool_choice: request.tool_choice,
+        reasoning_effort: request.reasoning_effort,
+        web_search_options: request.web_search_options,
+        messages: request.messages.map((m) => this.parseRequestMessage(m)),
+        max_tokens: request.max_tokens,
+        temperature: request.temperature,
+        top_p: request.top_p,
+        frequency_penalty: request.frequency_penalty,
+        presence_penalty: request.presence_penalty,
+        logit_bias: request.logit_bias,
+        prediction: request.prediction,
+        stream: true,
+        stream_options: {
+          include_usage: true,
+        },
+      }
+      return this.attachVendorExtensions(params, request)
+    }
+
+    const params: ChatCompletionCreateParamsNonStreaming &
+      Record<string, unknown> = {
       model: request.model,
       tools: request.tools,
       tool_choice: request.tool_choice,
       reasoning_effort: request.reasoning_effort,
       web_search_options: request.web_search_options,
       messages: request.messages.map((m) => this.parseRequestMessage(m)),
-      // TODO: max_tokens is deprecated in the OpenAI API, with max_completion_tokens being the
-      // recommended replacement. Reasoning models do not support max_tokens at all.
-      // However, many OpenAI-compatible APIs still only support max_tokens.
-      // Consider implementing a solution that works with both OpenAI and compatible APIs.
       max_tokens: request.max_tokens,
       temperature: request.temperature,
       top_p: request.top_p,
@@ -101,43 +143,57 @@ export class OpenAIMessageAdapter {
       presence_penalty: request.presence_penalty,
       logit_bias: request.logit_bias,
       prediction: request.prediction,
-      ...(stream && {
-        stream: true,
-        stream_options: {
-          include_usage: true,
-        },
-      }),
+    }
+    return this.attachVendorExtensions(params, request)
+  }
+
+  private attachVendorExtensions<T extends Record<string, unknown>>(
+    params: T,
+    request: LLMRequest,
+  ): T {
+    const mutable = params as Record<string, unknown>
+
+    if (
+      hasObjectProperty(request, 'thinking') &&
+      request.thinking &&
+      typeof request.thinking === 'object'
+    ) {
+      mutable.thinking = request.thinking
+    }
+    const thinkingConfig =
+      (hasObjectProperty(request, 'thinking_config') &&
+        request.thinking_config &&
+        typeof request.thinking_config === 'object' &&
+        request.thinking_config) ||
+      (hasObjectProperty(request, 'thinkingConfig') &&
+        request.thinkingConfig &&
+        typeof request.thinkingConfig === 'object' &&
+        request.thinkingConfig)
+    if (thinkingConfig) {
+      mutable.thinking_config = thinkingConfig
     }
 
-    // Pass-through vendor-specific reasoning/thinking fields for compatible gateways
-    const reqAny = request as any
-    if (reqAny.thinking) {
-      base.thinking = reqAny.thinking // e.g., { budget_tokens: number }
-    }
-    if (reqAny.thinking_config || reqAny.thinkingConfig) {
-      base.thinking_config = reqAny.thinking_config || reqAny.thinkingConfig // e.g., { thinking_budget: number }
-    }
-
-    // Handle Gemini native tools from extra_body - override top-level tools if present
-    if (reqAny.extra_body && typeof reqAny.extra_body === 'object') {
-      const { tools, ...otherExtraBody } = reqAny.extra_body as {
-        tools?: unknown
+    if (
+      hasObjectProperty(request, 'extra_body') &&
+      request.extra_body &&
+      typeof request.extra_body === 'object'
+    ) {
+      const { tools, ...otherExtraBody } = request.extra_body as {
+        tools?: ChatCompletionTool[]
         [key: string]: unknown
       }
-      // If extra_body contains Gemini tools, use them directly in top-level tools field
       if (Array.isArray(tools)) {
-        base.tools = tools as ChatCompletionTool[]
-        // Remove tool_choice when using Gemini tools to avoid conflicts
-        delete base.tool_choice
+        mutable.tools = tools
+        if (hasObjectProperty(mutable, 'tool_choice')) {
+          delete (mutable as { tool_choice?: unknown }).tool_choice
+        }
       }
-
-      // Pass-through other extra_body fields for gateways that need them
       if (Object.keys(otherExtraBody).length > 0) {
-        base.extra_body = otherExtraBody
+        mutable.extra_body = otherExtraBody
       }
     }
 
-    return base
+    return params
   }
 
   protected parseRequestMessage(
@@ -199,7 +255,7 @@ export class OpenAIMessageAdapter {
         finish_reason: choice.finish_reason,
         message: {
           content: choice.message.content,
-          reasoning: (choice.message as any).reasoning_content || undefined,
+          reasoning: extractReasoningContent(choice.message),
           role: choice.message.role,
           tool_calls: choice.message.tool_calls,
         },
@@ -221,7 +277,7 @@ export class OpenAIMessageAdapter {
         finish_reason: choice.finish_reason ?? null,
         delta: {
           content: choice.delta.content ?? null,
-          reasoning: (choice.delta as any).reasoning_content || undefined,
+          reasoning: extractReasoningContent(choice.delta),
           role: choice.delta.role,
           tool_calls: choice.delta.tool_calls,
         },

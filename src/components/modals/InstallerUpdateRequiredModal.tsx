@@ -2,9 +2,9 @@ import { App } from 'obsidian'
 
 import { ReactModal } from '../common/ReactModal'
 
-export class InstallerUpdateRequiredModal extends ReactModal<
-  Record<string, never>
-> {
+type InstallerUpdateRequiredModalProps = Record<string, never>
+
+export class InstallerUpdateRequiredModal extends ReactModal<InstallerUpdateRequiredModalProps> {
   constructor(app: App) {
     super({
       app: app,
@@ -17,7 +17,9 @@ export class InstallerUpdateRequiredModal extends ReactModal<
   }
 }
 
-function InstallerUpdateRequiredModalComponent() {
+function InstallerUpdateRequiredModalComponent({
+  onClose: _onClose,
+}: InstallerUpdateRequiredModalProps & { onClose: () => void }) {
   return (
     <div>
       <div>

@@ -17,7 +17,6 @@ type FolderPickerModalProps = {
   existing: string[]
   allowFiles?: boolean
   onPick: (folderPath: string) => void
-  onClose: () => void
 }
 
 export class FolderPickerModal extends ReactModal<FolderPickerModalProps> {
@@ -43,7 +42,7 @@ function FolderPickerModalComponent({
   onPick,
   onClose,
   allowFiles,
-}: FolderPickerModalProps) {
+}: FolderPickerModalProps & { onClose: () => void }) {
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['']))
   const allFolders = useMemo(() => listAllFolderPaths(vault), [vault])

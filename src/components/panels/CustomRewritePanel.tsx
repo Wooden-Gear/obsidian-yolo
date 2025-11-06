@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
+import SmartComposerPlugin from '../../main'
 import { ObsidianButton } from '../common/ObsidianButton'
 import { ObsidianSetting } from '../common/ObsidianSetting'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
@@ -10,10 +11,12 @@ import { ReactFloatingPanel } from '../common/ReactFloatingPanel'
 
 export type CustomRewritePanelProps = {
   editor: Editor
-  onClose: () => void
 }
 
-function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
+function CustomRewritePanelBody({
+  editor,
+  onClose,
+}: CustomRewritePanelProps & { onClose: () => void }) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
@@ -83,7 +86,7 @@ export class CustomRewritePanel {
     editor,
     position,
   }: {
-    plugin: any
+    plugin: SmartComposerPlugin
     editor: Editor
     position?: { x: number; y: number }
   }) {

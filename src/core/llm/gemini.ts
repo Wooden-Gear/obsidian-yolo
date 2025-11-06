@@ -1,4 +1,13 @@
 import { GoogleGenAI } from '@google/genai'
+import type {
+  Content as GeminiContent,
+  FunctionCall as GeminiFunctionCall,
+  GenerateContentConfig as GeminiGenerateContentConfig,
+  GenerateContentParameters as GeminiGenerateContentParams,
+  GenerateContentResponse as GeminiGenerateContentResponse,
+  Part as GeminiPart,
+  Tool as GeminiTool,
+} from '@google/genai'
 import { v4 as uuidv4 } from 'uuid'
 
 import { ChatModel } from '../../types/chat-model.types'
@@ -12,6 +21,8 @@ import {
 import {
   LLMResponseNonStreaming,
   LLMResponseStreaming,
+  ToolCall,
+  ToolCallDelta,
 } from '../../types/llm/response'
 import { LLMProvider } from '../../types/provider.types'
 import { parseImageDataUrl } from '../../utils/llm/image'
@@ -22,6 +33,14 @@ import {
   LLMAPIKeyNotSetException,
   LLMRateLimitExceededException,
 } from './exception'
+
+type GeminiStreamGenerator = Awaited<
+  ReturnType<
+    InstanceType<typeof GoogleGenAI>['models']['generateContentStream']
+  >
+>
+type GeminiStreamChunk =
+  GeminiStreamGenerator extends AsyncGenerator<infer Chunk> ? Chunk : never
 
 /**
  * TODO: Consider future migration from '@google/generative-ai' to '@google/genai' (https://github.com/googleapis/js-genai)
@@ -39,6 +58,14 @@ import {
 export class GeminiProvider extends BaseLLMProvider<
   Extract<LLMProvider, { type: 'gemini' }>
 > {
+  private static readonly SUPPORTED_IMAGE_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+  ] as const
+
   private client: GoogleGenAI
   private apiKey: string
 
@@ -74,41 +101,51 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      const config: any = {
-        maxOutputTokens: request.max_tokens,
-        temperature: request.temperature,
+      const config: GeminiGenerateContentConfig = {
+        maxOutputTokens: request.max_tokens ?? undefined,
+        temperature: request.temperature ?? undefined,
       }
-      if ((model as any).thinking?.enabled) {
-        const budget = (model as any).thinking.thinking_budget
-        config.thinkingConfig = { thinkingBudget: budget }
-        if (request.model.includes('2.5')) {
-          config.thinkingConfig.includeThoughts = true
+      if (model.thinking?.enabled) {
+        const budget = model.thinking.thinking_budget
+        config.thinkingConfig = {
+          thinkingBudget: budget,
+          ...(request.model.includes('2.5') ? { includeThoughts: true } : {}),
         }
       }
 
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      let payload: Record<string, unknown> = {
+      const contents = request.messages
+        .map((message) => GeminiProvider.parseRequestMessage(message))
+        .filter((content): content is GeminiContent =>
+          GeminiProvider.isGeminiContent(content),
+        )
+
+      const shouldIncludeConfig =
+        (tools?.length ?? 0) > 0 ||
+        Object.values(config).some((value) => value !== undefined)
+
+      const payloadBase: GeminiGenerateContentParams = {
         model: request.model,
-        contents: request.messages
-          .map((message) => GeminiProvider.parseRequestMessage(message))
-          .filter((m) => m !== null),
-        config: {
-          ...config,
-          ...(tools ? { tools } : {}),
-        },
+        contents,
+        ...(shouldIncludeConfig
+          ? {
+              config: {
+                ...config,
+                ...(tools ? { tools } : {}),
+              },
+            }
+          : {}),
+        ...(systemInstruction ? { systemInstruction } : {}),
       }
 
-      if (systemInstruction) {
-        payload.systemInstruction = systemInstruction
-      }
-
-      payload = this.applyCustomModelParameters(model, payload)
-
-      const result: any = await this.client.models.generateContent(
-        payload as any,
+      const payload = this.applyCustomModelParameters(
+        model,
+        payloadBase as GeminiGenerateContentParams & Record<string, unknown>,
       )
+
+      const result = await this.client.models.generateContent(payload)
 
       const messageId = crypto.randomUUID()
       return GeminiProvider.parseNonStreamingResponse(
@@ -117,18 +154,19 @@ export class GeminiProvider extends BaseLLMProvider<
         messageId,
       )
     } catch (error) {
+      const message = GeminiProvider.getErrorMessage(error)
       const isInvalidApiKey =
-        error.message?.includes('API_KEY_INVALID') ||
-        error.message?.includes('API key not valid')
+        message?.includes('API_KEY_INVALID') ||
+        message?.includes('API key not valid')
 
       if (isInvalidApiKey) {
         throw new LLMAPIKeyInvalidException(
           `Provider ${this.provider.id} API key is invalid. Please update it in settings menu.`,
-          error as Error,
+          GeminiProvider.toError(error),
         )
       }
 
-      throw error
+      throw GeminiProvider.toError(error)
     }
   }
 
@@ -154,68 +192,75 @@ export class GeminiProvider extends BaseLLMProvider<
         : undefined
 
     try {
-      const config: any = {
-        maxOutputTokens: request.max_tokens,
-        temperature: request.temperature,
+      const config: GeminiGenerateContentConfig = {
+        maxOutputTokens: request.max_tokens ?? undefined,
+        temperature: request.temperature ?? undefined,
       }
-      if ((model as any).thinking?.enabled) {
-        const budget = (model as any).thinking.thinking_budget
-        config.thinkingConfig = { thinkingBudget: budget }
-        if (request.model.includes('2.5')) {
-          config.thinkingConfig.includeThoughts = true
+      if (model.thinking?.enabled) {
+        const budget = model.thinking.thinking_budget
+        config.thinkingConfig = {
+          thinkingBudget: budget,
+          ...(request.model.includes('2.5') ? { includeThoughts: true } : {}),
         }
       }
 
       // Prepare tools including Gemini native tools
       const tools = this.prepareTools(request, model, options)
 
-      let payload: Record<string, unknown> = {
+      const contents = request.messages
+        .map((message) => GeminiProvider.parseRequestMessage(message))
+        .filter((content): content is GeminiContent =>
+          GeminiProvider.isGeminiContent(content),
+        )
+
+      const shouldIncludeConfig =
+        (tools?.length ?? 0) > 0 ||
+        Object.values(config).some((value) => value !== undefined)
+
+      const payloadBase: GeminiGenerateContentParams = {
         model: request.model,
-        contents: request.messages
-          .map((message) => GeminiProvider.parseRequestMessage(message))
-          .filter((m) => m !== null),
-        config: {
-          ...config,
-          ...(tools ? { tools } : {}),
-        },
+        contents,
+        ...(shouldIncludeConfig
+          ? {
+              config: {
+                ...config,
+                ...(tools ? { tools } : {}),
+              },
+            }
+          : {}),
+        ...(systemInstruction ? { systemInstruction } : {}),
       }
 
-      if (systemInstruction) {
-        payload.systemInstruction = systemInstruction
-      }
-
-      payload = this.applyCustomModelParameters(model, payload)
-
-      const stream = await this.client.models.generateContentStream(
-        payload as any,
+      const payload = this.applyCustomModelParameters(
+        model,
+        payloadBase as GeminiGenerateContentParams & Record<string, unknown>,
       )
+
+      const stream = await this.client.models.generateContentStream(payload)
 
       const messageId = crypto.randomUUID()
-      return this.streamResponseGenerator(
-        stream as any,
-        request.model,
-        messageId,
-      )
+      return this.streamResponseGenerator(stream, request.model, messageId)
     } catch (error) {
+      const message = GeminiProvider.getErrorMessage(error)
       const isInvalidApiKey =
-        error.message?.includes('API_KEY_INVALID') ||
-        error.message?.includes('API key not valid')
+        message?.includes('API_KEY_INVALID') ||
+        message?.includes('API key not valid')
 
       if (isInvalidApiKey) {
         throw new LLMAPIKeyInvalidException(
           `Gemini API key is invalid. Please update it in settings menu.`,
-          error as Error,
+          GeminiProvider.toError(error),
         )
       }
       // Fallback: some networks/proxies can break streaming ("protocol error: unexpected EOF").
       // Try non-streaming once and adapt it into a single-chunk async iterable.
-      const shouldFallback = /protocol error|unexpected EOF/i.test(
-        String(error?.message ?? ''),
-      )
+      const shouldFallback = message
+        ? /protocol error|unexpected EOF/i.test(message)
+        : false
       if (shouldFallback) {
         const nonStream = await this.generateResponse(
           model,
-          request as any,
+          GeminiProvider.toNonStreamingRequest(request),
           options,
         )
         const singleChunk = async function* (
@@ -242,47 +287,48 @@ export class GeminiProvider extends BaseLLMProvider<
         }
         return singleChunk(nonStream)
       }
-      throw error
+      throw GeminiProvider.toError(error)
     }
   }
 
   private async *streamResponseGenerator(
-    stream: AsyncIterable<any>,
+    stream: AsyncIterable<GeminiStreamChunk>,
     model: string,
     messageId: string,
   ): AsyncIterable<LLMResponseStreaming> {
-    for await (const chunk of stream as any) {
+    for await (const chunk of stream) {
       yield GeminiProvider.parseStreamingResponseChunk(chunk, model, messageId)
     }
   }
 
-  static parseRequestMessage(message: RequestMessage): any | null {
+  static parseRequestMessage(message: RequestMessage): GeminiContent | null {
     switch (message.role) {
       case 'system':
         // System messages should be extracted and handled separately
         return null
       case 'user': {
-        const contentParts: any[] = Array.isArray(message.content)
-          ? message.content.map((part) => {
-              switch (part.type) {
-                case 'text':
-                  return { text: part.text }
-                case 'image_url': {
-                  const { mimeType, base64Data } = parseImageDataUrl(
-                    part.image_url.url,
-                  )
-                  GeminiProvider.validateImageType(mimeType)
-
-                  return {
+        const contentParts: GeminiPart[] = Array.isArray(message.content)
+          ? message.content.flatMap((part) => {
+              if (part.type === 'text') {
+                return [{ text: part.text }]
+              }
+              if (part.type === 'image_url') {
+                const { mimeType, base64Data } = parseImageDataUrl(
+                  part.image_url.url,
+                )
+                GeminiProvider.validateImageType(mimeType)
+                return [
+                  {
                     inlineData: {
                       data: base64Data,
                       mimeType,
                     },
-                  }
-                }
+                  } as GeminiPart,
+                ]
               }
+              return []
             })
-          : [{ text: message.content }]
+          : [{ text: message.content } as GeminiPart]
 
         return {
           role: 'user',
@@ -290,28 +336,24 @@ export class GeminiProvider extends BaseLLMProvider<
         }
       }
       case 'assistant': {
-        const contentParts: any[] = [
-          ...(message.content === '' ? [] : [{ text: message.content }]),
-          ...(message.tool_calls?.map((toolCall): any => {
-            try {
-              const args = JSON.parse(toolCall.arguments ?? '{}')
-              return {
-                functionCall: {
-                  name: toolCall.name,
-                  args,
-                },
-              }
-            } catch (error) {
-              // If the arguments are not valid JSON, return an empty object
-              return {
-                functionCall: {
-                  name: toolCall.name,
-                  args: {},
-                },
-              }
-            }
-          }) ?? []),
-        ]
+        const contentParts: GeminiPart[] = []
+        if (typeof message.content === 'string' && message.content !== '') {
+          contentParts.push({ text: message.content })
+        }
+
+        if (message.tool_calls) {
+          for (const toolCall of message.tool_calls) {
+            const args = GeminiProvider.safeParseJsonObject(
+              toolCall.arguments ?? '{}',
+            )
+            contentParts.push({
+              functionCall: {
+                name: toolCall.name,
+                args,
+              },
+            })
+          }
+        }
 
         if (contentParts.length === 0) {
           return null
@@ -329,7 +371,7 @@ export class GeminiProvider extends BaseLLMProvider<
             {
               functionResponse: {
                 name: message.tool_call.name,
-                response: { result: message.content }, // Gemini requires a response object
+                response: { result: message.content },
               },
             },
           ],
@@ -339,112 +381,183 @@ export class GeminiProvider extends BaseLLMProvider<
   }
 
   static parseNonStreamingResponse(
-    response: any,
+    response: GeminiGenerateContentResponse,
     model: string,
     messageId: string,
   ): LLMResponseNonStreaming {
-    // Extract thought summaries if present
-    let reasoningText: string | undefined
-    try {
-      const parts = response?.response?.candidates?.[0]?.content?.parts ?? []
-      if (Array.isArray(parts) && parts.length > 0) {
-        const thoughtPieces = parts
-          .filter((p: any) => p?.thought && typeof p?.text === 'string')
-          .map((p: any) => p.text)
-        reasoningText =
-          thoughtPieces.length > 0 ? thoughtPieces.join('') : undefined
-      }
-    } catch {
-      // Ignore parsing issues for optional reasoning metadata.
-    }
+    const parts = response.candidates?.[0]?.content?.parts ?? []
+    const reasoningPieces = parts
+      .filter(
+        (part): part is GeminiPart & { text: string } =>
+          Boolean(part?.thought) && typeof part?.text === 'string',
+      )
+      .map((part) => part.text)
+    const reasoningText =
+      reasoningPieces.length > 0 ? reasoningPieces.join('') : undefined
+
+    const toolCallsRaw = response.functionCalls
+      ?.map((call) => GeminiProvider.mapFunctionCall(call))
+      .filter((call): call is ToolCall => call !== null)
+    const toolCalls =
+      toolCallsRaw && toolCallsRaw.length > 0 ? toolCallsRaw : undefined
+
     return {
       id: messageId,
       choices: [
         {
-          finish_reason:
-            response.response?.candidates?.[0]?.finishReason ?? null,
+          finish_reason: response.candidates?.[0]?.finishReason ?? null,
           message: {
-            content: (response.text ?? response.response?.text?.()) as string,
+            content: response.text ?? '',
             reasoning: reasoningText ?? null,
             role: 'assistant',
-            tool_calls: (
-              response.functionCalls ?? response.response?.functionCalls?.()
-            )?.map((f: any) => ({
-              id: uuidv4(),
-              type: 'function',
-              function: {
-                name: f.name,
-                arguments: JSON.stringify(f.args),
-              },
-            })),
+            tool_calls: toolCalls,
           },
         },
       ],
       created: Date.now(),
-      model: model,
+      model,
       object: 'chat.completion',
-      usage:
-        (response.response?.usageMetadata ?? response.usageMetadata)
-          ? {
-              prompt_tokens: (response.response?.usageMetadata
-                ?.promptTokenCount ??
-                response.usageMetadata?.promptTokenCount) as number,
-              completion_tokens: (response.response?.usageMetadata
-                ?.candidatesTokenCount ??
-                response.usageMetadata?.candidatesTokenCount) as number,
-              total_tokens: (response.response?.usageMetadata
-                ?.totalTokenCount ??
-                response.usageMetadata?.totalTokenCount) as number,
-            }
-          : undefined,
+      usage: response.usageMetadata
+        ? {
+            prompt_tokens: response.usageMetadata.promptTokenCount ?? 0,
+            completion_tokens: response.usageMetadata.candidatesTokenCount ?? 0,
+            total_tokens: response.usageMetadata.totalTokenCount ?? 0,
+          }
+        : undefined,
+    }
+  }
+
+  private static isGeminiContent(
+    content: GeminiContent | null,
+  ): content is GeminiContent {
+    return content !== null
+  }
+
+  private static safeParseJsonObject(raw: string): Record<string, unknown> {
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // swallow parse errors and fallback to empty object
+    }
+    return {}
+  }
+
+  private static mapFunctionCall(
+    call: GeminiFunctionCall | undefined,
+  ): ToolCall | null {
+    if (!call?.name) {
+      return null
+    }
+    const args = call.args && typeof call.args === 'object' ? call.args : {}
+
+    return {
+      id: call.id ?? uuidv4(),
+      type: 'function' as const,
+      function: {
+        name: call.name,
+        arguments: JSON.stringify(args),
+      },
+    }
+  }
+
+  private static mapFunctionCallDelta(
+    call: GeminiFunctionCall | undefined,
+    index: number,
+  ): ToolCallDelta | null {
+    const base = this.mapFunctionCall(call)
+    if (!base) {
+      return null
+    }
+    return {
+      index,
+      id: base.id,
+      type: base.type,
+      function: base.function,
+    }
+  }
+
+  private static getErrorMessage(error: unknown): string | null {
+    if (typeof error === 'string') {
+      return error
+    }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string'
+    ) {
+      return (error as { message: string }).message
+    }
+    return null
+  }
+
+  private static isHttpError(
+    error: unknown,
+  ): error is { status: number; message?: string } {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof (error as { status?: unknown }).status === 'number'
+    )
+  }
+
+  private static toError(error: unknown): Error {
+    if (error instanceof Error) {
+      return error
+    }
+    const message = GeminiProvider.getErrorMessage(error) ?? 'Unexpected error'
+    return new Error(message)
+  }
+
+  private static toNonStreamingRequest(
+    request: LLMRequestStreaming,
+  ): LLMRequestNonStreaming {
+    const { stream: _stream, ...rest } = request
+    return {
+      ...rest,
+      stream: false,
     }
   }
 
   static parseStreamingResponseChunk(
-    chunk: any,
+    chunk: GeminiStreamChunk,
     model: string,
     messageId: string,
   ): LLMResponseStreaming {
     // Separate answer text and thought summaries if present in parts
     let contentPiece = ''
     let reasoningPiece = ''
-    try {
-      const parts = chunk?.candidates?.[0]?.content?.parts ?? []
-      if (Array.isArray(parts) && parts.length > 0) {
-        for (const p of parts) {
-          if (!p?.text) continue
-          if (p?.thought) reasoningPiece += p.text
-          else contentPiece += p.text
+    const parts = chunk.candidates?.[0]?.content?.parts ?? []
+    if (Array.isArray(parts) && parts.length > 0) {
+      for (const p of parts) {
+        if (typeof p?.text !== 'string') continue
+        if (p.thought) {
+          reasoningPiece += p.text
+        } else {
+          contentPiece += p.text
         }
       }
-    } catch {
-      // Ignore parsing issues for partial chunk metadata.
     }
+    const toolCallDeltaRaw =
+      chunk.functionCalls
+        ?.map((call, index) => GeminiProvider.mapFunctionCallDelta(call, index))
+        .filter((call): call is ToolCallDelta => call !== null) ?? []
+    const toolCallDeltas =
+      toolCallDeltaRaw.length > 0 ? toolCallDeltaRaw : undefined
+
     return {
       id: messageId,
       choices: [
         {
           finish_reason: chunk.candidates?.[0]?.finishReason ?? null,
           delta: {
-            content:
-              (contentPiece ||
-                (typeof chunk.text === 'function'
-                  ? chunk.text()
-                  : chunk.text)) ??
-              '',
+            content: contentPiece || chunk.text || '',
             reasoning: reasoningPiece || undefined,
-            tool_calls: (typeof chunk.functionCalls === 'function'
-              ? chunk.functionCalls()
-              : chunk.functionCalls
-            )?.map((f: any, index: number) => ({
-              index,
-              id: uuidv4(),
-              type: 'function',
-              function: {
-                name: f.name,
-                arguments: JSON.stringify(f.args),
-              },
-            })),
+            tool_calls: toolCallDeltas,
           },
         },
       ],
@@ -453,12 +566,92 @@ export class GeminiProvider extends BaseLLMProvider<
       object: 'chat.completion.chunk',
       usage: chunk.usageMetadata
         ? {
-            prompt_tokens: chunk.usageMetadata.promptTokenCount,
-            completion_tokens: chunk.usageMetadata.candidatesTokenCount,
-            total_tokens: chunk.usageMetadata.totalTokenCount,
+            prompt_tokens: chunk.usageMetadata.promptTokenCount ?? 0,
+            completion_tokens: chunk.usageMetadata.candidatesTokenCount ?? 0,
+            total_tokens: chunk.usageMetadata.totalTokenCount ?? 0,
           }
         : undefined,
     }
+  }
+
+  private static validateImageType(mimeType: string) {
+    if (
+      !GeminiProvider.SUPPORTED_IMAGE_TYPES.includes(
+        mimeType as (typeof GeminiProvider.SUPPORTED_IMAGE_TYPES)[number],
+      )
+    ) {
+      throw new Error(
+        `Gemini does not support image type ${mimeType}. Supported types: ${GeminiProvider.SUPPORTED_IMAGE_TYPES.join(
+          ', ',
+        )}`,
+      )
+    }
+  }
+
+  async getEmbedding(model: string, text: string): Promise<number[]> {
+    if (!this.apiKey) {
+      throw new LLMAPIKeyNotSetException(
+        `Provider ${this.provider.id} API key is missing. Please set it in settings menu.`,
+      )
+    }
+
+    try {
+      const res = await this.client.models.embedContent({
+        model,
+        contents: text,
+      })
+      // Support both shapes
+      const values =
+        ('embedding' in res &&
+        res.embedding &&
+        typeof res.embedding === 'object' &&
+        Array.isArray((res.embedding as { values?: number[] }).values)
+          ? (res.embedding as { values?: number[] }).values
+          : res.embeddings?.[0]?.values) ?? null
+      if (!values) {
+        throw new Error('Gemini embedding response did not include values.')
+      }
+      return values
+    } catch (error) {
+      if (GeminiProvider.isHttpError(error) && error.status === 429) {
+        throw new LLMRateLimitExceededException(
+          'Gemini API rate limit exceeded. Please try again later.',
+        )
+      }
+      throw GeminiProvider.toError(error)
+    }
+  }
+
+  private prepareTools(
+    request: LLMRequestNonStreaming | LLMRequestStreaming,
+    model: ChatModel,
+    options?: LLMOptions,
+  ): GeminiTool[] | undefined {
+    const tools: GeminiTool[] = []
+
+    // Add Gemini native tools if enabled
+    if (model.providerType === 'gemini' && options?.geminiTools) {
+      const geminiTools = options.geminiTools
+
+      // Add Google Search tool
+      if (geminiTools.useWebSearch) {
+        tools.push({ googleSearch: {} })
+      }
+
+      // Add URL Context tool
+      if (geminiTools.useUrlContext) {
+        tools.push({ urlContext: {} })
+      }
+    }
+
+    // Add function calling tools if provided
+    if (request.tools && request.tools.length > 0) {
+      tools.push(
+        ...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)),
+      )
+    }
+
+    return tools.length > 0 ? tools : undefined
   }
 
   private static removeAdditionalProperties(schema: unknown): unknown {
@@ -482,97 +675,19 @@ export class GeminiProvider extends BaseLLMProvider<
     )
   }
 
-  private static parseRequestTool(tool: RequestTool): any {
-    // Remove additionalProperties for compatibility
-    const cleanedParameters = this.removeAdditionalProperties(
+  private static parseRequestTool(tool: RequestTool): GeminiTool {
+    const cleanedSchema = this.removeAdditionalProperties(
       tool.function.parameters,
-    ) as Record<string, any>
+    )
 
     return {
       functionDeclarations: [
         {
           name: tool.function.name,
           description: tool.function.description,
-          parametersJsonSchema: {
-            type: 'object',
-            properties: cleanedParameters.properties ?? {},
-          },
+          parametersJsonSchema: cleanedSchema,
         },
       ],
     }
-  }
-
-  private static validateImageType(mimeType: string) {
-    const SUPPORTED_IMAGE_TYPES = [
-      'image/png',
-      'image/jpeg',
-      'image/webp',
-      'image/heic',
-      'image/heif',
-    ]
-    if (!SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
-      throw new Error(
-        `Gemini does not support image type ${mimeType}. Supported types: ${SUPPORTED_IMAGE_TYPES.join(
-          ', ',
-        )}`,
-      )
-    }
-  }
-
-  async getEmbedding(model: string, text: string): Promise<number[]> {
-    if (!this.apiKey) {
-      throw new LLMAPIKeyNotSetException(
-        `Provider ${this.provider.id} API key is missing. Please set it in settings menu.`,
-      )
-    }
-
-    try {
-      const res: any = await this.client.models.embedContent({
-        model,
-        contents: text,
-      })
-      // Support both shapes
-      const values = res.embedding?.values ?? res.embeddings?.[0]?.values
-      return values as number[]
-    } catch (error) {
-      if (error.status === 429) {
-        throw new LLMRateLimitExceededException(
-          'Gemini API rate limit exceeded. Please try again later.',
-        )
-      }
-      throw error
-    }
-  }
-
-  private prepareTools(
-    request: LLMRequestNonStreaming | LLMRequestStreaming,
-    model: ChatModel,
-    options?: LLMOptions,
-  ): any[] | undefined {
-    const tools: any[] = []
-
-    // Add Gemini native tools if enabled
-    if ((model as any).toolType === 'gemini' && (options as any)?.geminiTools) {
-      const geminiTools = (options as any).geminiTools
-
-      // Add Google Search tool
-      if (geminiTools.useWebSearch) {
-        tools.push({ googleSearch: {} })
-      }
-
-      // Add URL Context tool
-      if (geminiTools.useUrlContext) {
-        tools.push({ urlContext: {} })
-      }
-    }
-
-    // Add function calling tools if provided
-    if (request.tools && request.tools.length > 0) {
-      tools.push(
-        ...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)),
-      )
-    }
-
-    return tools.length > 0 ? tools : undefined
   }
 }

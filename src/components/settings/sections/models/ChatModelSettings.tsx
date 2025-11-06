@@ -13,7 +13,6 @@ import { ReactModal } from '../../../common/ReactModal'
 type SettingsComponentProps = {
   model: ChatModel
   plugin: SmartComposerPlugin
-  onClose: () => void
 }
 
 export class ChatModelSettingsModal extends ReactModal<SettingsComponentProps> {
@@ -34,7 +33,7 @@ export class ChatModelSettingsModal extends ReactModal<SettingsComponentProps> {
 
 type ModelSettingsRegistry = {
   check: (model: ChatModel) => boolean
-  SettingsComponent: React.FC<SettingsComponentProps>
+  SettingsComponent: React.FC<SettingsComponentProps & { onClose: () => void }>
 }
 
 /**
@@ -52,7 +51,7 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
    */
   {
     check: (model) => model.providerType === 'anthropic',
-    SettingsComponent: (props: SettingsComponentProps) => {
+    SettingsComponent: (props) => {
       const DEFAULT_THINKING_BUDGET_TOKENS = 8192
 
       const { model, plugin, onClose } = props
@@ -162,7 +161,7 @@ const MODEL_SETTINGS_REGISTRY: ModelSettingsRegistry[] = [
         'sonar-reasoning-pro',
       ].includes(model.model),
 
-    SettingsComponent: (props: SettingsComponentProps) => {
+    SettingsComponent: (props) => {
       const { model, plugin, onClose } = props
       const typedModel = model as ChatModel & { providerType: 'perplexity' }
       const [searchContextSize, setSearchContextSize] = useState(

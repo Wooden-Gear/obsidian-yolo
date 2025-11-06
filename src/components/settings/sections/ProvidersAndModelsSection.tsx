@@ -862,10 +862,7 @@ export function ProvidersAndModelsSection({
                                 <ObsidianToggle
                                   value={isEnabled(model.enable)}
                                   onChange={(value) => {
-                                    handleToggleEnableChatModel(
-                                      model.id,
-                                      value,
-                                    )
+                                    handleToggleEnableChatModel(model.id, value)
                                   }}
                                 />
                               </td>
@@ -891,10 +888,10 @@ export function ProvidersAndModelsSection({
                                       v.id === model.id &&
                                       v.providerId === model.providerId,
                                   ) && (
-                                      <button
-                                        onClick={() => {
-                                          handleDeleteChatModel(model.id)
-                                        }}
+                                    <button
+                                      onClick={() => {
+                                        handleDeleteChatModel(model.id)
+                                      }}
                                       className="clickable-icon"
                                     >
                                       <Trash2 />
@@ -955,7 +952,7 @@ export function ProvidersAndModelsSection({
                             <tr key={model.id}>
                               <td></td>
                               <td title={model.id}>
-                                {(model as any).name || model.model || model.id}
+                                {model.name ?? model.model ?? model.id}
                               </td>
                               <td title={model.model}>{model.model}</td>
                               <td>{model.dimension}</td>

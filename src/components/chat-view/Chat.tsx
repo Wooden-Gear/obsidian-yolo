@@ -182,11 +182,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   // Per-conversation override settings (temperature, top_p, context, stream)
   const conversationOverridesRef = useRef<
-    Map<string, ConversationOverrideSettings>
+    Map<string, ConversationOverrideSettings | null>
   >(new Map())
-  const [conversationOverrides, setConversationOverrides] = useState<
-    ConversationOverrideSettings | undefined
-  >(undefined)
+  const [conversationOverrides, setConversationOverrides] =
+    useState<ConversationOverrideSettings | null>(null)
 
   // Per-conversation model id (do NOT write back to global settings)
   const conversationModelIdRef = useRef<Map<string, string>>(new Map())
@@ -217,7 +216,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     promptGenerator,
     chatMode,
     learningMode,
-    conversationOverrides,
+    conversationOverrides: conversationOverrides ?? undefined,
     modelId: conversationModelId,
   })
 
@@ -244,7 +243,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       const suppressed =
         conversationSuppressionRef.current.get(conversationId) ?? 'none'
       setCurrentFileSuppression(suppressed)
-      setConversationOverrides(conversation.overrides ?? undefined)
+      setConversationOverrides(conversation.overrides ?? null)
       if (conversation.overrides) {
         conversationOverridesRef.current.set(
           conversationId,
@@ -278,7 +277,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setCurrentConversationId(newId)
     conversationSuppressionRef.current.set(newId, 'none')
     setCurrentFileSuppression('none')
-    setConversationOverrides(undefined)
+    setConversationOverrides(null)
     conversationModelIdRef.current.set(newId, settings.chatModelId)
     setConversationModelId(settings.chatModelId)
     setMessageModelMap(new Map())
@@ -753,7 +752,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (!currentConversationId) {
         return undefined
       }
-      return conversationOverridesRef.current.get(currentConversationId)
+      const stored = conversationOverridesRef.current.get(currentConversationId)
+      return stored ?? undefined
     },
     getCurrentConversationModelId: () => {
       if (conversationModelId) {

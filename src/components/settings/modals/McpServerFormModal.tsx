@@ -16,7 +16,6 @@ import { ReactModal } from '../../common/ReactModal'
 
 type McpServerFormComponentProps = {
   plugin: SmartComposerPlugin
-  onClose: () => void
   serverId?: string
 }
 
@@ -50,7 +49,7 @@ function McpServerFormComponent({
   plugin,
   onClose,
   serverId,
-}: McpServerFormComponentProps) {
+}: McpServerFormComponentProps & { onClose: () => void }) {
   const existingServer = serverId
     ? plugin.settings.mcp.servers.find((server) => server.id === serverId)
     : undefined

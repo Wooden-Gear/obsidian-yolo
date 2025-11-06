@@ -18,6 +18,7 @@ import {
 } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
+import { ConversationOverrideSettings } from '../../../types/conversation-settings.types'
 import {
   Mentionable,
   MentionableImage,
@@ -55,11 +56,17 @@ export type ChatUserInputProps = {
   setMentionables: (mentionables: Mentionable[]) => void
   autoFocus?: boolean
   addedBlockKey?: string | null
-  conversationOverrides?: any
-  onConversationOverridesChange?: (overrides: any) => void
+  conversationOverrides?: ConversationOverrideSettings | null
+  onConversationOverridesChange?: (
+    overrides: ConversationOverrideSettings | null,
+  ) => void
   showConversationSettingsButton?: boolean
   modelId?: string
   onModelChange?: (modelId: string) => void
+}
+
+type ChatSubmitOptions = {
+  useVaultSearch?: boolean
 }
 
 const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
@@ -73,7 +80,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       setMentionables,
       autoFocus = false,
       addedBlockKey,
-      conversationOverrides,
+      conversationOverrides = null,
       onConversationOverridesChange: _onConversationOverridesChange,
       showConversationSettingsButton: _showConversationSettingsButton = false,
       modelId,
@@ -234,12 +241,14 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       })
     }
 
-    const handleSubmit = (options: { useVaultSearch?: boolean } = {}) => {
+    const handleSubmit = (options: ChatSubmitOptions = {}) => {
       const content = editorRef.current?.getEditorState()?.toJSON()
       // Use vault search from conversation overrides if available, otherwise use the passed option
       const shouldUseVaultSearch =
         conversationOverrides?.useVaultSearch ?? options.useVaultSearch
-      content && onSubmit(content, shouldUseVaultSearch)
+      if (content) {
+        onSubmit(content, shouldUseVaultSearch)
+      }
     }
 
     return (

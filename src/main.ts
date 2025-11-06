@@ -319,8 +319,8 @@ export default class SmartComposerPlugin extends Plugin {
     timestamp: number
   } | null = null
   // Selection chat state
-  private selectionManager: any | null = null
-  private selectionChatWidget: any | null = null
+  private selectionManager: SelectionManager | null = null
+  private selectionChatWidget: SelectionChatWidget | null = null
   private pendingSelectionRewrite: {
     editor: Editor
     selectedText: string
