@@ -72,74 +72,73 @@ function McpServerFormComponent({
     2,
   )
 
-  const handleSubmit = () => {
-    void (async () => {
-      try {
-        const serverName = name.trim()
-        if (serverName.length === 0) {
-          throw new Error('Name is required')
-        }
-        validateServerName(serverName)
-
-        if (
-          plugin.settings.mcp.servers.find(
-            (server) =>
-              server.id === serverName && server.id !== existingServer?.id,
-          )
-        ) {
-          throw new Error('Server with same name already exists')
-        }
-
-        if (parameters.trim().length === 0) {
-          throw new Error('Parameters are required')
-        }
-        let parsedParameters: unknown
-        try {
-          parsedParameters = JSON.parse(parameters)
-        } catch {
-          throw new Error('Parameters must be valid JSON')
-        }
-        const validatedParameters: McpServerParameters =
-          mcpServerParametersSchema.strict().parse(parsedParameters)
-
-        const newSettings = {
-          ...plugin.settings,
-          mcp: {
-            ...plugin.settings.mcp,
-            servers: existingServer
-              ? plugin.settings.mcp.servers.map((server) =>
-                  server.id === existingServer.id
-                    ? {
-                        ...server,
-                        id: serverName,
-                        parameters: validatedParameters,
-                      }
-                    : server,
-                )
-              : [
-                  ...plugin.settings.mcp.servers,
-                  {
-                    id: serverName,
-                    parameters: validatedParameters,
-                    toolOptions: {},
-                    enabled: true,
-                  },
-                ],
-          },
-        }
-
-        await plugin.setSettings(newSettings)
-
-        onClose()
-      } catch (error) {
-        if (error instanceof Error) {
-          new Notice(error.message)
-        } else {
-          console.error(error)
-          new Notice('Failed to add MCP server.')
-        }
+  const handleSubmit = async () => {
+    try {
+      const serverName = name.trim()
+      if (serverName.length === 0) {
+        throw new Error('Name is required')
       }
-    })()
+      validateServerName(serverName)
+
+      if (
+        plugin.settings.mcp.servers.find(
+          (server) =>
+            server.id === serverName && server.id !== existingServer?.id,
+        )
+      ) {
+        throw new Error('Server with same name already exists')
+      }
+
+      if (parameters.trim().length === 0) {
+        throw new Error('Parameters are required')
+      }
+      let parsedParameters: unknown
+      try {
+        parsedParameters = JSON.parse(parameters)
+      } catch {
+        throw new Error('Parameters must be valid JSON')
+      }
+      const validatedParameters: McpServerParameters = mcpServerParametersSchema
+        .strict()
+        .parse(parsedParameters)
+
+      const newSettings = {
+        ...plugin.settings,
+        mcp: {
+          ...plugin.settings.mcp,
+          servers: existingServer
+            ? plugin.settings.mcp.servers.map((server) =>
+                server.id === existingServer.id
+                  ? {
+                      ...server,
+                      id: serverName,
+                      parameters: validatedParameters,
+                    }
+                  : server,
+              )
+            : [
+                ...plugin.settings.mcp.servers,
+                {
+                  id: serverName,
+                  parameters: validatedParameters,
+                  toolOptions: {},
+                  enabled: true,
+                },
+              ],
+        },
+      }
+
+      await plugin.setSettings(newSettings)
+
+      onClose()
+    } catch (error) {
+      if (error instanceof Error) {
+        new Notice(error.message)
+      } else {
+        console.error(error)
+        new Notice('Failed to add MCP server.')
+      }
+    }
   }
 
   const validateParameters = useCallback((parameters: string) => {

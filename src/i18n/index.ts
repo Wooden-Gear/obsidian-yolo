@@ -15,16 +15,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function getNestedValue(
+function getNestedString(
   source: TranslationKeys,
   path: string[],
-): unknown | undefined {
-  return path.reduce<unknown | undefined>((current, key) => {
-    if (isRecord(current) && key in current) {
-      return current[key]
+): string | undefined {
+  let current: unknown = source
+  for (const key of path) {
+    if (!isRecord(current)) {
+      return undefined
     }
-    return undefined
-  }, source)
+    current = current[key]
+  }
+  return typeof current === 'string' ? current : undefined
 }
 
 export function createTranslationFunction(language: Language) {
@@ -32,7 +34,7 @@ export function createTranslationFunction(language: Language) {
 
   return function translate(keyPath: string, fallback?: string): string {
     const keys = keyPath.split('.')
-    const value = getNestedValue(t, keys)
+    const value = getNestedString(t, keys)
 
     return typeof value === 'string' ? value : fallback || keyPath
   }
