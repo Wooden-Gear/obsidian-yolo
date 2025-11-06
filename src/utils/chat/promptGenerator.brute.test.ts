@@ -1,7 +1,7 @@
 /**
  * Minimal tests for PromptGenerator brute mode behavior
  */
-import { App, TFile, type FileStats } from 'obsidian'
+import { App, type FileStats, TFile } from 'obsidian'
 
 import type { RAGEngine } from '../../core/rag/ragEngine'
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'

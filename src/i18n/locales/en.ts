@@ -136,11 +136,11 @@ export const en: TranslationKeys = {
         'Are you sure you want to reset to default quick actions and delete all custom settings?',
       actionLabel: 'Action label',
       actionLabelDesc: 'Text displayed in the quick action',
-      actionLabelPlaceholder: 'e.g., continue writing',
+      actionLabelPlaceholder: 'For example, continue writing',
       actionInstruction: 'Prompt',
       actionInstructionDesc: 'Instruction sent to AI',
       actionInstructionPlaceholder:
-        'e.g., please continue expanding the current paragraph, maintaining the original tone and style.',
+        'For example, please continue expanding the current paragraph while maintaining the original tone and style.',
       actionCategory: 'Category',
       actionCategoryDesc: 'Category this action belongs to',
       actionIcon: 'Icon',
@@ -218,7 +218,7 @@ export const en: TranslationKeys = {
       defaultAssistantName: 'New assistant',
       deleteConfirmTitle: 'Confirm delete assistant',
       deleteConfirmMessagePrefix: 'Are you sure you want to delete assistant',
-      deleteConfirmMessageSuffix: ' which cannot be undone.',
+      deleteConfirmMessageSuffix: ' This action cannot be undone.',
       addAssistantAria: 'Add new assistant',
       deleteAssistantAria: 'Delete assistant',
       actions: 'Actions',
@@ -237,8 +237,8 @@ export const en: TranslationKeys = {
       deleteProvider: 'Delete provider',
       deleteConfirm: 'Are you sure you want to delete provider',
       deleteWarning: 'This will also delete',
-      chatModels: 'chat models',
-      embeddingModels: 'embedding models',
+      chatModels: 'Chat models',
+      embeddingModels: 'Embedding models',
       embeddingsWillBeDeleted:
         'All embeddings generated using the related embedding models will also be deleted.',
       addCustomProvider: 'Add custom provider',
@@ -289,18 +289,18 @@ export const en: TranslationKeys = {
       geminiThinkingBudget: 'Thinking budget (thinkingBudget)',
       geminiThinkingBudgetDesc:
         'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
-      geminiThinkingBudgetPlaceholder: 'e.g., -1 (dynamic, 0=off)',
+      geminiThinkingBudgetPlaceholder: 'For example, -1 (dynamic, 0=off)',
       toolType: 'Tool type',
       toolTypeDesc: 'Select the tool type supported by the model',
       toolTypeNone: 'No tools',
       toolTypeGemini: 'Gemini tools',
       customParameters: 'Custom parameters',
       customParametersDesc:
-        'Attach additional request fields; values accept plain text or JSON (e.g., {"thinking": {"type": "enabled"}}).',
+        'Attach additional request fields; values accept plain text or JSON (for example, {"thinking": {"type": "enabled"}}).',
       customParametersAdd: 'Add parameter',
-      customParametersKeyPlaceholder: 'Key, e.g., thinking',
+      customParametersKeyPlaceholder: 'Key, for example, thinking',
       customParametersValuePlaceholder:
-        'Value, plain text or JSON; for example, {"type":"enabled"} or 0.7',
+        'Value in plain text or JSON; for example, {"type":"enabled"} or 0.7',
       dimension: 'Dimension',
       dimensionDesc: 'The dimension of the embedding model (optional)',
       dimensionPlaceholder: '1536',
@@ -346,7 +346,7 @@ export const en: TranslationKeys = {
       selectExcludeFoldersPlaceholder:
         'Click here to select folders to exclude (leave empty to exclude nothing)',
       conflictNoteDefaultInclude:
-        'Tip: no include folders are selected, so all are included by default; if exclude folders are set, exclusion takes precedence.',
+        'Tip: No include folders are selected, so all are included by default; if exclude folders are set, exclusion takes precedence.',
       conflictExact:
         'The following folders are both included and excluded; they will be excluded:',
       conflictParentExclude:
@@ -516,8 +516,8 @@ export const en: TranslationKeys = {
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
     customContinuePromptPlaceholder: 'Ask AI...',
-    customContinueHint: '⏎ press the enter key to submit',
-    customContinueConfirmHint: '⏎ press the enter key again to confirm',
+    customContinueHint: 'Press Enter (⏎) to submit',
+    customContinueConfirmHint: 'Press Enter (⏎) again to confirm',
     customContinueProcessing: 'Thinking',
     customContinueError: 'Generation failed; please try again soon.',
     customContinueSections: {

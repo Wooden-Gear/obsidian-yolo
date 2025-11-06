@@ -341,7 +341,7 @@ export function SmartSpaceQuickActionsSettings() {
     setIsAddingAction(true)
   }
 
-  const handleSaveAction = () => {
+  const handleSaveAction = async () => {
     if (!editingAction || !editingAction.label || !editingAction.instruction) {
       return
     }
@@ -357,29 +357,25 @@ export function SmartSpaceQuickActionsSettings() {
       )
     }
 
-    void (async () => {
-      try {
-        await handleSaveActions(newActions)
-        setEditingAction(null)
-        setIsAddingAction(false)
-      } catch (error: unknown) {
-        console.error('Failed to save Smart Space quick action', error)
-      }
-    })()
+    try {
+      await handleSaveActions(newActions)
+      setEditingAction(null)
+      setIsAddingAction(false)
+    } catch (error: unknown) {
+      console.error('Failed to save Smart Space quick action', error)
+    }
   }
 
-  const handleDeleteAction = (id: string) => {
+  const handleDeleteAction = async (id: string) => {
     const newActions = quickActions.filter((action) => action.id !== id)
-    void (async () => {
-      try {
-        await handleSaveActions(newActions)
-      } catch (error: unknown) {
-        console.error('Failed to delete Smart Space quick action', error)
-      }
-    })()
+    try {
+      await handleSaveActions(newActions)
+    } catch (error: unknown) {
+      console.error('Failed to delete Smart Space quick action', error)
+    }
   }
 
-  const handleDuplicateAction = (action: QuickAction) => {
+  const handleDuplicateAction = async (action: QuickAction) => {
     const newAction = {
       ...action,
       id: generateId(),
@@ -387,13 +383,11 @@ export function SmartSpaceQuickActionsSettings() {
       enabled: true,
     }
     const newActions = [...quickActions, newAction]
-    void (async () => {
-      try {
-        await handleSaveActions(newActions)
-      } catch (error: unknown) {
-        console.error('Failed to duplicate Smart Space quick action', error)
-      }
-    })()
+    try {
+      await handleSaveActions(newActions)
+    } catch (error: unknown) {
+      console.error('Failed to duplicate Smart Space quick action', error)
+    }
   }
 
   const triggerDropSuccess = (movedId: string) => {
@@ -602,19 +596,17 @@ export function SmartSpaceQuickActionsSettings() {
 
     modal.onClose = () => {
       if (!confirmed) return
-      void (async () => {
-        try {
-          await setSettings({
-            ...settings,
-            continuationOptions: {
-              ...settings.continuationOptions,
-              smartSpaceQuickActions: undefined,
-            },
-          })
-        } catch (error: unknown) {
-          console.error('Failed to reset Smart Space quick actions', error)
-        }
-      })()
+      Promise.resolve(
+        setSettings({
+          ...settings,
+          continuationOptions: {
+            ...settings.continuationOptions,
+            smartSpaceQuickActions: undefined,
+          },
+        }),
+      ).catch((error: unknown) => {
+        console.error('Failed to reset Smart Space quick actions', error)
+      })
     }
 
     modal.open()
