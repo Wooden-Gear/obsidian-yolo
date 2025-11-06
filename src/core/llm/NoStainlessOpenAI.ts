@@ -59,8 +59,12 @@ export class NoStainlessOpenAI extends OpenAI {
             req.req.body = JSON.stringify(body)
           }
         }
-      } catch (e) {
-        // If JSON parsing fails, continue with original body
+      } catch (parseError) {
+        console.debug(
+          '[Smart Composer] Failed to inspect request body while stripping Stainless headers.',
+          parseError,
+        )
+        // If JSON parsing fails, continue with original body unchanged
       }
     }
 

@@ -332,9 +332,12 @@ function AddChatModelModalComponent({
         isBaseModel: true,
       }
     } else {
-      const { isBaseModel: _ignored, ...withoutBaseFlag } =
-        modelDataWithPrefix as Record<string, unknown>
-      modelDataWithPrefix = withoutBaseFlag as ChatModel
+      const withoutBaseFlag = Object.fromEntries(
+        Object.entries(modelDataWithPrefix as Record<string, unknown>).filter(
+          ([key]) => key !== 'isBaseModel',
+        ),
+      ) as ChatModel
+      modelDataWithPrefix = withoutBaseFlag
 
       if (reasoningType === 'openai') {
         if (!isReasoningConfigurable(modelDataWithPrefix)) {
