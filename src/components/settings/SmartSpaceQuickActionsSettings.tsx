@@ -516,7 +516,7 @@ export function SmartSpaceQuickActionsSettings() {
       activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
-  const handleDrop = async (
+  const handleDrop = (
     event: DragEvent<HTMLDivElement>,
     targetGlobalIndex: number,
     targetCategory: QuickAction['category'],
@@ -556,13 +556,14 @@ export function SmartSpaceQuickActionsSettings() {
 
     updatedActions.splice(insertIndex, 0, moved)
 
-    void (async () => {
-      try {
-        await handleSaveActions(updatedActions)
+    handleSaveActions(updatedActions)
+      .then(() => {
         triggerDropSuccess(moved.id)
-      } catch (error: unknown) {
+      })
+      .catch((error: unknown) => {
         console.error('Failed to reorder Smart Space actions', error)
-      } finally {
+      })
+      .finally(() => {
         itemEl?.classList.remove(
           'smtcmp-quick-action-drag-over-before',
           'smtcmp-quick-action-drag-over-after',
@@ -578,8 +579,7 @@ export function SmartSpaceQuickActionsSettings() {
         dragOverItemRef.current = null
         lastDropPosRef.current = null
         lastInsertIndexRef.current = null
-      }
-    })()
+      })
   }
 
   const handleResetToDefault = () => {
@@ -768,7 +768,7 @@ export function SmartSpaceQuickActionsSettings() {
                       }
                       onDragOver={(event) => handleDragOver(event, globalIndex)}
                       onDrop={(event) =>
-                        void handleDrop(event, globalIndex, group.category)
+                        handleDrop(event, globalIndex, group.category)
                       }
                       onDragEnd={handleDragEnd}
                     >

@@ -98,7 +98,7 @@ export default function MarkdownCodeComponent({
             }}
           >
             <Eye size={12} />
-            {isPreviewMode ? 'View raw text' : 'View formatted'}
+            {isPreviewMode ? 'Show raw text' : 'Show formatted text'}
           </button>
           <button
             className="clickable-icon smtcmp-code-block-header-button"
@@ -109,12 +109,12 @@ export default function MarkdownCodeComponent({
             {copied ? (
               <>
                 <Check size={10} />
-                <span>Copied</span>
+                <span>Text copied</span>
               </>
             ) : (
               <>
                 <CopyIcon size={10} />
-                <span>Copy</span>
+                <span>Copy text</span>
               </>
             )}
           </button>

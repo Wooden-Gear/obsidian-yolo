@@ -400,9 +400,21 @@ export class DatabaseManager {
           'All PGlite resource paths failed. Attempted URLs:',
           candidateBaseUrls.map((u) => u.href),
         )
-        throw lastError instanceof Error
-          ? lastError
-          : new Error(String(lastError))
+        if (lastError instanceof Error) {
+          throw lastError
+        }
+        const fallbackMessage = (() => {
+          if (typeof lastError === 'string') return lastError
+          if (lastError && typeof lastError === 'object') {
+            try {
+              return JSON.stringify(lastError)
+            } catch {
+              return Object.prototype.toString.call(lastError)
+            }
+          }
+          return String(lastError)
+        })()
+        throw new Error(fallbackMessage)
       }
       throw new Error(
         'Failed to resolve PGlite bundle path - no candidate URLs generated',

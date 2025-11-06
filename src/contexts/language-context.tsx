@@ -38,11 +38,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   const t = createTranslationFunction(language)
 
-  const setLanguage = async (newLanguage: Language) => {
-    await plugin.setSettings({
-      ...plugin.settings,
-      language: newLanguage,
-    })
+  const setLanguage = (newLanguage: Language) => {
+    void plugin
+      .setSettings({
+        ...plugin.settings,
+        language: newLanguage,
+      })
+      .catch((error) => {
+        console.error('Failed to update language preference', error)
+      })
   }
 
   return (
