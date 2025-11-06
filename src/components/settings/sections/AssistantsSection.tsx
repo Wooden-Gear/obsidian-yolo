@@ -126,12 +126,16 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
 
     const newAssistantsList = [...assistants, newAssistant]
 
-    void setSettings({
-      ...settings,
-      assistants: newAssistantsList,
-    }).catch((error) => {
-      console.error('Failed to add assistant', error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          assistants: newAssistantsList,
+        })
+      } catch (error: unknown) {
+        console.error('Failed to add assistant', error)
+      }
+    })()
   }
 
   const handleUpdateAssistant = (updatedAssistant: Assistant) => {
@@ -139,12 +143,16 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
       assistant.id === updatedAssistant.id ? updatedAssistant : assistant,
     )
 
-    void setSettings({
-      ...settings,
-      assistants: newAssistantsList,
-    }).catch((error) => {
-      console.error('Failed to update assistant', error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          assistants: newAssistantsList,
+        })
+      } catch (error: unknown) {
+        console.error('Failed to update assistant', error)
+      }
+    })()
   }
 
   const handleDeleteAssistant = (id: string) => {
@@ -175,13 +183,17 @@ export function AssistantsSection({ app }: AssistantsSectionProps) {
             updatedAssistants.length > 0 ? updatedAssistants[0].id : undefined
         }
 
-        void setSettings({
-          ...settings,
-          assistants: updatedAssistants,
-          currentAssistantId: newCurrentAssistantId,
-        }).catch((error) => {
-          console.error('Failed to delete assistant', error)
-        })
+        void (async () => {
+          try {
+            await setSettings({
+              ...settings,
+              assistants: updatedAssistants,
+              currentAssistantId: newCurrentAssistantId,
+            })
+          } catch (error: unknown) {
+            console.error('Failed to delete assistant', error)
+          }
+        })()
       }
     }
 

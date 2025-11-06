@@ -68,8 +68,7 @@ const inlineSuggestionGhostEffect =
 
 type ThinkingIndicatorPayload = { from: number; text: string } | null
 
-const thinkingIndicatorEffect =
-  StateEffect.define<ThinkingIndicatorPayload>()
+const thinkingIndicatorEffect = StateEffect.define<ThinkingIndicatorPayload>()
 
 class ThinkingIndicatorWidget extends WidgetType {
   constructor(private readonly text: string) {
@@ -87,15 +86,15 @@ class ThinkingIndicatorWidget extends WidgetType {
   toDOM(): HTMLElement {
     const container = document.createElement('span')
     container.className = 'smtcmp-thinking-indicator-inline'
-    
+
     // 创建思考动画容器
     const loader = document.createElement('span')
     loader.className = 'smtcmp-thinking-loader'
-    
+
     // 图标容器
     const icon = document.createElement('span')
     icon.className = 'smtcmp-thinking-icon'
-    
+
     // SVG 图标 (Sparkles)
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     svg.setAttribute('width', '12')
@@ -107,9 +106,12 @@ class ThinkingIndicatorWidget extends WidgetType {
     svg.setAttribute('stroke-linecap', 'round')
     svg.setAttribute('stroke-linejoin', 'round')
     svg.classList.add('smtcmp-thinking-icon-svg')
-    
+
     const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path1.setAttribute('d', 'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z')
+    path1.setAttribute(
+      'd',
+      'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z',
+    )
     const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     path2.setAttribute('d', 'M5 3v4')
     const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
@@ -118,24 +120,24 @@ class ThinkingIndicatorWidget extends WidgetType {
     path4.setAttribute('d', 'M3 5h4')
     const path5 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     path5.setAttribute('d', 'M17 19h4')
-    
+
     svg.appendChild(path1)
     svg.appendChild(path2)
     svg.appendChild(path3)
     svg.appendChild(path4)
     svg.appendChild(path5)
-    
+
     icon.appendChild(svg)
-    
+
     // 文字
     const textEl = document.createElement('span')
     textEl.className = 'smtcmp-thinking-text'
     textEl.textContent = this.text
-    
+
     loader.appendChild(icon)
     loader.appendChild(textEl)
     container.appendChild(loader)
-    
+
     return container
   }
 }
@@ -961,11 +963,7 @@ export default class SmartComposerPlugin extends Plugin {
     view.dispatch({ effects: inlineSuggestionGhostEffect.of(payload) })
   }
 
-  private showThinkingIndicator(
-    view: EditorView,
-    from: number,
-    text: string,
-  ) {
+  private showThinkingIndicator(view: EditorView, from: number, text: string) {
     this.ensureInlineSuggestionExtension(view)
     view.dispatch({ effects: thinkingIndicatorEffect.of({ from, text }) })
   }
@@ -1532,15 +1530,17 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerEditorExtension(this.createSmartSpaceTriggerExtension())
 
     // This creates an icon in the left ribbon.
-    this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () =>
-      this.openChatView(),
-    )
+    this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () => {
+      void this.openChatView()
+    })
 
     // This adds a simple command that can be triggered anywhere
     this.addCommand({
       id: 'open-new-chat',
       name: this.t('commands.openChat'),
-      callback: () => this.openChatView(true),
+      callback: () => {
+        void this.openChatView(true)
+      },
     })
 
     // Global ESC to cancel any ongoing AI continuation/rewrite
@@ -1555,7 +1555,7 @@ export default class SmartComposerPlugin extends Plugin {
       id: 'add-selection-to-chat',
       name: this.t('commands.addSelectionToChat'),
       editorCallback: (editor: Editor, view: MarkdownView) => {
-        this.addSelectionToChat(editor, view)
+        void this.addSelectionToChat(editor, view)
       },
     })
 
@@ -2265,7 +2265,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
       // Mark in-progress to avoid re-entrancy from keyword trigger during insertion
       this.isContinuationInProgress = true
-      
+
       view = this.getEditorView(editor)
       if (!view) {
         notice.setMessage('Unable to access editor view.')

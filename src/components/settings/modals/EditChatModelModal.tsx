@@ -139,100 +139,104 @@ function EditChatModelModalComponent({
       : [],
   )
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.model.trim()) {
       new Notice(t('common.error'))
       return
     }
 
-    try {
-      const settings = plugin.settings
-      const chatModels = [...settings.chatModels]
-      const modelIndex = chatModels.findIndex((m) => m.id === model.id)
+    const execute = async () => {
+      try {
+        const settings = plugin.settings
+        const chatModels = [...settings.chatModels]
+        const modelIndex = chatModels.findIndex((m) => m.id === model.id)
 
-      if (modelIndex === -1) {
-        new Notice('Model not found')
-        return
-      }
-
-      // Compute new internal id from provider + API model id (calling ID)
-      const baseInternalId = generateModelId(model.providerId, formData.model)
-      const existingIds = chatModels
-        .map((m) => m.id)
-        .filter((id) => id !== model.id)
-      const newInternalId = ensureUniqueModelId(existingIds, baseInternalId)
-
-      // Compose reasoning/thinking fields based on selection and provider
-      const updatedModel: EditableChatModel = {
-        ...chatModels[modelIndex],
-        id: newInternalId,
-        model: formData.model,
-        name:
-          formData.name && formData.name.trim().length > 0
-            ? formData.name
-            : undefined,
-      }
-
-      // Apply according to selected reasoningType only (not limited by providerType)
-      if (reasoningType === 'base') {
-        delete updatedModel.reasoning
-        delete updatedModel.thinking
-        updatedModel.isBaseModel = true
-      } else if (reasoningType === 'openai') {
-        updatedModel.reasoning = {
-          enabled: true,
-          reasoning_effort: openaiEffort,
-        }
-        delete updatedModel.thinking
-        delete updatedModel.isBaseModel
-      } else if (reasoningType === 'gemini') {
-        const budget = parseInt(geminiBudget, 10)
-        if (Number.isNaN(budget)) {
-          new Notice(t('common.error'))
+        if (modelIndex === -1) {
+          new Notice('Model not found')
           return
         }
-        updatedModel.thinking = { enabled: true, thinking_budget: budget }
-        delete updatedModel.reasoning
-        delete updatedModel.isBaseModel
-      } else {
-        delete updatedModel.reasoning
-        delete updatedModel.thinking
-        delete updatedModel.isBaseModel
+
+        // Compute new internal id from provider + API model id (calling ID)
+        const baseInternalId = generateModelId(model.providerId, formData.model)
+        const existingIds = chatModels
+          .map((m) => m.id)
+          .filter((id) => id !== model.id)
+        const newInternalId = ensureUniqueModelId(existingIds, baseInternalId)
+
+        // Compose reasoning/thinking fields based on selection and provider
+        const updatedModel: EditableChatModel = {
+          ...chatModels[modelIndex],
+          id: newInternalId,
+          model: formData.model,
+          name:
+            formData.name && formData.name.trim().length > 0
+              ? formData.name
+              : undefined,
+        }
+
+        // Apply according to selected reasoningType only (not limited by providerType)
+        if (reasoningType === 'base') {
+          delete updatedModel.reasoning
+          delete updatedModel.thinking
+          updatedModel.isBaseModel = true
+        } else if (reasoningType === 'openai') {
+          updatedModel.reasoning = {
+            enabled: true,
+            reasoning_effort: openaiEffort,
+          }
+          delete updatedModel.thinking
+          delete updatedModel.isBaseModel
+        } else if (reasoningType === 'gemini') {
+          const budget = parseInt(geminiBudget, 10)
+          if (Number.isNaN(budget)) {
+            new Notice(t('common.error'))
+            return
+          }
+          updatedModel.thinking = { enabled: true, thinking_budget: budget }
+          delete updatedModel.reasoning
+          delete updatedModel.isBaseModel
+        } else {
+          delete updatedModel.reasoning
+          delete updatedModel.thinking
+          delete updatedModel.isBaseModel
+        }
+
+        // Apply tool type
+        updatedModel.toolType = toolType
+
+        const sanitizedCustomParameters = customParameters
+          .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
+          .filter((entry) => entry.key.length > 0)
+
+        if (sanitizedCustomParameters.length > 0) {
+          updatedModel.customParameters = sanitizedCustomParameters
+        } else {
+          delete updatedModel.customParameters
+        }
+
+        // Update the model
+        chatModels[modelIndex] = updatedModel
+
+        // Update references if current selection points to the old id
+        const nextSettings = { ...settings, chatModels }
+        if (nextSettings.chatModelId === model.id) {
+          nextSettings.chatModelId = newInternalId
+        }
+        if (nextSettings.applyModelId === model.id) {
+          nextSettings.applyModelId = newInternalId
+        }
+
+        await plugin.setSettings(nextSettings)
+
+        new Notice(t('common.success'))
+        onClose()
+      } catch (error) {
+        console.error('Failed to update chat model:', error)
+        new Notice(t('common.error'))
       }
-
-      // Apply tool type
-      updatedModel.toolType = toolType
-
-      const sanitizedCustomParameters = customParameters
-        .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
-        .filter((entry) => entry.key.length > 0)
-
-      if (sanitizedCustomParameters.length > 0) {
-        updatedModel.customParameters = sanitizedCustomParameters
-      } else {
-        delete updatedModel.customParameters
-      }
-
-      // Update the model
-      chatModels[modelIndex] = updatedModel
-
-      // Update references if current selection points to the old id
-      const nextSettings = { ...settings, chatModels }
-      if (nextSettings.chatModelId === model.id) {
-        nextSettings.chatModelId = newInternalId
-      }
-      if (nextSettings.applyModelId === model.id) {
-        nextSettings.applyModelId = newInternalId
-      }
-
-      await plugin.setSettings(nextSettings)
-
-      new Notice(t('common.success'))
-      onClose()
-    } catch (error) {
-      console.error('Failed to update chat model:', error)
-      new Notice(t('common.error'))
     }
+
+    void execute()
   }
 
   return (

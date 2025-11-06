@@ -14,15 +14,19 @@ export function ChatPreferencesSection() {
     patch: Partial<typeof settings.chatOptions>,
     context: string,
   ) => {
-    void setSettings({
-      ...settings,
-      chatOptions: {
-        ...settings.chatOptions,
-        ...patch,
-      },
-    }).catch((error) => {
-      console.error(`Failed to update chat options: ${context}`, error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          chatOptions: {
+            ...settings.chatOptions,
+            ...patch,
+          },
+        })
+      } catch (error: unknown) {
+        console.error(`Failed to update chat options: ${context}`, error)
+      }
+    })()
   }
 
   const learningModePromptValue =

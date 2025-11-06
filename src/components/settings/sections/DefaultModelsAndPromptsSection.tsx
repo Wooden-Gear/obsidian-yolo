@@ -22,12 +22,19 @@ export function DefaultModelsAndPromptsSection() {
     patch: Partial<typeof settings>,
     context: string,
   ) => {
-    void setSettings({
-      ...settings,
-      ...patch,
-    }).catch((error) => {
-      console.error(`Failed to update default models/settings: ${context}`, error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          ...patch,
+        })
+      } catch (error: unknown) {
+        console.error(
+          `Failed to update default models/settings: ${context}`,
+          error,
+        )
+      }
+    })()
   }
 
   const enabledChatModels = useMemo(

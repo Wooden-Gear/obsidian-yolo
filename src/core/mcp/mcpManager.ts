@@ -48,7 +48,12 @@ export class McpManager {
   }) {
     this.settings = settings
     this.unsubscribeFromSettings = registerSettingsListener((newSettings) => {
-      this.handleSettingsUpdate(newSettings)
+      void this.handleSettingsUpdate(newSettings).catch((error) => {
+        console.error(
+          '[Smart Composer] Failed to handle MCP settings update:',
+          error,
+        )
+      })
     })
   }
 

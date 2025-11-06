@@ -70,113 +70,126 @@ function ProviderFormComponent({
           baseUrl: '',
         },
   )
-  const handleSubmit = async () => {
-    if (provider) {
-      if (
-        plugin.settings.providers.some(
-          (p: LLMProvider) => p.id === formData.id && p.id !== provider.id,
+  const handleSubmit = () => {
+    const execute = async () => {
+      if (provider) {
+        if (
+          plugin.settings.providers.some(
+            (p: LLMProvider) => p.id === formData.id && p.id !== provider.id,
+          )
+        ) {
+          new Notice(
+            'Provider with this ID already exists. Try a different ID.',
+          )
+          return
+        }
+
+        const validationResult = llmProviderSchema.safeParse(formData)
+        if (!validationResult.success) {
+          new Notice(
+            validationResult.error.issues.map((v) => v.message).join('\n'),
+          )
+          return
+        }
+
+        const providerIndex = plugin.settings.providers.findIndex(
+          (v) => v.id === provider.id,
         )
-      ) {
-        new Notice('Provider with this ID already exists. Try a different ID.')
-        return
+
+        if (providerIndex === -1) {
+          new Notice(`No provider found with this ID`)
+          return
+        }
+
+        const validatedProvider = validationResult.data
+        const providerIdChanged = provider.id !== validatedProvider.id
+        const providerTypeChanged = provider.type !== validatedProvider.type
+
+        const updatedProviders = [...plugin.settings.providers]
+        updatedProviders[providerIndex] = validatedProvider
+
+        const updatedChatModels =
+          providerIdChanged || providerTypeChanged
+            ? plugin.settings.chatModels.map((model) => {
+                if (model.providerId !== provider.id) {
+                  return model
+                }
+                const updatedModel = {
+                  ...model,
+                  ...(providerIdChanged
+                    ? { providerId: validatedProvider.id }
+                    : {}),
+                  ...(providerTypeChanged
+                    ? { providerType: validatedProvider.type }
+                    : {}),
+                }
+                return providerTypeChanged
+                  ? chatModelSchema.parse(updatedModel)
+                  : updatedModel
+              })
+            : plugin.settings.chatModels
+
+        const updatedEmbeddingModels =
+          providerIdChanged || providerTypeChanged
+            ? plugin.settings.embeddingModels.map((model) => {
+                if (model.providerId !== provider.id) {
+                  return model
+                }
+                const updatedModel = {
+                  ...model,
+                  ...(providerIdChanged
+                    ? { providerId: validatedProvider.id }
+                    : {}),
+                  ...(providerTypeChanged
+                    ? { providerType: validatedProvider.type }
+                    : {}),
+                }
+                return providerTypeChanged
+                  ? embeddingModelSchema.parse(updatedModel)
+                  : updatedModel
+              })
+            : plugin.settings.embeddingModels
+
+        await plugin.setSettings({
+          ...plugin.settings,
+          providers: updatedProviders,
+          chatModels: updatedChatModels,
+          embeddingModels: updatedEmbeddingModels,
+        })
+      } else {
+        if (
+          plugin.settings.providers.some(
+            (p: LLMProvider) => p.id === formData.id,
+          )
+        ) {
+          new Notice(
+            'Provider with this ID already exists. Try a different ID.',
+          )
+          return
+        }
+
+        const validationResult = llmProviderSchema.safeParse(formData)
+        if (!validationResult.success) {
+          new Notice(
+            validationResult.error.issues.map((v) => v.message).join('\n'),
+          )
+          return
+        }
+
+        const validatedProvider = validationResult.data
+        await plugin.setSettings({
+          ...plugin.settings,
+          providers: [...plugin.settings.providers, validatedProvider],
+        })
       }
 
-      const validationResult = llmProviderSchema.safeParse(formData)
-      if (!validationResult.success) {
-        new Notice(
-          validationResult.error.issues.map((v) => v.message).join('\n'),
-        )
-        return
-      }
-
-      const providerIndex = plugin.settings.providers.findIndex(
-        (v) => v.id === provider.id,
-      )
-
-      if (providerIndex === -1) {
-        new Notice(`No provider found with this ID`)
-        return
-      }
-
-      const validatedProvider = validationResult.data
-      const providerIdChanged = provider.id !== validatedProvider.id
-      const providerTypeChanged = provider.type !== validatedProvider.type
-
-      const updatedProviders = [...plugin.settings.providers]
-      updatedProviders[providerIndex] = validatedProvider
-
-      const updatedChatModels =
-        providerIdChanged || providerTypeChanged
-          ? plugin.settings.chatModels.map((model) => {
-              if (model.providerId !== provider.id) {
-                return model
-              }
-              const updatedModel = {
-                ...model,
-                ...(providerIdChanged
-                  ? { providerId: validatedProvider.id }
-                  : {}),
-                ...(providerTypeChanged
-                  ? { providerType: validatedProvider.type }
-                  : {}),
-              }
-              return providerTypeChanged
-                ? chatModelSchema.parse(updatedModel)
-                : updatedModel
-            })
-          : plugin.settings.chatModels
-
-      const updatedEmbeddingModels =
-        providerIdChanged || providerTypeChanged
-          ? plugin.settings.embeddingModels.map((model) => {
-              if (model.providerId !== provider.id) {
-                return model
-              }
-              const updatedModel = {
-                ...model,
-                ...(providerIdChanged
-                  ? { providerId: validatedProvider.id }
-                  : {}),
-                ...(providerTypeChanged
-                  ? { providerType: validatedProvider.type }
-                  : {}),
-              }
-              return providerTypeChanged
-                ? embeddingModelSchema.parse(updatedModel)
-                : updatedModel
-            })
-          : plugin.settings.embeddingModels
-
-      await plugin.setSettings({
-        ...plugin.settings,
-        providers: updatedProviders,
-        chatModels: updatedChatModels,
-        embeddingModels: updatedEmbeddingModels,
-      })
-    } else {
-      if (
-        plugin.settings.providers.some((p: LLMProvider) => p.id === formData.id)
-      ) {
-        new Notice('Provider with this ID already exists. Try a different ID.')
-        return
-      }
-
-      const validationResult = llmProviderSchema.safeParse(formData)
-      if (!validationResult.success) {
-        new Notice(
-          validationResult.error.issues.map((v) => v.message).join('\n'),
-        )
-        return
-      }
-
-      const validatedProvider = validationResult.data
-      await plugin.setSettings({
-        ...plugin.settings,
-        providers: [...plugin.settings.providers, validatedProvider],
-      })
+      onClose()
     }
 
-    onClose()
+    void execute().catch((error) => {
+      console.error('[Smart Composer] Failed to save provider:', error)
+      new Notice('Failed to save provider settings.')
+    })
   }
 
   const providerTypeInfo = PROVIDER_TYPES_INFO[formData.type]

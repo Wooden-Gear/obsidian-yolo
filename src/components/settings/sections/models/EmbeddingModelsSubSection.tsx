@@ -35,32 +35,39 @@ export function EmbeddingModelsSubSection({
       title: 'Delete embedding model',
       message: message,
       ctaText: 'Delete',
-      onConfirm: async () => {
-        const vectorManager = await plugin.tryGetVectorManager()
+      onConfirm: () => {
+        void (async () => {
+          const vectorManager = await plugin.tryGetVectorManager()
 
-        if (vectorManager) {
-          const embeddingStats = await vectorManager.getEmbeddingStats()
-          const embeddingStat = embeddingStats.find((v) => v.model === modelId)
+          if (vectorManager) {
+            const embeddingStats = await vectorManager.getEmbeddingStats()
+            const embeddingStat = embeddingStats.find(
+              (v) => v.model === modelId,
+            )
 
-          if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-            // only clear when there's data
-            const embeddingModelClient = getEmbeddingModelClient({
-              settings,
-              embeddingModelId: modelId,
-            })
-            await vectorManager.clearAllVectors(embeddingModelClient)
+            if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+              // only clear when there's data
+              const embeddingModelClient = getEmbeddingModelClient({
+                settings,
+                embeddingModelId: modelId,
+              })
+              await vectorManager.clearAllVectors(embeddingModelClient)
+            }
+          } else {
+            console.warn(
+              '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+            )
           }
-        } else {
-          console.warn(
-            '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
-          )
-        }
 
-        await setSettings({
-          ...settings,
-          embeddingModels: [...settings.embeddingModels].filter(
-            (v) => v.id !== modelId,
-          ),
+          await setSettings({
+            ...settings,
+            embeddingModels: [...settings.embeddingModels].filter(
+              (v) => v.id !== modelId,
+            ),
+          })
+        })().catch((error) => {
+          console.error('Failed to delete embedding model', error)
+          new Notice('Failed to delete embedding model.')
         })
       },
     }).open()

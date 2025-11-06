@@ -118,10 +118,10 @@ export class ChatView extends ItemView {
                 </DarkModeProvider>
               </SettingsProvider>
             </AppProvider>
-      </LanguageProvider>
-    </PluginProvider>
-  </ChatViewProvider>,
-)
+          </LanguageProvider>
+        </PluginProvider>
+      </ChatViewProvider>,
+    )
     return Promise.resolve()
   }
 

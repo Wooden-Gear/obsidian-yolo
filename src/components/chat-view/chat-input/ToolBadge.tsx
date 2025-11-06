@@ -25,15 +25,19 @@ export default function ToolBadge() {
   const handleToolToggle = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      void setSettings({
-        ...settings,
-        chatOptions: {
-          ...settings.chatOptions,
-          enableTools: !settings.chatOptions.enableTools,
-        },
-      }).catch((error) => {
-        console.error('Failed to toggle tool usage', error)
-      })
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            chatOptions: {
+              ...settings.chatOptions,
+              enableTools: !settings.chatOptions.enableTools,
+            },
+          })
+        } catch (error: unknown) {
+          console.error('Failed to toggle tool usage', error)
+        }
+      })()
     },
     [settings, setSettings],
   )
@@ -52,7 +56,7 @@ export default function ToolBadge() {
           }
         })
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Failed to initialize MCP manager', error)
       })
     return () => {
@@ -68,7 +72,7 @@ export default function ToolBadge() {
           .then((tools) => {
             setToolCount(tools.length)
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             console.error('Failed to refresh tool list count', error)
           })
       })

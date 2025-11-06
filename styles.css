@@ -1279,7 +1279,7 @@ button.smtcmp-chat-input-model-select {
   justify-content: center;
   border-radius: 50%;
   background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
-  box-shadow: 
+  box-shadow:
     0 0 0 1px color-mix(in srgb, var(--interactive-accent) 20%, transparent),
     0 1px 4px color-mix(in srgb, var(--interactive-accent) 10%, transparent);
 }
@@ -3984,7 +3984,7 @@ button.smtcmp-chat-input-model-select {
   border-color: color-mix(
     in srgb,
     var(--h1-color, var(--interactive-accent)) 35%,
-    transparent,
+    transparent
   );
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.12),
@@ -3999,14 +3999,14 @@ button.smtcmp-chat-input-model-select {
   background: color-mix(
     in srgb,
     var(--background-modifier-hover) 90%,
-    transparent,
+    transparent
   );
   box-shadow:
     0 0 0 2px
       color-mix(
         in srgb,
         var(--h1-color, var(--interactive-accent)) 15%,
-        transparent,
+        transparent
       ),
     0 2px 8px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);

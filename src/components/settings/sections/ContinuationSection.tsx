@@ -26,15 +26,22 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
     patch: Partial<typeof settings.continuationOptions>,
     context: string,
   ) => {
-    void setSettings({
-      ...settings,
-      continuationOptions: {
-        ...settings.continuationOptions,
-        ...patch,
-      },
-    }).catch((error) => {
-      console.error(`Failed to update continuation options: ${context}`, error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          continuationOptions: {
+            ...settings.continuationOptions,
+            ...patch,
+          },
+        })
+      } catch (error: unknown) {
+        console.error(
+          `Failed to update continuation options: ${context}`,
+          error,
+        )
+      }
+    })()
   }
 
   const enabledChatModels = useMemo(
@@ -200,7 +207,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   return [chatModel.id, label]
                 }),
               )}
-              onChange={async (value) => {
+              onChange={(value) => {
                 updateContinuationOptions(
                   {
                     tabCompletionModelId: value,
@@ -218,7 +225,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.triggerDelayMs)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = Math.max(
                   0,
                   parseIntegerOption(
@@ -240,7 +247,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.minContextLength)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = Math.max(
                   0,
                   parseIntegerOption(
@@ -262,7 +269,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.maxContextChars)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = Math.max(
                   200,
                   parseIntegerOption(
@@ -286,7 +293,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.maxSuggestionLength)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = Math.max(
                   20,
                   parseIntegerOption(
@@ -308,7 +315,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.maxTokens)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const parsed = Math.max(
                   16,
                   Math.min(
@@ -333,7 +340,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.temperature)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = parseNumberOrDefault(
                   value,
                   DEFAULT_TAB_COMPLETION_OPTIONS.temperature,
@@ -352,7 +359,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.requestTimeoutMs)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const next = Math.max(
                   0,
                   parseIntegerOption(
@@ -374,7 +381,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
             <ObsidianTextInput
               type="number"
               value={String(tabCompletionOptions.maxRetries)}
-              onChange={async (value) => {
+              onChange={(value) => {
                 const parsed = parseIntegerOption(
                   value,
                   DEFAULT_TAB_COMPLETION_OPTIONS.maxRetries,

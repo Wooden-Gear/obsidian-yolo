@@ -226,11 +226,12 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       })
     }
 
-    const handleUploadImages = async (images: File[]) => {
-      const mentionableImages = await Promise.all(
+    const handleUploadImages = (images: File[]) => {
+      void Promise.all(
         images.map((image) => fileToMentionableImage(image)),
-      )
-      handleCreateImageMentionables(mentionableImages)
+      ).then(handleCreateImageMentionables, (error) => {
+        console.error('[Smart Composer] Failed to upload images:', error)
+      })
     }
 
     const handleSubmit = (options: { useVaultSearch?: boolean } = {}) => {

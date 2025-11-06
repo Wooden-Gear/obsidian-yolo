@@ -43,45 +43,51 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
       title: 'Delete provider',
       message: message,
       ctaText: 'Delete',
-      onConfirm: async () => {
-        const vectorManager = await plugin.tryGetVectorManager()
+      onConfirm: () => {
+        void (async () => {
+          try {
+            const vectorManager = await plugin.tryGetVectorManager()
 
-        if (vectorManager) {
-          const embeddingStats = await vectorManager.getEmbeddingStats()
+            if (vectorManager) {
+              const embeddingStats = await vectorManager.getEmbeddingStats()
 
-          // Clear embeddings for each associated embedding model
-          for (const embeddingModel of associatedEmbeddingModels) {
-            const embeddingStat = embeddingStats.find(
-              (v) => v.model === embeddingModel.id,
-            )
+              // Clear embeddings for each associated embedding model
+              for (const embeddingModel of associatedEmbeddingModels) {
+                const embeddingStat = embeddingStats.find(
+                  (v) => v.model === embeddingModel.id,
+                )
 
-            if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
-              // only clear when there's data
-              const embeddingModelClient = getEmbeddingModelClient({
-                settings,
-                embeddingModelId: embeddingModel.id,
-              })
-              await vectorManager.clearAllVectors(embeddingModelClient)
+                if (embeddingStat?.rowCount && embeddingStat.rowCount > 0) {
+                  // only clear when there's data
+                  const embeddingModelClient = getEmbeddingModelClient({
+                    settings,
+                    embeddingModelId: embeddingModel.id,
+                  })
+                  await vectorManager.clearAllVectors(embeddingModelClient)
+                }
+              }
+            } else {
+              console.warn(
+                '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
+              )
             }
-          }
-        } else {
-          console.warn(
-            '[Smart Composer] Skip clearing embeddings because vector manager is unavailable.',
-          )
-        }
 
-        await setSettings({
-          ...settings,
-          providers: [...settings.providers].filter(
-            (v) => v.id !== provider.id,
-          ),
-          chatModels: [...settings.chatModels].filter(
-            (v) => v.providerId !== provider.id,
-          ),
-          embeddingModels: [...settings.embeddingModels].filter(
-            (v) => v.providerId !== provider.id,
-          ),
-        })
+            await setSettings({
+              ...settings,
+              providers: [...settings.providers].filter(
+                (v) => v.id !== provider.id,
+              ),
+              chatModels: [...settings.chatModels].filter(
+                (v) => v.providerId !== provider.id,
+              ),
+              embeddingModels: [...settings.embeddingModels].filter(
+                (v) => v.providerId !== provider.id,
+              ),
+            })
+          } catch (error) {
+            console.error('[Smart Composer] Failed to delete provider:', error)
+          }
+        })()
       },
     }).open()
   }

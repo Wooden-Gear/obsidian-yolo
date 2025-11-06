@@ -55,43 +55,56 @@ export function ChatModelsSubSection({
       title: 'Delete chat model',
       message: message,
       ctaText: 'Delete',
-      onConfirm: async () => {
-        await setSettings({
-          ...settings,
-          chatModels: [...settings.chatModels].filter((v) => v.id !== modelId),
-        })
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await setSettings({
+              ...settings,
+              chatModels: [...settings.chatModels].filter(
+                (v) => v.id !== modelId,
+              ),
+            })
+          } catch (error: unknown) {
+            console.error('Failed to delete chat model', error)
+            new Notice('Failed to delete chat model.')
+          }
+        })()
       },
     }).open()
   }
 
-  const handleToggleEnableChatModel = async (
-    modelId: string,
-    value: boolean,
-  ) => {
-    if (
-      !value &&
-      (modelId === settings.chatModelId || modelId === settings.applyModelId)
-    ) {
-      new Notice(
-        'Cannot disable model that is currently selected as chat model or tool model',
-      )
+  const handleToggleEnableChatModel = (modelId: string, value: boolean) => {
+    void (async () => {
+      try {
+        if (
+          !value &&
+          (modelId === settings.chatModelId ||
+            modelId === settings.applyModelId)
+        ) {
+          new Notice(
+            'Cannot disable model that is currently selected as chat model or tool model',
+          )
 
-      // to trigger re-render
-      await setSettings({
-        ...settings,
-        chatModels: [...settings.chatModels].map((v) =>
-          v.id === modelId ? { ...v, enable: true } : v,
-        ),
-      })
-      return
-    }
+          await setSettings({
+            ...settings,
+            chatModels: [...settings.chatModels].map((v) =>
+              v.id === modelId ? { ...v, enable: true } : v,
+            ),
+          })
+          return
+        }
 
-    await setSettings({
-      ...settings,
-      chatModels: [...settings.chatModels].map((v) =>
-        v.id === modelId ? { ...v, enable: value } : v,
-      ),
-    })
+        await setSettings({
+          ...settings,
+          chatModels: [...settings.chatModels].map((v) =>
+            v.id === modelId ? { ...v, enable: value } : v,
+          ),
+        })
+      } catch (error: unknown) {
+        console.error('Failed to toggle chat model', error)
+        new Notice('Failed to toggle chat model.')
+      }
+    })()
   }
 
   const handleDragStart = (
@@ -205,7 +218,7 @@ export function ChatModelsSubSection({
       activeHandle.classList.remove('smtcmp-drag-handle--active')
   }
 
-  const handleDrop = async (
+  const handleDrop = (
     event: DragEvent<HTMLTableRowElement>,
     targetIndex: number,
   ) => {
@@ -218,51 +231,56 @@ export function ChatModelsSubSection({
       return
     }
 
-    const updatedChatModels = [...settings.chatModels]
-    const [moved] = updatedChatModels.splice(sourceIndex, 1)
-    if (!moved) {
-      return
-    }
-
     const rect = event.currentTarget.getBoundingClientRect()
     const dropAfter = event.clientY - rect.top > rect.height / 2
 
-    let insertIndex = targetIndex + (dropAfter ? 1 : 0)
-    if (sourceIndex < insertIndex) {
-      insertIndex -= 1
-    }
-    if (insertIndex < 0) {
-      insertIndex = 0
-    }
-    if (insertIndex > updatedChatModels.length) {
-      insertIndex = updatedChatModels.length
-    }
-    updatedChatModels.splice(insertIndex, 0, moved)
+    void (async () => {
+      try {
+        const updatedChatModels = [...settings.chatModels]
+        const [moved] = updatedChatModels.splice(sourceIndex, 1)
+        if (!moved) {
+          return
+        }
 
-    await setSettings({
-      ...settings,
-      chatModels: updatedChatModels,
-    })
+        let insertIndex = targetIndex + (dropAfter ? 1 : 0)
+        if (sourceIndex < insertIndex) {
+          insertIndex -= 1
+        }
+        if (insertIndex < 0) {
+          insertIndex = 0
+        }
+        if (insertIndex > updatedChatModels.length) {
+          insertIndex = updatedChatModels.length
+        }
+        updatedChatModels.splice(insertIndex, 0, moved)
 
-    // clear visuals on drop target
-    rowEl?.classList.remove(
-      'smtcmp-row-drag-over-before',
-      'smtcmp-row-drag-over-after',
-    )
-    const dragging = document.querySelector('tr.smtcmp-row-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
+        await setSettings({
+          ...settings,
+          chatModels: updatedChatModels,
+        })
 
-    dragOverRowRef.current = null
-    lastDropPosRef.current = null
-    lastInsertIndexRef.current = null
+        triggerDropSuccess(moved.id)
+      } catch (error: unknown) {
+        console.error('Failed to reorder chat models', error)
+        new Notice('Failed to reorder chat models.')
+      } finally {
+        rowEl?.classList.remove(
+          'smtcmp-row-drag-over-before',
+          'smtcmp-row-drag-over-after',
+        )
+        const dragging = document.querySelector('tr.smtcmp-row-dragging')
+        if (dragging) dragging.classList.remove('smtcmp-row-dragging')
+        const activeHandle = document.querySelector(
+          '.smtcmp-drag-handle.smtcmp-drag-handle--active',
+        )
+        if (activeHandle)
+          activeHandle.classList.remove('smtcmp-drag-handle--active')
 
-    // success feedback on the moved row at its new position
-    triggerDropSuccess(moved.id)
+        dragOverRowRef.current = null
+        lastDropPosRef.current = null
+        lastInsertIndexRef.current = null
+      }
+    })()
   }
 
   return (
@@ -298,7 +316,7 @@ export function ChatModelsSubSection({
                 draggable
                 onDragStart={(event) => handleDragStart(event, index)}
                 onDragOver={(event) => handleDragOver(event, index)}
-                onDrop={(event) => void handleDrop(event, index)}
+                onDrop={(event) => handleDrop(event, index)}
                 onDragEnd={handleDragEnd}
               >
                 <td>
@@ -315,13 +333,9 @@ export function ChatModelsSubSection({
                 <td>
                   <ObsidianToggle
                     value={isEnabled(chatModel.enable)}
-                    onChange={(value) => {
-                      handleToggleEnableChatModel(chatModel.id, value).catch(
-                        (error) => {
-                          console.error('Failed to toggle chat model', error)
-                        },
-                      )
-                    }}
+                    onChange={(value) =>
+                      handleToggleEnableChatModel(chatModel.id, value)
+                    }
                   />
                 </td>
                 <td>

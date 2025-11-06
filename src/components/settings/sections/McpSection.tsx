@@ -146,32 +146,42 @@ function McpServerComponent({
       message: message,
       ctaText: t('settings.mcp.delete'),
       onConfirm: () => {
-        void setSettings({
-          ...settings,
-          mcp: {
-            ...settings.mcp,
-            servers: settings.mcp.servers.filter((s) => s.id !== server.name),
-          },
-        }).catch((error) => {
-          console.error('Failed to delete MCP server', error)
-        })
+        void (async () => {
+          try {
+            await setSettings({
+              ...settings,
+              mcp: {
+                ...settings.mcp,
+                servers: settings.mcp.servers.filter(
+                  (s) => s.id !== server.name,
+                ),
+              },
+            })
+          } catch (error: unknown) {
+            console.error('Failed to delete MCP server', error)
+          }
+        })()
       },
     }).open()
   }, [server.name, settings, setSettings, app, t])
 
   const handleToggleEnabled = useCallback(
     (enabled: boolean) => {
-      void setSettings({
-        ...settings,
-        mcp: {
-          ...settings.mcp,
-          servers: settings.mcp.servers.map((s) =>
-            s.id === server.name ? { ...s, enabled } : s,
-          ),
-        },
-      }).catch((error) => {
-        console.error('Failed to toggle MCP server', error)
-      })
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            mcp: {
+              ...settings.mcp,
+              servers: settings.mcp.servers.map((s) =>
+                s.id === server.name ? { ...s, enabled } : s,
+              ),
+            },
+          })
+        } catch (error: unknown) {
+          console.error('Failed to toggle MCP server', error)
+        }
+      })()
     },
     [settings, setSettings, server.name],
   )
@@ -315,22 +325,26 @@ function McpToolComponent({
         allowAutoExecution,
       },
     }
-    void setSettings({
-      ...settings,
-      mcp: {
-        ...settings.mcp,
-        servers: settings.mcp.servers.map((s) =>
-          s.id === server.name
-            ? {
-                ...s,
-                toolOptions,
-              }
-            : s,
-        ),
-      },
-    }).catch((error) => {
-      console.error('Failed to toggle MCP tool enabled state', error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          mcp: {
+            ...settings.mcp,
+            servers: settings.mcp.servers.map((s) =>
+              s.id === server.name
+                ? {
+                    ...s,
+                    toolOptions,
+                  }
+                : s,
+            ),
+          },
+        })
+      } catch (error: unknown) {
+        console.error('Failed to toggle MCP tool enabled state', error)
+      }
+    })()
   }
 
   const handleToggleAutoExecution = (autoExecution: boolean) => {
@@ -339,22 +353,26 @@ function McpToolComponent({
       ...toolOptions[tool.name],
       allowAutoExecution: autoExecution,
     }
-    void setSettings({
-      ...settings,
-      mcp: {
-        ...settings.mcp,
-        servers: settings.mcp.servers.map((s) =>
-          s.id === server.name
-            ? {
-                ...s,
-                toolOptions,
-              }
-            : s,
-        ),
-      },
-    }).catch((error) => {
-      console.error('Failed to toggle MCP tool auto execution', error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          mcp: {
+            ...settings.mcp,
+            servers: settings.mcp.servers.map((s) =>
+              s.id === server.name
+                ? {
+                    ...s,
+                    toolOptions,
+                  }
+                : s,
+            ),
+          },
+        })
+      } catch (error: unknown) {
+        console.error('Failed to toggle MCP tool auto execution', error)
+      }
+    })()
   }
 
   return (

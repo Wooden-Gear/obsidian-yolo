@@ -25,7 +25,6 @@ import {
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
 import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
-import DotLoader from '../common/DotLoader'
 
 type SmartSpacePanelProps = {
   editor: Editor
@@ -79,7 +78,9 @@ function SmartSpacePanelBody({
   }, [])
 
   useEffect(() => {
-    setSelectedModelId((prev) => (prev === derivedModelId ? prev : derivedModelId))
+    setSelectedModelId((prev) =>
+      prev === derivedModelId ? prev : derivedModelId,
+    )
   }, [derivedModelId])
 
   useEffect(() => {

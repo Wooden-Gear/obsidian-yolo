@@ -187,7 +187,7 @@ function ToolCallItem({
                     label: 'Always allow this tool',
                     onClick: () => {
                       void handleToolCall()
-                      void handleAllowAutoExecution()
+                      handleAllowAutoExecution()
                       setIsOpen(false)
                     },
                   },
@@ -274,22 +274,26 @@ function useToolCall(
       allowAutoExecution: true,
     }
 
-    void setSettings({
-      ...settings,
-      mcp: {
-        ...settings.mcp,
-        servers: settings.mcp.servers.map((s) =>
-          s.id === server.id
-            ? {
-                ...s,
-                toolOptions: toolOptions,
-              }
-            : s,
-        ),
-      },
-    }).catch((error) => {
-      console.error('Failed to allow tool auto execution', error)
-    })
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          mcp: {
+            ...settings.mcp,
+            servers: settings.mcp.servers.map((s) =>
+              s.id === server.id
+                ? {
+                    ...s,
+                    toolOptions: toolOptions,
+                  }
+                : s,
+            ),
+          },
+        })
+      } catch (error: unknown) {
+        console.error('Failed to allow tool auto execution', error)
+      }
+    })()
   }, [request, settings, setSettings])
 
   const handleReject = useCallback(() => {

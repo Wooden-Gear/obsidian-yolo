@@ -1,7 +1,7 @@
 import { Sparkles } from 'lucide-react'
 import React from 'react'
 
-interface DotLoaderProps {
+type DotLoaderProps = {
   text?: string
 }
 

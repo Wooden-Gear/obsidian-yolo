@@ -313,8 +313,8 @@ export function SmartSpaceQuickActionsSettings() {
     })).filter((group) => group.actions.length > 0)
   }, [quickActions])
 
-  const handleSaveActions = (newActions: QuickAction[]) => {
-    return setSettings({
+  const handleSaveActions = async (newActions: QuickAction[]) => {
+    await setSettings({
       ...settings,
       continuationOptions: {
         ...settings.continuationOptions,
@@ -323,9 +323,6 @@ export function SmartSpaceQuickActionsSettings() {
           enabled: true,
         })),
       },
-    }).catch((error) => {
-      console.error('Failed to save Smart Space quick actions', error)
-      throw error
     })
   }
 
@@ -358,21 +355,26 @@ export function SmartSpaceQuickActionsSettings() {
       )
     }
 
-    void handleSaveActions(newActions)
-      .then(() => {
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
         setEditingAction(null)
         setIsAddingAction(false)
-      })
-      .catch(() => {
-        // Error already logged in handleSaveActions
-      })
+      } catch (error: unknown) {
+        console.error('Failed to save Smart Space quick action', error)
+      }
+    })()
   }
 
   const handleDeleteAction = (id: string) => {
     const newActions = quickActions.filter((action) => action.id !== id)
-    void handleSaveActions(newActions).catch(() => {
-      // Error already logged in handleSaveActions
-    })
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
+      } catch (error: unknown) {
+        console.error('Failed to delete Smart Space quick action', error)
+      }
+    })()
   }
 
   const handleDuplicateAction = (action: QuickAction) => {
@@ -383,9 +385,13 @@ export function SmartSpaceQuickActionsSettings() {
       enabled: true,
     }
     const newActions = [...quickActions, newAction]
-    void handleSaveActions(newActions).catch(() => {
-      // Error already logged in handleSaveActions
-    })
+    void (async () => {
+      try {
+        await handleSaveActions(newActions)
+      } catch (error: unknown) {
+        console.error('Failed to duplicate Smart Space quick action', error)
+      }
+    })()
   }
 
   const triggerDropSuccess = (movedId: string) => {
@@ -548,15 +554,18 @@ export function SmartSpaceQuickActionsSettings() {
 
     updatedActions.splice(insertIndex, 0, moved)
 
-    void handleSaveActions(updatedActions)
-      .then(() => {
+    void (async () => {
+      try {
+        await handleSaveActions(updatedActions)
+        triggerDropSuccess(moved.id)
+      } catch (error: unknown) {
+        console.error('Failed to reorder Smart Space actions', error)
+      } finally {
         itemEl?.classList.remove(
           'smtcmp-quick-action-drag-over-before',
           'smtcmp-quick-action-drag-over-after',
         )
-        const dragging = document.querySelector(
-          '.smtcmp-quick-action-dragging',
-        )
+        const dragging = document.querySelector('.smtcmp-quick-action-dragging')
         if (dragging) dragging.classList.remove('smtcmp-quick-action-dragging')
         const activeHandle = document.querySelector(
           '.smtcmp-drag-handle.smtcmp-drag-handle--active',
@@ -567,12 +576,8 @@ export function SmartSpaceQuickActionsSettings() {
         dragOverItemRef.current = null
         lastDropPosRef.current = null
         lastInsertIndexRef.current = null
-
-        triggerDropSuccess(moved.id)
-      })
-      .catch(() => {
-        // Error already logged in handleSaveActions
-      })
+      }
+    })()
   }
 
   const handleResetToDefault = () => {
@@ -595,15 +600,19 @@ export function SmartSpaceQuickActionsSettings() {
 
     modal.onClose = () => {
       if (!confirmed) return
-      void setSettings({
-        ...settings,
-        continuationOptions: {
-          ...settings.continuationOptions,
-          smartSpaceQuickActions: undefined,
-        },
-      }).catch((error) => {
-        console.error('Failed to reset Smart Space quick actions', error)
-      })
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            continuationOptions: {
+              ...settings.continuationOptions,
+              smartSpaceQuickActions: undefined,
+            },
+          })
+        } catch (error: unknown) {
+          console.error('Failed to reset Smart Space quick actions', error)
+        }
+      })()
     }
 
     modal.open()

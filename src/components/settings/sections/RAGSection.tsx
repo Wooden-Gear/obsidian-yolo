@@ -78,6 +78,21 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const isRagEnabled = settings.ragOptions.enabled ?? true
   const effectiveProgress = indexProgress ?? persistedProgress
+  const ragUpdateError = 'Failed to update RAG settings.'
+
+  const applySettingsUpdate = useCallback(
+    (nextSettings: typeof settings, errorMessage: string = ragUpdateError) => {
+      void (async () => {
+        try {
+          await setSettings(nextSettings)
+        } catch (error: unknown) {
+          console.error('[Smart Composer] ' + errorMessage, error)
+          new Notice(errorMessage)
+        }
+      })()
+    },
+    [ragUpdateError, setSettings],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -200,8 +215,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
       >
         <ObsidianToggle
           value={isRagEnabled}
-          onChange={async (value) => {
-            await setSettings({
+          onChange={(value) => {
+            applySettingsUpdate({
               ...settings,
               ragOptions: {
                 ...settings.ragOptions,
@@ -221,8 +236,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianDropdown
               value={settings.embeddingModelId}
               groupedOptions={embeddingModelOptionGroups}
-              onChange={async (value) => {
-                await setSettings({
+              onChange={(value) => {
+                applySettingsUpdate({
                   ...settings,
                   embeddingModelId: value,
                 })
@@ -257,9 +272,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
               vault={plugin.app.vault}
               title={t('settings.rag.selectedFolders', '已选择的文件夹')}
               value={includeFolders}
-              onChange={async (folders: string[]) => {
+              onChange={(folders: string[]) => {
                 const patterns = folderPathsToIncludePatterns(folders)
-                await setSettings({
+                applySettingsUpdate({
                   ...settings,
                   ragOptions: {
                     ...settings.ragOptions,
@@ -301,9 +316,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 '点击此处选择要排除的文件夹（留空则不排除）',
               )}
               value={excludeFolders}
-              onChange={async (folders: string[]) => {
+              onChange={(folders: string[]) => {
                 const patterns = folderPathsToIncludePatterns(folders)
-                await setSettings({
+                applySettingsUpdate({
                   ...settings,
                   ragOptions: {
                     ...settings.ragOptions,
@@ -376,10 +391,10 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianTextInput
               value={String(settings.ragOptions.chunkSize)}
               placeholder="1000"
-              onChange={async (value) => {
+              onChange={(value) => {
                 const chunkSize = parseInt(value, 10)
                 if (!isNaN(chunkSize)) {
-                  await setSettings({
+                  applySettingsUpdate({
                     ...settings,
                     ragOptions: {
                       ...settings.ragOptions,
@@ -398,10 +413,10 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianTextInput
               value={String(settings.ragOptions.thresholdTokens)}
               placeholder="8192"
-              onChange={async (value) => {
+              onChange={(value) => {
                 const thresholdTokens = parseInt(value, 10)
                 if (!isNaN(thresholdTokens)) {
-                  await setSettings({
+                  applySettingsUpdate({
                     ...settings,
                     ragOptions: {
                       ...settings.ragOptions,
@@ -420,7 +435,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianTextInput
               value={String(settings.ragOptions.minSimilarity)}
               placeholder="0.0"
-              onChange={async (value) => {
+              onChange={(value) => {
                 // Allow decimal point and numbers only
                 if (!/^[0-9.]*$/.test(value)) return
 
@@ -429,7 +444,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
 
                 const minSimilarity = parseFloat(value)
                 if (!isNaN(minSimilarity)) {
-                  await setSettings({
+                  applySettingsUpdate({
                     ...settings,
                     ragOptions: {
                       ...settings.ragOptions,
@@ -448,10 +463,10 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianTextInput
               value={String(settings.ragOptions.limit)}
               placeholder="10"
-              onChange={async (value) => {
+              onChange={(value) => {
                 const limit = parseInt(value, 10)
                 if (!isNaN(limit)) {
-                  await setSettings({
+                  applySettingsUpdate({
                     ...settings,
                     ragOptions: {
                       ...settings.ragOptions,
@@ -472,8 +487,8 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           >
             <ObsidianToggle
               value={!!settings.ragOptions.autoUpdateEnabled}
-              onChange={async (value) => {
-                await setSettings({
+              onChange={(value) => {
+                applySettingsUpdate({
                   ...settings,
                   ragOptions: {
                     ...settings.ragOptions,
@@ -494,10 +509,10 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             <ObsidianTextInput
               value={String(settings.ragOptions.autoUpdateIntervalHours ?? 24)}
               placeholder="24"
-              onChange={async (v) => {
+              onChange={(v) => {
                 const n = parseInt(v, 10)
                 if (!isNaN(n) && n > 0) {
-                  await setSettings({
+                  applySettingsUpdate({
                     ...settings,
                     ragOptions: {
                       ...settings.ragOptions,

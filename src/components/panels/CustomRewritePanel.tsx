@@ -18,19 +18,26 @@ function CustomRewritePanelBody({ editor, onClose }: CustomRewritePanelProps) {
   const { t } = useLanguage()
   const [instruction, setInstruction] = useState('')
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     onClose()
-    await plugin.customRewrite(
-      editor,
-      instruction.trim().length > 0 ? instruction : undefined,
-    )
+    void plugin
+      .customRewrite(
+        editor,
+        instruction.trim().length > 0 ? instruction : undefined,
+      )
+      .catch((error) => {
+        console.error(
+          '[Smart Composer] Failed to trigger custom rewrite:',
+          error,
+        )
+      })
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault()
       // Shift+Enter 作为确定
-      void handleConfirm()
+      handleConfirm()
       return
     }
     if (e.key === 'Escape') {
