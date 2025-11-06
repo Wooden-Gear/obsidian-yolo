@@ -50,8 +50,7 @@ export function useChatHistory(): UseChatHistory {
 
   useEffect(() => {
     void fetchChatList()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchChatList])
 
   // Refresh chat list when other parts of the app clear or modify chat history (e.g., Settings -> Etc -> Clear Chat History)
   useEffect(() => {

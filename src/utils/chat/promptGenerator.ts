@@ -315,12 +315,11 @@ ${message.annotations
       const query = editorStateToPlainText(message.content)
       let similaritySearchResults = undefined
 
-      useVaultSearch =
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-        useVaultSearch ||
-        message.mentionables.some(
-          (m): m is MentionableVault => m.type === 'vault',
-        )
+      const mentionablesRequireVaultSearch = message.mentionables.some(
+        (m): m is MentionableVault => m.type === 'vault',
+      )
+      const shouldSearchEntireVault =
+        Boolean(useVaultSearch) || mentionablesRequireVaultSearch
 
       onQueryProgressChange?.({
         type: 'reading-mentionables',
@@ -352,11 +351,11 @@ ${message.annotations
       const isBrute = chatMode === 'brute'
       const shouldUseRAG = isBrute
         ? false
-        : useVaultSearch || (await exceedsTokenThreshold())
+        : shouldSearchEntireVault || (await exceedsTokenThreshold())
 
       let filePrompt: string
       if (shouldUseRAG) {
-        similaritySearchResults = useVaultSearch
+        similaritySearchResults = shouldSearchEntireVault
           ? await (
               await this.getRagEngine()
             ).processQuery({

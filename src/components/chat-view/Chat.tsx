@@ -534,8 +534,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   useEffect(() => {
     setFocusedMessageId(inputMessage.id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [inputMessage.id])
 
   // Ensure local learningMode state is turned off if the feature is disabled in settings
   useEffect(() => {
@@ -674,8 +673,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   // React to toggle changes immediately by syncing the current-file mentionable
   useEffect(() => {
     handleActiveLeafChange()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.chatOptions.includeCurrentFileContent])
+  }, [handleActiveLeafChange, settings.chatOptions.includeCurrentFileContent])
 
   useImperativeHandle(ref, () => ({
     openNewChat: (selectedBlock?: MentionableBlockData) =>

@@ -142,17 +142,27 @@ function FolderPickerModalComponent({
   React.useEffect(() => {
     const lower = q.trim().toLowerCase()
     if (!lower) return
-    const collect = (ns: Node[], acc: Set<string>) => {
-      for (const n of ns) {
-        acc.add(n.path)
-        collect(n.children, acc)
+
+    const collect = (nodes: Node[], acc: Set<string>): boolean => {
+      let updated = false
+      for (const node of nodes) {
+        if (!acc.has(node.path)) {
+          acc.add(node.path)
+          updated = true
+        }
+        if (node.children.length > 0 && collect(node.children, acc)) {
+          updated = true
+        }
       }
+      return updated
     }
-    const next = new Set<string>(expanded)
-    collect(filteredRoots, next)
-    setExpanded(next)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, filteredRoots])
+
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      const updated = collect(filteredRoots, next)
+      return updated ? next : prev
+    })
+  }, [filteredRoots, q])
 
   const toggle = (p: string) => {
     setExpanded((prev) => {

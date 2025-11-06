@@ -159,7 +159,11 @@ function AddChatModelModalComponent({
 
   useEffect(() => {
     const fetchModels = async () => {
-      if (!selectedProvider) return
+      if (!selectedProvider) {
+        setAvailableModels([])
+        setLoadingModels(false)
+        return
+      }
 
       // Check cache first
       const cachedModels = plugin.getCachedModelList(selectedProvider.id)
@@ -290,9 +294,8 @@ function AddChatModelModalComponent({
       }
     }
 
-    fetchModels()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvider?.id])
+    void fetchModels()
+  }, [plugin, selectedProvider])
 
   const handleSubmit = () => {
     // Validate required API model id

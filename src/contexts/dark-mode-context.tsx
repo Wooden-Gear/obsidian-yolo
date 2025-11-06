@@ -25,10 +25,10 @@ export function DarkModeProvider({ children }: { children: ReactNode }) {
       setIsDarkMode(document.body.classList.contains('theme-dark'))
     }
     handleDarkMode()
-    app.workspace.on('css-change', handleDarkMode)
-    return () => app.workspace.off('css-change', handleDarkMode)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const { workspace } = app
+    workspace.on('css-change', handleDarkMode)
+    return () => workspace.off('css-change', handleDarkMode)
+  }, [app])
 
   return (
     <DarkModeContext.Provider value={{ isDarkMode }}>
