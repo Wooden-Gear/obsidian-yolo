@@ -152,7 +152,9 @@ function McpServerComponent({
         })
       } catch (error: unknown) {
         console.error('Failed to delete MCP server', error)
-        new Notice(t('settings.mcp.failedToDeleteServer', 'Failed to delete server.'))
+        new Notice(
+          t('settings.mcp.failedToDeleteServer', 'Failed to delete server.'),
+        )
       }
     }
     new ConfirmModal(app, {

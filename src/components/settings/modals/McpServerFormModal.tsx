@@ -138,7 +138,9 @@ function McpServerFormComponent({
         new Notice(error.message)
       } else {
         console.error(error)
-        new Notice(t('settings.mcp.failedToAddServer', 'Failed to add MCP server.'))
+        new Notice(
+          t('settings.mcp.failedToAddServer', 'Failed to add MCP server.'),
+        )
       }
     }
   }
