@@ -526,7 +526,7 @@ function SmartSpacePanelBody({
                     onChange={(modelId) => {
                       setSelectedModelId(modelId)
                       if (settings) {
-                        setSettings({
+                        void setSettings({
                           ...settings,
                           continuationOptions: {
                             ...settings.continuationOptions,
@@ -591,7 +591,7 @@ function SmartSpacePanelBody({
                         const newValue = !useWebSearch
                         setUseWebSearch(newValue)
                         if (settings) {
-                          setSettings({
+                          void setSettings({
                             ...settings,
                             continuationOptions: {
                               ...settings.continuationOptions,
@@ -635,7 +635,7 @@ function SmartSpacePanelBody({
                         const newValue = !useUrlContext
                         setUseUrlContext(newValue)
                         if (settings) {
-                          setSettings({
+                          void setSettings({
                             ...settings,
                             continuationOptions: {
                               ...settings.continuationOptions,

@@ -103,7 +103,7 @@ export default function MarkdownCodeComponent({
           <button
             className="clickable-icon smtcmp-code-block-header-button"
             onClick={() => {
-              handleCopy()
+              void handleCopy()
             }}
           >
             {copied ? (

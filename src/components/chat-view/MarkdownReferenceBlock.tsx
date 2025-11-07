@@ -51,7 +51,7 @@ export default function MarkdownReferenceBlock({
       setCollapsed(totalLines > 2)
     }
 
-    fetchBlockContent()
+    void fetchBlockContent()
   }, [filename, startLine, endLine, app.vault])
 
   const handleOpenFile = () => {

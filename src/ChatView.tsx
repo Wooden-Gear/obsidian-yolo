@@ -45,12 +45,11 @@ export class ChatView extends ItemView {
     return 'Yolo chat'
   }
 
-  onOpen(): Promise<void> {
-    this.render()
+  async onOpen(): Promise<void> {
+    await this.render()
 
     // Consume chatProps
     this.initialChatProps = undefined
-    return Promise.resolve()
   }
 
   onClose(): Promise<void> {
