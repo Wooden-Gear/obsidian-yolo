@@ -3,6 +3,7 @@ import { PropsWithChildren, useMemo, useState } from 'react'
 
 import { useApp } from '../../contexts/app-context'
 import { useDarkModeContext } from '../../contexts/dark-mode-context'
+import { useLanguage } from '../../contexts/language-context'
 import { openMarkdownFile } from '../../utils/obsidian'
 
 import { ObsidianMarkdown } from './ObsidianMarkdown'
@@ -22,6 +23,7 @@ export default function MarkdownCodeComponent({
 }>) {
   const app = useApp()
   const { isDarkMode } = useDarkModeContext()
+  const { t } = useLanguage()
 
   const [isPreviewMode, setIsPreviewMode] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -98,7 +100,9 @@ export default function MarkdownCodeComponent({
             }}
           >
             <Eye size={12} />
-            {isPreviewMode ? 'Show raw text' : 'Show formatted text'}
+            {isPreviewMode
+              ? t('chat.codeBlock.showRawText', 'Show raw text')
+              : t('chat.codeBlock.showFormattedText', 'Show formatted text')}
           </button>
           <button
             className="clickable-icon smtcmp-code-block-header-button"
@@ -109,12 +113,12 @@ export default function MarkdownCodeComponent({
             {copied ? (
               <>
                 <Check size={10} />
-                <span>Text copied</span>
+                <span>{t('chat.codeBlock.textCopied', 'Text copied')}</span>
               </>
             ) : (
               <>
                 <CopyIcon size={10} />
-                <span>Copy text</span>
+                <span>{t('chat.codeBlock.copyText', 'Copy text')}</span>
               </>
             )}
           </button>
@@ -132,12 +136,12 @@ export default function MarkdownCodeComponent({
             {isApplying ? (
               <>
                 <Loader2 className="spinner" size={14} />
-                <span>Applying...</span>
+                <span>{t('chat.codeBlock.applying', 'Applying...')}</span>
               </>
             ) : (
               <>
                 <Play size={10} />
-                <span>Apply</span>
+                <span>{t('chat.codeBlock.apply', 'Apply')}</span>
               </>
             )}
           </button>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import * as z from 'zod'
 
+import { useLanguage } from '../../../contexts/language-context'
 import { validateServerName } from '../../../core/mcp/tool-name-utils'
 import SmartComposerPlugin from '../../../main'
 import {
@@ -50,6 +51,7 @@ function McpServerFormComponent({
   onClose,
   serverId,
 }: McpServerFormComponentProps & { onClose: () => void }) {
+  const { t } = useLanguage()
   const existingServer = serverId
     ? plugin.settings.mcp.servers.find((server) => server.id === serverId)
     : undefined
@@ -136,7 +138,7 @@ function McpServerFormComponent({
         new Notice(error.message)
       } else {
         console.error(error)
-        new Notice('Failed to add MCP server.')
+        new Notice(t('settings.mcp.failedToAddServer', 'Failed to add MCP server.'))
       }
     }
   }
@@ -208,13 +210,17 @@ function McpServerFormComponent({
         </div>
       ) : (
         <div className="smtcmp-mcp-server-modal-validation smtcmp-mcp-server-modal-validation--success">
-          Valid parameters
+          {t('settings.mcp.validParameters', 'Valid parameters')}
         </div>
       )}
 
       <ObsidianSetting>
-        <ObsidianButton text="Save" onClick={() => void handleSubmit()} cta />
-        <ObsidianButton text="Cancel" onClick={onClose} />
+        <ObsidianButton
+          text={t('common.save', 'Save')}
+          onClick={() => void handleSubmit()}
+          cta
+        />
+        <ObsidianButton text={t('common.cancel', 'Cancel')} onClick={onClose} />
       </ObsidianSetting>
     </>
   )

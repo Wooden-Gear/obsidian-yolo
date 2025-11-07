@@ -302,6 +302,9 @@ export type TranslationKeys = {
       delete: string
       expand: string
       collapse: string
+      validParameters?: string
+      failedToAddServer?: string
+      failedToDeleteServer?: string
     }
     templates: {
       title: string
@@ -448,6 +451,14 @@ export type TranslationKeys = {
     regenerate: string
     reasoning: string
     annotations: string
+    codeBlock?: {
+      showRawText?: string
+      showFormattedText?: string
+      copyText?: string
+      textCopied?: string
+      apply?: string
+      applying?: string
+    }
     modeTitle?: string
     modeRAG?: string
     modeBrute?: string
