@@ -45,7 +45,7 @@ const ObsidianMarkdown = memo(function ObsidianMarkdown({
   }, [app, content, chatView])
 
   useEffect(() => {
-    renderMarkdown()
+    void renderMarkdown()
   }, [renderMarkdown])
 
   return (
@@ -73,7 +73,11 @@ function setupMarkdownLinks(
       evt.preventDefault()
       const linktext = el.getAttribute('href')
       if (linktext) {
-        app.workspace.openLinkText(linktext, sourcePath, Keymap.isModEvent(evt))
+        void app.workspace.openLinkText(
+          linktext,
+          sourcePath,
+          Keymap.isModEvent(evt),
+        )
       }
     })
 

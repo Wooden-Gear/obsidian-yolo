@@ -709,7 +709,7 @@ export function SmartSpaceQuickActionsSettings() {
           <div className="smtcmp-quick-action-editor-buttons">
             <ObsidianButton
               text={t('common.save', '保存')}
-              onClick={handleSaveAction}
+              onClick={() => void handleSaveAction()}
               cta
               disabled={!editingAction.label || !editingAction.instruction}
             />
@@ -804,12 +804,12 @@ export function SmartSpaceQuickActionsSettings() {
                           }
                         />
                         <ObsidianButton
-                          onClick={() => handleDuplicateAction(action)}
+                          onClick={() => void handleDuplicateAction(action)}
                           icon="copy"
                           tooltip={t('settings.smartSpace.duplicate', '复制')}
                         />
                         <ObsidianButton
-                          onClick={() => handleDeleteAction(action.id)}
+                          onClick={() => void handleDeleteAction(action.id)}
                           icon="trash-2"
                           tooltip={t('common.delete', '删除')}
                         />
@@ -914,7 +914,7 @@ export function SmartSpaceQuickActionsSettings() {
                         <div className="smtcmp-quick-action-editor-buttons">
                           <ObsidianButton
                             text={t('common.save', '保存')}
-                            onClick={handleSaveAction}
+                            onClick={() => void handleSaveAction()}
                             cta
                             disabled={
                               !editingAction.label || !editingAction.instruction

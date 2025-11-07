@@ -97,7 +97,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   useEffect(() => {
     let cancelled = false
 
-    ;(async () => {
+    void (async () => {
       try {
         const raw = await loadAppLocalStorage(app, 'smtcmp_rag_last_progress')
         if (!raw || cancelled) return

@@ -1738,11 +1738,15 @@ export default class SmartComposerPlugin extends Plugin {
     this.ragEngineInitPromise = null
 
     // DatabaseManager cleanup
-    this.dbManager?.cleanup()
+    if (this.dbManager) {
+      void this.dbManager.cleanup()
+    }
     this.dbManager = null
 
     // McpManager cleanup
-    this.mcpManager?.cleanup()
+    if (this.mcpManager) {
+      this.mcpManager.cleanup()
+    }
     this.mcpManager = null
     if (this.autoUpdateTimer) {
       clearTimeout(this.autoUpdateTimer)

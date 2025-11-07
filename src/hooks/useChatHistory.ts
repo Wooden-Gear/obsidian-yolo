@@ -112,7 +112,7 @@ export function useChatHistory(): UseChatHistory {
             })
 
             // Auto-generate a better title using the tool model (applyModelId). Timeout: 3s
-            ;(async () => {
+            void (async () => {
               try {
                 const firstUserText = rawTitle
                 if (!firstUserText || (firstUserText ?? '').trim().length === 0)

@@ -197,9 +197,9 @@ export const en: TranslationKeys = {
       defaultTemperature: 'Default temperature',
       defaultTemperatureDesc:
         'Default temperature for new conversations (0.0-2.0); leave empty to use the model default.',
-      defaultTopP: 'Default top P',
+      defaultTopP: 'Default top p',
       defaultTopPDesc:
-        'Default top P for new conversations (0.0-1.0); leave empty to use the model default.',
+        'Default top p for new conversations (0.0-1.0); leave empty to use the model default.',
     },
     assistants: {
       title: 'Assistants',
@@ -278,14 +278,14 @@ export const en: TranslationKeys = {
       embeddingModelsFirst: 'Embedding models are listed first',
       reasoningType: 'Model type',
       reasoningTypeNone: 'No special configuration',
-      reasoningTypeOpenAI: 'OpenAI reasoning (o3 / o4-mini / GPT-5)',
+      reasoningTypeOpenAI: 'OpenAI reasoning (o3 / o4-mini / gpt-5)',
       reasoningTypeGemini: 'Gemini reasoning (2.5 pro / flash / flash-lite)',
       reasoningTypeBase: 'Special: base model',
       baseModelWarning:
         'When enabled, no system prompts (including assistant prompts) will be injected for this model; enable only if you understand how base models behave.',
       openaiReasoningEffort: 'Reasoning effort',
       openaiReasoningEffortDesc:
-        'Choose effort: minimal (GPT-5 only) / low / medium / high',
+        'Choose effort: minimal (gpt-5 only) / low / medium / high',
       geminiThinkingBudget: 'Thinking budget (thinkingBudget)',
       geminiThinkingBudgetDesc:
         'Unit: thinking tokens. 0=off (Flash/Flash-Lite), -1=dynamic; ranges vary by model.',
@@ -371,13 +371,13 @@ export const en: TranslationKeys = {
       notStarted: 'Not started',
     },
     mcp: {
-      title: 'Model context protocol (MCP)',
+      title: 'Model Context Protocol (MCP)',
       desc: 'Configure MCP servers to extend AI capabilities',
       warning:
         'When using tools, the tool response is passed to the language model (LLM); if the tool result contains a large amount of content, this can significantly increase LLM usage and associated costs, so please be mindful when enabling or using tools that may return long outputs.',
       notSupportedOnMobile: 'MCP is not supported on mobile devices',
       mcpServers: 'MCP servers',
-      addServer: 'Add MCP server',
+      addServer: 'Add server',
       serverName: 'Server name',
       command: 'Command',
       server: 'Server',
@@ -391,8 +391,8 @@ export const en: TranslationKeys = {
       connecting: 'Connecting...',
       disconnected: 'Disconnected',
       autoExecute: 'Auto-execute',
-      deleteServer: 'Delete MCP server',
-      deleteServerConfirm: 'Are you sure you want to delete MCP server',
+      deleteServer: 'Delete server',
+      deleteServerConfirm: 'Are you sure you want to delete server',
       edit: 'Edit',
       delete: 'Delete',
       expand: 'Expand',
@@ -516,8 +516,8 @@ export const en: TranslationKeys = {
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
     customContinuePromptPlaceholder: 'Ask AI...',
-    customContinueHint: 'Press Enter (⏎) to submit',
-    customContinueConfirmHint: 'Press Enter (⏎) again to confirm',
+    customContinueHint: 'Press enter (⏎) to submit',
+    customContinueConfirmHint: 'Press enter (⏎) again to confirm',
     customContinueProcessing: 'Thinking',
     customContinueError: 'Generation failed; please try again soon.',
     customContinueSections: {
@@ -592,7 +592,7 @@ export const en: TranslationKeys = {
       maxContext: 'Max context',
       sampling: 'Sampling parameters',
       temperature: 'Temperature',
-      topP: 'Top P',
+      topP: 'Top p',
       streaming: 'Streaming',
       vaultSearch: 'Vault search',
       useVaultSearch: 'RAG search',
@@ -603,17 +603,17 @@ export const en: TranslationKeys = {
   },
 
   notices: {
-    rebuildingIndex: 'Rebuilding vault index...',
-    rebuildComplete: 'Rebuilding vault index complete',
-    rebuildFailed: 'Rebuilding vault index failed',
+    rebuildingIndex: 'Rebuilding vault index…',
+    rebuildComplete: 'Rebuilding vault index complete.',
+    rebuildFailed: 'Rebuilding vault index failed.',
     pgliteUnavailable:
       'PGlite resources unavailable; please check your network connection.',
     downloadingPglite:
-      'Downloading PGlite dependencies from the CDN (~20MB); this may take a moment...',
-    updatingIndex: 'Updating vault index...',
-    indexUpdated: 'Vault index updated',
-    indexUpdateFailed: 'Vault index update failed',
-    migrationComplete: 'Migration to JSON storage completed successfully',
+      'Downloading PGlite dependencies from CDN (~20MB); this may take a moment…',
+    updatingIndex: 'Updating vault index…',
+    indexUpdated: 'Vault index updated.',
+    indexUpdateFailed: 'Vault index update failed.',
+    migrationComplete: 'Migration to JSON storage completed successfully.',
     migrationFailed:
       'Failed to migrate to JSON storage; please check the console for details.',
     reloadingPlugin: 'Reloading "next-composer" due to migration',
@@ -626,6 +626,6 @@ export const en: TranslationKeys = {
     invalidApiKey: 'Invalid API key',
     networkError: 'Network error',
     databaseError: 'Database error',
-    mcpServerError: 'MCP server error',
+    mcpServerError: 'Server error',
   },
 }

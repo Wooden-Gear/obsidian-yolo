@@ -152,7 +152,7 @@ function McpServerComponent({
         })
       } catch (error: unknown) {
         console.error('Failed to delete MCP server', error)
-        new Notice('Failed to delete MCP server.')
+        new Notice('Failed to delete server.')
       }
     }
     new ConfirmModal(app, {
@@ -194,7 +194,7 @@ function McpServerComponent({
         <div className="smtcmp-mcp-server-toggle">
           <ObsidianToggle
             value={server.config.enabled}
-            onChange={handleToggleEnabled}
+            onChange={(enabled) => void handleToggleEnabled(enabled)}
           />
         </div>
         <div className="smtcmp-mcp-server-actions">
