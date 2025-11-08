@@ -455,6 +455,7 @@ export const zh: TranslationKeys = {
   smartSpace: {
     webSearch: '联网',
     urlContext: 'URL',
+    mentionContextLabel: '引用的文件',
   },
 
   selection: {

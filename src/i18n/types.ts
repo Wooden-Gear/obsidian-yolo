@@ -84,6 +84,7 @@ export type TranslationKeys = {
   smartSpace?: {
     webSearch?: string
     urlContext?: string
+    mentionContextLabel?: string
   }
 
   // Settings

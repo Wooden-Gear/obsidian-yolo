@@ -13,7 +13,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { Editor } from 'obsidian'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
@@ -21,10 +21,18 @@ import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
 import SmartComposerPlugin from '../../main'
+import { MentionableFile } from '../../types/mentionable'
+import {
+  getMentionableKey,
+  serializeMentionable,
+} from '../../utils/chat/mentionable'
 import {
   clearDynamicStyleClass,
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
+import { fuzzySearch } from '../../utils/fuzzy-search'
+import { openMarkdownFile } from '../../utils/obsidian'
+import MentionableBadge from '../chat-view/chat-input/MentionableBadge'
 import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
 
 type SmartSpacePanelProps = {
@@ -63,6 +71,13 @@ function SmartSpacePanelBody({
       settings?.chatModelId ??
       '',
   )
+  const [mentionables, setMentionables] = useState<MentionableFile[]>([])
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionResults, setMentionResults] = useState<MentionableFile[]>([])
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
+  const mentionTriggerRangeRef = useRef<{ start: number; end: number } | null>(
+    null,
+  )
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -95,6 +110,20 @@ function SmartSpacePanelBody({
       prev === derivedUseUrlContext ? prev : derivedUseUrlContext,
     )
   }, [derivedUseUrlContext])
+
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionResults([])
+      return
+    }
+    const results = fuzzySearch(plugin.app, mentionQuery)
+      .filter((item): item is MentionableFile => item.type === 'file')
+      .slice(0, 8)
+    setMentionResults(results)
+    setMentionActiveIndex((prev) =>
+      results.length === 0 ? 0 : Math.min(prev, results.length - 1),
+    )
+  }, [mentionQuery, plugin.app])
 
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
@@ -386,6 +415,91 @@ function SmartSpacePanelBody({
     }
   }
 
+  const closeMentionMenu = useCallback(() => {
+    setMentionQuery(null)
+    setMentionResults([])
+    setMentionActiveIndex(0)
+    mentionTriggerRangeRef.current = null
+  }, [])
+
+  const detectMentionTrigger = useCallback(
+    (value: string, caretPos: number | null) => {
+      if (caretPos == null) {
+        closeMentionMenu()
+        return
+      }
+      const uptoCaret = value.slice(0, caretPos)
+      const match = /(^|\s)@([^\s@]*)$/.exec(uptoCaret)
+      if (match) {
+        const query = match[2] ?? ''
+        const start = caretPos - query.length - 1
+        mentionTriggerRangeRef.current = { start, end: caretPos }
+        setMentionQuery(query)
+      } else {
+        closeMentionMenu()
+      }
+    },
+    [closeMentionMenu],
+  )
+
+  const handleInstructionChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const { value, selectionStart } = event.target
+    setInstruction(value)
+    detectMentionTrigger(value, selectionStart ?? value.length)
+  }
+
+  const handleInputSelect = (
+    event: React.SyntheticEvent<HTMLTextAreaElement>,
+  ) => {
+    const target = event.currentTarget
+    detectMentionTrigger(
+      target.value,
+      target.selectionStart ?? target.value.length,
+    )
+  }
+
+  const handleMentionSelect = useCallback(
+    (mentionable: MentionableFile) => {
+      setMentionables((prev) => {
+        if (prev.some((item) => item.file.path === mentionable.file.path)) {
+          return prev
+        }
+        return [...prev, mentionable]
+      })
+      const triggerRange = mentionTriggerRangeRef.current
+      if (triggerRange) {
+        const { start, end } = triggerRange
+        setInstruction((prev) => `${prev.slice(0, start)}${prev.slice(end)}`)
+        window.requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.selectionStart = start
+            inputRef.current.selectionEnd = start
+          }
+        })
+      }
+      closeMentionMenu()
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true })
+      })
+    },
+    [closeMentionMenu],
+  )
+
+  const handleMentionableDelete = useCallback((target: MentionableFile) => {
+    setMentionables((prev) =>
+      prev.filter((item) => item.file.path !== target.file.path),
+    )
+  }, [])
+
+  const handleMentionableClick = useCallback(
+    (mentionable: MentionableFile) => {
+      openMarkdownFile(plugin.app, mentionable.file.path)
+    },
+    [plugin.app],
+  )
+
   const handleSubmit = async (value?: string) => {
     if (isSubmitting) return
     setIsSubmitting(true)
@@ -400,6 +514,7 @@ function SmartSpacePanelBody({
         editor,
         payload.length > 0 ? payload : undefined,
         geminiTools,
+        mentionables,
       )
       onClose()
     } catch (err) {
@@ -414,6 +529,44 @@ function SmartSpacePanelBody({
   const handleInputKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
+    const mentionMenuActive = mentionQuery !== null
+    if (mentionMenuActive) {
+      if (event.key === 'ArrowDown' && mentionResults.length > 0) {
+        event.preventDefault()
+        setMentionActiveIndex(
+          (prev) => (prev + 1) % Math.max(mentionResults.length, 1),
+        )
+        return
+      }
+      if (event.key === 'ArrowUp' && mentionResults.length > 0) {
+        event.preventDefault()
+        setMentionActiveIndex(
+          (prev) =>
+            (prev - 1 + Math.max(mentionResults.length, 1)) %
+            Math.max(mentionResults.length, 1),
+        )
+        return
+      }
+      if (
+        event.key === 'Enter' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        mentionResults.length > 0
+      ) {
+        event.preventDefault()
+        const selected = mentionResults[mentionActiveIndex]
+        if (selected) {
+          handleMentionSelect(selected)
+        }
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeMentionMenu()
+        return
+      }
+    }
+
     // 普通回车需二次确认；Cmd/Ctrl+Enter 仍可立即提交
     if (event.key === 'Enter') {
       event.preventDefault()
@@ -505,11 +658,68 @@ function SmartSpacePanelBody({
                     'Ask AI...',
                   )}
                   value={instruction}
-                  onChange={(event) => setInstruction(event.target.value)}
+                  onChange={handleInstructionChange}
                   onKeyDown={handleInputKeyDown}
+                  onSelect={handleInputSelect}
                   disabled={isSubmitting}
                   rows={1}
                 />
+                {mentionables.length > 0 && (
+                  <div className="smtcmp-smart-space-mention-badges">
+                    {mentionables.map((mentionable) => (
+                      <MentionableBadge
+                        key={getMentionableKey(
+                          serializeMentionable(mentionable),
+                        )}
+                        mentionable={mentionable}
+                        onDelete={() => handleMentionableDelete(mentionable)}
+                        onClick={() => handleMentionableClick(mentionable)}
+                        isFocused={false}
+                      />
+                    ))}
+                  </div>
+                )}
+                {mentionQuery !== null && (
+                  <div
+                    className="smtcmp-smart-space-mention-menu"
+                    role="listbox"
+                  >
+                    {mentionResults.length === 0 ? (
+                      <div className="smtcmp-smart-space-mention-empty">
+                        {t('common.noResults', '未找到匹配项')}
+                      </div>
+                    ) : (
+                      mentionResults.map((result, index) => (
+                        <button
+                          type="button"
+                          key={result.file.path}
+                          className={`smtcmp-smart-space-mention-option ${
+                            index === mentionActiveIndex ? 'active' : ''
+                          }`}
+                          role="option"
+                          aria-selected={index === mentionActiveIndex}
+                          onMouseDown={(mouseEvent) => {
+                            mouseEvent.preventDefault()
+                            handleMentionSelect(result)
+                          }}
+                        >
+                          <FileText
+                            size={14}
+                            className="smtcmp-smart-space-mention-option-icon"
+                          />
+                          <div className="smtcmp-smart-space-mention-option-text">
+                            <div className="smtcmp-smart-space-mention-option-name">
+                              {result.file.name}
+                            </div>
+                            <div className="smtcmp-smart-space-mention-option-path">
+                              {result.file.path}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
                 {(instruction.length > 0 || isSubmitConfirmPending) && (
                   <div className="smtcmp-smart-space-input-hint">
                     {isSubmitConfirmPending

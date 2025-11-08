@@ -54,6 +54,7 @@ import {
   LLMRequestNonStreaming,
   RequestMessage,
 } from './types/llm/request'
+import { MentionableFile } from './types/mentionable'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -2002,6 +2003,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     editor: Editor,
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+    mentionables?: MentionableFile[],
   ) {
     // Check if this is actually a rewrite request from Selection Chat
     if (this.pendingSelectionRewrite) {
@@ -2022,7 +2024,12 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       )
       return
     }
-    return this.handleContinueWriting(editor, customPrompt, geminiTools)
+    return this.handleContinueWriting(
+      editor,
+      customPrompt,
+      geminiTools,
+      mentionables,
+    )
   }
 
   // Public wrapper for use in React panel
@@ -2034,6 +2041,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     editor: Editor,
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
+    mentionables?: MentionableFile[],
   ) {
     // 立即创建并注册 AbortController，确保整个流程都能被中止
     const controller = new AbortController()
@@ -2116,6 +2124,38 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         } catch (error) {
           console.warn(
             'Failed to load reference rule folders for continuation',
+            error,
+          )
+        }
+      }
+
+      let mentionableContextSection = ''
+      if (mentionables && mentionables.length > 0) {
+        try {
+          const fileMap = new Map<string, TFile>()
+          for (const mentionable of mentionables) {
+            fileMap.set(mentionable.file.path, mentionable.file)
+          }
+          const files = Array.from(fileMap.values())
+          if (files.length > 0) {
+            const contents = await readMultipleTFiles(files, this.app.vault)
+            const mentionLabel = this.t(
+              'smartSpace.mentionContextLabel',
+              'Mentioned files',
+            )
+            const combined = files
+              .map((file, index) => {
+                const content = contents[index] ?? ''
+                return `File: ${file.path}\n${content}`
+              })
+              .join('\n\n')
+            if (combined.trim().length > 0) {
+              mentionableContextSection = `${mentionLabel}:\n\n${combined}\n\n`
+            }
+          }
+        } catch (error) {
+          console.warn(
+            'Failed to include mentioned files for Smart Space continuation',
             error,
           )
         }
@@ -2235,8 +2275,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           : ''
       const baseModelContextSection = `${
         referenceRulesSection
-      }${hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''}${ragContextSection}`
-      const combinedContextSection = `${referenceRulesSection}${contextSection}${ragContextSection}`
+      }${mentionableContextSection}${
+        hasContext && limitedContextHasContent ? `${limitedContext}\n\n` : ''
+      }${ragContextSection}`
+      const combinedContextSection = `${referenceRulesSection}${mentionableContextSection}${contextSection}${ragContextSection}`
 
       const isBaseModel = Boolean(model.isBaseModel)
       const baseModelSpecialPrompt = (

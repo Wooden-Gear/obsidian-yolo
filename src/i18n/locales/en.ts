@@ -86,6 +86,7 @@ export const en: TranslationKeys = {
   smartSpace: {
     webSearch: 'Web',
     urlContext: 'URL',
+    mentionContextLabel: 'Mentioned files',
   },
 
   selection: {
