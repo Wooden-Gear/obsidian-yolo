@@ -11,6 +11,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $createTextNode, COMMAND_PRIORITY_NORMAL, TextNode } from 'lexical'
 import {
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -194,9 +195,11 @@ function MentionsTypeaheadMenuItem({
 export default function NewMentionsPlugin({
   searchResultByQuery,
   onMenuOpenChange,
+  menuContainerRef,
 }: {
   searchResultByQuery: (query: string) => SearchableMentionable[]
   onMenuOpenChange?: (isOpen: boolean) => void
+  menuContainerRef?: RefObject<HTMLElement>
 }): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
 
@@ -273,7 +276,7 @@ export default function NewMentionsPlugin({
       ) =>
         anchorElementRef.current && results.length
           ? createPortal(
-              <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-dropdown">
+              <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-popover smtcmp-smart-space-mention-dropdown">
                 <div
                   className="smtcmp-model-select-list smtcmp-smart-space-mention-list"
                   role="listbox"
@@ -295,7 +298,7 @@ export default function NewMentionsPlugin({
                   ))}
                 </div>
               </div>,
-              anchorElementRef.current,
+              menuContainerRef?.current ?? anchorElementRef.current,
             )
           : null
       }

@@ -42,6 +42,7 @@ export type LexicalContentEditableProps = {
   contentClassName?: string
   searchResultByQuery?: (query: string) => SearchableMentionable[]
   onMentionMenuToggle?: (isOpen: boolean) => void
+  mentionMenuContainerRef?: RefObject<HTMLElement>
   plugins?: {
     onEnter?: {
       onVaultChat: () => void
@@ -64,6 +65,7 @@ export default function LexicalContentEditable({
   contentClassName,
   searchResultByQuery,
   onMentionMenuToggle,
+  mentionMenuContainerRef,
   plugins,
 }: LexicalContentEditableProps) {
   const app = useApp()
@@ -131,6 +133,7 @@ export default function LexicalContentEditable({
       <MentionPlugin
         searchResultByQuery={resolvedSearch}
         onMenuOpenChange={onMentionMenuToggle}
+        menuContainerRef={mentionMenuContainerRef}
       />
       <OnChangePlugin
         onChange={(editorState, _editor) => {

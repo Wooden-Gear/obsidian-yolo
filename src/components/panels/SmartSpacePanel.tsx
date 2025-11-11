@@ -57,6 +57,7 @@ function SmartSpacePanelBody({
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const inputCardRef = useRef<HTMLDivElement>(null)
   const modelSelectRef = useRef<HTMLButtonElement>(null)
   const webSearchButtonRef = useRef<HTMLButtonElement>(null)
   const urlContextButtonRef = useRef<HTMLButtonElement>(null)
@@ -581,7 +582,7 @@ function SmartSpacePanelBody({
     <div className="smtcmp-smart-space-panel" ref={containerRef ?? undefined}>
       {!isSubmitting ? (
         <>
-          <div className="smtcmp-smart-space-input-card">
+          <div className="smtcmp-smart-space-input-card" ref={inputCardRef}>
             <div className="smtcmp-smart-space-header">
               <div className="smtcmp-smart-space-avatar">
                 <Sparkles size={14} />
@@ -607,6 +608,7 @@ function SmartSpacePanelBody({
                     onMentionNodeMutation={handleMentionNodeMutation}
                     onMentionMenuToggle={setIsMentionMenuOpen}
                     searchResultByQuery={mentionSearch}
+                    mentionMenuContainerRef={inputCardRef}
                     autoFocus
                     contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-smart-space-content-editable"
                   />
