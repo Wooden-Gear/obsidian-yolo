@@ -81,6 +81,7 @@ function SmartSpacePanelBody({
   const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
     'top' | 'bottom'
   >('top')
+  const [isMultilineInput, setIsMultilineInput] = useState(false)
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -99,6 +100,18 @@ function SmartSpacePanelBody({
   useEffect(() => {
     lexicalEditorRef.current?.setEditable(!isSubmitting)
   }, [isSubmitting])
+
+  useEffect(() => {
+    const element = contentEditableRef.current
+    if (!element) return
+    const singleLineThreshold = 34
+    const observer = new ResizeObserver(() => {
+      const height = element.getBoundingClientRect().height
+      setIsMultilineInput(height > singleLineThreshold)
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     setSelectedModelId((prev) =>
@@ -621,7 +634,9 @@ function SmartSpacePanelBody({
               </div>
               <div className="smtcmp-smart-space-input-wrapper">
                 <div
-                  className={`smtcmp-smart-space-input${isSubmitting ? ' is-disabled' : ''}`}
+                  className={`smtcmp-smart-space-input${isSubmitting ? ' is-disabled' : ''}${
+                    isMultilineInput ? ' is-multiline' : ''
+                  }`}
                   onKeyDownCapture={handleInputKeyDown}
                   onClick={() => contentEditableRef.current?.focus()}
                   aria-disabled={isSubmitting ? 'true' : undefined}
