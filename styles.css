@@ -3775,6 +3775,8 @@ button.smtcmp-chat-input-model-select {
   outline: none;
   display: block;
   flex: 1;
+  font-size: var(--font-ui-medium);
+  line-height: 1.5;
 }
 
 .smtcmp-smart-space-input-hint {
