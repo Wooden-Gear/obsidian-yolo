@@ -78,6 +78,9 @@ function SmartSpacePanelBody({
   )
   const [mentionables, setMentionables] = useState<MentionableFile[]>([])
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
+  const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
+    'top' | 'bottom'
+  >('top')
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -122,6 +125,22 @@ function SmartSpacePanelBody({
       ),
     [plugin.app],
   )
+
+  const updateMentionMenuPlacement = useCallback(() => {
+    const card = inputCardRef.current
+    if (!card) return
+    const rect = card.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const margin = 16
+    const spaceAbove = rect.top - margin
+    const spaceBelow = viewportHeight - rect.bottom - margin
+    const preferredHeight = 260
+    if (spaceAbove < preferredHeight && spaceBelow > spaceAbove) {
+      setMentionMenuPlacement('bottom')
+    } else {
+      setMentionMenuPlacement('top')
+    }
+  }, [])
 
   const handleMentionNodeMutation = useCallback(
     (mutations: NodeMutations<MentionNode>) => {
@@ -175,6 +194,19 @@ function SmartSpacePanelBody({
     },
     [plugin.app],
   )
+
+  useEffect(() => {
+    if (!isMentionMenuOpen) return
+    updateMentionMenuPlacement()
+
+    const handleResize = () => updateMentionMenuPlacement()
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('scroll', handleResize, true)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleResize, true)
+    }
+  }, [isMentionMenuOpen, updateMentionMenuPlacement])
 
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
@@ -609,6 +641,7 @@ function SmartSpacePanelBody({
                     onMentionMenuToggle={setIsMentionMenuOpen}
                     searchResultByQuery={mentionSearch}
                     mentionMenuContainerRef={inputCardRef}
+                    mentionMenuPlacement={mentionMenuPlacement}
                     autoFocus
                     contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-smart-space-content-editable"
                   />

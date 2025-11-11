@@ -196,10 +196,12 @@ export default function NewMentionsPlugin({
   searchResultByQuery,
   onMenuOpenChange,
   menuContainerRef,
+  placement = 'top',
 }: {
   searchResultByQuery: (query: string) => SearchableMentionable[]
   onMenuOpenChange?: (isOpen: boolean) => void
   menuContainerRef?: RefObject<HTMLElement>
+  placement?: 'top' | 'bottom'
 }): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
 
@@ -276,7 +278,10 @@ export default function NewMentionsPlugin({
       ) =>
         anchorElementRef.current && results.length
           ? createPortal(
-              <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-popover smtcmp-smart-space-mention-dropdown">
+              <div
+                className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-popover smtcmp-smart-space-mention-dropdown"
+                data-placement={placement}
+              >
                 <div
                   className="smtcmp-model-select-list smtcmp-smart-space-mention-list"
                   role="listbox"

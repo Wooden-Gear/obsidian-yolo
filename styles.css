@@ -3789,6 +3789,11 @@ button.smtcmp-chat-input-model-select {
   z-index: 5;
 }
 
+.smtcmp-smart-space-mention-popover[data-placement='bottom'] {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+
 .smtcmp-smart-space-mention-dropdown {
   width: 100%;
   max-width: min(360px, 100%);
