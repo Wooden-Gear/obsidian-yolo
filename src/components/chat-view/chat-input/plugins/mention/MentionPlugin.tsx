@@ -9,7 +9,13 @@
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $createTextNode, COMMAND_PRIORITY_NORMAL, TextNode } from 'lexical'
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import type { JSX as ReactJSX } from 'react/jsx-runtime'
 import { createPortal } from 'react-dom'
 
@@ -141,39 +147,56 @@ function MentionsTypeaheadMenuItem({
   onMouseEnter: () => void
   option: MentionTypeaheadOption
 }) {
-  let className = 'item'
-  if (isSelected) {
-    className += ' selected'
-  }
-
   const Icon = getMentionableIcon(option.mentionable)
+  const pathText = (() => {
+    switch (option.mentionable.type) {
+      case 'file':
+        return option.mentionable.file.path
+      case 'folder':
+        return option.mentionable.folder.path
+      default:
+        return null
+    }
+  })()
+
   return (
-    <li
-      key={option.key}
-      tabIndex={-1}
-      className={className}
+    <button
+      type="button"
+      className={`smtcmp-popover-item smtcmp-smart-space-mention-option ${
+        isSelected ? 'active' : ''
+      }`}
       ref={(el) => option.setRefElement(el)}
       role="option"
       aria-selected={isSelected}
       id={`typeahead-item-${index}`}
+      onMouseDown={(event) => event.preventDefault()}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
+      data-highlighted={isSelected ? 'true' : undefined}
     >
-      {Icon && <Icon size={14} className="smtcmp-popover-item-icon" />}
-      <span className="text">{option.name}</span>
-      {option.mentionable.type === 'folder' && (
-        <span className="text smtcmp-mention-popover-folder-path">
-          {option.mentionable.folder.path}
-        </span>
+      {Icon && (
+        <Icon size={14} className="smtcmp-smart-space-mention-option-icon" />
       )}
-    </li>
+      <div className="smtcmp-smart-space-mention-option-text">
+        <div className="smtcmp-smart-space-mention-option-name">
+          {option.name}
+        </div>
+        {pathText && (
+          <div className="smtcmp-smart-space-mention-option-path">
+            {pathText}
+          </div>
+        )}
+      </div>
+    </button>
   )
 }
 
 export default function NewMentionsPlugin({
   searchResultByQuery,
+  onMenuOpenChange,
 }: {
   searchResultByQuery: (query: string) => SearchableMentionable[]
+  onMenuOpenChange?: (isOpen: boolean) => void
 }): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
 
@@ -195,6 +218,10 @@ export default function NewMentionsPlugin({
         .slice(0, SUGGESTION_LIST_LENGTH_LIMIT),
     [results],
   )
+
+  useEffect(() => {
+    onMenuOpenChange?.(options.length > 0)
+  }, [onMenuOpenChange, options.length])
 
   const onSelectOption = useCallback(
     (
@@ -246,8 +273,11 @@ export default function NewMentionsPlugin({
       ) =>
         anchorElementRef.current && results.length
           ? createPortal(
-              <div className="smtcmp-popover smtcmp-mention-popover">
-                <ul>
+              <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-dropdown">
+                <div
+                  className="smtcmp-model-select-list smtcmp-smart-space-mention-list"
+                  role="listbox"
+                >
                   {options.map((option, i: number) => (
                     <MentionsTypeaheadMenuItem
                       index={i}
@@ -263,7 +293,7 @@ export default function NewMentionsPlugin({
                       option={option}
                     />
                   ))}
-                </ul>
+                </div>
               </div>,
               anchorElementRef.current,
             )

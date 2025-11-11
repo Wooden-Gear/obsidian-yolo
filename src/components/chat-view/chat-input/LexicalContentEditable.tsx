@@ -9,12 +9,12 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
-import { LexicalEditor, SerializedEditorState } from 'lexical'
-import { RefObject, useCallback, useEffect } from 'react'
+import { $getRoot, LexicalEditor, SerializedEditorState } from 'lexical'
+import { RefObject, useCallback, useEffect, useMemo } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
 import { MentionableImage } from '../../../types/mentionable'
-import { fuzzySearch } from '../../../utils/fuzzy-search'
+import { SearchableMentionable, fuzzySearch } from '../../../utils/fuzzy-search'
 
 import DragDropPaste from './plugins/image/DragDropPastePlugin'
 import ImagePastePlugin from './plugins/image/ImagePastePlugin'
@@ -32,12 +32,16 @@ export type LexicalContentEditableProps = {
   editorRef: RefObject<LexicalEditor>
   contentEditableRef: RefObject<HTMLDivElement>
   onChange?: (content: SerializedEditorState) => void
+  onTextContentChange?: (textContent: string) => void
   onEnter?: (evt: KeyboardEvent) => void
   onFocus?: () => void
   onMentionNodeMutation?: (mutations: NodeMutations<MentionNode>) => void
   onCreateImageMentionables?: (mentionables: MentionableImage[]) => void
   initialEditorState?: InitialEditorStateType
   autoFocus?: boolean
+  contentClassName?: string
+  searchResultByQuery?: (query: string) => SearchableMentionable[]
+  onMentionMenuToggle?: (isOpen: boolean) => void
   plugins?: {
     onEnter?: {
       onVaultChat: () => void
@@ -50,12 +54,16 @@ export default function LexicalContentEditable({
   editorRef,
   contentEditableRef,
   onChange,
+  onTextContentChange,
   onEnter,
   onFocus,
   onMentionNodeMutation,
   onCreateImageMentionables,
   initialEditorState,
   autoFocus = false,
+  contentClassName,
+  searchResultByQuery,
+  onMentionMenuToggle,
   plugins,
 }: LexicalContentEditableProps) {
   const app = useApp()
@@ -73,9 +81,14 @@ export default function LexicalContentEditable({
     },
   }
 
-  const searchResultByQuery = useCallback(
+  const defaultSearch = useCallback(
     (query: string) => fuzzySearch(app, query),
     [app],
+  )
+
+  const resolvedSearch = useMemo(
+    () => searchResultByQuery ?? defaultSearch,
+    [defaultSearch, searchResultByQuery],
   )
 
   /*
@@ -104,7 +117,10 @@ export default function LexicalContentEditable({
       <RichTextPlugin
         contentEditable={
           <ContentEditable
-            className="obsidian-default-textarea smtcmp-content-editable"
+            className={
+              contentClassName ??
+              'obsidian-default-textarea smtcmp-content-editable'
+            }
             onFocus={onFocus}
             ref={contentEditableRef}
           />
@@ -112,10 +128,19 @@ export default function LexicalContentEditable({
         ErrorBoundary={LexicalErrorBoundary}
       />
       <HistoryPlugin />
-      <MentionPlugin searchResultByQuery={searchResultByQuery} />
+      <MentionPlugin
+        searchResultByQuery={resolvedSearch}
+        onMenuOpenChange={onMentionMenuToggle}
+      />
       <OnChangePlugin
-        onChange={(editorState) => {
+        onChange={(editorState, _editor) => {
           onChange?.(editorState.toJSON())
+          if (onTextContentChange) {
+            editorState.read(() => {
+              const textContent = $getRoot().getTextContent()
+              onTextContentChange(textContent)
+            })
+          }
         }}
       />
       {onEnter && (

@@ -1,4 +1,5 @@
 import { EditorView, WidgetType } from '@codemirror/view'
+import { $nodesOfType, LexicalEditor } from 'lexical'
 import {
   Brain,
   FileText,
@@ -16,6 +17,7 @@ import { Editor } from 'obsidian'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
+import { AppProvider } from '../../contexts/app-context'
 import { LanguageProvider, useLanguage } from '../../contexts/language-context'
 import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { SettingsProvider, useSettings } from '../../contexts/settings-context'
@@ -23,6 +25,7 @@ import { getChatModelClient } from '../../core/llm/manager'
 import SmartComposerPlugin from '../../main'
 import { MentionableFile } from '../../types/mentionable'
 import {
+  deserializeMentionable,
   getMentionableKey,
   serializeMentionable,
 } from '../../utils/chat/mentionable'
@@ -31,9 +34,10 @@ import {
   updateDynamicStyleClass,
 } from '../../utils/dom/dynamicStyleManager'
 import { fuzzySearch } from '../../utils/fuzzy-search'
-import { openMarkdownFile } from '../../utils/obsidian'
-import MentionableBadge from '../chat-view/chat-input/MentionableBadge'
+import LexicalContentEditable from '../chat-view/chat-input/LexicalContentEditable'
 import { ModelSelect } from '../chat-view/chat-input/ModelSelect'
+import { MentionNode } from '../chat-view/chat-input/plugins/mention/MentionNode'
+import { NodeMutations } from '../chat-view/chat-input/plugins/on-mutation/OnMutationPlugin'
 
 type SmartSpacePanelProps = {
   editor: Editor
@@ -50,12 +54,13 @@ function SmartSpacePanelBody({
   const plugin = usePlugin()
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const contentEditableRef = useRef<HTMLDivElement>(null)
+  const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const modelSelectRef = useRef<HTMLButtonElement>(null)
   const webSearchButtonRef = useRef<HTMLButtonElement>(null)
   const urlContextButtonRef = useRef<HTMLButtonElement>(null)
-  const [instruction, setInstruction] = useState('')
+  const [instructionText, setInstructionText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [useWebSearch, setUseWebSearch] = useState(
@@ -65,19 +70,13 @@ function SmartSpacePanelBody({
     settings?.continuationOptions?.smartSpaceUseUrlContext ?? false,
   )
   const [isSubmitConfirmPending, setIsSubmitConfirmPending] = useState(false)
-  const [textareaHeight, setTextareaHeight] = useState<number | null>(null)
   const [selectedModelId, setSelectedModelId] = useState<string>(
     settings?.continuationOptions?.continuationModelId ??
       settings?.chatModelId ??
       '',
   )
   const [mentionables, setMentionables] = useState<MentionableFile[]>([])
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
-  const [mentionResults, setMentionResults] = useState<MentionableFile[]>([])
-  const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
-  const mentionTriggerRangeRef = useRef<{ start: number; end: number } | null>(
-    null,
-  )
+  const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -90,8 +89,12 @@ function SmartSpacePanelBody({
     settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
 
   useEffect(() => {
-    inputRef.current?.focus({ preventScroll: true })
+    contentEditableRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    lexicalEditorRef.current?.setEditable(!isSubmitting)
+  }, [isSubmitting])
 
   useEffect(() => {
     setSelectedModelId((prev) =>
@@ -111,19 +114,66 @@ function SmartSpacePanelBody({
     )
   }, [derivedUseUrlContext])
 
-  useEffect(() => {
-    if (mentionQuery === null) {
-      setMentionResults([])
-      return
-    }
-    const results = fuzzySearch(plugin.app, mentionQuery)
-      .filter((item): item is MentionableFile => item.type === 'file')
-      .slice(0, 8)
-    setMentionResults(results)
-    setMentionActiveIndex((prev) =>
-      results.length === 0 ? 0 : Math.min(prev, results.length - 1),
-    )
-  }, [mentionQuery, plugin.app])
+  const mentionSearch = useCallback(
+    (query: string) =>
+      fuzzySearch(plugin.app, query).filter(
+        (item): item is MentionableFile => item.type === 'file',
+      ),
+    [plugin.app],
+  )
+
+  const handleMentionNodeMutation = useCallback(
+    (mutations: NodeMutations<MentionNode>) => {
+      setMentionables((currentMentionables) => {
+        const mentionMap = new Map(
+          currentMentionables.map((item) => [
+            getMentionableKey(serializeMentionable(item)),
+            item,
+          ]),
+        )
+        let hasChange = false
+
+        mutations.forEach((mutation) => {
+          const serializedMentionable = mutation.node.getMentionable()
+          const mentionKey = getMentionableKey(serializedMentionable)
+
+          if (mutation.mutation === 'destroyed') {
+            const stillExists = lexicalEditorRef.current?.read(() => {
+              const nodes = $nodesOfType(MentionNode)
+              return nodes.some(
+                (node) =>
+                  getMentionableKey(node.getMentionable()) === mentionKey,
+              )
+            })
+            if (!stillExists && mentionMap.has(mentionKey)) {
+              mentionMap.delete(mentionKey)
+              hasChange = true
+            }
+            return
+          }
+
+          const mentionable = deserializeMentionable(
+            serializedMentionable,
+            plugin.app,
+          )
+          if (
+            mentionable &&
+            mentionable.type === 'file' &&
+            !mentionMap.has(mentionKey)
+          ) {
+            mentionMap.set(mentionKey, mentionable)
+            hasChange = true
+          }
+        })
+
+        if (!hasChange) {
+          return currentMentionables
+        }
+        return Array.from(mentionMap.values())
+      })
+    },
+    [plugin.app],
+  )
 
   // Check if current model supports Gemini tools
   const hasGeminiTools = useMemo(() => {
@@ -148,35 +198,9 @@ function SmartSpacePanelBody({
     }
   }, [plugin.settings])
 
-  // 自动调整 textarea 高度
-  useEffect(() => {
-    let rafId: number | null = null
-    setTextareaHeight(null)
-    rafId = window.requestAnimationFrame(() => {
-      const textarea = inputRef.current
-      if (!textarea) return
-      const scrollHeight = textarea.scrollHeight
-      const maxHeight = 200
-      setTextareaHeight(Math.min(scrollHeight, maxHeight))
-    })
-    return () => {
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId)
-      }
-    }
-  }, [instruction])
-
   useEffect(() => {
     setIsSubmitConfirmPending(false)
-  }, [instruction])
-
-  const textareaStyle = useMemo(
-    () =>
-      textareaHeight !== null
-        ? ({ height: `${textareaHeight}px` } as React.CSSProperties)
-        : undefined,
-    [textareaHeight],
-  )
+  }, [instructionText, mentionables.length])
 
   const sections = useMemo(() => {
     type SectionItem = {
@@ -415,215 +439,112 @@ function SmartSpacePanelBody({
     }
   }
 
-  const closeMentionMenu = useCallback(() => {
-    setMentionQuery(null)
-    setMentionResults([])
-    setMentionActiveIndex(0)
-    mentionTriggerRangeRef.current = null
-  }, [])
-
-  const detectMentionTrigger = useCallback(
-    (value: string, caretPos: number | null) => {
-      if (caretPos == null) {
-        closeMentionMenu()
-        return
-      }
-      const uptoCaret = value.slice(0, caretPos)
-      const match = /(^|\s)@([^\s@]*)$/.exec(uptoCaret)
-      if (match) {
-        const query = match[2] ?? ''
-        const start = caretPos - query.length - 1
-        mentionTriggerRangeRef.current = { start, end: caretPos }
-        setMentionQuery(query)
-      } else {
-        closeMentionMenu()
-      }
-    },
-    [closeMentionMenu],
-  )
-
-  const handleInstructionChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>,
-  ) => {
-    const { value, selectionStart } = event.target
-    setInstruction(value)
-    detectMentionTrigger(value, selectionStart ?? value.length)
-  }
-
-  const handleInputSelect = (
-    event: React.SyntheticEvent<HTMLTextAreaElement>,
-  ) => {
-    const target = event.currentTarget
-    detectMentionTrigger(
-      target.value,
-      target.selectionStart ?? target.value.length,
-    )
-  }
-
-  const handleMentionSelect = useCallback(
-    (mentionable: MentionableFile) => {
-      setMentionables((prev) => {
-        if (prev.some((item) => item.file.path === mentionable.file.path)) {
-          return prev
-        }
-        return [...prev, mentionable]
-      })
-      const triggerRange = mentionTriggerRangeRef.current
-      if (triggerRange) {
-        const { start, end } = triggerRange
-        setInstruction((prev) => `${prev.slice(0, start)}${prev.slice(end)}`)
-        window.requestAnimationFrame(() => {
-          if (inputRef.current) {
-            inputRef.current.selectionStart = start
-            inputRef.current.selectionEnd = start
-          }
-        })
-      }
-      closeMentionMenu()
-      window.requestAnimationFrame(() => {
-        inputRef.current?.focus({ preventScroll: true })
-      })
-    },
-    [closeMentionMenu],
-  )
-
-  const handleMentionableDelete = useCallback((target: MentionableFile) => {
-    setMentionables((prev) =>
-      prev.filter((item) => item.file.path !== target.file.path),
-    )
-  }, [])
-
-  const handleMentionableClick = useCallback(
-    (mentionable: MentionableFile) => {
-      openMarkdownFile(plugin.app, mentionable.file.path)
-    },
-    [plugin.app],
-  )
-
-  const handleSubmit = async (value?: string) => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    setError(null)
-    setIsSubmitConfirmPending(false)
-    const payload = (value ?? instruction).trim()
-    try {
-      const geminiTools = hasGeminiTools
-        ? { useWebSearch, useUrlContext }
-        : undefined
-      await plugin.continueWriting(
-        editor,
-        payload.length > 0 ? payload : undefined,
-        geminiTools,
-        mentionables,
-      )
-      onClose()
-    } catch (err) {
-      console.error('Smart Space failed', err)
-      setIsSubmitting(false)
-      setError(
-        t('chat.customContinueError', 'Generation failed. Please try again.'),
-      )
-    }
-  }
-
-  const handleInputKeyDown = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    if (event.key === 'Backspace' && mentionables.length > 0) {
-      const target = event.currentTarget
-      const selectionStart = target.selectionStart ?? 0
-      const selectionEnd = target.selectionEnd ?? 0
-      const hasSelection = selectionStart !== selectionEnd
-      const caretAtStart = selectionStart === 0 && selectionEnd === 0
-
-      if (!hasSelection && caretAtStart && instruction.length === 0) {
-        event.preventDefault()
-        const lastMention = mentionables[mentionables.length - 1]
-        if (lastMention) {
-          handleMentionableDelete(lastMention)
-        }
-        return
-      }
-    }
-
-    const mentionMenuActive = mentionQuery !== null
-    if (mentionMenuActive) {
-      if (event.key === 'ArrowDown' && mentionResults.length > 0) {
-        event.preventDefault()
-        setMentionActiveIndex(
-          (prev) => (prev + 1) % Math.max(mentionResults.length, 1),
+  const handleSubmit = useCallback(
+    async (value?: string) => {
+      if (isSubmitting) return
+      setIsSubmitting(true)
+      setError(null)
+      setIsSubmitConfirmPending(false)
+      const payload = (value ?? instructionText).trim()
+      try {
+        const geminiTools = hasGeminiTools
+          ? { useWebSearch, useUrlContext }
+          : undefined
+        await plugin.continueWriting(
+          editor,
+          payload.length > 0 ? payload : undefined,
+          geminiTools,
+          mentionables,
         )
-        return
-      }
-      if (event.key === 'ArrowUp' && mentionResults.length > 0) {
-        event.preventDefault()
-        setMentionActiveIndex(
-          (prev) =>
-            (prev - 1 + Math.max(mentionResults.length, 1)) %
-            Math.max(mentionResults.length, 1),
+        onClose()
+      } catch (err) {
+        console.error('Smart Space failed', err)
+        setError(
+          err instanceof Error
+            ? err.message
+            : t('chat.customContinueError', '智能续写失败，请重试'),
         )
-        return
+      } finally {
+        setIsSubmitting(false)
       }
-      if (
-        event.key === 'Enter' &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        mentionResults.length > 0
-      ) {
-        event.preventDefault()
-        const selected = mentionResults[mentionActiveIndex]
-        if (selected) {
-          handleMentionSelect(selected)
-        }
-        return
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        closeMentionMenu()
-        return
-      }
-    }
+    },
+    [
+      editor,
+      hasGeminiTools,
+      instructionText,
+      isSubmitting,
+      mentionables,
+      onClose,
+      plugin,
+      t,
+      useUrlContext,
+      useWebSearch,
+    ],
+  )
 
-    // 普通回车需二次确认；Cmd/Ctrl+Enter 仍可立即提交
-    if (event.key === 'Enter') {
-      event.preventDefault()
+  const handleEditorEnter = useCallback(
+    (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey) {
         setIsSubmitConfirmPending(false)
         void handleSubmit()
         return
       }
+
       if (isSubmitConfirmPending) {
         setIsSubmitConfirmPending(false)
         void handleSubmit()
       } else {
         setIsSubmitConfirmPending(true)
       }
-    } else if (event.key === 'Escape') {
+    },
+    [handleSubmit, isSubmitConfirmPending],
+  )
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const canHandleNavigation =
+      !isMentionMenuOpen &&
+      !isSubmitting &&
+      instructionText.length === 0 &&
+      mentionables.length === 0
+
+    if (!canHandleNavigation) {
+      return
+    }
+
+    if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
-    } else if (event.key === 'ArrowDown') {
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
       if (totalItems === 0) return
       event.preventDefault()
       focusFirstItem()
-    } else if (event.key === 'ArrowUp') {
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
       if (totalItems === 0) return
       event.preventDefault()
       focusLastItem()
-    } else if (event.key === 'ArrowRight') {
-      // 支持右方向键切换到模型选择框或工具按钮
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
       event.preventDefault()
-      if (modelSelectRef.current) {
-        modelSelectRef.current.focus()
-      }
-    } else if (event.key === 'ArrowLeft') {
-      // 左方向键从输入框循环到最后一个控件
+      modelSelectRef.current?.focus()
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
       event.preventDefault()
       if (urlContextButtonRef.current) {
         urlContextButtonRef.current.focus()
       } else if (webSearchButtonRef.current) {
         webSearchButtonRef.current.focus()
-      } else if (modelSelectRef.current) {
-        modelSelectRef.current.focus()
+      } else {
+        modelSelectRef.current?.focus()
       }
     }
   }
@@ -636,14 +557,14 @@ function SmartSpacePanelBody({
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       if (index === totalItems - 1) {
-        inputRef.current?.focus({ preventScroll: true })
+        contentEditableRef.current?.focus({ preventScroll: true })
       } else {
         moveFocus(index, 1)
       }
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
       if (index === 0) {
-        inputRef.current?.focus({ preventScroll: true })
+        contentEditableRef.current?.focus({ preventScroll: true })
       } else {
         moveFocus(index, -1)
       }
@@ -666,85 +587,33 @@ function SmartSpacePanelBody({
                 <Sparkles size={14} />
               </div>
               <div className="smtcmp-smart-space-input-wrapper">
-                <textarea
-                  ref={inputRef}
-                  className="smtcmp-smart-space-input"
-                  style={textareaStyle}
-                  placeholder={t(
-                    'chat.customContinuePromptPlaceholder',
-                    'Ask AI...',
-                  )}
-                  value={instruction}
-                  onChange={handleInstructionChange}
-                  onKeyDown={handleInputKeyDown}
-                  onSelect={handleInputSelect}
-                  disabled={isSubmitting}
-                  rows={1}
-                />
-                {mentionables.length > 0 && (
-                  <div className="smtcmp-smart-space-mention-badges">
-                    {mentionables.map((mentionable) => (
-                      <MentionableBadge
-                        key={getMentionableKey(
-                          serializeMentionable(mentionable),
-                        )}
-                        mentionable={mentionable}
-                        onDelete={() => handleMentionableDelete(mentionable)}
-                        onClick={() => handleMentionableClick(mentionable)}
-                        isFocused={false}
-                      />
-                    ))}
-                  </div>
-                )}
-                {mentionQuery !== null && (
-                  <div className="smtcmp-smart-space-mention-popover">
-                    <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-dropdown">
-                      <div
-                        className="smtcmp-model-select-list smtcmp-smart-space-mention-list"
-                        role="listbox"
-                      >
-                        {mentionResults.length === 0 ? (
-                          <div className="smtcmp-smart-space-mention-empty">
-                            {t('common.noResults', '未找到匹配项')}
-                          </div>
-                        ) : (
-                          mentionResults.map((result, index) => (
-                            <button
-                              type="button"
-                              key={result.file.path}
-                              className={`smtcmp-popover-item smtcmp-smart-space-mention-option ${
-                                index === mentionActiveIndex ? 'active' : ''
-                              }`}
-                              data-highlighted={
-                                index === mentionActiveIndex ? 'true' : undefined
-                              }
-                              role="option"
-                              aria-selected={index === mentionActiveIndex}
-                              onMouseDown={(mouseEvent) => {
-                                mouseEvent.preventDefault()
-                                handleMentionSelect(result)
-                              }}
-                            >
-                              <FileText
-                                size={14}
-                                className="smtcmp-smart-space-mention-option-icon"
-                              />
-                              <div className="smtcmp-smart-space-mention-option-text">
-                                <div className="smtcmp-smart-space-mention-option-name">
-                                  {result.file.name}
-                                </div>
-                                <div className="smtcmp-smart-space-mention-option-path">
-                                  {result.file.path}
-                                </div>
-                              </div>
-                            </button>
-                          ))
-                        )}
+                <div
+                  className={`smtcmp-smart-space-input${isSubmitting ? ' is-disabled' : ''}`}
+                  onKeyDownCapture={handleInputKeyDown}
+                  onClick={() => contentEditableRef.current?.focus()}
+                  aria-disabled={isSubmitting ? 'true' : undefined}
+                >
+                  {instructionText.length === 0 &&
+                    mentionables.length === 0 && (
+                      <div className="smtcmp-smart-space-input-placeholder">
+                        {t('chat.customContinuePromptPlaceholder', 'Ask AI...')}
                       </div>
-                    </div>
-                  </div>
-                )}
-                {(instruction.length > 0 || isSubmitConfirmPending) && (
+                    )}
+                  <LexicalContentEditable
+                    editorRef={lexicalEditorRef}
+                    contentEditableRef={contentEditableRef}
+                    onTextContentChange={setInstructionText}
+                    onEnter={handleEditorEnter}
+                    onMentionNodeMutation={handleMentionNodeMutation}
+                    onMentionMenuToggle={setIsMentionMenuOpen}
+                    searchResultByQuery={mentionSearch}
+                    autoFocus
+                    contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-smart-space-content-editable"
+                  />
+                </div>
+                {(instructionText.length > 0 ||
+                  mentionables.length > 0 ||
+                  isSubmitConfirmPending) && (
                   <div className="smtcmp-smart-space-input-hint">
                     {isSubmitConfirmPending
                       ? t('chat.customContinueConfirmHint', '⏎ 是否确认提交？')
@@ -771,7 +640,9 @@ function SmartSpacePanelBody({
                     }}
                     onModelSelected={() => {
                       window.setTimeout(() => {
-                        inputRef.current?.focus({ preventScroll: true })
+                        contentEditableRef.current?.focus({
+                          preventScroll: true,
+                        })
                       }, 0)
                     }}
                     onKeyDown={(event, isMenuOpen) => {
@@ -791,7 +662,7 @@ function SmartSpacePanelBody({
                       } else if (event.key === 'ArrowLeft') {
                         // 左方向键返回输入框
                         event.preventDefault()
-                        inputRef.current?.focus()
+                        contentEditableRef.current?.focus()
                       } else if (event.key === 'ArrowRight') {
                         // 右方向键移动到工具按钮（如果存在）
                         event.preventDefault()
@@ -799,7 +670,7 @@ function SmartSpacePanelBody({
                           webSearchButtonRef.current.focus()
                         } else {
                           // 如果没有工具按钮，回到输入框
-                          inputRef.current?.focus()
+                          contentEditableRef.current?.focus()
                         }
                       }
                     }}
@@ -889,7 +760,7 @@ function SmartSpacePanelBody({
                         } else if (event.key === 'ArrowRight') {
                           // 右方向键返回输入框（循环）
                           event.preventDefault()
-                          inputRef.current?.focus()
+                          contentEditableRef.current?.focus()
                         }
                       }}
                       title={t(
@@ -1118,12 +989,14 @@ export class SmartSpaceWidget extends WidgetType {
           }
         >
           <LanguageProvider>
-            <SmartSpacePanelBody
-              editor={this.options.editor}
-              onClose={this.closeWithAnimation}
-              showQuickActions={this.options.showQuickActions}
-              containerRef={this.containerRef}
-            />
+            <AppProvider app={this.options.plugin.app}>
+              <SmartSpacePanelBody
+                editor={this.options.editor}
+                onClose={this.closeWithAnimation}
+                showQuickActions={this.options.showQuickActions}
+                containerRef={this.containerRef}
+              />
+            </AppProvider>
           </LanguageProvider>
         </SettingsProvider>
       </PluginProvider>,

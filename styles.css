@@ -3724,36 +3724,42 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-smart-space-input {
   width: 100%;
-  border: none !important;
-  outline: none !important;
+  border: none;
+  outline: none;
   background: transparent;
   color: var(--text-normal);
   font-family: var(--font-interface);
   font-size: var(--font-ui-medium);
   line-height: 1.5;
-  resize: none;
-  overflow-y: auto;
   min-height: 24px;
   max-height: 200px;
-  box-shadow: none !important;
+  box-shadow: none;
+  position: relative;
+  cursor: text;
 }
 
-.smtcmp-smart-space-input::placeholder {
-  color: var(--text-muted);
-}
-
-.smtcmp-smart-space-input:disabled {
+.smtcmp-smart-space-input.is-disabled {
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.smtcmp-smart-space-input:focus,
-.smtcmp-smart-space-input:focus-visible,
-.smtcmp-smart-space-input:active,
-.smtcmp-smart-space-input:hover {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
+.smtcmp-smart-space-input-placeholder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--text-muted);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.smtcmp-smart-space-content-editable {
+  width: 100%;
+  min-height: 24px;
+  max-height: 200px;
+  overflow-y: auto;
+  outline: none;
 }
 
 .smtcmp-smart-space-input-hint {
@@ -3887,13 +3893,12 @@ button.smtcmp-chat-input-model-select {
   );
   border-radius: var(--radius-m);
   padding-left: 8px;
-  box-shadow:
-    0 0 0 1px
-      color-mix(
-        in srgb,
-        var(--h1-color, var(--interactive-accent)) 40%,
-        transparent
-      );
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--h1-color, var(--interactive-accent)) 40%,
+      transparent
+    );
   border: none;
 }
 
