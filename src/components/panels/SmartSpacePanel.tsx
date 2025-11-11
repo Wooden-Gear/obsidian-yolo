@@ -1,5 +1,13 @@
 import { EditorView, WidgetType } from '@codemirror/view'
-import { $nodesOfType, LexicalEditor } from 'lexical'
+import {
+  $getSelection,
+  $isElementNode,
+  $isRangeSelection,
+  $isTextNode,
+  $nodesOfType,
+  LexicalEditor,
+  LexicalNode,
+} from 'lexical'
 import {
   Brain,
   FileText,
@@ -570,6 +578,48 @@ function SmartSpacePanelBody({
     [handleSubmit, isSubmitConfirmPending],
   )
 
+  const isCaretAtRightEdge = useCallback(() => {
+    const editor = lexicalEditorRef.current
+    if (!editor) return false
+
+    return editor.getEditorState().read(() => {
+      const selection = $getSelection()
+      if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
+        return false
+      }
+
+      const anchor = selection.anchor
+      let node = anchor.getNode()
+      if (!node) return false
+
+      if ($isTextNode(node)) {
+        if (anchor.offset < node.getTextContentSize()) {
+          return false
+        }
+      } else if ($isElementNode(node)) {
+        if (anchor.offset < node.getChildrenSize()) {
+          return false
+        }
+      } else if (anchor.offset < node.getTextContentSize()) {
+        return false
+      }
+
+      let currentNode: LexicalNode | null = node
+      while (currentNode) {
+        let sibling = currentNode.getNextSibling()
+        while (sibling) {
+          if (sibling.getTextContentSize() > 0) {
+            return false
+          }
+          sibling = sibling.getNextSibling()
+        }
+        currentNode = currentNode.getParent()
+      }
+
+      return true
+    })
+  }, [])
+
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const canHandleNavigation =
       !isMentionMenuOpen &&
@@ -578,6 +628,15 @@ function SmartSpacePanelBody({
       mentionables.length === 0
 
     if (!canHandleNavigation) {
+      if (
+        event.key === 'ArrowRight' &&
+        !isMentionMenuOpen &&
+        !isSubmitting &&
+        isCaretAtRightEdge()
+      ) {
+        event.preventDefault()
+        modelSelectRef.current?.focus()
+      }
       return
     }
 
