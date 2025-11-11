@@ -680,44 +680,51 @@ function SmartSpacePanelBody({
                   </div>
                 )}
                 {mentionQuery !== null && (
-                  <div
-                    className="smtcmp-smart-space-mention-menu"
-                    role="listbox"
-                  >
-                    {mentionResults.length === 0 ? (
-                      <div className="smtcmp-smart-space-mention-empty">
-                        {t('common.noResults', '未找到匹配项')}
-                      </div>
-                    ) : (
-                      mentionResults.map((result, index) => (
-                        <button
-                          type="button"
-                          key={result.file.path}
-                          className={`smtcmp-smart-space-mention-option ${
-                            index === mentionActiveIndex ? 'active' : ''
-                          }`}
-                          role="option"
-                          aria-selected={index === mentionActiveIndex}
-                          onMouseDown={(mouseEvent) => {
-                            mouseEvent.preventDefault()
-                            handleMentionSelect(result)
-                          }}
-                        >
-                          <FileText
-                            size={14}
-                            className="smtcmp-smart-space-mention-option-icon"
-                          />
-                          <div className="smtcmp-smart-space-mention-option-text">
-                            <div className="smtcmp-smart-space-mention-option-name">
-                              {result.file.name}
-                            </div>
-                            <div className="smtcmp-smart-space-mention-option-path">
-                              {result.file.path}
-                            </div>
+                  <div className="smtcmp-smart-space-mention-popover">
+                    <div className="smtcmp-popover smtcmp-smart-space-popover smtcmp-smart-space-mention-dropdown">
+                      <div
+                        className="smtcmp-model-select-list smtcmp-smart-space-mention-list"
+                        role="listbox"
+                      >
+                        {mentionResults.length === 0 ? (
+                          <div className="smtcmp-smart-space-mention-empty">
+                            {t('common.noResults', '未找到匹配项')}
                           </div>
-                        </button>
-                      ))
-                    )}
+                        ) : (
+                          mentionResults.map((result, index) => (
+                            <button
+                              type="button"
+                              key={result.file.path}
+                              className={`smtcmp-popover-item smtcmp-smart-space-mention-option ${
+                                index === mentionActiveIndex ? 'active' : ''
+                              }`}
+                              data-highlighted={
+                                index === mentionActiveIndex ? 'true' : undefined
+                              }
+                              role="option"
+                              aria-selected={index === mentionActiveIndex}
+                              onMouseDown={(mouseEvent) => {
+                                mouseEvent.preventDefault()
+                                handleMentionSelect(result)
+                              }}
+                            >
+                              <FileText
+                                size={14}
+                                className="smtcmp-smart-space-mention-option-icon"
+                              />
+                              <div className="smtcmp-smart-space-mention-option-text">
+                                <div className="smtcmp-smart-space-mention-option-name">
+                                  {result.file.name}
+                                </div>
+                                <div className="smtcmp-smart-space-mention-option-path">
+                                  {result.file.path}
+                                </div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
                 {(instruction.length > 0 || isSubmitConfirmPending) && (
