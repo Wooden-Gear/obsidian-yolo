@@ -3787,10 +3787,17 @@ button.smtcmp-chat-input-model-select {
   width: 100%;
   max-width: min(360px, 100%);
   pointer-events: auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .smtcmp-smart-space-mention-list {
   overflow-y: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .smtcmp-smart-space-popover .smtcmp-smart-space-mention-list {
@@ -3799,6 +3806,9 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-smart-space-mention-option {
   width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
   border: none;
   background: transparent;
   color: var(--text-normal);
@@ -3836,9 +3846,15 @@ button.smtcmp-chat-input-model-select {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 4px;
   white-space: normal;
   line-height: 1.4;
+  background: transparent;
+  border: none;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  transform: none;
 }
 
 .smtcmp-smart-space-popover
@@ -3850,6 +3866,35 @@ button.smtcmp-chat-input-model-select {
       var(--h1-color, var(--interactive-accent)) 70%,
       transparent
     );
+}
+
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-smart-space-mention-option::before {
+  display: none;
+}
+
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-smart-space-mention-option:hover,
+.smtcmp-smart-space-popover
+  .smtcmp-model-select-list
+  > .smtcmp-smart-space-mention-option[data-highlighted='true'] {
+  background: color-mix(
+    in srgb,
+    var(--h1-color, var(--interactive-accent)) 14%,
+    transparent
+  );
+  border-radius: var(--radius-m);
+  padding-left: 8px;
+  box-shadow:
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--h1-color, var(--interactive-accent)) 40%,
+        transparent
+      );
+  border: none;
 }
 
 .smtcmp-smart-space-mention-empty {
