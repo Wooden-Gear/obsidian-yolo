@@ -600,7 +600,7 @@ function SmartSpacePanelBody({
         if (anchor.offset < node.getChildrenSize()) {
           return false
         }
-      } else if (anchor.offset < node.getTextContentSize()) {
+      } else {
         return false
       }
 
