@@ -3683,10 +3683,19 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-smart-space-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   width: 100%;
   padding: 12px 16px;
+}
+
+.smtcmp-smart-space-header.is-empty {
+  align-items: center;
+}
+
+.smtcmp-smart-space-header:not(.is-empty) .smtcmp-smart-space-avatar,
+.smtcmp-smart-space-header:not(.is-empty) .smtcmp-smart-space-controls {
+  margin-top: 6px;
 }
 
 .smtcmp-smart-space-header:hover {
@@ -3736,7 +3745,7 @@ button.smtcmp-chat-input-model-select {
   position: relative;
   cursor: text;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 4px 0;
 }
 
@@ -3745,8 +3754,8 @@ button.smtcmp-chat-input-model-select {
   cursor: not-allowed;
 }
 
-.smtcmp-smart-space-input.is-multiline {
-  align-items: flex-start;
+.smtcmp-smart-space-input.is-empty {
+  align-items: center;
 }
 
 .smtcmp-smart-space-input-placeholder {

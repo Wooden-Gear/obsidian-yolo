@@ -104,12 +104,36 @@ function SmartSpacePanelBody({
   useEffect(() => {
     const element = contentEditableRef.current
     if (!element) return
-    const singleLineThreshold = 34
-    const observer = new ResizeObserver(() => {
-      const height = element.getBoundingClientRect().height
-      setIsMultilineInput(height > singleLineThreshold)
-    })
+
+    const computeIsMultiline = () => {
+      if (!element.childNodes.length) {
+        setIsMultilineInput(false)
+        return
+      }
+
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const rects = Array.from(range.getClientRects()).filter(
+        // filter out zero-height rects created by empty nodes
+        (rect) => rect.height > 0 && rect.width > 0,
+      )
+
+      if (rects.length === 0) {
+        setIsMultilineInput(false)
+        return
+      }
+
+      const tolerance = 2
+      const lineYPositions = new Set(
+        rects.map((rect) => Math.round(rect.top / tolerance) * tolerance),
+      )
+      const isMulti = lineYPositions.size > 1
+      setIsMultilineInput((prev) => (prev === isMulti ? prev : isMulti))
+    }
+
+    const observer = new ResizeObserver(computeIsMultiline)
     observer.observe(element)
+    computeIsMultiline()
     return () => observer.disconnect()
   }, [])
 
@@ -623,12 +647,18 @@ function SmartSpacePanelBody({
     }
   }
 
+  const isInputEmpty = instructionText.length === 0 && mentionables.length === 0
+
   return (
     <div className="smtcmp-smart-space-panel" ref={containerRef ?? undefined}>
       {!isSubmitting ? (
         <>
           <div className="smtcmp-smart-space-input-card" ref={inputCardRef}>
-            <div className="smtcmp-smart-space-header">
+            <div
+              className={`smtcmp-smart-space-header${
+                isMultilineInput ? ' is-multiline' : ''
+              }${isInputEmpty ? ' is-empty' : ''}`}
+            >
               <div className="smtcmp-smart-space-avatar">
                 <Sparkles size={14} />
               </div>
@@ -636,17 +666,16 @@ function SmartSpacePanelBody({
                 <div
                   className={`smtcmp-smart-space-input${isSubmitting ? ' is-disabled' : ''}${
                     isMultilineInput ? ' is-multiline' : ''
-                  }`}
+                  }${isInputEmpty ? ' is-empty' : ''}`}
                   onKeyDownCapture={handleInputKeyDown}
                   onClick={() => contentEditableRef.current?.focus()}
                   aria-disabled={isSubmitting ? 'true' : undefined}
                 >
-                  {instructionText.length === 0 &&
-                    mentionables.length === 0 && (
-                      <div className="smtcmp-smart-space-input-placeholder">
-                        {t('chat.customContinuePromptPlaceholder', 'Ask AI...')}
-                      </div>
-                    )}
+                  {isInputEmpty && (
+                    <div className="smtcmp-smart-space-input-placeholder">
+                      {t('chat.customContinuePromptPlaceholder', 'Ask AI...')}
+                    </div>
+                  )}
                   <LexicalContentEditable
                     editorRef={lexicalEditorRef}
                     contentEditableRef={contentEditableRef}
