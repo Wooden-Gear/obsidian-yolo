@@ -529,6 +529,23 @@ function SmartSpacePanelBody({
   const handleInputKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
+    if (event.key === 'Backspace' && mentionables.length > 0) {
+      const target = event.currentTarget
+      const selectionStart = target.selectionStart ?? 0
+      const selectionEnd = target.selectionEnd ?? 0
+      const hasSelection = selectionStart !== selectionEnd
+      const caretAtStart = selectionStart === 0 && selectionEnd === 0
+
+      if (!hasSelection && caretAtStart && instruction.length === 0) {
+        event.preventDefault()
+        const lastMention = mentionables[mentionables.length - 1]
+        if (lastMention) {
+          handleMentionableDelete(lastMention)
+        }
+        return
+      }
+    }
+
     const mentionMenuActive = mentionQuery !== null
     if (mentionMenuActive) {
       if (event.key === 'ArrowDown' && mentionResults.length > 0) {
