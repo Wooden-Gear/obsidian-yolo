@@ -174,6 +174,9 @@ export type TranslationKeys = {
       embeddingModels: string
       embeddingsWillBeDeleted: string
       addCustomProvider: string
+      providerId: string
+      providerIdDesc: string
+      providerIdPlaceholder: string
       apiKey: string
       apiKeyDesc: string
       apiKeyPlaceholder: string

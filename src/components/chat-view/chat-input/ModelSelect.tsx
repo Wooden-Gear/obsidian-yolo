@@ -156,6 +156,7 @@ export const ModelSelect = forwardRef<
             align={align}
             alignOffset={alignOffset}
             collisionPadding={8}
+            loop
             onPointerDownOutside={(e) => {
               // 阻止事件冒泡，防止关闭父容器
               e.stopPropagation()
@@ -207,15 +208,13 @@ export const ModelSelect = forwardRef<
                     </DropdownMenu.Label>
                   )
 
-                  const items = groupModels.map((chatModelOption) => {
+                  const items = groupModels.map((chatModelOption, index) => {
                     // 列表项名称：优先显示「展示名称」，其次调用ID(model)，最后回退到内部 id
                     const displayName =
                       chatModelOption.name ||
                       chatModelOption.model ||
                       getModelDisplayName(chatModelOption.id)
-                    const currentIndex = runningIndex
                     runningIndex += 1
-                    const isLastItem = currentIndex === totalModels - 1
                     return (
                       <DropdownMenu.RadioItem
                         key={chatModelOption.id}
@@ -224,13 +223,9 @@ export const ModelSelect = forwardRef<
                         ref={(element) => {
                           itemRefs.current[chatModelOption.id] = element
                         }}
-                        onKeyDown={(event) => {
-                          if (isLastItem && event.key === 'ArrowDown') {
-                            event.preventDefault()
-                            setIsOpen(false)
-                            onModelSelected?.(selectedModelId)
-                          }
-                        }}
+                        data-first-item={
+                          runningIndex === 1 && index === 0 ? 'true' : undefined
+                        }
                       >
                         {displayName}
                       </DropdownMenu.RadioItem>

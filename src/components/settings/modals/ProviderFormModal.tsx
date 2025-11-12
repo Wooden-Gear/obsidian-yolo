@@ -196,13 +196,19 @@ function ProviderFormComponent({
   return (
     <>
       <ObsidianSetting
-        name="ID"
-        desc="Choose an ID to identify this provider in your settings. This is just for your reference."
+        name={t('settings.providers.providerId', 'ID')}
+        desc={t(
+          'settings.providers.providerIdDesc',
+          'Choose an ID to identify this provider in your settings. This is just for your reference.',
+        )}
         required
       >
         <ObsidianTextInput
           value={formData.id}
-          placeholder="my-custom-provider"
+          placeholder={t(
+            'settings.providers.providerIdPlaceholder',
+            'my-custom-provider',
+          )}
           onChange={(value: string) =>
             setFormData((prev) => ({ ...prev, id: value }))
           }
@@ -259,11 +265,21 @@ function ProviderFormComponent({
         />
       </ObsidianSetting>
 
-      {providerTypeInfo.additionalSettings.map((setting) => (
+      {providerTypeInfo.additionalSettings.map((setting) => {
+        const label =
+          setting.key === 'noStainless'
+            ? t('settings.providers.noStainlessHeaders')
+            : setting.label
+        const description =
+          setting.key === 'noStainless'
+            ? t('settings.providers.noStainlessHeadersDesc')
+            : setting.description
+
+        return (
         <ObsidianSetting
           key={setting.key}
-          name={setting.label}
-          desc={'description' in setting ? setting.description : undefined}
+          name={label}
+          desc={description}
           required={setting.required}
         >
           {setting.type === 'toggle' ? (
@@ -309,7 +325,7 @@ function ProviderFormComponent({
             />
           )}
         </ObsidianSetting>
-      ))}
+      )})}
 
       <ObsidianSetting>
         <ObsidianButton

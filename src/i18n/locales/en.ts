@@ -244,6 +244,10 @@ export const en: TranslationKeys = {
         'All embeddings generated using the related embedding models will also be deleted.',
       addCustomProvider: 'Add custom provider',
       editProviderTitle: 'Edit provider',
+      providerId: 'ID',
+      providerIdDesc:
+        'Choose an ID to identify this provider in your settings. This is just for your reference.',
+      providerIdPlaceholder: 'my-custom-provider',
       apiKey: 'API key',
       apiKeyDesc: '(Leave empty if not required)',
       apiKeyPlaceholder: 'Enter your API key',
