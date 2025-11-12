@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import cx from 'clsx'
 import { ChevronDown, ChevronUp, Eye } from 'lucide-react'
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react'
 
@@ -71,7 +71,7 @@ export default function MarkdownReferenceBlock({
 
   return (
     blockContent && (
-      <div className={clsx('smtcmp-code-block', filename && 'has-filename')}>
+      <div className={cx('smtcmp-code-block', filename && 'has-filename')}>
         <div className="smtcmp-code-block-header">
           {filename && (
             <div

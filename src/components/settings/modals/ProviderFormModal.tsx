@@ -273,59 +273,60 @@ function ProviderFormComponent({
         const description =
           setting.key === 'noStainless'
             ? t('settings.providers.noStainlessHeadersDesc')
-            : setting.description
+            : (setting as { description?: string }).description
 
         return (
-        <ObsidianSetting
-          key={setting.key}
-          name={label}
-          desc={description}
-          required={setting.required}
-        >
-          {setting.type === 'toggle' ? (
-            <ObsidianToggle
-              value={
-                (formData.additionalSettings as Record<string, boolean>)?.[
-                  setting.key
-                ] ?? false
-              }
-              onChange={(value: boolean) =>
-                setFormData(
-                  (prev) =>
-                    ({
-                      ...prev,
-                      additionalSettings: {
-                        ...(prev.additionalSettings ?? {}),
-                        [setting.key]: value,
-                      },
-                    }) as LLMProvider,
-                )
-              }
-            />
-          ) : (
-            <ObsidianTextInput
-              value={
-                (formData.additionalSettings as Record<string, string>)?.[
-                  setting.key
-                ] ?? ''
-              }
-              placeholder={setting.placeholder}
-              onChange={(value: string) =>
-                setFormData(
-                  (prev) =>
-                    ({
-                      ...prev,
-                      additionalSettings: {
-                        ...(prev.additionalSettings ?? {}),
-                        [setting.key]: value,
-                      },
-                    }) as LLMProvider,
-                )
-              }
-            />
-          )}
-        </ObsidianSetting>
-      )})}
+          <ObsidianSetting
+            key={setting.key}
+            name={label}
+            desc={description}
+            required={setting.required}
+          >
+            {setting.type === 'toggle' ? (
+              <ObsidianToggle
+                value={
+                  (formData.additionalSettings as Record<string, boolean>)?.[
+                    setting.key
+                  ] ?? false
+                }
+                onChange={(value: boolean) =>
+                  setFormData(
+                    (prev) =>
+                      ({
+                        ...prev,
+                        additionalSettings: {
+                          ...(prev.additionalSettings ?? {}),
+                          [setting.key]: value,
+                        },
+                      }) as LLMProvider,
+                  )
+                }
+              />
+            ) : (
+              <ObsidianTextInput
+                value={
+                  (formData.additionalSettings as Record<string, string>)?.[
+                    setting.key
+                  ] ?? ''
+                }
+                placeholder={setting.placeholder}
+                onChange={(value: string) =>
+                  setFormData(
+                    (prev) =>
+                      ({
+                        ...prev,
+                        additionalSettings: {
+                          ...(prev.additionalSettings ?? {}),
+                          [setting.key]: value,
+                        },
+                      }) as LLMProvider,
+                  )
+                }
+              />
+            )}
+          </ObsidianSetting>
+        )
+      })}
 
       <ObsidianSetting>
         <ObsidianButton

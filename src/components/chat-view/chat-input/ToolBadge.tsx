@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import cx from 'clsx'
 import { Eye, EyeOff, Wrench } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -93,7 +93,7 @@ export default function ToolBadge() {
           className="smtcmp-chat-user-input-file-badge-name-icon"
         />
         <span
-          className={clsx(
+          className={cx(
             !settings.chatOptions.enableTools && 'smtcmp-excluded-content',
           )}
         >

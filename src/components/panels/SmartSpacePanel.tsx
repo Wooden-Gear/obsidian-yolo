@@ -68,10 +68,7 @@ function SmartSpacePanelBody({
   const plugin = usePlugin()
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
-  const draftState = useMemo(
-    () => plugin.getSmartSpaceDraftState(),
-    [plugin],
-  )
+  const draftState = useMemo(() => plugin.getSmartSpaceDraftState(), [plugin])
   const initialMentionables = useMemo(() => {
     if (!draftState?.mentionables || draftState.mentionables.length === 0) {
       return []
@@ -94,9 +91,7 @@ function SmartSpacePanelBody({
   const modelSelectRef = useRef<HTMLButtonElement>(null)
   const webSearchButtonRef = useRef<HTMLButtonElement>(null)
   const urlContextButtonRef = useRef<HTMLButtonElement>(null)
-  const [instructionText, setInstructionText] = useState(
-    initialInstructionText,
-  )
+  const [instructionText, setInstructionText] = useState(initialInstructionText)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [useWebSearch, setUseWebSearch] = useState(
@@ -279,9 +274,7 @@ function SmartSpacePanelBody({
       }
       plugin.setSmartSpaceDraftState({
         instructionText: text,
-        mentionables: mentionableList.map((item) =>
-          serializeMentionable(item),
-        ),
+        mentionables: mentionableList.map((item) => serializeMentionable(item)),
         editorState: latestEditorStateRef.current ?? undefined,
       })
     }
@@ -715,7 +708,7 @@ function SmartSpacePanelBody({
       }
 
       const anchor = selection.anchor
-      let node = anchor.getNode()
+      const node = anchor.getNode()
       if (!node) return false
 
       if ($isTextNode(node)) {

@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import cx from 'clsx'
 import { Check, ChevronDown, ChevronRight, Loader2, X } from 'lucide-react'
 import { memo, useCallback, useMemo, useState } from 'react'
 
@@ -62,7 +62,7 @@ const ToolMessage = memo(function ToolMessage({
       {message.toolCalls.map((toolCall, index) => (
         <div
           key={toolCall.request.id}
-          className={clsx(index > 0 && 'smtcmp-toolcall-border-top')}
+          className={cx(index > 0 && 'smtcmp-toolcall-border-top')}
         >
           <ToolCallItem
             request={toolCall.request}

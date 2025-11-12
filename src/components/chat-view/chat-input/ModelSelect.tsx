@@ -48,7 +48,6 @@ export const ModelSelect = forwardRef<
     const enabledModels = settings.chatModels.filter(
       ({ enable }) => enable ?? true,
     )
-    const totalModels = enabledModels.length
     const providerOrder = settings.providers.map((p) => p.id)
     const providerIdsInModels = Array.from(
       new Set(enabledModels.map((m) => m.providerId)),

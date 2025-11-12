@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import cx from 'clsx'
 import { Eye, EyeOff, X } from 'lucide-react'
 import { PropsWithChildren, useCallback } from 'react'
 
@@ -159,14 +159,14 @@ function CurrentFileBadge({
             className="smtcmp-chat-user-input-file-badge-name-icon"
           />
         )}
-        <span className={clsx(!mentionable.file && 'smtcmp-excluded-content')}>
+        <span className={cx(!mentionable.file && 'smtcmp-excluded-content')}>
           {mentionable.file?.name ??
             app.workspace.getActiveFile()?.name ??
             'Current file'}
         </span>
       </div>
       <div
-        className={clsx(
+        className={cx(
           'smtcmp-chat-user-input-file-badge-name-suffix',
           !mentionable.file && 'smtcmp-excluded-content',
         )}

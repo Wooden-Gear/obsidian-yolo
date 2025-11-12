@@ -12,6 +12,7 @@ import {
   WidgetType,
   keymap,
 } from '@codemirror/view'
+import { SerializedEditorState } from 'lexical'
 import { minimatch } from 'minimatch'
 import {
   Editor,
@@ -23,7 +24,6 @@ import {
   TFolder,
   normalizePath,
 } from 'obsidian'
-import { SerializedEditorState } from 'lexical'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
@@ -55,10 +55,7 @@ import {
   LLMRequestNonStreaming,
   RequestMessage,
 } from './types/llm/request'
-import {
-  MentionableFile,
-  SerializedMentionable,
-} from './types/mentionable'
+import { MentionableFile, SerializedMentionable } from './types/mentionable'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -71,9 +68,11 @@ type InlineSuggestionGhostPayload = { from: number; text: string } | null
 const inlineSuggestionGhostEffect =
   StateEffect.define<InlineSuggestionGhostPayload>()
 
-type ThinkingIndicatorPayload =
-  | { from: number; label: string; snippet?: string }
-  | null
+type ThinkingIndicatorPayload = {
+  from: number
+  label: string
+  snippet?: string
+} | null
 
 const thinkingIndicatorEffect = StateEffect.define<ThinkingIndicatorPayload>()
 
@@ -86,9 +85,7 @@ class ThinkingIndicatorWidget extends WidgetType {
   }
 
   eq(other: ThinkingIndicatorWidget) {
-    return (
-      this.label === other.label && this.snippet === other.snippet
-    )
+    return this.label === other.label && this.snippet === other.snippet
   }
 
   ignoreEvent(): boolean {
@@ -175,10 +172,7 @@ const thinkingIndicatorField = StateField.define<DecorationSet>({
           continue
         }
         const widget = Decoration.widget({
-          widget: new ThinkingIndicatorWidget(
-            payload.label,
-            payload.snippet,
-          ),
+          widget: new ThinkingIndicatorWidget(payload.label, payload.snippet),
           side: 1,
         }).range(payload.from)
         decorations = Decoration.set([widget])
@@ -2487,9 +2481,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
           if (reasoningDelta) {
             reasoningPreviewBuffer += reasoningDelta
             if (reasoningPreviewBuffer.length > MAX_REASONING_BUFFER) {
-              reasoningPreviewBuffer = reasoningPreviewBuffer.slice(
-                -MAX_REASONING_BUFFER,
-              )
+              reasoningPreviewBuffer =
+                reasoningPreviewBuffer.slice(-MAX_REASONING_BUFFER)
             }
             updateThinkingReasoningPreview()
           }

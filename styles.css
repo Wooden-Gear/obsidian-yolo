@@ -1339,7 +1339,7 @@ button.smtcmp-chat-input-model-select {
     background-position: 200% center;
   }
   100% {
-  background-position: -200% center;
+    background-position: -200% center;
   }
 }
 

@@ -3,7 +3,7 @@ import {
   QueryClientProvider,
   useQuery,
 } from '@tanstack/react-query'
-import clsx from 'clsx'
+import cx from 'clsx'
 import dayjs from 'dayjs'
 import { Loader2, PickaxeIcon, RefreshCw, Trash2 } from 'lucide-react'
 import { App, Notice } from 'obsidian'
@@ -188,7 +188,7 @@ function EmbeddingDbManageModalComponent({
           }}
           disabled={isFetching}
         >
-          <RefreshCw size={16} className={clsx(isFetching && 'spinner')} />
+          <RefreshCw size={16} className={cx(isFetching && 'spinner')} />
         </button>
 
         <span className="smtcmp-settings-embedding-db-manage-last-updated">
