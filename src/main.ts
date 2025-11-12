@@ -71,17 +71,24 @@ type InlineSuggestionGhostPayload = { from: number; text: string } | null
 const inlineSuggestionGhostEffect =
   StateEffect.define<InlineSuggestionGhostPayload>()
 
-type ThinkingIndicatorPayload = { from: number; text: string } | null
+type ThinkingIndicatorPayload =
+  | { from: number; label: string; snippet?: string }
+  | null
 
 const thinkingIndicatorEffect = StateEffect.define<ThinkingIndicatorPayload>()
 
 class ThinkingIndicatorWidget extends WidgetType {
-  constructor(private readonly text: string) {
+  constructor(
+    private readonly label: string,
+    private readonly snippet?: string,
+  ) {
     super()
   }
 
   eq(other: ThinkingIndicatorWidget) {
-    return this.text === other.text
+    return (
+      this.label === other.label && this.snippet === other.snippet
+    )
   }
 
   ignoreEvent(): boolean {
@@ -137,10 +144,16 @@ class ThinkingIndicatorWidget extends WidgetType {
     // 文字
     const textEl = document.createElement('span')
     textEl.className = 'smtcmp-thinking-text'
-    textEl.textContent = this.text
+    textEl.textContent = this.label
 
     loader.appendChild(icon)
     loader.appendChild(textEl)
+    if (this.snippet) {
+      const snippetEl = document.createElement('span')
+      snippetEl.className = 'smtcmp-thinking-snippet'
+      snippetEl.textContent = this.snippet
+      loader.appendChild(snippetEl)
+    }
     container.appendChild(loader)
 
     return container
@@ -162,7 +175,10 @@ const thinkingIndicatorField = StateField.define<DecorationSet>({
           continue
         }
         const widget = Decoration.widget({
-          widget: new ThinkingIndicatorWidget(payload.text),
+          widget: new ThinkingIndicatorWidget(
+            payload.label,
+            payload.snippet,
+          ),
           side: 1,
         }).range(payload.from)
         decorations = Decoration.set([widget])
@@ -983,9 +999,20 @@ export default class SmartComposerPlugin extends Plugin {
     view.dispatch({ effects: inlineSuggestionGhostEffect.of(payload) })
   }
 
-  private showThinkingIndicator(view: EditorView, from: number, text: string) {
+  private showThinkingIndicator(
+    view: EditorView,
+    from: number,
+    label: string,
+    snippet?: string,
+  ) {
     this.ensureInlineSuggestionExtension(view)
-    view.dispatch({ effects: thinkingIndicatorEffect.of({ from, text }) })
+    view.dispatch({
+      effects: thinkingIndicatorEffect.of({
+        from,
+        label,
+        snippet,
+      }),
+    })
   }
 
   private hideThinkingIndicator(view: EditorView) {
@@ -2390,6 +2417,33 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       let suggestionText = ''
       let hasHiddenThinkingIndicator = false
       const nonNullView = view // TypeScript 类型细化
+      let reasoningPreviewBuffer = ''
+      let lastReasoningPreview = ''
+      const MAX_REASONING_BUFFER = 400
+
+      const formatReasoningPreview = (text: string) => {
+        const normalized = text.replace(/\s+/g, ' ').trim()
+        if (!normalized) return ''
+        if (normalized.length <= 120) {
+          return normalized
+        }
+        return normalized.slice(-120)
+      }
+
+      const updateThinkingReasoningPreview = () => {
+        if (hasHiddenThinkingIndicator) return
+        const preview = formatReasoningPreview(reasoningPreviewBuffer)
+        if (!preview || preview === lastReasoningPreview) {
+          return
+        }
+        lastReasoningPreview = preview
+        this.showThinkingIndicator(
+          nonNullView,
+          cursorOffset,
+          thinkingText,
+          preview,
+        )
+      }
 
       const updateContinuationSuggestion = (text: string) => {
         // 首次接收到内容时隐藏思考指示器
@@ -2429,6 +2483,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
           const delta = chunk?.choices?.[0]?.delta
           const piece = delta?.content ?? ''
+          const reasoningDelta = delta?.reasoning ?? ''
+          if (reasoningDelta) {
+            reasoningPreviewBuffer += reasoningDelta
+            if (reasoningPreviewBuffer.length > MAX_REASONING_BUFFER) {
+              reasoningPreviewBuffer = reasoningPreviewBuffer.slice(
+                -MAX_REASONING_BUFFER,
+              )
+            }
+            updateThinkingReasoningPreview()
+          }
           if (!piece) continue
 
           suggestionText += piece

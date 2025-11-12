@@ -1318,6 +1318,22 @@ button.smtcmp-chat-input-model-select {
   animation: smtcmp-thinking-text-shimmer 2s ease-in-out infinite;
 }
 
+.smtcmp-thinking-snippet {
+  font-size: var(--font-ui-small);
+  line-height: 1.2;
+  color: var(--text-normal);
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
 @keyframes smtcmp-thinking-text-shimmer {
   0% {
     background-position: 200% center;
