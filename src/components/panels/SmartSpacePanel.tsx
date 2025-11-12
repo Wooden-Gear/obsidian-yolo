@@ -53,6 +53,7 @@ type SmartSpacePanelProps = {
   editor: Editor
   onClose: () => void
   showQuickActions?: boolean // Whether to show quick action buttons
+  onOverlayStateChange?: (isOverlayActive: boolean) => void
 }
 
 function SmartSpacePanelBody({
@@ -60,7 +61,10 @@ function SmartSpacePanelBody({
   onClose,
   showQuickActions = true,
   containerRef,
-}: SmartSpacePanelProps & { containerRef?: React.RefObject<HTMLDivElement> }) {
+  onOverlayStateChange,
+}: SmartSpacePanelProps & {
+  containerRef?: React.RefObject<HTMLDivElement>
+}) {
   const plugin = usePlugin()
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
@@ -111,6 +115,7 @@ function SmartSpacePanelBody({
     () => initialMentionables,
   )
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
   const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
     'top' | 'bottom'
   >('top')
@@ -137,6 +142,7 @@ function SmartSpacePanelBody({
     }
   }, [initialEditorState])
   const hasRestoredDraftSelectionRef = useRef(false)
+  const prevModelMenuOpenRef = useRef(isModelMenuOpen)
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -147,6 +153,7 @@ function SmartSpacePanelBody({
     settings?.continuationOptions?.smartSpaceUseWebSearch ?? false
   const derivedUseUrlContext =
     settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
+  const hasBlockingOverlay = isMentionMenuOpen || isModelMenuOpen
 
   useEffect(() => {
     contentEditableRef.current?.focus()
@@ -209,6 +216,23 @@ function SmartSpacePanelBody({
       prev === derivedUseUrlContext ? prev : derivedUseUrlContext,
     )
   }, [derivedUseUrlContext])
+
+  useEffect(() => {
+    onOverlayStateChange?.(hasBlockingOverlay)
+  }, [hasBlockingOverlay, onOverlayStateChange])
+
+  useEffect(() => {
+    return () => {
+      onOverlayStateChange?.(false)
+    }
+  }, [onOverlayStateChange])
+
+  useEffect(() => {
+    if (prevModelMenuOpenRef.current && !isModelMenuOpen) {
+      contentEditableRef.current?.focus({ preventScroll: true })
+    }
+    prevModelMenuOpenRef.current = isModelMenuOpen
+  }, [isModelMenuOpen])
 
   useEffect(() => {
     if (!draftState || hasRestoredDraftSelectionRef.current) {
@@ -870,6 +894,7 @@ function SmartSpacePanelBody({
                   <ModelSelect
                     ref={modelSelectRef}
                     modelId={selectedModelId}
+                    onMenuOpenChange={setIsModelMenuOpen}
                     onChange={(modelId) => {
                       setSelectedModelId(modelId)
                       if (settings) {
@@ -1102,6 +1127,7 @@ export class SmartSpaceWidget extends WidgetType {
   private closeAnimationTimeout: number | null = null
   private containerRef: React.RefObject<HTMLDivElement> =
     React.createRef<HTMLDivElement>()
+  private hasBlockingOverlay = false
 
   constructor(
     private readonly options: {
@@ -1200,6 +1226,7 @@ export class SmartSpaceWidget extends WidgetType {
   private closeWithAnimation = () => {
     if (this.isClosing) return
     this.isClosing = true
+    this.hasBlockingOverlay = false
 
     // 添加关闭动画类
     if (this.overlayContainer) {
@@ -1239,6 +1266,7 @@ export class SmartSpaceWidget extends WidgetType {
                 onClose={this.closeWithAnimation}
                 showQuickActions={this.options.showQuickActions}
                 containerRef={this.containerRef}
+                onOverlayStateChange={this.handleOverlayStateChange}
               />
             </AppProvider>
           </LanguageProvider>
@@ -1284,6 +1312,9 @@ export class SmartSpaceWidget extends WidgetType {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (this.hasBlockingOverlay) {
+        return
+      }
       event.preventDefault()
       event.stopPropagation()
       this.closeWithAnimation()
@@ -1358,5 +1389,9 @@ export class SmartSpaceWidget extends WidgetType {
         top: Math.round(top),
       },
     )
+  }
+
+  private handleOverlayStateChange = (isActive: boolean) => {
+    this.hasBlockingOverlay = isActive
   }
 }

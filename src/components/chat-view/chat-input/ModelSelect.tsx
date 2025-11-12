@@ -11,6 +11,7 @@ export const ModelSelect = forwardRef<
     modelId?: string
     onModelSelected?: (modelId: string) => void
     onChange?: (modelId: string) => void
+    onMenuOpenChange?: (isOpen: boolean) => void
     side?: 'top' | 'bottom' | 'left' | 'right'
     sideOffset?: number
     align?: 'start' | 'center' | 'end'
@@ -28,6 +29,7 @@ export const ModelSelect = forwardRef<
       modelId: externalModelId,
       onModelSelected,
       onChange,
+      onMenuOpenChange,
       side = 'bottom',
       sideOffset = 4,
       align = 'end',
@@ -110,14 +112,25 @@ export const ModelSelect = forwardRef<
         return
       }
 
+      if (isOpen && event.key === 'Escape') {
+        event.preventDefault()
+        handleOpenChange(false)
+        return
+      }
+
       // 调用传入的 onKeyDown 处理器来处理其他导航键
       if (onKeyDown) {
         onKeyDown(event, isOpen)
       }
     }
 
+    const handleOpenChange = (open: boolean) => {
+      setIsOpen(open)
+      onMenuOpenChange?.(open)
+    }
+
     return (
-      <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
           ref={ref}
           className="smtcmp-chat-input-model-select"
