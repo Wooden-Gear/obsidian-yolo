@@ -94,7 +94,8 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
         onClick={handleToggle}
       >
         <span>
-          {showLoader ? 'Reasoning' : 'Reasoned'} {showLoader && <DotLoader />}
+          {showLoader ? 'Reasoning' : 'Reasoned'}{' '}
+          {showLoader && <DotLoader variant="dots" />}
         </span>
         {isExpanded ? (
           <ChevronUp className="smtcmp-assistant-message-metadata-toggle-icon" />
