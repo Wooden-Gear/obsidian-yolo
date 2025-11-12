@@ -1,5 +1,6 @@
 import { EditorView, WidgetType } from '@codemirror/view'
 import {
+  $getRoot,
   $getSelection,
   $isElementNode,
   $isRangeSelection,
@@ -7,6 +8,7 @@ import {
   $nodesOfType,
   LexicalEditor,
   LexicalNode,
+  SerializedEditorState,
 } from 'lexical'
 import {
   Brain,
@@ -62,6 +64,25 @@ function SmartSpacePanelBody({
   const plugin = usePlugin()
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
+  const draftState = useMemo(
+    () => plugin.getSmartSpaceDraftState(),
+    [plugin],
+  )
+  const initialMentionables = useMemo(() => {
+    if (!draftState?.mentionables || draftState.mentionables.length === 0) {
+      return []
+    }
+    const hydrated: MentionableFile[] = []
+    for (const serialized of draftState.mentionables) {
+      const mentionable = deserializeMentionable(serialized, plugin.app)
+      if (mentionable && mentionable.type === 'file') {
+        hydrated.push(mentionable)
+      }
+    }
+    return hydrated
+  }, [draftState, plugin.app])
+  const initialInstructionText = draftState?.instructionText ?? ''
+  const initialEditorState = draftState?.editorState ?? null
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -69,7 +90,9 @@ function SmartSpacePanelBody({
   const modelSelectRef = useRef<HTMLButtonElement>(null)
   const webSearchButtonRef = useRef<HTMLButtonElement>(null)
   const urlContextButtonRef = useRef<HTMLButtonElement>(null)
-  const [instructionText, setInstructionText] = useState('')
+  const [instructionText, setInstructionText] = useState(
+    initialInstructionText,
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [useWebSearch, setUseWebSearch] = useState(
@@ -84,12 +107,36 @@ function SmartSpacePanelBody({
       settings?.chatModelId ??
       '',
   )
-  const [mentionables, setMentionables] = useState<MentionableFile[]>([])
+  const [mentionables, setMentionables] = useState<MentionableFile[]>(
+    () => initialMentionables,
+  )
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
   const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
     'top' | 'bottom'
   >('top')
   const [isMultilineInput, setIsMultilineInput] = useState(false)
+  const latestInstructionTextRef = useRef(initialInstructionText)
+  const latestMentionablesRef = useRef<MentionableFile[]>(initialMentionables)
+  const latestEditorStateRef = useRef<SerializedEditorState | null>(
+    initialEditorState,
+  )
+  const shouldPersistDraftRef = useRef(true)
+  const initialEditorStateCallback = useMemo(() => {
+    if (!initialEditorState) {
+      return undefined
+    }
+    return (editor: LexicalEditor) => {
+      try {
+        editor.setEditorState(editor.parseEditorState(initialEditorState))
+        editor.update(() => {
+          $getRoot().selectEnd()
+        })
+      } catch (error) {
+        console.error('Failed to restore Smart Space draft', error)
+      }
+    }
+  }, [initialEditorState])
+  const hasRestoredDraftSelectionRef = useRef(false)
 
   const derivedModelId =
     settings?.continuationOptions?.continuationModelId ??
@@ -162,6 +209,59 @@ function SmartSpacePanelBody({
       prev === derivedUseUrlContext ? prev : derivedUseUrlContext,
     )
   }, [derivedUseUrlContext])
+
+  useEffect(() => {
+    if (!draftState || hasRestoredDraftSelectionRef.current) {
+      return
+    }
+    let cancelled = false
+    const attemptSelectionRestore = () => {
+      if (cancelled || hasRestoredDraftSelectionRef.current) return
+      const editor = lexicalEditorRef.current
+      if (editor) {
+        hasRestoredDraftSelectionRef.current = true
+        editor.update(() => {
+          $getRoot().selectEnd()
+        })
+        return
+      }
+      requestAnimationFrame(attemptSelectionRestore)
+    }
+    attemptSelectionRestore()
+    return () => {
+      cancelled = true
+    }
+  }, [draftState])
+
+  useEffect(() => {
+    latestInstructionTextRef.current = instructionText
+  }, [instructionText])
+
+  useEffect(() => {
+    latestMentionablesRef.current = mentionables
+  }, [mentionables])
+
+  useEffect(() => {
+    return () => {
+      if (!shouldPersistDraftRef.current) {
+        plugin.setSmartSpaceDraftState(null)
+        return
+      }
+      const text = latestInstructionTextRef.current
+      const mentionableList = latestMentionablesRef.current
+      if (text.length === 0 && mentionableList.length === 0) {
+        plugin.setSmartSpaceDraftState(null)
+        return
+      }
+      plugin.setSmartSpaceDraftState({
+        instructionText: text,
+        mentionables: mentionableList.map((item) =>
+          serializeMentionable(item),
+        ),
+        editorState: latestEditorStateRef.current ?? undefined,
+      })
+    }
+  }, [plugin])
 
   const mentionSearch = useCallback(
     (query: string) =>
@@ -534,6 +634,8 @@ function SmartSpacePanelBody({
           geminiTools,
           mentionables,
         )
+        shouldPersistDraftRef.current = false
+        plugin.setSmartSpaceDraftState(null)
         onClose()
       } catch (err) {
         console.error('Smart Space failed', err)
@@ -736,8 +838,12 @@ function SmartSpacePanelBody({
                     </div>
                   )}
                   <LexicalContentEditable
+                    initialEditorState={initialEditorStateCallback}
                     editorRef={lexicalEditorRef}
                     contentEditableRef={contentEditableRef}
+                    onChange={(state) => {
+                      latestEditorStateRef.current = state
+                    }}
                     onTextContentChange={setInstructionText}
                     onEnter={handleEditorEnter}
                     onMentionNodeMutation={handleMentionNodeMutation}

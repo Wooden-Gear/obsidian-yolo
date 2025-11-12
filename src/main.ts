@@ -23,6 +23,7 @@ import {
   TFolder,
   normalizePath,
 } from 'obsidian'
+import { SerializedEditorState } from 'lexical'
 
 import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
@@ -54,7 +55,10 @@ import {
   LLMRequestNonStreaming,
   RequestMessage,
 } from './types/llm/request'
-import { MentionableFile } from './types/mentionable'
+import {
+  MentionableFile,
+  SerializedMentionable,
+} from './types/mentionable'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -268,6 +272,12 @@ const smartSpaceWidgetField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 })
 
+type SmartSpaceDraftState = {
+  instructionText?: string
+  mentionables?: SerializedMentionable[]
+  editorState?: SerializedEditorState
+} | null
+
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
   initialChatProps?: ChatProps // TODO: change this to use view state like ApplyView
@@ -309,6 +319,7 @@ export default class SmartComposerPlugin extends Plugin {
     editor: Editor
     cursorOffset: number
   } | null = null
+  private smartSpaceDraftState: SmartSpaceDraftState = null
   private smartSpaceWidgetState: {
     view: EditorView
     pos: number
@@ -331,6 +342,14 @@ export default class SmartComposerPlugin extends Plugin {
   // Model list cache for provider model fetching
   private modelListCache: Map<string, { models: string[]; timestamp: number }> =
     new Map()
+
+  getSmartSpaceDraftState(): SmartSpaceDraftState {
+    return this.smartSpaceDraftState
+  }
+
+  setSmartSpaceDraftState(state: SmartSpaceDraftState) {
+    this.smartSpaceDraftState = state
+  }
 
   // Get cached model list for a provider
   getCachedModelList(providerId: string): string[] | null {
