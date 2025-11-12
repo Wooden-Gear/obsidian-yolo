@@ -207,6 +207,12 @@ export default function NewMentionsPlugin({
 
   const [queryString, setQueryString] = useState<string | null>(null)
 
+  useEffect(() => {
+    return () => {
+      onMenuOpenChange?.(false)
+    }
+  }, [onMenuOpenChange])
+
   const results = useMemo(() => {
     if (queryString == null) return []
     return searchResultByQuery(queryString)
@@ -223,10 +229,6 @@ export default function NewMentionsPlugin({
         .slice(0, SUGGESTION_LIST_LENGTH_LIMIT),
     [results],
   )
-
-  useEffect(() => {
-    onMenuOpenChange?.(options.length > 0)
-  }, [onMenuOpenChange, options.length])
 
   const onSelectOption = useCallback(
     (
@@ -272,6 +274,8 @@ export default function NewMentionsPlugin({
       triggerFn={checkForMentionMatch}
       options={options}
       commandPriority={COMMAND_PRIORITY_NORMAL}
+      onOpen={() => onMenuOpenChange?.(true)}
+      onClose={() => onMenuOpenChange?.(false)}
       menuRenderFn={(
         anchorElementRef,
         { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex },
