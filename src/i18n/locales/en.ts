@@ -531,7 +531,7 @@ export const en: TranslationKeys = {
     modeBrute: 'Brute',
     modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
-    customContinuePromptPlaceholder: 'Ask AI...',
+    customContinuePromptPlaceholder: 'Ask AI (@ to attach files)',
     customContinueHint: 'Press enter (⏎) to submit',
     customContinueConfirmHint: 'Press enter (⏎) again to confirm',
     customContinueProcessing: 'Thinking',

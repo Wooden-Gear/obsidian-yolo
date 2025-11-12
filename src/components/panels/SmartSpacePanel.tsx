@@ -851,7 +851,10 @@ function SmartSpacePanelBody({
                 >
                   {isInputEmpty && (
                     <div className="smtcmp-smart-space-input-placeholder">
-                      {t('chat.customContinuePromptPlaceholder', 'Ask AI...')}
+                      {t(
+                        'chat.customContinuePromptPlaceholder',
+                        'Ask AI (@ to attach files)...',
+                      )}
                     </div>
                   )}
                   <LexicalContentEditable

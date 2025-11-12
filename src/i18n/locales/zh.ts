@@ -497,7 +497,7 @@ export const zh: TranslationKeys = {
     modeBrute: '暴力模式',
     modeLearning: '学习模式',
     customContinuePromptLabel: '续写指令',
-    customContinuePromptPlaceholder: '询问 AI...',
+    customContinuePromptPlaceholder: '询问 AI（输入 @ 可附加文件）',
     customContinueHint: '⏎ 提交',
     customContinueConfirmHint: '⏎ 是否确认提交？',
     customContinueProcessing: '思考中',
