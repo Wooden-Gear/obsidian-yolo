@@ -178,15 +178,6 @@ export const en: TranslationKeys = {
       includeCurrentFile: 'Auto-include current page',
       includeCurrentFileDesc:
         'Automatically include the content of your current file in chats.',
-      enableBruteMode: 'Enable brute mode',
-      enableBruteModeDesc:
-        'Show chat mode switch in chat view to include entire folders verbatim (may exceed token limits).',
-      enableLearningMode: 'Learning mode',
-      enableLearningModeDesc:
-        'Add tutoring rules on top of the system/assistant prompt.',
-      learningModePrompt: 'Default learning prompt',
-      learningModePromptDesc:
-        'This text is appended when learning mode is enabled; view or customize as needed.',
       enableTools: 'Enable tools',
       enableToolsDesc: 'Allow the AI to use MCP tools.',
       maxAutoIterations: 'Max auto tool requests',
@@ -526,10 +517,6 @@ export const en: TranslationKeys = {
       apply: 'Apply',
       applying: 'Applying...',
     },
-    modeTitle: 'Chat mode',
-    modeRAG: 'RAG',
-    modeBrute: 'Brute',
-    modeLearning: 'Learning mode',
     customContinuePromptLabel: 'Continuation instruction',
     customContinuePromptPlaceholder: 'Ask AI (@ to attach files)',
     customContinueHint: 'Press enter (⏎) to submit',

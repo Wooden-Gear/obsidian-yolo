@@ -871,21 +871,6 @@
   background: var(--background-modifier-hover);
 }
 
-/* Chat mode dropdown: render divider as a thin line instead of a block item */
-.smtcmp-popover ul li.smtcmp-divider {
-  padding: 0;
-  margin: var(--size-2-1) 8px;
-  min-height: 0;
-  height: 1px;
-  background-color: var(--background-modifier-border);
-  pointer-events: none;
-  cursor: default;
-}
-
-/* Make selected item more obvious only inside chat mode dropdown */
-.smtcmp-chat-mode-dropdown-content ul li.selected {
-  font-weight: var(--font-medium);
-}
 
 .smtcmp-popover li {
   z-index: 1000;
@@ -2529,20 +2514,6 @@ button.smtcmp-chat-input-model-select {
   width: var(--smtcmp-width, auto);
   height: var(--smtcmp-height, auto);
   z-index: 1000;
-}
-
-/* Conversation mode selector */
-.smtcmp-chat-mode-selector {
-  display: flex;
-  gap: 6px;
-}
-.smtcmp-chat-mode-label {
-  font-size: 12px;
-  opacity: 0.8;
-}
-.smtcmp-chat-mode-selector-buttons {
-  display: flex;
-  gap: 4px;
 }
 
 /* Code block header button container spacing variant */

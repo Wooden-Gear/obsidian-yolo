@@ -160,9 +160,6 @@ export const smartComposerSettingsSchema = z.object({
   chatOptions: z
     .object({
       includeCurrentFileContent: z.boolean(),
-      enableBruteMode: z.boolean().optional(),
-      enableLearningMode: z.boolean().optional(),
-      learningModePrompt: z.string().optional(),
       enableTools: z.boolean(),
       maxAutoIterations: z.number(),
       maxContextMessages: z.number(),
@@ -174,9 +171,6 @@ export const smartComposerSettingsSchema = z.object({
     })
     .catch({
       includeCurrentFileContent: true,
-      enableBruteMode: false,
-      enableLearningMode: false,
-      learningModePrompt: '',
       enableTools: true,
       maxAutoIterations: 1,
       maxContextMessages: 32,

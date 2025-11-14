@@ -116,12 +116,6 @@ export type TranslationKeys = {
       title: string
       includeCurrentFile: string
       includeCurrentFileDesc: string
-      enableBruteMode?: string
-      enableBruteModeDesc?: string
-      enableLearningMode?: string
-      enableLearningModeDesc?: string
-      learningModePrompt?: string
-      learningModePromptDesc?: string
       enableTools: string
       enableToolsDesc: string
       maxAutoIterations: string
@@ -463,10 +457,6 @@ export type TranslationKeys = {
       apply?: string
       applying?: string
     }
-    modeTitle?: string
-    modeRAG?: string
-    modeBrute?: string
-    modeLearning?: string
     customContinuePromptLabel?: string
     customContinuePromptPlaceholder?: string
     customContinueHint?: string

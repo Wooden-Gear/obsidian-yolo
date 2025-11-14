@@ -2,7 +2,6 @@ import { App, TFile, htmlToMarkdown, requestUrl } from 'obsidian'
 
 import { editorStateToPlainText } from '../../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import { QueryProgressState } from '../../components/chat-view/QueryProgress'
-import { DEFAULT_LEARNING_MODE_PROMPT } from '../../constants'
 import { RAGEngine } from '../../core/rag/ragEngine'
 import { SelectEmbedding } from '../../database/schema'
 import { SmartComposerSettings } from '../../settings/schema/setting.types'
@@ -51,15 +50,11 @@ export class PromptGenerator {
   public async generateRequestMessages({
     messages,
     hasTools = false,
-    chatMode,
-    learningMode,
     maxContextOverride,
     model,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
-    chatMode?: 'rag' | 'brute'
-    learningMode?: boolean
     maxContextOverride?: number
     model: ChatModel
   }): Promise<RequestMessage[]> {
@@ -75,7 +70,6 @@ export class PromptGenerator {
           const { promptContent, similaritySearchResults } =
             await this.compileUserMessagePrompt({
               message,
-              chatMode,
             })
           return {
             ...message,
@@ -116,8 +110,6 @@ export class PromptGenerator {
     const customInstructionMessage = isBaseModel
       ? null
       : this.getCustomInstructionMessage()
-    const learningModeMessage =
-      !isBaseModel && learningMode ? this.getLearningModeMessage() : null
 
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
@@ -131,7 +123,6 @@ export class PromptGenerator {
       ...baseModelSpecialPromptMessage,
       ...(systemMessage ? [systemMessage] : []),
       ...(customInstructionMessage ? [customInstructionMessage] : []),
-      ...(learningModeMessage ? [learningModeMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
       ...this.getChatHistoryMessages({
         messages: compiledMessages,
@@ -292,12 +283,10 @@ ${message.annotations
     message,
     useVaultSearch,
     onQueryProgressChange,
-    chatMode,
   }: {
     message: ChatUserMessage
     useVaultSearch?: boolean
     onQueryProgressChange?: (queryProgress: QueryProgressState) => void
-    chatMode?: 'rag' | 'brute'
   }): Promise<{
     promptContent: ChatUserMessage['promptContent']
     shouldUseRAG: boolean
@@ -348,10 +337,8 @@ ${message.annotations
         }
         return false
       }
-      const isBrute = chatMode === 'brute'
-      const shouldUseRAG = isBrute
-        ? false
-        : shouldSearchEntireVault || (await exceedsTokenThreshold())
+      const shouldUseRAG =
+        shouldSearchEntireVault || (await exceedsTokenThreshold())
 
       let filePrompt: string
       if (shouldUseRAG) {
@@ -611,17 +598,6 @@ ${fileContent}
 <smtcmp_block filename="path/to/file.md" language="markdown" startLine="200" endLine="310"></smtcmp_block>
 
 When writing out new markdown blocks, remember not to include "line_number|" at the beginning of each line.`,
-    }
-  }
-
-  private getLearningModeMessage(): RequestMessage {
-    const custom = this.settings.chatOptions?.learningModePrompt
-    const defaultContent = DEFAULT_LEARNING_MODE_PROMPT
-    const content =
-      custom && `${custom}`.trim().length > 0 ? custom : defaultContent
-    return {
-      role: 'user',
-      content,
     }
   }
 

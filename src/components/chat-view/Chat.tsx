@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { Book, CircleStop, History, Plus } from 'lucide-react'
+import { CircleStop, History, Plus } from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import {
   forwardRef,
@@ -57,7 +57,6 @@ import ChatSettingsButton from './chat-input/ChatSettingsButton'
 import ChatUserInput, { ChatUserInputRef } from './chat-input/ChatUserInput'
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
 import { ChatListDropdown } from './ChatListDropdown'
-import { ChatModeDropdown } from './ChatModeDropdown'
 import Composer from './Composer'
 import QueryProgress, { QueryProgressState } from './QueryProgress'
 import { useAutoScroll } from './useAutoScroll'
@@ -167,10 +166,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [queryProgress, setQueryProgress] = useState<QueryProgressState>({
     type: 'idle',
   })
-  const [chatMode, setChatMode] = useState<'rag' | 'brute'>('rag')
-  const [learningMode, setLearningMode] = useState<boolean>(
-    settings.chatOptions.enableLearningMode ?? false,
-  )
 
   const activeView = props.activeView ?? 'chat'
   const onChangeView = props.onChangeView
@@ -214,8 +209,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setChatMessages,
     autoScrollToBottom,
     promptGenerator,
-    chatMode,
-    learningMode,
     conversationOverrides: conversationOverrides ?? undefined,
     modelId: conversationModelId,
   })
@@ -339,7 +332,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               await promptGenerator.compileUserMessagePrompt({
                 message,
                 useVaultSearch,
-                chatMode,
                 onQueryProgressChange: setQueryProgress,
               })
             return {
@@ -353,7 +345,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             const { promptContent, similaritySearchResults } =
               await promptGenerator.compileUserMessagePrompt({
                 message,
-                chatMode,
               })
             return {
               ...message,
@@ -377,7 +368,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       promptGenerator,
       abortActiveStreams,
       forceScrollToBottom,
-      chatMode,
     ],
   )
 
@@ -535,14 +525,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   useEffect(() => {
     setFocusedMessageId(inputMessage.id)
   }, [inputMessage.id])
-
-  // Ensure local learningMode state is turned off if the feature is disabled in settings
-  useEffect(() => {
-    const enabledInSettings = settings.chatOptions.enableLearningMode ?? false
-    if (!enabledInSettings && learningMode) {
-      setLearningMode(false)
-    }
-  }, [settings.chatOptions.enableLearningMode, learningMode])
 
   useEffect(() => {
     const updateConversationAsync = async () => {
@@ -814,18 +796,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             >
               <History size={18} />
             </ChatListDropdown>
-            <ChatModeDropdown
-              mode={chatMode}
-              onChange={setChatMode}
-              showBruteOption={settings.chatOptions.enableBruteMode ?? false}
-              showLearningOption={
-                settings.chatOptions.enableLearningMode ?? false
-              }
-              learningEnabled={learningMode}
-              onToggleLearning={setLearningMode}
-            >
-              <Book size={18} />
-            </ChatModeDropdown>
           </div>
         </div>
       )}

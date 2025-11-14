@@ -22,8 +22,6 @@ type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   autoScrollToBottom: () => void
   promptGenerator: PromptGenerator
-  chatMode: 'rag' | 'brute'
-  learningMode: boolean
   conversationOverrides?: ConversationOverrideSettings
   modelId: string
 }
@@ -41,8 +39,6 @@ export function useChatStreamManager({
   setChatMessages,
   autoScrollToBottom,
   promptGenerator,
-  chatMode,
-  learningMode,
   conversationOverrides,
   modelId,
 }: UseChatStreamManagerParams): UseChatStreamManager {
@@ -111,8 +107,6 @@ export function useChatStreamManager({
           promptGenerator,
           mcpManager,
           abortSignal: abortController.signal,
-          chatMode,
-          learningMode,
           requestParams: {
             stream: conversationOverrides?.stream ?? true,
             temperature: conversationOverrides?.temperature ?? undefined,

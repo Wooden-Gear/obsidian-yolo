@@ -50,8 +50,6 @@ describe('parseSmartComposerSettings', () => {
 
     expect(result.chatOptions).toMatchObject({
       includeCurrentFileContent: true,
-      enableBruteMode: false,
-      enableLearningMode: false,
       enableTools: true,
       maxAutoIterations: 1,
       maxContextMessages: 32,

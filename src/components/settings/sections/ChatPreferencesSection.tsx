@@ -1,8 +1,6 @@
-import { DEFAULT_LEARNING_MODE_PROMPT } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
-import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 
@@ -29,11 +27,6 @@ export function ChatPreferencesSection() {
     })()
   }
 
-  const learningModePromptValue =
-    (settings.chatOptions.learningModePrompt ?? '').trim().length > 0
-      ? settings.chatOptions.learningModePrompt!
-      : DEFAULT_LEARNING_MODE_PROMPT
-
   return (
     <div className="smtcmp-settings-section">
       <div className="smtcmp-settings-header">
@@ -56,63 +49,6 @@ export function ChatPreferencesSection() {
           }}
         />
       </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.chatPreferences.enableBruteMode')}
-        desc={t('settings.chatPreferences.enableBruteModeDesc')}
-      >
-        <ObsidianToggle
-          value={settings.chatOptions.enableBruteMode ?? false}
-          onChange={(value) => {
-            updateChatOptions(
-              {
-                enableBruteMode: value,
-              },
-              'enableBruteMode',
-            )
-          }}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.chatPreferences.enableLearningMode')}
-        desc={t('settings.chatPreferences.enableLearningModeDesc')}
-      >
-        <ObsidianToggle
-          value={settings.chatOptions.enableLearningMode ?? false}
-          onChange={(value) => {
-            updateChatOptions(
-              {
-                enableLearningMode: value,
-              },
-              'enableLearningMode',
-            )
-          }}
-        />
-      </ObsidianSetting>
-
-      {settings.chatOptions.enableLearningMode && (
-        <>
-          <ObsidianSetting
-            name={t('settings.chatPreferences.learningModePrompt')}
-            desc={t('settings.chatPreferences.learningModePromptDesc')}
-            className="smtcmp-settings-textarea-header"
-          />
-          <ObsidianSetting className="smtcmp-settings-textarea">
-            <ObsidianTextArea
-              value={learningModePromptValue}
-              onChange={(value: string) => {
-                updateChatOptions(
-                  {
-                    learningModePrompt: value,
-                  },
-                  'learningModePrompt',
-                )
-              }}
-            />
-          </ObsidianSetting>
-        </>
-      )}
 
       <ObsidianSetting
         name={t('settings.chatPreferences.enableTools')}

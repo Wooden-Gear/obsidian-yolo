@@ -29,8 +29,6 @@ export type ResponseGeneratorParams = {
   promptGenerator: PromptGenerator
   mcpManager: McpManager
   abortSignal?: AbortSignal
-  chatMode?: 'rag' | 'brute'
-  learningMode?: boolean
   requestParams?: {
     stream?: boolean
     temperature?: number
@@ -53,8 +51,6 @@ export class ResponseGenerator {
   private readonly abortSignal?: AbortSignal
   private readonly receivedMessages: ChatMessage[]
   private readonly maxAutoIterations: number
-  private readonly chatMode?: 'rag' | 'brute'
-  private readonly learningMode?: boolean
   private readonly requestParams?: {
     stream?: boolean
     temperature?: number
@@ -79,8 +75,6 @@ export class ResponseGenerator {
     this.promptGenerator = params.promptGenerator
     this.mcpManager = params.mcpManager
     this.abortSignal = params.abortSignal
-    this.chatMode = params.chatMode
-    this.learningMode = params.learningMode
     this.requestParams = params.requestParams
     this.maxContextOverride = params.maxContextOverride
     this.geminiTools = params.geminiTools
@@ -181,8 +175,6 @@ export class ResponseGenerator {
     const requestMessages = await this.promptGenerator.generateRequestMessages({
       messages: [...this.receivedMessages, ...this.responseMessages],
       hasTools,
-      chatMode: this.chatMode,
-      learningMode: this.learningMode,
       maxContextOverride: this.maxContextOverride,
       model: this.model,
     })
