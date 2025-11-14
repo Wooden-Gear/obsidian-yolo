@@ -304,7 +304,17 @@ export class VectorManager {
     }
 
     if (contentChunks.length === 0) {
-      throw new Error('All files failed to process. Stopping indexing process.')
+      const hasExistingVectors =
+        await this.repository.hasVectorsForModel(embeddingModel)
+      if (!hasExistingVectors) {
+        throw new Error(
+          'All files failed to process. Stopping indexing process.',
+        )
+      }
+      console.warn(
+        '[Smart Composer] Vector indexing skipped because all pending files failed. Using existing embeddings.',
+      )
+      return
     }
 
     // 初始进度更新，包含文件夹信息

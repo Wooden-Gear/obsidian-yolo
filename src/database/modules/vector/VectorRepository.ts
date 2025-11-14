@@ -109,6 +109,21 @@ export class VectorRepository {
       .where(eq(embeddingTable.model, embeddingModel.id))
   }
 
+  async hasVectorsForModel(
+    embeddingModel: EmbeddingModelClient,
+  ): Promise<boolean> {
+    if (!this.db) {
+      throw new DatabaseNotInitializedException()
+    }
+    const result = await this.db
+      .select({ value: count() })
+      .from(embeddingTable)
+      .where(eq(embeddingTable.model, embeddingModel.id))
+      .limit(1)
+    const countValue = result[0]?.value ?? 0
+    return countValue > 0
+  }
+
   async insertVectors(data: InsertEmbedding[]): Promise<void> {
     if (!this.db) {
       throw new DatabaseNotInitializedException()

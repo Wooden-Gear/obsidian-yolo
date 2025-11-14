@@ -60,7 +60,7 @@ export default function QueryProgress({
         <div className="smtcmp-query-progress">
           <p>
             Reading mentioned files
-            <DotLoader />
+            <DotLoader variant="dots" />
           </p>
         </div>
       )
@@ -69,7 +69,7 @@ export default function QueryProgress({
         <div className="smtcmp-query-progress">
           <p>
             {`Indexing ${state.indexProgress.totalFiles} file`}
-            <DotLoader />
+            <DotLoader variant="dots" />
           </p>
           <p className="smtcmp-query-progress-detail">{`${state.indexProgress.completedChunks}/${state.indexProgress.totalChunks} chunks indexed`}</p>
           {state.indexProgress.waitingForRateLimit && (
@@ -84,7 +84,7 @@ export default function QueryProgress({
         <div className="smtcmp-query-progress">
           <p>
             Querying the vault
-            <DotLoader />
+            <DotLoader variant="dots" />
           </p>
         </div>
       )
@@ -93,7 +93,7 @@ export default function QueryProgress({
         <div className="smtcmp-query-progress">
           <p>
             Reading related files
-            <DotLoader />
+            <DotLoader variant="dots" />
           </p>
           {state.queryResult.map((result) => (
             <div key={result.path}>
