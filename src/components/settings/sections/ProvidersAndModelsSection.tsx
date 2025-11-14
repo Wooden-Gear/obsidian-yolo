@@ -1,4 +1,19 @@
 import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   ChevronDown,
   ChevronRight,
   Edit,
@@ -7,7 +22,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { App, Notice } from 'obsidian'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import {
   DEFAULT_CHAT_MODELS,
@@ -18,6 +33,8 @@ import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { getEmbeddingModelClient } from '../../../core/rag/embedding'
 import SmartComposerPlugin from '../../../main'
+import { ChatModel } from '../../../types/chat-model.types'
+import { EmbeddingModel } from '../../../types/embedding-model.types'
 import { LLMProvider } from '../../../types/provider.types'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { AddChatModelModal } from '../modals/AddChatModelModal'
@@ -34,6 +51,505 @@ type ProvidersAndModelsSectionProps = {
   plugin: SmartComposerPlugin
 }
 
+type ProviderSectionItemProps = {
+  provider: LLMProvider
+  app: App
+  plugin: SmartComposerPlugin
+  t: Translator
+  isExpanded: boolean
+  toggleProvider: (id: string) => void
+  chatModels: ChatModel[]
+  embeddingModels: EmbeddingModel[]
+  modelSensors: ReturnType<typeof useSensors>
+  handleDeleteProvider: (provider: LLMProvider) => void
+  handleDeleteChatModel: (modelId: string) => void
+  handleDeleteEmbeddingModel: (modelId: string) => void
+  handleToggleEnableChatModel: (modelId: string, value: boolean) => void
+  handleChatModelDragEnd: (event: DragEndEvent) => void
+  handleEmbeddingModelDragEnd: (event: DragEndEvent) => void
+}
+
+function ProviderSectionItem({
+  provider,
+  app,
+  plugin,
+  t,
+  isExpanded,
+  toggleProvider,
+  chatModels,
+  embeddingModels,
+  modelSensors,
+  handleDeleteProvider,
+  handleDeleteChatModel,
+  handleDeleteEmbeddingModel,
+  handleToggleEnableChatModel,
+  handleChatModelDragEnd,
+  handleEmbeddingModelDragEnd,
+}: ProviderSectionItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: provider.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`smtcmp-provider-section ${isDragging ? 'smtcmp-provider-dragging' : ''}`}
+      data-provider-id={provider.id}
+      {...attributes}
+    >
+      <div
+        className="smtcmp-provider-header smtcmp-clickable"
+        onClick={() => toggleProvider(provider.id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            toggleProvider(provider.id)
+          }
+        }}
+      >
+        <span
+          className="smtcmp-provider-drag-handle"
+          aria-label={t('settings.providers.dragHandle', 'Drag to reorder')}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          {...listeners}
+        >
+          <GripVertical />
+        </span>
+
+        <div className="smtcmp-provider-expand-btn">
+          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </div>
+
+        <div className="smtcmp-provider-info">
+          <span className="smtcmp-provider-id">{provider.id}</span>
+          <span className="smtcmp-provider-type">
+            {PROVIDER_TYPES_INFO[provider.type].label}
+          </span>
+          <span
+            className="smtcmp-provider-api-key"
+            onClick={(e) => {
+              e.stopPropagation()
+              new EditProviderModal(app, plugin, provider).open()
+            }}
+          >
+            {provider.apiKey ? '••••••••' : 'Set API key'}
+          </span>
+        </div>
+
+        <div className="smtcmp-provider-actions">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              new EditProviderModal(app, plugin, provider).open()
+            }}
+            className="clickable-icon"
+          >
+            <Settings />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteProvider(provider)
+            }}
+            className="clickable-icon"
+          >
+            <Trash2 />
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="smtcmp-provider-models">
+          <ChatModelsTable
+            provider={provider}
+            app={app}
+            plugin={plugin}
+            t={t}
+            models={chatModels}
+            sensors={modelSensors}
+            onDragEnd={handleChatModelDragEnd}
+            onToggle={handleToggleEnableChatModel}
+            onDelete={handleDeleteChatModel}
+          />
+
+          <EmbeddingModelsTable
+            provider={provider}
+            app={app}
+            plugin={plugin}
+            t={t}
+            models={embeddingModels}
+            sensors={modelSensors}
+            onDragEnd={handleEmbeddingModelDragEnd}
+            onDelete={handleDeleteEmbeddingModel}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+type ChatModelsTableProps = {
+  provider: LLMProvider
+  app: App
+  plugin: SmartComposerPlugin
+  t: Translator
+  models: ChatModel[]
+  sensors: ReturnType<typeof useSensors>
+  onDragEnd: (event: DragEndEvent) => void
+  onToggle: (modelId: string, value: boolean) => void
+  onDelete: (modelId: string) => void
+}
+
+function ChatModelsTable({
+  provider,
+  app,
+  plugin,
+  t,
+  models,
+  sensors,
+  onDragEnd,
+  onToggle,
+  onDelete,
+}: ChatModelsTableProps) {
+  const items = models.map((model) => model.id)
+
+  return (
+    <div className="smtcmp-models-subsection">
+      <div className="smtcmp-models-subsection-header">
+        <span>{t('settings.models.chatModels')}</span>
+        <button
+          className="smtcmp-add-model-btn"
+          onClick={() => {
+            const modal = new AddChatModelModal(app, plugin, provider)
+            modal.open()
+          }}
+        >
+          + {t('settings.models.addChatModel')}
+        </button>
+      </div>
+
+      {models.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+            <table className="smtcmp-models-table">
+              <colgroup>
+                <col width={16} />
+                <col />
+                <col />
+                <col width={60} />
+                <col width={60} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>{t('settings.models.modelName')}</th>
+                  <th>Model (calling ID)</th>
+                  <th>Enable</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {models.map((model) => (
+                  <ChatModelRow
+                    key={model.id}
+                    provider={provider}
+                    model={model}
+                    app={app}
+                    plugin={plugin}
+                    t={t}
+                    onToggle={onToggle}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="smtcmp-no-models">
+          {t('settings.models.noChatModelsConfigured')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+type EmbeddingModelsTableProps = {
+  provider: LLMProvider
+  app: App
+  plugin: SmartComposerPlugin
+  t: Translator
+  models: EmbeddingModel[]
+  sensors: ReturnType<typeof useSensors>
+  onDragEnd: (event: DragEndEvent) => void
+  onDelete: (modelId: string) => void
+}
+
+function EmbeddingModelsTable({
+  provider,
+  app,
+  plugin,
+  t,
+  models,
+  sensors,
+  onDragEnd,
+  onDelete,
+}: EmbeddingModelsTableProps) {
+  const items = models.map((model) => model.id)
+
+  return (
+    <div className="smtcmp-models-subsection">
+      <div className="smtcmp-models-subsection-header">
+        <span>{t('settings.models.embeddingModels')}</span>
+        <button
+          className="smtcmp-add-model-btn"
+          onClick={() => {
+            const modal = new AddEmbeddingModelModal(app, plugin, provider)
+            modal.open()
+          }}
+        >
+          + {t('settings.models.addEmbeddingModel')}
+        </button>
+      </div>
+
+      {models.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+            <table className="smtcmp-models-table smtcmp-embedding-models-table">
+              <colgroup>
+                <col width={16} />
+                <col />
+                <col />
+                <col width={80} />
+                <col width={60} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>{t('settings.models.modelName')}</th>
+                  <th>Model (calling ID)</th>
+                  <th>Dimension</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {models.map((model) => (
+                  <EmbeddingModelRow
+                    key={model.id}
+                    provider={provider}
+                    model={model}
+                    app={app}
+                    plugin={plugin}
+                    t={t}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="smtcmp-no-models">
+          {t('settings.models.noEmbeddingModelsConfigured')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+type ChatModelRowProps = {
+  provider: LLMProvider
+  model: ChatModel
+  app: App
+  plugin: SmartComposerPlugin
+  t: Translator
+  onToggle: (modelId: string, value: boolean) => void
+  onDelete: (modelId: string) => void
+}
+
+function ChatModelRow({
+  provider,
+  model,
+  app,
+  plugin,
+  t,
+  onToggle,
+  onDelete,
+}: ChatModelRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: model.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const isDefault = DEFAULT_CHAT_MODELS.some(
+    (v) => v.id === model.id && v.providerId === model.providerId,
+  )
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? 'smtcmp-row-dragging' : ''}
+      data-model-id={model.id}
+      data-model-key={`${provider.id}:${model.id}`}
+      {...attributes}
+    >
+      <td>
+        <span
+          className="smtcmp-drag-handle"
+          aria-label={t('settings.models.dragHandle', 'Drag to reorder')}
+          {...listeners}
+        >
+          <GripVertical />
+        </span>
+      </td>
+      <td title={model.id}>{model.name || model.model || model.id}</td>
+      <td>{model.model || model.id}</td>
+      <td>
+        <ObsidianToggle
+          value={model.enable ?? true}
+          onChange={(value) => onToggle(model.id, value)}
+        />
+      </td>
+      <td>
+        <div className="smtcmp-settings-actions">
+          <button
+            onClick={() => new EditChatModelModal(app, plugin, model).open()}
+            className="clickable-icon"
+            title="Edit model"
+          >
+            <Edit />
+          </button>
+          {!isDefault && (
+            <button
+              onClick={() => onDelete(model.id)}
+              className="clickable-icon"
+            >
+              <Trash2 />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+type EmbeddingModelRowProps = {
+  provider: LLMProvider
+  model: EmbeddingModel
+  app: App
+  plugin: SmartComposerPlugin
+  t: Translator
+  onDelete: (modelId: string) => void
+}
+
+function EmbeddingModelRow({
+  provider,
+  model,
+  app,
+  plugin,
+  t,
+  onDelete,
+}: EmbeddingModelRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: model.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const isDefault = DEFAULT_EMBEDDING_MODELS.some(
+    (v) => v.id === model.id && v.providerId === model.providerId,
+  )
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? 'smtcmp-row-dragging' : ''}
+      data-model-id={model.id}
+      data-model-key={`${provider.id}:${model.id}`}
+      {...attributes}
+    >
+      <td>
+        <span
+          className="smtcmp-drag-handle"
+          aria-label={t('settings.models.dragHandle', 'Drag to reorder')}
+          {...listeners}
+        >
+          <GripVertical />
+        </span>
+      </td>
+      <td title={model.id}>{model.name ?? model.model ?? model.id}</td>
+      <td title={model.model}>{model.model}</td>
+      <td>{model.dimension}</td>
+      <td>
+        <div className="smtcmp-settings-actions">
+          {!isDefault && (
+            <>
+              <button
+                onClick={() =>
+                  new EditEmbeddingModelModal(app, plugin, model).open()
+                }
+                className="clickable-icon"
+                title="Edit model"
+              >
+                <Edit />
+              </button>
+              <button
+                onClick={() => onDelete(model.id)}
+                className="clickable-icon"
+              >
+                <Trash2 />
+              </button>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+type Translator = ReturnType<typeof useLanguage>['t']
+
 export function ProvidersAndModelsSection({
   app,
   plugin,
@@ -43,19 +559,20 @@ export function ProvidersAndModelsSection({
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
     new Set(),
   )
-  const dragChatModelRef = React.useRef<{
-    providerId: string
-    index: number
-  } | null>(null)
-  const dragOverRowRef = React.useRef<HTMLTableRowElement | null>(null)
-  const lastDropPosRef = React.useRef<'before' | 'after' | null>(null)
-  const lastInsertIndexRef = React.useRef<number | null>(null)
-
-  // Provider drag state
-  const dragProviderRef = React.useRef<number | null>(null)
-  const dragOverProviderRef = React.useRef<HTMLDivElement | null>(null)
-  const lastProviderDropPosRef = React.useRef<'before' | 'after' | null>(null)
-  const lastProviderInsertIndexRef = React.useRef<number | null>(null)
+  const providerSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  )
+  const modelSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  )
+  const providerIds = useMemo(
+    () => settings.providers.map((provider) => provider.id),
+    [settings.providers],
+  )
 
   // Robustly highlight the moved row after DOM re-render
   const triggerProviderDropSuccess = (providerId: string, movedId: string) => {
@@ -75,6 +592,117 @@ export function ProvidersAndModelsSection({
       }
     }
     requestAnimationFrame(() => tryFind())
+  }
+
+  const handleProviderDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = settings.providers.findIndex((p) => p.id === active.id)
+    const newIndex = settings.providers.findIndex((p) => p.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) {
+      return
+    }
+
+    const reorderedProviders = arrayMove(settings.providers, oldIndex, newIndex)
+    try {
+      await setSettings({
+        ...settings,
+        providers: reorderedProviders,
+      })
+      triggerProviderDropSuccessFeedback(String(active.id))
+    } catch (error) {
+      console.error('[Smart Composer] Failed to reorder providers:', error)
+      new Notice('Failed to reorder providers.')
+    }
+  }
+
+  const handleChatModelDragEnd = async (
+    providerId: string,
+    { active, over }: DragEndEvent,
+  ) => {
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const providerModels = settings.chatModels.filter(
+      (model) => model.providerId === providerId,
+    )
+    const oldIndex = providerModels.findIndex((model) => model.id === active.id)
+    const newIndex = providerModels.findIndex((model) => model.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) {
+      return
+    }
+
+    const reorderedProviderModels = arrayMove(
+      providerModels,
+      oldIndex,
+      newIndex,
+    )
+    const queue = [...reorderedProviderModels]
+    const updatedChatModels = settings.chatModels.map((model) => {
+      if (model.providerId !== providerId) {
+        return model
+      }
+      return queue.shift() ?? model
+    })
+
+    try {
+      await setSettings({
+        ...settings,
+        chatModels: updatedChatModels,
+      })
+      triggerProviderDropSuccess(providerId, String(active.id))
+    } catch (error) {
+      console.error('[Smart Composer] Failed to reorder chat models:', error)
+      new Notice('Failed to reorder chat models.')
+    }
+  }
+
+  const handleEmbeddingModelDragEnd = async (
+    providerId: string,
+    { active, over }: DragEndEvent,
+  ) => {
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const providerModels = settings.embeddingModels.filter(
+      (model) => model.providerId === providerId,
+    )
+    const oldIndex = providerModels.findIndex((model) => model.id === active.id)
+    const newIndex = providerModels.findIndex((model) => model.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) {
+      return
+    }
+
+    const reorderedProviderModels = arrayMove(
+      providerModels,
+      oldIndex,
+      newIndex,
+    )
+    const queue = [...reorderedProviderModels]
+    const updatedEmbeddingModels = settings.embeddingModels.map((model) => {
+      if (model.providerId !== providerId) {
+        return model
+      }
+      return queue.shift() ?? model
+    })
+
+    try {
+      await setSettings({
+        ...settings,
+        embeddingModels: updatedEmbeddingModels,
+      })
+      triggerProviderDropSuccess(providerId, String(active.id))
+    } catch (error) {
+      console.error(
+        '[Smart Composer] Failed to reorder embedding models:',
+        error,
+      )
+      new Notice('Failed to reorder embedding models.')
+    }
   }
 
   const toggleProvider = (providerId: string) => {
@@ -277,383 +905,6 @@ export function ProvidersAndModelsSection({
     })()
   }
 
-  const handleProviderModelDragStart = (
-    event: React.DragEvent<HTMLTableRowElement>,
-    providerId: string,
-    index: number,
-  ) => {
-    dragChatModelRef.current = { providerId, index }
-    event.dataTransfer?.setData('text/plain', `${providerId}:${index}`)
-    event.dataTransfer.effectAllowed = 'move'
-
-    // visual feedback
-    const row = event.currentTarget
-    row.classList.add('smtcmp-row-dragging')
-    const handle = row.querySelector('.smtcmp-drag-handle')
-    if (handle) handle.classList.add('smtcmp-drag-handle--active')
-  }
-
-  const handleProviderModelDragEnd = () => {
-    dragChatModelRef.current = null
-    if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove(
-        'smtcmp-row-drag-over-before',
-        'smtcmp-row-drag-over-after',
-      )
-      dragOverRowRef.current = null
-    }
-    lastDropPosRef.current = null
-    lastInsertIndexRef.current = null
-    const dragging = document.querySelector('tr.smtcmp-row-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
-  }
-
-  const handleProviderModelDragOver = (
-    event: React.DragEvent<HTMLTableRowElement>,
-    providerId: string,
-    targetIndex: number,
-  ) => {
-    event.preventDefault()
-
-    // only show indicators when dragging within the same provider group
-    if (
-      !dragChatModelRef.current ||
-      dragChatModelRef.current.providerId !== providerId
-    ) {
-      return
-    }
-
-    const row = event.currentTarget
-    const rect = row.getBoundingClientRect()
-    const rel = (event.clientY - rect.top) / rect.height
-
-    // If hovering the row being dragged, suppress indicator to avoid flicker
-    if (dragChatModelRef.current.index === targetIndex) {
-      row.classList.remove(
-        'smtcmp-row-drag-over-before',
-        'smtcmp-row-drag-over-after',
-      )
-      if (dragOverRowRef.current && dragOverRowRef.current !== row) {
-        dragOverRowRef.current.classList.remove(
-          'smtcmp-row-drag-over-before',
-          'smtcmp-row-drag-over-after',
-        )
-      }
-      dragOverRowRef.current = row
-      lastDropPosRef.current = null
-      lastInsertIndexRef.current = null
-      return
-    }
-
-    // Hysteresis around the midline to prevent rapid toggling
-    const HYSTERESIS = 0.05
-    let dropAfter: boolean
-    if (lastDropPosRef.current) {
-      if (rel > 0.5 + HYSTERESIS) dropAfter = true
-      else if (rel < 0.5 - HYSTERESIS) dropAfter = false
-      else dropAfter = lastDropPosRef.current === 'after'
-    } else {
-      dropAfter = rel > 0.5
-    }
-
-    // Calculate actual insert position to avoid duplicate indicators
-    const sourceIndex = dragChatModelRef.current.index
-    let insertIndex = targetIndex
-    if (dropAfter) insertIndex += 1
-    if (sourceIndex < targetIndex) insertIndex -= 1
-
-    // If same insert position as before, don't change anything
-    if (lastInsertIndexRef.current === insertIndex) {
-      return
-    }
-
-    // clear previous indicator
-    if (dragOverRowRef.current) {
-      dragOverRowRef.current.classList.remove(
-        'smtcmp-row-drag-over-before',
-        'smtcmp-row-drag-over-after',
-      )
-    }
-
-    const desiredClass = dropAfter
-      ? 'smtcmp-row-drag-over-after'
-      : 'smtcmp-row-drag-over-before'
-    row.classList.remove(
-      'smtcmp-row-drag-over-before',
-      'smtcmp-row-drag-over-after',
-    )
-    row.classList.add(desiredClass)
-    dragOverRowRef.current = row
-    lastDropPosRef.current = dropAfter ? 'after' : 'before'
-    lastInsertIndexRef.current = insertIndex
-  }
-
-  const handleProviderModelDrop = (
-    event: React.DragEvent<HTMLTableRowElement>,
-    providerId: string,
-    targetIndex: number,
-  ) => {
-    event.preventDefault()
-    // capture row early to avoid SyntheticEvent pooling issues
-    const rowEl = event.currentTarget as HTMLTableRowElement
-    const dragInfo = dragChatModelRef.current
-    dragChatModelRef.current = null
-    if (!dragInfo || dragInfo.providerId !== providerId) {
-      return
-    }
-
-    const providerModelIndexes = settings.chatModels.reduce<number[]>(
-      (acc, model, idx) => {
-        if (model.providerId === providerId) {
-          acc.push(idx)
-        }
-        return acc
-      },
-      [],
-    )
-
-    const sourceGlobalIndex = providerModelIndexes[dragInfo.index]
-    const targetGlobalIndex = providerModelIndexes[targetIndex]
-    if (sourceGlobalIndex === undefined || targetGlobalIndex === undefined) {
-      return
-    }
-
-    const updatedChatModels = [...settings.chatModels]
-    const [moved] = updatedChatModels.splice(sourceGlobalIndex, 1)
-    if (!moved) {
-      return
-    }
-
-    const rect = event.currentTarget.getBoundingClientRect()
-    const dropAfter = event.clientY - rect.top > rect.height / 2
-
-    let insertIndex = targetGlobalIndex + (dropAfter ? 1 : 0)
-    if (sourceGlobalIndex < insertIndex) {
-      insertIndex -= 1
-    }
-    if (insertIndex < 0) {
-      insertIndex = 0
-    }
-    if (insertIndex > updatedChatModels.length) {
-      insertIndex = updatedChatModels.length
-    }
-
-    updatedChatModels.splice(insertIndex, 0, moved)
-
-    void (async () => {
-      try {
-        await setSettings({
-          ...settings,
-          chatModels: updatedChatModels,
-        })
-        triggerProviderDropSuccess(providerId, moved.id)
-      } catch (error) {
-        console.error('[Smart Composer] Failed to reorder chat models:', error)
-        new Notice('Failed to reorder chat models.')
-      } finally {
-        rowEl?.classList.remove(
-          'smtcmp-row-drag-over-before',
-          'smtcmp-row-drag-over-after',
-        )
-        const dragging = document.querySelector('tr.smtcmp-row-dragging')
-        if (dragging) dragging.classList.remove('smtcmp-row-dragging')
-        const activeHandle = document.querySelector(
-          '.smtcmp-drag-handle.smtcmp-drag-handle--active',
-        )
-        if (activeHandle)
-          activeHandle.classList.remove('smtcmp-drag-handle--active')
-
-        dragOverRowRef.current = null
-        lastDropPosRef.current = null
-        lastInsertIndexRef.current = null
-      }
-    })()
-  }
-
-  const isEnabled = (enable: boolean | undefined | null) => enable ?? true
-
-  // Provider drag handlers
-  const handleProviderDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    index: number,
-  ) => {
-    dragProviderRef.current = index
-    event.dataTransfer?.setData('text/plain', `${index}`)
-    event.dataTransfer.effectAllowed = 'move'
-
-    const section = event.currentTarget
-    section.classList.add('smtcmp-provider-dragging')
-    const handle = section.querySelector('.smtcmp-provider-drag-handle')
-    if (handle) handle.classList.add('smtcmp-drag-handle--active')
-  }
-
-  const handleProviderDragEnd = () => {
-    dragProviderRef.current = null
-    if (dragOverProviderRef.current) {
-      dragOverProviderRef.current.classList.remove(
-        'smtcmp-provider-drag-over-before',
-        'smtcmp-provider-drag-over-after',
-      )
-      dragOverProviderRef.current = null
-    }
-    lastProviderDropPosRef.current = null
-    lastProviderInsertIndexRef.current = null
-    const dragging = document.querySelector('.smtcmp-provider-dragging')
-    if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
-    const activeHandle = document.querySelector(
-      '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
-    )
-    if (activeHandle)
-      activeHandle.classList.remove('smtcmp-drag-handle--active')
-  }
-
-  const handleProviderDragOver = (
-    event: React.DragEvent<HTMLDivElement>,
-    targetIndex: number,
-  ) => {
-    event.preventDefault()
-
-    if (dragProviderRef.current === null) {
-      return
-    }
-
-    const section = event.currentTarget
-    const rect = section.getBoundingClientRect()
-    const rel = (event.clientY - rect.top) / rect.height
-
-    // If hovering the section being dragged, suppress indicator
-    if (dragProviderRef.current === targetIndex) {
-      section.classList.remove(
-        'smtcmp-provider-drag-over-before',
-        'smtcmp-provider-drag-over-after',
-      )
-      if (
-        dragOverProviderRef.current &&
-        dragOverProviderRef.current !== section
-      ) {
-        dragOverProviderRef.current.classList.remove(
-          'smtcmp-provider-drag-over-before',
-          'smtcmp-provider-drag-over-after',
-        )
-      }
-      dragOverProviderRef.current = section
-      lastProviderDropPosRef.current = null
-      lastProviderInsertIndexRef.current = null
-      return
-    }
-
-    // Hysteresis around the midline
-    const HYSTERESIS = 0.05
-    let dropAfter: boolean
-    if (lastProviderDropPosRef.current) {
-      if (rel > 0.5 + HYSTERESIS) dropAfter = true
-      else if (rel < 0.5 - HYSTERESIS) dropAfter = false
-      else dropAfter = lastProviderDropPosRef.current === 'after'
-    } else {
-      dropAfter = rel > 0.5
-    }
-
-    const sourceIndex = dragProviderRef.current
-    let insertIndex = targetIndex
-    if (dropAfter) insertIndex += 1
-    if (sourceIndex < targetIndex) insertIndex -= 1
-
-    if (lastProviderInsertIndexRef.current === insertIndex) {
-      return
-    }
-
-    if (dragOverProviderRef.current) {
-      dragOverProviderRef.current.classList.remove(
-        'smtcmp-provider-drag-over-before',
-        'smtcmp-provider-drag-over-after',
-      )
-    }
-
-    const desiredClass = dropAfter
-      ? 'smtcmp-provider-drag-over-after'
-      : 'smtcmp-provider-drag-over-before'
-    section.classList.remove(
-      'smtcmp-provider-drag-over-before',
-      'smtcmp-provider-drag-over-after',
-    )
-    section.classList.add(desiredClass)
-    dragOverProviderRef.current = section
-    lastProviderDropPosRef.current = dropAfter ? 'after' : 'before'
-    lastProviderInsertIndexRef.current = insertIndex
-  }
-
-  const handleProviderDrop = (
-    event: React.DragEvent<HTMLDivElement>,
-    targetIndex: number,
-  ) => {
-    event.preventDefault()
-    const sectionEl = event.currentTarget as HTMLDivElement
-    const dragInfo = dragProviderRef.current
-    dragProviderRef.current = null
-
-    if (dragInfo === null) {
-      return
-    }
-
-    const updatedProviders = [...settings.providers]
-    const [moved] = updatedProviders.splice(dragInfo, 1)
-    if (!moved) {
-      return
-    }
-
-    const rect = event.currentTarget.getBoundingClientRect()
-    const dropAfter = event.clientY - rect.top > rect.height / 2
-
-    let insertIndex = targetIndex + (dropAfter ? 1 : 0)
-    if (dragInfo < insertIndex) {
-      insertIndex -= 1
-    }
-    if (insertIndex < 0) {
-      insertIndex = 0
-    }
-    if (insertIndex > updatedProviders.length) {
-      insertIndex = updatedProviders.length
-    }
-
-    updatedProviders.splice(insertIndex, 0, moved)
-
-    void (async () => {
-      try {
-        await setSettings({
-          ...settings,
-          providers: updatedProviders,
-        })
-
-        // success feedback on moved provider
-        triggerProviderDropSuccessFeedback(moved.id)
-      } catch (error) {
-        console.error('[Smart Composer] Failed to reorder providers:', error)
-        new Notice('Failed to reorder providers.')
-      } finally {
-        sectionEl?.classList.remove(
-          'smtcmp-provider-drag-over-before',
-          'smtcmp-provider-drag-over-after',
-        )
-        const dragging = document.querySelector('.smtcmp-provider-dragging')
-        if (dragging) dragging.classList.remove('smtcmp-provider-dragging')
-        const activeHandle = document.querySelector(
-          '.smtcmp-provider-drag-handle.smtcmp-drag-handle--active',
-        )
-        if (activeHandle)
-          activeHandle.classList.remove('smtcmp-drag-handle--active')
-
-        dragOverProviderRef.current = null
-        lastProviderDropPosRef.current = null
-        lastProviderInsertIndexRef.current = null
-      }
-    })()
-  }
-
   const triggerProviderDropSuccessFeedback = (movedId: string) => {
     const tryFind = (attempt = 0) => {
       const movedSection = document.querySelector(
@@ -690,320 +941,51 @@ export function ProvidersAndModelsSection({
       </div>
 
       <div className="smtcmp-providers-models-container">
-        {settings.providers.map((provider, index) => {
-          const isExpanded = expandedProviders.has(provider.id)
-          const chatModels = settings.chatModels.filter(
-            (m) => m.providerId === provider.id,
-          )
-          const embeddingModels = settings.embeddingModels.filter(
-            (m) => m.providerId === provider.id,
-          )
+        <DndContext
+          sensors={providerSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleProviderDragEnd}
+        >
+          <SortableContext
+            items={providerIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {settings.providers.map((provider) => {
+              const isExpanded = expandedProviders.has(provider.id)
+              const chatModels = settings.chatModels.filter(
+                (m) => m.providerId === provider.id,
+              )
+              const embeddingModels = settings.embeddingModels.filter(
+                (m) => m.providerId === provider.id,
+              )
 
-          return (
-            <div
-              key={provider.id}
-              className="smtcmp-provider-section"
-              data-provider-id={provider.id}
-              draggable
-              onDragStart={(event) => handleProviderDragStart(event, index)}
-              onDragOver={(event) => handleProviderDragOver(event, index)}
-              onDrop={(event) => handleProviderDrop(event, index)}
-              onDragEnd={handleProviderDragEnd}
-            >
-              <div
-                className="smtcmp-provider-header smtcmp-clickable"
-                onClick={() => toggleProvider(provider.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    toggleProvider(provider.id)
+              return (
+                <ProviderSectionItem
+                  key={provider.id}
+                  provider={provider}
+                  app={app}
+                  plugin={plugin}
+                  t={t}
+                  isExpanded={isExpanded}
+                  toggleProvider={toggleProvider}
+                  chatModels={chatModels}
+                  embeddingModels={embeddingModels}
+                  modelSensors={modelSensors}
+                  handleDeleteProvider={handleDeleteProvider}
+                  handleDeleteChatModel={handleDeleteChatModel}
+                  handleDeleteEmbeddingModel={handleDeleteEmbeddingModel}
+                  handleToggleEnableChatModel={handleToggleEnableChatModel}
+                  handleChatModelDragEnd={(event) =>
+                    handleChatModelDragEnd(provider.id, event)
                   }
-                }}
-              >
-                <span
-                  className="smtcmp-provider-drag-handle"
-                  aria-label="Drag to reorder"
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  <GripVertical />
-                </span>
-
-                <div className="smtcmp-provider-expand-btn">
-                  {isExpanded ? (
-                    <ChevronDown size={16} />
-                  ) : (
-                    <ChevronRight size={16} />
-                  )}
-                </div>
-
-                <div className="smtcmp-provider-info">
-                  <span className="smtcmp-provider-id">{provider.id}</span>
-                  <span className="smtcmp-provider-type">
-                    {PROVIDER_TYPES_INFO[provider.type].label}
-                  </span>
-                  <span
-                    className="smtcmp-provider-api-key"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      new EditProviderModal(app, plugin, provider).open()
-                    }}
-                  >
-                    {provider.apiKey ? '••••••••' : 'Set API key'}
-                  </span>
-                </div>
-
-                <div className="smtcmp-provider-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      new EditProviderModal(app, plugin, provider).open()
-                    }}
-                    className="clickable-icon"
-                  >
-                    <Settings />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteProvider(provider)
-                    }}
-                    className="clickable-icon"
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="smtcmp-provider-models">
-                  {/* Chat Models Section */}
-                  <div className="smtcmp-models-subsection">
-                    <div className="smtcmp-models-subsection-header">
-                      <span>{t('settings.models.chatModels')}</span>
-                      <button
-                        className="smtcmp-add-model-btn"
-                        onClick={() => {
-                          const modal = new AddChatModelModal(
-                            app,
-                            plugin,
-                            provider,
-                          )
-                          modal.open()
-                        }}
-                      >
-                        + {t('settings.models.addChatModel')}
-                      </button>
-                    </div>
-
-                    {chatModels.length > 0 ? (
-                      <table className="smtcmp-models-table">
-                        <colgroup>
-                          <col width={16} />
-                          <col />
-                          <col />
-                          <col width={60} />
-                          <col width={60} />
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th></th>
-                            <th>{t('settings.models.modelName')}</th>
-                            <th>Model (calling ID)</th>
-                            <th>Enable</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {chatModels.map((model, index) => (
-                            <tr
-                              key={model.id}
-                              data-model-id={model.id}
-                              data-model-key={`${provider.id}:${model.id}`}
-                              draggable
-                              onDragStart={(event) =>
-                                handleProviderModelDragStart(
-                                  event,
-                                  provider.id,
-                                  index,
-                                )
-                              }
-                              onDragOver={(event) =>
-                                handleProviderModelDragOver(
-                                  event,
-                                  provider.id,
-                                  index,
-                                )
-                              }
-                              onDrop={(event) =>
-                                handleProviderModelDrop(
-                                  event,
-                                  provider.id,
-                                  index,
-                                )
-                              }
-                              onDragEnd={handleProviderModelDragEnd}
-                            >
-                              <td>
-                                <span
-                                  className="smtcmp-drag-handle"
-                                  aria-label="Drag to reorder"
-                                >
-                                  <GripVertical />
-                                </span>
-                              </td>
-                              <td title={model.id}>
-                                {model.name || model.model || model.id}
-                              </td>
-                              <td>{model.model || model.id}</td>
-                              <td>
-                                <ObsidianToggle
-                                  value={isEnabled(model.enable)}
-                                  onChange={(value) => {
-                                    handleToggleEnableChatModel(model.id, value)
-                                  }}
-                                />
-                              </td>
-                              <td>
-                                <div className="smtcmp-settings-actions">
-                                  {/* Always allow editing, even for default models (e.g., Gemini presets) */}
-                                  <button
-                                    onClick={() =>
-                                      new EditChatModelModal(
-                                        app,
-                                        plugin,
-                                        model,
-                                      ).open()
-                                    }
-                                    className="clickable-icon"
-                                    title="Edit model"
-                                  >
-                                    <Edit />
-                                  </button>
-                                  {/* Keep delete hidden for default models */}
-                                  {!DEFAULT_CHAT_MODELS.some(
-                                    (v) =>
-                                      v.id === model.id &&
-                                      v.providerId === model.providerId,
-                                  ) && (
-                                    <button
-                                      onClick={() => {
-                                        handleDeleteChatModel(model.id)
-                                      }}
-                                      className="clickable-icon"
-                                    >
-                                      <Trash2 />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="smtcmp-no-models">
-                        {t('settings.models.noChatModelsConfigured')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Embedding Models Section */}
-                  <div className="smtcmp-models-subsection">
-                    <div className="smtcmp-models-subsection-header">
-                      <span>{t('settings.models.embeddingModels')}</span>
-                      <button
-                        className="smtcmp-add-model-btn"
-                        onClick={() => {
-                          const modal = new AddEmbeddingModelModal(
-                            app,
-                            plugin,
-                            provider,
-                          )
-                          modal.open()
-                        }}
-                      >
-                        + {t('settings.models.addEmbeddingModel')}
-                      </button>
-                    </div>
-
-                    {embeddingModels.length > 0 ? (
-                      <table className="smtcmp-models-table smtcmp-embedding-models-table">
-                        <colgroup>
-                          <col />
-                          <col />
-                          <col />
-                          <col width={60} />
-                          <col width={60} />
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th></th>
-                            <th>{t('settings.models.modelName')}</th>
-                            <th>Model (calling ID)</th>
-                            <th>Dimension</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {embeddingModels.map((model) => (
-                            <tr key={model.id}>
-                              <td></td>
-                              <td title={model.id}>
-                                {model.name ?? model.model ?? model.id}
-                              </td>
-                              <td title={model.model}>{model.model}</td>
-                              <td>{model.dimension}</td>
-                              <td>
-                                <div className="smtcmp-settings-actions">
-                                  {!DEFAULT_EMBEDDING_MODELS.some(
-                                    (v) =>
-                                      v.id === model.id &&
-                                      v.providerId === model.providerId,
-                                  ) && (
-                                    <>
-                                      <button
-                                        onClick={() =>
-                                          new EditEmbeddingModelModal(
-                                            app,
-                                            plugin,
-                                            model,
-                                          ).open()
-                                        }
-                                        className="clickable-icon"
-                                        title="Edit model"
-                                      >
-                                        <Edit />
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleDeleteEmbeddingModel(model.id)
-                                        }}
-                                        className="clickable-icon"
-                                      >
-                                        <Trash2 />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="smtcmp-no-models">
-                        {t('settings.models.noEmbeddingModelsConfigured')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                  handleEmbeddingModelDragEnd={(event) =>
+                    handleEmbeddingModelDragEnd(provider.id, event)
+                  }
+                />
+              )
+            })}
+          </SortableContext>
+        </DndContext>
 
         <button
           className="smtcmp-add-provider-btn"

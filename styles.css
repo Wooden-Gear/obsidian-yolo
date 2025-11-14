@@ -5129,25 +5129,6 @@ button.smtcmp-chat-input-model-select {
   cursor: grabbing;
 }
 
-.smtcmp-quick-action-item.smtcmp-quick-action-drag-over-before::before,
-.smtcmp-quick-action-item.smtcmp-quick-action-drag-over-after::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--interactive-accent);
-  z-index: 10;
-}
-
-.smtcmp-quick-action-item.smtcmp-quick-action-drag-over-before::before {
-  top: -1px;
-}
-
-.smtcmp-quick-action-item.smtcmp-quick-action-drag-over-after::after {
-  bottom: -1px;
-}
-
 .smtcmp-quick-action-item.smtcmp-quick-action-drop-success {
   animation: smtcmp-drop-success 0.7s ease;
 }
