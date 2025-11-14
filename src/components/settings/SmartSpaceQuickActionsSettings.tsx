@@ -1,10 +1,10 @@
 import {
   DndContext,
+  type DragEndEvent,
   PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -637,6 +637,8 @@ export function SmartSpaceQuickActionsSettings() {
                       handleDuplicateAction={handleDuplicateAction}
                       handleDeleteAction={handleDeleteAction}
                       handleSaveAction={handleSaveAction}
+                      categoryOptions={categoryOptions}
+                      iconOptions={iconOptions}
                       t={t}
                     />
                   )
@@ -664,6 +666,8 @@ type QuickActionItemProps = {
   handleDuplicateAction: (action: QuickAction) => void
   handleDeleteAction: (id: string) => void
   handleSaveAction: () => void | Promise<void>
+  categoryOptions: Record<string, string>
+  iconOptions: Record<string, string>
   t: TranslateFn
 }
 
@@ -677,6 +681,8 @@ function QuickActionItem({
   handleDuplicateAction,
   handleDeleteAction,
   handleSaveAction,
+  categoryOptions,
+  iconOptions,
   t,
 }: QuickActionItemProps) {
   const {
@@ -735,12 +741,12 @@ function QuickActionItem({
             }
           />
           <ObsidianButton
-            onClick={() => void handleDuplicateAction(action)}
+            onClick={() => handleDuplicateAction(action)}
             icon="copy"
             tooltip={t('settings.smartSpace.duplicate', '复制')}
           />
           <ObsidianButton
-            onClick={() => void handleDeleteAction(action.id)}
+            onClick={() => handleDeleteAction(action.id)}
             icon="trash-2"
             tooltip={t('common.delete', '删除')}
           />

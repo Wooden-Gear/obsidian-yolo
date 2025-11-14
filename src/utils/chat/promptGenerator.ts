@@ -456,7 +456,9 @@ ${await this.getWebsiteContent(url)}
 - Always reply in the same language as the user's message.
 - Your replies should be detailed and insightful
 
-${hasTools ? `
+${
+  hasTools
+    ? `
 - You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
 - When using tools, focus on providing clear results to the user. Only briefly mention tool usage if it helps understanding.
 `

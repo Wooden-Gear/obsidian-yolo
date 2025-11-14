@@ -48,9 +48,9 @@ function ConfirmModalComponent({
       <div className="modal-button-container">
         <button
           className="mod-warning"
-          onClick={async () => {
+          onClick={() => {
             try {
-              await onConfirm()
+              onConfirm()
             } finally {
               onClose()
             }
@@ -60,9 +60,9 @@ function ConfirmModalComponent({
         </button>
         <button
           className="mod-cancel"
-          onClick={async () => {
+          onClick={() => {
             try {
-              await onCancel?.()
+              onCancel?.()
             } finally {
               onClose()
             }

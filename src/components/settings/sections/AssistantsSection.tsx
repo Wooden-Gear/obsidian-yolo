@@ -1,10 +1,10 @@
 import {
   DndContext,
+  type DragEndEvent,
   PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -15,7 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Bot, GripVertical } from 'lucide-react'
 import { App } from 'obsidian'
-import React, { useState, type FC } from 'react'
+import React, { type FC, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
@@ -447,7 +447,7 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
             tooltip={t('settings.assistants.duplicate', 'Duplicate')}
           />
           <ObsidianButton
-            onClick={() => void handleDeleteAssistant(assistant.id)}
+            onClick={() => handleDeleteAssistant(assistant.id)}
             icon="trash-2"
             tooltip={t('common.delete', 'Delete')}
           />
