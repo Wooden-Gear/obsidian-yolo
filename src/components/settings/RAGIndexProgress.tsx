@@ -1,5 +1,12 @@
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import React, { useState } from 'react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  FolderClosed,
+  FolderOpen,
+} from 'lucide-react'
+import React, { useMemo, useState } from 'react'
 
 import { IndexProgress } from '../chat-view/QueryProgress'
 
@@ -16,7 +23,9 @@ export function RAGIndexProgress({
   getMarkdownFilesInFolder,
 }: RAGIndexProgressProps) {
   // expanded folders
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(['']),
+  )
   const noProgressYet = !progress
 
   const formatFolderName = (path: string) => {
@@ -33,153 +42,221 @@ export function RAGIndexProgress({
   }
 
   // 构建树形结构（跳过根目录行，只渲染其子节点）
-  type FolderNode = {
+  type TreeNode = {
     path: string
     name: string
-    info: { completedChunks: number; totalChunks: number }
-    children: FolderNode[]
+    type: 'folder' | 'file'
+    info?: { completedChunks: number; totalChunks: number }
+    children: TreeNode[]
   }
 
-  const treeRoots: FolderNode[] = (() => {
+  const treeRoots: TreeNode[] = useMemo(() => {
+    if (!progress) return []
     const fp = progress?.folderProgress || {}
-    const entries = Object.entries(fp)
-    const nodes = new Map<string, FolderNode>()
+    const nodes = new Map<string, TreeNode>()
 
-    // 确保为每个出现的路径建立节点
-    for (const [p, info] of entries) {
-      const name = p === '' ? '根目录' : formatFolderName(p)
-      nodes.set(p, {
+    const ensureFolder = (p: string): TreeNode => {
+      const existing = nodes.get(p)
+      if (existing) return existing
+      const info = fp[p]
+      const node: TreeNode = {
         path: p,
-        name,
+        name: p === '' ? '根目录' : formatFolderName(p),
+        type: 'folder',
         info: {
-          completedChunks: info.completedChunks || 0,
-          totalChunks: info.totalChunks || 0,
+          completedChunks: info?.completedChunks || 0,
+          totalChunks: info?.totalChunks || 0,
         },
         children: [],
-      })
+      }
+      nodes.set(p, node)
+      return node
     }
 
-    // 确保根节点存在
-    if (!nodes.has('')) {
-      nodes.set('', {
-        path: '',
-        name: '根目录',
-        info: { completedChunks: 0, totalChunks: 0 },
-        children: [],
-      })
-    }
-
-    // 挂接父子关系
     const getParent = (p: string): string => {
       if (!p || !p.includes('/')) return ''
       return p.substring(0, p.lastIndexOf('/'))
     }
 
-    for (const [p] of entries) {
-      if (p === '') continue
-      const parent = getParent(p)
-      let parentNode = nodes.get(parent)
-      if (!parentNode) {
-        // 父节点缺失时补齐（例如该父级仅作为聚合存在、没有直接文件）
-        parentNode = {
-          path: parent,
-          name: parent === '' ? '根目录' : formatFolderName(parent),
-          info: { completedChunks: 0, totalChunks: 0 },
-          children: [],
-        }
-        nodes.set(parent, parentNode)
+    const ensureAncestors = (p: string) => {
+      let current = getParent(p)
+      while (current !== '') {
+        ensureFolder(current)
+        current = getParent(current)
       }
-      const node = nodes.get(p)!
+      ensureFolder('')
+    }
+
+    for (const p of Object.keys(fp)) {
+      ensureFolder(p)
+      ensureAncestors(p)
+    }
+    if (!nodes.has('')) ensureFolder('')
+
+    // 清空子节点，重新挂接
+    nodes.forEach((node) => {
+      if (node.type === 'folder') {
+        const info = fp[node.path]
+        node.info = {
+          completedChunks: info?.completedChunks || 0,
+          totalChunks: info?.totalChunks || 0,
+        }
+      }
+      node.children = []
+    })
+
+    nodes.forEach((node) => {
+      if (node.type !== 'folder' || node.path === '') return
+      const parent = getParent(node.path)
+      const parentNode = nodes.get(parent)
       if (parentNode) parentNode.children.push(node)
+    })
+
+    if (getMarkdownFilesInFolder) {
+      nodes.forEach((node) => {
+        if (node.type !== 'folder') return
+        const files = getMarkdownFilesInFolder(node.path) || []
+        for (const filePath of files) {
+          node.children.push({
+            path: filePath,
+            name: filePath.split('/').pop() || filePath,
+            type: 'file',
+            children: [],
+          })
+        }
+      })
     }
 
-    // 排序函数：按名称排序
-    const sortNodes = (arr: FolderNode[]) => {
-      arr.sort((a, b) => a.name.localeCompare(b.name))
-      for (const n of arr) sortNodes(n.children)
+    const sortRec = (node: TreeNode) => {
+      node.children.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+        return a.name.localeCompare(b.name)
+      })
+      node.children.forEach((child) => {
+        if (child.type === 'folder') sortRec(child)
+      })
     }
+    const root = nodes.get('')
+    if (root) {
+      sortRec(root)
+      return [root]
+    }
+    return []
+  }, [progress, getMarkdownFilesInFolder])
 
-    const roots = nodes.get('')?.children ?? []
-    sortNodes(roots)
-    return roots
-  })()
+  const toggle = (path: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }
 
-  const renderNode = (node: FolderNode, depth: number) => {
-    const progressPercent = formatProgress(
-      node.info.completedChunks,
-      node.info.totalChunks,
-    )
-    const isOpen = expanded.has(node.path)
-    const files = getMarkdownFilesInFolder
-      ? getMarkdownFilesInFolder(node.path)
-      : []
+  const renderNodes = (
+    nodes: TreeNode[],
+    depth: number,
+    ancestorLast: boolean[],
+  ): React.ReactNode => {
+    return nodes.map((node, index) => {
+      const isFolder = node.type === 'folder'
+      const hasChildren = node.children.length > 0
+      const isOpen = isFolder && expanded.has(node.path)
+      const isLast = index === nodes.length - 1
+      const guides = ancestorLast.map((isLastAncestor, levelIdx) => (
+        <span
+          key={`guide-${node.path}-${levelIdx}`}
+          className={`smtcmp-tree-guide ${isLastAncestor ? 'is-empty' : ''}`}
+        />
+      ))
+      const progressPercent =
+        isFolder && node.info
+          ? formatProgress(
+              node.info.completedChunks,
+              node.info.totalChunks,
+            )
+          : ''
+      const folderIcon = hasChildren
+        ? isOpen
+          ? <FolderOpen size={16} />
+          : <FolderClosed size={16} />
+        : <Folder size={16} />
+      const displayIcon =
+        node.type === 'folder' ? folderIcon : <FileText size={16} />
 
-    return (
-      <div key={node.path}>
-        <div
-          className={`smtcmp-provider-header ${depth > 0 ? `smtcmp-indent-folder smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}` : ''}`}
-          onClick={() => {
-            setExpanded((prev) => {
-              const next = new Set(prev)
-              if (next.has(node.path)) next.delete(node.path)
-              else next.add(node.path)
-              return next
-            })
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              setExpanded((prev) => {
-                const next = new Set(prev)
-                if (next.has(node.path)) next.delete(node.path)
-                else next.add(node.path)
-                return next
-              })
-            }
-          }}
-        >
-          <div className="smtcmp-provider-expand-btn">
-            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </div>
-          <div className="smtcmp-provider-info">
-            <span className="smtcmp-provider-id" title={node.path}>
-              {node.name}
-            </span>
-            <span className="smtcmp-provider-type">{progressPercent}</span>
-          </div>
-        </div>
+      const rowRole = isFolder && hasChildren ? 'button' : undefined
+      const rowTabIndex = isFolder && hasChildren ? 0 : -1
 
-        {isOpen && (
-          <div>
-            {/* 子文件夹 */}
-            {node.children.map((child) => renderNode(child, depth + 1))}
-
-            {/* 当前层级文件 */}
-            {files.length > 0 ? (
-              <ul
-                className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}
+      return (
+        <li key={node.path || `root-${index}`} className="smtcmp-tree-item">
+          <div
+            className={`smtcmp-provider-header smtcmp-folder-row${!isFolder ? ' is-file' : ''}`}
+            onClick={() => {
+              if (isFolder && hasChildren) toggle(node.path)
+            }}
+            role={rowRole}
+            tabIndex={rowTabIndex}
+            onKeyDown={(e) => {
+              if (!isFolder || !hasChildren) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                toggle(node.path)
+              }
+            }}
+          >
+            <div className="smtcmp-tree-guides">
+              {guides}
+              {depth > 0 && (
+                <span
+                  className={`smtcmp-tree-guide smtcmp-tree-guide-branch${isLast ? ' is-last' : ''}`}
+                />
+              )}
+            </div>
+            <div
+              className={`smtcmp-provider-expand-btn ${hasChildren && isFolder ? '' : 'no-children'}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (isFolder && hasChildren) toggle(node.path)
+              }}
+            >
+              {isFolder && hasChildren ? (
+                isOpen ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )
+              ) : (
+                <span className="smtcmp-icon-placeholder" />
+              )}
+            </div>
+            <div className="smtcmp-tree-icon" aria-hidden="true">
+              {displayIcon}
+            </div>
+            <div className="smtcmp-provider-info">
+              <span
+                className="smtcmp-provider-id"
+                title={node.path || '根目录'}
               >
-                {files.map((f) => (
-                  <li key={f} title={f}>
-                    {f.split('/').pop()}
-                  </li>
-                ))}
-              </ul>
-            ) : node.children.length === 0 ? (
-              <div
-                className={`smtcmp-rag-progress-folder-files smtcmp-list-reset smtcmp-indent-list smtcmp-depth smtcmp-depth-${Math.min(10, Math.max(0, depth))}`}
-              >
-                <span className="smtcmp-text-faint-small">
-                  暂无 Markdown 文件（仅当前层级）
+                {node.name}
+              </span>
+              {isFolder && (
+                <span className="smtcmp-provider-type">
+                  {progressPercent || '--'}
                 </span>
-              </div>
-            ) : null}
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    )
+          {hasChildren && isOpen && (
+            <ul className="smtcmp-list-reset smtcmp-tree-children">
+              {renderNodes(node.children, depth + 1, [
+                ...ancestorLast,
+                isLast,
+              ])}
+            </ul>
+          )}
+        </li>
+      )
+    })
   }
 
   return (
@@ -191,13 +268,13 @@ export function RAGIndexProgress({
             正在准备索引进度...
           </div>
         ) : null
-      ) : (
-        treeRoots.length > 0 && (
-          <div className="smtcmp-rag-progress-folders-list">
-            {treeRoots.map((n) => renderNode(n, 0))}
-          </div>
-        )
-      )}
+      ) : treeRoots.length > 0 ? (
+        <div className="smtcmp-rag-progress-folders-list">
+          <ul className="smtcmp-list-reset smtcmp-tree-root">
+            {renderNodes(treeRoots, 0, [])}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }

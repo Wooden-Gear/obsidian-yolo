@@ -2583,6 +2583,12 @@ button.smtcmp-chat-input-model-select {
   box-shadow: none;
   border: 0;
 }
+.smtcmp-folder-row.is-file {
+  cursor: default;
+}
+.smtcmp-folder-row.is-file:hover {
+  background-color: transparent;
+}
 .smtcmp-folder-row.is-disabled {
   cursor: not-allowed;
 }
