@@ -3668,25 +3668,6 @@ button.smtcmp-chat-input-model-select {
   cursor: grabbing;
 }
 
-.smtcmp-assistant-item.smtcmp-assistant-item-drag-over-before::before,
-.smtcmp-assistant-item.smtcmp-assistant-item-drag-over-after::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--interactive-accent);
-  border-radius: 1px;
-}
-
-.smtcmp-assistant-item.smtcmp-assistant-item-drag-over-before::before {
-  top: -2px;
-}
-
-.smtcmp-assistant-item.smtcmp-assistant-item-drag-over-after::after {
-  bottom: -2px;
-}
-
 .smtcmp-assistant-item.smtcmp-assistant-item-drop-success {
   animation: smtcmp-assistant-drop-success 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
