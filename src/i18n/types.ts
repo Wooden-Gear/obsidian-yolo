@@ -138,7 +138,10 @@ export type TranslationKeys = {
       noAssistant?: string
       selectAssistant?: string
       name?: string
+      nameDesc?: string
       description?: string
+      descriptionDesc?: string
+      descriptionPlaceholder?: string
       systemPrompt?: string
       actions?: string
       // new optional helpers
@@ -152,7 +155,11 @@ export type TranslationKeys = {
       deleteConfirmMessageSuffix?: string
       addAssistantAria?: string
       deleteAssistantAria?: string
+      dragHandleAria?: string
       maxContextMessagesDesc?: string
+      duplicate?: string
+      copySuffix?: string
+      currentBadge?: string
     }
     providers: {
       title: string

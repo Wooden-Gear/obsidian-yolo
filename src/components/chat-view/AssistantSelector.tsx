@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Bot, ChevronDown, ChevronUp } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
@@ -52,6 +52,11 @@ export function AssistantSelector() {
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button className="smtcmp-assistant-selector-button">
+          {currentAssistant && (
+            <div className="smtcmp-assistant-selector-current-icon">
+              <Bot size={14} />
+            </div>
+          )}
           <div className="smtcmp-assistant-selector-current">
             {currentAssistant
               ? currentAssistant.name
@@ -73,8 +78,10 @@ export function AssistantSelector() {
               }`}
               onClick={handleSelectNoAssistant}
             >
-              <div className="smtcmp-assistant-selector-item-name">
-                {t('settings.assistants.noAssistant')}
+              <div className="smtcmp-assistant-selector-item-content">
+                <div className="smtcmp-assistant-selector-item-name">
+                  {t('settings.assistants.noAssistant')}
+                </div>
               </div>
             </li>
 
@@ -87,14 +94,19 @@ export function AssistantSelector() {
                 }`}
                 onClick={() => handleSelectAssistant(assistant)}
               >
-                <div className="smtcmp-assistant-selector-item-name">
-                  {assistant.name}
+                <div className="smtcmp-assistant-selector-item-icon">
+                  <Bot size={14} />
                 </div>
-                {assistant.description && (
-                  <div className="smtcmp-assistant-selector-item-description">
-                    {assistant.description}
+                <div className="smtcmp-assistant-selector-item-content">
+                  <div className="smtcmp-assistant-selector-item-name">
+                    {assistant.name}
                   </div>
-                )}
+                  {assistant.description && (
+                    <div className="smtcmp-assistant-selector-item-description">
+                      {assistant.description}
+                    </div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

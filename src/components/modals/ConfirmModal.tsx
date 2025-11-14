@@ -48,18 +48,24 @@ function ConfirmModalComponent({
       <div className="modal-button-container">
         <button
           className="mod-warning"
-          onClick={() => {
-            onClose()
-            onConfirm()
+          onClick={async () => {
+            try {
+              await onConfirm()
+            } finally {
+              onClose()
+            }
           }}
         >
           {ctaText ?? 'Confirm'}
         </button>
         <button
           className="mod-cancel"
-          onClick={() => {
-            onClose()
-            onCancel?.()
+          onClick={async () => {
+            try {
+              await onCancel?.()
+            } finally {
+              onClose()
+            }
           }}
         >
           Cancel
