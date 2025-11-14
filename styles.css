@@ -871,7 +871,6 @@
   background: var(--background-modifier-hover);
 }
 
-
 .smtcmp-popover li {
   z-index: 1000;
   max-height: 300px;

@@ -55,7 +55,11 @@ import {
   LLMRequestNonStreaming,
   RequestMessage,
 } from './types/llm/request'
-import { MentionableFile, SerializedMentionable } from './types/mentionable'
+import {
+  MentionableFile,
+  MentionableFolder,
+  SerializedMentionable,
+} from './types/mentionable'
 import {
   getMentionableBlockData,
   getNestedFiles,
@@ -2043,7 +2047,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     editor: Editor,
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
-    mentionables?: MentionableFile[],
+    mentionables?: (MentionableFile | MentionableFolder)[],
   ) {
     // Check if this is actually a rewrite request from Selection Chat
     if (this.pendingSelectionRewrite) {
@@ -2081,7 +2085,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     editor: Editor,
     customPrompt?: string,
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
-    mentionables?: MentionableFile[],
+    mentionables?: (MentionableFile | MentionableFolder)[],
   ) {
     // 立即创建并注册 AbortController，确保整个流程都能被中止
     const controller = new AbortController()
@@ -2174,7 +2178,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         try {
           const fileMap = new Map<string, TFile>()
           for (const mentionable of mentionables) {
-            fileMap.set(mentionable.file.path, mentionable.file)
+            if (mentionable.type === 'file') {
+              fileMap.set(mentionable.file.path, mentionable.file)
+            } else if (mentionable.type === 'folder') {
+              for (const file of getNestedFiles(
+                mentionable.folder,
+                this.app.vault,
+              )) {
+                fileMap.set(file.path, file)
+              }
+            }
           }
           const files = Array.from(fileMap.values())
           if (files.length > 0) {

@@ -23,9 +23,7 @@ export function RAGIndexProgress({
   getMarkdownFilesInFolder,
 }: RAGIndexProgressProps) {
   // expanded folders
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(['']),
-  )
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['']))
   const noProgressYet = !progress
 
   const formatFolderName = (path: string) => {
@@ -171,16 +169,17 @@ export function RAGIndexProgress({
       ))
       const progressPercent =
         isFolder && node.info
-          ? formatProgress(
-              node.info.completedChunks,
-              node.info.totalChunks,
-            )
+          ? formatProgress(node.info.completedChunks, node.info.totalChunks)
           : ''
-      const folderIcon = hasChildren
-        ? isOpen
-          ? <FolderOpen size={16} />
-          : <FolderClosed size={16} />
-        : <Folder size={16} />
+      const folderIcon = hasChildren ? (
+        isOpen ? (
+          <FolderOpen size={16} />
+        ) : (
+          <FolderClosed size={16} />
+        )
+      ) : (
+        <Folder size={16} />
+      )
       const displayIcon =
         node.type === 'folder' ? folderIcon : <FileText size={16} />
 
@@ -248,10 +247,7 @@ export function RAGIndexProgress({
           </div>
           {hasChildren && isOpen && (
             <ul className="smtcmp-list-reset smtcmp-tree-children">
-              {renderNodes(node.children, depth + 1, [
-                ...ancestorLast,
-                isLast,
-              ])}
+              {renderNodes(node.children, depth + 1, [...ancestorLast, isLast])}
             </ul>
           )}
         </li>

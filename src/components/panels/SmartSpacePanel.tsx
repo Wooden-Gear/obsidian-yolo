@@ -33,7 +33,7 @@ import { PluginProvider, usePlugin } from '../../contexts/plugin-context'
 import { SettingsProvider, useSettings } from '../../contexts/settings-context'
 import { getChatModelClient } from '../../core/llm/manager'
 import SmartComposerPlugin from '../../main'
-import { MentionableFile } from '../../types/mentionable'
+import { MentionableFile, MentionableFolder } from '../../types/mentionable'
 import {
   deserializeMentionable,
   getMentionableKey,
@@ -56,6 +56,8 @@ type SmartSpacePanelProps = {
   onOverlayStateChange?: (isOverlayActive: boolean) => void
 }
 
+type SmartSpaceMentionable = MentionableFile | MentionableFolder
+
 function SmartSpacePanelBody({
   editor,
   onClose,
@@ -73,10 +75,13 @@ function SmartSpacePanelBody({
     if (!draftState?.mentionables || draftState.mentionables.length === 0) {
       return []
     }
-    const hydrated: MentionableFile[] = []
+    const hydrated: SmartSpaceMentionable[] = []
     for (const serialized of draftState.mentionables) {
       const mentionable = deserializeMentionable(serialized, plugin.app)
-      if (mentionable && mentionable.type === 'file') {
+      if (
+        mentionable &&
+        (mentionable.type === 'file' || mentionable.type === 'folder')
+      ) {
         hydrated.push(mentionable)
       }
     }
@@ -106,7 +111,7 @@ function SmartSpacePanelBody({
       settings?.chatModelId ??
       '',
   )
-  const [mentionables, setMentionables] = useState<MentionableFile[]>(
+  const [mentionables, setMentionables] = useState<SmartSpaceMentionable[]>(
     () => initialMentionables,
   )
   const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
@@ -116,7 +121,8 @@ function SmartSpacePanelBody({
   >('top')
   const [isMultilineInput, setIsMultilineInput] = useState(false)
   const latestInstructionTextRef = useRef(initialInstructionText)
-  const latestMentionablesRef = useRef<MentionableFile[]>(initialMentionables)
+  const latestMentionablesRef =
+    useRef<SmartSpaceMentionable[]>(initialMentionables)
   const latestEditorStateRef = useRef<SerializedEditorState | null>(
     initialEditorState,
   )
@@ -283,7 +289,8 @@ function SmartSpacePanelBody({
   const mentionSearch = useCallback(
     (query: string) =>
       fuzzySearch(plugin.app, query).filter(
-        (item): item is MentionableFile => item.type === 'file',
+        (item): item is SmartSpaceMentionable =>
+          item.type === 'file' || item.type === 'folder',
       ),
     [plugin.app],
   )
@@ -340,7 +347,7 @@ function SmartSpacePanelBody({
           )
           if (
             mentionable &&
-            mentionable.type === 'file' &&
+            (mentionable.type === 'file' || mentionable.type === 'folder') &&
             !mentionMap.has(mentionKey)
           ) {
             mentionMap.set(mentionKey, mentionable)

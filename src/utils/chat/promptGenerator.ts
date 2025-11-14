@@ -450,36 +450,30 @@ ${await this.getWebsiteContent(url)}
     // When both RAG and tools are available, prioritize based on context
     const useRAGPrompt = shouldUseRAG && !hasTools
 
-    const systemPrompt = `You are an intelligent assistant to help answer any questions that the user has.
+    const systemPrompt = `You are an intelligent assistant.
 
-1. Format your response in markdown.
+- Format your responses in Markdown.
+- Always reply in the same language as the user's message.
 
-${
-  hasTools
-    ? `
-2. You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
-
-3. When using tools, explain what you're doing and why.
+${hasTools ? `
+- You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
+- When using tools, focus on providing clear results to the user. Only briefly mention tool usage if it helps understanding.
 `
     : ''
 }
 
-${hasTools ? '4' : '2'}. Respond in the same language as the user's message.
-
-${hasTools ? '5' : '2'}. When writing out new markdown blocks, also wrap them with <smtcmp_block> tags. For example:
+- When you output a new Markdown block (for new content), wrap it in <smtcmp_block> tags. Example:
 <smtcmp_block language="markdown">
 {{ content }}
 </smtcmp_block>
 
-${hasTools ? '6' : '3'}. When providing markdown blocks for an existing file, add the filename and language attributes to the <smtcmp_block> tags. Restate the relevant section or heading, so the user knows which part of the file you are editing. For example:
+- When you output Markdown for an existing file, add filename and language attributes to <smtcmp_block>. Restate the relevant section or heading so the user knows which part of the file you are editing. Example:
 <smtcmp_block filename="path/to/file.md" language="markdown">
 ## Section Title
-...
 {{ content }}
-...
 </smtcmp_block>
 
-${hasTools ? '7' : '4'}. When the user is asking for edits to their markdown, please provide a simplified version of the markdown block emphasizing only the changes. Use comments to show where unchanged content has been skipped. Wrap the markdown block with <smtcmp_block> tags. Add filename and language attributes to the <smtcmp_block> tags. For example:
+- When the user asks for edits to their Markdown file, output a simplified Markdown block that focuses only on the changed parts. Use comments to skip unchanged content. Wrap it with <smtcmp_block> and include filename and language. Example:
 <smtcmp_block filename="path/to/file.md" language="markdown">
 <!-- ... existing content ... -->
 {{ edit_1 }}
@@ -487,7 +481,8 @@ ${hasTools ? '7' : '4'}. When the user is asking for edits to their markdown, pl
 {{ edit_2 }}
 <!-- ... existing content ... -->
 </smtcmp_block>
-The user has full access to the file, so they prefer seeing only the changes in the markdown. Often this will mean that the start/end of the file will be skipped, but that's okay! Rewrite the entire file only if specifically requested. Always provide a brief explanation of the updates, except when the user specifically asks for just the content.
+
+- The user has full access to the file, so show only the modified parts unless they explicitly ask for the full file. You may briefly explain what you changed when helpful.
 `
 
     const systemPromptRAG = `You are an intelligent assistant to help answer any questions that the user has. You will be given your conversation history with them and potentially relevant blocks of markdown content from the current vault.
