@@ -454,6 +454,7 @@ ${await this.getWebsiteContent(url)}
 
 - Format your responses in Markdown.
 - Always reply in the same language as the user's message.
+- Your replies should be detailed and insightful
 
 ${hasTools ? `
 - You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
@@ -490,6 +491,7 @@ ${hasTools ? `
 - Do not fabricate facts—if the provided context is insufficient, say so.
 - Format your responses in Markdown.
 - Always reply in the same language as the user's message.
+- Your replies should be detailed and insightful
 
 ${
   hasTools
