@@ -424,19 +424,19 @@ function ChatModelRow({
       data-model-id={model.id}
       data-model-key={`${provider.id}:${model.id}`}
       {...attributes}
+      {...listeners}
     >
       <td>
         <span
           className="smtcmp-drag-handle"
           aria-label={t('settings.models.dragHandle', 'Drag to reorder')}
-          {...listeners}
         >
           <GripVertical />
         </span>
       </td>
       <td title={model.id}>{model.name || model.model || model.id}</td>
       <td>{model.model || model.id}</td>
-      <td>
+      <td onPointerDown={(event) => event.stopPropagation()}>
         <ObsidianToggle
           value={model.enable ?? true}
           onChange={(value) => onToggle(model.id, value)}
@@ -448,6 +448,7 @@ function ChatModelRow({
             onClick={() => new EditChatModelModal(app, plugin, model).open()}
             className="clickable-icon"
             title="Edit model"
+            onPointerDown={(event) => event.stopPropagation()}
           >
             <Edit />
           </button>
@@ -455,6 +456,7 @@ function ChatModelRow({
             <button
               onClick={() => onDelete(model.id)}
               className="clickable-icon"
+              onPointerDown={(event) => event.stopPropagation()}
             >
               <Trash2 />
             </button>
@@ -508,12 +510,12 @@ function EmbeddingModelRow({
       data-model-id={model.id}
       data-model-key={`${provider.id}:${model.id}`}
       {...attributes}
+      {...listeners}
     >
       <td>
         <span
           className="smtcmp-drag-handle"
           aria-label={t('settings.models.dragHandle', 'Drag to reorder')}
-          {...listeners}
         >
           <GripVertical />
         </span>
@@ -531,12 +533,14 @@ function EmbeddingModelRow({
                 }
                 className="clickable-icon"
                 title="Edit model"
+                onPointerDown={(event) => event.stopPropagation()}
               >
                 <Edit />
               </button>
               <button
                 onClick={() => onDelete(model.id)}
                 className="clickable-icon"
+                onPointerDown={(event) => event.stopPropagation()}
               >
                 <Trash2 />
               </button>
