@@ -34,7 +34,6 @@ type Translator = ReturnType<typeof useLanguage>['t']
 
 type AssistantListItemProps = {
   assistant: Assistant
-  isActive: boolean
   isEditing: boolean
   editingAssistant: Assistant | null
   setEditingAssistant: React.Dispatch<React.SetStateAction<Assistant | null>>
@@ -327,13 +326,11 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
               {assistants.map((assistant) => {
                 const isEditing =
                   !isAddingAssistant && editingAssistant?.id === assistant.id
-                const isActive = settings.currentAssistantId === assistant.id
 
                 return (
                   <AssistantListItem
                     key={assistant.id}
                     assistant={assistant}
-                    isActive={isActive}
                     isEditing={isEditing}
                     editingAssistant={editingAssistant}
                     setEditingAssistant={setEditingAssistant}
@@ -355,7 +352,6 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
 
 const AssistantListItem: FC<AssistantListItemProps> = ({
   assistant,
-  isActive,
   isEditing,
   editingAssistant,
   setEditingAssistant,
@@ -387,7 +383,7 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
         ref={setNodeRef}
         style={style}
         data-assistant-id={assistant.id}
-        className={`smtcmp-assistant-item ${isEditing ? 'editing' : ''} ${isActive ? 'active' : ''} ${isDragging ? 'smtcmp-assistant-item-dragging' : ''}`}
+        className={`smtcmp-assistant-item ${isEditing ? 'editing' : ''} ${isDragging ? 'smtcmp-assistant-item-dragging' : ''}`}
         {...attributes}
       >
         <div className="smtcmp-assistant-drag-handle">
@@ -410,11 +406,6 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
             <div className="smtcmp-assistant-info">
               <div className="smtcmp-assistant-name">
                 {assistant.name}
-                {isActive && (
-                  <span className="smtcmp-assistant-badge">
-                    {t('settings.assistants.currentBadge', 'Current')}
-                  </span>
-                )}
               </div>
               {assistant.description && (
                 <div className="smtcmp-assistant-description">

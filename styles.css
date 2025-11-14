@@ -4682,22 +4682,6 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-smart-space-popover
   .smtcmp-model-select-list
-  > .smtcmp-popover-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--h1-color, var(--interactive-accent));
-  border-radius: 0 2px 2px 0;
-  opacity: 0;
-  transform: translateX(-3px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.smtcmp-smart-space-popover
-  .smtcmp-model-select-list
   > .smtcmp-popover-item:hover,
 .smtcmp-smart-space-popover
   .smtcmp-model-select-list
@@ -4708,17 +4692,6 @@ button.smtcmp-chat-input-model-select {
     transparent
   );
   color: var(--text-normal);
-  padding-left: 16px;
-}
-
-.smtcmp-smart-space-popover
-  .smtcmp-model-select-list
-  > .smtcmp-popover-item:hover::before,
-.smtcmp-smart-space-popover
-  .smtcmp-model-select-list
-  > .smtcmp-popover-item[data-highlighted]::before {
-  opacity: 1;
-  transform: translateX(0);
 }
 
 .smtcmp-chat-sidebar-popover
