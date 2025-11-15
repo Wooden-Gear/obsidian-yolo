@@ -51,7 +51,10 @@ export function AssistantSelector() {
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button className="smtcmp-assistant-selector-button">
+        <button
+          className="smtcmp-assistant-selector-button"
+          data-state={open ? 'open' : 'closed'}
+        >
           {currentAssistant && (
             <div className="smtcmp-assistant-selector-current-icon">
               <Bot size={14} />
