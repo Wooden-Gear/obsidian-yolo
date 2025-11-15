@@ -3361,7 +3361,8 @@ button.smtcmp-chat-input-model-select {
   background-color: transparent !important;
 }
 
-.smtcmp-chat-header-right button.smtcmp-assistant-selector-button[data-state='open'] {
+.smtcmp-chat-header-right
+  button.smtcmp-assistant-selector-button[data-state='open'] {
   color: var(--text-normal) !important;
 }
 
@@ -6039,8 +6040,6 @@ button.smtcmp-chat-input-model-select {
 }
 
 /* ==================== Assistant Icon Selector in Settings ==================== */
-
-
 
 /* ==================== Emoji Icon Styles (No Background) ==================== */
 

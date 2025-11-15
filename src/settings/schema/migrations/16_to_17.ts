@@ -1,5 +1,5 @@
-import { SettingMigration } from '../setting.types'
 import { DEFAULT_ASSISTANT_ICON } from '../../../utils/assistant-icon'
+import { SettingMigration } from '../setting.types'
 
 export const migrateFrom16To17: SettingMigration['migrate'] = (data) => {
   const newData = { ...data }

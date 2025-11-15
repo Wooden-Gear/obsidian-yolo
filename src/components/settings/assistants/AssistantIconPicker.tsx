@@ -1,17 +1,12 @@
-import React, { useState } from 'react'
 import { Modal } from 'obsidian'
+import React, { useState } from 'react'
+
 import { AssistantIcon } from '../../../types/assistant.types'
 import {
-  PRESET_LUCIDE_ICONS,
   PRESET_EMOJIS,
+  PRESET_LUCIDE_ICONS,
   renderAssistantIcon,
 } from '../../../utils/assistant-icon'
-
-interface AssistantIconPickerProps {
-  currentIcon: AssistantIcon | undefined
-  onSelect: (icon: AssistantIcon) => void
-  onClose: () => void
-}
 
 export class AssistantIconPickerModal extends Modal {
   private currentIcon: AssistantIcon | undefined
@@ -20,7 +15,7 @@ export class AssistantIconPickerModal extends Modal {
   constructor(
     app: any,
     currentIcon: AssistantIcon | undefined,
-    onSelect: (icon: AssistantIcon) => void
+    onSelect: (icon: AssistantIcon) => void,
   ) {
     super(app)
     this.currentIcon = currentIcon
@@ -81,7 +76,10 @@ export class AssistantIconPickerModal extends Modal {
                     title={iconName}
                   >
                     <div className="smtcmp-icon-picker-item-preview">
-                      {renderAssistantIcon({ type: 'lucide', value: iconName }, 20)}
+                      {renderAssistantIcon(
+                        { type: 'lucide', value: iconName },
+                        20,
+                      )}
                     </div>
                   </button>
                 )
@@ -130,7 +128,10 @@ export class AssistantIconPickerModal extends Modal {
                       title={emoji}
                     >
                       <div className="smtcmp-icon-picker-item-preview">
-                        {renderAssistantIcon({ type: 'emoji', value: emoji }, 24)}
+                        {renderAssistantIcon(
+                          { type: 'emoji', value: emoji },
+                          24,
+                        )}
                       </div>
                     </button>
                   )
@@ -166,7 +167,7 @@ export class AssistantIconPickerModal extends Modal {
 export const openIconPicker = (
   app: any,
   currentIcon: AssistantIcon | undefined,
-  onSelect: (icon: AssistantIcon) => void
+  onSelect: (icon: AssistantIcon) => void,
 ) => {
   new AssistantIconPickerModal(app, currentIcon, onSelect).open()
 }

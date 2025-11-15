@@ -1,5 +1,6 @@
-import React from 'react'
 import * as LucideIcons from 'lucide-react'
+import React from 'react'
+
 import { AssistantIcon } from '../types/assistant.types'
 
 /**
@@ -129,14 +130,17 @@ export const PRESET_EMOJIS = [
  */
 export const renderAssistantIcon = (
   icon: AssistantIcon | undefined,
-  size: number = 16,
-  className?: string
+  size = 16,
+  className?: string,
 ): React.ReactElement => {
   const iconConfig = icon || DEFAULT_ASSISTANT_ICON
 
   // 为不同类型的图标添加不同的类名
-  const iconTypeClass = iconConfig.type === 'emoji' ? 'icon-emoji' : 'icon-lucide'
-  const combinedClassName = className ? `${className} ${iconTypeClass}` : iconTypeClass
+  const iconTypeClass =
+    iconConfig.type === 'emoji' ? 'icon-emoji' : 'icon-lucide'
+  const combinedClassName = className
+    ? `${className} ${iconTypeClass}`
+    : iconTypeClass
 
   if (iconConfig.type === 'emoji') {
     return (

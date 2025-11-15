@@ -44,7 +44,10 @@ type AssistantListItemProps = {
   handleDuplicateAssistant: (assistant: Assistant) => void | Promise<void>
   handleDeleteAssistant: (id: string) => void
   handleSaveAssistant: () => void | Promise<void>
-  handleUpdateIcon: (assistantId: string, newIcon: AssistantIcon) => void | Promise<void>
+  handleUpdateIcon: (
+    assistantId: string,
+    newIcon: AssistantIcon,
+  ) => void | Promise<void>
   t: Translator
 }
 
@@ -120,9 +123,7 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
     newIcon: AssistantIcon,
   ) => {
     const newAssistants = assistants.map((a) =>
-      a.id === assistantId
-        ? { ...a, icon: newIcon, updatedAt: Date.now() }
-        : a,
+      a.id === assistantId ? { ...a, icon: newIcon, updatedAt: Date.now() } : a,
     )
 
     try {
@@ -447,9 +448,7 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
               {renderAssistantIcon(assistant.icon, 16)}
             </div>
             <div className="smtcmp-assistant-info">
-              <div className="smtcmp-assistant-name">
-                {assistant.name}
-              </div>
+              <div className="smtcmp-assistant-name">{assistant.name}</div>
               {assistant.description && (
                 <div className="smtcmp-assistant-description">
                   {assistant.description}
