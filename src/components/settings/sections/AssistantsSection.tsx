@@ -13,18 +13,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Bot, GripVertical } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 import { App } from 'obsidian'
 import React, { type FC, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import { Assistant } from '../../../types/assistant.types'
+import { Assistant, AssistantIcon } from '../../../types/assistant.types'
+import { renderAssistantIcon } from '../../../utils/assistant-icon'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextArea } from '../../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ConfirmModal } from '../../modals/ConfirmModal'
+import { openIconPicker } from '../assistants/AssistantIconPicker'
 
 type AssistantsSectionProps = {
   app: App
@@ -33,6 +35,7 @@ type AssistantsSectionProps = {
 type Translator = ReturnType<typeof useLanguage>['t']
 
 type AssistantListItemProps = {
+  app: App
   assistant: Assistant
   isEditing: boolean
   editingAssistant: Assistant | null
@@ -41,6 +44,7 @@ type AssistantListItemProps = {
   handleDuplicateAssistant: (assistant: Assistant) => void | Promise<void>
   handleDeleteAssistant: (id: string) => void
   handleSaveAssistant: () => void | Promise<void>
+  handleUpdateIcon: (assistantId: string, newIcon: AssistantIcon) => void | Promise<void>
   t: Translator
 }
 
@@ -108,6 +112,27 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
       setIsAddingAssistant(false)
     } catch (error: unknown) {
       console.error('Failed to save assistant', error)
+    }
+  }
+
+  const handleUpdateIcon = async (
+    assistantId: string,
+    newIcon: AssistantIcon,
+  ) => {
+    const newAssistants = assistants.map((a) =>
+      a.id === assistantId
+        ? { ...a, icon: newIcon, updatedAt: Date.now() }
+        : a,
+    )
+
+    try {
+      await handleSaveAssistants(newAssistants)
+      // 同时更新编辑中的助手状态
+      if (editingAssistant && editingAssistant.id === assistantId) {
+        setEditingAssistant({ ...editingAssistant, icon: newIcon })
+      }
+    } catch (error: unknown) {
+      console.error('Failed to update icon', error)
     }
   }
 
@@ -263,6 +288,20 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
           </ObsidianSetting>
 
           <ObsidianSetting
+            name={t('settings.assistants.icon', '图标')}
+            desc={t('settings.assistants.iconDesc', '选择助手图标')}
+          >
+            <ObsidianButton
+              text={t('settings.assistants.chooseIcon', '选择图标')}
+              onClick={() => {
+                openIconPicker(app, editingAssistant.icon, (newIcon) => {
+                  setEditingAssistant({ ...editingAssistant, icon: newIcon })
+                })
+              }}
+            />
+          </ObsidianSetting>
+
+          <ObsidianSetting
             name={t('settings.assistants.systemPrompt', 'System prompt')}
             desc={t(
               'settings.assistants.systemPromptDesc',
@@ -330,6 +369,7 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
                 return (
                   <AssistantListItem
                     key={assistant.id}
+                    app={app}
                     assistant={assistant}
                     isEditing={isEditing}
                     editingAssistant={editingAssistant}
@@ -338,6 +378,7 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
                     handleDuplicateAssistant={handleDuplicateAssistant}
                     handleDeleteAssistant={handleDeleteAssistant}
                     handleSaveAssistant={handleSaveAssistant}
+                    handleUpdateIcon={handleUpdateIcon}
                     t={t}
                   />
                 )
@@ -351,6 +392,7 @@ export const AssistantsSection: FC<AssistantsSectionProps> = ({ app }) => {
 }
 
 const AssistantListItem: FC<AssistantListItemProps> = ({
+  app,
   assistant,
   isEditing,
   editingAssistant,
@@ -359,6 +401,7 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
   handleDuplicateAssistant,
   handleDeleteAssistant,
   handleSaveAssistant,
+  handleUpdateIcon,
   t,
 }) => {
   const {
@@ -401,7 +444,7 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
         <div className="smtcmp-assistant-content">
           <div className="smtcmp-assistant-header">
             <div className="smtcmp-assistant-icon">
-              <Bot size={16} />
+              {renderAssistantIcon(assistant.icon, 16)}
             </div>
             <div className="smtcmp-assistant-info">
               <div className="smtcmp-assistant-name">
@@ -485,6 +528,21 @@ const AssistantListItem: FC<AssistantListItemProps> = ({
                   description: value,
                 })
               }
+            />
+          </ObsidianSetting>
+
+          <ObsidianSetting
+            name={t('settings.assistants.icon', '图标')}
+            desc={t('settings.assistants.iconDesc', '选择助手图标')}
+          >
+            <ObsidianButton
+              text={t('settings.assistants.chooseIcon', '选择图标')}
+              onClick={() => {
+                openIconPicker(app, currentEditing.icon, (newIcon) => {
+                  // 立即保存图标到数据库
+                  void handleUpdateIcon(assistant.id, newIcon)
+                })
+              }}
             />
           </ObsidianSetting>
 

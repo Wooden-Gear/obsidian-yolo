@@ -5914,3 +5914,153 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-rag-minimal .smtcmp-rag-progress-folder-header:hover {
   color: var(--text-normal);
 }
+
+/* ==================== Assistant Icon Picker Modal ==================== */
+
+.smtcmp-icon-picker-modal {
+  padding: var(--size-4-4);
+}
+
+.smtcmp-icon-picker-content h2 {
+  margin: 0 0 var(--size-4-4) 0;
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.smtcmp-icon-picker-tabs {
+  display: flex;
+  gap: var(--size-2-1);
+  margin-bottom: var(--size-4-4);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.smtcmp-icon-picker-tab {
+  padding: var(--size-4-1) var(--size-4-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.smtcmp-icon-picker-tab:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.smtcmp-icon-picker-tab.active {
+  color: var(--interactive-accent);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.smtcmp-icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: var(--size-2-2);
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--size-2-1);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+.smtcmp-icon-picker-item {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-secondary);
+  border: 2px solid transparent;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.smtcmp-icon-picker-item:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+  transform: scale(1.05);
+}
+
+.smtcmp-icon-picker-item.selected {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent);
+}
+
+.smtcmp-icon-picker-item-preview {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-normal);
+}
+
+.smtcmp-icon-picker-custom-emoji {
+  display: flex;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-4);
+  align-items: center;
+}
+
+.smtcmp-icon-picker-emoji-input {
+  flex: 1;
+  padding: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+}
+
+.smtcmp-icon-picker-emoji-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.smtcmp-icon-picker-confirm-btn {
+  padding: var(--size-4-2) var(--size-4-4);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.smtcmp-icon-picker-confirm-btn:hover {
+  background: var(--interactive-accent-hover);
+}
+
+/* ==================== Assistant Icon Selector in Settings ==================== */
+
+
+
+/* ==================== Emoji Icon Styles (No Background) ==================== */
+
+/* 助手选择器当前图标 - emoji 无背景 */
+.smtcmp-assistant-selector-current-icon:has(.icon-emoji) {
+  background: none;
+  box-shadow: none;
+}
+
+/* 助手选择器列表项图标 - emoji 无背景 */
+.smtcmp-assistant-selector-item-icon:has(.icon-emoji) {
+  background: none;
+}
+
+/* 设置面板助手列表图标 - emoji 无背景 */
+.smtcmp-assistant-icon:has(.icon-emoji) {
+  background: none;
+}
+
+/* Emoji 图标字体大小调整 */
+.icon-emoji {
+  font-size: 1.2em;
+}

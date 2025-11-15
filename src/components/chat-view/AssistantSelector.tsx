@@ -1,10 +1,11 @@
 import * as Popover from '@radix-ui/react-popover'
-import { Bot, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
 import { Assistant } from '../../types/assistant.types'
+import { renderAssistantIcon } from '../../utils/assistant-icon'
 
 export function AssistantSelector() {
   const { settings, setSettings } = useSettings()
@@ -57,7 +58,7 @@ export function AssistantSelector() {
         >
           {currentAssistant && (
             <div className="smtcmp-assistant-selector-current-icon">
-              <Bot size={14} />
+              {renderAssistantIcon(currentAssistant.icon, 14)}
             </div>
           )}
           <div className="smtcmp-assistant-selector-current">
@@ -98,7 +99,7 @@ export function AssistantSelector() {
                 onClick={() => handleSelectAssistant(assistant)}
               >
                 <div className="smtcmp-assistant-selector-item-icon">
-                  <Bot size={14} />
+                  {renderAssistantIcon(assistant.icon, 14)}
                 </div>
                 <div className="smtcmp-assistant-selector-item-content">
                   <div className="smtcmp-assistant-selector-item-name">
