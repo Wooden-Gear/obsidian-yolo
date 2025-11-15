@@ -120,6 +120,8 @@ function SmartSpacePanelBody({
     'top' | 'bottom'
   >('top')
   const [isMultilineInput, setIsMultilineInput] = useState(false)
+  const [isKeyboardNavigationActive, setIsKeyboardNavigationActive] =
+    useState(false)
   const latestInstructionTextRef = useRef(initialInstructionText)
   const latestMentionablesRef =
     useRef<SmartSpaceMentionable[]>(initialMentionables)
@@ -155,6 +157,12 @@ function SmartSpacePanelBody({
   const derivedUseUrlContext =
     settings?.continuationOptions?.smartSpaceUseUrlContext ?? false
   const hasBlockingOverlay = isMentionMenuOpen || isModelMenuOpen
+  const activateKeyboardNavigation = useCallback(() => {
+    setIsKeyboardNavigationActive((prev) => (prev ? prev : true))
+  }, [])
+  const deactivateKeyboardNavigation = useCallback(() => {
+    setIsKeyboardNavigationActive((prev) => (prev ? false : prev))
+  }, [])
 
   useEffect(() => {
     contentEditableRef.current?.focus()
@@ -612,6 +620,7 @@ function SmartSpacePanelBody({
   const focusFirstItem = () => {
     for (const ref of itemRefs.current) {
       if (ref && !ref.disabled) {
+        activateKeyboardNavigation()
         ref.focus()
         return
       }
@@ -622,6 +631,7 @@ function SmartSpacePanelBody({
     for (let i = itemRefs.current.length - 1; i >= 0; i -= 1) {
       const ref = itemRefs.current[i]
       if (ref && !ref.disabled) {
+        activateKeyboardNavigation()
         ref.focus()
         return
       }
@@ -635,6 +645,7 @@ function SmartSpacePanelBody({
       nextIndex = (nextIndex + direction + totalItems) % totalItems
       const ref = itemRefs.current[nextIndex]
       if (ref && !ref.disabled) {
+        activateKeyboardNavigation()
         ref.focus()
         return
       }
@@ -831,6 +842,12 @@ function SmartSpacePanelBody({
       onClose()
     }
   }
+
+  const handleQuickActionsPointerMove = useCallback(() => {
+    if (!isKeyboardNavigationActive) return
+    // 鼠标开始移动时恢复 hover 行为
+    deactivateKeyboardNavigation()
+  }, [deactivateKeyboardNavigation, isKeyboardNavigationActive])
 
   const isInputEmpty = instructionText.length === 0 && mentionables.length === 0
 
@@ -1057,7 +1074,12 @@ function SmartSpacePanelBody({
             </div>
           )}
           {showQuickActions && sections.length > 0 && (
-            <div className="smtcmp-smart-space-section-card">
+            <div
+              className={`smtcmp-smart-space-section-card${
+                isKeyboardNavigationActive ? ' is-keyboard-nav' : ''
+              }`}
+              onPointerMove={handleQuickActionsPointerMove}
+            >
               <div className="smtcmp-smart-space-section-list">
                 {(() => {
                   let itemIndex = -1

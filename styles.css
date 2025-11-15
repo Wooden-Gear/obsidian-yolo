@@ -4505,6 +4505,13 @@ button.smtcmp-chat-input-model-select {
   outline: none;
 }
 
+/* 键盘导航时禁用鼠标 hover 的视觉反馈，避免与焦点状态冲突 */
+.smtcmp-smart-space-section-card.is-keyboard-nav
+  .smtcmp-smart-space-item:hover:not(:focus-visible):not(:focus) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
 .smtcmp-smart-space-item:disabled {
   opacity: 0.6;
   cursor: default;
