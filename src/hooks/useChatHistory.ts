@@ -33,6 +33,10 @@ type UseChatHistory = {
     overrides: ConversationOverrideSettings | null | undefined
   } | null>
   updateConversationTitle: (id: string, title: string) => Promise<void>
+  generateConversationTitle: (
+    id: string,
+    messages: ChatMessage[],
+  ) => Promise<void>
   chatList: ChatConversationMetadata[]
 }
 
@@ -95,13 +99,7 @@ export function useChatHistory(): UseChatHistory {
                   : overrides,
             })
           } else {
-            const firstUserMessage = messages.find((v) => v.role === 'user')
-
-            // 默认标题统一为“新消息”，待首条消息发送后由工具模型自动改名
-            // 同时保留首条消息的纯文本供后续自动命名使用
-            const rawTitle = firstUserMessage?.content
-              ? editorStateToPlainText(firstUserMessage.content)
-              : ''
+            // 默认标题统一为"新消息"，待第一轮模型回答完成后由工具模型自动改名
             const defaultTitle = '新消息'
 
             await chatManager.createChat({
@@ -110,60 +108,6 @@ export function useChatHistory(): UseChatHistory {
               messages: serializedMessages,
               overrides: overrides ?? null,
             })
-
-            // Auto-generate a better title using the tool model (applyModelId). Timeout: 3s
-            void (async () => {
-              try {
-                const firstUserText = rawTitle
-                if (!firstUserText || (firstUserText ?? '').trim().length === 0)
-                  return
-
-                const controller = new AbortController()
-                const timer = setTimeout(() => controller.abort(), 3000)
-
-                const { providerClient, model } = getChatModelClient({
-                  settings,
-                  modelId: settings.applyModelId,
-                })
-
-                const defaultTitlePrompt =
-                  DEFAULT_CHAT_TITLE_PROMPT[language] ??
-                  DEFAULT_CHAT_TITLE_PROMPT.en
-                const customizedPrompt = (
-                  settings.chatOptions.chatTitlePrompt ?? ''
-                ).trim()
-                const systemPrompt =
-                  customizedPrompt.length > 0
-                    ? customizedPrompt
-                    : defaultTitlePrompt
-
-                const response = await providerClient.generateResponse(
-                  model,
-                  {
-                    model: model.model,
-                    messages: [
-                      { role: 'system', content: systemPrompt },
-                      { role: 'user', content: firstUserText },
-                    ],
-                    stream: false,
-                  },
-                  { signal: controller.signal },
-                )
-                clearTimeout(timer)
-
-                const generated = response.choices?.[0]?.message?.content ?? ''
-                const nextTitle = (generated || '')
-                  .trim()
-                  .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
-                if (!nextTitle) return
-                const nextSafeTitle = nextTitle.substring(0, 10)
-
-                await chatManager.updateChat(id, { title: nextSafeTitle })
-                await fetchChatList()
-              } catch {
-                // Ignore failures/timeouts; keep fallback title
-              }
-            })()
           }
 
           await fetchChatList()
@@ -233,12 +177,98 @@ export function useChatHistory(): UseChatHistory {
     [chatManager, fetchChatList],
   )
 
+  const generateConversationTitle = useCallback(
+    async (id: string, messages: ChatMessage[]): Promise<void> => {
+      const conversation = await chatManager.findById(id)
+      if (!conversation) {
+        return
+      }
+
+      // 如果标题已经不是"新消息"，说明已经命名过了，不需要再次命名
+      if (conversation.title !== '新消息') {
+        return
+      }
+
+      // 检查是否有用户消息和助手消息
+      const firstUserMessage = messages.find((v) => v.role === 'user')
+      const firstAssistantMessage = messages.find((v) => v.role === 'assistant')
+
+      // 只有在有用户消息和助手消息时才进行命名
+      if (!firstUserMessage || !firstAssistantMessage) {
+        return
+      }
+
+      // 使用用户的第一条消息和助手的第一条回答来生成标题
+      const userText = firstUserMessage.content
+        ? editorStateToPlainText(firstUserMessage.content)
+        : ''
+      const assistantText = firstAssistantMessage.content || ''
+
+      if (!userText || userText.trim().length === 0) {
+        return
+      }
+
+      void (async () => {
+        try {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 3000)
+
+          const { providerClient, model } = getChatModelClient({
+            settings,
+            modelId: settings.applyModelId,
+          })
+
+          const defaultTitlePrompt =
+            DEFAULT_CHAT_TITLE_PROMPT[language] ??
+            DEFAULT_CHAT_TITLE_PROMPT.en
+          const customizedPrompt = (
+            settings.chatOptions.chatTitlePrompt ?? ''
+          ).trim()
+          const systemPrompt =
+            customizedPrompt.length > 0
+              ? customizedPrompt
+              : defaultTitlePrompt
+
+          // 使用用户消息和助手回答来生成标题，这样能更好地理解对话内容
+          const response = await providerClient.generateResponse(
+            model,
+            {
+              model: model.model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userText },
+                { role: 'assistant', content: assistantText },
+              ],
+              stream: false,
+            },
+            { signal: controller.signal },
+          )
+          clearTimeout(timer)
+
+          const generated = response.choices?.[0]?.message?.content ?? ''
+          const nextTitle = (generated || '')
+            .trim()
+            .replace(/^["'""'']+|["'""'']+$/g, '')
+          if (!nextTitle) return
+          const nextSafeTitle = nextTitle.substring(0, 10)
+
+          await chatManager.updateChat(id, { title: nextSafeTitle })
+          await fetchChatList()
+        } catch {
+          // Ignore failures/timeouts; keep fallback title
+        }
+      })()
+    },
+    [chatManager, fetchChatList, language, settings],
+  )
+
   return {
     createOrUpdateConversation,
     deleteConversation,
     getChatMessagesById,
     getConversationById,
     updateConversationTitle,
+    generateConversationTitle,
     chatList,
   }
 }

@@ -117,6 +117,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     deleteConversation,
     getConversationById,
     updateConversationTitle,
+    generateConversationTitle,
     chatList,
   } = useChatHistory()
   const promptGenerator = useMemo(() => {
@@ -548,6 +549,53 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     createOrUpdateConversation,
     conversationOverrides,
   ])
+
+  // 跟踪每个对话是否已经命名过
+  const titleGeneratedRef = useRef<Set<string>>(new Set())
+
+  // 在第一轮模型回答完成后自动生成对话标题
+  useEffect(() => {
+    if (
+      submitChatMutation.isSuccess &&
+      !submitChatMutation.isPending &&
+      chatMessages.length > 0 &&
+      currentConversationId &&
+      !titleGeneratedRef.current.has(currentConversationId)
+    ) {
+      // 检查是否有用户消息和助手消息
+      const hasUserMessage = chatMessages.some((m) => m.role === 'user')
+      const hasAssistantMessage = chatMessages.some((m) => m.role === 'assistant')
+      const lastMessage = chatMessages.at(-1)
+
+      // 只有在有用户和助手消息，且最后一条消息是助手消息时，才进行命名
+      // 如果最后一条是工具消息，需要等待后续的助手消息
+      if (
+        hasUserMessage &&
+        hasAssistantMessage &&
+        lastMessage?.role === 'assistant'
+      ) {
+        titleGeneratedRef.current.add(currentConversationId)
+        void generateConversationTitle(currentConversationId, chatMessages)
+      }
+    }
+  }, [
+    submitChatMutation.isSuccess,
+    submitChatMutation.isPending,
+    chatMessages,
+    currentConversationId,
+    generateConversationTitle,
+  ])
+
+  // 当切换对话时，清除命名标记（如果对话标题还是"新消息"）
+  useEffect(() => {
+    // 如果切换到新对话，清除该对话的命名标记
+    if (currentConversationId) {
+      const conversation = chatList.find((c) => c.id === currentConversationId)
+      if (conversation && conversation.title === '新消息') {
+        titleGeneratedRef.current.delete(currentConversationId)
+      }
+    }
+  }, [currentConversationId, chatList])
 
   // Updates the currentFile of the focused message (input or chat history)
   // This happens when active file changes or focused message changes
