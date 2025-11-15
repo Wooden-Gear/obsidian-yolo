@@ -3379,6 +3379,36 @@ button.smtcmp-chat-input-model-select {
   justify-content: center;
 }
 
+.smtcmp-assistant-selector-current-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(
+      in srgb,
+      var(--h1-color, var(--interactive-accent)) 90%,
+      transparent
+    ),
+    color-mix(
+      in srgb,
+      var(--h1-color, var(--interactive-accent)) 60%,
+      #ffffff 12%
+    )
+  );
+  color: var(--text-on-accent, #ffffff);
+  box-shadow: 0 0 8px rgba(var(--interactive-accent-rgb, 128 90 213), 0.25);
+}
+
+.smtcmp-assistant-selector-current-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
 .smtcmp-assistant-selector-content {
   padding: var(--size-2-1);
   min-width: 240px;
@@ -3423,14 +3453,31 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-assistant-selector-item-icon {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-s);
-  background-color: var(--background-modifier-border);
-  color: var(--text-muted);
+  background: linear-gradient(
+    140deg,
+    color-mix(
+      in srgb,
+      var(--h1-color, var(--interactive-accent)) 85%,
+      transparent
+    ),
+    color-mix(
+      in srgb,
+      var(--h1-color, var(--interactive-accent)) 55%,
+      #ffffff 10%
+    )
+  );
+  color: var(--text-on-accent, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.smtcmp-assistant-selector-item-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 .smtcmp-assistant-selector-item-content {
