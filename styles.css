@@ -3414,6 +3414,8 @@ button.smtcmp-chat-input-model-select {
   padding: var(--size-2-1);
   min-width: 240px;
   max-width: 320px;
+  border-radius: var(--radius-m);
+  overflow: hidden;
 }
 
 .smtcmp-assistant-selector-empty {
@@ -3430,26 +3432,26 @@ button.smtcmp-chat-input-model-select {
   border-radius: var(--radius-s);
 }
 
-.smtcmp-assistant-selector-item {
+.smtcmp-assistant-selector-content .smtcmp-assistant-selector-item {
   display: flex;
   align-items: center;
   gap: var(--size-4-2);
   padding: var(--size-4-1) var(--size-4-2);
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-m);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.smtcmp-assistant-selector-item:hover {
+.smtcmp-assistant-selector-content .smtcmp-assistant-selector-item:hover {
   background-color: var(--background-modifier-hover);
 }
 
-.smtcmp-assistant-selector-item.selected {
+.smtcmp-assistant-selector-content .smtcmp-assistant-selector-item.selected {
   background-color: var(--background-modifier-hover);
   border: 1px solid var(--interactive-accent);
 }
 
-.smtcmp-assistant-selector-item:active {
+.smtcmp-assistant-selector-content .smtcmp-assistant-selector-item:active {
   transform: translateY(1px);
 }
 
