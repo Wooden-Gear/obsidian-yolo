@@ -19,6 +19,7 @@ export class McpSectionModal extends ReactModal<McpSectionComponentProps> {
         app,
         plugin,
       },
+      plugin: plugin,
     })
     this.modalEl.classList.add('smtcmp-modal--wide')
   }
