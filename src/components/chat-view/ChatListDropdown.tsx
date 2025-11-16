@@ -171,10 +171,11 @@ export function ChatListDropdown({
 
       <Popover.Portal>
         <Popover.Content
-          className="smtcmp-popover smtcmp-chat-list-dropdown-content"
+          className="smtcmp-popover smtcmp-chat-sidebar-popover smtcmp-chat-list-dropdown-content"
+          sideOffset={8}
           onKeyDown={handleKeyDown}
         >
-          <ul>
+          <ul className="smtcmp-model-select-list">
             {chatList.length === 0 ? (
               <li className="smtcmp-chat-list-dropdown-empty">
                 No conversations
