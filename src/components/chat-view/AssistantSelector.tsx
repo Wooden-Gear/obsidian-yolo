@@ -73,8 +73,11 @@ export function AssistantSelector() {
       </Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content className="smtcmp-popover smtcmp-assistant-selector-content">
-          <ul className="smtcmp-assistant-selector-list">
+        <Popover.Content
+          className="smtcmp-popover smtcmp-chat-sidebar-popover smtcmp-assistant-selector-content"
+          sideOffset={14}
+        >
+          <ul className="smtcmp-assistant-selector-list smtcmp-model-select-list">
             {/* "No Assistant" option */}
             <li
               className={`smtcmp-assistant-selector-item ${
