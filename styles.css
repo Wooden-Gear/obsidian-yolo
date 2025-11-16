@@ -948,17 +948,24 @@
 }
 
 .smtcmp-chat-list-dropdown-content {
-  width: 280px;
-  max-width: 280px;
+  display: inline-flex;
+  flex-direction: column;
+  width: 200px !important;
+  max-width: 200px !important;
+  min-width: 0 !important;
 }
 
-.smtcmp-chat-list-dropdown-content li {
+.smtcmp-chat-list-dropdown-content li,
+.smtcmp-chat-list-dropdown-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  border-radius: var(--radius-l) !important;
+  margin: 4px 0;
+  width: auto;
+  box-sizing: border-box;
   background: transparent !important;
   box-shadow: none !important;
   border: 0 !important;
@@ -975,14 +982,26 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
   font-size: var(--font-ui-smaller);
 }
 
-.smtcmp-chat-sidebar-popover .smtcmp-chat-list-dropdown-content li:hover {
-  background: color-mix(
-    in srgb,
-    var(--background-modifier-hover) 90%,
-    transparent
-  ) !important;
+.smtcmp-chat-list-dropdown-content li:hover {
+  color: var(--text-normal) !important;
 }
 
+.smtcmp-chat-list-dropdown-item:hover,
+.smtcmp-chat-list-dropdown-item:focus-within,
+.smtcmp-chat-sidebar-popover
+  .smtcmp-chat-list-dropdown-content
+  li:is(:hover, :focus-within, :has(:hover)) {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 92%,
+    transparent
+  ) !important;
+  outline: none;
+  color: var(--text-normal) !important;
+}
+
+.smtcmp-chat-list-dropdown-item.selected,
+.smtcmp-chat-list-dropdown-item[data-highlighted='true'],
 .smtcmp-chat-sidebar-popover
   .smtcmp-chat-list-dropdown-content
   li.selected,
@@ -990,15 +1009,13 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
   .smtcmp-chat-list-dropdown-content
   li[data-highlighted='true'] {
   background: color-mix(
-      in srgb,
-      var(--interactive-accent) 14%,
-      transparent
-    )
-    !important;
-  box-shadow: 0 0 0 1px
-    color-mix(in srgb, var(--interactive-accent) 40%, transparent);
-  border: 1px solid
-    color-mix(in srgb, var(--interactive-accent) 40%, transparent) !important;
+    in srgb,
+    var(--background-modifier-hover) 96%,
+    transparent
+  ) !important;
+  box-shadow: none;
+  border: 0 !important;
+  color: var(--text-normal) !important;
 }
 
 .smtcmp-chat-list-dropdown-item-actions {

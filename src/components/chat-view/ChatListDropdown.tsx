@@ -77,7 +77,8 @@ function ChatListItem({
         onSelect()
       }}
       onMouseEnter={onMouseEnter}
-      className={isFocused ? 'selected' : ''}
+      className={`smtcmp-chat-list-dropdown-item${isFocused ? ' selected' : ''}`}
+      data-highlighted={isFocused ? 'true' : undefined}
     >
       {isEditing ? (
         <TitleInput title={title} onSubmit={onFinishEdit} />
