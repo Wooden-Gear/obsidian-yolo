@@ -193,6 +193,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [messageModelMap, setMessageModelMap] = useState<Map<string, string>>(
     new Map(),
   )
+  const submitMutationPendingRef = useRef(false)
 
   const groupedChatMessages: (ChatUserMessage | AssistantToolMessageGroup)[] =
     useMemo(() => {
@@ -213,6 +214,23 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     conversationOverrides: conversationOverrides ?? undefined,
     modelId: conversationModelId,
   })
+
+  const persistConversation = useCallback(
+    async (messages: ChatMessage[]) => {
+      if (messages.length === 0) return
+      try {
+        await createOrUpdateConversation(
+          currentConversationId,
+          messages,
+          conversationOverrides ?? null,
+        )
+      } catch (error) {
+        new Notice('Failed to save chat history')
+        console.error('Failed to save chat history', error)
+      }
+    },
+    [conversationOverrides, createOrUpdateConversation, currentConversationId],
+  )
 
   const registerChatUserInputRef = (
     id: string,
@@ -358,6 +376,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       )
 
       setChatMessages(compiledMessages)
+      void persistConversation(compiledMessages)
       submitChatMutation.mutate({
         chatMessages: compiledMessages,
         conversationId: currentConversationId,
@@ -369,6 +388,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       promptGenerator,
       abortActiveStreams,
       forceScrollToBottom,
+      persistConversation,
     ],
   )
 
@@ -528,27 +548,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }, [inputMessage.id])
 
   useEffect(() => {
-    const updateConversationAsync = async () => {
-      try {
-        if (chatMessages.length > 0) {
-          await createOrUpdateConversation(
-            currentConversationId,
-            chatMessages,
-            conversationOverrides ?? null,
-          )
-        }
-      } catch (error) {
-        new Notice('Failed to save chat history')
-        console.error('Failed to save chat history', error)
-      }
+    if (submitChatMutation.isPending) {
+      submitMutationPendingRef.current = true
+      return
     }
-    void updateConversationAsync()
-  }, [
-    currentConversationId,
-    chatMessages,
-    createOrUpdateConversation,
-    conversationOverrides,
-  ])
+    if (submitMutationPendingRef.current) {
+      submitMutationPendingRef.current = false
+      void persistConversation(chatMessages)
+    }
+  }, [chatMessages, persistConversation, submitChatMutation.isPending])
 
   // 跟踪每个对话是否已经命名过
   const titleGeneratedRef = useRef<Set<string>>(new Set())

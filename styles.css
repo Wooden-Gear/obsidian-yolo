@@ -959,7 +959,7 @@
 .smtcmp-chat-list-dropdown-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   padding: 10px 12px;
   border-radius: var(--radius-l) !important;
@@ -975,6 +975,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
 }
 
 input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
@@ -1022,6 +1023,7 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
   display: flex;
   align-items: center;
   gap: var(--size-4-1);
+  margin-left: auto;
 
   svg {
     height: var(--icon-xs);
