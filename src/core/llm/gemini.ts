@@ -71,11 +71,15 @@ export class GeminiProvider extends BaseLLMProvider<
 
   constructor(provider: Extract<LLMProvider, { type: 'gemini' }>) {
     super(provider)
-    if (provider.baseUrl) {
-      throw new Error('Gemini does not support custom base URL')
-    }
 
-    this.client = new GoogleGenAI({ apiKey: provider.apiKey ?? '' })
+    const baseUrl = provider.baseUrl
+      ? GeminiProvider.normalizeBaseUrl(provider.baseUrl)
+      : undefined
+
+    this.client = new GoogleGenAI({
+      apiKey: provider.apiKey ?? '',
+      httpOptions: baseUrl ? { baseUrl } : undefined,
+    })
     this.apiKey = provider.apiKey ?? ''
   }
 
@@ -689,6 +693,22 @@ export class GeminiProvider extends BaseLLMProvider<
           parametersJsonSchema: cleanedSchema,
         },
       ],
+    }
+  }
+
+  private static normalizeBaseUrl(raw: string): string {
+    const trimmed = raw.replace(/\/+$/, '')
+    try {
+      const url = new URL(trimmed)
+      // Avoid double version segments when SDK appends /v1beta or /v1.
+      url.pathname = url.pathname.replace(
+        /\/?(v1beta|v1alpha1|v1)(\/)?$/,
+        '',
+      )
+      return url.toString().replace(/\/+$/, '')
+    } catch {
+      // Fallback for non-standard schemes: just strip trailing version pieces.
+      return trimmed.replace(/\/?(v1beta|v1alpha1|v1)(\/)?$/, '')
     }
   }
 }

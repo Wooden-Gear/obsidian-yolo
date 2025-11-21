@@ -68,6 +68,19 @@ const collectModelIdentifiers = (values: unknown[]): string[] =>
     .map((entry) => extractModelIdentifier(entry))
     .filter((id): id is string => Boolean(id))
 
+const normalizeGeminiBaseUrl = (raw?: string): string | undefined => {
+  if (!raw) return undefined
+  const trimmed = raw.replace(/\/+$/, '')
+  try {
+    const url = new URL(trimmed)
+    // Strip trailing version segments to avoid double-appending by SDK
+    url.pathname = url.pathname.replace(/\/?(v1beta|v1alpha1|v1)(\/)?$/, '')
+    return url.toString().replace(/\/+$/, '')
+  } catch {
+    return trimmed.replace(/\/?(v1beta|v1alpha1|v1)(\/)?$/, '')
+  }
+}
+
 const isReasoningType = (value: string): value is ReasoningType =>
   REASONING_TYPES.includes(value as ReasoningType)
 
@@ -266,7 +279,11 @@ function AddChatModelModalComponent({
         }
 
         if (selectedProvider.type === 'gemini') {
-          const ai = new GoogleGenAI({ apiKey: selectedProvider.apiKey ?? '' })
+          const baseUrl = normalizeGeminiBaseUrl(selectedProvider.baseUrl)
+          const ai = new GoogleGenAI({
+            apiKey: selectedProvider.apiKey ?? '',
+            httpOptions: baseUrl ? { baseUrl } : undefined,
+          })
           const pager = await ai.models.list()
           const names: string[] = []
           for await (const entry of pager) {
