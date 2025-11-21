@@ -113,7 +113,7 @@ export class GeminiProvider extends BaseLLMProvider<
         const budget = model.thinking.thinking_budget
         config.thinkingConfig = {
           thinkingBudget: budget,
-          ...(request.model.includes('2.5') ? { includeThoughts: true } : {}),
+          includeThoughts: true,
         }
       }
 
@@ -204,7 +204,7 @@ export class GeminiProvider extends BaseLLMProvider<
         const budget = model.thinking.thinking_budget
         config.thinkingConfig = {
           thinkingBudget: budget,
-          ...(request.model.includes('2.5') ? { includeThoughts: true } : {}),
+          includeThoughts: true,
         }
       }
 
