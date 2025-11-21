@@ -1,6 +1,6 @@
 import cx from 'clsx'
-import { Eye, EyeOff, X } from 'lucide-react'
-import { PropsWithChildren, useCallback } from 'react'
+import { X } from 'lucide-react'
+import { PropsWithChildren } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
 import {
@@ -131,23 +131,13 @@ function CurrentFileBadge({
   onDelete,
   onClick,
   isFocused,
-  onToggleVisibility,
 }: {
   mentionable: MentionableCurrentFile
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
-  onToggleVisibility: () => void
 }) {
   const app = useApp()
-
-  const handleCurrentFileToggle = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      e.stopPropagation()
-      onToggleVisibility()
-    },
-    [onToggleVisibility],
-  )
 
   const Icon = getMentionableIcon(mentionable)
   return (
@@ -172,12 +162,6 @@ function CurrentFileBadge({
         )}
       >
         {' (Current file)'}
-      </div>
-      <div
-        className="smtcmp-chat-user-input-file-badge-eye"
-        onClick={handleCurrentFileToggle}
-      >
-        {mentionable.file ? <Eye size={12} /> : <EyeOff size={12} />}
       </div>
     </BadgeBase>
   )
@@ -272,13 +256,11 @@ export default function MentionableBadge({
   onDelete,
   onClick,
   isFocused = false,
-  onToggleVisibility,
 }: {
   mentionable: Mentionable
   onDelete: () => void
   onClick: () => void
   isFocused?: boolean
-  onToggleVisibility?: () => void
 }) {
   switch (mentionable.type) {
     case 'file':
@@ -315,7 +297,6 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
-          onToggleVisibility={() => onToggleVisibility?.()}
         />
       )
     case 'block':
