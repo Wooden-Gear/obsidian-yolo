@@ -21,7 +21,7 @@ With YOLO you can:
 
 - 💬 Chat with LLMs directly in the sidebar
 - 📚 Treat your entire vault as the AI’s knowledge base
-- ✍️ Use the “Super Rewrite” mode to continue your ideas effortlessly
+- ✍️ Summon Smart Space to continue your ideas anywhere
 - 🧩 Enable experimental features like Learning Mode and sub-agents to explore personalized workflows
 - 🎨 Enjoy numerous UX improvements and UI polish
 
@@ -40,13 +40,17 @@ Seamless conversations with LLMs, with context injection, preset prompts, custom
 
 https://github.com/user-attachments/assets/cffbada7-4314-4709-bef4-9867b43d6484
 
-## **✍️ Super Rewrite**
+## **✍️ Smart Space**
 
 
 https://github.com/user-attachments/assets/141f3c6a-19f5-46be-9674-2ddd230be9c6
 
 
-Activate continuation through hotkeys or the command palette, combining context understanding with natural, fluent paragraph generation.
+Summon Smart Space anywhere for natural, fluent, and efficient content generation.
+
+## **🪡 Cursor Chat**
+
+Add it with one click—always within reach.
 
 ## **🎛️ Multi-Model Support + i18n**
 
