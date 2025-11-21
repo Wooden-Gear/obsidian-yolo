@@ -39,12 +39,13 @@ https://github.com/user-attachments/assets/cffbada7-4314-4709-bef4-9867b43d6484
 
 ## **✍️ Smart Space**
 
-https://github.com/user-attachments/assets/141f3c6a-19f5-46be-9674-2ddd230be9c6
+https://github.com/user-attachments/assets/fa2d32dc-51fb-4f19-a3c3-44c2ea7a5fd9
 
 在任何地方召唤出 Smart Space，享受自然流畅高效的内容生成
 
 ## **🪡 Cursor Chat**
 
+https://github.com/user-attachments/assets/21b775d7-b427-4da2-b20c-f2ede85c2b69
 
 一键添加，触手可得
 
