@@ -107,10 +107,6 @@ export class PromptGenerator {
       ? null
       : this.getSystemMessage(shouldUseRAG, hasTools)
 
-    const customInstructionMessage = isBaseModel
-      ? null
-      : this.getCustomInstructionMessage()
-
     const currentFile = lastUserMessage.mentionables.find(
       (m) => m.type === 'current-file',
     )?.file
@@ -122,7 +118,6 @@ export class PromptGenerator {
     const requestMessages: RequestMessage[] = [
       ...baseModelSpecialPromptMessage,
       ...(systemMessage ? [systemMessage] : []),
-      ...(customInstructionMessage ? [customInstructionMessage] : []),
       ...(currentFileMessage ? [currentFileMessage] : []),
       ...this.getChatHistoryMessages({
         messages: compiledMessages,
@@ -450,20 +445,104 @@ ${await this.getWebsiteContent(url)}
     // When both RAG and tools are available, prioritize based on context
     const useRAGPrompt = shouldUseRAG && !hasTools
 
-    const systemPrompt = `You are an intelligent assistant.
+    // Build user custom instructions section (priority: placed first)
+    const customInstructionsSection = this.buildCustomInstructionsSection()
+
+    // Build base behavior section
+    const baseBehaviorSection = useRAGPrompt
+      ? this.buildRAGBehaviorSection(hasTools)
+      : this.buildDefaultBehaviorSection(hasTools)
+
+    // Build output format section
+    const outputFormatSection = useRAGPrompt
+      ? this.buildRAGOutputFormatSection()
+      : this.buildDefaultOutputFormatSection()
+
+    // Combine all sections: user instructions first, then base behavior, then output format
+    const sections = [
+      customInstructionsSection,
+      baseBehaviorSection,
+      outputFormatSection,
+    ].filter(Boolean)
+
+    return {
+      role: 'system',
+      content: sections.join('\n\n'),
+    }
+  }
+
+  private buildCustomInstructionsSection(): string | null {
+    // Get custom system prompt
+    const customInstruction = this.settings.systemPrompt.trim()
+
+    // Get currently selected assistant
+    const currentAssistantId = this.settings.currentAssistantId
+    const assistants = this.settings.assistants || []
+    // Only use assistant if explicitly selected (currentAssistantId is not undefined)
+    const currentAssistant = currentAssistantId
+      ? assistants.find((a) => a.id === currentAssistantId)
+      : null
+
+    // If there's no custom prompt and no selected assistant, return null
+    if (!customInstruction && !currentAssistant) {
+      return null
+    }
+
+    // Build prompt content
+    const parts: string[] = []
+
+    // Add assistant's system prompt (if available) - this is the primary instruction
+    if (currentAssistant?.systemPrompt) {
+      parts.push(`<assistant_instructions name="${currentAssistant.name}">
+${currentAssistant.systemPrompt}
+</assistant_instructions>`)
+    }
+
+    // Add global custom instructions (if available)
+    if (customInstruction) {
+      parts.push(`<custom_instructions>
+${customInstruction}
+</custom_instructions>`)
+    }
+
+    return parts.join('\n\n')
+  }
+
+  private buildDefaultBehaviorSection(hasTools: boolean): string {
+    let section = `You are an intelligent assistant.
 
 - Format your responses in Markdown.
 - Always reply in the same language as the user's message.
-- Your replies should be detailed and insightful
+- Your replies should be detailed and insightful.`
 
-${
-  hasTools
-    ? `
+    if (hasTools) {
+      section += `
 - You have access to tools that can help you perform actions. Use them when appropriate to provide better assistance.
-- When using tools, focus on providing clear results to the user. Only briefly mention tool usage if it helps understanding.
-`
-    : ''
-}
+- When using tools, focus on providing clear results to the user. Only briefly mention tool usage if it helps understanding.`
+    }
+
+    return section
+  }
+
+  private buildRAGBehaviorSection(hasTools: boolean): string {
+    let section = `You are an intelligent assistant that answers the user's questions using their vault content whenever it is available.
+
+- Do not fabricate facts—if the provided context is insufficient, say so.
+- Format your responses in Markdown.
+- Always reply in the same language as the user's message.
+- Your replies should be detailed and insightful.`
+
+    if (hasTools) {
+      section += `
+- You can use tools, but consult the provided markdown first. Only call tools when the vault content cannot answer the question.
+- When using tools, briefly state why they are needed and focus on summarizing the results for the user.`
+    }
+
+    return section
+  }
+
+  private buildDefaultOutputFormatSection(): string {
+    return `## Output Format
 
 - When you output a new Markdown block (for new content), wrap it in <smtcmp_block> tags. Example:
 <smtcmp_block language="markdown">
@@ -485,24 +564,11 @@ ${
 <!-- ... existing content ... -->
 </smtcmp_block>
 
-- The user has full access to the file, so show only the modified parts unless they explicitly ask for the full file. You may briefly explain what you changed when helpful.
-`
+- The user has full access to the file, so show only the modified parts unless they explicitly ask for the full file. You may briefly explain what you changed when helpful.`
+  }
 
-    const systemPromptRAG = `You are an intelligent assistant that answers the user's questions using their vault content whenever it is available.
-
-- Do not fabricate facts—if the provided context is insufficient, say so.
-- Format your responses in Markdown.
-- Always reply in the same language as the user's message.
-- Your replies should be detailed and insightful
-
-${
-  hasTools
-    ? `
-- You can use tools, but consult the provided markdown first. Only call tools when the vault content cannot answer the question.
-- When using tools, briefly state why they are needed and focus on summarizing the results for the user.
-`
-    : ''
-}
+  private buildRAGOutputFormatSection(): string {
+    return `## Output Format
 
 - When referencing markdown blocks in your answer:
   a. Never include line numbers in the output.
@@ -511,57 +577,7 @@ ${
   d. If the user gives you a markdown block, output an empty placeholder with filename, language, startLine, and endLine attributes (e.g. <smtcmp_block filename="path/to/file.md" language="markdown" startLine="2" endLine="30"></smtcmp_block>) and keep commentary outside the block.
 
 - When you output new Markdown content, wrap it in <smtcmp_block language="markdown">...</smtcmp_block>.
-- When editing an existing file, include filename and language on the block, restate the relevant heading, and show only the changed sections using <!-- ... --> comments for skipped content. The user already has full access to the file.
-`
-
-    return {
-      role: 'system',
-      content: useRAGPrompt ? systemPromptRAG : systemPrompt,
-    }
-  }
-
-  private getCustomInstructionMessage(): RequestMessage | null {
-    // Get custom system prompt
-    const customInstruction = this.settings.systemPrompt.trim()
-
-    // Get currently selected assistant
-    const currentAssistantId = this.settings.currentAssistantId
-    const assistants = this.settings.assistants || []
-    // Only use assistant if explicitly selected (currentAssistantId is not undefined)
-    const currentAssistant = currentAssistantId
-      ? assistants.find((a) => a.id === currentAssistantId)
-      : null
-
-    // If there's no custom prompt and no selected assistant, return null
-    if (!customInstruction && !currentAssistant) {
-      return null
-    }
-
-    // Build prompt content
-    let content = ''
-
-    // Add assistant's system prompt (if available)
-    if (currentAssistant?.systemPrompt) {
-      content += `Here are instructions from the selected assistant (${currentAssistant.name}):
-<assistant_instructions>
-${currentAssistant.systemPrompt}
-</assistant_instructions>
-
-`
-    }
-
-    // Add global custom instructions (if available)
-    if (customInstruction) {
-      content += `Here are additional instructions to follow in your responses when relevant. There's no need to explicitly acknowledge them:
-<custom_instructions>
-${customInstruction}
-</custom_instructions>`
-    }
-
-    return {
-      role: 'user',
-      content: content,
-    }
+- When editing an existing file, include filename and language on the block, restate the relevant heading, and show only the changed sections using <!-- ... --> comments for skipped content. The user already has full access to the file.`
   }
 
   private async getCurrentFileMessage(
