@@ -14,6 +14,7 @@ type SelectionChatWidgetProps = {
   plugin: SmartComposerPlugin
   editor: Editor
   selection: SelectionInfo
+  editorContainer: HTMLElement
   onClose: () => void
   onAction: (actionId: string, selection: SelectionInfo) => void | Promise<void>
 }
@@ -113,19 +114,24 @@ export class SelectionChatWidget {
   private overlayContainer: HTMLDivElement | null = null
   private cleanupListeners: (() => void) | null = null
   private cleanupCallbacks: (() => void)[] = []
+  private currentSelection: SelectionInfo
+  private scrollThrottle: number | null = null
 
   constructor(
     private readonly options: {
       plugin: SmartComposerPlugin
       editor: Editor
       selection: SelectionInfo
+      editorContainer: HTMLElement
       onClose: () => void
       onAction: (
         actionId: string,
         selection: SelectionInfo,
       ) => void | Promise<void>
     },
-  ) {}
+  ) {
+    this.currentSelection = options.selection
+  }
 
   mount(): void {
     const overlayRoot = SelectionChatWidget.getOverlayRoot()
@@ -135,19 +141,7 @@ export class SelectionChatWidget {
     this.overlayContainer = overlayContainer
 
     this.root = createRoot(overlayContainer)
-    this.root.render(
-      <PluginProvider plugin={this.options.plugin}>
-        <LanguageProvider>
-          <SelectionChatWidgetBody
-            plugin={this.options.plugin}
-            editor={this.options.editor}
-            selection={this.options.selection}
-            onClose={this.handleClose}
-            onAction={this.options.onAction}
-          />
-        </LanguageProvider>
-      </PluginProvider>,
-    )
+    this.render()
 
     this.setupGlobalListeners()
   }
@@ -172,6 +166,11 @@ export class SelectionChatWidget {
       this.overlayContainer.parentNode.removeChild(this.overlayContainer)
     }
     this.overlayContainer = null
+
+    if (this.scrollThrottle !== null) {
+      window.clearTimeout(this.scrollThrottle)
+      this.scrollThrottle = null
+    }
   }
 
   private static getOverlayRoot(): HTMLElement {
@@ -207,20 +206,91 @@ export class SelectionChatWidget {
       }
     }
 
-    // Close on scroll to avoid positioning issues
+    // Recompute position when the editor scrolls; close only if selection is invalid
     const handleScroll = () => {
-      this.handleClose()
+      if (this.scrollThrottle !== null) {
+        return
+      }
+      this.scrollThrottle = window.setTimeout(() => {
+        this.scrollThrottle = null
+        this.refreshSelectionPosition()
+      }, 80)
     }
 
     window.addEventListener('pointerdown', handlePointerDown, true)
     window.addEventListener('keydown', handleKeyDown, true)
-    window.addEventListener('scroll', handleScroll, true)
+    this.options.editorContainer.addEventListener('scroll', handleScroll, true)
 
     this.cleanupListeners = () => {
       window.removeEventListener('pointerdown', handlePointerDown, true)
       window.removeEventListener('keydown', handleKeyDown, true)
-      window.removeEventListener('scroll', handleScroll, true)
+      this.options.editorContainer.removeEventListener(
+        'scroll',
+        handleScroll,
+        true,
+      )
       this.cleanupListeners = null
     }
+  }
+
+  private refreshSelectionPosition(): void {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+      this.handleClose()
+      return
+    }
+
+    const range = selection.getRangeAt(0)
+    if (!this.isInEditor(range.commonAncestorContainer)) {
+      this.handleClose()
+      return
+    }
+
+    const rects = range.getClientRects()
+    const text = selection.toString().trim()
+    if (!rects.length || !text) {
+      this.handleClose()
+      return
+    }
+
+    const rect = rects[rects.length - 1]
+    const isMultiLine = rects.length > 1 || text.includes('\n')
+
+    this.currentSelection = {
+      text,
+      range,
+      rect,
+      isMultiLine,
+    }
+    this.render()
+  }
+
+  private isInEditor(node: Node): boolean {
+    let current: Node | null = node
+    while (current) {
+      if (current === this.options.editorContainer) {
+        return true
+      }
+      current = current.parentNode
+    }
+    return false
+  }
+
+  private render(): void {
+    if (!this.root) return
+    this.root.render(
+      <PluginProvider plugin={this.options.plugin}>
+        <LanguageProvider>
+          <SelectionChatWidgetBody
+            plugin={this.options.plugin}
+            editor={this.options.editor}
+            selection={this.currentSelection}
+            editorContainer={this.options.editorContainer}
+            onClose={this.handleClose}
+            onAction={this.options.onAction}
+          />
+        </LanguageProvider>
+      </PluginProvider>,
+    )
   }
 }

@@ -546,17 +546,25 @@ export default class SmartComposerPlugin extends Plugin {
       return
     }
 
-    // Show new widget if selection is valid
-    if (selection) {
-      this.selectionChatWidget = new SelectionChatWidget({
-        plugin: this,
-        editor,
-        selection,
-        onClose: () => {
-          if (this.selectionChatWidget) {
-            this.selectionChatWidget.destroy()
-            this.selectionChatWidget = null
-          }
+      // Show new widget if selection is valid
+      if (selection) {
+        const currentView = this.app.workspace.getActiveViewOfType(MarkdownView)
+        const editorContainer =
+          currentView?.containerEl.querySelector('.cm-editor')
+        if (!editorContainer) {
+          return
+        }
+
+        this.selectionChatWidget = new SelectionChatWidget({
+          plugin: this,
+          editor,
+          selection,
+          editorContainer: editorContainer as HTMLElement,
+          onClose: () => {
+            if (this.selectionChatWidget) {
+              this.selectionChatWidget.destroy()
+              this.selectionChatWidget = null
+            }
         },
         onAction: async (actionId: string, sel: SelectionInfo) => {
           await this.handleSelectionAction(actionId, sel, editor)
