@@ -96,14 +96,13 @@ function SelectionChatWidgetBody({
         selection={selection}
         onHoverChange={setIsHoveringIndicator}
       />
-      {showMenu && (
-        <SelectionActionsMenu
-          selection={selection}
-          indicatorPosition={indicatorPosition}
-          onAction={handleAction}
-          onHoverChange={setIsHoveringMenu}
-        />
-      )}
+      <SelectionActionsMenu
+        selection={selection}
+        indicatorPosition={indicatorPosition}
+        visible={showMenu}
+        onAction={handleAction}
+        onHoverChange={setIsHoveringMenu}
+      />
     </>
   )
 }

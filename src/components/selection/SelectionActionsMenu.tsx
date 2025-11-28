@@ -15,6 +15,7 @@ export type SelectionAction = {
 type SelectionActionsMenuProps = {
   selection: SelectionInfo
   indicatorPosition: { left: number; top: number }
+  visible: boolean
   onAction: (actionId: string) => void | Promise<void>
   onHoverChange: (isHovering: boolean) => void
 }
@@ -22,6 +23,7 @@ type SelectionActionsMenuProps = {
 export function SelectionActionsMenu({
   selection,
   indicatorPosition,
+  visible,
   onAction,
   onHoverChange,
 }: SelectionActionsMenuProps) {
@@ -29,6 +31,7 @@ export function SelectionActionsMenu({
   const menuRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ left: 0, top: 0 })
   const [isVisible, setIsVisible] = useState(false)
+  const showTimerRef = useRef<number | null>(null)
 
   const actions: SelectionAction[] = useMemo(
     () => [
@@ -87,11 +90,32 @@ export function SelectionActionsMenu({
 
   useEffect(() => {
     updatePosition()
-    // Fade in after positioning
-    const timer = window.setTimeout(() => setIsVisible(true), 50)
-
-    return () => window.clearTimeout(timer)
   }, [selection, updatePosition])
+
+  useEffect(() => {
+    if (showTimerRef.current !== null) {
+      window.clearTimeout(showTimerRef.current)
+      showTimerRef.current = null
+    }
+
+    if (visible) {
+      updatePosition()
+      // small delay to allow position styles to apply before transition
+      showTimerRef.current = window.setTimeout(() => {
+        setIsVisible(true)
+        showTimerRef.current = null
+      }, 10)
+    } else {
+      setIsVisible(false)
+    }
+
+    return () => {
+      if (showTimerRef.current !== null) {
+        window.clearTimeout(showTimerRef.current)
+        showTimerRef.current = null
+      }
+    }
+  }, [updatePosition, visible])
 
   const handleMouseEnter = () => {
     onHoverChange(true)

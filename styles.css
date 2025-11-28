@@ -5708,16 +5708,9 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-selection-indicator:hover {
-  background: var(--background-modifier-hover);
+  background: var(--background-primary);
   border-color: var(--interactive-accent-hover);
-  box-shadow:
-    0 0 0 2px
-      color-mix(
-        in srgb,
-        var(--h1-color, var(--interactive-accent)) 20%,
-        transparent
-      ),
-    var(--shadow-s);
+  box-shadow: var(--shadow-s);
   transform: scale(1.05);
 }
 
@@ -5732,7 +5725,7 @@ button.smtcmp-chat-input-model-select {
   position: fixed;
   min-width: 200px;
   max-width: 280px;
-  pointer-events: auto;
+  pointer-events: none;
   z-index: 9999;
   opacity: 0;
   transform: translateY(-4px) scale(0.96);
@@ -5740,6 +5733,7 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-selection-menu.visible {
+  pointer-events: auto;
   opacity: 1;
   transform: translateY(0) scale(1);
 }
