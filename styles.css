@@ -666,10 +666,12 @@
   gap: var(--size-4-1);
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   height: var(--size-4-4);
 
   .smtcmp-chat-user-input-controls__model-select-container {
-    flex-shrink: 1;
+    flex: 1 1 180px;
+    min-width: 0;
     overflow: hidden;
   }
 
@@ -4165,6 +4167,8 @@ button.smtcmp-chat-input-model-select {
   gap: 12px;
   width: 100%;
   padding: 12px 16px;
+  flex-wrap: nowrap;
+  position: relative;
 }
 
 .smtcmp-smart-space-header.is-empty {
@@ -4202,6 +4206,7 @@ button.smtcmp-chat-input-model-select {
   gap: 8px;
   min-width: 0;
   flex: 1 1 auto;
+  max-width: 100%;
 }
 
 .smtcmp-smart-space-input-wrapper:hover {
@@ -4608,13 +4613,62 @@ button.smtcmp-chat-input-model-select {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  margin-left: auto;
 }
 
 /* Smart Space Model Select - 精致的按钮设计 */
 .smtcmp-smart-space-model-select {
   display: flex;
   align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .smtcmp-smart-space-header {
+    flex-wrap: wrap;
+  }
+
+  .smtcmp-smart-space-controls {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
+  .smtcmp-smart-space-model-select {
+    flex: 1 1 160px;
+  }
+}
+
+/* 多行输入时，将模型选择等控件移到底部一行，右对齐 */
+.smtcmp-smart-space-header:not(.is-empty) {
+  padding-bottom: 32px;
+}
+
+.smtcmp-smart-space-header:not(.is-empty) .smtcmp-smart-space-input-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 0;
+}
+
+.smtcmp-smart-space-header:not(.is-empty) .smtcmp-smart-space-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-left: 0;
 }
 
 .smtcmp-smart-space-model-select .smtcmp-chat-input-model-select {
@@ -4708,9 +4762,10 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-chat-sidebar-model-select {
-  flex: 1;
+  flex: 0 1 clamp(140px, 28vw, 280px);
   display: flex;
   margin-left: -6px;
+  min-width: 0;
 }
 
 .smtcmp-chat-sidebar-model-select .smtcmp-chat-input-model-select {

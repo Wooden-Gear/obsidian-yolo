@@ -2087,6 +2087,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     geminiTools?: { useWebSearch?: boolean; useUrlContext?: boolean },
     mentionables?: (MentionableFile | MentionableFolder)[],
   ) {
+    // 先取消所有进行中的任务，避免旧任务的流式响应覆盖新任务的状态
+    this.cancelAllAiTasks()
+    this.clearInlineSuggestion()
+
     // 立即创建并注册 AbortController，确保整个流程都能被中止
     const controller = new AbortController()
     this.activeAbortControllers.add(controller)
@@ -2373,7 +2377,6 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       }
 
       this.ensureInlineSuggestionExtension(view)
-      this.clearInlineSuggestion()
 
       // 在光标位置显示思考指示器
       const currentCursor = editor.getCursor()
