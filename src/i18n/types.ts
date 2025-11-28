@@ -549,4 +549,21 @@ export type TranslationKeys = {
     databaseError: string
     mcpServerError: string
   }
+
+  // Apply View
+  applyView?: {
+    applying?: string
+    changesResolved?: string
+    acceptAllIncoming?: string
+    rejectAll?: string
+    reset?: string
+    applyAndClose?: string
+    acceptIncoming?: string
+    acceptCurrent?: string
+    acceptBoth?: string
+    acceptedIncoming?: string
+    keptCurrent?: string
+    mergedBoth?: string
+    undo?: string
+  }
 }

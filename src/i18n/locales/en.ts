@@ -631,4 +631,20 @@ export const en: TranslationKeys = {
     databaseError: 'Database error',
     mcpServerError: 'Server error',
   },
+
+  applyView: {
+    applying: 'Applying',
+    changesResolved: 'changes resolved',
+    acceptAllIncoming: 'Accept All Incoming',
+    rejectAll: 'Reject All',
+    reset: 'Reset',
+    applyAndClose: 'Apply & Close',
+    acceptIncoming: 'Accept incoming',
+    acceptCurrent: 'Accept current',
+    acceptBoth: 'Accept both',
+    acceptedIncoming: 'Accepted incoming',
+    keptCurrent: 'Kept current',
+    mergedBoth: 'Merged both',
+    undo: 'Undo',
+  },
 }

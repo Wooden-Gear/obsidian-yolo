@@ -596,4 +596,20 @@ export const zh: TranslationKeys = {
     databaseError: '数据库错误',
     mcpServerError: 'MCP 服务器错误',
   },
+
+  applyView: {
+    applying: '正在应用',
+    changesResolved: '处更改已处理',
+    acceptAllIncoming: '接受所有更改',
+    rejectAll: '拒绝所有',
+    reset: '重置',
+    applyAndClose: '应用并关闭',
+    acceptIncoming: '接受更改',
+    acceptCurrent: '保留原文',
+    acceptBoth: '合并两者',
+    acceptedIncoming: '已接受更改',
+    keptCurrent: '已保留原文',
+    mergedBoth: '已合并两者',
+    undo: '撤销',
+  },
 }

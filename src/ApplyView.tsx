@@ -4,6 +4,9 @@ import { Root, createRoot } from 'react-dom/client'
 import ApplyViewRoot from './components/apply-view/ApplyViewRoot'
 import { APPLY_VIEW_TYPE } from './constants'
 import { AppProvider } from './contexts/app-context'
+import { LanguageProvider } from './contexts/language-context'
+import { PluginProvider } from './contexts/plugin-context'
+import SmartComposerPlugin from './main'
 
 export type ApplyViewState = {
   file: TFile
@@ -16,7 +19,10 @@ export class ApplyView extends View {
 
   private state: ApplyViewState | null = null
 
-  constructor(leaf: WorkspaceLeaf) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    private plugin: SmartComposerPlugin,
+  ) {
     super(leaf)
   }
 
@@ -51,9 +57,16 @@ export class ApplyView extends View {
   private render(): void {
     if (!this.root || !this.state) return
     this.root.render(
-      <AppProvider app={this.app}>
-        <ApplyViewRoot state={this.state} close={() => this.leaf.detach()} />
-      </AppProvider>,
+      <PluginProvider plugin={this.plugin}>
+        <LanguageProvider>
+          <AppProvider app={this.app}>
+            <ApplyViewRoot
+              state={this.state}
+              close={() => this.leaf.detach()}
+            />
+          </AppProvider>
+        </LanguageProvider>
+      </PluginProvider>,
     )
   }
 }

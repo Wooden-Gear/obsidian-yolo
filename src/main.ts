@@ -1570,7 +1570,7 @@ export default class SmartComposerPlugin extends Plugin {
     await this.loadSettings()
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
-    this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf))
+    this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf, this))
 
     this.registerEditorExtension(this.createSmartSpaceTriggerExtension())
 
