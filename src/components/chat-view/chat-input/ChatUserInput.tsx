@@ -255,38 +255,28 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       <div className="smtcmp-chat-user-input-container" ref={containerRef}>
         <div className="smtcmp-chat-user-input-files">
           <ToolBadge />
-          {mentionables.map((m) => (
-            <MentionableBadge
-              key={getMentionableKey(serializeMentionable(m))}
-              mentionable={m}
-              onDelete={() => handleMentionableDelete(m)}
-              onClick={() => {
-                const mentionableKey = getMentionableKey(
-                  serializeMentionable(m),
-                )
-                if (
-                  (m.type === 'current-file' ||
-                    m.type === 'file' ||
-                    m.type === 'block') &&
-                  m.file &&
-                  mentionableKey === displayedMentionableKey
-                ) {
-                  // open file on click again
-                  openMarkdownFile(
-                    app,
-                    m.file.path,
-                    m.type === 'block' ? m.startLine : undefined,
-                  )
-                } else {
-                  setDisplayedMentionableKey(mentionableKey)
-                }
-              }}
-              isFocused={
-                getMentionableKey(serializeMentionable(m)) ===
-                displayedMentionableKey
+          {mentionables.map((m) => {
+            const mentionableKey = getMentionableKey(serializeMentionable(m))
+            const isExpanded = mentionableKey === displayedMentionableKey
+            const handleToggleExpand = () => {
+              if (isExpanded) {
+                setDisplayedMentionableKey(null)
+              } else {
+                setDisplayedMentionableKey(mentionableKey)
               }
-            />
-          ))}
+            }
+            return (
+              <MentionableBadge
+                key={mentionableKey}
+                mentionable={m}
+                onDelete={() => handleMentionableDelete(m)}
+                onClick={handleToggleExpand}
+                isFocused={isExpanded}
+                isExpanded={isExpanded}
+                onToggleExpand={handleToggleExpand}
+              />
+            )
+          })}
         </div>
 
         <MentionableContentPreview

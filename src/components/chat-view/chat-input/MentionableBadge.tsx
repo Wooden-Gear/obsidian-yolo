@@ -1,5 +1,5 @@
 import cx from 'clsx'
-import { X } from 'lucide-react'
+import { ChevronDown, ChevronRight, X } from 'lucide-react'
 import { PropsWithChildren } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
@@ -21,16 +21,33 @@ function BadgeBase({
   onDelete,
   onClick,
   isFocused,
+  isExpanded,
+  onToggleExpand,
+  showExpandButton = false,
 }: PropsWithChildren<{
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
+  showExpandButton?: boolean
 }>) {
   return (
     <div
       className={`smtcmp-chat-user-input-file-badge ${isFocused ? 'smtcmp-chat-user-input-file-badge-focused' : ''}`}
       onClick={onClick}
     >
+      {showExpandButton && (
+        <div
+          className="smtcmp-chat-user-input-file-badge-expand"
+          onClick={(evt) => {
+            evt.stopPropagation()
+            onToggleExpand?.()
+          }}
+        >
+          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </div>
+      )}
       {children}
       <div
         className="smtcmp-chat-user-input-file-badge-delete"
@@ -50,15 +67,26 @@ function FileBadge({
   onDelete,
   onClick,
   isFocused,
+  isExpanded,
+  onToggleExpand,
 }: {
   mentionable: MentionableFile
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      showExpandButton={true}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -85,7 +113,12 @@ function FolderBadge({
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      showExpandButton={false}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -112,7 +145,12 @@ function VaultBadge({
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      showExpandButton={false}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -131,17 +169,28 @@ function CurrentFileBadge({
   onDelete,
   onClick,
   isFocused,
+  isExpanded,
+  onToggleExpand,
 }: {
   mentionable: MentionableCurrentFile
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }) {
   const app = useApp()
 
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      showExpandButton={true}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -172,15 +221,26 @@ function BlockBadge({
   onDelete,
   onClick,
   isFocused,
+  isExpanded,
+  onToggleExpand,
 }: {
   mentionable: MentionableBlock
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      showExpandButton={true}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -210,7 +270,12 @@ function UrlBadge({
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      showExpandButton={false}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -229,15 +294,26 @@ function ImageBadge({
   onDelete,
   onClick,
   isFocused,
+  isExpanded,
+  onToggleExpand,
 }: {
   mentionable: MentionableImage
   onDelete: () => void
   onClick: () => void
   isFocused: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }) {
   const Icon = getMentionableIcon(mentionable)
   return (
-    <BadgeBase onDelete={onDelete} onClick={onClick} isFocused={isFocused}>
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      showExpandButton={true}
+    >
       <div className="smtcmp-chat-user-input-file-badge-name">
         {Icon && (
           <Icon
@@ -256,11 +332,15 @@ export default function MentionableBadge({
   onDelete,
   onClick,
   isFocused = false,
+  isExpanded,
+  onToggleExpand,
 }: {
   mentionable: Mentionable
   onDelete: () => void
   onClick: () => void
   isFocused?: boolean
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }) {
   switch (mentionable.type) {
     case 'file':
@@ -270,6 +350,8 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
         />
       )
     case 'folder':
@@ -297,6 +379,8 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
         />
       )
     case 'block':
@@ -306,6 +390,8 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
         />
       )
     case 'url':
@@ -324,6 +410,8 @@ export default function MentionableBadge({
           onDelete={onDelete}
           onClick={onClick}
           isFocused={isFocused}
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
         />
       )
   }
