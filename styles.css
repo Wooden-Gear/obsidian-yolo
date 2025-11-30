@@ -1005,9 +1005,7 @@ input[type='text'].smtcmp-chat-list-dropdown-item-title-input {
 
 .smtcmp-chat-list-dropdown-item.selected,
 .smtcmp-chat-list-dropdown-item[data-highlighted='true'],
-.smtcmp-chat-sidebar-popover
-  .smtcmp-chat-list-dropdown-content
-  li.selected,
+.smtcmp-chat-sidebar-popover .smtcmp-chat-list-dropdown-content li.selected,
 .smtcmp-chat-sidebar-popover
   .smtcmp-chat-list-dropdown-content
   li[data-highlighted='true'] {
@@ -3581,23 +3579,27 @@ button.smtcmp-chat-input-model-select {
   scrollbar-width: thin;
 }
 
-.smtcmp-assistant-selector-content .smtcmp-assistant-selector-list::-webkit-scrollbar {
+.smtcmp-assistant-selector-content
+  .smtcmp-assistant-selector-list::-webkit-scrollbar {
   width: 8px;
 }
 
-.smtcmp-assistant-selector-content .smtcmp-assistant-selector-list::-webkit-scrollbar-track {
+.smtcmp-assistant-selector-content
+  .smtcmp-assistant-selector-list::-webkit-scrollbar-track {
   background: transparent;
   margin: 8px 0;
 }
 
-.smtcmp-assistant-selector-content .smtcmp-assistant-selector-list::-webkit-scrollbar-thumb {
+.smtcmp-assistant-selector-content
+  .smtcmp-assistant-selector-list::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--text-muted) 30%, transparent);
   border-radius: 4px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.smtcmp-assistant-selector-content .smtcmp-assistant-selector-list::-webkit-scrollbar-thumb:hover {
+.smtcmp-assistant-selector-content
+  .smtcmp-assistant-selector-list::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--text-muted) 50%, transparent);
   background-clip: padding-box;
 }

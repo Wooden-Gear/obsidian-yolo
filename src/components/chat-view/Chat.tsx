@@ -572,7 +572,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     ) {
       // 检查是否有用户消息和助手消息
       const hasUserMessage = chatMessages.some((m) => m.role === 'user')
-      const hasAssistantMessage = chatMessages.some((m) => m.role === 'assistant')
+      const hasAssistantMessage = chatMessages.some(
+        (m) => m.role === 'assistant',
+      )
       const lastMessage = chatMessages.at(-1)
 
       // 只有在有用户和助手消息，且最后一条消息是助手消息时，才进行命名

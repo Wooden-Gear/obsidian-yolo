@@ -251,14 +251,20 @@ export default function ApplyViewRoot({
           <button
             onClick={acceptAllIncoming}
             className="smtcmp-toolbar-btn smtcmp-accept"
-            title={t('applyView.acceptAllIncoming', 'Accept all incoming changes')}
+            title={t(
+              'applyView.acceptAllIncoming',
+              'Accept all incoming changes',
+            )}
           >
             {t('applyView.acceptAllIncoming', 'Accept All Incoming')}
           </button>
           <button
             onClick={acceptAllCurrent}
             className="smtcmp-toolbar-btn smtcmp-exclude"
-            title={t('applyView.rejectAll', 'Reject all changes (keep original)')}
+            title={t(
+              'applyView.rejectAll',
+              'Reject all changes (keep original)',
+            )}
           >
             {t('applyView.rejectAll', 'Reject All')}
           </button>
@@ -384,7 +390,7 @@ const DiffBlockView = forwardRef<
               <div className="smtcmp-diff-block decided-preview">
                 <div className="smtcmp-decided-header">
                   <span className="smtcmp-decided-label">
-                    ✓ {decisionLabel[decision as keyof typeof decisionLabel]}
+                    ✓ {decisionLabel[decision]}
                   </span>
                   <button
                     onClick={onUndo}

@@ -259,11 +259,11 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             <MentionableBadge
               key={getMentionableKey(serializeMentionable(m))}
               mentionable={m}
-            onDelete={() => handleMentionableDelete(m)}
-            onClick={() => {
-              const mentionableKey = getMentionableKey(
-                serializeMentionable(m),
-              )
+              onDelete={() => handleMentionableDelete(m)}
+              onClick={() => {
+                const mentionableKey = getMentionableKey(
+                  serializeMentionable(m),
+                )
                 if (
                   (m.type === 'current-file' ||
                     m.type === 'file' ||

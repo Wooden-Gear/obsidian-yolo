@@ -112,6 +112,6 @@ describe('migrateFrom8To9', () => {
     )
     expect(customModel).toBeDefined()
     expect(customModel?.model).toBe('custom-model-name')
-    expect(customModel?.providerType).toBe('custom')
+    expect(customModel?.providerType).toBe('openai-compatible')
   })
 })

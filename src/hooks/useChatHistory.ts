@@ -117,7 +117,7 @@ export function useChatHistory(): UseChatHistory {
           maxWait: 1000,
         },
       ),
-    [chatManager, fetchChatList, language, settings],
+    [chatManager, fetchChatList],
   )
 
   const deleteConversation = useCallback(
@@ -219,15 +219,12 @@ export function useChatHistory(): UseChatHistory {
           })
 
           const defaultTitlePrompt =
-            DEFAULT_CHAT_TITLE_PROMPT[language] ??
-            DEFAULT_CHAT_TITLE_PROMPT.en
+            DEFAULT_CHAT_TITLE_PROMPT[language] ?? DEFAULT_CHAT_TITLE_PROMPT.en
           const customizedPrompt = (
             settings.chatOptions.chatTitlePrompt ?? ''
           ).trim()
           const systemPrompt =
-            customizedPrompt.length > 0
-              ? customizedPrompt
-              : defaultTitlePrompt
+            customizedPrompt.length > 0 ? customizedPrompt : defaultTitlePrompt
 
           // 使用用户消息和助手回答来生成标题，这样能更好地理解对话内容
           const response = await providerClient.generateResponse(

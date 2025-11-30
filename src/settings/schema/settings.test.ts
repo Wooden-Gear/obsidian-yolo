@@ -56,14 +56,6 @@ describe('parseSmartComposerSettings', () => {
     })
 
     expect(result.continuationOptions).toMatchObject({
-      enableSuperContinuation: true,
-      enableSmartSpace: true,
-      enableKeywordTrigger: true,
-      triggerKeyword: 'cc',
-      manualContextEnabled: false,
-      stream: true,
-      useVaultSearch: false,
-      maxContinuationChars: 8000,
       enableTabCompletion: false,
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
     })

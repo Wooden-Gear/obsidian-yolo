@@ -701,10 +701,7 @@ export class GeminiProvider extends BaseLLMProvider<
     try {
       const url = new URL(trimmed)
       // Avoid double version segments when SDK appends /v1beta or /v1.
-      url.pathname = url.pathname.replace(
-        /\/?(v1beta|v1alpha1|v1)(\/)?$/,
-        '',
-      )
+      url.pathname = url.pathname.replace(/\/?(v1beta|v1alpha1|v1)(\/)?$/, '')
       return url.toString().replace(/\/+$/, '')
     } catch {
       // Fallback for non-standard schemes: just strip trailing version pieces.
