@@ -1,5 +1,5 @@
 import cx from 'clsx'
-import { ChevronDown, ChevronRight, X } from 'lucide-react'
+import { ChevronRight, ChevronUp, X } from 'lucide-react'
 import { PropsWithChildren } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
@@ -45,7 +45,7 @@ function BadgeBase({
             onToggleExpand?.()
           }}
         >
-          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          {isExpanded ? <ChevronUp size={12} /> : <ChevronRight size={12} />}
         </div>
       )}
       {children}
