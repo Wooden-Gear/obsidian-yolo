@@ -1612,6 +1612,31 @@ export default class SmartComposerPlugin extends Plugin {
       },
     })
 
+    // Register file context menu for adding file/folder to chat
+    this.registerEvent(
+      this.app.workspace.on('file-menu', (menu, file) => {
+        if (file instanceof TFile) {
+          menu.addItem((item) => {
+            item
+              .setTitle(this.t('commands.addFileToChat'))
+              .setIcon('message-square-plus')
+              .onClick(async () => {
+                await this.addFileToChat(file)
+              })
+          })
+        } else if (file instanceof TFolder) {
+          menu.addItem((item) => {
+            item
+              .setTitle(this.t('commands.addFolderToChat'))
+              .setIcon('message-square-plus')
+              .onClick(async () => {
+                await this.addFolderToChat(file)
+              })
+          })
+        }
+      }),
+    )
+
     // Auto update: listen to vault file changes and schedule incremental index updates
     this.registerEvent(
       this.app.vault.on('create', (file) => this.onVaultFileChanged(file)),
@@ -1896,6 +1921,50 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
     const chatView = leaves[0].view
     chatView.addSelectionToChat(data)
+    chatView.focusMessage()
+  }
+
+  async addFileToChat(file: TFile) {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView()
+      // Get the newly created chat view
+      const newLeaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+      if (newLeaves.length > 0 && newLeaves[0].view instanceof ChatView) {
+        const chatView = newLeaves[0].view
+        chatView.addFileToChat(file)
+        chatView.focusMessage()
+      }
+      return
+    }
+
+    // bring leaf to foreground (uncollapse sidebar if it's collapsed)
+    await this.app.workspace.revealLeaf(leaves[0])
+
+    const chatView = leaves[0].view
+    chatView.addFileToChat(file)
+    chatView.focusMessage()
+  }
+
+  async addFolderToChat(folder: TFolder) {
+    const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+    if (leaves.length === 0 || !(leaves[0].view instanceof ChatView)) {
+      await this.activateChatView()
+      // Get the newly created chat view
+      const newLeaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)
+      if (newLeaves.length > 0 && newLeaves[0].view instanceof ChatView) {
+        const chatView = newLeaves[0].view
+        chatView.addFolderToChat(folder)
+        chatView.focusMessage()
+      }
+      return
+    }
+
+    // bring leaf to foreground (uncollapse sidebar if it's collapsed)
+    await this.app.workspace.revealLeaf(leaves[0])
+
+    const chatView = leaves[0].view
+    chatView.addFolderToChat(folder)
     chatView.focusMessage()
   }
 

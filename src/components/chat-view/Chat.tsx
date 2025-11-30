@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { CircleStop, History, Plus } from 'lucide-react'
-import { App, Notice } from 'obsidian'
+import { App, Notice, TFile, TFolder } from 'obsidian'
 import {
   forwardRef,
   useCallback,
@@ -91,6 +91,8 @@ const getNewInputMessage = (
 export type ChatRef = {
   openNewChat: (selectedBlock?: MentionableBlockData) => void
   addSelectionToChat: (selectedBlock: MentionableBlockData) => void
+  addFileToChat: (file: TFile) => void
+  addFolderToChat: (folder: TFolder) => void
   insertTextToInput: (text: string) => void
   focusMessage: () => void
   getCurrentConversationOverrides: () =>
@@ -722,6 +724,114 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       const mentionable: Omit<MentionableBlock, 'id'> = {
         type: 'block',
         ...selectedBlock,
+      }
+
+      setAddedBlockKey(getMentionableKey(serializeMentionable(mentionable)))
+
+      if (focusedMessageId === inputMessage.id) {
+        setInputMessage((prevInputMessage) => {
+          const mentionableKey = getMentionableKey(
+            serializeMentionable(mentionable),
+          )
+          // Check if mentionable already exists
+          if (
+            prevInputMessage.mentionables.some(
+              (m) =>
+                getMentionableKey(serializeMentionable(m)) === mentionableKey,
+            )
+          ) {
+            return prevInputMessage
+          }
+          return {
+            ...prevInputMessage,
+            mentionables: [...prevInputMessage.mentionables, mentionable],
+          }
+        })
+      } else {
+        setChatMessages((prevChatHistory) =>
+          prevChatHistory.map((message) => {
+            if (message.id === focusedMessageId && message.role === 'user') {
+              const mentionableKey = getMentionableKey(
+                serializeMentionable(mentionable),
+              )
+              // Check if mentionable already exists
+              if (
+                message.mentionables.some(
+                  (m) =>
+                    getMentionableKey(serializeMentionable(m)) ===
+                    mentionableKey,
+                )
+              ) {
+                return message
+              }
+              return {
+                ...message,
+                mentionables: [...message.mentionables, mentionable],
+              }
+            }
+            return message
+          }),
+        )
+      }
+    },
+    addFileToChat: (file: TFile) => {
+      const mentionable: { type: 'file'; file: TFile } = {
+        type: 'file',
+        file: file,
+      }
+
+      setAddedBlockKey(getMentionableKey(serializeMentionable(mentionable)))
+
+      if (focusedMessageId === inputMessage.id) {
+        setInputMessage((prevInputMessage) => {
+          const mentionableKey = getMentionableKey(
+            serializeMentionable(mentionable),
+          )
+          // Check if mentionable already exists
+          if (
+            prevInputMessage.mentionables.some(
+              (m) =>
+                getMentionableKey(serializeMentionable(m)) === mentionableKey,
+            )
+          ) {
+            return prevInputMessage
+          }
+          return {
+            ...prevInputMessage,
+            mentionables: [...prevInputMessage.mentionables, mentionable],
+          }
+        })
+      } else {
+        setChatMessages((prevChatHistory) =>
+          prevChatHistory.map((message) => {
+            if (message.id === focusedMessageId && message.role === 'user') {
+              const mentionableKey = getMentionableKey(
+                serializeMentionable(mentionable),
+              )
+              // Check if mentionable already exists
+              if (
+                message.mentionables.some(
+                  (m) =>
+                    getMentionableKey(serializeMentionable(m)) ===
+                    mentionableKey,
+                )
+              ) {
+                return message
+              }
+              return {
+                ...message,
+                mentionables: [...message.mentionables, mentionable],
+              }
+            }
+            return message
+          }),
+        )
+      }
+    },
+    addFolderToChat: (folder: TFolder) => {
+      const mentionable: { type: 'folder'; folder: TFolder } = {
+        type: 'folder',
+        folder: folder,
       }
 
       setAddedBlockKey(getMentionableKey(serializeMentionable(mentionable)))

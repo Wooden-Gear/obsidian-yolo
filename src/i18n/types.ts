@@ -5,6 +5,8 @@ export type TranslationKeys = {
   commands: {
     openChat: string
     addSelectionToChat: string
+    addFileToChat: string
+    addFolderToChat: string
     rebuildVaultIndex: string
     updateVaultIndex: string
     continueWriting: string

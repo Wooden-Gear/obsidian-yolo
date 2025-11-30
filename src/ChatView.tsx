@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ItemView, WorkspaceLeaf } from 'obsidian'
+import { ItemView, TFile, TFolder, WorkspaceLeaf } from 'obsidian'
 import React from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
@@ -130,6 +130,14 @@ export class ChatView extends ItemView {
 
   addSelectionToChat(selectedBlock: MentionableBlockData) {
     this.chatRef.current?.addSelectionToChat(selectedBlock)
+  }
+
+  addFileToChat(file: TFile) {
+    this.chatRef.current?.addFileToChat(file)
+  }
+
+  addFolderToChat(folder: TFolder) {
+    this.chatRef.current?.addFolderToChat(folder)
   }
 
   insertTextToInput(text: string) {

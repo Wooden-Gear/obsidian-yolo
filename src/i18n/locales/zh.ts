@@ -4,6 +4,8 @@ export const zh: TranslationKeys = {
   commands: {
     openChat: '打开聊天',
     addSelectionToChat: '添加选中内容到聊天',
+    addFileToChat: '添加文件到聊天',
+    addFolderToChat: '添加文件夹到聊天',
     rebuildVaultIndex: '重建整个库索引',
     updateVaultIndex: '更新修改文件的索引',
     continueWriting: 'AI续写',

@@ -4,6 +4,8 @@ export const en: TranslationKeys = {
   commands: {
     openChat: 'Open chat',
     addSelectionToChat: 'Add selection to chat',
+    addFileToChat: 'Add file to chat',
+    addFolderToChat: 'Add folder to chat',
     rebuildVaultIndex: 'Rebuild entire vault index',
     updateVaultIndex: 'Update index for modified files',
     continueWriting: 'AI continue writing',
