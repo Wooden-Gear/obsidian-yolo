@@ -6398,61 +6398,59 @@ button.smtcmp-chat-input-model-select {
   overflow: hidden;
 }
 
-/* Quick Ask Header */
+/* Quick Ask Header - minimal drag handle */
 .smtcmp-quick-ask-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background: var(--background-secondary);
-}
-
-.smtcmp-quick-ask-assistant-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  cursor: pointer;
-  font-size: var(--font-ui-small);
-  color: var(--text-normal);
-  transition: all 0.15s ease;
-}
-
-.smtcmp-quick-ask-assistant-button:hover {
-  background: var(--background-modifier-hover);
-  border-color: var(--interactive-accent);
-}
-
-.smtcmp-quick-ask-assistant-icon {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: var(--h1-color, var(--interactive-accent));
+  padding: 4px 8px;
+  background: var(--background-secondary);
+  cursor: grab;
+  user-select: none;
+  position: relative;
 }
 
-.smtcmp-quick-ask-assistant-name {
-  font-weight: 500;
+.smtcmp-quick-ask-header:active {
+  cursor: grabbing;
+}
+
+.smtcmp-quick-ask-drag-indicator {
+  width: 32px;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+
+.smtcmp-quick-ask-panel.is-dragging {
+  opacity: 0.95;
+}
+
+.smtcmp-quick-ask-panel.is-dragging .smtcmp-quick-ask-header {
+  cursor: grabbing;
 }
 
 .smtcmp-quick-ask-close-button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: var(--radius-s);
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--text-faint);
   transition: all 0.15s ease;
+  opacity: 0;
+}
+
+.smtcmp-quick-ask-header:hover .smtcmp-quick-ask-close-button {
+  opacity: 1;
 }
 
 .smtcmp-quick-ask-close-button:hover {
@@ -6460,11 +6458,49 @@ button.smtcmp-chat-input-model-select {
   color: var(--text-normal);
 }
 
+/* Quick Ask Assistant Row - above input */
+.smtcmp-quick-ask-assistant-row {
+  position: relative;
+  padding: 6px 10px 0;
+}
+
+.smtcmp-quick-ask-assistant-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.smtcmp-quick-ask-assistant-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.smtcmp-quick-ask-assistant-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--h1-color, var(--interactive-accent));
+}
+
+.smtcmp-quick-ask-assistant-name {
+  font-weight: 500;
+}
+
 /* Quick Ask Assistant Dropdown */
 .smtcmp-quick-ask-assistant-dropdown {
   position: absolute;
-  top: 44px;
-  left: 12px;
+  top: 100%;
+  left: 10px;
   z-index: 10;
   min-width: 200px;
   max-width: 300px;

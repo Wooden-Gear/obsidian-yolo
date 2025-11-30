@@ -33,6 +33,8 @@ export class QuickAskWidget extends WidgetType {
   private containerRef: React.RefObject<HTMLDivElement> =
     React.createRef<HTMLDivElement>()
   private hasBlockingOverlay = false
+  // Drag state - when set, use fixed position instead of anchor-based
+  private dragPosition: { x: number; y: number } | null = null
 
   constructor(
     private readonly options: {
@@ -180,6 +182,7 @@ export class QuickAskWidget extends WidgetType {
                     onClose={this.closeWithAnimation}
                     containerRef={this.containerRef}
                     onOverlayStateChange={this.handleOverlayStateChange}
+                    onDragOffset={this.handleDragOffset}
                   />
                 </McpProvider>
               </RAGProvider>
@@ -254,6 +257,13 @@ export class QuickAskWidget extends WidgetType {
 
   private updateOverlayPosition() {
     if (!this.overlayContainer || !this.anchor) return
+
+    // If panel has been dragged, use drag position instead
+    if (this.dragPosition) {
+      this.updateDragPosition()
+      return
+    }
+
     if (!this.anchor.isConnected) {
       // Anchor not mounted yet, try again on next frame
       this.schedulePositionUpdate()
@@ -308,5 +318,47 @@ export class QuickAskWidget extends WidgetType {
 
   private handleOverlayStateChange = (isActive: boolean) => {
     this.hasBlockingOverlay = isActive
+  }
+
+  private handleDragOffset = (x: number, y: number) => {
+    this.dragPosition = { x, y }
+    this.updateDragPosition()
+  }
+
+  private updateDragPosition() {
+    if (!this.overlayContainer || !this.dragPosition) return
+
+    // Get panel dimensions for width calculation
+    const scrollDom = this.options.view.scrollDOM
+    const scrollRect = scrollDom?.getBoundingClientRect()
+    const sizer = scrollDom?.querySelector('.cm-sizer')
+    const sizerRect = sizer?.getBoundingClientRect()
+
+    const fallbackWidth = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        '--file-line-width',
+      ) || '720',
+      10,
+    )
+
+    const viewportWidth = window.innerWidth
+    const margin = 12
+
+    const editorContentWidth =
+      sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
+    const maxPanelWidth = Math.max(
+      120,
+      Math.min(editorContentWidth, viewportWidth - margin * 2),
+    )
+
+    updateDynamicStyleClass(
+      this.overlayContainer,
+      'smtcmp-quick-ask-overlay-pos',
+      {
+        width: maxPanelWidth,
+        left: Math.round(this.dragPosition.x),
+        top: Math.round(this.dragPosition.y),
+      },
+    )
   }
 }
