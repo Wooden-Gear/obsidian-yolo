@@ -346,6 +346,14 @@ export type TranslationKeys = {
       keywordTriggerDesc: string
       triggerKeyword: string
       triggerKeywordDesc: string
+      // Quick Ask settings
+      quickAskSubsectionTitle?: string
+      quickAskDescription?: string
+      quickAskToggle?: string
+      quickAskToggleDesc?: string
+      quickAskTrigger?: string
+      quickAskTriggerDesc?: string
+      // Tab completion settings
       tabCompletion: string
       tabCompletionDesc: string
       tabCompletionModel: string

@@ -440,6 +440,15 @@ export const en: TranslationKeys = {
       triggerKeyword: 'Trigger keyword',
       triggerKeywordDesc:
         'Continuation is triggered when the text immediately before the cursor equals this keyword (default: cc).',
+      quickAskSubsectionTitle: 'Quick Ask',
+      quickAskDescription:
+        'Quick Ask lets you ask questions directly in the editor. Type the trigger character (default @) on an empty line to open a floating chat panel, select an assistant, and get AI responses. Supports multi-turn conversations, copying answers, inserting at cursor, or opening in sidebar.',
+      quickAskToggle: 'Enable Quick Ask',
+      quickAskToggleDesc:
+        'When disabled, the trigger character will no longer summon the Quick Ask floating panel.',
+      quickAskTrigger: 'Trigger character',
+      quickAskTriggerDesc:
+        'Typing this character on an empty line triggers Quick Ask (default: @). Supports 1-3 characters.',
       tabCompletion: 'Enable tab completion',
       tabCompletionDesc:
         'After a 3-second pause, request a prefix completion and show it as gray ghost text that can be accepted with the tab key.',

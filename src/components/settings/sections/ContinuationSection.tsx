@@ -140,6 +140,52 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
       </ObsidianSetting>
 
       <div className="smtcmp-settings-sub-header">
+        {t('settings.continuation.quickAskSubsectionTitle')}
+      </div>
+      <div className="smtcmp-settings-desc smtcmp-settings-callout">
+        {t('settings.continuation.quickAskDescription')}
+      </div>
+      <ObsidianSetting
+        name={t('settings.continuation.quickAskToggle')}
+        desc={t('settings.continuation.quickAskToggleDesc')}
+      >
+        <ObsidianToggle
+          value={settings.continuationOptions.enableQuickAsk ?? true}
+          onChange={(value) => {
+            updateContinuationOptions(
+              {
+                enableQuickAsk: value,
+              },
+              'enableQuickAsk',
+            )
+          }}
+        />
+      </ObsidianSetting>
+
+      {(settings.continuationOptions.enableQuickAsk ?? true) && (
+        <ObsidianSetting
+          name={t('settings.continuation.quickAskTrigger')}
+          desc={t('settings.continuation.quickAskTriggerDesc')}
+        >
+          <ObsidianTextInput
+            value={settings.continuationOptions.quickAskTrigger ?? '@'}
+            onChange={(value) => {
+              // Only allow single character or short string
+              const trimmed = value.trim()
+              if (trimmed.length > 0 && trimmed.length <= 3) {
+                updateContinuationOptions(
+                  {
+                    quickAskTrigger: trimmed,
+                  },
+                  'quickAskTrigger',
+                )
+              }
+            }}
+          />
+        </ObsidianSetting>
+      )}
+
+      <div className="smtcmp-settings-sub-header">
         {t('settings.continuation.tabSubsectionTitle')}
       </div>
       <ObsidianSetting

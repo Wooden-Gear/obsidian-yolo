@@ -408,6 +408,14 @@ export const zh: TranslationKeys = {
         '在编辑器中检测到指定关键词时自动触发续写。建议使用"cc"。',
       triggerKeyword: '触发关键词',
       triggerKeywordDesc: '当光标前的文本等于该关键词时触发续写（默认：cc）',
+      quickAskSubsectionTitle: 'Quick Ask',
+      quickAskDescription:
+        'Quick Ask 让你在编辑器中快速提问。在空行输入触发字符（默认 @）即可唤出浮动聊天面板，选择助手后输入问题，AI 会在面板中回答。支持多轮对话、复制回答、插入到光标位置或在侧边栏打开。',
+      quickAskToggle: '启用 Quick Ask',
+      quickAskToggleDesc: '关闭后，触发字符将不再唤出 Quick Ask 浮动面板。',
+      quickAskTrigger: '触发字符',
+      quickAskTriggerDesc:
+        '在空行输入此字符时触发 Quick Ask（默认：@）。支持 1-3 个字符。',
       tabCompletion: '启用 Tab 补全',
       tabCompletionDesc:
         '停顿 3 秒后自动请求补全，并以灰色幽灵文本形式给出建议，按下 Tab 接受。',

@@ -613,16 +613,24 @@ export default class SmartComposerPlugin extends Plugin {
             return false
           }
 
-          // Check for @ key
-          const isAtSign =
-            event.key === '@' || (event.key === '2' && event.shiftKey) // For keyboards where @ is Shift+2
-
-          if (!isAtSign) {
+          // Don't trigger with modifier keys (except Shift for special chars like @)
+          if (event.altKey || event.metaKey || event.ctrlKey) {
             return false
           }
 
-          // Don't trigger with modifier keys (except Shift for @)
-          if (event.altKey || event.metaKey || event.ctrlKey) {
+          // Get trigger string from settings (default: @)
+          const triggerStr =
+            this.settings.continuationOptions?.quickAskTrigger ?? '@'
+
+          // Determine what character the user is typing
+          let typedChar = event.key
+          // Special handling for @ which may be Shift+2 on some keyboards
+          if (event.key === '2' && event.shiftKey) {
+            typedChar = '@'
+          }
+
+          // Only proceed if the typed character could be part of the trigger
+          if (typedChar.length !== 1) {
             return false
           }
 
@@ -638,8 +646,19 @@ export default class SmartComposerPlugin extends Plugin {
             selection.head - line.from,
           )
 
-          // Only trigger at line start or on empty line
-          if (lineTextBeforeCursor.trim().length > 0) {
+          // Build the potential trigger sequence: existing text + new character
+          const potentialSequence = lineTextBeforeCursor + typedChar
+
+          // Check if the potential sequence matches the trigger string
+          if (potentialSequence !== triggerStr) {
+            // Check if it could be a partial match (for multi-char triggers)
+            if (
+              triggerStr.length > 1 &&
+              triggerStr.startsWith(potentialSequence)
+            ) {
+              // Allow the character to be typed, it might complete the trigger later
+              return false
+            }
             return false
           }
 
@@ -655,9 +674,20 @@ export default class SmartComposerPlugin extends Plugin {
             return false
           }
 
-          // Prevent default @ input
+          // Prevent default input
           event.preventDefault()
           event.stopPropagation()
+
+          // Clear the trigger characters from the line before showing panel
+          if (lineTextBeforeCursor.length > 0) {
+            // Delete the partial trigger that was already typed
+            const deleteFrom = line.from
+            const deleteTo = selection.head
+            view.dispatch({
+              changes: { from: deleteFrom, to: deleteTo },
+              selection: { anchor: deleteFrom },
+            })
+          }
 
           // Show Quick Ask panel
           this.showQuickAsk(editor, view)

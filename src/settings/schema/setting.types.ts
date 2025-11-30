@@ -234,6 +234,8 @@ export const smartComposerSettingsSchema = z.object({
       smartSpaceUseUrlContext: z.boolean().optional(),
       // enable quick ask feature (@ trigger in empty line)
       enableQuickAsk: z.boolean().optional(),
+      // trigger character for quick ask (default: @)
+      quickAskTrigger: z.string().optional(),
     })
     .catch({
       continuationModelId:
@@ -258,6 +260,7 @@ export const smartComposerSettingsSchema = z.object({
       smartSpaceUseWebSearch: false,
       smartSpaceUseUrlContext: false,
       enableQuickAsk: true,
+      quickAskTrigger: '@',
     }),
 
   // Assistant list
