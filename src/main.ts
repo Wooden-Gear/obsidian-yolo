@@ -29,6 +29,7 @@ import { ApplyView, ApplyViewState } from './ApplyView'
 import { ChatView } from './ChatView'
 import { ChatProps } from './components/chat-view/Chat'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
+import { QuickAskWidget } from './components/panels/quick-ask'
 import { SmartSpaceWidget } from './components/panels/SmartSpacePanel'
 import { SelectionChatWidget } from './components/selection/SelectionChatWidget'
 import { SelectionManager } from './components/selection/SelectionManager'
@@ -292,6 +293,46 @@ type SmartSpaceDraftState = {
   editorState?: SerializedEditorState
 } | null
 
+// Quick Ask Widget types and state
+type QuickAskWidgetPayload = {
+  pos: number
+  options: {
+    plugin: SmartComposerPlugin
+    editor: Editor
+    view: EditorView
+    contextText: string
+    onClose: () => void
+  }
+}
+
+const quickAskWidgetEffect = StateEffect.define<QuickAskWidgetPayload | null>()
+
+const quickAskWidgetField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(decorations, tr) {
+    let updated = decorations.map(tr.changes)
+    for (const effect of tr.effects) {
+      if (effect.is(quickAskWidgetEffect)) {
+        updated = Decoration.none
+        const payload = effect.value
+        if (payload) {
+          updated = Decoration.set([
+            Decoration.widget({
+              widget: new QuickAskWidget(payload.options),
+              side: 1,
+              block: false,
+            }).range(payload.pos),
+          ])
+        }
+      }
+    }
+    return updated
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
 export default class SmartComposerPlugin extends Plugin {
   settings: SmartComposerSettings
   initialChatProps?: ChatProps // TODO: change this to use view state like ApplyView
@@ -356,6 +397,12 @@ export default class SmartComposerPlugin extends Plugin {
   // Model list cache for provider model fetching
   private modelListCache: Map<string, { models: string[]; timestamp: number }> =
     new Map()
+  // Quick Ask state
+  private quickAskWidgetState: {
+    view: EditorView
+    pos: number
+    close: () => void
+  } | null = null
 
   getSmartSpaceDraftState(): SmartSpaceDraftState {
     return this.smartSpaceDraftState
@@ -489,6 +536,150 @@ export default class SmartComposerPlugin extends Plugin {
     })
 
     this.smartSpaceWidgetState = { view, pos, close }
+  }
+
+  // Quick Ask methods
+  private closeQuickAsk() {
+    const state = this.quickAskWidgetState
+    if (!state) return
+
+    // Clear state to prevent duplicate close
+    this.quickAskWidgetState = null
+
+    // Try to trigger close animation
+    const hasAnimation = QuickAskWidget.closeCurrentWithAnimation()
+
+    if (!hasAnimation) {
+      // If no animation instance, dispatch close effect directly
+      state.view.dispatch({ effects: quickAskWidgetEffect.of(null) })
+    }
+
+    state.view.focus()
+  }
+
+  private showQuickAsk(editor: Editor, view: EditorView) {
+    const selection = view.state.selection.main
+    const pos = selection.head
+
+    // Get context text (all text before cursor)
+    const contextText = editor.getRange({ line: 0, ch: 0 }, editor.getCursor())
+
+    // Close any existing Quick Ask panel
+    this.closeQuickAsk()
+    // Also close Smart Space if open
+    this.closeSmartSpace()
+
+    const close = () => {
+      if (this.quickAskWidgetState && this.quickAskWidgetState.view !== view) {
+        return
+      }
+      this.quickAskWidgetState = null
+      view.dispatch({ effects: quickAskWidgetEffect.of(null) })
+      view.focus()
+    }
+
+    view.dispatch({
+      effects: [
+        quickAskWidgetEffect.of(null),
+        quickAskWidgetEffect.of({
+          pos,
+          options: {
+            plugin: this,
+            editor,
+            view,
+            contextText,
+            onClose: close,
+          },
+        }),
+      ],
+    })
+
+    this.quickAskWidgetState = { view, pos, close }
+  }
+
+  private createQuickAskTriggerExtension(): Extension {
+    return [
+      quickAskWidgetField,
+      EditorView.domEventHandlers({
+        keydown: (event, view) => {
+          // Check if Quick Ask feature is enabled (default: true)
+          const enableQuickAsk =
+            this.settings.continuationOptions?.enableQuickAsk ?? true
+          if (!enableQuickAsk) {
+            return false
+          }
+
+          if (event.defaultPrevented) {
+            return false
+          }
+
+          // Check for @ key
+          const isAtSign =
+            event.key === '@' || (event.key === '2' && event.shiftKey) // For keyboards where @ is Shift+2
+
+          if (!isAtSign) {
+            return false
+          }
+
+          // Don't trigger with modifier keys (except Shift for @)
+          if (event.altKey || event.metaKey || event.ctrlKey) {
+            return false
+          }
+
+          const selection = view.state.selection.main
+          if (!selection.empty) {
+            return false
+          }
+
+          // Check if cursor is at an empty line or at line start
+          const line = view.state.doc.lineAt(selection.head)
+          const lineTextBeforeCursor = line.text.slice(
+            0,
+            selection.head - line.from,
+          )
+
+          // Only trigger at line start or on empty line
+          if (lineTextBeforeCursor.trim().length > 0) {
+            return false
+          }
+
+          const markdownView =
+            this.app.workspace.getActiveViewOfType(MarkdownView)
+          const editor = markdownView?.editor
+          if (!editor) {
+            return false
+          }
+
+          const activeView = this.getEditorView(editor)
+          if (activeView && activeView !== view) {
+            return false
+          }
+
+          // Prevent default @ input
+          event.preventDefault()
+          event.stopPropagation()
+
+          // Show Quick Ask panel
+          this.showQuickAsk(editor, view)
+          return true
+        },
+      }),
+      EditorView.updateListener.of((update) => {
+        const state = this.quickAskWidgetState
+        if (!state || state.view !== update.view) return
+
+        if (update.docChanged) {
+          state.pos = update.changes.mapPos(state.pos)
+        }
+
+        if (update.selectionSet) {
+          const head = update.state.selection.main
+          if (!head.empty || head.head !== state.pos) {
+            this.closeQuickAsk()
+          }
+        }
+      }),
+    ]
   }
 
   // Selection Chat methods
@@ -1581,6 +1772,7 @@ export default class SmartComposerPlugin extends Plugin {
     this.registerView(APPLY_VIEW_TYPE, (leaf) => new ApplyView(leaf, this))
 
     this.registerEditorExtension(this.createSmartSpaceTriggerExtension())
+    this.registerEditorExtension(this.createQuickAskTriggerExtension())
 
     // This creates an icon in the left ribbon.
     this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () => {

@@ -568,4 +568,22 @@ export type TranslationKeys = {
     mergedBoth?: string
     undo?: string
   }
+
+  // Quick Ask
+  quickAsk?: {
+    selectAssistant?: string
+    noAssistant?: string
+    noAssistantDescription?: string
+    navigationHint?: string
+    inputPlaceholder?: string
+    close?: string
+    copy?: string
+    insert?: string
+    openInSidebar?: string
+    stop?: string
+    send?: string
+    error?: string
+    copied?: string
+    inserted?: string
+  }
 }

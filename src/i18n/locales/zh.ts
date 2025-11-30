@@ -614,4 +614,21 @@ export const zh: TranslationKeys = {
     mergedBoth: '已合并两者',
     undo: '撤销',
   },
+
+  quickAsk: {
+    selectAssistant: '选择助手',
+    noAssistant: '无助手',
+    noAssistantDescription: '使用默认系统提示词',
+    navigationHint: '↑↓ 导航，Enter 选择，Esc 取消',
+    inputPlaceholder: '输入问题...',
+    close: '关闭',
+    copy: '复制',
+    insert: '插入',
+    openInSidebar: '在侧边栏打开',
+    stop: '停止',
+    send: '发送',
+    error: '生成失败',
+    copied: '已复制到剪贴板',
+    inserted: '已插入到光标位置',
+  },
 }

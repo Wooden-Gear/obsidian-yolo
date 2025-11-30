@@ -30,7 +30,7 @@ import {
   serializeMentionable,
 } from '../../../utils/chat/mentionable'
 import { fileToMentionableImage } from '../../../utils/llm/image'
-import { openMarkdownFile, readTFileContent } from '../../../utils/obsidian'
+import { readTFileContent } from '../../../utils/obsidian'
 import { ObsidianMarkdown } from '../ObsidianMarkdown'
 
 import { ImageUploadButton } from './ImageUploadButton'

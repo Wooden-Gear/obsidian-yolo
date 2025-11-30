@@ -232,6 +232,8 @@ export const smartComposerSettingsSchema = z.object({
       // Smart Space Gemini tools default state
       smartSpaceUseWebSearch: z.boolean().optional(),
       smartSpaceUseUrlContext: z.boolean().optional(),
+      // enable quick ask feature (@ trigger in empty line)
+      enableQuickAsk: z.boolean().optional(),
     })
     .catch({
       continuationModelId:
@@ -255,6 +257,7 @@ export const smartComposerSettingsSchema = z.object({
       smartSpaceQuickActions: undefined,
       smartSpaceUseWebSearch: false,
       smartSpaceUseUrlContext: false,
+      enableQuickAsk: true,
     }),
 
   // Assistant list

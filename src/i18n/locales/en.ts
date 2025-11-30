@@ -649,4 +649,21 @@ export const en: TranslationKeys = {
     mergedBoth: 'Merged both',
     undo: 'Undo',
   },
+
+  quickAsk: {
+    selectAssistant: 'Select an assistant',
+    noAssistant: 'No Assistant',
+    noAssistantDescription: 'Use default system prompt',
+    navigationHint: '↑↓ to navigate, Enter to select, Esc to cancel',
+    inputPlaceholder: 'Ask a question...',
+    close: 'Close',
+    copy: 'Copy',
+    insert: 'Insert',
+    openInSidebar: 'Open in sidebar',
+    stop: 'Stop',
+    send: 'Send',
+    error: 'Failed to generate response',
+    copied: 'Copied to clipboard',
+    inserted: 'Inserted at cursor',
+  },
 }
