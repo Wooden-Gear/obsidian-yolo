@@ -6463,11 +6463,11 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-ask-assistant-dropdown {
   position: absolute;
   top: calc(100% + 16px);
-  left: -14px;
+  left: -8px;
   transform: none;
   z-index: 20;
-  min-width: 240px;
-  width: clamp(240px, 42vw, 420px);
+  min-width: 200px;
+  width: clamp(200px, 34vw, 300px);
   background: color-mix(
     in srgb,
     var(--background-primary) 96%,
