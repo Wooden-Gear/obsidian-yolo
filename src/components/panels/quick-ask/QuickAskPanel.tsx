@@ -108,6 +108,8 @@ export function QuickAskPanel({
   const [inputText, setInputText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
+  const assistantDropdownRef = useRef<HTMLDivElement | null>(null)
+  const assistantTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
@@ -150,6 +152,50 @@ export function QuickAskPanel({
   useEffect(() => {
     onOverlayStateChange?.(isAssistantMenuOpen)
   }, [isAssistantMenuOpen, onOverlayStateChange])
+
+  // Arrow keys focus assistant trigger; Enter on the trigger will open the menu
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isAssistantMenuOpen) return
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+      event.preventDefault()
+      event.stopPropagation()
+      assistantTriggerRef.current?.focus()
+    }
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [isAssistantMenuOpen])
+
+  // When focus在助手按钮但菜单未展开时，ArrowUp 将焦点送回输入框（兜底）
+  useEffect(() => {
+    const handleArrowUpBack = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowUp') return
+      if (isAssistantMenuOpen) return
+      const active = document.activeElement
+      if (active !== assistantTriggerRef.current) return
+      event.preventDefault()
+      event.stopPropagation()
+      contentEditableRef.current?.focus()
+    }
+    window.addEventListener('keydown', handleArrowUpBack, true)
+    return () => window.removeEventListener('keydown', handleArrowUpBack, true)
+  }, [isAssistantMenuOpen])
+
+  // When assistant menu已打开时按 Esc：只关闭菜单并回焦输入
+  useEffect(() => {
+    const handleMenuEscape = (event: KeyboardEvent) => {
+      if (!isAssistantMenuOpen) return
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      setIsAssistantMenuOpen(false)
+      requestAnimationFrame(() => {
+        contentEditableRef.current?.focus()
+      })
+    }
+    window.addEventListener('keydown', handleMenuEscape, true)
+    return () => window.removeEventListener('keydown', handleMenuEscape, true)
+  }, [isAssistantMenuOpen])
 
   // Get model client
   const { providerClient, model } = useMemo(() => {
@@ -422,8 +468,16 @@ export function QuickAskPanel({
         {/* Left: Assistant selector */}
         <div className="smtcmp-quick-ask-toolbar-left">
           <button
+            ref={assistantTriggerRef}
             className="smtcmp-quick-ask-assistant-trigger"
             onClick={() => setIsAssistantMenuOpen(!isAssistantMenuOpen)}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowUp' && !isAssistantMenuOpen) {
+                event.preventDefault()
+                event.stopPropagation()
+                contentEditableRef.current?.focus()
+              }
+            }}
           >
             {selectedAssistant && (
               <span className="smtcmp-quick-ask-assistant-icon">
@@ -439,13 +493,19 @@ export function QuickAskPanel({
 
           {/* Assistant dropdown */}
           {isAssistantMenuOpen && (
-            <div className="smtcmp-quick-ask-assistant-dropdown">
+            <div
+              className="smtcmp-quick-ask-assistant-dropdown"
+              ref={assistantDropdownRef}
+            >
               <AssistantSelectMenu
                 assistants={assistants}
                 currentAssistantId={selectedAssistant?.id}
                 onSelect={(assistant) => {
                   setSelectedAssistant(assistant)
                   setIsAssistantMenuOpen(false)
+                  requestAnimationFrame(() => {
+                    contentEditableRef.current?.focus()
+                  })
                 }}
                 onClose={() => setIsAssistantMenuOpen(false)}
                 compact

@@ -6441,9 +6441,15 @@ button.smtcmp-chat-input-model-select {
   margin-left: -3px;
 }
 
-.smtcmp-quick-ask-assistant-trigger:hover {
-  background: transparent;
-  color: color-mix(in srgb, var(--interactive-accent) 65%, var(--text-normal) 35%);
+.smtcmp-quick-ask-assistant-trigger:hover,
+.smtcmp-quick-ask-assistant-trigger:focus-visible {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 32%,
+    transparent
+  );
+  color: white !important;
+  outline: none;
 }
 
 .smtcmp-quick-ask-assistant-icon {
