@@ -6413,8 +6413,8 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-ask-input-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px 6px;
+  gap: 8px;
+  padding: 6px 8px 4px;
   background: transparent;
   border-bottom: none;
 }
@@ -6423,7 +6423,7 @@ button.smtcmp-chat-input-model-select {
   all: unset;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 6px 10px;
   background: transparent !important;
   border: none !important;
@@ -6432,11 +6432,12 @@ button.smtcmp-chat-input-model-select {
   appearance: none;
   -webkit-appearance: none;
   outline: none;
-  font-size: var(--font-ui-small);
-  color: color-mix(in srgb, var(--text-normal) 90%, transparent);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted) !important;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  margin-left: -3px;
 }
 
 .smtcmp-quick-ask-assistant-trigger:hover {
@@ -6602,7 +6603,7 @@ button.smtcmp-chat-input-model-select {
   width: 100%;
   min-height: 34px;
   max-height: 140px;
-  padding: 6px 0 4px;
+  padding: 6px 0 4px 6px;
   background: transparent;
   border: none;
   font-size: var(--font-ui-small);
@@ -6619,7 +6620,7 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-quick-ask-input-placeholder {
   position: absolute;
-  left: 0;
+  left: 6px;
   top: 50%;
   transform: translateY(-50%);
   color: color-mix(in srgb, var(--text-muted) 78%, transparent);
@@ -6661,7 +6662,7 @@ button.smtcmp-chat-input-model-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px 8px;
+  padding: 0px 8px 6px;
   border-top: none;
   background: color-mix(
     in srgb,
