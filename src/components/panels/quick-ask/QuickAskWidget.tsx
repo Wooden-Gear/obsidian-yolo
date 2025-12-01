@@ -220,14 +220,6 @@ export class QuickAskWidget extends WidgetType {
   }
 
   private setupGlobalListeners() {
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null
-      if (!target) return
-      if (this.overlayContainer?.contains(target)) return
-      if (this.anchor?.contains(target)) return
-      this.closeWithAnimation()
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (this.hasBlockingOverlay) {
@@ -238,10 +230,8 @@ export class QuickAskWidget extends WidgetType {
       this.closeWithAnimation()
     }
 
-    window.addEventListener('pointerdown', handlePointerDown, true)
     window.addEventListener('keydown', handleKeyDown, true)
     this.cleanupListeners = () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true)
       window.removeEventListener('keydown', handleKeyDown, true)
       this.cleanupListeners = null
     }

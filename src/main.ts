@@ -701,13 +701,6 @@ export default class SmartComposerPlugin extends Plugin {
         if (update.docChanged) {
           state.pos = update.changes.mapPos(state.pos)
         }
-
-        if (update.selectionSet) {
-          const head = update.state.selection.main
-          if (!head.empty || head.head !== state.pos) {
-            this.closeQuickAsk()
-          }
-        }
       }),
     ]
   }
