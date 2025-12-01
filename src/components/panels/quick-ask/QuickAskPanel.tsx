@@ -161,7 +161,15 @@ export function QuickAskPanel({
   // Arrow keys focus assistant trigger; Enter on the trigger will open the menu
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isAssistantMenuOpen) return
+      if (isAssistantMenuOpen || isModelMenuOpen) return
+      const active = document.activeElement
+      if (
+        (active && assistantTriggerRef.current?.contains(active)) ||
+        (active && modelTriggerRef.current?.contains(active)) ||
+        (active && contentEditableRef.current?.contains(active))
+      ) {
+        return
+      }
       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
       event.preventDefault()
       event.stopPropagation()
@@ -169,7 +177,7 @@ export function QuickAskPanel({
     }
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [isAssistantMenuOpen])
+  }, [isAssistantMenuOpen, isModelMenuOpen])
 
   // When focus在助手按钮但菜单未展开时，ArrowUp 将焦点送回输入框（兜底）
   useEffect(() => {
@@ -427,6 +435,12 @@ export function QuickAskPanel({
             contentEditableRef={contentEditableRef}
             onTextContentChange={setInputText}
             onEnter={handleEnter}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                assistantTriggerRef.current?.focus()
+              }
+            }}
             autoFocus
             contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-quick-ask-content-editable"
           />
@@ -591,6 +605,11 @@ export function QuickAskPanel({
                   event.preventDefault()
                   contentEditableRef.current?.focus()
                 }
+              }}
+              onModelSelected={() => {
+                requestAnimationFrame(() => {
+                  modelTriggerRef.current?.focus({ preventScroll: true })
+                })
               }}
             />
           </div>

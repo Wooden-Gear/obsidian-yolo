@@ -56,6 +56,9 @@ export const ModelSelect = forwardRef<
       ...providerOrder.filter((id) => providerIdsInModels.includes(id)),
       ...providerIdsInModels.filter((id) => !providerOrder.includes(id)),
     ]
+    const orderedModelIds = orderedProviderIds.flatMap((pid) =>
+      enabledModels.filter((m) => m.providerId === pid).map((m) => m.id),
+    )
 
     // Get provider name for current model
     const getCurrentModelDisplay = () => {
@@ -88,6 +91,29 @@ export const ModelSelect = forwardRef<
       })
     }, [selectedModelId])
 
+    const focusByDelta = useCallback(
+      (delta: number) => {
+        if (orderedModelIds.length === 0) return
+        const activeElement = document.activeElement as HTMLElement | null
+        const activeId =
+          activeElement?.dataset?.modelId && orderedModelIds.includes(activeElement.dataset.modelId)
+            ? activeElement.dataset.modelId
+            : selectedModelId
+        const currentIndex = orderedModelIds.indexOf(activeId)
+        const nextIndex =
+          currentIndex === -1
+            ? 0
+            : (currentIndex + delta + orderedModelIds.length) % orderedModelIds.length
+        const nextId = orderedModelIds[nextIndex]
+        const target = itemRefs.current[nextId]
+        if (target) {
+          target.focus({ preventScroll: true })
+          target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+        }
+      },
+      [orderedModelIds, selectedModelId],
+    )
+
     useEffect(() => {
       if (!isOpen) return
       const rafId = window.requestAnimationFrame(() => {
@@ -101,13 +127,23 @@ export const ModelSelect = forwardRef<
     ) => {
       // 处理键盘导航
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        // 先让外部有机会消费（例如切回输入框）
+        if (onKeyDown) {
+          onKeyDown(event, isOpen)
+        }
+        if (event.defaultPrevented) {
+          return
+        }
+
         // 如果下拉菜单未打开，按上下方向键时打开它
         if (!isOpen) {
           event.preventDefault()
           setIsOpen(true)
           return
         }
-        // 如果菜单已打开，不要阻止事件，让 Radix UI 接管
+        // 菜单已打开时，确保焦点移入列表，让 Radix 接管
+        event.preventDefault()
+        focusSelectedItem()
         return
       }
 
@@ -144,23 +180,28 @@ export const ModelSelect = forwardRef<
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal container={container}>
-          <DropdownMenu.Content
-            className={
-              contentClassName
-                ? `smtcmp-popover ${contentClassName}`
-                : 'smtcmp-popover'
-            }
-            side={side}
-            sideOffset={sideOffset}
-            align={align}
-            alignOffset={alignOffset}
-            collisionPadding={8}
-            loop
-            onPointerDownOutside={(e) => {
-              // 阻止事件冒泡，防止关闭父容器
-              e.stopPropagation()
-            }}
-            onCloseAutoFocus={(e) => {
+        <DropdownMenu.Content
+          className={
+            contentClassName
+              ? `smtcmp-popover ${contentClassName}`
+              : 'smtcmp-popover'
+          }
+          side={side}
+          sideOffset={sideOffset}
+          align={align}
+          alignOffset={alignOffset}
+          collisionPadding={8}
+          loop
+          onOpenAutoFocus={(event) => {
+            // 自定义聚焦，防止默认把焦点留在触发器上
+            event.preventDefault()
+            focusSelectedItem()
+          }}
+          onPointerDownOutside={(e) => {
+            // 阻止事件冒泡，防止关闭父容器
+            e.stopPropagation()
+          }}
+          onCloseAutoFocus={(e) => {
               // 防止关闭后自动聚焦，保持焦点在触发器上
               e.preventDefault()
             }}
@@ -168,6 +209,15 @@ export const ModelSelect = forwardRef<
             <DropdownMenu.RadioGroup
               className="smtcmp-model-select-list"
               value={selectedModelId}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  focusByDelta(1)
+                } else if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  focusByDelta(-1)
+                }
+              }}
               onValueChange={(modelId: string) => {
                 if (onChange) {
                   onChange(modelId)
@@ -222,6 +272,7 @@ export const ModelSelect = forwardRef<
                         ref={(element) => {
                           itemRefs.current[chatModelOption.id] = element
                         }}
+                        data-model-id={chatModelOption.id}
                         data-first-item={
                           runningIndex === 1 && index === 0 ? 'true' : undefined
                         }

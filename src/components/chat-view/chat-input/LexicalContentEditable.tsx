@@ -34,6 +34,7 @@ export type LexicalContentEditableProps = {
   onChange?: (content: SerializedEditorState) => void
   onTextContentChange?: (textContent: string) => void
   onEnter?: (evt: KeyboardEvent) => void
+  onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onFocus?: () => void
   onMentionNodeMutation?: (mutations: NodeMutations<MentionNode>) => void
   onCreateImageMentionables?: (mentionables: MentionableImage[]) => void
@@ -58,6 +59,7 @@ export default function LexicalContentEditable({
   onChange,
   onTextContentChange,
   onEnter,
+  onKeyDown,
   onFocus,
   onMentionNodeMutation,
   onCreateImageMentionables,
@@ -126,6 +128,7 @@ export default function LexicalContentEditable({
               'obsidian-default-textarea smtcmp-content-editable'
             }
             onFocus={onFocus}
+            onKeyDown={onKeyDown}
             ref={contentEditableRef}
           />
         }
