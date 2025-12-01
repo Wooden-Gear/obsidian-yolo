@@ -6466,6 +6466,94 @@ button.smtcmp-chat-input-model-select {
   white-space: nowrap;
 }
 
+.smtcmp-quick-ask-model-select {
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 28px;
+  border: none !important;
+  border-radius: 6px;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  transition: all 0.15s ease;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select:hover,
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select:focus,
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select:focus-visible,
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select[data-state='open'] {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 32%,
+    transparent
+  );
+  border: none !important;
+  box-shadow: none !important;
+  color: white;
+  outline: none;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select__model-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select[data-state='open']
+  .smtcmp-chat-input-model-select__icon {
+  color: inherit !important;
+  opacity: 0.85;
+}
+
+.smtcmp-quick-ask-toolbar
+  .smtcmp-quick-ask-model-select
+  .smtcmp-chat-input-model-select__icon
+  svg {
+  width: 12px;
+  height: 12px;
+}
+
+.smtcmp-quick-ask-model-popover {
+  min-width: max(var(--radix-dropdown-menu-trigger-width, 0px), 220px);
+  max-width: min(
+    calc(var(--radix-dropdown-menu-trigger-width, 320px) + 80px),
+    360px
+  );
+}
+
 /* Assistant Dropdown */
 .smtcmp-quick-ask-assistant-dropdown {
   position: absolute;

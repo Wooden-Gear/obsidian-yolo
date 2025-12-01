@@ -2,6 +2,7 @@ import { EditorView } from '@codemirror/view'
 import { $getRoot, LexicalEditor, SerializedEditorState } from 'lexical'
 import {
   ChevronDown,
+  ChevronUp,
   Copy,
   ExternalLink,
   PanelRight,
@@ -27,6 +28,7 @@ import { renderAssistantIcon } from '../../../utils/assistant-icon'
 import { PromptGenerator } from '../../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../../utils/chat/responseGenerator'
 import LexicalContentEditable from '../../chat-view/chat-input/LexicalContentEditable'
+import { ModelSelect } from '../../chat-view/chat-input/ModelSelect'
 import { editorStateToPlainText } from '../../chat-view/chat-input/utils/editor-state-to-plain-text'
 
 import { AssistantSelectMenu } from './AssistantSelectMenu'
@@ -109,8 +111,10 @@ export function QuickAskPanel({
   const [inputText, setInputText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
   const assistantDropdownRef = useRef<HTMLDivElement | null>(null)
   const assistantTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const modelTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
@@ -151,8 +155,8 @@ export function QuickAskPanel({
 
   // Notify overlay state changes
   useEffect(() => {
-    onOverlayStateChange?.(isAssistantMenuOpen)
-  }, [isAssistantMenuOpen, onOverlayStateChange])
+    onOverlayStateChange?.(isAssistantMenuOpen || isModelMenuOpen)
+  }, [isAssistantMenuOpen, isModelMenuOpen, onOverlayStateChange])
 
   // Arrow keys focus assistant trigger; Enter on the trigger will open the menu
   useEffect(() => {
@@ -200,8 +204,14 @@ export function QuickAskPanel({
 
   // Get model client
   const { providerClient, model } = useMemo(() => {
-    const modelId = settings.chatModelId
-    return getChatModelClient({ settings, modelId })
+    const continuationModelId = settings.continuationOptions?.continuationModelId
+    const preferredModelId =
+      continuationModelId &&
+      settings.chatModels.some((m) => m.id === continuationModelId)
+        ? continuationModelId
+        : settings.chatModelId
+
+    return getChatModelClient({ settings, modelId: preferredModelId })
   }, [settings])
 
   // Abort current stream
@@ -384,19 +394,23 @@ export function QuickAskPanel({
   // Global key handling to match palette UX (Esc closes, even when dropdown is open)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key !== 'Escape') return
+      if (isAssistantMenuOpen) {
         event.preventDefault()
-        if (isAssistantMenuOpen) {
-          setIsAssistantMenuOpen(false)
-          return
-        }
-        onClose()
+        setIsAssistantMenuOpen(false)
+        return
       }
+      if (isModelMenuOpen) {
+        // 交给模型下拉自身处理关闭，避免误关闭面板
+        return
+      }
+      event.preventDefault()
+      onClose()
     }
 
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [isAssistantMenuOpen, onClose])
+  }, [isAssistantMenuOpen, isModelMenuOpen, onClose])
 
   return (
     <div
@@ -473,10 +487,19 @@ export function QuickAskPanel({
             className="smtcmp-quick-ask-assistant-trigger"
             onClick={() => setIsAssistantMenuOpen(!isAssistantMenuOpen)}
             onKeyDown={(event) => {
-              if (event.key === 'ArrowUp' && !isAssistantMenuOpen) {
-                event.preventDefault()
-                event.stopPropagation()
-                contentEditableRef.current?.focus()
+              if (!isAssistantMenuOpen) {
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  contentEditableRef.current?.focus()
+                  return
+                }
+                if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  modelTriggerRef.current?.focus()
+                  return
+                }
               }
             }}
           >
@@ -489,7 +512,7 @@ export function QuickAskPanel({
               {selectedAssistant?.name ||
                 t('quickAsk.noAssistant', 'No Assistant')}
             </span>
-            <ChevronDown size={12} />
+            {isAssistantMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
 
           {/* Assistant dropdown */}
@@ -517,6 +540,60 @@ export function QuickAskPanel({
               />
             </div>
           )}
+
+          <div className="smtcmp-quick-ask-model-select smtcmp-smart-space-model-select">
+            <ModelSelect
+              ref={modelTriggerRef}
+              modelId={
+                settings.continuationOptions?.continuationModelId &&
+                settings.chatModels.some(
+                  (m) => m.id === settings.continuationOptions?.continuationModelId,
+                )
+                  ? settings.continuationOptions?.continuationModelId
+                  : settings.chatModelId
+              }
+              onMenuOpenChange={(open) => setIsModelMenuOpen(open)}
+              onChange={(modelId) => {
+                void setSettings({
+                  ...settings,
+                  continuationOptions: {
+                    ...settings.continuationOptions,
+                    continuationModelId: modelId,
+                  },
+                })
+              }}
+              container={containerRef?.current ?? undefined}
+              side="bottom"
+              align="start"
+              sideOffset={12}
+              alignOffset={-4}
+              contentClassName="smtcmp-smart-space-popover smtcmp-quick-ask-model-popover"
+              onKeyDown={(event, isMenuOpen) => {
+                if (isMenuOpen) {
+                  if (event.key === 'Escape') {
+                    event.preventDefault()
+                    setIsModelMenuOpen(false)
+                  }
+                  return
+                }
+
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault()
+                  assistantTriggerRef.current?.focus()
+                  return
+                }
+                if (event.key === 'ArrowRight') {
+                  event.preventDefault()
+                  assistantTriggerRef.current?.focus()
+                  return
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  contentEditableRef.current?.focus()
+                }
+              }}
+            />
+          </div>
         </div>
 
         {/* Right: Action buttons */}
