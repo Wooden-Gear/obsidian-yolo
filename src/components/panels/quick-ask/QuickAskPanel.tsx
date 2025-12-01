@@ -1,7 +1,15 @@
 import { EditorView } from '@codemirror/view'
 import { $getRoot, LexicalEditor, SerializedEditorState } from 'lexical'
-import { Copy, ExternalLink, PanelRight, Send, Square, X } from 'lucide-react'
-import { Editor, MarkdownRenderer, Notice } from 'obsidian'
+import {
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  PanelRight,
+  Send,
+  Square,
+  X,
+} from 'lucide-react'
+import { Component, Editor, MarkdownRenderer, Notice } from 'obsidian'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -34,10 +42,14 @@ type QuickAskPanelProps = {
   onDragOffset?: (offsetX: number, offsetY: number) => void
 }
 
-type Phase = 'selecting-assistant' | 'chatting'
-
 // Simple markdown renderer component for Quick Ask
-function SimpleMarkdownContent({ content }: { content: string }) {
+function SimpleMarkdownContent({
+  content,
+  component,
+}: {
+  content: string
+  component: Component
+}) {
   const app = useApp()
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -49,11 +61,10 @@ function SimpleMarkdownContent({ content }: { content: string }) {
         content,
         containerRef.current,
         '',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        null as any,
+        component,
       )
     }
-  }, [app, content])
+  }, [app, component, content])
 
   return (
     <div
@@ -71,7 +82,6 @@ export function QuickAskPanel({
   onClose,
   containerRef,
   onOverlayStateChange,
-  onDragOffset,
 }: QuickAskPanelProps) {
   const app = useApp()
   const { settings } = useSettings()
@@ -85,9 +95,6 @@ export function QuickAskPanel({
   const currentAssistantId = settings.currentAssistantId
 
   // State
-  const [phase, setPhase] = useState<Phase>(
-    assistants.length > 0 ? 'selecting-assistant' : 'chatting',
-  )
   const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(
     () => {
       if (currentAssistantId) {
@@ -101,18 +108,11 @@ export function QuickAskPanel({
   const [inputText, setInputText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
 
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const dragStartRef = useRef<{
-    x: number
-    y: number
-    offsetX: number
-    offsetY: number
-  } | null>(null)
 
   // Build promptGenerator with context
   const promptGenerator = useMemo(() => {
@@ -139,102 +139,23 @@ export function QuickAskPanel({
     }
   }, [chatMessages])
 
-  // Focus input when entering chat phase
+  // Focus input on mount
   useEffect(() => {
-    if (phase === 'chatting') {
-      setTimeout(() => {
-        contentEditableRef.current?.focus()
-      }, 100)
-    }
-  }, [phase])
+    setTimeout(() => {
+      contentEditableRef.current?.focus()
+    }, 100)
+  }, [])
 
   // Notify overlay state changes
   useEffect(() => {
     onOverlayStateChange?.(isAssistantMenuOpen)
   }, [isAssistantMenuOpen, onOverlayStateChange])
 
-  // Drag handlers
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      // Only start drag on left mouse button
-      if (e.button !== 0) return
-      // Don't start drag if clicking on buttons
-      if ((e.target as HTMLElement).closest('button')) return
-
-      e.preventDefault()
-      setIsDragging(true)
-
-      // Get current panel position
-      const panel = containerRef?.current
-      if (panel) {
-        const rect = panel.getBoundingClientRect()
-        dragStartRef.current = {
-          x: e.clientX,
-          y: e.clientY,
-          offsetX: rect.left,
-          offsetY: rect.top,
-        }
-      }
-    },
-    [containerRef],
-  )
-
-  useEffect(() => {
-    if (!isDragging) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragStartRef.current || !onDragOffset) return
-
-      const deltaX = e.clientX - dragStartRef.current.x
-      const deltaY = e.clientY - dragStartRef.current.y
-
-      // Calculate new position
-      let newX = dragStartRef.current.offsetX + deltaX
-      let newY = dragStartRef.current.offsetY + deltaY
-
-      // Constrain to viewport
-      const panel = containerRef?.current
-      if (panel) {
-        const rect = panel.getBoundingClientRect()
-        const margin = 12
-        newX = Math.max(
-          margin,
-          Math.min(newX, window.innerWidth - rect.width - margin),
-        )
-        newY = Math.max(
-          margin,
-          Math.min(newY, window.innerHeight - rect.height - margin),
-        )
-      }
-
-      onDragOffset(newX, newY)
-    }
-
-    const handleMouseUp = () => {
-      setIsDragging(false)
-      dragStartRef.current = null
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isDragging, containerRef, onDragOffset])
-
   // Get model client
   const { providerClient, model } = useMemo(() => {
     const modelId = settings.chatModelId
     return getChatModelClient({ settings, modelId })
   }, [settings])
-
-  // Handle assistant selection
-  const handleSelectAssistant = useCallback((assistant: Assistant | null) => {
-    setSelectedAssistant(assistant)
-    setPhase('chatting')
-  }, [])
 
   // Abort current stream
   const abortStream = useCallback(() => {
@@ -410,46 +331,60 @@ export function QuickAskPanel({
     plugin,
   ])
 
-  // Render assistant selection phase
-  if (phase === 'selecting-assistant') {
-    return (
-      <div className="smtcmp-quick-ask-panel" ref={containerRef ?? undefined}>
-        <AssistantSelectMenu
-          assistants={assistants}
-          currentAssistantId={currentAssistantId}
-          onSelect={handleSelectAssistant}
-          onClose={onClose}
-        />
-      </div>
-    )
-  }
-
-  // Render chat phase
   const hasMessages = chatMessages.length > 0
   const hasAssistantResponse = chatMessages.some((m) => m.role === 'assistant')
 
+  // Global key handling to match palette UX (Esc closes, even when dropdown is open)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (isAssistantMenuOpen) {
+          setIsAssistantMenuOpen(false)
+          return
+        }
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [isAssistantMenuOpen, onClose])
+
   return (
     <div
-      className={`smtcmp-quick-ask-panel ${isDragging ? 'is-dragging' : ''}`}
+      className={`smtcmp-quick-ask-panel ${hasMessages ? 'has-messages' : ''}`}
       ref={containerRef ?? undefined}
     >
-      {/* Header - minimal drag handle */}
-      <div
-        className="smtcmp-quick-ask-header"
-        onMouseDown={handleDragStart}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-      >
-        <div className="smtcmp-quick-ask-drag-indicator" />
+      {/* Top: Input row with close button (Cursor style) */}
+      <div className="smtcmp-quick-ask-input-row">
+        <div
+          className={`smtcmp-quick-ask-input ${isStreaming ? 'is-disabled' : ''}`}
+        >
+          <LexicalContentEditable
+            editorRef={lexicalEditorRef}
+            contentEditableRef={contentEditableRef}
+            onTextContentChange={setInputText}
+            onEnter={handleEnter}
+            autoFocus
+            contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-quick-ask-content-editable"
+          />
+          {inputText.length === 0 && (
+            <div className="smtcmp-quick-ask-input-placeholder">
+              {t('quickAsk.inputPlaceholder', 'Ask a question...')}
+            </div>
+          )}
+        </div>
         <button
           className="smtcmp-quick-ask-close-button"
           onClick={onClose}
           aria-label={t('quickAsk.close', 'Close')}
         >
-          <X size={12} />
+          <X size={14} />
         </button>
       </div>
 
-      {/* Chat area */}
+      {/* Chat area - only shown when there are messages */}
       {hasMessages && (
         <div className="smtcmp-quick-ask-chat-area" ref={chatAreaRef}>
           {chatMessages.map((message) => {
@@ -470,7 +405,10 @@ export function QuickAskPanel({
                   key={message.id}
                   className="smtcmp-quick-ask-assistant-message"
                 >
-                  <SimpleMarkdownContent content={message.content || ''} />
+                  <SimpleMarkdownContent
+                    content={message.content || ''}
+                    component={plugin}
+                  />
                 </div>
               )
             }
@@ -479,63 +417,77 @@ export function QuickAskPanel({
         </div>
       )}
 
-      {/* Assistant selector - above input */}
-      <div className="smtcmp-quick-ask-assistant-row">
-        <button
-          className="smtcmp-quick-ask-assistant-button"
-          onClick={() => setIsAssistantMenuOpen(!isAssistantMenuOpen)}
-        >
-          {selectedAssistant && (
-            <span className="smtcmp-quick-ask-assistant-icon">
-              {renderAssistantIcon(selectedAssistant.icon, 12)}
+      {/* Bottom toolbar (Cursor style): assistant selector left, actions right */}
+      <div className="smtcmp-quick-ask-toolbar">
+        {/* Left: Assistant selector */}
+        <div className="smtcmp-quick-ask-toolbar-left">
+          <button
+            className="smtcmp-quick-ask-assistant-trigger"
+            onClick={() => setIsAssistantMenuOpen(!isAssistantMenuOpen)}
+          >
+            {selectedAssistant && (
+              <span className="smtcmp-quick-ask-assistant-icon">
+                {renderAssistantIcon(selectedAssistant.icon, 14)}
+              </span>
+            )}
+            <span className="smtcmp-quick-ask-assistant-name">
+              {selectedAssistant?.name ||
+                t('quickAsk.noAssistant', 'No Assistant')}
             </span>
-          )}
-          <span className="smtcmp-quick-ask-assistant-name">
-            {selectedAssistant?.name ||
-              t('quickAsk.noAssistant', 'No Assistant')}
-          </span>
-        </button>
+            <ChevronDown size={12} />
+          </button>
 
-        {/* Assistant selector dropdown */}
-        {isAssistantMenuOpen && (
-          <div className="smtcmp-quick-ask-assistant-dropdown">
-            <AssistantSelectMenu
-              assistants={assistants}
-              currentAssistantId={selectedAssistant?.id}
-              onSelect={(assistant) => {
-                setSelectedAssistant(assistant)
-                setIsAssistantMenuOpen(false)
-              }}
-              onClose={() => setIsAssistantMenuOpen(false)}
-              compact
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Input area */}
-      <div className="smtcmp-quick-ask-input-area">
-        <div
-          className={`smtcmp-quick-ask-input ${isStreaming ? 'is-disabled' : ''}`}
-        >
-          <LexicalContentEditable
-            editorRef={lexicalEditorRef}
-            contentEditableRef={contentEditableRef}
-            onTextContentChange={setInputText}
-            onEnter={handleEnter}
-            autoFocus
-            contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-quick-ask-content-editable"
-          />
-          {inputText.length === 0 && (
-            <div className="smtcmp-quick-ask-input-placeholder">
-              {t('quickAsk.inputPlaceholder', 'Ask a question...')}
+          {/* Assistant dropdown */}
+          {isAssistantMenuOpen && (
+            <div className="smtcmp-quick-ask-assistant-dropdown">
+              <AssistantSelectMenu
+                assistants={assistants}
+                currentAssistantId={selectedAssistant?.id}
+                onSelect={(assistant) => {
+                  setSelectedAssistant(assistant)
+                  setIsAssistantMenuOpen(false)
+                }}
+                onClose={() => setIsAssistantMenuOpen(false)}
+                compact
+              />
             </div>
           )}
         </div>
-        <div className="smtcmp-quick-ask-input-actions">
+
+        {/* Right: Action buttons */}
+        <div className="smtcmp-quick-ask-toolbar-right">
+          {/* Response actions - only shown when there's an assistant response */}
+          {hasAssistantResponse && (
+            <>
+              <button
+                className="smtcmp-quick-ask-toolbar-button"
+                onClick={copyLastResponse}
+                title={t('quickAsk.copy', 'Copy')}
+              >
+                <Copy size={14} />
+              </button>
+              <button
+                className="smtcmp-quick-ask-toolbar-button"
+                onClick={insertLastResponse}
+                title={t('quickAsk.insert', 'Insert')}
+              >
+                <ExternalLink size={14} />
+              </button>
+              <button
+                className="smtcmp-quick-ask-toolbar-button"
+                onClick={openInSidebar}
+                title={t('quickAsk.openInSidebar', 'Open in sidebar')}
+              >
+                <PanelRight size={14} />
+              </button>
+              <div className="smtcmp-quick-ask-toolbar-divider" />
+            </>
+          )}
+
+          {/* Send/Stop button */}
           {isStreaming ? (
             <button
-              className="smtcmp-quick-ask-action-button stop"
+              className="smtcmp-quick-ask-send-button stop"
               onClick={abortStream}
               aria-label={t('quickAsk.stop', 'Stop')}
             >
@@ -543,7 +495,7 @@ export function QuickAskPanel({
             </button>
           ) : (
             <button
-              className="smtcmp-quick-ask-action-button send"
+              className="smtcmp-quick-ask-send-button"
               onClick={() => {
                 const lexicalEditor = lexicalEditorRef.current
                 if (lexicalEditor) {
@@ -559,36 +511,6 @@ export function QuickAskPanel({
           )}
         </div>
       </div>
-
-      {/* Footer actions */}
-      {hasAssistantResponse && (
-        <div className="smtcmp-quick-ask-footer">
-          <button
-            className="smtcmp-quick-ask-footer-button"
-            onClick={copyLastResponse}
-            title={t('quickAsk.copy', 'Copy')}
-          >
-            <Copy size={12} />
-            <span>{t('quickAsk.copy', 'Copy')}</span>
-          </button>
-          <button
-            className="smtcmp-quick-ask-footer-button"
-            onClick={insertLastResponse}
-            title={t('quickAsk.insert', 'Insert')}
-          >
-            <ExternalLink size={12} />
-            <span>{t('quickAsk.insert', 'Insert')}</span>
-          </button>
-          <button
-            className="smtcmp-quick-ask-footer-button"
-            onClick={openInSidebar}
-            title={t('quickAsk.openInSidebar', 'Open in sidebar')}
-          >
-            <PanelRight size={12} />
-            <span>{t('quickAsk.openInSidebar', 'Open in sidebar')}</span>
-          </button>
-        </div>
-      )}
     </div>
   )
 }
