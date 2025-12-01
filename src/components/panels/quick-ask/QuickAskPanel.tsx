@@ -85,6 +85,7 @@ export function QuickAskPanel({
 }: QuickAskPanelProps) {
   const app = useApp()
   const { settings } = useSettings()
+  const { setSettings } = useSettings()
   const { t } = useLanguage()
   const { getRAGEngine } = useRAG()
   const { getMcpManager } = useMcp()
@@ -502,6 +503,10 @@ export function QuickAskPanel({
                 currentAssistantId={selectedAssistant?.id}
                 onSelect={(assistant) => {
                   setSelectedAssistant(assistant)
+                  void setSettings({
+                    ...settings,
+                    currentAssistantId: assistant?.id,
+                  })
                   setIsAssistantMenuOpen(false)
                   requestAnimationFrame(() => {
                     contentEditableRef.current?.focus()
