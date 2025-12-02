@@ -20,8 +20,9 @@
 With YOLO you can:
 
 - 💬 Chat with LLMs directly in the sidebar
-- 📚 Treat your entire vault as the AI’s knowledge base
+- 📚 Treat your entire vault as the AI's knowledge base
 - ✍️ Summon Smart Space to continue your ideas anywhere
+- ⚡ Use Quick Ask for instant inline AI assistance with intelligent editing
 - 🧩 Enable experimental features like Learning Mode and sub-agents to explore personalized workflows
 - 🎨 Enjoy numerous UX improvements and UI polish
 
@@ -45,6 +46,22 @@ https://github.com/user-attachments/assets/cffbada7-4314-4709-bef4-9867b43d6484
 https://github.com/user-attachments/assets/fa2d32dc-51fb-4f19-a3c3-44c2ea7a5fd9
 
 Summon Smart Space anywhere for natural, fluent, and efficient content generation.
+
+## **⚡ Quick Ask**
+
+Quick Ask is a lightweight inline assistant that you can summon anywhere with a trigger character (default: `@`). It provides three powerful modes:
+
+- **Ask Mode** 💬: Engage in multi-turn conversations and get instant answers
+- **Edit Mode** ✏️: Generate structured edits with preview before applying
+- **Edit (Full Access)** ⚡: Apply AI-generated edits directly without confirmation
+
+Quick Ask supports three types of edit operations:
+
+- **CONTINUE**: Append content to the end of your document
+- **REPLACE**: Replace existing text with improved versions
+- **INSERT AFTER**: Insert new content after specific text
+
+The AI intelligently chooses the appropriate format based on your instructions, making document editing seamless and efficient.
 
 ## **🪡 Cursor Chat**
 
