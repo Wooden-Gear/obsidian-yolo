@@ -570,12 +570,17 @@ export default class SmartComposerPlugin extends Plugin {
     this.closeSmartSpace()
 
     const close = () => {
-      if (this.quickAskWidgetState && this.quickAskWidgetState.view !== view) {
-        return
+      const isCurrentView =
+        !this.quickAskWidgetState || this.quickAskWidgetState.view === view
+
+      if (isCurrentView) {
+        this.quickAskWidgetState = null
       }
-      this.quickAskWidgetState = null
       view.dispatch({ effects: quickAskWidgetEffect.of(null) })
-      view.focus()
+
+      if (isCurrentView) {
+        view.focus()
+      }
     }
 
     view.dispatch({

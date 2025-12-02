@@ -30,6 +30,7 @@ import { generateEditContent } from '../../../utils/chat/editMode'
 import { PromptGenerator } from '../../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../../utils/chat/responseGenerator'
 import { parseTagContents } from '../../../utils/chat/parse-tag-content'
+import AssistantMessageReasoning from '../../chat-view/AssistantMessageReasoning'
 import {
   applySearchReplaceBlocks,
   parseSearchReplaceBlocks,
@@ -162,7 +163,17 @@ export function QuickAskPanel({
       const rendered: JSX.Element[] = []
 
       parsed.forEach((block, index) => {
-        if (block.type === 'think') return
+        if (block.type === 'think') {
+          if (!block.content.trim()) return
+          rendered.push(
+            <AssistantMessageReasoning
+              key={index}
+              reasoning={block.content}
+              content={rawContent ?? ''}
+            />,
+          )
+          return
+        }
 
         if (block.type === 'smtcmp_block') {
           const normalizedContent =
@@ -797,6 +808,12 @@ export function QuickAskPanel({
                   key={message.id}
                   className="smtcmp-quick-ask-assistant-message"
                 >
+                  {message.reasoning?.trim() && (
+                    <AssistantMessageReasoning
+                      reasoning={message.reasoning}
+                      content={message.content}
+                    />
+                  )}
                   {renderAssistantBlocks(message.content)}
                   {isLatestAssistant && (
                     <div className="smtcmp-quick-ask-assistant-actions">
