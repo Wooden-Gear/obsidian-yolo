@@ -45,6 +45,9 @@ https://github.com/user-attachments/assets/fa2d32dc-51fb-4f19-a3c3-44c2ea7a5fd9
 在任何地方召唤出 Smart Space，享受自然流畅高效的内容生成
 
 ## **⚡ Quick Ask**
+> 该功能的编辑模式对于模型的工具调用能力有一定需求，推荐使用目前的主流推理模型
+
+https://github.com/user-attachments/assets/5a23e55e-482d-4e03-b564-7eac6814584e
 
 Quick Ask 是一个轻量级的内联助手，你可以在任何地方通过触发字符（默认：`@`）召唤它。它提供三种强大的模式：
 
