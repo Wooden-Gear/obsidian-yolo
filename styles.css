@@ -6413,10 +6413,10 @@ button.smtcmp-chat-input-model-select {
 /* Input Row - Top: [Input...] [×] */
 .smtcmp-quick-ask-input-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
-  padding: 6px 40px 4px 8px; /* reserve a slim area for the close button on the right */
-  margin-top: 8px; /* Space for drag handle */
+  padding: 2px 32px 0 6px; /* reserve a slim area for the close button on the right */
+  margin-top: 6px; /* Space for drag handle */
   background: transparent;
   border-bottom: none;
   position: relative;
@@ -6441,7 +6441,7 @@ button.smtcmp-chat-input-model-select {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  margin-left: -3px;
+  margin-left: -5px;
 }
 
 .smtcmp-quick-ask-assistant-trigger:hover,
@@ -6785,10 +6785,10 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-ask-input {
   flex: 1;
   position: relative;
-  min-height: 38px;
+  min-height: 22px;
   max-height: 200px;
   overflow: hidden;
-  padding: 2px 0 2px 0;
+  padding: 0 0 0 0;
   box-sizing: border-box;
 }
 
@@ -6801,13 +6801,13 @@ button.smtcmp-chat-input-model-select {
   width: 100%;
   max-width: 100%;
   margin-right: 0;
-  min-height: 34px;
+  min-height: 20px;
   max-height: 200px;
-  padding: 6px 8px 4px 6px;
+  padding: 2px 6px 1px 6px;
   background: transparent;
   border: none;
   font-size: var(--font-ui-small);
-  line-height: 1.35;
+  line-height: 1.25;
   outline: none;
   overflow-y: auto;
   scrollbar-gutter: stable; /* keep gutter on the right */
@@ -6827,8 +6827,8 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-ask-input-placeholder {
   position: absolute;
   left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 4px;
+  transform: none;
   color: color-mix(in srgb, var(--text-muted) 78%, transparent);
   pointer-events: none;
   font-size: var(--font-ui-small);
@@ -6841,7 +6841,7 @@ button.smtcmp-chat-input-model-select {
   justify-content: center;
   width: 26px;
   height: 26px;
-  margin-top: 6px;
+  margin-top: 0;
   padding: 0;
   background: transparent !important;
   border: none !important;
@@ -6855,8 +6855,9 @@ button.smtcmp-chat-input-model-select {
   -webkit-appearance: none;
   outline: none !important;
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
 }
 
 .smtcmp-quick-ask-close-button:hover {
