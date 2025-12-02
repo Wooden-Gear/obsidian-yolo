@@ -55,11 +55,18 @@ https://github.com/user-attachments/assets/21b775d7-b427-4da2-b20c-f2ede85c2b69
 
 ## 开始使用
 
-1. 打开 Obsidian 设置
-2. 导航到“社区插件”并点击“浏览”
-3. 搜索“YOLO”并点击安装
-4. 在社区插件中启用该插件
-5. 在插件设置中设置您的 API 密钥
+> [!NOTE]
+> YOLO 目前尚未上架 Obsidian 社区插件商店，请按照以下步骤手动安装。
+
+### 手动安装
+
+1. 前往 [Releases](https://github.com/Lapis0x0/obsidian-yolo/releases) 页面
+2. 下载最新版本的 `main.js`、`manifest.json` 和 `styles.css`
+3. 在你的 Vault 插件目录下创建文件夹：`<vault>/.obsidian/plugins/obsidian-yolo/`
+4. 将下载的文件复制到该文件夹中
+5. 打开 Obsidian 设置 → 社区插件
+6. 在插件列表中启用 "YOLO"
+7. 在插件设置中配置你的 API 密钥
    - OpenAI : [ChatGPT API 密钥](https://platform.openai.com/api-keys)
    - Anthropic : [Claude API 密钥](https://console.anthropic.com/settings/keys)
    - Gemini : [Gemini API 密钥](https://aistudio.google.com/apikey)

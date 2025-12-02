@@ -6469,7 +6469,7 @@ button.smtcmp-chat-input-model-select {
 .smtcmp-quick-ask-model-select {
   display: flex;
   align-items: center;
-  margin-left: 4px;
+  margin-left: 0px;
 }
 
 .smtcmp-quick-ask-toolbar
@@ -6477,7 +6477,7 @@ button.smtcmp-chat-input-model-select {
   .smtcmp-chat-input-model-select {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0px;
   padding: 6px 10px;
   min-height: 28px;
   border: none !important;
@@ -6527,6 +6527,7 @@ button.smtcmp-chat-input-model-select {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: 2px;
   color: inherit;
 }
 

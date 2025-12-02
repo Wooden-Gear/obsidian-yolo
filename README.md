@@ -58,11 +58,18 @@ Supports multiple providers (OpenAI, Claude, Gemini, DeepSeek, etc.) with native
 
 ## Getting Started
 
-1. Open Obsidian Settings
-2. Navigate to "Community plugins" and click "Browse"
-3. Search for "YOLO" and click Install
-4. Enable the plugin in Community plugins
-5. Set up your API key in plugin settings
+> [!NOTE]
+> YOLO is not yet available in the Obsidian Community Plugin Store. Please install it manually following the steps below.
+
+### Manual Installation
+
+1. Go to the [Releases](https://github.com/Lapis0x0/obsidian-yolo/releases) page
+2. Download `main.js`, `manifest.json`, and `styles.css` from the latest release
+3. Create a folder named `obsidian-yolo` in your vault's plugin directory: `<vault>/.obsidian/plugins/obsidian-yolo/`
+4. Copy the downloaded files into this folder
+5. Open Obsidian Settings → Community plugins
+6. Enable "YOLO" in the plugin list
+7. Set up your API key in plugin settings
    - OpenAI : [ChatGPT API Keys](https://platform.openai.com/api-keys)
    - Anthropic : [Claude API Keys](https://console.anthropic.com/settings/keys)
    - Gemini : [Gemini API Keys](https://aistudio.google.com/apikey)
