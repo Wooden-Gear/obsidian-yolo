@@ -48,6 +48,9 @@ https://github.com/user-attachments/assets/fa2d32dc-51fb-4f19-a3c3-44c2ea7a5fd9
 Summon Smart Space anywhere for natural, fluent, and efficient content generation.
 
 ## **⚡ Quick Ask**
+> The edit modes of this feature require certain tool-calling capabilities from the model. We recommend using mainstream reasoning models.
+
+https://github.com/user-attachments/assets/5a23e55e-482d-4e03-b564-7eac6814584e
 
 Quick Ask is a lightweight inline assistant that you can summon anywhere with a trigger character (default: `@`). It provides three powerful modes:
 
