@@ -2104,6 +2104,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.initialChatProps = chatProps
 
     const leaf = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)[0]
+    if (leaf && leaf.view instanceof ChatView) {
+      leaf.view.setInitialChatProps(chatProps)
+    }
 
     await (leaf ?? this.app.workspace.getRightLeaf(false))?.setViewState({
       type: CHAT_VIEW_TYPE,

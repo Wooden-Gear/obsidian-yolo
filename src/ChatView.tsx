@@ -33,6 +33,10 @@ export class ChatView extends ItemView {
     this.initialChatProps = plugin.initialChatProps
   }
 
+  setInitialChatProps(chatProps?: ChatProps) {
+    this.initialChatProps = chatProps
+  }
+
   getViewType() {
     return CHAT_VIEW_TYPE
   }

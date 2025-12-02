@@ -105,6 +105,7 @@ export type ChatProps = {
   selectedBlock?: MentionableBlockData
   activeView?: 'chat' | 'composer'
   onChangeView?: (view: 'chat' | 'composer') => void
+  initialConversationId?: string
 }
 
 const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
@@ -285,6 +286,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       console.error('Failed to load conversation', error)
     }
   }
+
+  // Load an initial conversation passed in via props (e.g., from Quick Ask)
+  useEffect(() => {
+    if (!props.initialConversationId) return
+    void handleLoadConversation(props.initialConversationId)
+  }, [handleLoadConversation, props.initialConversationId])
 
   const handleNewChat = (selectedBlock?: MentionableBlockData) => {
     const newId = uuidv4()

@@ -5,7 +5,6 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
-  PanelRight,
   Send,
   Square,
   X,
@@ -550,23 +549,6 @@ export function QuickAskPanel({
   }, [chatMessages, editor, onClose, t])
 
   // Open in sidebar
-  const openInSidebar = useCallback(() => {
-    // Save conversation first
-    if (chatMessages.length > 0) {
-      createOrUpdateConversation?.(conversationId, chatMessages)
-    }
-    // Open chat view with this conversation
-    plugin.activateChatView()
-    // TODO: Load specific conversation by ID
-    onClose()
-  }, [
-    chatMessages,
-    conversationId,
-    createOrUpdateConversation,
-    onClose,
-    plugin,
-  ])
-
   const hasMessages = chatMessages.length > 0
   const lastAssistantMessageId = useMemo(
     () => [...chatMessages].reverse().find((m) => m.role === 'assistant')?.id,
@@ -671,13 +653,6 @@ export function QuickAskPanel({
                         title={t('quickAsk.insert', 'Insert')}
                       >
                         <ExternalLink size={14} />
-                      </button>
-                      <button
-                        className="smtcmp-quick-ask-toolbar-button"
-                        onClick={openInSidebar}
-                        title={t('quickAsk.openInSidebar', 'Open in sidebar')}
-                      >
-                        <PanelRight size={14} />
                       </button>
                     </div>
                   )}
