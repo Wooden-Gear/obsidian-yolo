@@ -6988,6 +6988,8 @@ button.smtcmp-chat-input-model-select {
   border-top: 1px solid var(--background-modifier-border);
   max-height: 300px;
   order: 1;
+  user-select: text;
+  pointer-events: auto;
 }
 
 .smtcmp-quick-ask-user-message {
@@ -7013,10 +7015,13 @@ button.smtcmp-chat-input-model-select {
   border-bottom-left-radius: var(--radius-s);
   font-size: var(--font-ui-small);
   line-height: 1.5;
+  user-select: text;
+  pointer-events: auto;
 }
 
 .smtcmp-quick-ask-assistant-message .markdown-rendered {
   font-size: var(--font-ui-small);
+  user-select: text;
 }
 
 .smtcmp-quick-ask-assistant-block + .smtcmp-quick-ask-assistant-block {
