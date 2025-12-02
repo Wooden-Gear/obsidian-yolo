@@ -7010,6 +7010,10 @@ button.smtcmp-chat-input-model-select {
   font-size: var(--font-ui-small);
 }
 
+.smtcmp-quick-ask-assistant-block + .smtcmp-quick-ask-assistant-block {
+  margin-top: 8px;
+}
+
 .smtcmp-quick-ask-assistant-message .markdown-rendered p {
   margin: 0 0 0.5em 0;
 }
