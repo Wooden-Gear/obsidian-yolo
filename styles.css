@@ -6616,44 +6616,44 @@ button.smtcmp-chat-input-model-select {
 }
 
 .smtcmp-quick-ask-mode-popover {
-  min-width: 180px;
-  max-width: 240px;
+  min-width: 140px;
+  max-width: 200px;
 }
 
 .smtcmp-mode-select-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 8px 12px !important;
+  gap: 6px;
+  padding: 6px 10px !important;
 }
 
 .smtcmp-mode-select-item__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--text-muted);
 }
 
 .smtcmp-mode-select-item__icon svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .smtcmp-mode-select-item__content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .smtcmp-mode-select-item__label {
-  font-size: var(--font-ui-small);
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-normal);
 }
 
 .smtcmp-mode-select-item__desc {
-  font-size: var(--font-ui-smaller);
+  font-size: 11px;
   color: var(--text-muted);
   line-height: 1.3;
 }
