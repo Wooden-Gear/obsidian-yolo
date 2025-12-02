@@ -14,6 +14,8 @@ import { Component, Editor, MarkdownRenderer, Notice } from 'obsidian'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+import { ApplyViewState } from '../../../ApplyView'
+import { APPLY_VIEW_TYPE } from '../../../constants'
 import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useMcp } from '../../../contexts/mcp-context'
@@ -25,13 +27,20 @@ import SmartComposerPlugin from '../../../main'
 import { Assistant } from '../../../types/assistant.types'
 import { ChatMessage, ChatUserMessage } from '../../../types/chat'
 import { renderAssistantIcon } from '../../../utils/assistant-icon'
+import { generateEditContent } from '../../../utils/chat/editMode'
 import { PromptGenerator } from '../../../utils/chat/promptGenerator'
 import { ResponseGenerator } from '../../../utils/chat/responseGenerator'
+import {
+  applySearchReplaceBlocks,
+  parseSearchReplaceBlocks,
+} from '../../../utils/chat/searchReplace'
+import { readTFileContent } from '../../../utils/obsidian'
 import LexicalContentEditable from '../../chat-view/chat-input/LexicalContentEditable'
 import { ModelSelect } from '../../chat-view/chat-input/ModelSelect'
 import { editorStateToPlainText } from '../../chat-view/chat-input/utils/editor-state-to-plain-text'
 
 import { AssistantSelectMenu } from './AssistantSelectMenu'
+import { ModeSelect, QuickAskMode } from './ModeSelect'
 
 type QuickAskPanelProps = {
   plugin: SmartComposerPlugin
@@ -112,9 +121,14 @@ export function QuickAskPanel({
   const [isStreaming, setIsStreaming] = useState(false)
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false)
+  const [mode, setMode] = useState<QuickAskMode>(
+    () => settings.continuationOptions?.quickAskMode ?? 'ask',
+  )
   const assistantDropdownRef = useRef<HTMLDivElement | null>(null)
   const assistantTriggerRef = useRef<HTMLButtonElement | null>(null)
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const modeTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
@@ -155,17 +169,25 @@ export function QuickAskPanel({
 
   // Notify overlay state changes
   useEffect(() => {
-    onOverlayStateChange?.(isAssistantMenuOpen || isModelMenuOpen)
-  }, [isAssistantMenuOpen, isModelMenuOpen, onOverlayStateChange])
+    onOverlayStateChange?.(
+      isAssistantMenuOpen || isModelMenuOpen || isModeMenuOpen,
+    )
+  }, [
+    isAssistantMenuOpen,
+    isModelMenuOpen,
+    isModeMenuOpen,
+    onOverlayStateChange,
+  ])
 
   // Arrow keys focus assistant trigger; Enter on the trigger will open the menu
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isAssistantMenuOpen || isModelMenuOpen) return
+      if (isAssistantMenuOpen || isModelMenuOpen || isModeMenuOpen) return
       const active = document.activeElement
       if (
         (active && assistantTriggerRef.current?.contains(active)) ||
         (active && modelTriggerRef.current?.contains(active)) ||
+        (active && modeTriggerRef.current?.contains(active)) ||
         (active && contentEditableRef.current?.contains(active))
       ) {
         return
@@ -177,7 +199,7 @@ export function QuickAskPanel({
     }
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [isAssistantMenuOpen, isModelMenuOpen])
+  }, [isAssistantMenuOpen, isModelMenuOpen, isModeMenuOpen])
 
   // When focus在助手按钮但菜单未展开时，ArrowUp 将焦点送回输入框（兜底）
   useEffect(() => {
@@ -212,7 +234,8 @@ export function QuickAskPanel({
 
   // Get model client
   const { providerClient, model } = useMemo(() => {
-    const continuationModelId = settings.continuationOptions?.continuationModelId
+    const continuationModelId =
+      settings.continuationOptions?.continuationModelId
     const preferredModelId =
       continuationModelId &&
       settings.chatModels.some((m) => m.id === continuationModelId)
@@ -339,6 +362,110 @@ export function QuickAskPanel({
     ],
   )
 
+  // Submit edit mode - generate SEARCH/REPLACE and open ApplyView
+  const submitEditMode = useCallback(
+    async (instruction: string) => {
+      if (isStreaming) return
+      if (!instruction.trim()) return
+
+      const activeFile = app.workspace.getActiveFile()
+      if (!activeFile) {
+        new Notice(t('quickAsk.editNoFile', 'Please open a file first'))
+        return
+      }
+
+      setIsStreaming(true)
+
+      // Clear the lexical editor
+      lexicalEditorRef.current?.update(() => {
+        const root = lexicalEditorRef.current?.getEditorState().read(() => {
+          return $getRoot()
+        })
+        if (root) {
+          root.clear()
+        }
+      })
+      setInputText('')
+
+      try {
+        const currentContent = await readTFileContent(activeFile, app.vault)
+
+        // Generate SEARCH/REPLACE blocks
+        const response = await generateEditContent({
+          instruction,
+          currentFile: activeFile,
+          currentFileContent: currentContent,
+          providerClient,
+          model,
+        })
+
+        // Parse SEARCH/REPLACE blocks
+        const blocks = parseSearchReplaceBlocks(response)
+        if (blocks.length === 0) {
+          new Notice(
+            t('quickAsk.editNoChanges', 'No valid changes returned by model'),
+          )
+          return
+        }
+
+        // Apply blocks to original content
+        const { newContent, errors, appliedCount } = applySearchReplaceBlocks(
+          currentContent,
+          blocks,
+        )
+
+        if (appliedCount === 0) {
+          new Notice(
+            t(
+              'quickAsk.editNoChanges',
+              'Could not apply any changes. The model output may not match the document.',
+            ),
+          )
+          return
+        }
+
+        if (errors.length > 0) {
+          console.warn('Some replacements failed:', errors)
+        }
+
+        // Open ApplyView
+        await app.workspace.getLeaf(true).setViewState({
+          type: APPLY_VIEW_TYPE,
+          active: true,
+          state: {
+            file: activeFile,
+            originalContent: currentContent,
+            newContent,
+          } satisfies ApplyViewState,
+        })
+
+        // Close Quick Ask
+        onClose()
+      } catch (error) {
+        console.error('Edit mode failed:', error)
+        new Notice(t('quickAsk.error', 'Failed to generate edits'))
+      } finally {
+        setIsStreaming(false)
+      }
+    },
+    [app, isStreaming, model, onClose, providerClient, t],
+  )
+
+  // Handle mode change
+  const handleModeChange = useCallback(
+    (newMode: QuickAskMode) => {
+      setMode(newMode)
+      void setSettings({
+        ...settings,
+        continuationOptions: {
+          ...settings.continuationOptions,
+          quickAskMode: newMode,
+        },
+      })
+    },
+    [setSettings, settings],
+  )
+
   // Handle Enter key
   const handleEnter = useCallback(
     (event: KeyboardEvent) => {
@@ -347,10 +474,16 @@ export function QuickAskPanel({
       const lexicalEditor = lexicalEditorRef.current
       if (lexicalEditor) {
         const editorState = lexicalEditor.getEditorState().toJSON()
-        void submitMessage(editorState)
+        const textContent = editorStateToPlainText(editorState)
+
+        if (mode === 'edit') {
+          void submitEditMode(textContent)
+        } else {
+          void submitMessage(editorState)
+        }
       }
     },
-    [submitMessage],
+    [mode, submitEditMode, submitMessage],
   )
 
   // Copy last assistant message
@@ -408,8 +541,8 @@ export function QuickAskPanel({
         setIsAssistantMenuOpen(false)
         return
       }
-      if (isModelMenuOpen) {
-        // 交给模型下拉自身处理关闭，避免误关闭面板
+      if (isModelMenuOpen || isModeMenuOpen) {
+        // 交给下拉自身处理关闭，避免误关闭面板
         return
       }
       event.preventDefault()
@@ -418,7 +551,7 @@ export function QuickAskPanel({
 
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [isAssistantMenuOpen, isModelMenuOpen, onClose])
+  }, [isAssistantMenuOpen, isModelMenuOpen, isModeMenuOpen, onClose])
 
   return (
     <div
@@ -526,7 +659,11 @@ export function QuickAskPanel({
               {selectedAssistant?.name ||
                 t('quickAsk.noAssistant', 'No Assistant')}
             </span>
-            {isAssistantMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {isAssistantMenuOpen ? (
+              <ChevronUp size={12} />
+            ) : (
+              <ChevronDown size={12} />
+            )}
           </button>
 
           {/* Assistant dropdown */}
@@ -561,7 +698,8 @@ export function QuickAskPanel({
               modelId={
                 settings.continuationOptions?.continuationModelId &&
                 settings.chatModels.some(
-                  (m) => m.id === settings.continuationOptions?.continuationModelId,
+                  (m) =>
+                    m.id === settings.continuationOptions?.continuationModelId,
                 )
                   ? settings.continuationOptions?.continuationModelId
                   : settings.chatModelId
@@ -598,7 +736,7 @@ export function QuickAskPanel({
                 }
                 if (event.key === 'ArrowRight') {
                   event.preventDefault()
-                  assistantTriggerRef.current?.focus()
+                  modeTriggerRef.current?.focus()
                   return
                 }
                 if (event.key === 'ArrowUp') {
@@ -610,6 +748,45 @@ export function QuickAskPanel({
                 requestAnimationFrame(() => {
                   modelTriggerRef.current?.focus({ preventScroll: true })
                 })
+              }}
+            />
+          </div>
+
+          <div className="smtcmp-quick-ask-mode-select">
+            <ModeSelect
+              ref={modeTriggerRef}
+              mode={mode}
+              onChange={handleModeChange}
+              onMenuOpenChange={(open) => setIsModeMenuOpen(open)}
+              container={containerRef?.current ?? undefined}
+              side="bottom"
+              align="start"
+              sideOffset={12}
+              alignOffset={-4}
+              contentClassName="smtcmp-smart-space-popover smtcmp-quick-ask-mode-popover"
+              onKeyDown={(event, isMenuOpen) => {
+                if (isMenuOpen) {
+                  if (event.key === 'Escape') {
+                    event.preventDefault()
+                    setIsModeMenuOpen(false)
+                  }
+                  return
+                }
+
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault()
+                  modelTriggerRef.current?.focus()
+                  return
+                }
+                if (event.key === 'ArrowRight') {
+                  event.preventDefault()
+                  assistantTriggerRef.current?.focus()
+                  return
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  contentEditableRef.current?.focus()
+                }
               }}
             />
           </div>
@@ -661,7 +838,13 @@ export function QuickAskPanel({
                 const lexicalEditor = lexicalEditorRef.current
                 if (lexicalEditor) {
                   const editorState = lexicalEditor.getEditorState().toJSON()
-                  void submitMessage(editorState)
+                  const textContent = editorStateToPlainText(editorState)
+
+                  if (mode === 'edit') {
+                    void submitEditMode(textContent)
+                  } else {
+                    void submitMessage(editorState)
+                  }
                 }
               }}
               disabled={inputText.trim().length === 0}

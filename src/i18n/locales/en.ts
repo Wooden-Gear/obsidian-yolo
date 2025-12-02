@@ -674,5 +674,12 @@ export const en: TranslationKeys = {
     error: 'Failed to generate response',
     copied: 'Copied to clipboard',
     inserted: 'Inserted at cursor',
+    // Mode select
+    modeAsk: 'Ask',
+    modeEdit: 'Edit',
+    modeAskDesc: 'Ask questions and get answers',
+    modeEditDesc: 'Edit the current document',
+    editNoFile: 'Please open a file first',
+    editNoChanges: 'No valid changes returned by model',
   },
 }

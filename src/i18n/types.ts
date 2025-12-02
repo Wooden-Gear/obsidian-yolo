@@ -593,5 +593,12 @@ export type TranslationKeys = {
     error?: string
     copied?: string
     inserted?: string
+    // Mode select
+    modeAsk?: string
+    modeEdit?: string
+    modeAskDesc?: string
+    modeEditDesc?: string
+    editNoFile?: string
+    editNoChanges?: string
   }
 }

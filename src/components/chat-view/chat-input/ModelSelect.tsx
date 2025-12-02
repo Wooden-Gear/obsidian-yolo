@@ -96,14 +96,16 @@ export const ModelSelect = forwardRef<
         if (orderedModelIds.length === 0) return
         const activeElement = document.activeElement as HTMLElement | null
         const activeId =
-          activeElement?.dataset?.modelId && orderedModelIds.includes(activeElement.dataset.modelId)
+          activeElement?.dataset?.modelId &&
+          orderedModelIds.includes(activeElement.dataset.modelId)
             ? activeElement.dataset.modelId
             : selectedModelId
         const currentIndex = orderedModelIds.indexOf(activeId)
         const nextIndex =
           currentIndex === -1
             ? 0
-            : (currentIndex + delta + orderedModelIds.length) % orderedModelIds.length
+            : (currentIndex + delta + orderedModelIds.length) %
+              orderedModelIds.length
         const nextId = orderedModelIds[nextIndex]
         const target = itemRefs.current[nextId]
         if (target) {
@@ -180,28 +182,28 @@ export const ModelSelect = forwardRef<
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal container={container}>
-        <DropdownMenu.Content
-          className={
-            contentClassName
-              ? `smtcmp-popover ${contentClassName}`
-              : 'smtcmp-popover'
-          }
-          side={side}
-          sideOffset={sideOffset}
-          align={align}
-          alignOffset={alignOffset}
-          collisionPadding={8}
-          loop
-          onOpenAutoFocus={(event) => {
-            // 自定义聚焦，防止默认把焦点留在触发器上
-            event.preventDefault()
-            focusSelectedItem()
-          }}
-          onPointerDownOutside={(e) => {
-            // 阻止事件冒泡，防止关闭父容器
-            e.stopPropagation()
-          }}
-          onCloseAutoFocus={(e) => {
+          <DropdownMenu.Content
+            className={
+              contentClassName
+                ? `smtcmp-popover ${contentClassName}`
+                : 'smtcmp-popover'
+            }
+            side={side}
+            sideOffset={sideOffset}
+            align={align}
+            alignOffset={alignOffset}
+            collisionPadding={8}
+            loop
+            onOpenAutoFocus={(event) => {
+              // 自定义聚焦，防止默认把焦点留在触发器上
+              event.preventDefault()
+              focusSelectedItem()
+            }}
+            onPointerDownOutside={(e) => {
+              // 阻止事件冒泡，防止关闭父容器
+              e.stopPropagation()
+            }}
+            onCloseAutoFocus={(e) => {
               // 防止关闭后自动聚焦，保持焦点在触发器上
               e.preventDefault()
             }}

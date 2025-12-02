@@ -638,5 +638,12 @@ export const zh: TranslationKeys = {
     error: '生成失败',
     copied: '已复制到剪贴板',
     inserted: '已插入到光标位置',
+    // Mode select
+    modeAsk: '问答',
+    modeEdit: '编辑',
+    modeAskDesc: '提问并获取回答',
+    modeEditDesc: '编辑当前文档',
+    editNoFile: '请先打开一个文件',
+    editNoChanges: '模型未返回有效的编辑内容',
   },
 }
