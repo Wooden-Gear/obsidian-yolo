@@ -7014,6 +7014,13 @@ button.smtcmp-chat-input-model-select {
   margin-top: 8px;
 }
 
+.smtcmp-quick-ask-assistant-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 .smtcmp-quick-ask-assistant-message .markdown-rendered p {
   margin: 0 0 0.5em 0;
 }

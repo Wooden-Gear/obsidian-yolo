@@ -568,7 +568,10 @@ export function QuickAskPanel({
   ])
 
   const hasMessages = chatMessages.length > 0
-  const hasAssistantResponse = chatMessages.some((m) => m.role === 'assistant')
+  const lastAssistantMessageId = useMemo(
+    () => [...chatMessages].reverse().find((m) => m.role === 'assistant')?.id,
+    [chatMessages],
+  )
 
   // Global key handling to match palette UX (Esc closes, even when dropdown is open)
   useEffect(() => {
@@ -646,12 +649,38 @@ export function QuickAskPanel({
               )
             }
             if (message.role === 'assistant') {
+              const isLatestAssistant = message.id === lastAssistantMessageId
               return (
                 <div
                   key={message.id}
                   className="smtcmp-quick-ask-assistant-message"
                 >
                   {renderAssistantBlocks(message.content)}
+                  {isLatestAssistant && (
+                    <div className="smtcmp-quick-ask-assistant-actions">
+                      <button
+                        className="smtcmp-quick-ask-toolbar-button"
+                        onClick={copyLastResponse}
+                        title={t('quickAsk.copy', 'Copy')}
+                      >
+                        <Copy size={14} />
+                      </button>
+                      <button
+                        className="smtcmp-quick-ask-toolbar-button"
+                        onClick={insertLastResponse}
+                        title={t('quickAsk.insert', 'Insert')}
+                      >
+                        <ExternalLink size={14} />
+                      </button>
+                      <button
+                        className="smtcmp-quick-ask-toolbar-button"
+                        onClick={openInSidebar}
+                        title={t('quickAsk.openInSidebar', 'Open in sidebar')}
+                      >
+                        <PanelRight size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             }
@@ -829,34 +858,6 @@ export function QuickAskPanel({
 
         {/* Right: Action buttons */}
         <div className="smtcmp-quick-ask-toolbar-right">
-          {/* Response actions - only shown when there's an assistant response */}
-          {hasAssistantResponse && (
-            <>
-              <button
-                className="smtcmp-quick-ask-toolbar-button"
-                onClick={copyLastResponse}
-                title={t('quickAsk.copy', 'Copy')}
-              >
-                <Copy size={14} />
-              </button>
-              <button
-                className="smtcmp-quick-ask-toolbar-button"
-                onClick={insertLastResponse}
-                title={t('quickAsk.insert', 'Insert')}
-              >
-                <ExternalLink size={14} />
-              </button>
-              <button
-                className="smtcmp-quick-ask-toolbar-button"
-                onClick={openInSidebar}
-                title={t('quickAsk.openInSidebar', 'Open in sidebar')}
-              >
-                <PanelRight size={14} />
-              </button>
-              <div className="smtcmp-quick-ask-toolbar-divider" />
-            </>
-          )}
-
           {/* Send/Stop button */}
           {isStreaming ? (
             <button
