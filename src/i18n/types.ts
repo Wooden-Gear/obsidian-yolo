@@ -590,6 +590,9 @@ export type TranslationKeys = {
     openInSidebar?: string
     stop?: string
     send?: string
+    clear?: string
+    clearConfirm?: string
+    cleared?: string
     error?: string
     copied?: string
     inserted?: string

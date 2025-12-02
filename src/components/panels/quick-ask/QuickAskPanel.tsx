@@ -5,6 +5,7 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
+  RotateCcw,
   Send,
   Square,
   X,
@@ -644,6 +645,19 @@ export function QuickAskPanel({
     }
   }, [chatMessages, editor, onClose, t])
 
+  // Clear conversation
+  const clearConversation = useCallback(() => {
+    setChatMessages([])
+    new Notice(t('quickAsk.cleared', 'Conversation cleared'))
+    // Re-enable auto-scroll after clearing
+    shouldAutoScrollRef.current = true
+    userDisabledAutoScrollRef.current = false
+    // Focus input after clearing
+    setTimeout(() => {
+      contentEditableRef.current?.focus()
+    }, 0)
+  }, [t])
+
   // Open in sidebar
   const hasMessages = chatMessages.length > 0
   const lastAssistantMessageId = useMemo(
@@ -1079,6 +1093,18 @@ export function QuickAskPanel({
 
         {/* Right: Action buttons */}
         <div className="smtcmp-quick-ask-toolbar-right">
+          {/* Clear conversation button - only shown when there are messages */}
+          {hasMessages && (
+            <button
+              className="smtcmp-quick-ask-toolbar-button"
+              onClick={clearConversation}
+              aria-label={t('quickAsk.clear', 'Clear conversation')}
+              title={t('quickAsk.clear', 'Clear conversation')}
+            >
+              <RotateCcw size={14} />
+            </button>
+          )}
+
           {/* Send/Stop button */}
           {isStreaming ? (
             <button
