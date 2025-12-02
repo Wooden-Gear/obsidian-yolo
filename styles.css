@@ -6406,15 +6406,21 @@ button.smtcmp-chat-input-model-select {
   max-height: min(500px, 70vh);
 }
 
+.smtcmp-quick-ask-panel.has-messages .smtcmp-quick-ask-input-row {
+  order: 2;
+}
+
 /* Input Row - Top: [Input...] [×] */
 .smtcmp-quick-ask-input-row {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   padding: 6px 40px 4px 8px; /* reserve a slim area for the close button on the right */
+  margin-top: 8px; /* Space for drag handle */
   background: transparent;
   border-bottom: none;
   position: relative;
+  order: 0;
 }
 
 .smtcmp-quick-ask-assistant-trigger {
@@ -6868,6 +6874,7 @@ button.smtcmp-chat-input-model-select {
   padding: 0px 8px 6px;
   border-top: none;
   background: color-mix(in srgb, var(--background-primary) 96%, transparent);
+  order: 3;
 }
 
 .smtcmp-quick-ask-toolbar-left {
@@ -6979,6 +6986,7 @@ button.smtcmp-chat-input-model-select {
   gap: 10px;
   border-top: 1px solid var(--background-modifier-border);
   max-height: 300px;
+  order: 1;
 }
 
 .smtcmp-quick-ask-user-message {
@@ -7038,4 +7046,104 @@ button.smtcmp-chat-input-model-select {
 
 .smtcmp-quick-ask-assistant-message .markdown-rendered code {
   font-size: var(--font-ui-smaller);
+}
+
+/* Drag handle */
+.smtcmp-quick-ask-drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 20; /* Higher than resize handles */
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.smtcmp-quick-ask-drag-handle:hover {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 20%,
+    transparent
+  );
+}
+
+.smtcmp-quick-ask-drag-handle:active {
+  cursor: grabbing;
+}
+
+.smtcmp-quick-ask-drag-indicator {
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  transition: background-color 0.15s ease;
+}
+
+.smtcmp-quick-ask-drag-handle:hover .smtcmp-quick-ask-drag-indicator {
+  background: color-mix(in srgb, var(--text-muted) 65%, transparent);
+}
+
+/* Resize handles */
+.smtcmp-quick-ask-resize-handle {
+  position: absolute;
+  z-index: 10; /* Lower than drag handle */
+  background: transparent;
+}
+
+.smtcmp-quick-ask-resize-handle-right {
+  top: 8px; /* Start below drag handle */
+  right: 0;
+  width: 4px;
+  height: calc(100% - 8px); /* Exclude drag handle area */
+  cursor: ew-resize;
+}
+
+.smtcmp-quick-ask-resize-handle-bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  cursor: ns-resize;
+}
+
+.smtcmp-quick-ask-resize-handle-bottom-right {
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+}
+
+/* Visual indicator for bottom-right corner */
+.smtcmp-quick-ask-resize-handle-bottom-right::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  border-bottom: 2px solid
+    color-mix(in srgb, var(--text-muted) 35%, transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.smtcmp-quick-ask-panel:hover .smtcmp-quick-ask-resize-handle-bottom-right::after {
+  opacity: 1;
+}
+
+/* Panel states */
+.smtcmp-quick-ask-panel.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.smtcmp-quick-ask-panel.is-resizing {
+  user-select: none;
 }

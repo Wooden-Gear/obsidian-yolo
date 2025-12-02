@@ -51,6 +51,7 @@ type QuickAskPanelProps = {
   containerRef?: React.RefObject<HTMLDivElement>
   onOverlayStateChange?: (isOverlayActive: boolean) => void
   onDragOffset?: (offsetX: number, offsetY: number) => void
+  onResize?: (width: number, height: number) => void
 }
 
 // Simple markdown renderer component for Quick Ask
@@ -93,6 +94,8 @@ export function QuickAskPanel({
   onClose,
   containerRef,
   onOverlayStateChange,
+  onDragOffset,
+  onResize,
 }: QuickAskPanelProps) {
   const app = useApp()
   const { settings } = useSettings()
@@ -134,6 +137,25 @@ export function QuickAskPanel({
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Drag & Resize state
+  const dragHandleRef = useRef<HTMLDivElement>(null)
+  const resizeHandlesRef = useRef<{
+    right?: HTMLDivElement | null
+    bottom?: HTMLDivElement | null
+    bottomRight?: HTMLDivElement | null
+  }>({})
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const dragStartRef = useRef<{ x: number; y: number; panelX: number; panelY: number } | null>(null)
+  const resizeStartRef = useRef<{
+    direction: 'right' | 'bottom' | 'bottom-right'
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
+  const [panelSize, setPanelSize] = useState<{ width: number; height: number } | null>(null)
   const renderAssistantBlocks = useCallback(
     (rawContent: string | undefined | null) => {
       const parsed = parseTagContents(rawContent ?? '')
@@ -576,11 +598,145 @@ export function QuickAskPanel({
     return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [isAssistantMenuOpen, isModelMenuOpen, isModeMenuOpen, onClose])
 
+  // Drag handling
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current || !containerRef?.current) return
+
+      const deltaX = e.clientX - dragStartRef.current.x
+      const deltaY = e.clientY - dragStartRef.current.y
+
+      const newX = dragStartRef.current.panelX + deltaX
+      const newY = dragStartRef.current.panelY + deltaY
+
+      onDragOffset?.(newX, newY)
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+      dragStartRef.current = null
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'grabbing'
+    document.body.style.userSelect = 'none'
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isDragging, containerRef, onDragOffset])
+
+  // Resize handling
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizeStartRef.current || !containerRef?.current) return
+
+      const deltaX = e.clientX - resizeStartRef.current.x
+      const deltaY = e.clientY - resizeStartRef.current.y
+
+      let newWidth = resizeStartRef.current.width
+      let newHeight = resizeStartRef.current.height
+
+      if (resizeStartRef.current.direction === 'right' || resizeStartRef.current.direction === 'bottom-right') {
+        newWidth = Math.max(300, resizeStartRef.current.width + deltaX)
+      }
+      if (resizeStartRef.current.direction === 'bottom' || resizeStartRef.current.direction === 'bottom-right') {
+        newHeight = Math.max(200, resizeStartRef.current.height + deltaY)
+      }
+
+      setPanelSize({ width: newWidth, height: newHeight })
+      onResize?.(newWidth, newHeight)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      resizeStartRef.current = null
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.userSelect = 'none'
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing, containerRef, onResize])
+
+  // Drag handle mouse down
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if (!containerRef?.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panelX: rect.left,
+      panelY: rect.top,
+    }
+    setIsDragging(true)
+    e.preventDefault()
+  }, [containerRef])
+
+  // Resize handle mouse down
+  const handleResizeStart = useCallback((direction: 'right' | 'bottom' | 'bottom-right') => (e: React.MouseEvent) => {
+    if (!containerRef?.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    resizeStartRef.current = {
+      direction,
+      x: e.clientX,
+      y: e.clientY,
+      width: rect.width,
+      height: rect.height,
+    }
+    setIsResizing(true)
+    e.preventDefault()
+    e.stopPropagation()
+  }, [containerRef])
+
   return (
     <div
-      className={`smtcmp-quick-ask-panel ${hasMessages ? 'has-messages' : ''}`}
+      className={`smtcmp-quick-ask-panel ${hasMessages ? 'has-messages' : ''} ${isDragging ? 'is-dragging' : ''} ${isResizing ? 'is-resizing' : ''}`}
       ref={containerRef ?? undefined}
+      style={
+        panelSize
+          ? {
+              width: panelSize.width,
+              maxWidth: panelSize.width, // Override CSS max-width constraint
+              ...(panelSize.height
+                ? {
+                    height: panelSize.height,
+                    maxHeight: panelSize.height, // Override CSS max-height constraint
+                  }
+                : {}),
+            }
+          : undefined
+      }
     >
+      {/* Drag handle */}
+      <div
+        ref={dragHandleRef}
+        className="smtcmp-quick-ask-drag-handle"
+        onMouseDown={handleDragStart}
+      >
+        <div className="smtcmp-quick-ask-drag-indicator" />
+      </div>
+
       {/* Top: Input row with close button (Cursor style) */}
       <div className="smtcmp-quick-ask-input-row">
         <div
@@ -617,7 +773,11 @@ export function QuickAskPanel({
 
       {/* Chat area - only shown when there are messages */}
       {hasMessages && (
-        <div className="smtcmp-quick-ask-chat-area" ref={chatAreaRef}>
+        <div
+          className="smtcmp-quick-ask-chat-area"
+          ref={chatAreaRef}
+          style={panelSize?.height ? { maxHeight: 'none' } : undefined}
+        >
           {chatMessages.map((message) => {
             if (message.role === 'user') {
               const textContent =
@@ -866,6 +1026,27 @@ export function QuickAskPanel({
           )}
         </div>
       </div>
+
+      {/* Resize handles */}
+      <div
+        className="smtcmp-quick-ask-resize-handle smtcmp-quick-ask-resize-handle-right"
+        onMouseDown={handleResizeStart('right')}
+        ref={(el) => (resizeHandlesRef.current.right = el)}
+      />
+      {hasMessages && (
+        <>
+          <div
+            className="smtcmp-quick-ask-resize-handle smtcmp-quick-ask-resize-handle-bottom"
+            onMouseDown={handleResizeStart('bottom')}
+            ref={(el) => (resizeHandlesRef.current.bottom = el)}
+          />
+          <div
+            className="smtcmp-quick-ask-resize-handle smtcmp-quick-ask-resize-handle-bottom-right"
+            onMouseDown={handleResizeStart('bottom-right')}
+            ref={(el) => (resizeHandlesRef.current.bottomRight = el)}
+          />
+        </>
+      )}
     </div>
   )
 }

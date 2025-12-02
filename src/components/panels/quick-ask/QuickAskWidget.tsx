@@ -35,6 +35,8 @@ export class QuickAskWidget extends WidgetType {
   private hasBlockingOverlay = false
   // Drag state - when set, use fixed position instead of anchor-based
   private dragPosition: { x: number; y: number } | null = null
+  // Resize state - when set, override panel size
+  private resizeSize: { width: number; height: number } | null = null
 
   constructor(
     private readonly options: {
@@ -183,6 +185,7 @@ export class QuickAskWidget extends WidgetType {
                     containerRef={this.containerRef}
                     onOverlayStateChange={this.handleOverlayStateChange}
                     onDragOffset={this.handleDragOffset}
+                    onResize={this.handleResize}
                   />
                 </McpProvider>
               </RAGProvider>
@@ -315,6 +318,11 @@ export class QuickAskWidget extends WidgetType {
     this.updateDragPosition()
   }
 
+  private handleResize = (width: number, height: number) => {
+    this.resizeSize = { width, height }
+    this.updateDragPosition() // Also update position when resizing
+  }
+
   private updateDragPosition() {
     if (!this.overlayContainer || !this.dragPosition) return
 
@@ -336,16 +344,21 @@ export class QuickAskWidget extends WidgetType {
 
     const editorContentWidth =
       sizerRect?.width ?? scrollRect?.width ?? fallbackWidth
-    const maxPanelWidth = Math.max(
+
+    // Use resized width if available, otherwise use default max width
+    const panelWidth = this.resizeSize?.width ?? Math.max(
       120,
       Math.min(editorContentWidth, viewportWidth - margin * 2),
     )
+
+    const panelHeight = this.resizeSize?.height
 
     updateDynamicStyleClass(
       this.overlayContainer,
       'smtcmp-quick-ask-overlay-pos',
       {
-        width: maxPanelWidth,
+        width: panelWidth,
+        ...(panelHeight ? { height: panelHeight } : {}),
         left: Math.round(this.dragPosition.x),
         top: Math.round(this.dragPosition.y),
       },
