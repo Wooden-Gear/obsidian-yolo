@@ -69,10 +69,23 @@ export const ModeSelect = forwardRef<
   ) => {
     const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(false)
+    const triggerRef = useRef<HTMLButtonElement | null>(null)
     const itemRefs = useRef<Record<QuickAskMode, HTMLDivElement | null>>({
       ask: null,
       edit: null,
     })
+    const setTriggerRef = useCallback(
+      (node: HTMLButtonElement | null) => {
+        triggerRef.current = node
+        if (typeof ref === 'function') {
+          ref(node)
+        } else if (ref) {
+          // eslint-disable-next-line no-param-reassign
+          ;(ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
+        }
+      },
+      [ref],
+    )
 
     const currentOption = MODE_OPTIONS.find((opt) => opt.value === mode)
 
@@ -149,7 +162,7 @@ export const ModeSelect = forwardRef<
     return (
       <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
-          ref={ref}
+          ref={setTriggerRef}
           className="smtcmp-chat-input-model-select smtcmp-mode-select"
           onKeyDown={handleTriggerKeyDown}
         >
@@ -178,16 +191,12 @@ export const ModeSelect = forwardRef<
             alignOffset={alignOffset}
             collisionPadding={8}
             loop
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            onOpenAutoFocus={(event: any) => {
-              event.preventDefault()
-              focusSelectedItem()
-            }}
             onPointerDownOutside={(e) => {
               e.stopPropagation()
             }}
             onCloseAutoFocus={(e) => {
               e.preventDefault()
+              triggerRef.current?.focus({ preventScroll: true })
             }}
           >
             <DropdownMenu.RadioGroup

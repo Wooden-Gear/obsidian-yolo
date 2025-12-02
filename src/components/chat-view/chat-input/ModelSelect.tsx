@@ -194,11 +194,6 @@ export const ModelSelect = forwardRef<
             alignOffset={alignOffset}
             collisionPadding={8}
             loop
-            onOpenAutoFocus={(event) => {
-              // 自定义聚焦，防止默认把焦点留在触发器上
-              event.preventDefault()
-              focusSelectedItem()
-            }}
             onPointerDownOutside={(e) => {
               // 阻止事件冒泡，防止关闭父容器
               e.stopPropagation()
