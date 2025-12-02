@@ -56,6 +56,11 @@ export class ApplyView extends View {
 
   private render(): void {
     if (!this.root || !this.state) return
+    const reopenFile = async () => {
+      if (this.state?.file) {
+        await this.leaf.openFile(this.state.file)
+      }
+    }
     this.root.render(
       <PluginProvider plugin={this.plugin}>
         <LanguageProvider>

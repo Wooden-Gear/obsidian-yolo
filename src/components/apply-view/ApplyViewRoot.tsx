@@ -7,6 +7,8 @@ import {
   useState,
 } from 'react'
 
+import { MarkdownView } from 'obsidian'
+
 import { ApplyViewState } from '../../ApplyView'
 import { useApp } from '../../contexts/app-context'
 import { useLanguage } from '../../contexts/language-context'
@@ -117,7 +119,26 @@ export default function ApplyViewRoot({
   const applyAndClose = async () => {
     const newContent = generateFinalContent('current')
     await app.vault.modify(state.file, newContent)
+
+    // Try to focus an existing leaf showing this file to avoid duplicates
+    const targetLeaf = app.workspace
+      .getLeavesOfType('markdown')
+      .find((leaf) => {
+        const view = leaf.view
+        return view instanceof MarkdownView && view.file?.path === state.file.path
+      })
+
     close()
+
+    if (targetLeaf) {
+      app.workspace.setActiveLeaf(targetLeaf, { focus: true })
+      return
+    }
+
+    // If no existing leaf, open the file once
+    const leaf = app.workspace.getLeaf(true)
+    await leaf.openFile(state.file)
+    app.workspace.setActiveLeaf(leaf, { focus: true })
   }
 
   // Individual block decisions (don't close, just mark decision)
