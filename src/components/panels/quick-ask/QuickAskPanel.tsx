@@ -585,6 +585,100 @@ export function QuickAskPanel({
     [app, isStreaming, model, onClose, providerClient, t],
   )
 
+  // Submit edit-direct mode - generate and apply edits directly without confirmation
+  const submitEditDirect = useCallback(
+    async (instruction: string) => {
+      if (isStreaming) return
+      if (!instruction.trim()) return
+
+      const activeFile = app.workspace.getActiveFile()
+      if (!activeFile) {
+        new Notice(t('quickAsk.editNoFile', 'Please open a file first'))
+        return
+      }
+
+      setIsStreaming(true)
+
+      // Clear the lexical editor
+      lexicalEditorRef.current?.update(() => {
+        const root = lexicalEditorRef.current?.getEditorState().read(() => {
+          return $getRoot()
+        })
+        if (root) {
+          root.clear()
+        }
+      })
+      setInputText('')
+
+      try {
+        const currentContent = await readTFileContent(activeFile, app.vault)
+
+        // Generate edit blocks
+        const response = await generateEditContent({
+          instruction,
+          currentFile: activeFile,
+          currentFileContent: currentContent,
+          providerClient,
+          model,
+        })
+
+        // Parse edit blocks
+        const blocks = parseSearchReplaceBlocks(response)
+        if (blocks.length === 0) {
+          new Notice(
+            t('quickAsk.editNoChanges', 'No valid changes returned by model'),
+          )
+          return
+        }
+
+        // Apply blocks to original content
+        const { newContent, errors, appliedCount } = applySearchReplaceBlocks(
+          currentContent,
+          blocks,
+        )
+
+        if (appliedCount === 0) {
+          new Notice(
+            t(
+              'quickAsk.editNoChanges',
+              'Could not apply any changes. The model output may not match the document.',
+            ),
+          )
+          return
+        }
+
+        if (errors.length > 0) {
+          console.warn('Some edits failed:', errors)
+          new Notice(
+            t(
+              'quickAsk.editPartialSuccess',
+              `Applied ${appliedCount} of ${blocks.length} edits. Check console for details.`,
+            ),
+          )
+        }
+
+        // Apply changes directly to file
+        await app.vault.modify(activeFile, newContent)
+
+        new Notice(
+          t(
+            'quickAsk.editApplied',
+            `Successfully applied ${appliedCount} edit(s) to ${activeFile.name}`,
+          ),
+        )
+
+        // Close Quick Ask
+        onClose()
+      } catch (error) {
+        console.error('Edit-direct mode failed:', error)
+        new Notice(t('quickAsk.error', 'Failed to apply edits'))
+      } finally {
+        setIsStreaming(false)
+      }
+    },
+    [app, isStreaming, model, onClose, providerClient, t],
+  )
+
   // Handle mode change
   const handleModeChange = useCallback(
     (newMode: QuickAskMode) => {
@@ -612,12 +706,14 @@ export function QuickAskPanel({
 
         if (mode === 'edit') {
           void submitEditMode(textContent)
+        } else if (mode === 'edit-direct') {
+          void submitEditDirect(textContent)
         } else {
           void submitMessage(editorState)
         }
       }
     },
-    [mode, submitEditMode, submitMessage],
+    [mode, submitEditMode, submitEditDirect, submitMessage],
   )
 
   // Copy last assistant message

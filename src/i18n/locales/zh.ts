@@ -644,9 +644,13 @@ export const zh: TranslationKeys = {
     // Mode select
     modeAsk: '问答',
     modeEdit: '编辑',
+    modeEditDirect: '编辑（完全访问）',
     modeAskDesc: '提问并获取回答',
     modeEditDesc: '编辑当前文档',
+    modeEditDirectDesc: '直接编辑文档，无需确认',
     editNoFile: '请先打开一个文件',
     editNoChanges: '模型未返回有效的编辑内容',
+    editPartialSuccess: '已应用 ${appliedCount}/${blocks.length} 个编辑，详情请查看控制台',
+    editApplied: '成功应用了 ${appliedCount} 个编辑到 ${activeFile.name}',
   },
 }

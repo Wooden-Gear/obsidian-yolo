@@ -1,10 +1,10 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { ChevronDown, ChevronUp, MessageSquare, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronUp, MessageSquare, Pencil, Zap } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 
-export type QuickAskMode = 'ask' | 'edit'
+export type QuickAskMode = 'ask' | 'edit' | 'edit-direct'
 
 type ModeOption = {
   value: QuickAskMode
@@ -31,6 +31,14 @@ const MODE_OPTIONS: ModeOption[] = [
     descKey: 'quickAsk.modeEditDesc',
     descFallback: 'Edit the current document',
     icon: <Pencil size={14} />,
+  },
+  {
+    value: 'edit-direct',
+    labelKey: 'quickAsk.modeEditDirect',
+    labelFallback: 'Edit (Full Access)',
+    descKey: 'quickAsk.modeEditDirectDesc',
+    descFallback: 'Edit document directly without confirmation',
+    icon: <Zap size={14} />,
   },
 ]
 
@@ -73,6 +81,7 @@ export const ModeSelect = forwardRef<
     const itemRefs = useRef<Record<QuickAskMode, HTMLDivElement | null>>({
       ask: null,
       edit: null,
+      'edit-direct': null,
     })
     const setTriggerRef = useCallback(
       (node: HTMLButtonElement | null) => {
@@ -101,7 +110,7 @@ export const ModeSelect = forwardRef<
 
     const focusByDelta = useCallback(
       (delta: number) => {
-        const values: QuickAskMode[] = ['ask', 'edit']
+        const values: QuickAskMode[] = ['ask', 'edit', 'edit-direct']
         const currentIndex = values.indexOf(mode)
         const nextIndex = (currentIndex + delta + values.length) % values.length
         const nextValue = values[nextIndex]

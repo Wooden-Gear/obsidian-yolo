@@ -680,9 +680,13 @@ export const en: TranslationKeys = {
     // Mode select
     modeAsk: 'Ask',
     modeEdit: 'Edit',
+    modeEditDirect: 'Edit (Full Access)',
     modeAskDesc: 'Ask questions and get answers',
     modeEditDesc: 'Edit the current document',
+    modeEditDirectDesc: 'Edit document directly without confirmation',
     editNoFile: 'Please open a file first',
     editNoChanges: 'No valid changes returned by model',
+    editPartialSuccess: 'Applied ${appliedCount} of ${blocks.length} edits. Check console for details.',
+    editApplied: 'Successfully applied ${appliedCount} edit(s) to ${activeFile.name}',
   },
 }

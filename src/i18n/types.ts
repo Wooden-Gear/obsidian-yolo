@@ -599,9 +599,13 @@ export type TranslationKeys = {
     // Mode select
     modeAsk?: string
     modeEdit?: string
+    modeEditDirect?: string
     modeAskDesc?: string
     modeEditDesc?: string
+    modeEditDirectDesc?: string
     editNoFile?: string
     editNoChanges?: string
+    editPartialSuccess?: string
+    editApplied?: string
   }
 }
