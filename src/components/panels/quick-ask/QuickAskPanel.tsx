@@ -59,9 +59,11 @@ type QuickAskPanelProps = {
 function SimpleMarkdownContent({
   content,
   component,
+  scale, // scale is unused here but kept for interface compatibility
 }: {
   content: string
   component: Component
+  scale?: 'xs' | 'sm' | 'base'
 }) {
   const app = useApp()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -138,6 +140,9 @@ export function QuickAskPanel({
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const chatAreaRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const shouldAutoScrollRef = useRef(true)
+  const userDisabledAutoScrollRef = useRef(false)
+  const lastScrollTopRef = useRef(0)
 
   // Drag & Resize state
   const dragHandleRef = useRef<HTMLDivElement>(null)
@@ -170,6 +175,9 @@ export function QuickAskPanel({
               key={index}
               reasoning={block.content}
               content={rawContent ?? ''}
+              MarkdownComponent={({ content, scale }) => (
+                <SimpleMarkdownContent content={content} component={plugin} />
+              )}
             />,
           )
           return
@@ -223,9 +231,64 @@ export function QuickAskPanel({
     })
   }, [app, contextText, getRAGEngine, selectedAssistant, settings])
 
-  // Auto-scroll to bottom when messages change
+  // Track user scroll position to determine if we should auto-scroll
   useEffect(() => {
-    if (chatAreaRef.current) {
+    const chatArea = chatAreaRef.current
+    if (!chatArea) return
+
+    const disableAutoScroll = () => {
+      shouldAutoScrollRef.current = false
+    }
+
+    const handleScroll = () => {
+      // Check if user is near the bottom (within 100px)
+      const distanceToBottom =
+        chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight
+      const isNearBottom = distanceToBottom < 100
+
+      const currentScrollTop = chatArea.scrollTop
+      const scrolledUp = currentScrollTop < lastScrollTopRef.current
+      lastScrollTopRef.current = currentScrollTop
+
+      if (scrolledUp) {
+        // 用户向上滚动，立即关闭自动滚动
+        userDisabledAutoScrollRef.current = true
+        shouldAutoScrollRef.current = false
+        return
+      }
+
+      if (userDisabledAutoScrollRef.current) {
+        // 只有用户手动滚回底部附近才恢复自动滚动
+        if (isNearBottom) {
+          userDisabledAutoScrollRef.current = false
+          shouldAutoScrollRef.current = true
+        }
+        return
+      }
+
+      shouldAutoScrollRef.current = isNearBottom
+    }
+
+    // Initialize state based on current position
+    handleScroll()
+
+    chatArea.addEventListener('scroll', handleScroll)
+    chatArea.addEventListener('wheel', disableAutoScroll, { passive: true })
+    chatArea.addEventListener('touchstart', disableAutoScroll, {
+      passive: true,
+    })
+    chatArea.addEventListener('pointerdown', disableAutoScroll)
+    return () => {
+      chatArea.removeEventListener('scroll', handleScroll)
+      chatArea.removeEventListener('wheel', disableAutoScroll)
+      chatArea.removeEventListener('touchstart', disableAutoScroll)
+      chatArea.removeEventListener('pointerdown', disableAutoScroll)
+    }
+  }, [chatMessages.length])
+
+  // Auto-scroll to bottom when messages change, but only if user hasn't scrolled up
+  useEffect(() => {
+    if (chatAreaRef.current && shouldAutoScrollRef.current) {
       chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight
     }
   }, [chatMessages])
@@ -812,6 +875,12 @@ export function QuickAskPanel({
                     <AssistantMessageReasoning
                       reasoning={message.reasoning}
                       content={message.content}
+                      MarkdownComponent={({ content, scale }) => (
+                        <SimpleMarkdownContent
+                          content={content}
+                          component={plugin}
+                        />
+                      )}
                     />
                   )}
                   {renderAssistantBlocks(message.content)}

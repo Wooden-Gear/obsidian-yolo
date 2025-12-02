@@ -9,9 +9,14 @@ import { ObsidianMarkdown } from './ObsidianMarkdown'
 const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
   reasoning,
   content,
+  MarkdownComponent = ObsidianMarkdown,
 }: {
   reasoning: string
   content: string
+  MarkdownComponent?: React.ComponentType<{
+    content: string
+    scale?: 'xs' | 'sm' | 'base'
+  }>
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const hasUserInteracted = useRef(false)
@@ -105,7 +110,7 @@ const AssistantMessageReasoning = memo(function AssistantMessageReasoning({
       </div>
       {isExpanded && (
         <div className="smtcmp-assistant-message-metadata-content">
-          <ObsidianMarkdown content={reasoning} scale="xs" />
+          <MarkdownComponent content={reasoning} scale="xs" />
         </div>
       )}
     </div>
