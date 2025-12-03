@@ -529,6 +529,34 @@ export type TranslationKeys = {
     regenerate: string
     reasoning: string
     annotations: string
+    // 系统提示词相关
+    systemPrompt?: {
+      toggleTitle: string
+      toggleAria: string
+      title: string
+      description: string
+      empty: string
+      hasChanges: string
+      applyChanges: string
+      discardChanges: string
+      groupStats: string
+      searchPlaceholder: string
+      noResults: string
+      resetToDefault: string
+      confirmReset: string
+      enableGroup: string
+      disableGroup: string
+      enablePrompt: string
+      disablePrompt: string
+      allEnabled: string
+      allDisabled: string
+      partiallyEnabled: string
+      selectAll: string
+      deselectAll: string
+      expandAll: string
+      collapseAll: string
+      previewTitle: string
+    }
     codeBlock?: {
       showRawText?: string
       showFormattedText?: string
