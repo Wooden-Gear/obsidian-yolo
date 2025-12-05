@@ -1,10 +1,12 @@
 import { en } from './locales/en'
 import { zh } from './locales/zh'
+import { it } from './locales/it'
 import { Language, TranslationKeys } from './types'
 
 const translations: Record<Language, TranslationKeys> = {
   en,
   zh,
+  it,
 }
 
 export function getTranslation(language: Language): TranslationKeys {
@@ -43,3 +45,4 @@ export function createTranslationFunction(language: Language) {
 export type { Language, TranslationKeys } from './types'
 export { en } from './locales/en'
 export { zh } from './locales/zh'
+export { it } from './locales/it'

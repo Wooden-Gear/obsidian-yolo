@@ -1,4 +1,4 @@
-export type Language = 'en' | 'zh'
+export type Language = 'en' | 'zh' | 'it'
 
 export type TranslationKeys = {
   // Commands
