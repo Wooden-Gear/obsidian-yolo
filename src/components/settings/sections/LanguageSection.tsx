@@ -6,6 +6,7 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 const languageOptions: Record<string, string> = {
   en: 'English',
   zh: '中文',
+  it: 'Italiano',
 }
 
 export function LanguageSection() {
