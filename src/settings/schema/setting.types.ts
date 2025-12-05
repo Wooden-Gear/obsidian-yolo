@@ -273,7 +273,7 @@ export const smartComposerSettingsSchema = z.object({
   currentAssistantId: z.string().optional(),
 
   // Language setting
-  language: z.enum(['en', 'zh']).catch('en'),
+  language: z.enum(['en', 'zh', 'it']).catch('en'),
 })
 export type SmartComposerSettings = z.infer<typeof smartComposerSettingsSchema>
 
