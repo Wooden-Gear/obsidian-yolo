@@ -166,6 +166,12 @@ export class SelectionChatWidget {
     }
     this.overlayContainer = null
 
+    const overlayRoot = SelectionChatWidget.overlayRoot
+    if (overlayRoot && overlayRoot.childElementCount === 0) {
+      overlayRoot.remove()
+      SelectionChatWidget.overlayRoot = null
+    }
+
     if (this.scrollThrottle !== null) {
       window.clearTimeout(this.scrollThrottle)
       this.scrollThrottle = null

@@ -111,6 +111,11 @@ export class QuickAskWidget extends WidgetType {
       clearDynamicStyleClass(this.overlayContainer)
     }
     this.overlayContainer = null
+    const overlayRoot = QuickAskWidget.overlayRoot
+    if (overlayRoot && overlayRoot.childElementCount === 0) {
+      overlayRoot.remove()
+      QuickAskWidget.overlayRoot = null
+    }
     this.anchor = null
   }
 

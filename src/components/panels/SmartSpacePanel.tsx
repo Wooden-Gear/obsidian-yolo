@@ -1227,6 +1227,11 @@ export class SmartSpaceWidget extends WidgetType {
       clearDynamicStyleClass(this.overlayContainer)
     }
     this.overlayContainer = null
+    const overlayRoot = SmartSpaceWidget.overlayRoot
+    if (overlayRoot && overlayRoot.childElementCount === 0) {
+      overlayRoot.remove()
+      SmartSpaceWidget.overlayRoot = null
+    }
     this.anchor = null
   }
 
