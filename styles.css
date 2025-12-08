@@ -5586,6 +5586,10 @@ button.smtcmp-chat-input-model-select {
   margin-left: var(--size-4-1);
 }
 
+.smtcmp-smart-space-trigger-setting .setting-item-control select {
+  width: 220px;
+}
+
 /* Modal styles for quick action editor */
 .smtcmp-quick-action-editor .setting-item {
   border-top: none;

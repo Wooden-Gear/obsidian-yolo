@@ -427,10 +427,18 @@ export const en: TranslationKeys = {
       continuationModelDesc:
         'Select the model used for continuation while sparkle mode is enabled.',
       smartSpaceDescription:
-        'Smart space offers a lightweight floating composer while you write; by default it appears when you press the space key on an empty line or type “/” followed by space anywhere, then press enter twice to submit and press escape to close.',
+        'Smart space offers a lightweight floating composer while you write; by default it appears when you press the space key on an empty line or type “/” followed by space anywhere. You can switch below to double-space on empty lines or disable space-triggering. Press enter twice to submit and press escape to close.',
       smartSpaceToggle: 'Enable smart space',
       smartSpaceToggleDesc:
         'When disabled, the space bar or "/"+space will no longer summon the smart space floating composer.',
+      smartSpaceTriggerMode: 'Empty-line space trigger',
+      smartSpaceTriggerModeDesc:
+        'How smart space should respond when you press space on an empty line.',
+      smartSpaceTriggerModeSingle: 'Single space to trigger (original behavior)',
+      smartSpaceTriggerModeDouble:
+        'Double space to trigger (~600ms; first space inserts a real space)',
+      smartSpaceTriggerModeOff:
+        'Disable empty-line space trigger (keep "/"+space only)',
       selectionChatToggle: 'Enable cursor chat',
       selectionChatToggleDesc:
         'Show a small indicator at the bottom-right of selected text with actions (add to chat, AI rewrite, explain in depth).',

@@ -229,6 +229,10 @@ export const smartComposerSettingsSchema = z.object({
           }),
         )
         .optional(),
+      // Empty-line trigger mode for Smart Space
+      smartSpaceTriggerMode: z
+        .enum(['single-space', 'double-space', 'off'])
+        .optional(),
       // Smart Space Gemini tools default state
       smartSpaceUseWebSearch: z.boolean().optional(),
       smartSpaceUseUrlContext: z.boolean().optional(),
@@ -259,6 +263,7 @@ export const smartComposerSettingsSchema = z.object({
       tabCompletionOptions: { ...DEFAULT_TAB_COMPLETION_OPTIONS },
       tabCompletionSystemPrompt: DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
       smartSpaceQuickActions: undefined,
+      smartSpaceTriggerMode: 'single-space',
       smartSpaceUseWebSearch: false,
       smartSpaceUseUrlContext: false,
       enableQuickAsk: true,

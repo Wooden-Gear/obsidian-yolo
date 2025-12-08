@@ -385,6 +385,11 @@ export default class SmartComposerPlugin extends Plugin {
     pos: number
     timestamp: number
   } | null = null
+  private lastSmartSpaceSpace: {
+    view: EditorView
+    pos: number
+    timestamp: number
+  } | null = null
   // Selection chat state
   private selectionManager: SelectionManager | null = null
   private selectionChatWidget: SelectionChatWidget | null = null
@@ -931,10 +936,12 @@ export default class SmartComposerPlugin extends Plugin {
             this.settings.continuationOptions?.enableSmartSpace ?? true
           if (!smartSpaceEnabled) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
           if (event.defaultPrevented) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
 
@@ -948,16 +955,19 @@ export default class SmartComposerPlugin extends Plugin {
 
           if (!handledKey) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
           if (event.altKey || event.metaKey || event.ctrlKey) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
 
           const selection = view.state.selection.main
           if (!selection.empty) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
 
@@ -966,11 +976,13 @@ export default class SmartComposerPlugin extends Plugin {
           const editor = markdownView?.editor
           if (!editor) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
           const activeView = this.getEditorView(editor)
           if (activeView && activeView !== view) {
             this.lastSmartSpaceSlash = null
+            this.lastSmartSpaceSpace = null
             return false
           }
 
@@ -980,11 +992,15 @@ export default class SmartComposerPlugin extends Plugin {
               pos: selection.head,
               timestamp: Date.now(),
             }
+            this.lastSmartSpaceSpace = null
             return false
           }
 
           // Space handling (either legacy single-space trigger, or slash + space)
           const now = Date.now()
+          const triggerMode =
+            this.settings.continuationOptions?.smartSpaceTriggerMode ??
+            'single-space'
           const lastSlash = this.lastSmartSpaceSlash
           let selectionAfterRemoval = selection
           let triggeredBySlashCombo = false
@@ -1014,8 +1030,47 @@ export default class SmartComposerPlugin extends Plugin {
           if (!triggeredBySlashCombo) {
             const line = view.state.doc.lineAt(selectionAfterRemoval.head)
             if (line.text.trim().length > 0) {
+              this.lastSmartSpaceSpace = null
               return false
             }
+
+            if (triggerMode === 'off') {
+              this.lastSmartSpaceSpace = null
+              return false
+            }
+
+            if (triggerMode === 'double-space') {
+              const lastSpace = this.lastSmartSpaceSpace
+              const isDoublePress =
+                lastSpace &&
+                lastSpace.view === view &&
+                now - lastSpace.timestamp <= 600 &&
+                lastSpace.pos + 1 === selectionAfterRemoval.head &&
+                view.state.doc.sliceString(lastSpace.pos, lastSpace.pos + 1) ===
+                  ' '
+              if (!isDoublePress || !lastSpace) {
+                this.lastSmartSpaceSpace = {
+                  view,
+                  pos: selectionAfterRemoval.head,
+                  timestamp: now,
+                }
+                return false
+              }
+
+              view.dispatch({
+                changes: {
+                  from: lastSpace.pos,
+                  to: Math.min(lastSpace.pos + 1, view.state.doc.length),
+                },
+                selection: EditorSelection.cursor(lastSpace.pos),
+              })
+              selectionAfterRemoval = view.state.selection.main
+              this.lastSmartSpaceSpace = null
+            } else {
+              this.lastSmartSpaceSpace = null
+            }
+          } else {
+            this.lastSmartSpaceSpace = null
           }
 
           event.preventDefault()

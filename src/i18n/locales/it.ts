@@ -422,10 +422,19 @@ export const it: TranslationKeys = {
       continuationModelDesc:
         'Modello usato per generare testo di continuazione.',
       smartSpaceDescription:
-        'Smart Space ti aiuta a continuare a scrivere con azioni rapide personalizzabili.',
+        'Smart Space ti aiuta a continuare a scrivere con azioni rapide personalizzabili. Di default si apre con spazio su riga vuota o "/" + spazio; qui sotto puoi passare al doppio spazio o disattivare il trigger con spazio.',
       smartSpaceToggle: 'Abilita smart space',
       smartSpaceToggleDesc:
         'Mostra il menu smart space quando il cursore è su una riga vuota.',
+      smartSpaceTriggerMode: 'Trigger spazio su riga vuota',
+      smartSpaceTriggerModeDesc:
+        'Cosa deve fare Smart Space quando premi spazio su una riga vuota.',
+      smartSpaceTriggerModeSingle:
+        'Spazio singolo per aprire (comportamento originale)',
+      smartSpaceTriggerModeDouble:
+        'Doppio spazio per aprire (~600ms; il primo spazio inserisce davvero uno spazio)',
+      smartSpaceTriggerModeOff:
+        'Disattiva trigger con spazio su riga vuota (solo "/" + spazio)',
       selectionChatToggle: 'Abilita chat selezione',
       selectionChatToggleDesc:
         'Mostra il menu contestuale quando selezioni il testo.',

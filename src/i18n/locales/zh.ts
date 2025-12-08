@@ -396,10 +396,16 @@ export const zh: TranslationKeys = {
       continuationModel: 'Sparkle 续写模型',
       continuationModelDesc: '指定在 Sparkle 模式下用于续写的模型。',
       smartSpaceDescription:
-        'Smart Space 会在写作时提供一个轻量的悬浮输入框。默认在空白行按下空格，或任意位置输入 “/” 后紧接空格即可唤出；输入后连续按两次 Enter 提交，Esc 关闭。',
+        'Smart Space 会在写作时提供一个轻量的悬浮输入框。默认在空白行按下空格，或任意位置输入 “/” 后紧接空格即可唤出；支持在下方调整为空行双空格触发或关闭空格触发。输入后连续按两次 Enter 提交，Esc 关闭。',
       smartSpaceToggle: '启用 Smart Space',
       smartSpaceToggleDesc:
         '当关闭时，空格或 "/"+空格 将不再唤出 Smart Space 悬浮输入框。',
+      smartSpaceTriggerMode: '空行空格触发方式',
+      smartSpaceTriggerModeDesc:
+        '在空行按下空格时如何唤出 Smart Space。',
+      smartSpaceTriggerModeSingle: '单空格触发（原行为）',
+      smartSpaceTriggerModeDouble: '双空格触发（600ms 内；首个空格正常输入）',
+      smartSpaceTriggerModeOff: '关闭空行空格触发（仅保留 "/"+空格）',
       selectionChatToggle: '启用 Cursor Chat',
       selectionChatToggleDesc:
         '选中文本时在右下角显示小标识，悬停后展开操作菜单（添加到对话、AI 改写、深入解释）。',

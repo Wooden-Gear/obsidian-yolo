@@ -50,6 +50,8 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
   )
 
   const enableSmartSpace = settings.continuationOptions.enableSmartSpace ?? true
+  const smartSpaceTriggerMode =
+    settings.continuationOptions.smartSpaceTriggerMode ?? 'single-space'
   const enableTabCompletion = Boolean(
     settings.continuationOptions.enableTabCompletion,
   )
@@ -120,7 +122,42 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         />
       </ObsidianSetting>
 
-      {enableSmartSpace && <SmartSpaceQuickActionsSettings />}
+      {enableSmartSpace && (
+        <>
+          <ObsidianSetting
+            name={t('settings.continuation.smartSpaceTriggerMode')}
+            desc={t('settings.continuation.smartSpaceTriggerModeDesc')}
+            className="smtcmp-smart-space-trigger-setting"
+          >
+            <ObsidianDropdown
+              value={smartSpaceTriggerMode}
+              options={{
+                'single-space': t(
+                  'settings.continuation.smartSpaceTriggerModeSingle',
+                ),
+                'double-space': t(
+                  'settings.continuation.smartSpaceTriggerModeDouble',
+                ),
+                off: t('settings.continuation.smartSpaceTriggerModeOff'),
+              }}
+              onChange={(value) => {
+                updateContinuationOptions(
+                  {
+                    smartSpaceTriggerMode:
+                      value as
+                        | 'single-space'
+                        | 'double-space'
+                        | 'off',
+                  },
+                  'smartSpaceTriggerMode',
+                )
+              }}
+            />
+          </ObsidianSetting>
+
+          <SmartSpaceQuickActionsSettings />
+        </>
+      )}
 
       <ObsidianSetting
         name={t('settings.continuation.selectionChatToggle')}
