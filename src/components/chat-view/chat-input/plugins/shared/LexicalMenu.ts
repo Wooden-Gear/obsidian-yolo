@@ -522,7 +522,7 @@ export function useMenuAnchorRef(
         const offsetTop = 4
         const margin = 8
         const containerEl = rootElement.closest(
-          '.smtcmp-chat-user-input-container',
+          '.smtcmp-chat-user-input-container, .smtcmp-quick-ask-panel',
         )
 
         if (containerEl) {

@@ -6415,6 +6415,11 @@ button.smtcmp-chat-input-model-select {
   order: 2;
 }
 
+.smtcmp-quick-ask-panel .smtcmp-smart-space-mention-popover {
+  left: 0;
+  right: 0;
+}
+
 /* Input Row - Top: [Input...] [×] */
 .smtcmp-quick-ask-input-row {
   display: flex;

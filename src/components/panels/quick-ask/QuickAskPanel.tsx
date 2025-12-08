@@ -129,6 +129,10 @@ export function QuickAskPanel({
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false)
+  const [isMentionMenuOpen, setIsMentionMenuOpen] = useState(false)
+  const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
+    'top' | 'bottom'
+  >('top')
   const [mode, setMode] = useState<QuickAskMode>(
     () => settings.continuationOptions?.quickAskMode ?? 'ask',
   )
@@ -137,6 +141,7 @@ export function QuickAskPanel({
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null)
   const modeTriggerRef = useRef<HTMLButtonElement | null>(null)
 
+  const inputRowRef = useRef<HTMLDivElement | null>(null)
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const lexicalEditorRef = useRef<LexicalEditor | null>(null)
   const chatAreaRef = useRef<HTMLDivElement>(null)
@@ -213,6 +218,24 @@ export function QuickAskPanel({
     },
     [plugin],
   )
+
+  const updateMentionMenuPlacement = useCallback(() => {
+    const container = inputRowRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const margin = 16
+    const preferredHeight = 260
+    const spaceAbove = rect.top - margin
+    const spaceBelow = viewportHeight - rect.bottom - margin
+
+    if (spaceAbove < preferredHeight && spaceBelow > spaceAbove) {
+      setMentionMenuPlacement('bottom')
+    } else {
+      setMentionMenuPlacement('top')
+    }
+  }, [])
 
   // Build promptGenerator with context
   const promptGenerator = useMemo(() => {
@@ -301,15 +324,32 @@ export function QuickAskPanel({
     }, 100)
   }, [])
 
+  useEffect(() => {
+    if (!isMentionMenuOpen) return
+    updateMentionMenuPlacement()
+
+    const handleResize = () => updateMentionMenuPlacement()
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('scroll', handleResize, true)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleResize, true)
+    }
+  }, [isMentionMenuOpen, updateMentionMenuPlacement])
+
   // Notify overlay state changes
   useEffect(() => {
     onOverlayStateChange?.(
-      isAssistantMenuOpen || isModelMenuOpen || isModeMenuOpen,
+      isAssistantMenuOpen ||
+        isModelMenuOpen ||
+        isModeMenuOpen ||
+        isMentionMenuOpen,
     )
   }, [
     isAssistantMenuOpen,
     isModelMenuOpen,
     isModeMenuOpen,
+    isMentionMenuOpen,
     onOverlayStateChange,
   ])
 
@@ -924,7 +964,7 @@ export function QuickAskPanel({
       </div>
 
       {/* Top: Input row with close button (Cursor style) */}
-      <div className="smtcmp-quick-ask-input-row">
+      <div className="smtcmp-quick-ask-input-row" ref={inputRowRef}>
         <div
           className={`smtcmp-quick-ask-input ${isStreaming ? 'is-disabled' : ''}`}
         >
@@ -939,6 +979,12 @@ export function QuickAskPanel({
                 assistantTriggerRef.current?.focus()
               }
             }}
+            onMentionMenuToggle={(open) => {
+              setIsMentionMenuOpen(open)
+              if (open) updateMentionMenuPlacement()
+            }}
+            mentionMenuContainerRef={inputRowRef}
+            mentionMenuPlacement={mentionMenuPlacement}
             autoFocus
             contentClassName="obsidian-default-textarea smtcmp-content-editable smtcmp-quick-ask-content-editable"
           />
