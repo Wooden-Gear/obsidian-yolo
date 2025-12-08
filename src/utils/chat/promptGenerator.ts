@@ -63,10 +63,13 @@ export class PromptGenerator {
     }
 
     // Ensure all user messages have prompt content
-    // This is a fallback for cases where compilation was missed earlier in the process
+    // Compile if: no promptContent OR has mentionables that need to be processed
     const compiledMessages = await Promise.all(
       messages.map(async (message) => {
-        if (message.role === 'user' && !message.promptContent) {
+        if (
+          message.role === 'user' &&
+          (!message.promptContent || message.mentionables.length > 0)
+        ) {
           const { promptContent, similaritySearchResults } =
             await this.compileUserMessagePrompt({
               message,
