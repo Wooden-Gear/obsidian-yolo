@@ -1,5 +1,5 @@
 import { EditorView } from '@codemirror/view'
-import { $getRoot, LexicalEditor, SerializedEditorState } from 'lexical'
+import { $getRoot, $nodesOfType, LexicalEditor, SerializedEditorState } from 'lexical'
 import {
   ChevronDown,
   ChevronUp,
@@ -26,6 +26,12 @@ import { useChatHistory } from '../../../hooks/useChatHistory'
 import SmartComposerPlugin from '../../../main'
 import { Assistant } from '../../../types/assistant.types'
 import { ChatMessage, ChatUserMessage } from '../../../types/chat'
+import { Mentionable, SerializedMentionable } from '../../../types/mentionable'
+import {
+  deserializeMentionable,
+  getMentionableKey,
+  serializeMentionable,
+} from '../../../utils/chat/mentionable'
 import { renderAssistantIcon } from '../../../utils/assistant-icon'
 import { generateEditContent } from '../../../utils/chat/editMode'
 import { PromptGenerator } from '../../../utils/chat/promptGenerator'
@@ -39,6 +45,8 @@ import {
 import { readTFileContent } from '../../../utils/obsidian'
 import LexicalContentEditable from '../../chat-view/chat-input/LexicalContentEditable'
 import { ModelSelect } from '../../chat-view/chat-input/ModelSelect'
+import { MentionNode } from '../../chat-view/chat-input/plugins/mention/MentionNode'
+import { NodeMutations } from '../../chat-view/chat-input/plugins/on-mutation/OnMutationPlugin'
 import { editorStateToPlainText } from '../../chat-view/chat-input/utils/editor-state-to-plain-text'
 
 import { AssistantSelectMenu } from './AssistantSelectMenu'
@@ -133,6 +141,7 @@ export function QuickAskPanel({
   const [mentionMenuPlacement, setMentionMenuPlacement] = useState<
     'top' | 'bottom'
   >('top')
+  const [mentionables, setMentionables] = useState<Mentionable[]>([])
   const [mode, setMode] = useState<QuickAskMode>(
     () => settings.continuationOptions?.quickAskMode ?? 'ask',
   )
@@ -236,6 +245,64 @@ export function QuickAskPanel({
       setMentionMenuPlacement('top')
     }
   }, [])
+
+  // Handle mention node mutations to track mentionables
+  const handleMentionNodeMutation = useCallback(
+    (mutations: NodeMutations<MentionNode>) => {
+      const destroyedMentionableKeys: string[] = []
+      const addedMentionables: SerializedMentionable[] = []
+
+      mutations.forEach((mutation) => {
+        const mentionable = mutation.node.getMentionable()
+        const mentionableKey = getMentionableKey(mentionable)
+
+        if (mutation.mutation === 'destroyed') {
+          const nodeWithSameMentionable = lexicalEditorRef.current?.read(() =>
+            $nodesOfType(MentionNode).find(
+              (node) =>
+                getMentionableKey(node.getMentionable()) === mentionableKey,
+            ),
+          )
+
+          if (!nodeWithSameMentionable) {
+            // remove mentionable only if it's not present in the editor state
+            destroyedMentionableKeys.push(mentionableKey)
+          }
+        } else if (mutation.mutation === 'created') {
+          if (
+            mentionables.some(
+              (m) =>
+                getMentionableKey(serializeMentionable(m)) === mentionableKey,
+            ) ||
+            addedMentionables.some(
+              (m) => getMentionableKey(m) === mentionableKey,
+            )
+          ) {
+            // do nothing if mentionable is already added
+            return
+          }
+
+          addedMentionables.push(mentionable)
+        }
+      })
+
+      setMentionables((prev) =>
+        prev
+          .filter(
+            (m) =>
+              !destroyedMentionableKeys.includes(
+                getMentionableKey(serializeMentionable(m)),
+              ),
+          )
+          .concat(
+            addedMentionables
+              .map((m) => deserializeMentionable(m, app))
+              .filter((v): v is Mentionable => !!v),
+          ),
+      )
+    },
+    [app, mentionables],
+  )
 
   // Build promptGenerator with context
   const promptGenerator = useMemo(() => {
@@ -451,13 +518,18 @@ export function QuickAskPanel({
       })
 
       // Create user message with all required fields
+      // Note: promptContent is set to null so that compileUserMessagePrompt will be called
+      // to properly process mentionables and include file contents
       const userMessage: ChatUserMessage = {
         role: 'user',
         content: editorState,
-        promptContent: textContent,
+        promptContent: null,
         id: uuidv4(),
-        mentionables: [],
+        mentionables: mentionables,
       }
+
+      // Clear mentionables after creating the message
+      setMentionables([])
 
       const newMessages: ChatMessage[] = [...chatMessages, userMessage]
       setChatMessages(newMessages)
@@ -528,6 +600,7 @@ export function QuickAskPanel({
       generateConversationTitle,
       getMcpManager,
       isStreaming,
+      mentionables,
       model,
       promptGenerator,
       providerClient,
@@ -983,6 +1056,7 @@ export function QuickAskPanel({
               setIsMentionMenuOpen(open)
               if (open) updateMentionMenuPlacement()
             }}
+            onMentionNodeMutation={handleMentionNodeMutation}
             mentionMenuContainerRef={inputRowRef}
             mentionMenuPlacement={mentionMenuPlacement}
             autoFocus
