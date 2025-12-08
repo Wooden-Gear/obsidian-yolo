@@ -649,23 +649,25 @@ export function QuickAskPanel({
 
         if (errors.length > 0) {
           console.warn('Some edits failed:', errors)
-          new Notice(
-            t(
-              'quickAsk.editPartialSuccess',
-              `Applied ${appliedCount} of ${blocks.length} edits. Check console for details.`,
-            ),
+          const partialMessage = t(
+            'quickAsk.editPartialSuccess',
+            `Applied ${appliedCount} of ${blocks.length} edits. Check console for details.`,
           )
+            .replace('${appliedCount}', String(appliedCount))
+            .replace('${blocks.length}', String(blocks.length))
+          new Notice(partialMessage)
         }
 
         // Apply changes directly to file
         await app.vault.modify(activeFile, newContent)
 
-        new Notice(
-          t(
-            'quickAsk.editApplied',
-            `Successfully applied ${appliedCount} edit(s) to ${activeFile.name}`,
-          ),
+        const successMessage = t(
+          'quickAsk.editApplied',
+          `Successfully applied ${appliedCount} edit(s) to ${activeFile.name}`,
         )
+          .replace('${appliedCount}', String(appliedCount))
+          .replace('${activeFile.name}', activeFile.name)
+        new Notice(successMessage)
 
         // Close Quick Ask
         onClose()
