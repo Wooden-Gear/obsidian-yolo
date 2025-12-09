@@ -63,6 +63,10 @@ export type ChatUserInputProps = {
   showConversationSettingsButton?: boolean
   modelId?: string
   onModelChange?: (modelId: string) => void
+  // 用于显示聚合后的 mentionables（包含历史消息中的文件）
+  displayMentionables?: Mentionable[]
+  // 删除时从所有消息中删除的回调
+  onDeleteFromAll?: (mentionable: Mentionable) => void
 }
 
 type ChatSubmitOptions = {
@@ -85,6 +89,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       showConversationSettingsButton: _showConversationSettingsButton = false,
       modelId,
       onModelChange,
+      displayMentionables,
+      onDeleteFromAll,
     },
     ref,
   ) => {
@@ -218,12 +224,20 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       const mentionableKey = getMentionableKey(
         serializeMentionable(mentionable),
       )
-      setMentionables(
-        mentionables.filter(
-          (m) => getMentionableKey(serializeMentionable(m)) !== mentionableKey,
-        ),
-      )
 
+      // 如果提供了 onDeleteFromAll，调用它来从所有消息中删除
+      if (onDeleteFromAll) {
+        onDeleteFromAll(mentionable)
+      } else {
+        // 否则只从当前消息中删除
+        setMentionables(
+          mentionables.filter(
+            (m) => getMentionableKey(serializeMentionable(m)) !== mentionableKey,
+          ),
+        )
+      }
+
+      // 从编辑器中移除对应的 MentionNode
       editorRef.current?.update(() => {
         $nodesOfType(MentionNode).forEach((node) => {
           if (getMentionableKey(node.getMentionable()) === mentionableKey) {
@@ -255,7 +269,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       <div className="smtcmp-chat-user-input-container" ref={containerRef}>
         <div className="smtcmp-chat-user-input-files">
           <ToolBadge />
-          {mentionables.map((m) => {
+          {(displayMentionables ?? mentionables).map((m) => {
             const mentionableKey = getMentionableKey(serializeMentionable(m))
             const isExpanded = mentionableKey === displayedMentionableKey
             const handleToggleExpand = () => {
@@ -281,7 +295,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
         <MentionableContentPreview
           displayedMentionableKey={displayedMentionableKey}
-          mentionables={mentionables}
+          mentionables={displayMentionables ?? mentionables}
         />
 
         <LexicalContentEditable

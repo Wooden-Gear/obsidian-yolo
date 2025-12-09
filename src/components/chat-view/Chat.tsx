@@ -203,6 +203,63 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       return groupAssistantAndToolMessages(chatMessages)
     }, [chatMessages])
 
+  // 从所有历史消息中聚合 mentionables（排除 current-file）
+  const aggregatedMentionables = useMemo(() => {
+    const allMentionables: typeof inputMessage.mentionables = []
+    const seenKeys = new Set<string>()
+
+    chatMessages.forEach((message) => {
+      if (message.role === 'user') {
+        message.mentionables.forEach((m) => {
+          // 排除 current-file，因为它是动态跟踪的
+          if (m.type === 'current-file') return
+          const key = getMentionableKey(serializeMentionable(m))
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key)
+            allMentionables.push(m)
+          }
+        })
+      }
+    })
+
+    return allMentionables
+  }, [chatMessages])
+
+  // 计算底部输入框显示的 mentionables（合并 current-file + 聚合 + 当前输入）
+  const displayMentionablesForInput = useMemo(() => {
+    const result: typeof inputMessage.mentionables = []
+    const seenKeys = new Set<string>()
+
+    // 1. 先添加 current-file（如果有）
+    const currentFileMentionable = inputMessage.mentionables.find(
+      (m) => m.type === 'current-file',
+    )
+    if (currentFileMentionable) {
+      result.push(currentFileMentionable)
+    }
+
+    // 2. 添加聚合的历史 mentionables
+    aggregatedMentionables.forEach((m) => {
+      const key = getMentionableKey(serializeMentionable(m))
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        result.push(m)
+      }
+    })
+
+    // 3. 添加当前输入的新增（去重）
+    inputMessage.mentionables.forEach((m) => {
+      if (m.type === 'current-file') return // 已经添加过了
+      const key = getMentionableKey(serializeMentionable(m))
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        result.push(m)
+      }
+    })
+
+    return result
+  }, [inputMessage.mentionables, aggregatedMentionables])
+
   const chatUserInputRefs = useRef<Map<string, ChatUserInputRef>>(new Map())
   const chatMessagesRef = useRef<HTMLDivElement>(null)
 
@@ -723,6 +780,41 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   useEffect(() => {
     handleActiveLeafChange()
   }, [handleActiveLeafChange, settings.chatOptions.includeCurrentFileContent])
+
+  // 从所有消息中删除指定的 mentionable，并清空 promptContent 以便重新编译
+  const handleMentionableDeleteFromAll = useCallback(
+    (mentionable: typeof inputMessage.mentionables[number]) => {
+      const mentionableKey = getMentionableKey(serializeMentionable(mentionable))
+
+      // 从所有历史消息中删除
+      setChatMessages((prevMessages) =>
+        prevMessages.map((message) => {
+          if (message.role !== 'user') return message
+          const filtered = message.mentionables.filter(
+            (m) => getMentionableKey(serializeMentionable(m)) !== mentionableKey,
+          )
+          // 如果 mentionables 变化了，清空 promptContent 以便下次重新编译
+          if (filtered.length !== message.mentionables.length) {
+            return {
+              ...message,
+              mentionables: filtered,
+              promptContent: null,
+            }
+          }
+          return message
+        }),
+      )
+
+      // 从当前输入消息中删除
+      setInputMessage((prev) => ({
+        ...prev,
+        mentionables: prev.mentionables.filter(
+          (m) => getMentionableKey(serializeMentionable(m)) !== mentionableKey,
+        ),
+      }))
+    },
+    [],
+  )
 
   useImperativeHandle(ref, () => ({
     openNewChat: (selectedBlock?: MentionableBlockData) =>
@@ -1272,6 +1364,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             conversationOverridesRef.current.set(currentConversationId, next)
           }}
           showConversationSettingsButton={false}
+          displayMentionables={displayMentionablesForInput}
+          onDeleteFromAll={handleMentionableDeleteFromAll}
         />
       </div>
     </div>
