@@ -1294,16 +1294,32 @@ ${[...folderPathSet].map((path) => `- \`${path}\``).join('\n')}`)
       (entry): entry is { file: TFile; content: string } => entry !== null,
     )
 
-    return readableFileEntries
-      .map(({ file, content }, index) => {
-        const numberedContent = this.addLineNumbersToContent({
-          content,
-          startLine: 1,
-        })
-        const prefix =
-          index === 0
-            ? '## Mentioned Vault Files (full content already provided below)\nUse this provided content first. Only call file tools if you need another file or want to verify the latest contents.\n\n'
-            : ''
+    if (readableFileEntries.length === 0) {
+      return ''
+    }
+
+    const entriesWithMeta = readableFileEntries.map(({ file, content }) => {
+      const numberedContent =
+        content.length === 0
+          ? ''
+          : this.addLineNumbersToContent({ content, startLine: 1 })
+      const lineCount = content.length === 0 ? 0 : content.split('\n').length
+      return { file, content, numberedContent, lineCount }
+    })
+
+    const fileListLines = entriesWithMeta
+      .map(({ file, lineCount }) => `- \`${file.path}\` (${lineCount} lines)`)
+      .join('\n')
+    const header =
+      '## Mentioned Vault Files (full content already provided below)\n' +
+      'The following files are fully attached in this message:\n' +
+      `${fileListLines}\n\n` +
+      'The content below is the latest version of these files at this turn. ' +
+      'Do NOT call any file-reading tool (e.g. read_file) to re-read them — use the content provided here directly. ' +
+      'Only call file tools if you need a file that is NOT in the list above.\n\n'
+
+    const body = entriesWithMeta
+      .map(({ file, content, numberedContent, lineCount }) => {
         const wikilinks =
           file.path.endsWith('.md') && content.length > 0
             ? collectWikilinkPaths(this.app, content, file.path)
@@ -1314,9 +1330,14 @@ ${[...folderPathSet].map((path) => `- \`${path}\``).join('\n')}`)
                 .map((w) => `${w.link} -> ${w.path}`)
                 .join('\n')}\n</wikilinks>\n`
             : ''
-        return `${prefix}\`\`\`${file.path}\n${numberedContent}\n\`\`\`\n${wikilinksBlock}`
+        return (
+          `### \`${file.path}\` (full content, ${lineCount} lines)\n` +
+          `\`\`\`${file.path}\n${numberedContent}\n\`\`\`\n${wikilinksBlock}`
+        )
       })
       .join('')
+
+    return `${header}${body}`
   }
 
   private collectMentionedFiles({

@@ -362,8 +362,12 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
     expect(textContent).toContain(
       '## Mentioned Vault Files (full content already provided below)',
     )
+    expect(textContent).toContain('- `notes/explicit.md` (2 lines)')
     expect(textContent).toContain(
-      'Use this provided content first. Only call file tools if you need another file or want to verify the latest contents.',
+      'Do NOT call any file-reading tool (e.g. read_file) to re-read them',
+    )
+    expect(textContent).toContain(
+      '### `notes/explicit.md` (full content, 2 lines)',
     )
     expect(textContent).toContain(
       '```notes/explicit.md\n1|# Explicit\n2|Body\n```',
@@ -373,6 +377,72 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
       '- `docs/from-folder.md`\n  - L1 ## Folder Heading',
     )
     expect(textContent).not.toContain('Folder body')
+  })
+
+  it('omits the full-content section when all mentioned files fail to read', async () => {
+    const explicitFile = createMockFile('notes/unreadable.md')
+
+    const app = createMockApp({
+      files: [explicitFile],
+      fileContents: new Map(),
+    })
+    ;(app.vault.cachedRead as jest.Mock).mockImplementation(async () => {
+      throw new Error('forced read failure')
+    })
+
+    const builder = new RequestContextBuilder(
+      app as never,
+      {
+        ...settings,
+        chatOptions: {
+          includeCurrentFileContent: true,
+          mentionContextMode: 'full',
+        },
+      } as unknown as SmartComposerSettings,
+    )
+
+    const result = await builder.compileUserMessagePrompt({
+      message: createUserMessage([{ type: 'file', file: explicitFile }]),
+    })
+
+    const textContent = getTextContent(result.promptContent)
+
+    expect(textContent).not.toContain(
+      '## Mentioned Vault Files (full content already provided below)',
+    )
+    expect(textContent).not.toContain('### `notes/unreadable.md`')
+  })
+
+  it('reports zero lines for empty files in full mode', async () => {
+    const emptyFile = createMockFile('notes/empty.md')
+
+    const app = createMockApp({
+      files: [emptyFile],
+      fileContents: new Map([[emptyFile.path, '']]),
+    })
+
+    const builder = new RequestContextBuilder(
+      app as never,
+      {
+        ...settings,
+        chatOptions: {
+          includeCurrentFileContent: true,
+          mentionContextMode: 'full',
+        },
+      } as unknown as SmartComposerSettings,
+    )
+
+    const result = await builder.compileUserMessagePrompt({
+      message: createUserMessage([{ type: 'file', file: emptyFile }]),
+    })
+
+    const textContent = getTextContent(result.promptContent)
+
+    expect(textContent).toContain('- `notes/empty.md` (0 lines)')
+    expect(textContent).toContain(
+      '### `notes/empty.md` (full content, 0 lines)',
+    )
+    expect(textContent).toContain('```notes/empty.md\n\n```')
   })
 })
 
