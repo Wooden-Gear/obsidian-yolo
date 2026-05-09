@@ -119,3 +119,33 @@ export async function loadPdfPages(
 
   return { totalPages, pages }
 }
+
+/**
+ * Lightweight metadata-only probe — opens the document just long enough to read
+ * `numPages`, skipping the per-page text extraction. Used at upload time when
+ * we want page-count metadata without paying the full extraction cost.
+ */
+export async function getPdfPageCount(
+  data: Uint8Array,
+  options: { maybeYield?: () => Promise<void>; signal?: AbortSignal } = {},
+): Promise<number> {
+  const { maybeYield, signal } = options
+
+  if (signal?.aborted) {
+    throw new DOMException('PDF probe aborted', 'AbortError')
+  }
+  if (maybeYield) {
+    await maybeYield()
+  }
+
+  await import('pdfjs-dist/build/pdf.worker.mjs')
+  const pdfjs = await import('pdfjs-dist')
+
+  const loadingTask = pdfjs.getDocument({
+    data,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+  })
+  const pdf = await loadingTask.promise
+  return pdf.numPages
+}

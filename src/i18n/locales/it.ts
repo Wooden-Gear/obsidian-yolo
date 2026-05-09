@@ -680,6 +680,7 @@ export const it: TranslationKeys = {
         'Tipi di input effettivamente supportati dal modello. Una scelta errata può causare errori di richiesta.',
       inputModalityText: 'Testo',
       inputModalityVision: 'Immagini',
+      inputModalityPdf: 'PDF (nativo)',
       toolType: 'Tipo di strumento',
       toolTypeDesc:
         'Tipo di chiamata di strumento supportato da questo modello.',

@@ -13,6 +13,7 @@ import {
   ToolCallResponseStatus,
   type ToolEditSummary,
 } from '../../types/tool-call.types'
+import { uint8ArrayToBase64 } from '../../utils/base64'
 import {
   createToolEditSummary,
   deriveToolEditUndoStatus,
@@ -21,13 +22,17 @@ import { editUndoSnapshotStore } from '../../utils/chat/editUndoSnapshotStore'
 import { isContextPrunableToolName } from '../../utils/chat/tool-context-pruning'
 import { collectWikilinkPaths } from '../../utils/llm/annotate-wikilinks'
 import { extractMarkdownImages } from '../../utils/llm/extract-markdown-images'
-import { chatModelSupportsVision } from '../../utils/llm/model-modalities'
+import {
+  chatModelSupportsPdf,
+  chatModelSupportsVision,
+} from '../../utils/llm/model-modalities'
 import {
   PDF_INDEX_MAX_BYTES,
   PDF_INDEX_MAX_PAGES,
   extractPdfText,
 } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
+import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import {
   findPathOutsideScope,
   isPathAllowedByScope,
@@ -129,7 +134,7 @@ type LegacyFsSearchItem =
   | { kind: 'dir'; path: string }
   | { kind: 'content_match'; path: string; line: number; snippet: string }
 type FsListScope = 'files' | 'dirs' | 'all'
-type FsReadModality = 'text' | 'image'
+type FsReadModality = 'auto' | 'text' | 'image' | 'pdf'
 type FsReadOperation =
   | {
       type: 'full'
@@ -462,7 +467,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        'Read vault files. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. PDFs default to text; switch modality to "image" only for a small page range that needs visual understanding (formulas, figures, scans, complex layout).',
+        "Read vault files. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. PDFs default to auto modality which picks the best strategy based on the active model's capabilities.",
       inputSchema: {
         type: 'object',
         properties: {
@@ -497,9 +502,9 @@ export function getLocalFileTools(options?: {
               },
               modality: {
                 type: 'string',
-                enum: ['text', 'image'],
+                enum: ['auto', 'text', 'image', 'pdf'],
                 description:
-                  'Read modality (PDF only; ignored for non-PDF files). text (default): extract text per page, returned with <page N> tags — cheap, fast, works for full or multi-page reads. image: render the requested pages to images for the vision model — use only when text is insufficient (formulas, figures, scans, complex layout). Strongly avoid image with full or large page ranges: each page is a high-resolution image, transport may stall and token cost balloons. Recommended: image + lines + a small range (1-3 pages).',
+                  "Read modality (PDF only; ignored for non-PDF files). auto (default): automatically pick the best modality based on the chat model's input capabilities (PDF native > image > text). Recommended for general use. text: extract plain text from PDF pages, returned with <page N> tags — cheap, fast, works for full or multi-page reads. image: render the requested pages to images for vision models — use only when text is insufficient (formulas, figures, scans, complex layout); avoid for large page ranges. pdf: send the requested pages as a native PDF slice — falls back to text if the model does not support native PDF.",
               },
             },
             required: ['type'],
@@ -1841,22 +1846,32 @@ const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
   const parsedOperation = coerceOperationObject(args.operation)
   const type = asOptionalString(parsedOperation.type).trim().toLowerCase()
 
-  // Strict modality parsing: only accept undefined/null (→ default text) or a
-  // string that normalizes to 'text' / 'image'. Numbers, booleans, objects,
-  // arrays all reject — silently coercing them would hide model bugs.
+  // Strict modality parsing: only accept undefined/null (→ default auto) or a
+  // string that normalizes to 'auto' / 'text' / 'image' / 'pdf'. Numbers,
+  // booleans, objects, arrays all reject — silently coercing them would hide
+  // model bugs.
   const rawModalityValue = parsedOperation.modality
-  let modality: FsReadModality = 'text'
+  let modality: FsReadModality = 'auto'
   if (rawModalityValue !== undefined && rawModalityValue !== null) {
     if (typeof rawModalityValue !== 'string') {
-      throw new Error('operation.modality must be a string: text or image.')
+      throw new Error(
+        'operation.modality must be a string: auto, text, image, or pdf.',
+      )
     }
     const normalized = rawModalityValue.trim().toLowerCase()
     if (normalized === '') {
-      // Empty string is treated as "not provided" → default text.
-    } else if (normalized === 'text' || normalized === 'image') {
+      // Empty string is treated as "not provided" → default auto.
+    } else if (
+      normalized === 'auto' ||
+      normalized === 'text' ||
+      normalized === 'image' ||
+      normalized === 'pdf'
+    ) {
       modality = normalized
     } else {
-      throw new Error('operation.modality must be one of: text, image.')
+      throw new Error(
+        'operation.modality must be one of: auto, text, image, pdf.',
+      )
     }
   }
 
@@ -2434,6 +2449,8 @@ export async function callLocalFileTool({
               nextStartLine: number | null
               content: string
               wikilinks?: Array<{ link: string; path: string }>
+              effectiveModality?: 'text' | 'image' | 'pdf'
+              warning?: string
             }
           | {
               path: string
@@ -2442,7 +2459,10 @@ export async function callLocalFileTool({
             }
         > = []
 
-        const perFileImageParts: Array<{
+        // Tool result attachments hoisted to a follow-up user message after
+        // the tool block. Mostly image_url for rendered PDFs/images, but also
+        // `document` for native PDF slices.
+        const perFileAttachmentParts: Array<{
           path: string
           parts: ContentPart[]
         }> = []
@@ -2459,6 +2479,10 @@ export async function callLocalFileTool({
         const chatModelAcceptsImages = activeChatModel
           ? chatModelSupportsVision(activeChatModel)
           : true
+        // Conservative: when no active model is known, don't assume PDF support.
+        const chatModelAcceptsPdf = activeChatModel
+          ? chatModelSupportsPdf(activeChatModel)
+          : false
 
         for (const path of paths) {
           if (signal?.aborted) {
@@ -2482,15 +2506,198 @@ export async function callLocalFileTool({
               continue
             }
 
-            // PDF-as-images branch: render pages to PNG only when the model
-            // requested it (operation.modality === 'image'), the model accepts
-            // vision input, and the master image-reading switch is on.
-            const pdfImageMode =
-              operation.modality === 'image' &&
-              chatModelAcceptsImages &&
-              (settings?.chatOptions?.imageReadingEnabled ?? true)
+            // Resolve the effective modality for this PDF read in one shot —
+            // capabilities are checked here, downstream branches just dispatch
+            // on `resolvedModality` without re-checking. Decision rules:
+            //   • 'auto'   → pdf if model accepts pdf;
+            //                else image if model accepts vision AND image-read
+            //                  is enabled;
+            //                else text.
+            //   • 'pdf'    → pdf if model accepts pdf, else text.
+            //   • 'image'  → image if model accepts vision AND image-read is
+            //                  enabled, else text.
+            //   • 'text'   → text.
+            const imageReadingEnabled =
+              settings?.chatOptions?.imageReadingEnabled ?? true
+            const canUseImage = chatModelAcceptsImages && imageReadingEnabled
+            const resolvedModality: 'pdf' | 'image' | 'text' = (() => {
+              switch (operation.modality) {
+                case 'auto':
+                  if (chatModelAcceptsPdf) return 'pdf'
+                  if (canUseImage) return 'image'
+                  return 'text'
+                case 'pdf':
+                  return chatModelAcceptsPdf ? 'pdf' : 'text'
+                case 'image':
+                  return canUseImage ? 'image' : 'text'
+                case 'text':
+                default:
+                  return 'text'
+              }
+            })()
 
-            if (pdfImageMode) {
+            // ── Native PDF slice branch ────────────────────────────────────
+            if (resolvedModality === 'pdf') {
+              const reqStart =
+                operation.type === 'lines' ? operation.startLine : 1
+              // lines 模式无 endLine 时语义与 image/text 分支一致：只读单页。
+              // full 模式的 endPage 留空，由 slicePdfPages 自动取到文档末页。
+              const reqEnd =
+                operation.type === 'lines'
+                  ? (operation.endLine ?? operation.startLine)
+                  : undefined
+
+              // Attempt to slice the PDF. slicePdfPages loads the source once
+              // and reports total page count + clamped range; on failure it
+              // throws a tagged PdfSliceError. Caller-side reaction depends on
+              // the kind:
+              //   • 'invalid-range' (e.g. startPage > totalPages) is a hard
+              //     model-facing error — degrading to text would silently hide
+              //     a bad page request.
+              //   • all other kinds (load-failed / too-large / too-many-pages)
+              //     fall through to text extraction with a warning prefix.
+              let sliceResult:
+                | Awaited<ReturnType<typeof slicePdfPages>>
+                | undefined
+              let sliceFallbackWarning: string | undefined
+
+              try {
+                const rawBuf = await app.vault.readBinary(file)
+                const rawBytes = new Uint8Array(rawBuf)
+                sliceResult = await slicePdfPages(rawBytes, {
+                  startPage: reqStart,
+                  endPage: reqEnd,
+                })
+              } catch (err) {
+                if (
+                  err instanceof PdfSliceError &&
+                  err.kind === 'invalid-range'
+                ) {
+                  results.push({
+                    path,
+                    ok: false,
+                    error: err.message,
+                  })
+                  continue
+                }
+                sliceFallbackWarning =
+                  err instanceof Error ? err.message : String(err)
+              }
+
+              if (sliceResult !== undefined) {
+                // Slice succeeded — emit the document part.
+                const {
+                  bytes: slicedBytes,
+                  totalSourcePages,
+                  actualStart,
+                  actualEnd,
+                } = sliceResult
+                const slicePageCount = actualEnd - actualStart + 1
+
+                const base64Data = uint8ArrayToBase64(slicedBytes)
+                const documentPart: ContentPart = {
+                  type: 'document',
+                  mediaType: 'application/pdf',
+                  name: `${file.name} (pages ${actualStart}–${actualEnd})`,
+                  data: base64Data,
+                  pageCount: slicePageCount,
+                }
+
+                const hasMoreBelow =
+                  operation.type === 'lines' && actualEnd < totalSourcePages
+                const nextStartLine = hasMoreBelow ? actualEnd + 1 : null
+
+                results.push({
+                  path,
+                  ok: true,
+                  totalLines: totalSourcePages,
+                  returnedRange:
+                    operation.type === 'lines'
+                      ? { startLine: actualStart, endLine: actualEnd }
+                      : undefined,
+                  hasMoreBelow,
+                  nextStartLine,
+                  // Explain page-number renumbering so the model cites original
+                  // page numbers (actualStart–actualEnd) rather than the
+                  // slice-internal numbers (1–slicePageCount).
+                  content: `Read pages ${actualStart}–${actualEnd} of "${file.name}" (original document has ${totalSourcePages} pages).\nThe attached PDF slice contains those pages renumbered as 1–${slicePageCount} internally, but you should refer to them by their ORIGINAL page numbers (${actualStart}–${actualEnd}) when citing.`,
+                  effectiveModality: 'pdf' as const,
+                })
+                perFileAttachmentParts.push({ path, parts: [documentPart] })
+                continue
+              }
+
+              // Slice failed — fall through to text extraction with a warning prefix.
+              let pdfSliceFallbackPages: { page: number; text: string }[] = []
+              try {
+                const extracted = await extractPdfText(app, file, {
+                  signal,
+                  maxBinaryBytes: PDF_INDEX_MAX_BYTES,
+                  maxPages: PDF_INDEX_MAX_PAGES,
+                  settings,
+                })
+                pdfSliceFallbackPages = extracted.pages
+              } catch (extractErr) {
+                if (
+                  extractErr instanceof DOMException &&
+                  extractErr.name === 'AbortError'
+                ) {
+                  return { status: ToolCallResponseStatus.Aborted }
+                }
+                results.push({
+                  path,
+                  ok: false,
+                  error:
+                    extractErr instanceof Error
+                      ? extractErr.message
+                      : 'Failed to extract PDF text.',
+                })
+                continue
+              }
+
+              const fbTotalPageCount = pdfSliceFallbackPages.length
+              const fbRangeStart = operation.type === 'lines' ? reqStart : 1
+              const fbRangeEnd =
+                operation.type === 'full'
+                  ? fbTotalPageCount
+                  : Math.min(reqEnd ?? fbRangeStart, fbTotalPageCount)
+              const fbSelectedPages = pdfSliceFallbackPages.filter(
+                (p) => p.page >= fbRangeStart && p.page <= fbRangeEnd,
+              )
+              const fbTaggedBody = fbSelectedPages
+                .map((p) => `<page ${p.page}>\n${p.text}\n</page ${p.page}>`)
+                .join('\n')
+              const fbWarningPrefix = `[PDF native slice failed for pages ${fbRangeStart}–${fbRangeEnd}, falling back to text extraction. Reason: ${sliceFallbackWarning ?? 'unknown error'}]\n\n`
+
+              results.push({
+                path,
+                ok: true,
+                totalLines: fbTotalPageCount,
+                returnedRange:
+                  operation.type === 'lines'
+                    ? {
+                        startLine:
+                          fbSelectedPages.length > 0 ? fbRangeStart : null,
+                        endLine: fbSelectedPages.length > 0 ? fbRangeEnd : null,
+                      }
+                    : undefined,
+                hasMoreBelow:
+                  operation.type === 'lines' && fbRangeEnd < fbTotalPageCount,
+                nextStartLine:
+                  operation.type === 'lines' && fbRangeEnd < fbTotalPageCount
+                    ? fbRangeEnd + 1
+                    : null,
+                content: fbWarningPrefix + fbTaggedBody,
+                effectiveModality: 'text' as const,
+                warning: fbWarningPrefix.trim(),
+              })
+              continue
+            }
+
+            // ── Image render branch ────────────────────────────────────────
+            // resolvedModality has already taken vision capability and the
+            // image-reading setting into account; checking it here is enough.
+            if (resolvedModality === 'image') {
               // Mirror text-mode semantics where it makes sense:
               //   - `full`  → render every page (matches "full = whole file").
               //   - `lines` without `endLine` → render only `startLine`. This
@@ -2555,7 +2762,7 @@ export async function callLocalFileTool({
               })
 
               if (rendered.length > 0) {
-                perFileImageParts.push({
+                perFileAttachmentParts.push({
                   path,
                   parts: rendered.map((r) => ({
                     type: 'image_url' as const,
@@ -2668,10 +2875,14 @@ export async function callLocalFileTool({
               ? rangeEndPageInclusive + 1
               : null
 
-            // When the model requested image modality but vision is not
-            // supported, signal the silent fallback so the model can observe it.
+            // Signal silent fallbacks to the model so it can observe the downgrade.
+            // 'auto' selects intelligently so no warning is needed for that case.
+            // visionDowngraded: user explicitly asked for image but model lacks vision.
+            // pdfDowngraded: user explicitly asked for pdf but model lacks native PDF.
             const visionDowngraded =
               operation.modality === 'image' && !chatModelAcceptsImages
+            const pdfDowngraded =
+              operation.modality === 'pdf' && resolvedModality === 'text'
 
             results.push({
               path,
@@ -2692,7 +2903,13 @@ export async function callLocalFileTool({
                     effectiveModality: 'text' as const,
                     warning: '当前模型不支持图像输入，已自动降级为文本读取',
                   }
-                : {}),
+                : pdfDowngraded
+                  ? {
+                      effectiveModality: 'text' as const,
+                      warning:
+                        '当前模型不支持原生 PDF 输入，已自动降级为文本读取',
+                    }
+                  : {}),
             })
             continue
           }
@@ -2797,7 +3014,10 @@ export async function callLocalFileTool({
               },
             )
             if (imageResult.contentParts) {
-              perFileImageParts.push({ path, parts: imageResult.contentParts })
+              perFileAttachmentParts.push({
+                path,
+                parts: imageResult.contentParts,
+              })
             }
           }
         }
@@ -2819,8 +3039,8 @@ export async function callLocalFileTool({
         // skip building per-file text headers that would just be discarded.
         // The text JSON (above) is the source of truth for paths/ranges.
         const contentParts: ContentPart[] | undefined =
-          perFileImageParts.length > 0
-            ? perFileImageParts.flatMap((p) => p.parts)
+          perFileAttachmentParts.length > 0
+            ? perFileAttachmentParts.flatMap((p) => p.parts)
             : undefined
 
         return {

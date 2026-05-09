@@ -48,8 +48,12 @@ import {
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { collectWikilinkPaths } from '../llm/annotate-wikilinks'
 import { isImageTFile, tFileToImageDataUrl } from '../llm/image'
-import { chatModelSupportsVision } from '../llm/model-modalities'
+import {
+  chatModelSupportsPdf,
+  chatModelSupportsVision,
+} from '../llm/model-modalities'
 import { getNestedFiles, readTFileContent } from '../obsidian'
+import { ensurePdfText } from '../pdf/ensurePdfText'
 import {
   PDF_INDEX_MAX_BYTES,
   PDF_INDEX_MAX_PAGES,
@@ -123,6 +127,92 @@ export function stripUnsupportedImages(
 
     return { ...message, content: stripped }
   })
+}
+
+/**
+ * Render the canonical `## Attached PDFs` text block for a single PDF. Used
+ * both for legacy text-only mentionables (their persisted `data`) and for the
+ * non-native-model fallback path (`prepareDocumentsForModel`). One template,
+ * one place to evolve.
+ */
+function renderAttachedPdfBlock({
+  name,
+  text,
+  pageCount,
+  truncated,
+}: {
+  name: string
+  text: string
+  pageCount?: number
+  /** Set when the fallback extractor itself had to truncate (FALLBACK_MAX_PAGES). */
+  truncated?: boolean
+}): string {
+  const meta =
+    pageCount !== undefined
+      ? ` (${pageCount} pages${truncated ? ', truncated' : ''})`
+      : truncated
+        ? ' (truncated)'
+        : ''
+  return `## Attached PDFs\n### ${name}${meta}\n\n${text}\n\n`
+}
+
+/**
+ * Convert `document` content parts to plain text for models that don't
+ * advertise the `pdf` modality. Native-PDF-capable models leave document parts
+ * untouched. This is the modality gate — adapters never have to handle a
+ * document part for a non-pdf model.
+ */
+export async function prepareDocumentsForModel(
+  messages: RequestMessage[],
+  chatModel: ChatModel | null | undefined,
+): Promise<RequestMessage[]> {
+  if (chatModelSupportsPdf(chatModel)) {
+    return messages
+  }
+
+  const next: RequestMessage[] = []
+  for (const message of messages) {
+    if (message.role !== 'user' || !Array.isArray(message.content)) {
+      next.push(message)
+      continue
+    }
+
+    const transformed: ContentPart[] = []
+    for (const part of message.content) {
+      if (part.type !== 'document') {
+        transformed.push(part)
+        continue
+      }
+      try {
+        const { text, truncated, pageCount } = await ensurePdfText({
+          rawData: part.data,
+        })
+        transformed.push({
+          type: 'text',
+          text: renderAttachedPdfBlock({
+            name: part.name,
+            text,
+            pageCount: part.pageCount ?? pageCount,
+            truncated,
+          }),
+        })
+      } catch (error) {
+        console.warn(
+          '[YOLO] Failed to extract PDF text for non-native model, dropping document part',
+          part.name,
+          error,
+        )
+        transformed.push({
+          type: 'text',
+          text: `[PDF "${part.name}" 无法解析为文本，已忽略]`,
+        })
+      }
+    }
+
+    next.push({ ...message, content: transformed })
+  }
+
+  return next
 }
 
 type MentionContextMode = 'light' | 'full'
@@ -349,7 +439,10 @@ export class RequestContextBuilder {
       { app: this.app, settings: this.settings },
     )
 
-    return stripUnsupportedImages(requestMessages, _model)
+    return prepareDocumentsForModel(
+      stripUnsupportedImages(requestMessages, _model),
+      _model,
+    )
   }
 
   private async getChatHistoryMessages({
@@ -514,18 +607,22 @@ export class RequestContextBuilder {
       })
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
-    const pdfPrompt = this.buildPdfPrompt(pdfs)
+    const {
+      documentParts: pdfDocumentParts,
+      legacyText: legacyPdfFallbackText,
+    } = this.buildPdfAttachments(pdfs)
 
     const selectedSkillsPrompt = await this.buildSelectedSkillsPrompt(
       message.selectedSkills,
     )
-    const textContent = `${blockPrompt}${assistantQuotePrompt}${pdfPrompt}${selectedSkillsPrompt}\n\n${query}\n\n`
-    if (imageParts.length === 0) {
+    const textContent = `${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
+    if (imageParts.length === 0 && pdfDocumentParts.length === 0) {
       return textContent
     }
 
     return [
       ...imageParts,
+      ...pdfDocumentParts,
       {
         type: 'text',
         text: textContent,
@@ -671,7 +768,7 @@ ${message.annotations
     prunedToolCallIds?: ReadonlySet<string>
   }): RequestMessage[] {
     const toolMessages: RequestMessage[] = []
-    const collectedImageParts: ContentPart[] = []
+    const collectedContentParts: ContentPart[] = []
 
     for (const toolCall of filterContextPrunedToolCalls(
       message.toolCalls,
@@ -702,27 +799,27 @@ ${message.annotations
             tool_call: toolCall.request,
             content: toolCall.response.data.text,
           })
-          // Collect image parts for a follow-up user message after
-          // all tool messages, so the message sequence stays valid.
+          // Collect hoistable parts (image_url and document) for a follow-up
+          // user message after all tool messages, so the message sequence stays valid.
           const parts = toolCall.response.data.contentParts
           if (parts) {
-            const imageParts = parts
-              .filter((p) => p.type === 'image_url')
-              .map((p) =>
-                p.type === 'image_url'
-                  ? {
-                      type: 'image_url' as const,
-                      image_url: { url: p.image_url.url },
-                    }
-                  : p,
+            const hoistableParts = parts.filter(
+              (p) => p.type === 'image_url' || p.type === 'document',
+            )
+            if (hoistableParts.length > 0) {
+              const hasImage = hoistableParts.some(
+                (p) => p.type === 'image_url',
               )
-            if (imageParts.length > 0) {
-              collectedImageParts.push(
-                {
-                  type: 'text',
-                  text: `[Images from tool call: ${toolCall.request.name}]`,
-                },
-                ...imageParts,
+              const hasDoc = hoistableParts.some((p) => p.type === 'document')
+              const headerLabel =
+                hasImage && hasDoc
+                  ? `Attachments from tool call: ${toolCall.request.name}`
+                  : hasDoc
+                    ? `PDF attachments from tool call: ${toolCall.request.name}`
+                    : `Images from tool call: ${toolCall.request.name}`
+              collectedContentParts.push(
+                { type: 'text', text: `[${headerLabel}]` },
+                ...hoistableParts,
               )
             }
           }
@@ -738,12 +835,12 @@ ${message.annotations
       }
     }
 
-    // Append a single user message with all collected images after the
+    // Append a single user message with all collected attachments after the
     // tool block, preserving the required tool → user message ordering.
-    if (collectedImageParts.length > 0) {
+    if (collectedContentParts.length > 0) {
       toolMessages.push({
         role: 'user',
-        content: collectedImageParts,
+        content: collectedContentParts,
       })
     }
 
@@ -822,7 +919,10 @@ ${message.annotations
         .join('')
       const assistantQuotePrompt =
         this.buildAssistantQuotePrompt(assistantQuotes)
-      const pdfPrompt = this.buildPdfPrompt(pdfs)
+      const {
+        documentParts: pdfDocumentParts,
+        legacyText: legacyPdfFallbackText,
+      } = this.buildPdfAttachments(pdfs)
 
       const urls = message.mentionables.filter(
         (m): m is MentionableUrl => m.type === 'url',
@@ -886,9 +986,10 @@ ${await this.getWebsiteContent(url)}
               },
             }),
           ),
+          ...pdfDocumentParts,
           {
             type: 'text',
-            text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${pdfPrompt}${urlPrompt}${selectedSkillsPrompt}\n\n${query}\n\n`,
+            text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${urlPrompt}${selectedSkillsPrompt}\n\n${query}\n\n`,
           },
         ],
       }
@@ -917,22 +1018,47 @@ ${quotes
   .join('\n\n')}\n\n`
   }
 
-  private buildPdfPrompt(pdfs: MentionablePDF[]): string {
-    if (pdfs.length === 0) {
-      return ''
+  /**
+   * Single entry that turns PDF mentionables into request payload pieces:
+   *   • `documentParts`: native `document` content parts for new uploads that
+   *     carry raw bytes. Pass-through for adapters that advertise the `pdf`
+   *     modality; `prepareDocumentsForModel` converts to text otherwise.
+   *   • `legacyText`: a `## Attached PDFs` block for legacy mentionables that
+   *     only have the pre-extracted `data` text (serialized before native PDF
+   *     support landed). Empty string when there are no legacy items.
+   */
+  private buildPdfAttachments(pdfs: MentionablePDF[]): {
+    documentParts: ContentPart[]
+    legacyText: string
+  } {
+    const documentParts: ContentPart[] = []
+    const legacyBlocks: string[] = []
+
+    for (const pdf of pdfs) {
+      if (pdf.rawData) {
+        documentParts.push({
+          type: 'document',
+          mediaType: 'application/pdf',
+          name: pdf.name,
+          data: pdf.rawData,
+          pageCount: pdf.pageCount,
+        })
+      } else if (pdf.data) {
+        legacyBlocks.push(
+          renderAttachedPdfBlock({
+            name: pdf.name,
+            text: pdf.data,
+            pageCount: pdf.pageCount,
+          }),
+        )
+      }
     }
-    return `## Attached PDFs
-${pdfs
-  .map(({ name, data, pageCount, truncated }) => {
-    const meta =
-      pageCount !== undefined
-        ? ` (${pageCount} pages${truncated ? ', truncated' : ''})`
-        : truncated
-          ? ' (truncated)'
-          : ''
-    return `### ${name}${meta}\n\n${data}`
-  })
-  .join('\n\n')}\n\n`
+
+    return {
+      documentParts,
+      // Already includes the `## Attached PDFs` header per block; join into one.
+      legacyText: legacyBlocks.join(''),
+    }
   }
 
   private async getSystemMessage(

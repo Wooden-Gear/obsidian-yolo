@@ -534,6 +534,7 @@ export type TranslationKeys = {
       inputModalityDesc?: string
       inputModalityText?: string
       inputModalityVision?: string
+      inputModalityPdf?: string
       openaiReasoningEffort?: string
       openaiReasoningEffortDesc?: string
       geminiThinkingBudget?: string

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { customParameterSchema } from './custom-parameter.types'
 
-export const CHAT_MODEL_MODALITIES = ['text', 'vision'] as const
+export const CHAT_MODEL_MODALITIES = ['text', 'vision', 'pdf'] as const
 export const chatModelModalitySchema = z.enum(CHAT_MODEL_MODALITIES)
 export type ChatModelModality = z.infer<typeof chatModelModalitySchema>
 

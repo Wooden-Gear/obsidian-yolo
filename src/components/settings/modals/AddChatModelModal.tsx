@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { Image as ImageIcon, Type } from 'lucide-react'
+import { FileText, Image as ImageIcon, Type } from 'lucide-react'
 import { App, Notice, requestUrl } from 'obsidian'
 import { useEffect, useRef, useState } from 'react'
 
@@ -861,6 +861,19 @@ function AddChatModelModalComponent({
               {t('settings.models.inputModalityVision')}
             </span>
             <span className="smtcmp-modality-chip-sub">Vision</span>
+          </button>
+          <button
+            type="button"
+            className={`smtcmp-modality-chip${
+              modalities.includes('pdf') ? ' is-active' : ''
+            }`}
+            onClick={() => toggleModality('pdf')}
+          >
+            <FileText size={14} />
+            <span className="smtcmp-modality-chip-label">
+              {t('settings.models.inputModalityPdf')}
+            </span>
+            <span className="smtcmp-modality-chip-sub">PDF</span>
           </button>
         </div>
       </div>

@@ -683,6 +683,7 @@ export const en: TranslationKeys = {
         'Input types this model actually supports. A wrong pick will cause request failures.',
       inputModalityText: 'Text',
       inputModalityVision: 'Vision',
+      inputModalityPdf: 'PDF (native)',
       openaiReasoningEffort: 'Reasoning effort',
       openaiReasoningEffortDesc:
         'Choose effort: minimal (gpt-5 only) / low / medium / high',

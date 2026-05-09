@@ -534,6 +534,21 @@ export class OpenAIMessageAdapter {
                   return { type: 'text', text: part.text }
                 case 'image_url':
                   return { type: 'image_url', image_url: part.image_url }
+                case 'document':
+                  // Pass-through as OpenAI Chat Completions `file` content
+                  // part — the de-facto standard adopted by OpenRouter and
+                  // most OpenAI-compatible proxies that forward to PDF-capable
+                  // upstreams (Gemini / Claude). Reaching here means the user
+                  // explicitly enabled the `pdf` modality on this model; if
+                  // their proxy doesn't speak this format the proxy will
+                  // surface its own error, which is more useful than ours.
+                  return {
+                    type: 'file',
+                    file: {
+                      filename: part.name,
+                      file_data: `data:${part.mediaType};base64,${part.data}`,
+                    },
+                  }
                 default:
                   throw new Error('Unsupported content part type.')
               }

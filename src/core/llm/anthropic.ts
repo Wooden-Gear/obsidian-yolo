@@ -4,6 +4,7 @@ import {
   ToolChoice as AnthropicToolChoice,
   Base64ImageSource,
   ContentBlockParam,
+  DocumentBlockParam,
   ImageBlockParam,
   MessageCreateParamsNonStreaming,
   MessageCreateParamsStreaming,
@@ -496,7 +497,7 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
       case 'user': {
         if (Array.isArray(message.content)) {
           const content = message.content.map(
-            (part): TextBlockParam | ImageBlockParam => {
+            (part): TextBlockParam | ImageBlockParam | DocumentBlockParam => {
               switch (part.type) {
                 case 'text':
                   return { type: 'text', text: part.text }
@@ -511,6 +512,19 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
                       data: base64Data,
                       media_type: mimeType as Base64ImageSource['media_type'],
                       type: 'base64',
+                    },
+                  }
+                }
+                case 'document': {
+                  // Native PDF support via Anthropic's document block. The
+                  // 'pdf' modality gate upstream guarantees this only reaches
+                  // models that advertise native PDF support.
+                  return {
+                    type: 'document',
+                    source: {
+                      type: 'base64',
+                      media_type: part.mediaType,
+                      data: part.data,
                     },
                   }
                 }

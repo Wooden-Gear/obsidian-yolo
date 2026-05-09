@@ -1352,3 +1352,210 @@ describe('stripUnsupportedImages', () => {
     })
   })
 })
+
+// ──────────────────────────────────────────────────────────────────────────────
+// parseToolMessage document hoisting
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('parseToolMessage document hoisting', () => {
+  const emptyArgs = createCompleteToolCallArguments({ value: {} })
+
+  const mockApp = {
+    vault: {
+      adapter: {
+        exists: jest.fn().mockResolvedValue(false),
+        mkdir: jest.fn().mockResolvedValue(undefined),
+        read: jest.fn().mockResolvedValue(''),
+        write: jest.fn().mockResolvedValue(undefined),
+      },
+    },
+  }
+
+  const mockSettings = {
+    systemPrompt: '',
+    currentAssistantId: undefined,
+    assistants: [],
+    yolo: { baseDir: 'YOLO' },
+    chatOptions: {
+      includeCurrentFileContent: false,
+      mentionContextMode: 'light',
+    },
+    skills: {},
+    // A PDF-capable model so prepareDocumentsForModel doesn't strip document parts.
+    chatModels: [
+      {
+        id: 'pdf-provider/pdf-model',
+        providerId: 'pdf-provider',
+        model: 'pdf-model',
+        modalities: ['text', 'vision', 'pdf'],
+      },
+    ],
+  } as unknown as SmartComposerSettings
+
+  // Use this model ID when building request messages so the PDF modality gate passes.
+  const PDF_MODEL_ID = 'pdf-provider/pdf-model'
+
+  /**
+   * Build a minimal conversation with one assistant turn (with tool calls),
+   * one tool response turn carrying the given contentParts, and a final user
+   * message. Returns the generated request messages.
+   */
+  const buildMessagesWithToolResponse = async (
+    toolName: string,
+    contentParts: ContentPart[],
+  ) => {
+    const builder = new RequestContextBuilder(mockApp as never, mockSettings)
+    return builder.generateRequestMessages({
+      messages: [
+        {
+          role: 'user',
+          id: 'user-1',
+          content: null,
+          promptContent: 'read some file',
+          mentionables: [],
+        },
+        {
+          role: 'assistant',
+          id: 'asst-1',
+          content: 'ok',
+          toolCallRequests: [
+            {
+              id: 'tc-1',
+              name: toolName,
+              arguments: emptyArgs,
+            },
+          ],
+        },
+        {
+          role: 'tool',
+          id: 'tool-1',
+          toolCalls: [
+            {
+              request: {
+                id: 'tc-1',
+                name: toolName,
+                arguments: emptyArgs,
+              },
+              response: {
+                status: ToolCallResponseStatus.Success,
+                data: {
+                  type: 'text',
+                  text: 'tool result text',
+                  contentParts,
+                },
+              },
+            },
+          ],
+        },
+        {
+          role: 'user',
+          id: 'user-2',
+          content: null,
+          promptContent: 'follow-up',
+          mentionables: [],
+        },
+      ],
+      hasTools: true,
+      hasMemoryTools: false,
+      // Use a PDF-capable model so prepareDocumentsForModel passes document parts through.
+      model: {
+        id: PDF_MODEL_ID,
+        providerId: 'pdf-provider',
+        model: 'pdf-model',
+        name: 'pdf-model',
+        modalities: ['text', 'vision', 'pdf'],
+      } as never,
+      conversationId: 'conv-doc-hoist',
+    })
+  }
+
+  it('hoists document part from tool response into follow-up user message', async () => {
+    const documentPart: ContentPart = {
+      type: 'document',
+      mediaType: 'application/pdf',
+      name: 'report.pdf (pages 1–3)',
+      data: 'base64data',
+      pageCount: 3,
+    }
+
+    const messages = await buildMessagesWithToolResponse(
+      'yolo_local__fs_read',
+      [documentPart],
+    )
+
+    // There should be a user message with the document part and a header label.
+    const userMessages = messages.filter((m) => m.role === 'user')
+    const hoistMsg = userMessages.find(
+      (m) =>
+        Array.isArray(m.content) &&
+        m.content.some((p) => p.type === 'document'),
+    )
+    expect(hoistMsg).toBeDefined()
+    const content = hoistMsg!.content as ContentPart[]
+    const headerPart = content.find((p) => p.type === 'text')
+    expect(headerPart?.type === 'text' && headerPart.text).toContain(
+      'PDF attachments from tool call',
+    )
+    expect(headerPart?.type === 'text' && headerPart.text).toContain(
+      'yolo_local__fs_read',
+    )
+    const docPart = content.find((p) => p.type === 'document')
+    expect(docPart).toEqual(documentPart)
+  })
+
+  it('hoists image_url part alone → header is "Images from tool call"', async () => {
+    const imagePart: ContentPart = {
+      type: 'image_url',
+      image_url: { url: 'data:image/png;base64,AAA' },
+    }
+
+    const messages = await buildMessagesWithToolResponse(
+      'yolo_local__fs_read',
+      [imagePart],
+    )
+
+    const userMessages = messages.filter((m) => m.role === 'user')
+    const hoistMsg = userMessages.find(
+      (m) =>
+        Array.isArray(m.content) &&
+        m.content.some((p) => p.type === 'image_url'),
+    )
+    expect(hoistMsg).toBeDefined()
+    const content = hoistMsg!.content as ContentPart[]
+    const headerPart = content.find((p) => p.type === 'text')
+    expect(headerPart?.type === 'text' && headerPart.text).toContain(
+      'Images from tool call',
+    )
+  })
+
+  it('mixed image + document → header is "Attachments from tool call"', async () => {
+    const imagePart: ContentPart = {
+      type: 'image_url',
+      image_url: { url: 'data:image/png;base64,BBB' },
+    }
+    const documentPart: ContentPart = {
+      type: 'document',
+      mediaType: 'application/pdf',
+      name: 'file.pdf',
+      data: 'base64',
+    }
+
+    const messages = await buildMessagesWithToolResponse(
+      'yolo_local__fs_read',
+      [imagePart, documentPart],
+    )
+
+    const userMessages = messages.filter((m) => m.role === 'user')
+    const hoistMsg = userMessages.find(
+      (m) =>
+        Array.isArray(m.content) &&
+        m.content.some((p) => p.type === 'image_url' || p.type === 'document'),
+    )
+    expect(hoistMsg).toBeDefined()
+    const content = hoistMsg!.content as ContentPart[]
+    const headerPart = content.find((p) => p.type === 'text')
+    expect(headerPart?.type === 'text' && headerPart.text).toContain(
+      'Attachments from tool call',
+    )
+  })
+})

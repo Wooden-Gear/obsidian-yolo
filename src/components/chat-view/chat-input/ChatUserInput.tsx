@@ -954,14 +954,6 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             })
             if (successes.length > 0) {
               handleCreatePdfMentionables(successes)
-              const truncated = successes.filter((p) => p.truncated)
-              if (truncated.length > 0) {
-                new Notice(
-                  `Some PDFs were truncated to the first pages: ${truncated
-                    .map((p) => p.name)
-                    .join(', ')}`,
-                )
-              }
             }
           })
         }

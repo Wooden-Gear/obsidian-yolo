@@ -6,7 +6,43 @@ jest.mock('../../utils/llm/extract-markdown-images', () => ({
     .mockResolvedValue({ contentParts: undefined }),
 }))
 
+// Mock pdf-lib for the native PDF slice tests below.
+jest.mock('pdf-lib', () => {
+  let _pageCount = 3
+  const makeDoc = (pageCount: number) => ({
+    getPageCount: () => pageCount,
+    copyPages: jest.fn((_src: unknown, indices: number[]) =>
+      Promise.resolve(indices.map(() => ({}))),
+    ),
+    addPage: jest.fn(),
+    save: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+  })
+  return {
+    PDFDocument: {
+      load: jest.fn(async () => makeDoc(_pageCount)),
+      create: jest.fn(async () => makeDoc(0)),
+      __setPageCount: (n: number) => {
+        _pageCount = n
+      },
+    },
+  }
+})
+
+// Mock slicePdfPages so we can control success/failure per test.
+jest.mock('../../utils/pdf/slicePdfPages', () => ({
+  PdfSliceError: class PdfSliceError extends Error {
+    kind: string
+    constructor(kind: string, message: string) {
+      super(message)
+      this.name = 'PdfSliceError'
+      this.kind = kind
+    }
+  },
+  slicePdfPages: jest.fn(),
+}))
+
 import { App, TFile, TFolder } from 'obsidian'
+import { PDFDocument } from 'pdf-lib'
 
 import type { SmartComposerSettings } from '../../settings/schema/setting.types'
 import {
@@ -17,6 +53,7 @@ import { editUndoSnapshotStore } from '../../utils/chat/editUndoSnapshotStore'
 import { extractMarkdownImages } from '../../utils/llm/extract-markdown-images'
 import { extractPdfText } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
+import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import type { RAGEngine } from '../rag/ragEngine'
 
 import {
@@ -428,7 +465,7 @@ describe('local fs tool action helpers', () => {
     expect(payload.toolCallId).toBe('read-call-1')
     expect(payload.requestedOperation).toMatchObject({
       type: 'full',
-      modality: 'text',
+      modality: 'auto',
     })
     expect(payload.results[0]).toMatchObject({
       ok: true,
@@ -581,7 +618,7 @@ describe('local fs tool action helpers', () => {
 
     expect(payload.requestedOperation).toMatchObject({
       type: 'full',
-      modality: 'text',
+      modality: 'auto',
     })
     expect(payload.results[0]).toMatchObject({
       ok: true,
@@ -634,7 +671,7 @@ describe('local fs tool action helpers', () => {
     expect(payload.toolCallId).toBeNull()
     expect(payload.requestedOperation).toEqual({
       type: 'lines',
-      modality: 'text',
+      modality: 'auto',
     })
     expect(payload.results[0]).toMatchObject({
       ok: true,
@@ -694,7 +731,7 @@ describe('local fs tool action helpers', () => {
 
     const expectModality = (
       result: Awaited<ReturnType<typeof callRead>>,
-      expected: 'text' | 'image',
+      expected: 'auto' | 'text' | 'image' | 'pdf',
     ) => {
       expect(result.status).toBe(ToolCallResponseStatus.Success)
       if (result.status !== ToolCallResponseStatus.Success) {
@@ -706,13 +743,13 @@ describe('local fs tool action helpers', () => {
       expect(payload.requestedOperation.modality).toBe(expected)
     }
 
-    it('defaults to text when modality is omitted', async () => {
-      expectModality(await callRead({ type: 'full' }), 'text')
+    it('defaults to auto when modality is omitted', async () => {
+      expectModality(await callRead({ type: 'full' }), 'auto')
     })
 
-    it('defaults to text when modality is null or empty string', async () => {
-      expectModality(await callRead({ type: 'full', modality: null }), 'text')
-      expectModality(await callRead({ type: 'full', modality: '   ' }), 'text')
+    it('defaults to auto when modality is null or empty string', async () => {
+      expectModality(await callRead({ type: 'full', modality: null }), 'auto')
+      expectModality(await callRead({ type: 'full', modality: '   ' }), 'auto')
     })
 
     it('accepts modality case-insensitively and trims whitespace', async () => {
@@ -2157,5 +2194,387 @@ describe('fs_read PDF vision-downgrade warning', () => {
     }
     expect(payload.results[0]?.effectiveModality).toBeUndefined()
     expect(payload.results[0]?.warning).toBeUndefined()
+  })
+})
+
+// fs_read PDF native slice (modality='pdf' / 'auto')
+// ──────────────────────────────────────────────────────────────────
+
+describe('fs_read PDF native slice', () => {
+  const sliceMock = slicePdfPages as jest.MockedFunction<typeof slicePdfPages>
+  const extractMockNative = extractPdfText as jest.MockedFunction<
+    typeof extractPdfText
+  >
+  const pdfLibMock = PDFDocument as unknown as {
+    load: jest.Mock
+    create: jest.Mock
+    __setPageCount: (n: number) => void
+  }
+
+  const makePdfFile = () =>
+    Object.assign(new TFile(), {
+      path: 'report.pdf',
+      extension: 'pdf',
+      name: 'report.pdf',
+      stat: { size: 4096, mtime: 0 },
+    })
+
+  const buildSettings = (
+    modalities: Array<'text' | 'vision' | 'pdf'>,
+  ): SmartComposerSettings =>
+    ({
+      chatOptions: {
+        imageReadingEnabled: true,
+        imageCompressionEnabled: false,
+        imageCompressionQuality: 85,
+        externalImageFetchEnabled: false,
+      },
+      chatModels: [
+        {
+          id: 'provider/model',
+          providerId: 'provider',
+          model: 'model',
+          modalities,
+        },
+      ],
+    }) as unknown as SmartComposerSettings
+
+  const FAKE_PDF_BYTES = new Uint8Array([1, 2, 3, 4])
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    pdfLibMock.__setPageCount(5)
+    sliceMock.mockImplementation(async (_bytes, range) => ({
+      bytes: FAKE_PDF_BYTES,
+      totalSourcePages: 5,
+      actualStart: range.startPage,
+      actualEnd: range.endPage !== undefined ? Math.min(range.endPage, 5) : 5,
+    }))
+    extractMockNative.mockResolvedValue({
+      pages: [
+        { page: 1, text: 'page one' },
+        { page: 2, text: 'page two' },
+        { page: 3, text: 'page three' },
+      ],
+    })
+  })
+
+  const callPdfSliceRead = (
+    modality: 'pdf' | 'auto' | 'text' | 'image',
+    modalities: Array<'text' | 'vision' | 'pdf'>,
+    operationType: 'full' | 'lines' = 'lines',
+    startLine = 1,
+    endLine = 2,
+  ) => {
+    const file = makePdfFile()
+    return callLocalFileTool({
+      app: {
+        vault: {
+          getFileByPath: jest.fn().mockReturnValue(file),
+          read: jest.fn().mockResolvedValue(''),
+          readBinary: jest.fn().mockResolvedValue(new ArrayBuffer(4)),
+        },
+      } as unknown as App,
+      toolName: 'fs_read',
+      toolCallId: 'tc-pdf-native',
+      args: {
+        paths: ['report.pdf'],
+        operation:
+          operationType === 'full'
+            ? { type: 'full', modality }
+            : { type: 'lines', startLine, endLine, modality },
+      },
+      settings: buildSettings(modalities),
+      chatModelId: 'provider/model',
+    })
+  }
+
+  it('modality=pdf + pdf-capable model → returns document contentPart with original page range in name', async () => {
+    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).toHaveBeenCalled()
+    expect(result.contentParts).toBeDefined()
+    expect(result.contentParts).toHaveLength(1)
+    const part = result.contentParts![0]
+    expect(part?.type).toBe('document')
+    if (part?.type !== 'document') throw new Error('expected document part')
+    expect(part.name).toContain('pages 1')
+    expect(part.name).toContain('2')
+
+    // text field should explain page renumbering
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ content: string; effectiveModality?: string }>
+    }
+    expect(payload.results[0]?.content).toContain('ORIGINAL page numbers')
+    expect(payload.results[0]?.effectiveModality).toBe('pdf')
+  })
+
+  it('modality=pdf + non-pdf model → falls back to text, result carries warning', async () => {
+    const result = await callPdfSliceRead('pdf', ['text', 'vision'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    // Should NOT have attempted a slice
+    expect(sliceMock).not.toHaveBeenCalled()
+    expect(extractMockNative).toHaveBeenCalled()
+
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ effectiveModality?: string; warning?: string }>
+    }
+    expect(payload.results[0]?.effectiveModality).toBe('text')
+    expect(payload.results[0]?.warning).toContain('原生 PDF')
+  })
+
+  it('modality=auto + pdf-capable model → takes pdf path', async () => {
+    const result = await callPdfSliceRead('auto', ['text', 'vision', 'pdf'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).toHaveBeenCalled()
+    expect(result.contentParts).toBeDefined()
+    expect(result.contentParts?.[0]?.type).toBe('document')
+  })
+
+  it('modality=auto + vision-only model → takes image path (not pdf)', async () => {
+    const renderMock = renderPdfPagesToImages as jest.MockedFunction<
+      typeof renderPdfPagesToImages
+    >
+    renderMock.mockResolvedValue({
+      totalPages: 3,
+      rendered: [{ page: 1, dataUrl: 'data:image/png;base64,ABC' }],
+    } as unknown as Awaited<ReturnType<typeof renderPdfPagesToImages>>)
+
+    const result = await callPdfSliceRead('auto', ['text', 'vision'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).not.toHaveBeenCalled()
+    expect(renderMock).toHaveBeenCalled()
+    // No document part expected
+    const docParts = (result.contentParts ?? []).filter(
+      (p) => p.type === 'document',
+    )
+    expect(docParts).toHaveLength(0)
+  })
+
+  it('modality=auto + text-only model → takes text path', async () => {
+    const result = await callPdfSliceRead('auto', ['text'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).not.toHaveBeenCalled()
+    expect(extractMockNative).toHaveBeenCalled()
+    expect(result.contentParts).toBeUndefined()
+  })
+
+  it('no chatModelId → auto does NOT take pdf path (conservative fallback)', async () => {
+    const file = makePdfFile()
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getFileByPath: jest.fn().mockReturnValue(file),
+          readBinary: jest.fn().mockResolvedValue(new ArrayBuffer(4)),
+        },
+      } as unknown as App,
+      toolName: 'fs_read',
+      toolCallId: 'tc-no-model',
+      args: {
+        paths: ['report.pdf'],
+        operation: {
+          type: 'lines',
+          startLine: 1,
+          endLine: 2,
+          modality: 'auto',
+        },
+      },
+      // No settings / chatModelId supplied
+    })
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    // slicePdfPages should NOT have been called
+    expect(sliceMock).not.toHaveBeenCalled()
+  })
+
+  it('slice fails (PdfSliceError) → falls back to text, warning present', async () => {
+    sliceMock.mockRejectedValueOnce(
+      new PdfSliceError('load-failed', 'encrypted PDF'),
+    )
+
+    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(extractMockNative).toHaveBeenCalled()
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ content: string; effectiveModality?: string }>
+    }
+    expect(payload.results[0]?.content).toContain('PDF native slice failed')
+    expect(payload.results[0]?.content).toContain('encrypted PDF')
+    expect(payload.results[0]?.effectiveModality).toBe('text')
+  })
+
+  // ── Bug fix tests ──────────────────────────────────────────────────
+
+  it('pdf modality full + slice failure → fallback returns all pages (bug 1)', async () => {
+    // extractMock returns 3 pages; slice fails → fallback should cover all 3
+    sliceMock.mockRejectedValueOnce(
+      new PdfSliceError('load-failed', 'corrupt PDF'),
+    )
+
+    const result = await callPdfSliceRead(
+      'pdf',
+      ['text', 'vision', 'pdf'],
+      'full',
+    )
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(extractMockNative).toHaveBeenCalled()
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ content: string; effectiveModality?: string }>
+    }
+    const content = payload.results[0]?.content ?? ''
+    // All 3 pages must appear in fallback content
+    expect(content).toContain('page one')
+    expect(content).toContain('page two')
+    expect(content).toContain('page three')
+  })
+
+  it('pdf modality lines without endLine → returns single page (bug 2)', async () => {
+    const file = makePdfFile()
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getFileByPath: jest.fn().mockReturnValue(file),
+          read: jest.fn().mockResolvedValue(''),
+          readBinary: jest.fn().mockResolvedValue(new ArrayBuffer(4)),
+        },
+      } as unknown as App,
+      toolName: 'fs_read',
+      toolCallId: 'tc-no-endline',
+      args: {
+        paths: ['report.pdf'],
+        operation: {
+          type: 'lines',
+          startLine: 2,
+          // endLine intentionally omitted
+          modality: 'pdf',
+        },
+      },
+      settings: buildSettings(['text', 'vision', 'pdf']),
+      chatModelId: 'provider/model',
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    // slicePdfPages should have been called with only page 2 (startPage = endPage = 2)
+    expect(sliceMock).toHaveBeenCalledWith(expect.any(Uint8Array), {
+      startPage: 2,
+      endPage: 2,
+    })
+  })
+
+  it('explicit pdf modality + no chatModelId → downgrades to text with warning', async () => {
+    const file = makePdfFile()
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getFileByPath: jest.fn().mockReturnValue(file),
+          read: jest.fn().mockResolvedValue(''),
+        },
+      } as unknown as App,
+      toolName: 'fs_read',
+      toolCallId: 'tc-no-chatModelId',
+      args: {
+        paths: ['report.pdf'],
+        operation: { type: 'full', modality: 'pdf' },
+      },
+      settings: buildSettings(['text', 'vision', 'pdf']),
+      // No chatModelId → activeChatModel = null → chatModelAcceptsPdf = false
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    // Native slice must NOT have been attempted
+    expect(sliceMock).not.toHaveBeenCalled()
+    expect(extractMockNative).toHaveBeenCalled()
+
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ effectiveModality?: string; warning?: string }>
+    }
+    expect(payload.results[0]?.effectiveModality).toBe('text')
+    expect(payload.results[0]?.warning).toContain('原生 PDF')
+  })
+
+  it('pdf modality + page count >100 → PdfSliceError → fallback returns all pages (bug 1)', async () => {
+    // Set pdf-lib to report 150 pages; sliceMock throws because >MAX_SLICE_PAGES
+    pdfLibMock.__setPageCount(150)
+    extractMockNative.mockResolvedValueOnce({
+      pages: Array.from({ length: 150 }, (_, i) => ({
+        page: i + 1,
+        text: `page ${i + 1} content`,
+      })),
+    })
+    sliceMock.mockRejectedValueOnce(
+      new PdfSliceError(
+        'too-many-pages',
+        'Requested 150 pages but the maximum allowed per slice is 100.',
+      ),
+    )
+
+    const result = await callPdfSliceRead(
+      'pdf',
+      ['text', 'vision', 'pdf'],
+      'full',
+    )
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(extractMockNative).toHaveBeenCalled()
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ content: string; totalLines?: number }>
+    }
+    // totalLines should reflect all 150 pages
+    expect(payload.results[0]?.totalLines).toBe(150)
+    // Content must include the last page
+    expect(payload.results[0]?.content).toContain('page 150 content')
+  })
+
+  it('invalid-range PdfSliceError → ok:false hard error, no text fallback', async () => {
+    // Caller asked for a page outside the document — must surface as a model
+    // error rather than silently degrade to text.
+    sliceMock.mockRejectedValueOnce(
+      new PdfSliceError(
+        'invalid-range',
+        "startPage 999 exceeds the source document's 5 pages.",
+      ),
+    )
+
+    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    // Text extraction must NOT have run.
+    expect(extractMockNative).not.toHaveBeenCalled()
+
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ ok: boolean; error?: string }>
+    }
+    expect(payload.results[0]?.ok).toBe(false)
+    expect(payload.results[0]?.error).toContain('exceeds')
   })
 })

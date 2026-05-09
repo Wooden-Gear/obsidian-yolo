@@ -551,6 +551,18 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
               } as GeminiReplayPart,
             ]
           }
+          if (part.type === 'document') {
+            // Gemini accepts native PDF input via inlineData with the
+            // application/pdf mimeType (≈258 tokens/page billing).
+            return [
+              {
+                inlineData: {
+                  data: part.data,
+                  mimeType: part.mediaType,
+                },
+              } as GeminiReplayPart,
+            ]
+          }
           return []
         })
       : [{ text: message.content } as GeminiReplayPart]
