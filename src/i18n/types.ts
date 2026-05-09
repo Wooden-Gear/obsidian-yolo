@@ -904,8 +904,6 @@ export type TranslationKeys = {
       notificationTaskCompletedDesc?: string
       interactionSectionTitle?: string
       maintenanceSectionTitle?: string
-      tabTitleFollowsConversation?: string
-      tabTitleFollowsConversationDesc?: string
     }
     smartSpace?: {
       quickActionsTitle: string

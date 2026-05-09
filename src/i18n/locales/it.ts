@@ -1132,10 +1132,6 @@ export const it: TranslationKeys = {
         "Avvisa quando l'esecuzione corrente di Agent termina senza attendere ulteriori approvazioni.",
       interactionSectionTitle: 'Interazione',
       maintenanceSectionTitle: 'Manutenzione',
-      tabTitleFollowsConversation:
-        'Usa il titolo della conversazione nella scheda',
-      tabTitleFollowsConversationDesc:
-        'Quando attivo, il titolo della scheda Chat mostra il titolo della conversazione corrente. Quando disattivo, resta Yolo chat.',
     },
   },
 

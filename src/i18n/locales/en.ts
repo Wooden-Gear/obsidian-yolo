@@ -1152,9 +1152,6 @@ export const en: TranslationKeys = {
         'Alert you after the current Agent run finishes without waiting for more approvals.',
       interactionSectionTitle: 'Interaction',
       maintenanceSectionTitle: 'Maintenance',
-      tabTitleFollowsConversation: 'Follow conversation title in tab',
-      tabTitleFollowsConversationDesc:
-        'When enabled, the Chat tab title shows the current conversation title. When disabled, it stays as Yolo chat.',
     },
   },
 

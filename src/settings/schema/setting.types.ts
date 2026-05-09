@@ -346,8 +346,6 @@ export const smartComposerSettingsSchema = z.object({
       historyArchiveEnabled: z.boolean().optional(),
       // Maximum number of recent non-pinned conversations shown before archive
       historyArchiveThreshold: z.number().int().min(20).max(500).optional(),
-      // Whether the tab title should follow the current conversation title
-      tabTitleFollowsConversation: z.boolean().default(true).catch(true),
       // Auto context compaction before next user send (based on last assistant usage)
       autoContextCompactionEnabled: z.boolean().optional(),
       autoContextCompactionThresholdMode: z
@@ -376,7 +374,6 @@ export const smartComposerSettingsSchema = z.object({
       reasoningLevelByModelId: {},
       historyArchiveEnabled: true,
       historyArchiveThreshold: 50,
-      tabTitleFollowsConversation: true,
       autoContextCompactionEnabled: false,
       autoContextCompactionThresholdMode: 'tokens',
       autoContextCompactionThresholdTokens: 24000,

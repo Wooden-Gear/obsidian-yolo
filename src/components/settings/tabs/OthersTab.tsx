@@ -1,5 +1,4 @@
 import { App } from 'obsidian'
-import React from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
@@ -91,25 +90,6 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
     })()
   }
 
-  const handleTabTitleFollowsConversationChange = (value: boolean) => {
-    void (async () => {
-      try {
-        await setSettings({
-          ...settings,
-          chatOptions: {
-            ...settings.chatOptions,
-            tabTitleFollowsConversation: value,
-          },
-        })
-      } catch (error: unknown) {
-        console.error(
-          'Failed to update chat tab title follow conversation setting',
-          error,
-        )
-      }
-    })()
-  }
-
   return (
     <>
       <div className="smtcmp-settings-section">
@@ -140,16 +120,6 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
           </div>
 
           <div className="smtcmp-settings-block-content">
-            <ObsidianSetting
-              name={t('settings.etc.tabTitleFollowsConversation')}
-              desc={t('settings.etc.tabTitleFollowsConversationDesc')}
-              className="smtcmp-settings-card"
-            >
-              <ObsidianToggle
-                value={settings.chatOptions.tabTitleFollowsConversation ?? true}
-                onChange={handleTabTitleFollowsConversationChange}
-              />
-            </ObsidianSetting>
             <ObsidianSetting
               name={t('settings.etc.mentionDisplayMode', '引用内容显示位置')}
               desc={t(

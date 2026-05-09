@@ -1065,9 +1065,6 @@ export const zh: TranslationKeys = {
         '当当前 Agent 任务结束且不再等待审批时发出提醒。',
       interactionSectionTitle: '交互',
       maintenanceSectionTitle: '维护',
-      tabTitleFollowsConversation: '标签页标题跟随当前对话',
-      tabTitleFollowsConversationDesc:
-        '开启后，Chat 标签页标题会显示当前对话标题；关闭后固定显示 Yolo chat。',
     },
   },
 

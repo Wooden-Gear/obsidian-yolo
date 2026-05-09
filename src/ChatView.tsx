@@ -29,7 +29,6 @@ export class ChatView extends ItemView {
   private root: Root | null = null
   private initialChatProps?: ChatProps
   private chatRef: React.RefObject<ChatRef> = React.createRef()
-  private removeSettingsChangeListener?: () => void
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -59,14 +58,6 @@ export class ChatView extends ItemView {
     this.updateDisplayTitle(
       manager.getLeafSummary(this.leaf)?.currentConversationTitle,
     )
-    this.removeSettingsChangeListener = this.plugin.addSettingsChangeListener(
-      () => {
-        this.updateDisplayTitle(
-          this.plugin.getChatLeafSessionManager().getLeafSummary(this.leaf)
-            ?.currentConversationTitle,
-        )
-      },
-    )
     this.initialChatProps = this.getInitialChatProps(pendingPayload)
 
     await this.render()
@@ -79,8 +70,6 @@ export class ChatView extends ItemView {
   }
 
   onClose(): Promise<void> {
-    this.removeSettingsChangeListener?.()
-    this.removeSettingsChangeListener = undefined
     this.plugin.getChatLeafSessionManager().unregisterLeaf(this.leaf)
     this.root?.unmount()
     return Promise.resolve()
@@ -348,10 +337,8 @@ export class ChatView extends ItemView {
   }
 
   private updateDisplayTitle(conversationTitle?: string): void {
-    const nextTitle = this.plugin.settings.chatOptions
-      .tabTitleFollowsConversation
-      ? conversationTitle?.trim() || DEFAULT_UNTITLED_CONVERSATION_TITLE
-      : 'Yolo chat'
+    const nextTitle =
+      conversationTitle?.trim() || DEFAULT_UNTITLED_CONVERSATION_TITLE
 
     if (this.displayTitle === nextTitle) {
       return
