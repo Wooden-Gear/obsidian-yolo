@@ -934,7 +934,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         }
         if (pdfFiles.length > 0) {
           void Promise.allSettled(
-            pdfFiles.map((file) => fileToMentionablePDF(file)),
+            pdfFiles.map((file) =>
+              fileToMentionablePDF(app, file, { settings }),
+            ),
           ).then((results) => {
             const successes: MentionablePDF[] = []
             results.forEach((result, idx) => {

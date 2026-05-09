@@ -41,7 +41,11 @@ const isDocumentPart = (val: Record<string, unknown>): boolean =>
 
 // Normalized OpenAI-compat shape: { type: 'file', file: { file_data: 'data:application/pdf;base64,...' } }
 const isOpenAIFilePart = (val: Record<string, unknown>): boolean => {
-  if (val.type !== 'file' || typeof val.file !== 'object' || val.file === null) {
+  if (
+    val.type !== 'file' ||
+    typeof val.file !== 'object' ||
+    val.file === null
+  ) {
     return false
   }
   const fileData = (val.file as Record<string, unknown>).file_data
@@ -140,8 +144,11 @@ export const estimateTextTokens = async (text: string): Promise<number> => {
 }
 
 export const estimateJsonTokens = async (value: unknown): Promise<number> => {
-  const { value: normalized, imageCount, pdfTokenEstimate } =
-    normalizeJsonValue(value)
+  const {
+    value: normalized,
+    imageCount,
+    pdfTokenEstimate,
+  } = normalizeJsonValue(value)
   const serialized = JSON.stringify(normalized)
 
   // Do not cache here — keys are always unique in hot paths (request payloads

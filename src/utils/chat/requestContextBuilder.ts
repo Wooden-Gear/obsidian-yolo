@@ -53,11 +53,11 @@ import {
   chatModelSupportsVision,
 } from '../llm/model-modalities'
 import { getNestedFiles, readTFileContent } from '../obsidian'
-import { ensurePdfText } from '../pdf/ensurePdfText'
 import {
   PDF_INDEX_MAX_BYTES,
   PDF_INDEX_MAX_PAGES,
   extractPdfText,
+  extractPdfTextFromBase64,
 } from '../pdf/extractPdfText'
 import { resolvePromptVariables } from '../prompt/promptVariables'
 
@@ -161,10 +161,17 @@ function renderAttachedPdfBlock({
  * advertise the `pdf` modality. Native-PDF-capable models leave document parts
  * untouched. This is the modality gate — adapters never have to handle a
  * document part for a non-pdf model.
+ *
+ * Text extraction goes through the shared `pdfTextCacheStore` keyed by content
+ * hash: the upload site already wrote pages there during `fileToMentionablePDF`,
+ * so the common case is a pure cache hit (no pdfjs invocation per turn). Cache
+ * miss (e.g. legacy mentionable, or upload-time write failure) falls back to a
+ * fresh extraction and writes the result for next time.
  */
 export async function prepareDocumentsForModel(
   messages: RequestMessage[],
   chatModel: ChatModel | null | undefined,
+  context: { app: App; settings: SmartComposerSettings },
 ): Promise<RequestMessage[]> {
   if (chatModelSupportsPdf(chatModel)) {
     return messages
@@ -184,16 +191,23 @@ export async function prepareDocumentsForModel(
         continue
       }
       try {
-        const { text, truncated, pageCount } = await ensurePdfText({
-          rawData: part.data,
-        })
+        const { pages } = await extractPdfTextFromBase64(
+          context.app,
+          part.data,
+          {
+            settings: context.settings,
+            sourceLabel: `upload:${part.name}`,
+          },
+        )
+        const text = pages
+          .map(({ page, text }) => `--- Page ${page} ---\n${text}`)
+          .join('\n\n')
         transformed.push({
           type: 'text',
           text: renderAttachedPdfBlock({
             name: part.name,
             text,
-            pageCount: part.pageCount ?? pageCount,
-            truncated,
+            pageCount: part.pageCount ?? pages.length,
           }),
         })
       } catch (error) {
@@ -442,6 +456,7 @@ export class RequestContextBuilder {
     return prepareDocumentsForModel(
       stripUnsupportedImages(requestMessages, _model),
       _model,
+      { app: this.app, settings: this.settings },
     )
   }
 
