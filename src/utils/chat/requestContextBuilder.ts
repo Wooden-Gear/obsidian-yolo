@@ -8,6 +8,7 @@ import {
   buildCompactionSummaryMessage,
 } from '../../core/agent/compaction'
 import { getMemoryPromptContext } from '../../core/memory/memoryManager'
+import { getProjectInstructionsSection } from '../../core/project-instructions'
 import {
   getLiteSkillDocument,
   listLiteSkillEntries,
@@ -349,6 +350,18 @@ export class RequestContextBuilder {
 
   private getMentionContextMode(): MentionContextMode {
     return this.settings.chatOptions?.mentionContextMode ?? 'light'
+  }
+
+  /**
+   * Resolve the assistant referenced by `settings.currentAssistantId`.
+   * Returns null when no assistant is selected or the selected id is not found,
+   * so callers can treat both cases as "no assistant".
+   */
+  private getCurrentAssistant() {
+    const currentAssistantId = this.settings.currentAssistantId
+    if (!currentAssistantId) return null
+    const assistants = this.settings.assistants ?? []
+    return assistants.find((a) => a.id === currentAssistantId) ?? null
   }
 
   public async generateRequestMessages({
@@ -1085,9 +1098,17 @@ ${quotes
 
     const baseBehaviorSection = this.buildDefaultBehaviorSection(hasTools)
 
-    const sections = [customInstructionsSection, baseBehaviorSection].filter(
-      Boolean,
+    const currentAssistant = this.getCurrentAssistant()
+    const projectInstructionsSection = await getProjectInstructionsSection(
+      this.app,
+      currentAssistant?.enableProjectInstructions === true,
     )
+
+    const sections = [
+      customInstructionsSection,
+      baseBehaviorSection,
+      projectInstructionsSection,
+    ].filter(Boolean)
 
     return {
       role: 'system',
@@ -1104,12 +1125,8 @@ ${quotes
     ).trim()
 
     // Get currently selected assistant
-    const currentAssistantId = this.settings.currentAssistantId
-    const assistants = this.settings.assistants || []
     // Only use assistant if explicitly selected (currentAssistantId is not undefined)
-    const currentAssistant = currentAssistantId
-      ? assistants.find((a) => a.id === currentAssistantId)
-      : null
+    const currentAssistant = this.getCurrentAssistant()
 
     // Build prompt content
     const parts: string[] = []

@@ -427,6 +427,9 @@ export const en: TranslationKeys = {
       editorSystemPrompt: 'System prompt',
       editorSystemPromptDesc:
         'Primary behavior instruction for this agent. Supported variables: date {{current_date}}, date + current hour {{current_hour}}, date + current hour and minute {{current_minute}}, weekday {{current_weekday}}.',
+      editorEnableProjectInstructions: 'Load project instruction files',
+      editorEnableProjectInstructionsDesc:
+        'Auto-load AGENTS.md and CLAUDE.md from the vault root for this agent. Compatible with Codex / Claude Code / Cursor and similar tools.',
       editorEnableTools: 'Enable tools',
       editorEnableToolsDesc: 'Allow this agent to call tools',
       editorIncludeBuiltinTools: 'Include built-in tools',

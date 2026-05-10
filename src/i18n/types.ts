@@ -310,6 +310,8 @@ export type TranslationKeys = {
       editorChooseIcon?: string
       editorSystemPrompt?: string
       editorSystemPromptDesc?: string
+      editorEnableProjectInstructions?: string
+      editorEnableProjectInstructionsDesc?: string
       editorEnableTools?: string
       editorEnableToolsDesc?: string
       editorIncludeBuiltinTools?: string
