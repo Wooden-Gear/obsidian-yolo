@@ -557,6 +557,24 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return newMessage
   })
   const inputMessageRef = useRef(inputMessage)
+  // 主输入框「是否为空」——发送按钮根据它切换淡化态/激活态。判断口径与
+  // 下方 onSubmit 里的早返回一致：纯文本 trim 后为空、且无 mentionable、
+  // 也无 skill。content 是 SerializedEditorState，每次 keystroke 引用都会变，
+  // 所以 useMemo 这里足够。
+  const isInputEmpty = useMemo(() => {
+    const text = inputMessage.content
+      ? editorStateToPlainText(inputMessage.content).trim()
+      : ''
+    return (
+      text === '' &&
+      inputMessage.mentionables.length === 0 &&
+      (inputMessage.selectedSkills?.length ?? 0) === 0
+    )
+  }, [
+    inputMessage.content,
+    inputMessage.mentionables,
+    inputMessage.selectedSkills,
+  ])
   const chatMessagesStateRef = useRef<ChatMessage[]>([])
   const activeBranchByUserMessageIdRef = useRef<Map<string, string>>(new Map())
   const [addedBlockKey, setAddedBlockKey] = useState<string | null>(null)
@@ -4663,12 +4681,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           followOutput={followOutput}
           onAtBottomStateChange={onAtBottomStateChange}
           editingAssistantMessageId={editingAssistantMessageId}
-          currentConversationRunSummaryIsRunning={
-            currentConversationRunSummary.isRunning
-          }
-          onAbortConversationRun={() =>
-            abortConversationRun(currentConversationId)
-          }
           onForceScrollToBottom={forceScrollToBottom}
           hasStreamingMessages={hasStreamingMessages}
           scrollToBottomLabel={t('chat.scrollToBottom', '回到底部')}
@@ -4828,6 +4840,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       void handleManualContextCompaction()
                     }
                   }}
+                  isGenerating={currentConversationRunSummary.isRunning}
+                  onAbort={() => abortConversationRun(currentConversationId)}
+                  submitDisabled={isInputEmpty}
                 />
               </div>
             </>

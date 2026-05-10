@@ -6335,23 +6335,8 @@ button.yolo-agent-chip--more:hover {
   z-index: 3;
 }
 
-.yolo-stop-gen-btn,
 .yolo-chat-scroll-to-bottom-button {
   pointer-events: auto;
-}
-
-.yolo-stop-gen-btn {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translate(-50%, calc(-100% - 12px));
-  z-index: 2;
-  width: max-content;
-  max-width: calc(100% - var(--size-4-6));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--size-4-1);
 }
 
 .yolo-sidebar-root {
@@ -7862,7 +7847,9 @@ button.yolo-agent-chip--more:hover {
   gap: var(--size-4-1);
   align-items: center;
   flex-wrap: nowrap;
-  height: var(--size-4-4);
+  /* 用 min-height 而非固定 height：发送圆按钮（24px）比该尺寸大时
+   * 行会自然撑高，避免按钮底边伸出行外、与容器底 padding 视觉不对称 */
+  min-height: var(--size-4-4);
 
   .yolo-chat-user-input-controls__left {
     display: flex;
@@ -7911,8 +7898,8 @@ button.yolo-agent-chip--more:hover {
   max-width: 120px;
 }
 
-.yolo-chat-user-input-controls__right .yolo-chat-user-input-submit-button {
-  flex: 0 1 96px;
+.yolo-chat-user-input-controls__right {
+  /* 圆形发送按钮自身宽度由内容决定，无需在父级预留 flex-basis */
 }
 
 .yolo-chat-user-input-controls .yolo-chat-user-input-submit-button {
@@ -7970,27 +7957,74 @@ button.yolo-agent-chip--more:hover {
   flex: 1 1 auto;
 }
 
-/* Circle submit button (ChatGPT style) */
+/* 圆形发送/停止按钮（ChatGPT/Claude 风格）。
+ *
+ * 选择器写成 `button.yolo-chat-user-input-submit-button-circle`，是为了对抗
+ * Obsidian `app.css` 里的 `button:not(.clickable-icon) { box-shadow: var(--input-shadow) }`
+ * ——必须保持等同或更高特异度，否则按钮内会出现一圈 inset 灰环。
+ *
+ * 同样地，Obsidian 的全局规则 `svg { width/height: var(--icon-size) }`
+ * 会覆盖 lucide 通过 inline 属性写入的尺寸 —— 必须在选择器内显式给 svg
+ * 兜底宽高，否则图标会被撑大或缩成奇形怪状。 */
 
-.yolo-chat-user-input-submit-button-circle {
-  width: 28px;
-  height: 28px;
+button.yolo-chat-user-input-submit-button-circle {
+  /* 略大于左侧 `+` 按钮（var(--size-4-5) ≈ 20px），强化"主按钮"地位但
+   * 又不至于撑出 var(--size-4-4) 行高太多。 */
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--background-modifier-border);
-  background: transparent;
+  border: none;
+  /* 用 Obsidian 设计系统的「主操作按钮」语义色对，自动跟随主题。 */
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.1s ease;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  box-shadow: none;
+  outline: 0;
+  line-height: 0;
+}
 
-  &:hover {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
-    border-color: var(--interactive-accent);
-  }
+button.yolo-chat-user-input-submit-button-circle svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+button.yolo-chat-user-input-submit-button-circle:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+button.yolo-chat-user-input-submit-button-circle:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* 空输入：淡化态。色用 text-faint 给箭头、bg 用 background-modifier-border
+ * 既保持圆形剪影，又明显比激活态弱很多。`cursor: default` 是为了对抗
+ * `.yolo-quick-ask-user-message--editing button { cursor: pointer }` 的兜底。 */
+
+button.yolo-chat-user-input-submit-button-circle:disabled {
+  background: var(--background-modifier-border);
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* 生成中：方块图标比箭头略小一点（实心方块视觉重，需要瘦身） */
+
+button.yolo-chat-user-input-submit-button-circle.is-generating svg {
+  width: 10px;
+  height: 10px;
 }
 
 /* Chat Mode Select */
@@ -8075,16 +8109,6 @@ button.yolo-agent-chip--more:hover {
 }
 
 @media (max-width: 520px) {
-  .yolo-chat-user-input-controls__right .yolo-chat-user-input-submit-button {
-    flex-basis: auto;
-    padding-inline: 0;
-  }
-
-  .yolo-chat-user-input-controls__right
-    .yolo-chat-user-input-submit-button-label {
-    display: none;
-  }
-
   .yolo-chat-user-input-controls__left .yolo-reasoning-select {
     flex-basis: auto;
   }

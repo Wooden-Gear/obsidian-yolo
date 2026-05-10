@@ -115,6 +115,11 @@ export type ChatUserInputProps = {
   allowAgentModeOption?: boolean
   enableResize?: boolean
   onRunSlashCommand?: (command: SlashCommand) => void
+  // 当父级正在执行 conversation run 时，发送按钮切换为停止按钮（圆形 + 方块）
+  isGenerating?: boolean
+  onAbort?: () => void
+  // 当输入为空、无 mentionable、无 skill 时，发送按钮以淡化态显示，不可点击
+  submitDisabled?: boolean
 }
 
 const INLINE_MENTIONABLE_TYPES = [
@@ -160,6 +165,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       allowAgentModeOption = true,
       enableResize = false,
       onRunSlashCommand,
+      isGenerating = false,
+      onAbort,
+      submitDisabled = false,
     },
     ref,
   ) => {
@@ -1411,7 +1419,12 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 )}
               </div>
               <div className="yolo-chat-user-input-controls__right">
-                <SubmitButton onClick={() => handleSubmit()} />
+                <SubmitButton
+                  onClick={() => handleSubmit()}
+                  isGenerating={isGenerating}
+                  onAbort={onAbort}
+                  disabled={submitDisabled}
+                />
               </div>
             </div>
           )}

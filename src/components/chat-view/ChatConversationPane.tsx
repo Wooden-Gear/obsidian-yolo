@@ -1,4 +1,4 @@
-import { ArrowDown, Bot, CircleStop, MessageCircle } from 'lucide-react'
+import { ArrowDown, Bot, MessageCircle } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import type { FollowOutput } from 'react-virtuoso'
 
@@ -21,8 +21,6 @@ type ChatConversationPaneProps = {
   followOutput: FollowOutput
   onAtBottomStateChange: (atBottom: boolean) => void
   editingAssistantMessageId: string | null
-  currentConversationRunSummaryIsRunning: boolean
-  onAbortConversationRun: () => void
   onForceScrollToBottom: () => void
   hasStreamingMessages: boolean
   scrollToBottomLabel: string
@@ -47,8 +45,6 @@ export function ChatConversationPane({
   followOutput,
   onAtBottomStateChange,
   editingAssistantMessageId,
-  currentConversationRunSummaryIsRunning,
-  onAbortConversationRun,
   onForceScrollToBottom,
   hasStreamingMessages,
   scrollToBottomLabel,
@@ -115,42 +111,26 @@ export function ChatConversationPane({
         scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
       />
-      <div
-        className={`yolo-chat-footer${
-          isCurrentConversationRunActive ? ' is-generating' : ''
-        }`}
-      >
-        {(isCurrentConversationRunActive || showScrollToBottomButton) && (
+      <div className="yolo-chat-footer">
+        {showScrollToBottomButton && (
           <div className="yolo-chat-floating-actions">
-            {currentConversationRunSummaryIsRunning && (
-              <button
-                type="button"
-                onClick={onAbortConversationRun}
-                className="yolo-stop-gen-btn"
-              >
-                <CircleStop size={16} />
-                <div>Stop generation</div>
-              </button>
-            )}
-            {showScrollToBottomButton && (
-              <button
-                type="button"
-                className="yolo-chat-scroll-to-bottom-button"
-                onClick={onForceScrollToBottom}
-                aria-label={
-                  hasStreamingMessages
-                    ? scrollToBottomWhileStreamingLabel
-                    : scrollToBottomLabel
-                }
-                title={
-                  hasStreamingMessages
-                    ? scrollToBottomWhileStreamingLabel
-                    : scrollToBottomLabel
-                }
-              >
-                <ArrowDown size={14} strokeWidth={2.25} />
-              </button>
-            )}
+            <button
+              type="button"
+              className="yolo-chat-scroll-to-bottom-button"
+              onClick={onForceScrollToBottom}
+              aria-label={
+                hasStreamingMessages
+                  ? scrollToBottomWhileStreamingLabel
+                  : scrollToBottomLabel
+              }
+              title={
+                hasStreamingMessages
+                  ? scrollToBottomWhileStreamingLabel
+                  : scrollToBottomLabel
+              }
+            >
+              <ArrowDown size={14} strokeWidth={2.25} />
+            </button>
           </div>
         )}
         {footerContent}
