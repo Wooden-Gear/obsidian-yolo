@@ -9,6 +9,8 @@ import {
   InlineSuggestionGhostPayload,
   inlineSuggestionGhostEffect,
   inlineSuggestionGhostField,
+  tabLoadingDotsEffect,
+  tabLoadingDotsField,
   thinkingIndicatorEffect,
   thinkingIndicatorField,
 } from './inlineSuggestion'
@@ -51,6 +53,7 @@ export class InlineSuggestionController {
     return [
       inlineSuggestionGhostField,
       thinkingIndicatorField,
+      tabLoadingDotsField,
       EditorView.updateListener.of((update) => {
         if (update.focusChanged && !update.view.hasFocus) {
           const tab = this.getTabCompletionController()
@@ -119,6 +122,14 @@ export class InlineSuggestionController {
 
   hideThinkingIndicator(view: EditorView) {
     view.dispatch({ effects: thinkingIndicatorEffect.of(null) })
+  }
+
+  showTabLoadingDots(view: EditorView, from: number) {
+    view.dispatch({ effects: tabLoadingDotsEffect.of({ from }) })
+  }
+
+  hideTabLoadingDots(view: EditorView) {
+    view.dispatch({ effects: tabLoadingDotsEffect.of(null) })
   }
 
   setActiveInlineSuggestion(suggestion: ActiveInlineSuggestion | null) {

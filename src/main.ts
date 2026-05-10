@@ -1409,6 +1409,10 @@ export default class SmartComposerPlugin extends Plugin {
           this.app.workspace.getActiveFile()?.basename?.trim() ?? '',
         setInlineSuggestionGhost: (view, payload) =>
           inlineSuggestionController.setInlineSuggestionGhost(view, payload),
+        showTabLoadingDots: (view, from) =>
+          inlineSuggestionController.showTabLoadingDots(view, from),
+        hideTabLoadingDots: (view) =>
+          inlineSuggestionController.hideTabLoadingDots(view),
         clearInlineSuggestion: () =>
           inlineSuggestionController.clearInlineSuggestion(),
         setActiveInlineSuggestion: (suggestion) =>
