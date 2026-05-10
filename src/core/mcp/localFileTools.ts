@@ -33,7 +33,7 @@ import {
 } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
-import { type TodoItem, todoStore } from '../agent/todo-store'
+import type { TodoItem } from '../agent/todos-from-messages'
 import {
   findPathOutsideScope,
   isPathAllowedByScope,
@@ -2337,7 +2337,6 @@ export async function callLocalFileTool({
   openApplyReview,
   getRagEngine,
   conversationId,
-  branchId,
   conversationMessages,
   roundId,
   toolCallId,
@@ -2353,7 +2352,6 @@ export async function callLocalFileTool({
   openApplyReview?: (state: ApplyViewState) => Promise<boolean>
   getRagEngine?: () => Promise<RAGEngine>
   conversationId?: string
-  branchId?: string
   conversationMessages?: ChatMessage[]
   roundId?: string
   toolCallId?: string
@@ -4004,7 +4002,7 @@ export async function callLocalFileTool({
       }
 
       case 'todo_write': {
-        return executeTodoWrite({ args, conversationId, branchId })
+        return executeTodoWrite({ args })
       }
 
       default:
@@ -4020,20 +4018,9 @@ export async function callLocalFileTool({
 
 function executeTodoWrite({
   args,
-  conversationId,
-  branchId,
 }: {
   args: Record<string, unknown>
-  conversationId?: string
-  branchId?: string
 }): LocalToolCallResult {
-  if (!conversationId) {
-    return {
-      status: ToolCallResponseStatus.Error,
-      error: 'todo_write requires a conversationId.',
-    }
-  }
-
   const rawTodos = args.todos
   if (!Array.isArray(rawTodos)) {
     return {
@@ -4084,8 +4071,6 @@ function executeTodoWrite({
       error: `At most one todo may be in_progress at a time, but ${inProgressCount} were provided.`,
     }
   }
-
-  todoStore.set(conversationId, branchId, todos)
 
   return {
     status: ToolCallResponseStatus.Success,

@@ -1243,6 +1243,11 @@ export const en: TranslationKeys = {
       autoFailed:
         'Automatic context compaction failed. Sending with the previous context.',
     },
+    todoPanel: {
+      summary: '{total} tasks, {completed} completed',
+      expand: 'Expand',
+      collapse: 'Collapse',
+    },
     codeBlock: {
       showRawText: 'Show raw text',
       showFormattedText: 'Show formatted text',

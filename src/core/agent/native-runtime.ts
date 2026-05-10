@@ -147,8 +147,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                   requestParams: input.requestParams,
                   contextualInjections: composeAgentInjections({
                     baseInjections: input.contextualInjections,
-                    conversationId: input.conversationId,
-                    branchId: input.branchId,
+                    messages: [...requestMessages, ...this.messages],
                   }),
                   geminiTools: input.geminiTools,
                   onAssistantMessage: (assistantMessage) => {
@@ -198,7 +197,6 @@ export class NativeAgentRuntime implements AgentRuntime {
                   await toolGateway.executeAutoToolCalls({
                     toolMessage: initialToolMessage,
                     conversationId: input.conversationId,
-                    branchId: input.branchId,
                     conversationMessages: [
                       ...requestMessages,
                       ...this.messages,
@@ -261,8 +259,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                             allowedSkillNames: input.allowedSkillNames,
                             contextualInjections: composeAgentInjections({
                               baseInjections: input.contextualInjections,
-                              conversationId: input.conversationId,
-                              branchId: input.branchId,
+                              messages: conversationMessages,
                             }),
                           })
                       } catch (error) {

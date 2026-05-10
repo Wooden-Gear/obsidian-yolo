@@ -1,6 +1,6 @@
 import type { TFile } from 'obsidian'
 
-import type { TodoItem } from '../../../core/agent/todo-store'
+import type { TodoItem } from '../../../core/agent/todos-from-messages'
 import type { CurrentFileViewState } from '../../../types/mentionable'
 
 /**
@@ -38,7 +38,7 @@ export type EditorSnapshotInjection = {
 
 export type TodoListInjection = {
   type: 'todo-list'
-  todos: TodoItem[]
+  todos: ReadonlyArray<TodoItem>
 }
 
 export type ContextualInjection =

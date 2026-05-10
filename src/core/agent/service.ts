@@ -686,7 +686,6 @@ export class AgentService {
       args: getToolCallArgumentsObject(toolCall.request.arguments),
       id: toolCall.request.id,
       conversationId,
-      branchId: runEntry.branchId,
       conversationMessages: runEntry.state.messages,
       roundId: toolMessage.id,
       chatModelId: lastRunInput.model.id,

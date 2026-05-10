@@ -111,6 +111,7 @@ import { useActiveViewState } from './hooks/useActiveViewState'
 import { syncRenderedLatexSelection } from './latex-copy'
 import QueryProgress from './QueryProgress'
 import type { QueryProgressState } from './QueryProgress'
+import { TodoListPanel } from './TodoListPanel'
 import { useAutoScroll } from './useAutoScroll'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
@@ -2476,7 +2477,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           args,
           id: request.id,
           conversationId,
-          branchId: toolMessage.metadata?.branchId,
           conversationMessages: runningMessages,
           roundId: toolMessageId,
           workspaceScope:
@@ -4714,6 +4714,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   </div>
                 )}
               <div className="yolo-chat-input-wrapper">
+                <TodoListPanel messages={displayedChatMessages} />
                 <ChatUserInput
                   key={inputMessage.id}
                   ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}

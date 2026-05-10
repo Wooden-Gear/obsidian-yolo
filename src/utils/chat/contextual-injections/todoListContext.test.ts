@@ -1,4 +1,4 @@
-import { TodoItem } from '../../../core/agent/todo-store'
+import { TodoItem } from '../../../core/agent/todos-from-messages'
 
 import { renderTodoListInjection } from './todoListContext'
 

@@ -1,13 +1,13 @@
+import type { ChatMessage } from '../../types/chat'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 
-import { todoStore } from './todo-store'
+import { deriveTodosFromMessages } from './todos-from-messages'
 
 export function composeAgentInjections(args: {
   baseInjections: ContextualInjection[] | undefined
-  conversationId: string
-  branchId?: string
+  messages: ReadonlyArray<ChatMessage>
 }): ContextualInjection[] {
-  const todos = todoStore.get(args.conversationId, args.branchId) ?? []
+  const todos = deriveTodosFromMessages(args.messages)
   return [
     ...(args.baseInjections ?? []),
     ...(todos.length > 0 ? [{ type: 'todo-list' as const, todos }] : []),

@@ -1071,6 +1071,11 @@ export type TranslationKeys = {
       waitingApproval?: string
       autoFailed?: string
     }
+    todoPanel?: {
+      summary?: string
+      expand?: string
+      collapse?: string
+    }
     codeBlock?: {
       showRawText?: string
       showFormattedText?: string

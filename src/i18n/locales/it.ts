@@ -1220,6 +1220,11 @@ export const it: TranslationKeys = {
       autoFailed:
         'Compattazione automatica non riuscita. Invio con il contesto precedente.',
     },
+    todoPanel: {
+      summary: '{total} attivita, {completed} completate',
+      expand: 'Espandi',
+      collapse: 'Comprimi',
+    },
     codeBlock: {
       showRawText: 'Mostra testo grezzo',
       showFormattedText: 'Mostra testo formattato',

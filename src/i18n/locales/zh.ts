@@ -1165,6 +1165,11 @@ export const zh: TranslationKeys = {
       waitingApproval: '请先处理当前待确认的工具调用，再压缩上下文。',
       autoFailed: '自动压缩上下文失败，将使用压缩前的上下文继续发送。',
     },
+    todoPanel: {
+      summary: '共 {total} 个任务，已完成 {completed} 个',
+      expand: '展开',
+      collapse: '收起',
+    },
     codeBlock: {
       showRawText: '显示原始文本',
       showFormattedText: '显示格式化文本',

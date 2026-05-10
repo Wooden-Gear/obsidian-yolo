@@ -121,14 +121,12 @@ export class AgentToolGateway {
   async executeAutoToolCalls({
     toolMessage,
     conversationId,
-    branchId,
     conversationMessages,
     signal,
     chatModelId,
   }: {
     toolMessage: ChatToolMessage
     conversationId: string
-    branchId?: string
     conversationMessages?: ChatMessage[]
     signal?: AbortSignal
     chatModelId?: string
@@ -178,7 +176,6 @@ export class AgentToolGateway {
             args: getToolCallArgumentsObject(entry.toolCall.request.arguments),
             id: entry.toolCall.request.id,
             conversationId,
-            branchId,
             conversationMessages,
             roundId: toolMessage.id,
             requireReview: this.shouldUseFsEditReview(
@@ -204,7 +201,6 @@ export class AgentToolGateway {
               ),
               id: entry.toolCall.request.id,
               conversationId,
-              branchId,
               conversationMessages,
               roundId: toolMessage.id,
               requireReview: this.shouldUseFsEditReview(
@@ -234,7 +230,6 @@ export class AgentToolGateway {
             args: mergedArgs,
             id: leader.toolCall.request.id,
             conversationId,
-            branchId,
             conversationMessages,
             roundId: toolMessage.id,
             requireReview: this.shouldUseFsEditReview(
