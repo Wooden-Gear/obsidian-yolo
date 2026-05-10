@@ -1166,7 +1166,10 @@ export const zh: TranslationKeys = {
       autoFailed: '自动压缩上下文失败，将使用压缩前的上下文继续发送。',
     },
     todoPanel: {
-      summary: '共 {total} 个任务，已完成 {completed} 个',
+      summaryPlanning: '{count} 个任务待开始',
+      summaryInProgress: '步骤 {index}/{total}：{text}',
+      summaryPartial: '已完成 {done}/{total}',
+      summaryAllDone: '{total}/{total} 已完成',
       expand: '展开',
       collapse: '收起',
     },

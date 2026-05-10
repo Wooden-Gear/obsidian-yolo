@@ -1056,7 +1056,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'todo_write',
       description:
-        'Update the todo list for the current agent run. Use proactively for multi-step tasks (≥3 steps) or when the user provides multiple requests. Always pass the complete list each call (this overwrites the previous list); pass `[]` to clear it. Each item needs `content` (a concise task description / action phrase, e.g. "Run tests") and `status` (pending / in_progress / completed). Keep at most ONE task in_progress at any time (and exactly one while there are unfinished items). Mark items completed immediately after finishing — don\'t batch.',
+        'Update the todo list for the current agent run. Use proactively for multi-step tasks (≥3 steps) or when the user has multiple requests. Each call replaces the entire list; pass `[]` to clear. Keep at most one item in_progress (and exactly one while work is ongoing). Mark items completed immediately as you finish them.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -1070,7 +1070,7 @@ export function getLocalFileTools(options?: {
                 content: {
                   type: 'string',
                   description:
-                    'Concise task description / action phrase, e.g. "Run tests". Keep it short — not a status sentence.',
+                    'The work to do, as an action phrase. Examples: "Run tests", "Refactor the parser".',
                 },
                 status: {
                   type: 'string',

@@ -1072,7 +1072,10 @@ export type TranslationKeys = {
       autoFailed?: string
     }
     todoPanel?: {
-      summary?: string
+      summaryPlanning?: string
+      summaryInProgress?: string
+      summaryPartial?: string
+      summaryAllDone?: string
       expand?: string
       collapse?: string
     }

@@ -130,7 +130,6 @@ button.yolo-todo-panel__header {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-  min-width: 1.5em;
 }
 
 .yolo-todo-panel__text {

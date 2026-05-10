@@ -1221,7 +1221,10 @@ export const it: TranslationKeys = {
         'Compattazione automatica non riuscita. Invio con il contesto precedente.',
     },
     todoPanel: {
-      summary: '{total} attivita, {completed} completate',
+      summaryPlanning: '{count} attivita da iniziare',
+      summaryInProgress: 'Passo {index}/{total}: {text}',
+      summaryPartial: '{done}/{total} completate',
+      summaryAllDone: 'Tutte {total} completate',
       expand: 'Espandi',
       collapse: 'Comprimi',
     },

@@ -1244,7 +1244,10 @@ export const en: TranslationKeys = {
         'Automatic context compaction failed. Sending with the previous context.',
     },
     todoPanel: {
-      summary: '{total} tasks, {completed} completed',
+      summaryPlanning: '{count} tasks pending',
+      summaryInProgress: 'Step {index}/{total}: {text}',
+      summaryPartial: '{done}/{total} done',
+      summaryAllDone: 'All {total} done',
       expand: 'Expand',
       collapse: 'Collapse',
     },

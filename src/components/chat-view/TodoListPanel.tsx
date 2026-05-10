@@ -48,15 +48,11 @@ export function TodoListPanel({ messages }: Props) {
   if (todos.length === 0) return null
 
   const total = todos.length
-  const completed = todos.filter((item) => item.status === 'completed').length
-
-  const summaryTpl = t(
-    'chat.todoPanel.summary',
-    '共 {total} 个任务，已完成 {completed} 个',
+  const done = todos.filter((item) => item.status === 'completed').length
+  const inProgressIndex = todos.findIndex(
+    (item) => item.status === 'in_progress',
   )
-  const summary = summaryTpl
-    .replace('{total}', String(total))
-    .replace('{completed}', String(completed))
+  const summary = formatSummary({ todos, total, done, inProgressIndex, t })
 
   const collapseLabel = expanded
     ? t('chat.todoPanel.collapse', '收起')
@@ -95,6 +91,65 @@ export function TodoListPanel({ messages }: Props) {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Compose the collapsed-state header summary. Branches on todo state so the
+ * one-line text always carries the most relevant signal:
+ *   - Just planned (all pending)         → "{n} tasks pending"
+ *   - Has an in_progress item            → "Step {i}/{total}: {content}"
+ *   - Mid-flight without in_progress     → "{done}/{total} done"
+ *   - Everything completed               → "All {total} done"
+ */
+function formatSummary({
+  todos,
+  total,
+  done,
+  inProgressIndex,
+  t,
+}: {
+  todos: ReadonlyArray<TodoItem>
+  total: number
+  done: number
+  inProgressIndex: number
+  t: (key: string, fallback: string) => string
+}): string {
+  if (inProgressIndex >= 0) {
+    return interpolate(
+      t('chat.todoPanel.summaryInProgress', 'Step {index}/{total}: {text}'),
+      {
+        index: String(inProgressIndex + 1),
+        total: String(total),
+        text: todos[inProgressIndex].content,
+      },
+    )
+  }
+  if (done === total) {
+    return interpolate(t('chat.todoPanel.summaryAllDone', 'All {total} done'), {
+      total: String(total),
+    })
+  }
+  if (done === 0) {
+    return interpolate(
+      t('chat.todoPanel.summaryPlanning', '{count} tasks pending'),
+      { count: String(total) },
+    )
+  }
+  return interpolate(
+    t('chat.todoPanel.summaryPartial', '{done}/{total} done'),
+    { done: String(done), total: String(total) },
+  )
+}
+
+/**
+ * Replace all `{key}` placeholders in a template. Note: a single
+ * `String.prototype.replace` only swaps the first occurrence, which broke the
+ * `{total}/{total}` style summaries — always use the global form here.
+ */
+function interpolate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key) =>
+    Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : match,
   )
 }
 
