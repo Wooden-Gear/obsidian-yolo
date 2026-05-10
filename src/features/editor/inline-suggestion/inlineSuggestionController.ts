@@ -80,6 +80,10 @@ export class InlineSuggestionController {
             key: 'Escape',
             run: (v) => this.tryRejectInlineSuggestionFromView(v),
           },
+          {
+            key: 'Backspace',
+            run: (v) => this.tryRejectInlineSuggestionFromView(v),
+          },
         ]),
       ),
     ]
