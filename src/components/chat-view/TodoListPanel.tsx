@@ -1,12 +1,14 @@
 import cx from 'clsx'
 import { Check, ChevronDown, Circle, ListTodo, Loader2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import {
   type TodoItem,
   type TodoStatus,
   deriveTodosFromMessages,
+  findLatestCompletedTodoWriteId,
+  findTodoSeriesStartId,
 } from '../../core/agent/todos-from-messages'
 import type { ChatMessage } from '../../types/chat'
 
@@ -16,8 +18,32 @@ type Props = {
 
 export function TodoListPanel({ messages }: Props) {
   const todos = useMemo(() => deriveTodosFromMessages(messages), [messages])
+  const seriesStartId = useMemo(
+    () => findTodoSeriesStartId(messages),
+    [messages],
+  )
+  const completedWriteId = useMemo(
+    () => findLatestCompletedTodoWriteId(messages),
+    [messages],
+  )
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(true)
+
+  // Auto-expand only when a new todo "series" begins (see findTodoSeriesStartId
+  // for the definition). Updates within an active series keep the user's
+  // collapse choice — Chat.tsx never unmounts this component, so we can't rely
+  // on useState's initial value to do this for us.
+  useEffect(() => {
+    if (seriesStartId !== null) setExpanded(true)
+  }, [seriesStartId])
+
+  // Auto-collapse the moment a write lands that marks every item completed —
+  // the body becomes informational rather than actionable. Fires only when
+  // completedWriteId changes (i.e. a new "everything done" write), so user
+  // re-expanding an all-completed list later won't be overridden.
+  useEffect(() => {
+    if (completedWriteId !== null) setExpanded(false)
+  }, [completedWriteId])
 
   if (todos.length === 0) return null
 

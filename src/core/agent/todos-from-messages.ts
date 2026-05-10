@@ -46,6 +46,77 @@ export function deriveTodosFromMessages(
   return EMPTY
 }
 
+/**
+ * Return the request id of the *first* successful `todo_write` in the current
+ * todo "series", or `null` if no series exists yet.
+ *
+ * A series starts when a `todo_write` lands while the previous todo state was
+ * "ended" — i.e. there was no prior write, or the previous write was an empty
+ * list, or every item in the previous list was `completed`. Subsequent writes
+ * within an active (still has non-completed items) series share the same
+ * series start id.
+ *
+ * UI uses this id as the auto-expand trigger key: it changes only when a new
+ * batch of work begins, so updates within a batch don't override the user's
+ * collapse choice.
+ */
+export function findTodoSeriesStartId(
+  messages: ReadonlyArray<ChatMessage>,
+): string | null {
+  let prevTodos: ReadonlyArray<TodoItem> | null = null
+  let seriesStartId: string | null = null
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i]
+    if (message.role !== 'tool') continue
+    for (let j = 0; j < message.toolCalls.length; j++) {
+      const { request, response } = message.toolCalls[j]
+      if (!isTodoWriteToolName(request.name)) continue
+      if (response.status !== ToolCallResponseStatus.Success) continue
+      const argsObject = getToolCallArgumentsObject(request.arguments)
+      const todos = argsObject ? parseTodos(argsObject.todos) : EMPTY
+      if (prevTodos === null || isTodoSeriesEnded(prevTodos)) {
+        seriesStartId = request.id
+      }
+      prevTodos = todos
+    }
+  }
+  return seriesStartId
+}
+
+function isTodoSeriesEnded(todos: ReadonlyArray<TodoItem>): boolean {
+  if (todos.length === 0) return true
+  return todos.every((item) => item.status === 'completed')
+}
+
+/**
+ * Return the request id of the latest successful `todo_write` whose todos
+ * are non-empty and entirely `completed`, or `null` if no such call exists.
+ *
+ * UI uses this as the auto-collapse trigger key: when a write lands that
+ * marks the whole list done, the panel collapses itself once. The id only
+ * changes on a fresh "everything done" write, so this never fights the user
+ * if they manually re-expand an already-completed list.
+ */
+export function findLatestCompletedTodoWriteId(
+  messages: ReadonlyArray<ChatMessage>,
+): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]
+    if (message.role !== 'tool') continue
+    for (let j = message.toolCalls.length - 1; j >= 0; j--) {
+      const { request, response } = message.toolCalls[j]
+      if (!isTodoWriteToolName(request.name)) continue
+      if (response.status !== ToolCallResponseStatus.Success) continue
+      const argsObject = getToolCallArgumentsObject(request.arguments)
+      const todos = argsObject ? parseTodos(argsObject.todos) : EMPTY
+      if (todos.length === 0) return null
+      if (todos.every((item) => item.status === 'completed')) return request.id
+      return null
+    }
+  }
+  return null
+}
+
 function isTodoWriteToolName(name: string): boolean {
   try {
     return parseToolName(name).toolName === 'todo_write'

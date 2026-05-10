@@ -7,7 +7,11 @@ import {
 import { getLocalFileToolServerName } from '../mcp/localFileTools'
 import { getToolName } from '../mcp/tool-name-utils'
 
-import { deriveTodosFromMessages } from './todos-from-messages'
+import {
+  deriveTodosFromMessages,
+  findLatestCompletedTodoWriteId,
+  findTodoSeriesStartId,
+} from './todos-from-messages'
 
 const TODO_WRITE_TOOL_NAME = getToolName(
   getLocalFileToolServerName(),
@@ -236,5 +240,197 @@ describe('deriveTodosFromMessages', () => {
     ]
     const result = deriveTodosFromMessages(messages)
     expect(Object.isFrozen(result)).toBe(true)
+  })
+})
+
+describe('findTodoSeriesStartId', () => {
+  it('returns null when no successful todo_write exists', () => {
+    expect(findTodoSeriesStartId([])).toBeNull()
+    expect(findTodoSeriesStartId([userMessage('hi')])).toBeNull()
+  })
+
+  it('returns the first call id as the series start', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'pending' }],
+        'm1',
+      ),
+    ]
+    expect(findTodoSeriesStartId(messages)).toBe('m1-call')
+  })
+
+  it('keeps the same series id while previous list still has active items', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'pending' },
+          { content: 'B', activeForm: 'Doing B', status: 'pending' },
+        ],
+        'm1',
+      ),
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'completed' },
+          { content: 'B', activeForm: 'Doing B', status: 'in_progress' },
+        ],
+        'm2',
+      ),
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'completed' },
+          { content: 'B', activeForm: 'Doing B', status: 'completed' },
+          { content: 'C', activeForm: 'Doing C', status: 'pending' },
+        ],
+        'm3',
+      ),
+    ]
+    expect(findTodoSeriesStartId(messages)).toBe('m1-call')
+  })
+
+  it('starts a new series when the previous list was all completed', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm1',
+      ),
+      todoWriteToolMessage(
+        [{ content: 'B', activeForm: 'Doing B', status: 'pending' }],
+        'm2',
+      ),
+    ]
+    expect(findTodoSeriesStartId(messages)).toBe('m2-call')
+  })
+
+  it('starts a new series when the previous list was empty (explicit clear)', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'pending' }],
+        'm1',
+      ),
+      todoWriteToolMessage([], 'm2'),
+      todoWriteToolMessage(
+        [{ content: 'B', activeForm: 'Doing B', status: 'pending' }],
+        'm3',
+      ),
+    ]
+    expect(findTodoSeriesStartId(messages)).toBe('m3-call')
+  })
+
+  it('ignores non-success todo_write calls when computing the series', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'pending' }],
+        'm1',
+      ),
+      // Failed write does not affect series detection.
+      todoWriteToolMessage('bad', 'm2', {
+        status: ToolCallResponseStatus.Error,
+        error: 'todos must be an array.',
+      }),
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm3',
+      ),
+    ]
+    // m3 follows m1 (m2 ignored); m1 had an active item so m3 is a continuation.
+    expect(findTodoSeriesStartId(messages)).toBe('m1-call')
+  })
+
+  it('handles multiple series in one message stream', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'pending' }],
+        'm1',
+      ),
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm2',
+      ),
+      todoWriteToolMessage(
+        [{ content: 'B', activeForm: 'Doing B', status: 'pending' }],
+        'm3',
+      ),
+      todoWriteToolMessage(
+        [{ content: 'B', activeForm: 'Doing B', status: 'in_progress' }],
+        'm4',
+      ),
+    ]
+    expect(findTodoSeriesStartId(messages)).toBe('m3-call')
+  })
+})
+
+describe('findLatestCompletedTodoWriteId', () => {
+  it('returns null when no successful todo_write exists', () => {
+    expect(findLatestCompletedTodoWriteId([])).toBeNull()
+    expect(findLatestCompletedTodoWriteId([userMessage('hi')])).toBeNull()
+  })
+
+  it('returns null when latest list still has pending or in_progress items', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'completed' },
+          { content: 'B', activeForm: 'Doing B', status: 'pending' },
+        ],
+        'm1',
+      ),
+    ]
+    expect(findLatestCompletedTodoWriteId(messages)).toBeNull()
+  })
+
+  it('returns null when latest list is an explicit empty (no completion to mark)', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm1',
+      ),
+      todoWriteToolMessage([], 'm2'),
+    ]
+    expect(findLatestCompletedTodoWriteId(messages)).toBeNull()
+  })
+
+  it('returns the request id when latest list is non-empty and all completed', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'completed' },
+          { content: 'B', activeForm: 'Doing B', status: 'completed' },
+        ],
+        'm1',
+      ),
+    ]
+    expect(findLatestCompletedTodoWriteId(messages)).toBe('m1-call')
+  })
+
+  it('returns the latest matching write, not an older one', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm1',
+      ),
+      todoWriteToolMessage(
+        [
+          { content: 'A', activeForm: 'Doing A', status: 'completed' },
+          { content: 'B', activeForm: 'Doing B', status: 'completed' },
+        ],
+        'm2',
+      ),
+    ]
+    expect(findLatestCompletedTodoWriteId(messages)).toBe('m2-call')
+  })
+
+  it('skips non-success todo_write calls', () => {
+    const messages: ChatMessage[] = [
+      todoWriteToolMessage(
+        [{ content: 'A', activeForm: 'Doing A', status: 'completed' }],
+        'm1',
+      ),
+      // Failed write does not change the "completed write" identity.
+      todoWriteToolMessage('bad', 'm2', {
+        status: ToolCallResponseStatus.Error,
+        error: 'todos must be an array.',
+      }),
+    ]
+    expect(findLatestCompletedTodoWriteId(messages)).toBe('m1-call')
   })
 })
