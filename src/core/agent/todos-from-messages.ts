@@ -9,7 +9,6 @@ export type TodoStatus = 'pending' | 'in_progress' | 'completed'
 
 export type TodoItem = {
   content: string
-  activeForm: string
   status: TodoStatus
 }
 
@@ -132,10 +131,8 @@ function parseTodos(value: unknown): ReadonlyArray<TodoItem> {
     if (!item || typeof item !== 'object') continue
     const record = item as Record<string, unknown>
     const content = record.content
-    const activeForm = record.activeForm
     const status = record.status
     if (typeof content !== 'string' || content.trim() === '') continue
-    if (typeof activeForm !== 'string' || activeForm.trim() === '') continue
     if (
       status !== 'pending' &&
       status !== 'in_progress' &&
@@ -143,7 +140,7 @@ function parseTodos(value: unknown): ReadonlyArray<TodoItem> {
     ) {
       continue
     }
-    result.push({ content, activeForm, status })
+    result.push({ content, status })
   }
   return Object.freeze(result)
 }

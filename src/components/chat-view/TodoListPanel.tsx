@@ -99,7 +99,7 @@ export function TodoListPanel({ messages }: Props) {
 }
 
 function TodoRow({ item, index }: { item: TodoItem; index: number }) {
-  const text = item.status === 'in_progress' ? item.activeForm : item.content
+  const text = item.content
   return (
     <li
       className={cx(

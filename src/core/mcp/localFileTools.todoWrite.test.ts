@@ -17,16 +17,8 @@ describe('todo_write tool (validation)', () => {
   it('returns success on a valid todo list', async () => {
     const result = await call({
       todos: [
-        {
-          content: 'Run tests',
-          activeForm: 'Running tests',
-          status: 'pending',
-        },
-        {
-          content: 'Build project',
-          activeForm: 'Building project',
-          status: 'in_progress',
-        },
+        { content: 'Run tests', status: 'pending' },
+        { content: 'Build project', status: 'in_progress' },
       ],
     })
 
@@ -48,7 +40,7 @@ describe('todo_write tool (validation)', () => {
 
   it('errors when content is empty', async () => {
     const result = await call({
-      todos: [{ content: '   ', activeForm: 'Doing A', status: 'pending' }],
+      todos: [{ content: '   ', status: 'pending' }],
     })
 
     expect(result.status).toBe(ToolCallResponseStatus.Error)
@@ -56,19 +48,9 @@ describe('todo_write tool (validation)', () => {
     expect(result.error).toMatch(/content/)
   })
 
-  it('errors when activeForm is empty', async () => {
-    const result = await call({
-      todos: [{ content: 'A', activeForm: '', status: 'pending' }],
-    })
-
-    expect(result.status).toBe(ToolCallResponseStatus.Error)
-    if (result.status !== ToolCallResponseStatus.Error) return
-    expect(result.error).toMatch(/activeForm/)
-  })
-
   it('errors when status is invalid', async () => {
     const result = await call({
-      todos: [{ content: 'A', activeForm: 'Doing A', status: 'done' }],
+      todos: [{ content: 'A', status: 'done' }],
     })
 
     expect(result.status).toBe(ToolCallResponseStatus.Error)
@@ -79,8 +61,8 @@ describe('todo_write tool (validation)', () => {
   it('errors when more than one item is in_progress', async () => {
     const result = await call({
       todos: [
-        { content: 'A', activeForm: 'Doing A', status: 'in_progress' },
-        { content: 'B', activeForm: 'Doing B', status: 'in_progress' },
+        { content: 'A', status: 'in_progress' },
+        { content: 'B', status: 'in_progress' },
       ],
     })
 

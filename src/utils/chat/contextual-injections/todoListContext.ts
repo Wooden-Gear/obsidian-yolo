@@ -7,8 +7,7 @@ export function renderTodoListInjection(
 ): RequestMessage {
   const lines = injection.todos.map((item) => {
     const label = `[${item.status}]`
-    const text = item.status === 'in_progress' ? item.activeForm : item.content
-    return `- ${label} ${text}`
+    return `- ${label} ${item.content}`
   })
 
   const content = `<current-todo-list>\n${lines.join('\n')}\n</current-todo-list>`

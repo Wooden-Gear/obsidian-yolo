@@ -1313,6 +1313,14 @@ export const zh: TranslationKeys = {
       alwaysAllowThisTool: '始终允许此工具',
       allowForThisChat: '仅本次对话允许',
     },
+    toolSummary: {
+      todoWrite: {
+        cleared: '清空清单',
+        allCompleted: '全部完成（{count} 项）',
+        created: '新建 {count} 项任务',
+        progress: '进度 {done}/{total}',
+      },
+    },
     externalAgent: {
       statusRunning: '执行中',
       statusDone: '已完成',

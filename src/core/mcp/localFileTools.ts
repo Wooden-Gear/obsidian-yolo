@@ -1056,7 +1056,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'todo_write',
       description:
-        'Update the todo list for the current agent run. Use proactively for multi-step tasks (≥3 steps) or when the user provides multiple requests. Always pass the complete list each call (this overwrites the previous list); pass `[]` to clear it. Each item needs `content` (imperative, e.g. "Run tests") and `activeForm` (present continuous, e.g. "Running tests"). Status: pending / in_progress / completed. Keep at most ONE task in_progress at any time (and exactly one while there are unfinished items). Mark items completed immediately after finishing — don\'t batch.',
+        'Update the todo list for the current agent run. Use proactively for multi-step tasks (≥3 steps) or when the user provides multiple requests. Always pass the complete list each call (this overwrites the previous list); pass `[]` to clear it. Each item needs `content` (a concise task description / action phrase, e.g. "Run tests") and `status` (pending / in_progress / completed). Keep at most ONE task in_progress at any time (and exactly one while there are unfinished items). Mark items completed immediately after finishing — don\'t batch.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -1069,12 +1069,8 @@ export function getLocalFileTools(options?: {
               properties: {
                 content: {
                   type: 'string',
-                  description: 'Imperative form of the task, e.g. "Run tests".',
-                },
-                activeForm: {
-                  type: 'string',
                   description:
-                    'Present-continuous form shown while in_progress, e.g. "Running tests".',
+                    'Concise task description / action phrase, e.g. "Run tests". Keep it short — not a status sentence.',
                 },
                 status: {
                   type: 'string',
@@ -1082,7 +1078,7 @@ export function getLocalFileTools(options?: {
                   description: 'Current status of the task.',
                 },
               },
-              required: ['content', 'activeForm', 'status'],
+              required: ['content', 'status'],
             },
           },
         },
@@ -4038,17 +4034,11 @@ function executeTodoWrite({
         error: `todos[${i}] must be an object.`,
       }
     }
-    const { content, activeForm, status } = item as Record<string, unknown>
+    const { content, status } = item as Record<string, unknown>
     if (typeof content !== 'string' || content.trim() === '') {
       return {
         status: ToolCallResponseStatus.Error,
         error: `todos[${i}].content must be a non-empty string.`,
-      }
-    }
-    if (typeof activeForm !== 'string' || activeForm.trim() === '') {
-      return {
-        status: ToolCallResponseStatus.Error,
-        error: `todos[${i}].activeForm must be a non-empty string.`,
       }
     }
     if (
@@ -4061,7 +4051,7 @@ function executeTodoWrite({
         error: `todos[${i}].status must be "pending", "in_progress", or "completed".`,
       }
     }
-    todos.push({ content, activeForm, status })
+    todos.push({ content, status })
   }
 
   const inProgressCount = todos.filter((t) => t.status === 'in_progress').length

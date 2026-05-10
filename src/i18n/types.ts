@@ -1198,6 +1198,14 @@ export type TranslationKeys = {
       alwaysAllowThisTool?: string
       allowForThisChat?: string
     }
+    toolSummary?: {
+      todoWrite?: {
+        cleared?: string
+        allCompleted?: string
+        created?: string
+        progress?: string
+      }
+    }
     // delegate_external_agent tool card
     externalAgent?: {
       statusRunning?: string

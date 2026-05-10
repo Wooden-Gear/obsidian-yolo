@@ -1401,6 +1401,14 @@ export const en: TranslationKeys = {
       alwaysAllowThisTool: 'Always allow this tool',
       allowForThisChat: 'Allow for this chat',
     },
+    toolSummary: {
+      todoWrite: {
+        cleared: 'Cleared list',
+        allCompleted: 'All completed ({count})',
+        created: 'Planned {count} tasks',
+        progress: 'Progress {done}/{total}',
+      },
+    },
     externalAgent: {
       statusRunning: 'Running',
       statusDone: 'Done',

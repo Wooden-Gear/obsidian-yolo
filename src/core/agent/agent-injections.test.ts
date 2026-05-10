@@ -34,7 +34,6 @@ const todoWriteToolMessage = (todos: TodoItem[]): ChatToolMessage => ({
 
 const item = (content: string): TodoItem => ({
   content,
-  activeForm: `Doing ${content}`,
   status: 'pending',
 })
 

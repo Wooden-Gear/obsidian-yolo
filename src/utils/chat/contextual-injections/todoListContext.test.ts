@@ -2,47 +2,42 @@ import { TodoItem } from '../../../core/agent/todos-from-messages'
 
 import { renderTodoListInjection } from './todoListContext'
 
-const pending = (content: string, activeForm: string): TodoItem => ({
+const pending = (content: string): TodoItem => ({
   content,
-  activeForm,
   status: 'pending',
 })
 
-const inProgress = (content: string, activeForm: string): TodoItem => ({
+const inProgress = (content: string): TodoItem => ({
   content,
-  activeForm,
   status: 'in_progress',
 })
 
-const completed = (content: string, activeForm: string): TodoItem => ({
+const completed = (content: string): TodoItem => ({
   content,
-  activeForm,
   status: 'completed',
 })
 
 describe('renderTodoListInjection', () => {
-  it('renders in_progress items using activeForm', () => {
+  it('renders in_progress items using content', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [inProgress('Run tests', 'Running tests')],
+      todos: [inProgress('Run tests')],
     })
-    expect(result.content).toContain('[in_progress] Running tests')
-    expect(result.content).not.toContain('Run tests')
+    expect(result.content).toContain('[in_progress] Run tests')
   })
 
   it('renders pending items using content', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [pending('Run tests', 'Running tests')],
+      todos: [pending('Run tests')],
     })
     expect(result.content).toContain('[pending] Run tests')
-    expect(result.content).not.toContain('Running tests')
   })
 
   it('renders completed items using content', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [completed('Run tests', 'Running tests')],
+      todos: [completed('Run tests')],
     })
     expect(result.content).toContain('[completed] Run tests')
   })
@@ -50,14 +45,10 @@ describe('renderTodoListInjection', () => {
   it('preserves original ordering', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [
-        inProgress('A', 'Doing A'),
-        completed('B', 'Done B'),
-        pending('C', 'Doing C'),
-      ],
+      todos: [inProgress('A'), completed('B'), pending('C')],
     })
     const text = result.content as string
-    const posA = text.indexOf('[in_progress] Doing A')
+    const posA = text.indexOf('[in_progress] A')
     const posB = text.indexOf('[completed] B')
     const posC = text.indexOf('[pending] C')
     expect(posA).toBeLessThan(posB)
@@ -67,7 +58,7 @@ describe('renderTodoListInjection', () => {
   it('wraps output in <current-todo-list> tags', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [pending('A', 'Doing A')],
+      todos: [pending('A')],
     })
     const text = result.content as string
     expect(text.startsWith('<current-todo-list>')).toBe(true)
@@ -77,7 +68,7 @@ describe('renderTodoListInjection', () => {
   it('returns a user-role message', () => {
     const result = renderTodoListInjection({
       type: 'todo-list',
-      todos: [pending('A', 'Doing A')],
+      todos: [pending('A')],
     })
     expect(result.role).toBe('user')
   })

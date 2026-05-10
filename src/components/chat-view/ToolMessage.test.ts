@@ -65,6 +65,11 @@ describe('ToolMessage headline helpers', () => {
     reject: 'Reject',
     abort: 'Abort',
     allowForThisChat: 'Allow for this chat',
+    todoWriteCleared: 'Cleared list',
+    todoWriteAllCompleted: (count: number) => `All completed (${count})`,
+    todoWriteCreated: (count: number) => `Planned ${count} tasks`,
+    todoWriteProgress: (done: number, total: number) =>
+      `Progress ${done}/${total}`,
   }
 
   it('appends edit deltas after the path for successful edit calls', () => {
@@ -387,6 +392,35 @@ describe('ToolMessage headline helpers', () => {
       displayName: 'Delete file',
       summaryText: '删除 docs 下 3 个文件',
     })
+  })
+
+  it('uses content (not legacy activeForm) for in_progress todo_write summary', () => {
+    // Old persisted tool calls may still carry an `activeForm` field. The
+    // chip summary must take it from `content` and ignore the legacy field.
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__todo_write',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              todos: [
+                { content: 'A done', activeForm: 'Doing A', status: 'completed' },
+                {
+                  content: '完成第二步',
+                  activeForm: '推进到第二步',
+                  status: 'in_progress',
+                },
+              ],
+            },
+          }),
+        },
+        response: {
+          status: ToolCallResponseStatus.Success,
+          data: { type: 'text', text: 'Todos updated.' },
+        },
+        labels,
+      }).summaryText,
+    ).toBe('完成第二步')
   })
 
   it('falls back to generic batch summary when create-file paths are distributed', () => {

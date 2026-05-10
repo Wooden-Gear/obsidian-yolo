@@ -54,6 +54,10 @@ export type ToolLabels = {
   reject: string
   abort: string
   allowForThisChat: string
+  todoWriteCleared: string
+  todoWriteAllCompleted: (count: number) => string
+  todoWriteCreated: (count: number) => string
+  todoWriteProgress: (done: number, total: number) => string
 }
 
 const DEFAULT_STATUS_LABELS: Record<ToolCallResponseStatus, string> = {
@@ -160,6 +164,7 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       memory_delete: translateBuiltinToolLabel('memory_delete', translate),
       web_search: translateBuiltinToolLabel('web_search', translate),
       web_scrape: translateBuiltinToolLabel('web_scrape', translate),
+      todo_write: translateBuiltinToolLabel('todo_write', translate),
       delegate_external_agent: translateBuiltinToolLabel(
         'delegate_external_agent',
         translate,
@@ -210,6 +215,24 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       'chat.toolCall.allowForThisChat',
       'Allow for this chat',
     ),
+    todoWriteCleared: translate(
+      'chat.toolSummary.todoWrite.cleared',
+      'Cleared list',
+    ),
+    todoWriteAllCompleted: (count: number) =>
+      translate(
+        'chat.toolSummary.todoWrite.allCompleted',
+        'All completed ({count})',
+      ).replace('{count}', String(count)),
+    todoWriteCreated: (count: number) =>
+      translate(
+        'chat.toolSummary.todoWrite.created',
+        'Planned {count} tasks',
+      ).replace('{count}', String(count)),
+    todoWriteProgress: (done: number, total: number) =>
+      translate('chat.toolSummary.todoWrite.progress', 'Progress {done}/{total}')
+        .replace('{done}', String(done))
+        .replace('{total}', String(total)),
   }
 }
 
@@ -586,6 +609,37 @@ const getLocalToolSummaryText = ({
         : ''
     const queryText = truncateText(query, 60)
     return topic ? `${topic} | ${queryText}` : queryText
+  }
+
+  if (toolName === 'todo_write') {
+    const rawTodos = Array.isArray(argumentsObject?.todos)
+      ? (argumentsObject.todos as unknown[])
+      : []
+    const todos = rawTodos.filter(
+      (
+        item,
+      ): item is {
+        content: string
+        status: 'pending' | 'in_progress' | 'completed'
+      } => {
+        if (!item || typeof item !== 'object') return false
+        const record = item as Record<string, unknown>
+        return (
+          typeof record.content === 'string' &&
+          (record.status === 'pending' ||
+            record.status === 'in_progress' ||
+            record.status === 'completed')
+        )
+      },
+    )
+    if (todos.length === 0) return labels.todoWriteCleared
+    const inProgress = todos.find((todo) => todo.status === 'in_progress')
+    if (inProgress) return truncateText(inProgress.content, 60)
+    const total = todos.length
+    const done = todos.filter((todo) => todo.status === 'completed').length
+    if (done === total) return labels.todoWriteAllCompleted(total)
+    if (done === 0) return labels.todoWriteCreated(total)
+    return labels.todoWriteProgress(done, total)
   }
 
   if (toolName === 'web_scrape') {
