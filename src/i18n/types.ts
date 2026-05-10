@@ -282,6 +282,8 @@ export type TranslationKeys = {
       builtinWebOpsDesc?: string
       builtinDelegateExternalAgentLabel?: string
       builtinDelegateExternalAgentDesc?: string
+      builtinTodoWriteLabel?: string
+      builtinTodoWriteDesc?: string
       editorDefaultName?: string
       editorIntro?: string
       editorTabProfile?: string

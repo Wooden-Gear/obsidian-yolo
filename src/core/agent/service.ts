@@ -14,6 +14,7 @@ import {
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
 
+import { DEFAULT_BRANCH_ID } from './branch'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
 import type { ExternalCliEvent } from './external-cli/streamBus'
 import { NativeAgentRuntime } from './native-runtime'
@@ -89,8 +90,6 @@ export type AgentReplaceConversationMessagesReason =
   | 'mutation'
   | 'hydrate'
   | 'self-heal'
-
-const DEFAULT_BRANCH_ID = '__default__'
 
 function buildExternalAgentResultMessage(
   record: AsyncTaskRecord,
@@ -687,6 +686,7 @@ export class AgentService {
       args: getToolCallArgumentsObject(toolCall.request.arguments),
       id: toolCall.request.id,
       conversationId,
+      branchId: runEntry.branchId,
       conversationMessages: runEntry.state.messages,
       roundId: toolMessage.id,
       chatModelId: lastRunInput.model.id,

@@ -399,6 +399,9 @@ export const it: TranslationKeys = {
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
       builtinDelegateExternalAgentDesc:
         'Avvia un agente CLI locale (codex exec o claude -p) come sottoprocesso, trasmette il suo output in chat e passa il risultato finale al LLM. Solo desktop. Richiede approvazione manuale ogni volta.',
+      builtinTodoWriteLabel: 'Lista delle attività',
+      builtinTodoWriteDesc:
+        "Consente all'agente di pianificare e tracciare autonomamente i progressi su task in più fasi. Solo modalità agente.",
       editorDefaultName: 'Nuovo agent',
       editorIntro:
         'Configura le capacità, il modello e il comportamento di questo agent.',

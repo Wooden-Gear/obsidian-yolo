@@ -2476,6 +2476,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           args,
           id: request.id,
           conversationId,
+          branchId: toolMessage.metadata?.branchId,
           conversationMessages: runningMessages,
           roundId: toolMessageId,
           workspaceScope:

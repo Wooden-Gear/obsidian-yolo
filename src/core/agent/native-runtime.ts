@@ -13,6 +13,7 @@ import {
   ToolCallResponseStatus,
 } from '../../types/tool-call.types'
 
+import { composeAgentInjections } from './agent-injections'
 import {
   buildCompactedConversationState,
   createConversationCompactionSummary,
@@ -144,7 +145,11 @@ export class NativeAgentRuntime implements AgentRuntime {
                   abortSignal,
                   reasoningLevel: input.reasoningLevel,
                   requestParams: input.requestParams,
-                  contextualInjections: input.contextualInjections,
+                  contextualInjections: composeAgentInjections({
+                    baseInjections: input.contextualInjections,
+                    conversationId: input.conversationId,
+                    branchId: input.branchId,
+                  }),
                   geminiTools: input.geminiTools,
                   onAssistantMessage: (assistantMessage) => {
                     this.upsertAssistantMessage(assistantMessage)
@@ -193,6 +198,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                   await toolGateway.executeAutoToolCalls({
                     toolMessage: initialToolMessage,
                     conversationId: input.conversationId,
+                    branchId: input.branchId,
                     conversationMessages: [
                       ...requestMessages,
                       ...this.messages,
@@ -253,7 +259,11 @@ export class NativeAgentRuntime implements AgentRuntime {
                             allowedToolNames: input.allowedToolNames,
                             allowedSkillIds: input.allowedSkillIds,
                             allowedSkillNames: input.allowedSkillNames,
-                            contextualInjections: input.contextualInjections,
+                            contextualInjections: composeAgentInjections({
+                              baseInjections: input.contextualInjections,
+                              conversationId: input.conversationId,
+                              branchId: input.branchId,
+                            }),
                           })
                       } catch (error) {
                         console.warn(

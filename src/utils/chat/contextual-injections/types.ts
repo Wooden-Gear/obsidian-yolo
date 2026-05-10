@@ -1,5 +1,6 @@
 import type { TFile } from 'obsidian'
 
+import type { TodoItem } from '../../../core/agent/todo-store'
 import type { CurrentFileViewState } from '../../../types/mentionable'
 
 /**
@@ -35,6 +36,12 @@ export type EditorSnapshotInjection = {
   selection?: EditorSnapshotSelection
 }
 
+export type TodoListInjection = {
+  type: 'todo-list'
+  todos: TodoItem[]
+}
+
 export type ContextualInjection =
   | CurrentFilePointerInjection
   | EditorSnapshotInjection
+  | TodoListInjection

@@ -82,6 +82,7 @@ export class AgentLlmTurnExecutor {
     'memory_update',
     'memory_delete',
     'open_skill',
+    'todo_write',
   ])
 
   constructor(private readonly input: AgentLlmTurnExecutorInput) {}

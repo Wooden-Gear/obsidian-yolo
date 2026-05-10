@@ -123,6 +123,13 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Spawn a local CLI agent (codex exec or claude -p) as a subprocess, stream its output back into the chat, and feed the result to the LLM. Desktop-only. Requires manual approval every time.',
   },
+  todo_write: {
+    labelKey: 'settings.agent.builtinTodoWriteLabel',
+    descKey: 'settings.agent.builtinTodoWriteDesc',
+    labelFallback: 'Task List',
+    descFallback:
+      'Let the agent plan and track multi-step task progress autonomously. Agent mode only.',
+  },
 }
 
 export const getBuiltinToolUiMeta = (
@@ -147,6 +154,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   [FILE_OPS_GROUP_TOOL_NAME]: 'vault',
   context_prune_tool_results: 'context',
   context_compact: 'context',
+  todo_write: 'context',
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
   open_skill: 'external',

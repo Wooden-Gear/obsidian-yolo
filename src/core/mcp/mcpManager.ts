@@ -698,6 +698,7 @@ export class McpManager {
     args,
     id,
     conversationId,
+    branchId,
     roundId,
     conversationMessages,
     signal,
@@ -709,6 +710,7 @@ export class McpManager {
     args?: Record<string, unknown> | undefined
     id?: string
     conversationId?: string
+    branchId?: string
     roundId?: string
     conversationMessages?: ChatMessage[]
     signal?: AbortSignal
@@ -743,6 +745,7 @@ export class McpManager {
           openApplyReview: this.openApplyReview,
           getRagEngine: this.getRagEngine,
           conversationId,
+          branchId,
           conversationMessages,
           roundId,
           toolCallId: id,

@@ -20,6 +20,7 @@ export const CHAT_BLOCKED_TOOL_NAMES: readonly string[] = [
   getToolName(getLocalFileToolServerName(), 'fs_create_dir'),
   getToolName(getLocalFileToolServerName(), 'fs_delete_dir'),
   getToolName(getLocalFileToolServerName(), 'fs_move'),
+  getToolName(getLocalFileToolServerName(), 'todo_write'),
 ]
 
 export type ChatModeRuntime = {

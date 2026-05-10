@@ -33,6 +33,7 @@ import {
 } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
+import { type TodoItem, todoStore } from '../agent/todo-store'
 import {
   findPathOutsideScope,
   isPathAllowedByScope,
@@ -127,6 +128,7 @@ type LocalFileToolName =
   | 'web_search'
   | 'web_scrape'
   | 'delegate_external_agent'
+  | 'todo_write'
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
 type FsSearchMode = 'keyword' | 'rag' | 'hybrid'
 type LegacyFsSearchItem =
@@ -1049,6 +1051,42 @@ export function getLocalFileTools(options?: {
           },
         },
         required: ['provider', 'sandboxMode', 'prompt'],
+      },
+    },
+    {
+      name: 'todo_write',
+      description:
+        'Update the todo list for the current agent run. Use proactively for multi-step tasks (≥3 steps) or when the user provides multiple requests. Always pass the complete list each call (this overwrites the previous list); pass `[]` to clear it. Each item needs `content` (imperative, e.g. "Run tests") and `activeForm` (present continuous, e.g. "Running tests"). Status: pending / in_progress / completed. Keep at most ONE task in_progress at any time (and exactly one while there are unfinished items). Mark items completed immediately after finishing — don\'t batch.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          todos: {
+            type: 'array',
+            description:
+              'Complete replacement list of todo items. Pass [] to clear all todos.',
+            items: {
+              type: 'object',
+              properties: {
+                content: {
+                  type: 'string',
+                  description: 'Imperative form of the task, e.g. "Run tests".',
+                },
+                activeForm: {
+                  type: 'string',
+                  description:
+                    'Present-continuous form shown while in_progress, e.g. "Running tests".',
+                },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'in_progress', 'completed'],
+                  description: 'Current status of the task.',
+                },
+              },
+              required: ['content', 'activeForm', 'status'],
+            },
+          },
+        },
+        required: ['todos'],
       },
     },
   ]
@@ -2299,6 +2337,7 @@ export async function callLocalFileTool({
   openApplyReview,
   getRagEngine,
   conversationId,
+  branchId,
   conversationMessages,
   roundId,
   toolCallId,
@@ -2314,6 +2353,7 @@ export async function callLocalFileTool({
   openApplyReview?: (state: ApplyViewState) => Promise<boolean>
   getRagEngine?: () => Promise<RAGEngine>
   conversationId?: string
+  branchId?: string
   conversationMessages?: ChatMessage[]
   roundId?: string
   toolCallId?: string
@@ -3963,6 +4003,10 @@ export async function callLocalFileTool({
         }
       }
 
+      case 'todo_write': {
+        return executeTodoWrite({ args, conversationId, branchId })
+      }
+
       default:
         throw new Error(`Unknown local file tool: ${toolName}`)
     }
@@ -3971,5 +4015,80 @@ export async function callLocalFileTool({
       status: ToolCallResponseStatus.Error,
       error: asErrorMessage(error),
     }
+  }
+}
+
+function executeTodoWrite({
+  args,
+  conversationId,
+  branchId,
+}: {
+  args: Record<string, unknown>
+  conversationId?: string
+  branchId?: string
+}): LocalToolCallResult {
+  if (!conversationId) {
+    return {
+      status: ToolCallResponseStatus.Error,
+      error: 'todo_write requires a conversationId.',
+    }
+  }
+
+  const rawTodos = args.todos
+  if (!Array.isArray(rawTodos)) {
+    return {
+      status: ToolCallResponseStatus.Error,
+      error: 'todos must be an array.',
+    }
+  }
+
+  const todos: TodoItem[] = []
+  for (let i = 0; i < rawTodos.length; i++) {
+    const item = rawTodos[i]
+    if (typeof item !== 'object' || item === null) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `todos[${i}] must be an object.`,
+      }
+    }
+    const { content, activeForm, status } = item as Record<string, unknown>
+    if (typeof content !== 'string' || content.trim() === '') {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `todos[${i}].content must be a non-empty string.`,
+      }
+    }
+    if (typeof activeForm !== 'string' || activeForm.trim() === '') {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `todos[${i}].activeForm must be a non-empty string.`,
+      }
+    }
+    if (
+      status !== 'pending' &&
+      status !== 'in_progress' &&
+      status !== 'completed'
+    ) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `todos[${i}].status must be "pending", "in_progress", or "completed".`,
+      }
+    }
+    todos.push({ content, activeForm, status })
+  }
+
+  const inProgressCount = todos.filter((t) => t.status === 'in_progress').length
+  if (inProgressCount > 1) {
+    return {
+      status: ToolCallResponseStatus.Error,
+      error: `At most one todo may be in_progress at a time, but ${inProgressCount} were provided.`,
+    }
+  }
+
+  todoStore.set(conversationId, branchId, todos)
+
+  return {
+    status: ToolCallResponseStatus.Success,
+    text: 'Todos updated. Continue tracking your progress with the todo list.',
   }
 }
