@@ -131,7 +131,7 @@ export type TranslationKeys = {
       agent: string
       others: string
     }
-    supportSmartComposer: {
+    supportYolo: {
       name: string
       desc: string
       buyMeACoffee: string

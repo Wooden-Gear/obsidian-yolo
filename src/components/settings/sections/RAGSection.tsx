@@ -10,7 +10,7 @@ import {
 } from '../../../core/rag/ragIndexService'
 import type { PGliteRuntimeStatus } from '../../../database/runtime/PGliteRuntimeManager'
 import { PGLITE_RUNTIME_VERSION } from '../../../database/runtime/pgliteRuntimeMetadata'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import { findFilesMatchingPatterns } from '../../../utils/glob-utils'
 import {
   folderPathsToIncludePatterns,
@@ -33,7 +33,7 @@ import { IncludedFilesModal } from '../modals/IncludedFilesModal'
 
 type RAGSectionProps = {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }
 
 type IndexJob = {
@@ -75,19 +75,19 @@ function RAGCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="smtcmp-rag-card">
-      <div className="smtcmp-rag-card-header">
-        <div className="smtcmp-rag-card-header-copy">
-          <div className="smtcmp-rag-card-title">{title}</div>
+    <section className="yolo-rag-card">
+      <div className="yolo-rag-card-header">
+        <div className="yolo-rag-card-header-copy">
+          <div className="yolo-rag-card-title">{title}</div>
           {description ? (
-            <div className="smtcmp-rag-card-description">{description}</div>
+            <div className="yolo-rag-card-description">{description}</div>
           ) : null}
         </div>
         {actions ? (
-          <div className="smtcmp-rag-card-actions">{actions}</div>
+          <div className="yolo-rag-card-actions">{actions}</div>
         ) : null}
       </div>
-      <div className="smtcmp-rag-card-body">{children}</div>
+      <div className="yolo-rag-card-body">{children}</div>
     </section>
   )
 }
@@ -797,17 +797,17 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   }, [settings.embeddingModels, settings.providers, t])
 
   return (
-    <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">
+    <div className="yolo-settings-section">
+      <div className="yolo-settings-header">
         {t('settings.rag.title', '知识库')}
       </div>
-      <div className="smtcmp-settings-desc">
+      <div className="yolo-settings-desc">
         {t(
           'settings.rag.desc',
           '管理知识库索引，当 Agent 使用「搜索」工具并选择混合 & RAG 模式时，会自动调用 RAG 能力。',
         )}
       </div>
-      <div className="smtcmp-rag-layout">
+      <div className="yolo-rag-layout">
         <RAGCard
           title={t('settings.rag.resourceCardTitle', 'PGlite 资源')}
           description={t(
@@ -843,20 +843,20 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             </>
           }
         >
-          <div className="smtcmp-rag-resource-summary">
-            <span className={`smtcmp-rag-status-pill ${pgliteStatusTone}`}>
+          <div className="yolo-rag-resource-summary">
+            <span className={`yolo-rag-status-pill ${pgliteStatusTone}`}>
               {pgliteStatusLabel}
             </span>
           </div>
 
           {pgliteDownloadDetail ? (
-            <div className="smtcmp-rag-inline-status">
-              <div className="smtcmp-rag-inline-status-text">
+            <div className="yolo-rag-inline-status">
+              <div className="yolo-rag-inline-status-text">
                 {pgliteDownloadDetail}
               </div>
-              <div className="smtcmp-rag-inline-progress" aria-hidden="true">
+              <div className="yolo-rag-inline-progress" aria-hidden="true">
                 <div
-                  className="smtcmp-rag-inline-progress-bar"
+                  className="yolo-rag-inline-progress-bar"
                   style={{ width: `${pgliteDownloadProgress ?? 0}%` }}
                 />
               </div>
@@ -864,17 +864,17 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           ) : null}
 
           {pgliteFailureReason ? (
-            <div className="smtcmp-rag-inline-status smtcmp-rag-inline-status--error">
-              <div className="smtcmp-rag-inline-status-title">
+            <div className="yolo-rag-inline-status yolo-rag-inline-status--error">
+              <div className="yolo-rag-inline-status-title">
                 {t('settings.rag.pgliteInlineErrorTitle', '下载失败')}
               </div>
-              <div className="smtcmp-rag-inline-status-text">
+              <div className="yolo-rag-inline-status-text">
                 {pgliteFailureReason}
               </div>
             </div>
           ) : null}
 
-          <div className="smtcmp-muted-note">{pgliteSummaryText}</div>
+          <div className="yolo-muted-note">{pgliteSummaryText}</div>
         </RAGCard>
 
         <RAGCard
@@ -887,7 +887,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           <ObsidianSetting
             name={t('settings.rag.enableRag')}
             desc={t('settings.rag.enableRagDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianToggle
               value={isRagEnabled}
@@ -918,7 +918,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
               'settings.rag.autoUpdateDesc',
               '开启后会在文档发生变化时于后台自动增量更新索引。',
             )}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianToggle
               value={isAutoUpdateEnabled}
@@ -940,7 +940,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
               'settings.rag.indexPdfDesc',
               '为知识库提取并索引 PDF 文本；首次全库重建可能较慢。大型仓库若不需要可关闭。',
             )}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianToggle
               value={isIndexPdfEnabled}
@@ -959,7 +959,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           <ObsidianSetting
             name={t('settings.rag.embeddingModel')}
             desc={t('settings.rag.embeddingModelDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianDropdown
               value={settings.embeddingModelId}
@@ -974,7 +974,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           </ObsidianSetting>
 
           {!canUseIndexMaintenance && isRagEnabled && (
-            <div className="smtcmp-muted-note">
+            <div className="yolo-muted-note">
               {t(
                 'settings.rag.maintenanceUnavailableHint',
                 '请先在上方准备好 PGlite 资源，再执行索引维护或嵌入数据库管理。',
@@ -987,25 +987,25 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
               <ObsidianSetting
                 name={t('settings.rag.maintenanceActions', '维护操作')}
                 nameExtra={
-                  <div className="smtcmp-index-inline-status">
+                  <div className="yolo-index-inline-status">
                     <IndexProgressRing percent={ringPercent} />
                     {isAnimatingCurrentFile ? (
                       <span
-                        className="smtcmp-index-current-file"
+                        className="yolo-index-current-file"
                         title={`${maintenanceStatusPrefix} ${maintenanceStatusLine}`}
                       >
-                        <span className="smtcmp-index-current-file-prefix">
+                        <span className="yolo-index-current-file-prefix">
                           {maintenanceStatusPrefix}
                         </span>
-                        <span className="smtcmp-index-current-file-viewport">
+                        <span className="yolo-index-current-file-viewport">
                           {leavingCurrentFile ? (
-                            <span className="smtcmp-index-current-file-text is-leaving">
+                            <span className="yolo-index-current-file-text is-leaving">
                               {leavingCurrentFile}
                             </span>
                           ) : null}
                           <span
                             key={fileAnimationKey}
-                            className={`smtcmp-index-current-file-text${leavingCurrentFile ? ' is-entering' : ''}`}
+                            className={`yolo-index-current-file-text${leavingCurrentFile ? ' is-entering' : ''}`}
                           >
                             {maintenanceStatusLine}
                           </span>
@@ -1014,7 +1014,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                     ) : (
                       <span
                         key={maintenanceStatusKey}
-                        className="smtcmp-index-current-file"
+                        className="yolo-index-current-file"
                         title={maintenanceStatusLine}
                       >
                         {maintenanceStatusLine}
@@ -1022,9 +1022,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                     )}
                   </div>
                 }
-                className="smtcmp-settings-card smtcmp-rag-maintenance-setting"
+                className="yolo-settings-card yolo-rag-maintenance-setting"
               >
-                <div className="smtcmp-flex-row-gap-8 smtcmp-rag-maintenance-actions">
+                <div className="yolo-flex-row-gap-8 yolo-rag-maintenance-actions">
                   <ObsidianButton
                     text={t('settings.rag.manage')}
                     disabled={!canUseIndexMaintenance}
@@ -1083,11 +1083,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 '选择哪些文件夹应参与知识库索引，哪些应被排除。',
               )}
             >
-              <div className="smtcmp-rag-scope-group">
+              <div className="yolo-rag-scope-group">
                 <ObsidianSetting
                   name={t('settings.rag.includePatterns')}
                   desc={t('settings.rag.includePatternsDesc')}
-                  className="smtcmp-rag-scope-group-setting"
+                  className="yolo-rag-scope-group-setting"
                 >
                   <ObsidianButton
                     text={t('settings.rag.testPatterns')}
@@ -1110,7 +1110,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   />
                 </ObsidianSetting>
 
-                <div className="smtcmp-rag-scope-group-body">
+                <div className="yolo-rag-scope-group-body">
                   <FolderSelectionList
                     app={app}
                     vault={plugin.app.vault}
@@ -1130,11 +1130,11 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 </div>
               </div>
 
-              <div className="smtcmp-rag-scope-group">
+              <div className="yolo-rag-scope-group">
                 <ObsidianSetting
                   name={t('settings.rag.excludePatterns')}
                   desc={t('settings.rag.excludePatternsDesc')}
-                  className="smtcmp-rag-scope-group-setting"
+                  className="yolo-rag-scope-group-setting"
                 >
                   <ObsidianButton
                     text={t('settings.rag.testPatterns')}
@@ -1153,7 +1153,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   />
                 </ObsidianSetting>
 
-                <div className="smtcmp-rag-scope-group-body">
+                <div className="yolo-rag-scope-group-body">
                   <FolderSelectionList
                     app={app}
                     vault={plugin.app.vault}
@@ -1181,7 +1181,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                 conflictInfo.exactConflicts.length > 0 ||
                 conflictInfo.includeUnderExcluded.length > 0 ||
                 conflictInfo.excludeWithinIncluded.length > 0) && (
-                <div className="smtcmp-muted-note">
+                <div className="yolo-muted-note">
                   {includeFolders.length === 0 && (
                     <div>
                       {t(
@@ -1235,7 +1235,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
 
             <RAGCard title={t('settings.rag.advanced', '高级设置')}>
               <div
-                className={`smtcmp-settings-advanced-toggle smtcmp-clickable${
+                className={`yolo-settings-advanced-toggle yolo-clickable${
                   showAdvancedRagSettings ? ' is-expanded' : ''
                 }`}
                 onClick={() => setShowAdvancedRagSettings((prev) => !prev)}
@@ -1248,7 +1248,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   }
                 }}
               >
-                <span className="smtcmp-settings-advanced-toggle-icon">▶</span>
+                <span className="yolo-settings-advanced-toggle-icon">▶</span>
                 {t('settings.rag.advanced', '高级设置')}
               </div>
 
@@ -1257,7 +1257,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   <ObsidianSetting
                     name={t('settings.rag.chunkSize')}
                     desc={t('settings.rag.chunkSizeDesc')}
-                    className="smtcmp-settings-card"
+                    className="yolo-settings-card"
                   >
                     <ObsidianTextInput
                       value={chunkSizeInput}
@@ -1289,7 +1289,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   <ObsidianSetting
                     name={t('settings.rag.minSimilarity')}
                     desc={t('settings.rag.minSimilarityDesc')}
-                    className="smtcmp-settings-card"
+                    className="yolo-settings-card"
                   >
                     <ObsidianTextInput
                       value={minSimilarityInput}
@@ -1322,7 +1322,7 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   <ObsidianSetting
                     name={t('settings.rag.limit')}
                     desc={t('settings.rag.limitDesc')}
-                    className="smtcmp-settings-card"
+                    className="yolo-settings-card"
                   >
                     <ObsidianTextInput
                       value={limitInput}

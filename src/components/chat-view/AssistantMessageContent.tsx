@@ -199,14 +199,14 @@ const AssistantTextRenderer = React.memo(function AssistantTextRenderer({
         )
       })}
       {toolPreviewText && (
-        <div className="smtcmp-toolcall-container smtcmp-assistant-tool-running-preview">
-          <div className="smtcmp-toolcall">
-            <div className="smtcmp-toolcall-header smtcmp-assistant-tool-running-preview-header">
-              <div className="smtcmp-toolcall-header-icon smtcmp-toolcall-header-icon--status-inline">
-                <Loader2 className="smtcmp-spinner" size={14} />
+        <div className="yolo-toolcall-container yolo-assistant-tool-running-preview">
+          <div className="yolo-toolcall">
+            <div className="yolo-toolcall-header yolo-assistant-tool-running-preview-header">
+              <div className="yolo-toolcall-header-icon yolo-toolcall-header-icon--status-inline">
+                <Loader2 className="yolo-spinner" size={14} />
               </div>
-              <div className="smtcmp-toolcall-header-content">
-                <span className="smtcmp-toolcall-header-tool-name">
+              <div className="yolo-toolcall-header-content">
+                <span className="yolo-toolcall-header-tool-name">
                   {toolPreviewText}
                 </span>
               </div>

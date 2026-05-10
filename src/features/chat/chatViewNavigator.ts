@@ -9,7 +9,7 @@ import {
 
 import { ChatView } from '../../ChatView'
 import { CHAT_VIEW_TYPE } from '../../constants'
-import type SmartComposerPlugin from '../../main'
+import type YoloPlugin from '../../main'
 import type {
   MentionableBlockData,
   MentionableImage,
@@ -22,7 +22,7 @@ import {
 } from './chatLeafSessionManager'
 
 type ChatViewNavigatorDeps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }
 
 type OpenChatViewOptions = {
@@ -41,7 +41,7 @@ type ResolveTargetChatLeafOptions = {
 }
 
 export class ChatViewNavigator {
-  private readonly plugin: SmartComposerPlugin
+  private readonly plugin: YoloPlugin
 
   constructor(deps: ChatViewNavigatorDeps) {
     this.plugin = deps.plugin

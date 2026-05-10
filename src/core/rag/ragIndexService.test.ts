@@ -12,7 +12,7 @@ describe('RagIndexService', () => {
 
   it('restores interrupted transient runs as retry scheduled on initialize', async () => {
     const saved: Record<string, string> = {
-      smtcmp_rag_index_run: JSON.stringify({
+      yolo_rag_index_run: JSON.stringify({
         runId: 'old-run',
         status: 'running',
         mode: 'rebuild',
@@ -47,7 +47,7 @@ describe('RagIndexService', () => {
 
   it('restores interrupted non-retryable runs as failed on initialize', async () => {
     const saved: Record<string, string> = {
-      smtcmp_rag_index_run: JSON.stringify({
+      yolo_rag_index_run: JSON.stringify({
         runId: 'old-run',
         status: 'running',
         mode: 'sync',

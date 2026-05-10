@@ -763,20 +763,20 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     }
   }, [isSidebarPlacement, isWorkspaceWideHeader])
 
-  const containerClassName = `smtcmp-chat-container${
+  const containerClassName = `yolo-chat-container${
     isSidebarPlacement
-      ? ' smtcmp-chat-container--sidebar'
-      : ' smtcmp-chat-container--centered'
+      ? ' yolo-chat-container--sidebar'
+      : ' yolo-chat-container--centered'
   }${
     !isSidebarPlacement && isWorkspaceWideHeader
-      ? ' smtcmp-chat-container--workspace-wide-header'
+      ? ' yolo-chat-container--workspace-wide-header'
       : ''
   }`
   const fontScale = settings.chatOptions.chatFontScale
   const containerStyle = {
     ...(!isSidebarPlacement && isWorkspaceWideHeader
       ? {
-          '--smtcmp-chat-workspace-header-height': `${workspaceWideHeaderHeight}px`,
+          '--yolo-chat-workspace-header-height': `${workspaceWideHeaderHeight}px`,
         }
       : {}),
     ...(fontScale != null ? { zoom: fontScale } : {}),
@@ -1320,7 +1320,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       didSelectionTouchChat = selectionTouchesChat
 
       chatMessagesElement
-        .querySelectorAll<HTMLElement>('.smtcmp-markdown-rendered')
+        .querySelectorAll<HTMLElement>('.yolo-markdown-rendered')
         .forEach((containerEl) => {
           syncRenderedLatexSelection(containerEl)
         })
@@ -4085,8 +4085,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const header = (
     <div
       ref={headerRef}
-      className={`smtcmp-chat-header${
-        isSidebarPlacement ? '' : ' smtcmp-chat-header--workspace'
+      className={`yolo-chat-header${
+        isSidebarPlacement ? '' : ' yolo-chat-header--workspace'
       }`}
     >
       {onChangeView ? (
@@ -4099,12 +4099,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           disabled={false}
         />
       ) : (
-        <h1 className="smtcmp-chat-header-title">
+        <h1 className="yolo-chat-header-title">
           {t('sidebar.tabs.chat', 'Chat')}
         </h1>
       )}
       {activeView === 'chat' && (
-        <div className="smtcmp-chat-header-right">
+        <div className="yolo-chat-header-right">
           {headerContextUsage && (
             <ContextUsageRing
               promptTokens={headerContextUsage.promptTokens}
@@ -4116,19 +4116,19 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             currentAssistantId={conversationAssistantId}
             triggerClassName={
               !isSidebarPlacement && isWorkspaceWideHeader
-                ? 'smtcmp-assistant-selector-button--workspace-floating'
+                ? 'yolo-assistant-selector-button--workspace-floating'
                 : undefined
             }
             contentClassName={
               !isSidebarPlacement && isWorkspaceWideHeader
-                ? 'smtcmp-assistant-selector-content--workspace-floating'
+                ? 'yolo-assistant-selector-content--workspace-floating'
                 : undefined
             }
             onAssistantChange={(assistant) => {
               handleConversationAssistantSelect(assistant.id)
             }}
           />
-          <div className="smtcmp-chat-header-buttons">
+          <div className="yolo-chat-header-buttons">
             <button
               type="button"
               onClick={() => handleNewChat()}
@@ -4250,13 +4250,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (timelineItem.kind === 'compaction-pending') {
         return (
           <div
-            className="smtcmp-chat-compaction-pending"
+            className="yolo-chat-compaction-pending"
             data-anchor-message-id={timelineItem.anchorMessageId}
           >
-            <div className="smtcmp-chat-compaction-pending__loader">
+            <div className="yolo-chat-compaction-pending__loader">
               <DotLoader text={compactionPendingTitle} />
             </div>
-            <div className="smtcmp-chat-compaction-pending__description">
+            <div className="yolo-chat-compaction-pending__description">
               {compactionPendingDescription}
             </div>
           </div>
@@ -4267,18 +4267,18 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         return (
           <div
             className={cx(
-              'smtcmp-chat-compaction-divider',
+              'yolo-chat-compaction-divider',
               timelineItem.renderKey ===
                 `${enteringCompactionDividerAnchorMessageId}-compact-divider` &&
                 'is-entering',
             )}
           >
-            <div className="smtcmp-chat-compaction-divider__title">
+            <div className="yolo-chat-compaction-divider__title">
               {compactionDividerTitle}
             </div>
-            <div className="smtcmp-chat-compaction-divider__line" />
-            <div className="smtcmp-chat-compaction-divider__content">
-              <div className="smtcmp-chat-compaction-divider__description">
+            <div className="yolo-chat-compaction-divider__line" />
+            <div className="yolo-chat-compaction-divider__content">
+              <div className="yolo-chat-compaction-divider__description">
                 {compactionDividerDescription}
               </div>
             </div>
@@ -4570,10 +4570,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
       if (timelineItem.kind === 'continue-response') {
         return (
-          <div className="smtcmp-continue-response-button-container">
+          <div className="yolo-continue-response-button-container">
             <button
               type="button"
-              className="smtcmp-continue-response-button"
+              className="yolo-continue-response-button"
               onClick={handleContinueResponse}
             >
               <div>Continue response</div>
@@ -4585,7 +4585,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       return (
         <div
           ref={bottomAnchorRef}
-          className="smtcmp-chat-bottom-anchor"
+          className="yolo-chat-bottom-anchor"
           aria-hidden="true"
         />
       )
@@ -4646,7 +4646,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     >
       {header}
       {activeView === 'composer' ? (
-        <div className="smtcmp-chat-composer-wrapper">
+        <div className="yolo-chat-composer-wrapper">
           <Composer onNavigateChat={() => onChangeView?.('chat')} />
         </div>
       ) : (
@@ -4694,7 +4694,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               {(settings.chatOptions.mentionDisplayMode ?? 'inline') ===
                 'badge' &&
                 displayMentionablesForInput.length > 0 && (
-                  <div className="smtcmp-chat-user-input-files">
+                  <div className="yolo-chat-user-input-files">
                     {displayMentionablesForInput.map((mentionable) => {
                       const mentionableKey = getMentionableKey(
                         serializeMentionable(mentionable),
@@ -4712,7 +4712,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                     })}
                   </div>
                 )}
-              <div className="smtcmp-chat-input-wrapper">
+              <div className="yolo-chat-input-wrapper">
                 <ChatUserInput
                   key={inputMessage.id}
                   ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}

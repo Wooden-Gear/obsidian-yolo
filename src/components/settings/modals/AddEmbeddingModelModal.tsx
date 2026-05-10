@@ -7,7 +7,7 @@ import { listBedrockEmbeddingModelIds } from '../../../core/llm/bedrockCatalog'
 import { extractEmbeddingVector } from '../../../core/llm/embedding-utils'
 import { getProviderClient } from '../../../core/llm/manager'
 import { supportedDimensionsForIndex } from '../../../database/schema'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import {
   EmbeddingModel,
   embeddingModelSchema,
@@ -27,7 +27,7 @@ import { SearchableDropdown } from '../../common/SearchableDropdown'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type AddEmbeddingModelModalComponentProps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   provider?: LLMProvider
 }
 
@@ -73,7 +73,7 @@ const sortModelsForEmbedding = (models: string[]): string[] => {
 }
 
 export class AddEmbeddingModelModal extends ReactModal<AddEmbeddingModelModalComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
+  constructor(app: App, plugin: YoloPlugin, provider?: LLMProvider) {
     super({
       app: app,
       Component: AddEmbeddingModelModalComponent,

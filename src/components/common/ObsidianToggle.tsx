@@ -20,7 +20,7 @@ export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
       let newToggleComponent: ToggleComponent | null = null
       setting.addToggle((component) => {
         newToggleComponent = component
-        newToggleComponent?.toggleEl.addClass('smtcmp-checkbox-container')
+        newToggleComponent?.toggleEl.addClass('yolo-checkbox-container')
       })
       setToggleComponent(newToggleComponent)
 
@@ -29,7 +29,7 @@ export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
       }
     } else if (containerRef.current) {
       const newToggleComponent = new ToggleComponent(containerRef.current)
-      newToggleComponent.toggleEl.addClass('smtcmp-checkbox-container')
+      newToggleComponent.toggleEl.addClass('yolo-checkbox-container')
       setToggleComponent(newToggleComponent)
 
       return () => {
@@ -52,5 +52,5 @@ export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
     toggleComponent.setValue(value)
   }, [toggleComponent, value])
 
-  return <div ref={containerRef} className="smtcmp-display-contents" />
+  return <div ref={containerRef} className="yolo-display-contents" />
 }

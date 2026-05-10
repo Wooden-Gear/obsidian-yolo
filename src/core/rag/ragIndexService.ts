@@ -73,7 +73,7 @@ type RagIndexServiceDeps = {
 
 type RagIndexSubscriber = (snapshot: RagIndexRunSnapshot) => void
 
-const STORAGE_KEY = 'smtcmp_rag_index_run'
+const STORAGE_KEY = 'yolo_rag_index_run'
 const RETRY_ACTIVITY_ID = 'rag:index'
 const TRANSIENT_RETRY_DELAY_MS = 5 * 60 * 1000
 const INTERRUPTED_RETRY_DELAY_MS = 15 * 1000

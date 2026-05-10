@@ -15,8 +15,8 @@ dropdown、滚动条共享样式（因为 SmartSpace 是这些样式最早的消
 ## 2. 命名前缀
 
 - 新增 CSS class → 一律 `yolo-` 前缀。
-- 存量 `smtcmp-*` → 不做大规模重命名（外部主题 / CSS snippet 可能 target）。
-- 旧组件被新抽象**完全替代**时，顺手删掉相关 `smtcmp-*` 死代码（删除而非改名）。
+- 存量 `yolo-*` → 不做大规模重命名（外部主题 / CSS snippet 可能 target）。
+- 旧组件被新抽象**完全替代**时，顺手删掉相关 `yolo-*` 死代码（删除而非改名）。
 
 ## 3. Popover / Dropdown 专项约定
 

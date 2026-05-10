@@ -18,7 +18,7 @@ const BUILTIN_SKILLS: BuiltinLiteSkill[] = [
     id: 'obsidian-output-format',
     name: 'Obsidian Output Format',
     description:
-      'Enforce Obsidian markdown output contract with <smtcmp_block> tags. Use whenever returning markdown content, proposing markdown edits, or referencing markdown snippets.',
+      'Enforce Obsidian markdown output contract with <yolo_block> tags. Use whenever returning markdown content, proposing markdown edits, or referencing markdown snippets.',
     mode: 'always',
     path: 'builtin://skills/obsidian-output-format.md',
     content: YOLO_OBSIDIAN_OUTPUT_FORMAT_TEMPLATE,

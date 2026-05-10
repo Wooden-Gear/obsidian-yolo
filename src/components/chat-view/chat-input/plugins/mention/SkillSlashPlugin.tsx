@@ -70,7 +70,7 @@ function SkillTypeaheadMenuItem({
   return (
     <button
       type="button"
-      className={`smtcmp-popover-item smtcmp-smart-space-mention-option ${
+      className={`yolo-popover-item yolo-smart-space-mention-option ${
         isSelected ? 'active' : ''
       }`}
       ref={(el) => option.setRefElement(el)}
@@ -82,19 +82,19 @@ function SkillTypeaheadMenuItem({
       onClick={onClick}
       data-highlighted={isSelected ? 'true' : undefined}
     >
-      <ItemIcon size={14} className="smtcmp-smart-space-mention-option-icon" />
-      <div className="smtcmp-smart-space-mention-option-text smtcmp-smart-space-mention-option-text--inline-meta">
-        <div className="smtcmp-smart-space-mention-option-name">
+      <ItemIcon size={14} className="yolo-smart-space-mention-option-icon" />
+      <div className="yolo-smart-space-mention-option-text yolo-smart-space-mention-option-text--inline-meta">
+        <div className="yolo-smart-space-mention-option-name">
           {option.name}
         </div>
         {option.subtitle && (
-          <div className="smtcmp-smart-space-mention-option-path smtcmp-smart-space-mention-option-inline-meta">
+          <div className="yolo-smart-space-mention-option-path yolo-smart-space-mention-option-inline-meta">
             {option.subtitle}
           </div>
         )}
       </div>
       {option.isSelectedSkill && (
-        <Check size={12} className="smtcmp-smart-space-mention-option-check" />
+        <Check size={12} className="yolo-smart-space-mention-option-check" />
       )}
     </button>
   )
@@ -287,12 +287,12 @@ export default function SkillSlashPlugin({
         anchorElementRef.current && options.length
           ? createPortal(
               <div
-                className="smtcmp-smart-space-mention-popover"
+                className="yolo-smart-space-mention-popover"
                 data-placement={placement}
               >
-                <div className="yolo-popover-surface yolo-popover-surface--smart-space smtcmp-smart-space-mention-dropdown">
+                <div className="yolo-popover-surface yolo-popover-surface--smart-space yolo-smart-space-mention-dropdown">
                   <div
-                    className="smtcmp-smart-space-mention-list"
+                    className="yolo-smart-space-mention-list"
                     role="listbox"
                     aria-label={t('chat.mentionMenu.entrySkill', '技能')}
                   >

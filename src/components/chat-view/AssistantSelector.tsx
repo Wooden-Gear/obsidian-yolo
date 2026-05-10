@@ -100,22 +100,22 @@ export function AssistantSelector({
         <button
           type="button"
           ref={triggerRef}
-          className={`smtcmp-assistant-selector-button${
+          className={`yolo-assistant-selector-button${
             triggerClassName ? ` ${triggerClassName}` : ''
           }`}
           data-state={open ? 'open' : 'closed'}
         >
           {currentAssistant && (
-            <div className="smtcmp-assistant-selector-current-icon">
+            <div className="yolo-assistant-selector-current-icon">
               {renderAssistantIcon(currentAssistant.icon, 14)}
             </div>
           )}
-          <div className="smtcmp-assistant-selector-current">
+          <div className="yolo-assistant-selector-current">
             {currentAssistant
               ? currentAssistant.name
               : t('settings.assistants.noAssistant')}
           </div>
-          <div className="smtcmp-assistant-selector-icon">
+          <div className="yolo-assistant-selector-icon">
             {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
           </div>
         </button>
@@ -128,25 +128,25 @@ export function AssistantSelector({
         maxHeight={400}
         className={
           contentClassName
-            ? `smtcmp-assistant-selector-content ${contentClassName}`
-            : 'smtcmp-assistant-selector-content'
+            ? `yolo-assistant-selector-content ${contentClassName}`
+            : 'yolo-assistant-selector-content'
         }
         sideOffset={14}
       >
-        <ul className="smtcmp-assistant-selector-list smtcmp-model-select-list">
+        <ul className="yolo-assistant-selector-list yolo-model-select-list">
           {/* "No Assistant" option */}
-          <li className="smtcmp-assistant-selector-row">
+          <li className="yolo-assistant-selector-row">
             <button
               type="button"
-              className={`smtcmp-assistant-selector-item ${
+              className={`yolo-assistant-selector-item ${
                 isDefaultAssistantId(resolvedCurrentAssistantId)
                   ? 'selected'
                   : ''
               }`}
               onClick={handleSelectDefaultAssistant}
             >
-              <div className="smtcmp-assistant-selector-item-content">
-                <div className="smtcmp-assistant-selector-item-name">
+              <div className="yolo-assistant-selector-item-content">
+                <div className="yolo-assistant-selector-item-name">
                   {assistants.find((assistant) =>
                     isDefaultAssistantId(assistant.id),
                   )?.name ?? t('settings.assistants.noAssistant')}
@@ -159,25 +159,25 @@ export function AssistantSelector({
           {assistants
             .filter((assistant) => !isDefaultAssistantId(assistant.id))
             .map((assistant) => (
-              <li key={assistant.id} className="smtcmp-assistant-selector-row">
+              <li key={assistant.id} className="yolo-assistant-selector-row">
                 <button
                   type="button"
-                  className={`smtcmp-assistant-selector-item ${
+                  className={`yolo-assistant-selector-item ${
                     assistant.id === resolvedCurrentAssistantId
                       ? 'selected'
                       : ''
                   }`}
                   onClick={() => handleSelectAssistant(assistant)}
                 >
-                  <div className="smtcmp-assistant-selector-item-icon">
+                  <div className="yolo-assistant-selector-item-icon">
                     {renderAssistantIcon(assistant.icon, 14)}
                   </div>
-                  <div className="smtcmp-assistant-selector-item-content">
-                    <div className="smtcmp-assistant-selector-item-name">
+                  <div className="yolo-assistant-selector-item-content">
+                    <div className="yolo-assistant-selector-item-name">
                       {assistant.name}
                     </div>
                     {assistant.description && (
-                      <div className="smtcmp-assistant-selector-item-description">
+                      <div className="yolo-assistant-selector-item-description">
                         {assistant.description}
                       </div>
                     )}

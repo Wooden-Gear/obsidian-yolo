@@ -5,7 +5,7 @@ import React from 'react'
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import { LLMProvider } from '../../../types/provider.types'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 import {
@@ -15,7 +15,7 @@ import {
 
 type ProvidersSectionProps = {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }
 
 export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
@@ -82,16 +82,16 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
   }
 
   return (
-    <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-header">
+    <div className="yolo-settings-section">
+      <div className="yolo-settings-header">
         {t('settings.providers.title')}
       </div>
 
-      <div className="smtcmp-settings-desc">
+      <div className="yolo-settings-desc">
         <span>{t('settings.providers.desc')}</span>
         <br />
         <a
-          href="https://github.com/glowingjade/obsidian-smart-composer/wiki/1.2-Initial-Setup#getting-your-api-key"
+          href="https://github.com/Lapis0x0/obsidian-yolo"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -99,8 +99,8 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
         </a>
       </div>
 
-      <div className="smtcmp-settings-table-container">
-        <table className="smtcmp-settings-table">
+      <div className="yolo-settings-table-container">
+        <table className="yolo-settings-table">
           <colgroup>
             <col />
             <col />
@@ -120,7 +120,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
               <tr key={provider.id}>
                 <td>{provider.id}</td>
                 <td>{PROVIDER_TYPES_INFO[provider.presetType].label}</td>
-                <td className="smtcmp-settings-table-api-key">
+                <td className="yolo-settings-table-api-key">
                   <button
                     type="button"
                     className="clickable-icon"
@@ -132,7 +132,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
                   </button>
                 </td>
                 <td>
-                  <div className="smtcmp-settings-actions">
+                  <div className="yolo-settings-actions">
                     <button
                       type="button"
                       onClick={() => {

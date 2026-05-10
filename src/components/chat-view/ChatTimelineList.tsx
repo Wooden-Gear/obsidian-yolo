@@ -105,7 +105,7 @@ function TimelineRow<TItem extends ChatTimelineItem>({
   return (
     <div
       ref={rowRef}
-      className={`smtcmp-chat-timeline-row smtcmp-chat-timeline-row--${item.kind}`}
+      className={`yolo-chat-timeline-row yolo-chat-timeline-row--${item.kind}`}
       data-timeline-kind={item.kind}
       style={
         item.spacingBefore ? { paddingTop: item.spacingBefore } : undefined

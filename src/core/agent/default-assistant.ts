@@ -1,4 +1,4 @@
-import { SmartComposerSettings } from '../../settings/schema/setting.types'
+import { YoloSettings } from '../../settings/schema/setting.types'
 import { Assistant } from '../../types/assistant.types'
 
 import {
@@ -99,8 +99,8 @@ const normalizeDefaultAssistant = (
 }
 
 export const ensureDefaultAssistantInSettings = (
-  settings: SmartComposerSettings,
-): SmartComposerSettings => {
+  settings: YoloSettings,
+): YoloSettings => {
   const assistants = settings.assistants || []
   const fallbackModelId = settings.chatModelId
   const existingDefault = assistants.find((assistant) =>

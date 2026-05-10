@@ -99,14 +99,14 @@ import { WriteAssistController } from './features/editor/write-assist/writeAssis
 import { enablePdfScreenshotFeature } from './features/pdf-screenshot'
 import { Language, createTranslationFunction } from './i18n'
 import {
-  SmartComposerSettings,
-  smartComposerSettingsSchema,
+  YoloSettings,
+  yoloSettingsSchema,
 } from './settings/schema/setting.types'
 import {
-  normalizeSmartComposerSettingsReferences,
-  parseSmartComposerSettings,
+  normalizeYoloSettingsReferences,
+  parseYoloSettings,
 } from './settings/schema/settings'
-import { SmartComposerSettingTab } from './settings/SettingTab'
+import { YoloSettingTab } from './settings/SettingTab'
 import type { ApplyViewState } from './types/apply-view.types'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import type {
@@ -121,9 +121,9 @@ import { ensureBufferByteLengthCompat } from './utils/runtime/ensureBufferByteLe
 
 const STARTUP_GRACE_MS = 30 * 1000
 
-export default class SmartComposerPlugin extends Plugin {
-  settings: SmartComposerSettings
-  settingsChangeListeners: ((newSettings: SmartComposerSettings) => void)[] = []
+export default class YoloPlugin extends Plugin {
+  settings: YoloSettings
+  settingsChangeListeners: ((newSettings: YoloSettings) => void)[] = []
   private deviceId: string | null = null
   private currentSettingsMeta: YoloDataMeta | null = null
   updateCheckResult: UpdateCheckResult | null = null
@@ -348,7 +348,7 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   private syncOAuthRuntimesFromSettings(
-    settings: Pick<SmartComposerSettings, 'providers'> = this.settings,
+    settings: Pick<YoloSettings, 'providers'> = this.settings,
   ): void {
     for (const provider of settings.providers) {
       if (provider.presetType === 'chatgpt-oauth') {
@@ -621,7 +621,7 @@ export default class SmartComposerPlugin extends Plugin {
         getSettings: () => this.settings,
         openApplyReview: (state) => this.openApplyReview(state),
         registerSettingsListener: (
-          listener: (settings: SmartComposerSettings) => void,
+          listener: (settings: YoloSettings) => void,
         ) => this.addSettingsChangeListener(listener),
         getRagEngine: () => this.getRAGEngine(),
       })
@@ -691,7 +691,7 @@ export default class SmartComposerPlugin extends Plugin {
     const runtime = this.manifest.version
     if (baked && runtime && baked !== runtime) {
       console.error(
-        `[Smart Composer] Version mismatch: main.js=${baked}, manifest=${runtime}. ` +
+        `[YOLO] Version mismatch: main.js=${baked}, manifest=${runtime}. ` +
           `Likely an incomplete update download.`,
       )
       this.installationIncompleteDetail = {
@@ -782,31 +782,31 @@ export default class SmartComposerPlugin extends Plugin {
   private setupBackgroundActivityStatusBar(): void {
     const statusBarItem = this.addStatusBarItem()
     statusBarItem.addClass('mod-clickable')
-    statusBarItem.addClass('smtcmp-background-activity-status-bar')
+    statusBarItem.addClass('yolo-background-activity-status-bar')
     statusBarItem.hide()
 
     const ring = document.createElement('span')
-    ring.className = 'smtcmp-background-activity-status-bar-ring'
+    ring.className = 'yolo-background-activity-status-bar-ring'
 
     const label = document.createElement('span')
-    label.className = 'smtcmp-background-activity-status-bar-label'
+    label.className = 'yolo-background-activity-status-bar-label'
 
     const panel = document.createElement('div')
-    panel.className = 'smtcmp-background-activity-status-panel'
+    panel.className = 'yolo-background-activity-status-panel'
     panel.setAttribute('aria-hidden', 'true')
     panel.hidden = true
 
     const panelHeader = document.createElement('div')
-    panelHeader.className = 'smtcmp-background-activity-status-panel-header'
+    panelHeader.className = 'yolo-background-activity-status-panel-header'
     panelHeader.setText(
       this.t('statusBar.backgroundStatusPanelTitle', '后台任务'),
     )
 
     const panelList = document.createElement('div')
-    panelList.className = 'smtcmp-background-activity-status-panel-list'
+    panelList.className = 'yolo-background-activity-status-panel-list'
 
     const panelEmpty = document.createElement('div')
-    panelEmpty.className = 'smtcmp-background-activity-status-panel-empty'
+    panelEmpty.className = 'yolo-background-activity-status-panel-empty'
     panelEmpty.setText(
       this.t(
         'statusBar.backgroundStatusPanelEmpty',
@@ -1240,25 +1240,25 @@ export default class SmartComposerPlugin extends Plugin {
     indicator: HTMLElement
   } {
     const item = createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item',
+      cls: 'yolo-background-activity-status-panel-item',
     })
     item.setAttribute('role', 'button')
     item.setAttribute('tabindex', '0')
 
     const row = item.createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item-row',
+      cls: 'yolo-background-activity-status-panel-item-row',
     })
     const copy = row.createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item-copy',
+      cls: 'yolo-background-activity-status-panel-item-copy',
     })
     const title = copy.createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item-title',
+      cls: 'yolo-background-activity-status-panel-item-title',
     })
     const detail = copy.createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item-detail',
+      cls: 'yolo-background-activity-status-panel-item-detail',
     })
     const indicator = row.createDiv({
-      cls: 'smtcmp-background-activity-status-panel-item-indicator',
+      cls: 'yolo-background-activity-status-panel-item-indicator',
     })
 
     const openAction = () => {
@@ -1876,7 +1876,7 @@ export default class SmartComposerPlugin extends Plugin {
       },
     })
     // This adds a settings tab so the user can configure various aspects of the plugin
-    this.addSettingTab(new SmartComposerSettingTab(this.app, this))
+    this.addSettingTab(new YoloSettingTab(this.app, this))
 
     // removed templates JSON migration
 
@@ -1992,7 +1992,7 @@ export default class SmartComposerPlugin extends Plugin {
     const sourceRaw = pluginExtract?.raw ?? null
     const sourceMeta = pluginExtract?.meta ?? null
 
-    const parsedSettings = parseSmartComposerSettings(sourceRaw)
+    const parsedSettings = parseYoloSettings(sourceRaw)
     const settingsWithDefaultAssistant =
       ensureDefaultAssistantInSettings(parsedSettings)
     const { chatModels, changed } = applyKnownMaxContextTokensToChatModels(
@@ -2065,7 +2065,7 @@ export default class SmartComposerPlugin extends Plugin {
   }
 
   private async persistPluginDirSettings(
-    settings: SmartComposerSettings,
+    settings: YoloSettings,
     meta: YoloDataMeta = this.buildSettingsMeta(),
   ): Promise<YoloDataMeta> {
     await this.saveData(stampYoloDataMeta(settings, meta))
@@ -2126,7 +2126,7 @@ export default class SmartComposerPlugin extends Plugin {
       return
     }
 
-    const parsedSettings = parseSmartComposerSettings(raw)
+    const parsedSettings = parseYoloSettings(raw)
     const settingsWithDefaultAssistant =
       ensureDefaultAssistantInSettings(parsedSettings)
     const { chatModels, changed } = applyKnownMaxContextTokensToChatModels(
@@ -2331,12 +2331,11 @@ export default class SmartComposerPlugin extends Plugin {
     )
   }
 
-  async setSettings(newSettings: SmartComposerSettings) {
+  async setSettings(newSettings: YoloSettings) {
     const normalizedSettings = ensureDefaultAssistantInSettings(
-      normalizeSmartComposerSettingsReferences(newSettings),
+      normalizeYoloSettingsReferences(newSettings),
     )
-    const validationResult =
-      smartComposerSettingsSchema.safeParse(normalizedSettings)
+    const validationResult = yoloSettingsSchema.safeParse(normalizedSettings)
 
     if (!validationResult.success) {
       new Notice(`Invalid settings:
@@ -2408,9 +2407,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     })
   }
 
-  addSettingsChangeListener(
-    listener: (newSettings: SmartComposerSettings) => void,
-  ) {
+  addSettingsChangeListener(listener: (newSettings: YoloSettings) => void) {
     this.settingsChangeListeners.push(listener)
     return () => {
       this.settingsChangeListeners = this.settingsChangeListeners.filter(

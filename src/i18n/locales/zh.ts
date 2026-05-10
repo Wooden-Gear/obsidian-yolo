@@ -121,7 +121,7 @@ export const zh: TranslationKeys = {
       agent: 'Agent',
       others: '其他',
     },
-    supportSmartComposer: {
+    supportYolo: {
       name: '支持 YOLO',
       desc: '如果你觉得 YOLO 有价值，请考虑支持它的开发！',
       buyMeACoffee: '爱发电',

@@ -1,7 +1,7 @@
 import isEqual from 'lodash.isequal'
 import { App, FileSystemAdapter, Platform } from 'obsidian'
 
-import { SmartComposerSettings } from '../../settings/schema/setting.types'
+import { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
 import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
@@ -67,7 +67,7 @@ export class McpManager {
   private readonly app: App
   private readonly openApplyReview: (state: ApplyViewState) => Promise<boolean>
   private readonly getRagEngine?: () => Promise<RAGEngine>
-  private settings: SmartComposerSettings
+  private settings: YoloSettings
   private unsubscribeFromSettings: () => void
   private defaultEnv: Record<string, string>
   private remoteTransportFactory: ReturnType<
@@ -155,10 +155,10 @@ export class McpManager {
     getRagEngine,
   }: {
     app: App
-    settings: SmartComposerSettings
+    settings: YoloSettings
     openApplyReview: (state: ApplyViewState) => Promise<boolean>
     registerSettingsListener: (
-      listener: (settings: SmartComposerSettings) => void,
+      listener: (settings: YoloSettings) => void,
     ) => () => void
     getRagEngine?: () => Promise<RAGEngine>
   }) {
@@ -237,7 +237,7 @@ export class McpManager {
     return () => this.subscribers.delete(callback)
   }
 
-  public async handleSettingsUpdate(settings: SmartComposerSettings) {
+  public async handleSettingsUpdate(settings: YoloSettings) {
     this.settings = settings
     const updatedServers = settings.mcp.servers.map(
       (serverConfig: McpServerConfig): McpServerState => {

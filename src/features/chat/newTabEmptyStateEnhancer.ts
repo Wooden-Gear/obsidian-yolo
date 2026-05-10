@@ -2,15 +2,15 @@ import { Notice, WorkspaceLeaf } from 'obsidian'
 
 import { ChatView } from '../../ChatView'
 import { CHAT_VIEW_TYPE } from '../../constants'
-import type SmartComposerPlugin from '../../main'
+import type YoloPlugin from '../../main'
 
 const EMPTY_VIEW_TYPE = 'empty'
-const ACTION_MARKER_ATTR = 'data-smtcmp-empty-tab-action'
+const ACTION_MARKER_ATTR = 'data-yolo-empty-tab-action'
 
 export class NewTabEmptyStateEnhancer {
   private observer: MutationObserver | null = null
 
-  constructor(private readonly plugin: SmartComposerPlugin) {}
+  constructor(private readonly plugin: YoloPlugin) {}
 
   enable(): void {
     this.plugin.app.workspace.onLayoutReady(() => {

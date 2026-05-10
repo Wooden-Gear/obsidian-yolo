@@ -3,7 +3,7 @@ import { App } from 'obsidian'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { selectionHighlightController } from '../../../features/editor/selection-highlight/selectionHighlightController'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianDropdown } from '../../common/ObsidianDropdown'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
@@ -13,7 +13,7 @@ import { EtcSection } from '../sections/EtcSection'
 
 type OthersTabProps = {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }
 
 export function OthersTab({ app, plugin }: OthersTabProps) {
@@ -92,15 +92,15 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
 
   return (
     <>
-      <div className="smtcmp-settings-section">
+      <div className="yolo-settings-section">
         <ObsidianSetting
-          name={t('settings.supportSmartComposer.name')}
-          desc={t('settings.supportSmartComposer.desc')}
+          name={t('settings.supportYolo.name')}
+          desc={t('settings.supportYolo.desc')}
           heading
-          className="smtcmp-settings-support-smart-composer"
+          className="yolo-settings-support-yolo"
         >
           <ObsidianButton
-            text={t('settings.supportSmartComposer.buyMeACoffee')}
+            text={t('settings.supportYolo.buyMeACoffee')}
             onClick={() =>
               window.open('https://afdian.com/a/lapis0x0', '_blank')
             }
@@ -109,24 +109,24 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
         </ObsidianSetting>
       </div>
 
-      <div className="smtcmp-settings-section smtcmp-settings-section--tight">
-        <section className="smtcmp-settings-block">
-          <div className="smtcmp-settings-block-head">
-            <div className="smtcmp-settings-block-head-title-row">
-              <div className="smtcmp-settings-sub-header smtcmp-settings-block-title">
+      <div className="yolo-settings-section yolo-settings-section--tight">
+        <section className="yolo-settings-block">
+          <div className="yolo-settings-block-head">
+            <div className="yolo-settings-block-head-title-row">
+              <div className="yolo-settings-sub-header yolo-settings-block-title">
                 {t('settings.etc.interactionSectionTitle', 'Interaction')}
               </div>
             </div>
           </div>
 
-          <div className="smtcmp-settings-block-content">
+          <div className="yolo-settings-block-content">
             <ObsidianSetting
               name={t('settings.etc.mentionDisplayMode', '引用内容显示位置')}
               desc={t(
                 'settings.etc.mentionDisplayModeDesc',
                 '选择 @ 文件引用和 / 技能选择是在输入框内显示，还是在输入框顶部以徽章显示。',
               )}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianDropdown
                 value={settings.chatOptions.mentionDisplayMode ?? 'inline'}
@@ -149,7 +149,7 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
                 'settings.etc.mentionContextModeDesc',
                 '控制 @ 文件注入到模型的方式，在轻量模式下将会注入引用文件的路径、笔记属性和 Markdown 结构，鼓励 Agent 只读取必要的内容。',
               )}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianDropdown
                 value={settings.chatOptions.mentionContextMode ?? 'light'}
@@ -166,7 +166,7 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
                 'settings.etc.chatApplyModeDesc',
                 '仅影响 Chat 侧边栏中的“应用”。可选择先进入内联审阅，或直接写入文件。关闭审阅后，点击应用将不再需要二次审批。',
               )}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianDropdown
                 value={settings.chatOptions.chatApplyMode ?? 'review-required'}
@@ -192,7 +192,7 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
                 'settings.etc.persistSelectionHighlightDesc',
                 '在侧边栏 Chat 或 Quick Ask 交互时，持续显示编辑器中已选内容的块级高亮。',
               )}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianToggle
                 value={
@@ -210,7 +210,7 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
       <EtcSection
         app={app}
         plugin={plugin}
-        className="smtcmp-settings-section--tight"
+        className="yolo-settings-section--tight"
       />
     </>
   )

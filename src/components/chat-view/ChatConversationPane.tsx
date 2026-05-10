@@ -80,15 +80,15 @@ export function ChatConversationPane({
         virtualizationThreshold={
           editingAssistantMessageId ? chatTimelineItems.length : undefined
         }
-        containerClassName="smtcmp-chat-conversation-surface"
+        containerClassName="yolo-chat-conversation-surface"
         overlaySlot={
           showEmptyState ? (
-            <div className="smtcmp-chat-empty-state-overlay">
-              <div className="smtcmp-chat-empty-state-overlay-inner">
-                <div className="smtcmp-chat-empty-state">
+            <div className="yolo-chat-empty-state-overlay">
+              <div className="yolo-chat-empty-state-overlay-inner">
+                <div className="yolo-chat-empty-state">
                   <div
                     key={chatMode}
-                    className="smtcmp-chat-empty-state-icon"
+                    className="yolo-chat-empty-state-icon"
                     data-mode={chatMode}
                   >
                     {chatMode === 'agent' ? (
@@ -97,12 +97,12 @@ export function ChatConversationPane({
                       <MessageCircle size={18} strokeWidth={2} />
                     )}
                   </div>
-                  <div className="smtcmp-chat-empty-state-title">
+                  <div className="yolo-chat-empty-state-title">
                     {chatMode === 'agent'
                       ? emptyStateAgentTitle
                       : emptyStateChatTitle}
                   </div>
-                  <div className="smtcmp-chat-empty-state-description">
+                  <div className="yolo-chat-empty-state-description">
                     {chatMode === 'agent'
                       ? emptyStateAgentDescription
                       : emptyStateChatDescription}
@@ -112,21 +112,21 @@ export function ChatConversationPane({
             </div>
           ) : undefined
         }
-        scrollContainerClassName="smtcmp-chat-messages"
+        scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
       />
       <div
-        className={`smtcmp-chat-footer${
+        className={`yolo-chat-footer${
           isCurrentConversationRunActive ? ' is-generating' : ''
         }`}
       >
         {(isCurrentConversationRunActive || showScrollToBottomButton) && (
-          <div className="smtcmp-chat-floating-actions">
+          <div className="yolo-chat-floating-actions">
             {currentConversationRunSummaryIsRunning && (
               <button
                 type="button"
                 onClick={onAbortConversationRun}
-                className="smtcmp-stop-gen-btn"
+                className="yolo-stop-gen-btn"
               >
                 <CircleStop size={16} />
                 <div>Stop generation</div>
@@ -135,7 +135,7 @@ export function ChatConversationPane({
             {showScrollToBottomButton && (
               <button
                 type="button"
-                className="smtcmp-chat-scroll-to-bottom-button"
+                className="yolo-chat-scroll-to-bottom-button"
                 onClick={onForceScrollToBottom}
                 aria-label={
                   hasStreamingMessages

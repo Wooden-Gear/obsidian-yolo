@@ -9,10 +9,10 @@ import {
   DEFAULT_TAB_COMPLETION_OPTIONS,
   DEFAULT_TAB_COMPLETION_SYSTEM_PROMPT,
   DEFAULT_TAB_COMPLETION_TRIGGERS,
-  type SmartComposerSettings,
   TAB_COMPLETION_CONSTRAINTS_PLACEHOLDER,
   type TabCompletionLengthPreset,
   type TabCompletionTrigger,
+  type YoloSettings,
   computeMaxTokens,
   splitContextRange,
 } from '../../../settings/schema/setting.types'
@@ -42,8 +42,8 @@ type ActiveInlineSuggestion = {
 } | null
 
 type TabCompletionDeps = {
-  getSettings: () => SmartComposerSettings
-  setSettings: (newSettings: SmartComposerSettings) => Promise<void>
+  getSettings: () => YoloSettings
+  setSettings: (newSettings: YoloSettings) => Promise<void>
   getEditorView: (editor: Editor) => EditorView | null
   getActiveMarkdownView: () => MarkdownView | null
   getActiveConversationOverrides: () => ConversationOverrideSettings | undefined

@@ -44,7 +44,7 @@ const AUTO_TITLE_MAX_RETRIES = 2
 const AUTO_TITLE_FAILURE_COOLDOWN_MS = 5 * 60 * 1000
 const AUTO_TITLE_WAIT_CONVERSATION_RETRIES = 15
 const AUTO_TITLE_WAIT_CONVERSATION_INTERVAL_MS = 200
-const CHAT_HISTORY_UPDATED_EVENT = 'smtcmp:chat-history-updated'
+const CHAT_HISTORY_UPDATED_EVENT = 'yolo:chat-history-updated'
 
 const isUntitledConversationTitle = (title: string): boolean =>
   LEGACY_UNTITLED_CONVERSATION_TITLES.has(title)
@@ -167,10 +167,10 @@ export function useChatHistory(): UseChatHistory {
     const handler = () => {
       void fetchChatList()
     }
-    window.addEventListener('smtcmp:chat-history-cleared', handler)
+    window.addEventListener('yolo:chat-history-cleared', handler)
     window.addEventListener(CHAT_HISTORY_UPDATED_EVENT, handler)
     return () => {
-      window.removeEventListener('smtcmp:chat-history-cleared', handler)
+      window.removeEventListener('yolo:chat-history-cleared', handler)
       window.removeEventListener(CHAT_HISTORY_UPDATED_EVENT, handler)
     }
   }, [fetchChatList])

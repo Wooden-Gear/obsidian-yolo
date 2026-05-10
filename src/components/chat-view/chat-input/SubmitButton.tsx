@@ -8,13 +8,13 @@ export function SubmitButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className="smtcmp-chat-user-input-submit-button"
+      className="yolo-chat-user-input-submit-button"
       onClick={onClick}
     >
-      <div className="smtcmp-chat-user-input-submit-button-icons">
+      <div className="yolo-chat-user-input-submit-button-icons">
         <CornerDownLeftIcon size={12} />
       </div>
-      <div className="smtcmp-chat-user-input-submit-button-label">
+      <div className="yolo-chat-user-input-submit-button-label">
         {t('chat.sendMessage', 'Chat')}
       </div>
     </button>

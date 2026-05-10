@@ -48,23 +48,23 @@ export default function ContextUsageRing({
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <div
-            className="smtcmp-context-usage-ring"
+            className="yolo-context-usage-ring"
             data-tone={tone}
             aria-hidden="true"
           >
             <svg
-              className="smtcmp-context-usage-ring__svg"
+              className="yolo-context-usage-ring__svg"
               viewBox="0 0 20 20"
               aria-hidden="true"
             >
               <circle
-                className="smtcmp-context-usage-ring__track"
+                className="yolo-context-usage-ring__track"
                 cx="10"
                 cy="10"
                 r={RING_RADIUS}
               />
               <circle
-                className="smtcmp-context-usage-ring__progress"
+                className="yolo-context-usage-ring__progress"
                 cx="10"
                 cy="10"
                 r={RING_RADIUS}
@@ -72,14 +72,14 @@ export default function ContextUsageRing({
                 strokeDashoffset={dashOffset}
               />
             </svg>
-            <span className="smtcmp-context-usage-ring__sr-only">
+            <span className="yolo-context-usage-ring__sr-only">
               {percentLabel}
             </span>
           </div>
         </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
-            className="smtcmp-tooltip-content"
+            className="yolo-tooltip-content"
             side="bottom"
             sideOffset={6}
           >

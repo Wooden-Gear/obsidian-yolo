@@ -1,6 +1,6 @@
 import {
   DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
-  SmartComposerSettings,
+  YoloSettings,
 } from '../../settings/schema/setting.types'
 import { RequestTransportMode } from '../../types/provider.types'
 
@@ -20,7 +20,7 @@ export const DEFAULT_MODEL_REQUEST_POLICY: ModelRequestPolicy = {
 }
 
 export const resolveModelRequestPolicy = (
-  settings: Pick<SmartComposerSettings, 'continuationOptions'>,
+  settings: Pick<YoloSettings, 'continuationOptions'>,
 ): ModelRequestPolicy => {
   const timeoutMs = Math.min(
     600000,

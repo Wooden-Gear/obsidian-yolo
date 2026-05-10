@@ -3,7 +3,7 @@ import { App, FileSystemAdapter, TFile, TFolder, normalizePath } from 'obsidian'
 import { upsertEditReviewSnapshot } from '../../database/json/chat/editReviewSnapshotStore'
 import { saveExternalAgentProgress } from '../../database/json/chat/externalAgentProgressStore'
 import { buildPdfPageImageCacheKey } from '../../database/json/chat/imageCacheStore'
-import type { SmartComposerSettings } from '../../settings/schema/setting.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
 import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
@@ -1687,7 +1687,7 @@ const getSemanticSearchUnavailableReason = ({
   settings,
   getRagEngine,
 }: {
-  settings?: SmartComposerSettings
+  settings?: YoloSettings
   getRagEngine?: () => Promise<RAGEngine>
 }): string | null => {
   if (!getRagEngine || !settings) {
@@ -1985,7 +1985,7 @@ const executeFsFileOps = async ({
   toolCallId,
 }: {
   app: App
-  settings?: SmartComposerSettings
+  settings?: YoloSettings
   action: FsFileOpAction
   items: Record<string, unknown>[]
   dryRun: boolean
@@ -2310,7 +2310,7 @@ export async function callLocalFileTool({
   workspaceScope,
 }: {
   app: App
-  settings?: SmartComposerSettings
+  settings?: YoloSettings
   openApplyReview?: (state: ApplyViewState) => Promise<boolean>
   getRagEngine?: () => Promise<RAGEngine>
   conversationId?: string

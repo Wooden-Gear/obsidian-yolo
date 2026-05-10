@@ -145,7 +145,7 @@ export const en: TranslationKeys = {
       agent: 'Agent',
       others: 'Others',
     },
-    supportSmartComposer: {
+    supportYolo: {
       name: 'Support the project',
       desc: 'If you find this plugin valuable, consider supporting its development!',
       buyMeACoffee: 'Buy me a coffee',

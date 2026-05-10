@@ -44,7 +44,7 @@ function ConfirmModalComponent({
 }: ConfirmModalComponentProps & { onClose: () => void }) {
   return (
     <div>
-      <div className="smtcmp-prewrap">{message}</div>
+      <div className="yolo-prewrap">{message}</div>
       <div className="modal-button-container">
         <button
           className="mod-warning"

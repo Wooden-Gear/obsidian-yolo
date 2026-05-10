@@ -27,7 +27,7 @@ export class AssistantIconPickerModal extends Modal {
 
     // 创建 React 根容器
     const root = contentEl.createDiv()
-    root.addClass('smtcmp-icon-picker-modal')
+    root.addClass('yolo-icon-picker-modal')
 
     // 使用 React 渲染内容
     const IconPickerContent: React.FC = () => {
@@ -40,19 +40,19 @@ export class AssistantIconPickerModal extends Modal {
       }
 
       return (
-        <div className="smtcmp-icon-picker-content">
+        <div className="yolo-icon-picker-content">
           <h2>选择助手图标</h2>
 
           {/* Tab 切换 */}
-          <div className="smtcmp-icon-picker-tabs">
+          <div className="yolo-icon-picker-tabs">
             <button
-              className={`smtcmp-icon-picker-tab ${activeTab === 'lucide' ? 'active' : ''}`}
+              className={`yolo-icon-picker-tab ${activeTab === 'lucide' ? 'active' : ''}`}
               onClick={() => setActiveTab('lucide')}
             >
               图标库
             </button>
             <button
-              className={`smtcmp-icon-picker-tab ${activeTab === 'emoji' ? 'active' : ''}`}
+              className={`yolo-icon-picker-tab ${activeTab === 'emoji' ? 'active' : ''}`}
               onClick={() => setActiveTab('emoji')}
             >
               Emoji
@@ -61,7 +61,7 @@ export class AssistantIconPickerModal extends Modal {
 
           {/* Lucide 图标网格 */}
           {activeTab === 'lucide' && (
-            <div className="smtcmp-icon-picker-grid">
+            <div className="yolo-icon-picker-grid">
               {PRESET_LUCIDE_ICONS.map((iconName) => {
                 const isSelected =
                   this.currentIcon?.type === 'lucide' &&
@@ -69,13 +69,13 @@ export class AssistantIconPickerModal extends Modal {
                 return (
                   <button
                     key={iconName}
-                    className={`smtcmp-icon-picker-item ${isSelected ? 'selected' : ''}`}
+                    className={`yolo-icon-picker-item ${isSelected ? 'selected' : ''}`}
                     onClick={() =>
                       handleSelect({ type: 'lucide', value: iconName })
                     }
                     title={iconName}
                   >
-                    <div className="smtcmp-icon-picker-item-preview">
+                    <div className="yolo-icon-picker-item-preview">
                       {renderAssistantIcon(
                         { type: 'lucide', value: iconName },
                         20,
@@ -91,18 +91,18 @@ export class AssistantIconPickerModal extends Modal {
           {activeTab === 'emoji' && (
             <div>
               {/* 自定义 Emoji 输入 */}
-              <div className="smtcmp-icon-picker-custom-emoji">
+              <div className="yolo-icon-picker-custom-emoji">
                 <input
                   type="text"
                   placeholder="或输入自定义 emoji..."
                   value={customEmoji}
                   onChange={(e) => setCustomEmoji(e.target.value)}
                   maxLength={4}
-                  className="smtcmp-icon-picker-emoji-input"
+                  className="yolo-icon-picker-emoji-input"
                 />
                 {customEmoji && (
                   <button
-                    className="smtcmp-icon-picker-confirm-btn"
+                    className="yolo-icon-picker-confirm-btn"
                     onClick={() =>
                       handleSelect({ type: 'emoji', value: customEmoji })
                     }
@@ -113,7 +113,7 @@ export class AssistantIconPickerModal extends Modal {
               </div>
 
               {/* 预设 Emoji 网格 */}
-              <div className="smtcmp-icon-picker-grid">
+              <div className="yolo-icon-picker-grid">
                 {PRESET_EMOJIS.map((emoji) => {
                   const isSelected =
                     this.currentIcon?.type === 'emoji' &&
@@ -121,13 +121,13 @@ export class AssistantIconPickerModal extends Modal {
                   return (
                     <button
                       key={emoji}
-                      className={`smtcmp-icon-picker-item ${isSelected ? 'selected' : ''}`}
+                      className={`yolo-icon-picker-item ${isSelected ? 'selected' : ''}`}
                       onClick={() =>
                         handleSelect({ type: 'emoji', value: emoji })
                       }
                       title={emoji}
                     >
-                      <div className="smtcmp-icon-picker-item-preview">
+                      <div className="yolo-icon-picker-item-preview">
                         {renderAssistantIcon(
                           { type: 'emoji', value: emoji },
                           24,

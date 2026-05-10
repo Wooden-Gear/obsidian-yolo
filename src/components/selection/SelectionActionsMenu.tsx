@@ -306,8 +306,7 @@ export function SelectionActionsMenu({
     [isMobile, position.left, position.top],
   )
 
-  const menuClasses =
-    `smtcmp-selection-menu ${isVisible ? 'visible' : ''}`.trim()
+  const menuClasses = `yolo-selection-menu ${isVisible ? 'visible' : ''}`.trim()
 
   return (
     <div
@@ -317,15 +316,15 @@ export function SelectionActionsMenu({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="smtcmp-selection-menu-content">
+      <div className="yolo-selection-menu-content">
         {actions.map((action) => (
           <button
             key={action.id}
             type="button"
-            className="smtcmp-selection-menu-item"
+            className="yolo-selection-menu-item"
             onClick={() => void handleActionClick(action)}
           >
-            <span className="smtcmp-selection-menu-item-label">
+            <span className="yolo-selection-menu-item-label">
               {action.label}
             </span>
           </button>

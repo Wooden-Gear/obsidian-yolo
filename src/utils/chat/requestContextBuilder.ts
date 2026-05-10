@@ -19,7 +19,7 @@ import {
 } from '../../core/skills/skillPolicy'
 import { scrapeUrlGeneric } from '../../core/web-search'
 import { readPromptSnapshotEntries } from '../../database/json/chat/promptSnapshotStore'
-import type { SmartComposerSettings } from '../../settings/schema/setting.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import type {
   ChatAssistantMessage,
   ChatConversationCompactionLike,
@@ -172,7 +172,7 @@ function renderAttachedPdfBlock({
 export async function prepareDocumentsForModel(
   messages: RequestMessage[],
   chatModel: ChatModel | null | undefined,
-  context: { app: App; settings: SmartComposerSettings },
+  context: { app: App; settings: YoloSettings },
 ): Promise<RequestMessage[]> {
   if (chatModelSupportsPdf(chatModel)) {
     return messages
@@ -331,12 +331,12 @@ function getMentionedFileProperties(
 
 export class RequestContextBuilder {
   private app: App
-  private settings: SmartComposerSettings
+  private settings: YoloSettings
   private includeSkills: boolean
 
   constructor(
     app: App,
-    settings: SmartComposerSettings,
+    settings: YoloSettings,
     options?: RequestContextBuilderOptions,
   ) {
     this.app = app

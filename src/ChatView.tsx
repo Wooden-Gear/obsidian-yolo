@@ -20,7 +20,7 @@ import { PluginProvider } from './contexts/plugin-context'
 import { RAGProvider } from './contexts/rag-context'
 import { SettingsProvider } from './contexts/settings-context'
 import type { PendingChatOpenPayload } from './features/chat/chatLeafSessionManager'
-import SmartComposerPlugin from './main'
+import YoloPlugin from './main'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
 import { MentionableBlockData, MentionableImage } from './types/mentionable'
 
@@ -32,7 +32,7 @@ export class ChatView extends ItemView {
 
   constructor(
     leaf: WorkspaceLeaf,
-    private plugin: SmartComposerPlugin,
+    private plugin: YoloPlugin,
   ) {
     super(leaf)
   }

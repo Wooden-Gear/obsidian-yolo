@@ -162,9 +162,9 @@ export function SelectionChatActionsSettings({
 
   if (variant === 'composer') {
     return (
-      <div className="smtcmp-smart-space-settings">
-        <div className="smtcmp-smart-space-settings-row">
-          <div className="smtcmp-settings-desc">{actionsCountLabel}</div>
+      <div className="yolo-smart-space-settings">
+        <div className="yolo-smart-space-settings-row">
+          <div className="yolo-settings-desc">{actionsCountLabel}</div>
           <ObsidianButton
             text={t('settings.selectionChat.configureActions', '配置快捷指令')}
             onClick={handleOpenModal}
@@ -175,7 +175,7 @@ export function SelectionChatActionsSettings({
   }
 
   return (
-    <div className="smtcmp-smart-space-settings">
+    <div className="yolo-smart-space-settings">
       <ObsidianSetting
         name={t(
           'settings.selectionChat.quickActionsTitle',
@@ -185,9 +185,9 @@ export function SelectionChatActionsSettings({
           'settings.selectionChat.quickActionsDesc',
           '自定义选中文本后显示的快捷指令和提示词',
         )}
-        className="smtcmp-settings-card"
+        className="yolo-settings-card"
       >
-        <div className="smtcmp-settings-desc">{actionsCountLabel}</div>
+        <div className="yolo-settings-desc">{actionsCountLabel}</div>
         <ObsidianButton
           text={t('settings.selectionChat.configureActions', '配置快捷指令')}
           onClick={handleOpenModal}
@@ -404,9 +404,9 @@ export function SelectionChatActionsSettingsContent() {
         `div[data-action-id="${movedId}"]`,
       )
       if (movedItem) {
-        movedItem.classList.add('smtcmp-quick-action-drop-success')
+        movedItem.classList.add('yolo-quick-action-drop-success')
         window.setTimeout(() => {
-          movedItem.classList.remove('smtcmp-quick-action-drop-success')
+          movedItem.classList.remove('yolo-quick-action-drop-success')
         }, 700)
       } else if (attempt < 8) {
         window.setTimeout(() => tryFind(attempt + 1), 50)
@@ -477,7 +477,7 @@ export function SelectionChatActionsSettingsContent() {
   }
 
   return (
-    <div className="smtcmp-smart-space-settings">
+    <div className="yolo-smart-space-settings">
       <ObsidianSetting
         name={t(
           'settings.selectionChat.quickActionsTitle',
@@ -499,7 +499,7 @@ export function SelectionChatActionsSettingsContent() {
       </ObsidianSetting>
 
       {isAddingAction && editingAction && (
-        <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-new">
+        <div className="yolo-quick-action-editor yolo-quick-action-editor-new">
           <ObsidianSetting
             name={t('settings.selectionChat.actionLabel', '选项名称')}
             desc={t(
@@ -582,9 +582,9 @@ export function SelectionChatActionsSettingsContent() {
           <ObsidianSetting
             name={t('settings.selectionChat.actionInstruction', '提示词')}
             desc={getInstructionDesc(editingAction.mode ?? 'ask')}
-            className="smtcmp-settings-textarea-header"
+            className="yolo-settings-textarea-header"
           />
-          <ObsidianSetting className="smtcmp-settings-textarea">
+          <ObsidianSetting className="yolo-settings-textarea">
             <ObsidianTextArea
               value={editingAction.instruction}
               placeholder={getInstructionPlaceholder(
@@ -603,7 +603,7 @@ export function SelectionChatActionsSettingsContent() {
             />
           </ObsidianSetting>
 
-          <div className="smtcmp-quick-action-editor-buttons">
+          <div className="yolo-quick-action-editor-buttons">
             <ObsidianButton
               text={t('common.save', '保存')}
               onClick={() => void handleSaveAction()}
@@ -630,7 +630,7 @@ export function SelectionChatActionsSettingsContent() {
           items={actionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="smtcmp-quick-actions-list">
+          <div className="yolo-quick-actions-list">
             {editableActions.map((action) => {
               const isEditing =
                 !isAddingAction && editingAction?.id === action.id
@@ -718,24 +718,24 @@ function QuickActionItem({
         ref={setNodeRef}
         style={style}
         data-action-id={action.id}
-        className={`smtcmp-quick-action-item ${isEditing ? 'editing' : ''} ${isDragging ? 'smtcmp-quick-action-dragging' : ''}`}
+        className={`yolo-quick-action-item ${isEditing ? 'editing' : ''} ${isDragging ? 'yolo-quick-action-dragging' : ''}`}
         {...attributes}
       >
-        <div className="smtcmp-quick-action-drag-handle">
+        <div className="yolo-quick-action-drag-handle">
           <span
-            className={`smtcmp-drag-handle ${isDragging ? 'smtcmp-drag-handle--active' : ''}`}
+            className={`yolo-drag-handle ${isDragging ? 'yolo-drag-handle--active' : ''}`}
             aria-label={t('settings.selectionChat.dragHandleAria', '拖拽排序')}
             {...listeners}
           >
             <GripVertical size={16} />
           </span>
         </div>
-        <div className="smtcmp-quick-action-content">
-          <div className="smtcmp-quick-action-header">
-            <span className="smtcmp-quick-action-label">{action.label}</span>
+        <div className="yolo-quick-action-content">
+          <div className="yolo-quick-action-header">
+            <span className="yolo-quick-action-label">{action.label}</span>
           </div>
         </div>
-        <div className="smtcmp-quick-action-controls">
+        <div className="yolo-quick-action-controls">
           <ObsidianButton
             onClick={() => {
               if (isEditing) {
@@ -764,7 +764,7 @@ function QuickActionItem({
       </div>
 
       {isEditing && currentEditing && (
-        <div className="smtcmp-quick-action-editor smtcmp-quick-action-editor-inline">
+        <div className="yolo-quick-action-editor yolo-quick-action-editor-inline">
           <ObsidianSetting
             name={t('settings.selectionChat.actionLabel', '选项名称')}
             desc={t(
@@ -847,9 +847,9 @@ function QuickActionItem({
           <ObsidianSetting
             name={t('settings.selectionChat.actionInstruction', '提示词')}
             desc={getInstructionDesc(currentEditing.mode ?? 'ask')}
-            className="smtcmp-settings-textarea-header"
+            className="yolo-settings-textarea-header"
           />
-          <ObsidianSetting className="smtcmp-settings-textarea">
+          <ObsidianSetting className="yolo-settings-textarea">
             <ObsidianTextArea
               value={currentEditing.instruction}
               placeholder={getInstructionPlaceholder(
@@ -868,7 +868,7 @@ function QuickActionItem({
             />
           </ObsidianSetting>
 
-          <div className="smtcmp-quick-action-editor-buttons">
+          <div className="yolo-quick-action-editor-buttons">
             <ObsidianButton
               text={t('common.save', '保存')}
               onClick={() => void handleSaveAction()}

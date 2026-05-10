@@ -132,7 +132,7 @@ function InsertButton({ messages }: { messages: AssistantToolMessageGroup }) {
       }
 
       const groupElement = buttonRef.current?.closest(
-        '.smtcmp-assistant-tool-message-group',
+        '.yolo-assistant-tool-message-group',
       )
       if (!groupElement) {
         return null
@@ -299,7 +299,7 @@ export default function AssistantToolMessageGroupActions({
   return (
     <div
       ref={containerRef}
-      className={`smtcmp-assistant-message-actions${
+      className={`yolo-assistant-message-actions${
         isMoreOpen ? ' is-more-open' : ''
       }`}
     >
@@ -315,18 +315,18 @@ export default function AssistantToolMessageGroupActions({
       {showInsert && <InsertButton messages={messages} />}
       {showCopy && <CopyButton messages={messages} />}
       {hasMoreActions ? (
-        <div className="smtcmp-assistant-message-more-group">
+        <div className="yolo-assistant-message-more-group">
           <div
-            className={`smtcmp-assistant-message-inline-actions${
+            className={`yolo-assistant-message-inline-actions${
               isMoreOpen ? ' is-open' : ''
             }`}
             aria-hidden={isMoreOpen ? undefined : 'true'}
           >
-            <div className="smtcmp-assistant-message-inline-actions-inner">
+            <div className="yolo-assistant-message-inline-actions-inner">
               {showBranch && (
                 <ActionIconButton
                   label={branchLabel}
-                  className="clickable-icon smtcmp-assistant-message-action-btn"
+                  className="clickable-icon yolo-assistant-message-action-btn"
                   disabled={isBranchDisabled}
                   tabIndex={isMoreOpen ? undefined : -1}
                   onClick={() => {
@@ -340,7 +340,7 @@ export default function AssistantToolMessageGroupActions({
               {showEdit && (
                 <ActionIconButton
                   label={editLabel}
-                  className="clickable-icon smtcmp-assistant-message-action-btn"
+                  className="clickable-icon yolo-assistant-message-action-btn"
                   disabled={isEditDisabled}
                   tabIndex={isMoreOpen ? undefined : -1}
                   onClick={() => {
@@ -354,7 +354,7 @@ export default function AssistantToolMessageGroupActions({
               {showDelete && (
                 <ActionIconButton
                   label={deleteLabel}
-                  className="clickable-icon smtcmp-assistant-message-action-btn"
+                  className="clickable-icon yolo-assistant-message-action-btn"
                   disabled={isDeleteDisabled}
                   tabIndex={isMoreOpen ? undefined : -1}
                   onClick={() => {
@@ -375,7 +375,7 @@ export default function AssistantToolMessageGroupActions({
               }
               setIsMoreOpen((current) => !current)
             }}
-            className={`clickable-icon smtcmp-assistant-message-action-btn smtcmp-assistant-message-more-button${
+            className={`clickable-icon yolo-assistant-message-action-btn yolo-assistant-message-more-button${
               isMoreOpen ? ' is-open' : ''
             }`}
             aria-label={t('sidebar.chatList.moreActions', 'More actions')}

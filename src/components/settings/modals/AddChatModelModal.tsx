@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { DEFAULT_CHAT_MODELS } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
 import { listBedrockChatModelIds } from '../../../core/llm/bedrockCatalog'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import {
   ChatModel,
   ChatModelModality,
@@ -40,7 +40,7 @@ import { ReactModal } from '../../common/ReactModal'
 import { SearchableDropdown } from '../../common/SearchableDropdown'
 
 type AddChatModelModalComponentProps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   provider?: LLMProvider
 }
 
@@ -198,7 +198,7 @@ const supportsGptTools = (provider: LLMProvider | undefined): boolean =>
   provider?.apiType === 'openai-responses'
 
 export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin, provider?: LLMProvider) {
+  constructor(app: App, plugin: YoloPlugin, provider?: LLMProvider) {
     super({
       app: app,
       Component: AddChatModelModalComponent,
@@ -743,7 +743,7 @@ function AddChatModelModalComponent({
   }
 
   return (
-    <div className="smtcmp-chat-model-modal-form">
+    <div className="yolo-chat-model-modal-form">
       {/* Available models dropdown (moved above modelId) */}
       <ObsidianSetting
         name={
@@ -826,54 +826,54 @@ function AddChatModelModalComponent({
       </ObsidianSetting>
 
       {/* Input modalities */}
-      <div className="smtcmp-modality-field">
-        <div className="smtcmp-modality-field-header">
-          <div className="smtcmp-modality-field-label">
+      <div className="yolo-modality-field">
+        <div className="yolo-modality-field-header">
+          <div className="yolo-modality-field-label">
             {t('settings.models.inputModality')}
           </div>
-          <div className="smtcmp-modality-field-desc">
+          <div className="yolo-modality-field-desc">
             {t('settings.models.inputModalityDesc')}
           </div>
         </div>
-        <div className="smtcmp-modality-chips">
+        <div className="yolo-modality-chips">
           <button
             type="button"
-            className={`smtcmp-modality-chip${
+            className={`yolo-modality-chip${
               modalities.includes('text') ? ' is-active' : ''
             }`}
             onClick={() => toggleModality('text')}
           >
             <Type size={14} />
-            <span className="smtcmp-modality-chip-label">
+            <span className="yolo-modality-chip-label">
               {t('settings.models.inputModalityText')}
             </span>
-            <span className="smtcmp-modality-chip-sub">Text</span>
+            <span className="yolo-modality-chip-sub">Text</span>
           </button>
           <button
             type="button"
-            className={`smtcmp-modality-chip${
+            className={`yolo-modality-chip${
               modalities.includes('vision') ? ' is-active' : ''
             }`}
             onClick={() => toggleModality('vision')}
           >
             <ImageIcon size={14} />
-            <span className="smtcmp-modality-chip-label">
+            <span className="yolo-modality-chip-label">
               {t('settings.models.inputModalityVision')}
             </span>
-            <span className="smtcmp-modality-chip-sub">Vision</span>
+            <span className="yolo-modality-chip-sub">Vision</span>
           </button>
           <button
             type="button"
-            className={`smtcmp-modality-chip${
+            className={`yolo-modality-chip${
               modalities.includes('pdf') ? ' is-active' : ''
             }`}
             onClick={() => toggleModality('pdf')}
           >
             <FileText size={14} />
-            <span className="smtcmp-modality-chip-label">
+            <span className="yolo-modality-chip-label">
               {t('settings.models.inputModalityPdf')}
             </span>
-            <span className="smtcmp-modality-chip-sub">PDF</span>
+            <span className="yolo-modality-chip-sub">PDF</span>
           </button>
         </div>
       </div>
@@ -906,25 +906,25 @@ function AddChatModelModalComponent({
       )}
 
       {toolType === 'gpt' && supportsGptTools(selectedProvider) && (
-        <div className="smtcmp-agent-tools-panel smtcmp-agent-model-panel">
-          <div className="smtcmp-agent-tools-panel-head smtcmp-agent-model-panel-head">
-            <div className="smtcmp-agent-tools-panel-title">
+        <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+          <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+            <div className="yolo-agent-tools-panel-title">
               {t('settings.models.gptTools')}
             </div>
           </div>
 
-          <div className="smtcmp-agent-model-controls">
-            <div className="smtcmp-agent-model-control">
-              <div className="smtcmp-agent-model-control-top">
-                <div className="smtcmp-agent-model-control-meta">
-                  <div className="smtcmp-agent-model-control-label">
+          <div className="yolo-agent-model-controls">
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
                     {t('settings.models.gptToolWebSearch')}
                   </div>
-                  <div className="smtcmp-agent-model-control-desc">
+                  <div className="yolo-agent-model-control-desc">
                     {t('settings.models.gptToolWebSearchDesc')}
                   </div>
                 </div>
-                <div className="smtcmp-agent-model-control-actions">
+                <div className="yolo-agent-model-control-actions">
                   <ObsidianToggle
                     value={gptWebSearchEnabled}
                     onChange={setGptWebSearchEnabled}
@@ -938,42 +938,42 @@ function AddChatModelModalComponent({
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 
-      <div className="smtcmp-agent-tools-panel smtcmp-agent-model-panel">
-        <div className="smtcmp-agent-tools-panel-head smtcmp-agent-model-panel-head">
-          <div className="smtcmp-agent-tools-panel-title">
+      <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+        <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+          <div className="yolo-agent-tools-panel-title">
             {t('settings.models.customParameters', 'Custom parameters')}
           </div>
           <button
             type="button"
-            className="smtcmp-agent-model-reset"
+            className="yolo-agent-model-reset"
             onClick={resetModelParams}
           >
             {t('settings.models.restoreDefaults', 'Restore defaults')}
           </button>
         </div>
 
-        <div className="smtcmp-agent-model-controls">
+        <div className="yolo-agent-model-controls">
           <div
-            className={`smtcmp-agent-model-control${
+            className={`yolo-agent-model-control${
               formData.maxContextTokens === undefined ? ' is-disabled' : ''
             }`}
           >
-            <div className="smtcmp-agent-model-control-top">
-              <div className="smtcmp-agent-model-control-meta">
-                <div className="smtcmp-agent-model-control-label">
+            <div className="yolo-agent-model-control-top">
+              <div className="yolo-agent-model-control-meta">
+                <div className="yolo-agent-model-control-label">
                   {t(
                     'settings.models.maxContextTokens',
                     'Context window tokens',
                   )}
                 </div>
-                <div className="smtcmp-agent-model-control-desc">
+                <div className="yolo-agent-model-control-desc">
                   {t(
                     'settings.models.maxContextTokensDesc',
                     'Auto-filled when this model is recognized. Adjust it if your provider uses a different limit.',
                   )}
                 </div>
               </div>
-              <div className="smtcmp-agent-model-control-actions">
+              <div className="yolo-agent-model-control-actions">
                 <ObsidianToggle
                   value={formData.maxContextTokens !== undefined}
                   onChange={setMaxContextTokensEnabled}
@@ -981,7 +981,7 @@ function AddChatModelModalComponent({
               </div>
             </div>
             {formData.maxContextTokens !== undefined && (
-              <div className="smtcmp-agent-model-control-adjust">
+              <div className="yolo-agent-model-control-adjust">
                 <input
                   type="range"
                   min={1024}
@@ -1005,7 +1005,7 @@ function AddChatModelModalComponent({
                 />
                 <input
                   type="text"
-                  className="smtcmp-agent-model-number"
+                  className="yolo-agent-model-number"
                   inputMode="numeric"
                   value={
                     isMaxContextTokensInputFocused
@@ -1044,20 +1044,20 @@ function AddChatModelModalComponent({
           </div>
 
           <div
-            className={`smtcmp-agent-model-control${
+            className={`yolo-agent-model-control${
               formData.temperature === undefined ? ' is-disabled' : ''
             }`}
           >
-            <div className="smtcmp-agent-model-control-top">
-              <div className="smtcmp-agent-model-control-meta">
-                <div className="smtcmp-agent-model-control-label">
+            <div className="yolo-agent-model-control-top">
+              <div className="yolo-agent-model-control-meta">
+                <div className="yolo-agent-model-control-label">
                   {t(
                     'settings.conversationSettings.temperature',
                     'Temperature',
                   )}
                 </div>
               </div>
-              <div className="smtcmp-agent-model-control-actions">
+              <div className="yolo-agent-model-control-actions">
                 <ObsidianToggle
                   value={formData.temperature !== undefined}
                   onChange={setTemperatureEnabled}
@@ -1065,7 +1065,7 @@ function AddChatModelModalComponent({
               </div>
             </div>
             {formData.temperature !== undefined && (
-              <div className="smtcmp-agent-model-control-adjust">
+              <div className="yolo-agent-model-control-adjust">
                 <input
                   type="range"
                   min={0}
@@ -1087,7 +1087,7 @@ function AddChatModelModalComponent({
                 />
                 <input
                   type="number"
-                  className="smtcmp-agent-model-number"
+                  className="yolo-agent-model-number"
                   min={0}
                   max={2}
                   step={0.1}
@@ -1110,17 +1110,17 @@ function AddChatModelModalComponent({
           </div>
 
           <div
-            className={`smtcmp-agent-model-control${
+            className={`yolo-agent-model-control${
               formData.topP === undefined ? ' is-disabled' : ''
             }`}
           >
-            <div className="smtcmp-agent-model-control-top">
-              <div className="smtcmp-agent-model-control-meta">
-                <div className="smtcmp-agent-model-control-label">
+            <div className="yolo-agent-model-control-top">
+              <div className="yolo-agent-model-control-meta">
+                <div className="yolo-agent-model-control-label">
                   {t('settings.conversationSettings.topP', 'Top P')}
                 </div>
               </div>
-              <div className="smtcmp-agent-model-control-actions">
+              <div className="yolo-agent-model-control-actions">
                 <ObsidianToggle
                   value={formData.topP !== undefined}
                   onChange={setTopPEnabled}
@@ -1128,7 +1128,7 @@ function AddChatModelModalComponent({
               </div>
             </div>
             {formData.topP !== undefined && (
-              <div className="smtcmp-agent-model-control-adjust">
+              <div className="yolo-agent-model-control-adjust">
                 <input
                   type="range"
                   min={0}
@@ -1147,7 +1147,7 @@ function AddChatModelModalComponent({
                 />
                 <input
                   type="number"
-                  className="smtcmp-agent-model-number"
+                  className="yolo-agent-model-number"
                   min={0}
                   max={1}
                   step={0.01}
@@ -1167,17 +1167,17 @@ function AddChatModelModalComponent({
           </div>
 
           <div
-            className={`smtcmp-agent-model-control${
+            className={`yolo-agent-model-control${
               formData.maxOutputTokens === undefined ? ' is-disabled' : ''
             }`}
           >
-            <div className="smtcmp-agent-model-control-top">
-              <div className="smtcmp-agent-model-control-meta">
-                <div className="smtcmp-agent-model-control-label">
+            <div className="yolo-agent-model-control-top">
+              <div className="yolo-agent-model-control-meta">
+                <div className="yolo-agent-model-control-label">
                   {t('settings.models.maxOutputTokens', 'Max output tokens')}
                 </div>
               </div>
-              <div className="smtcmp-agent-model-control-actions">
+              <div className="yolo-agent-model-control-actions">
                 <ObsidianToggle
                   value={formData.maxOutputTokens !== undefined}
                   onChange={setMaxOutputTokensEnabled}
@@ -1185,7 +1185,7 @@ function AddChatModelModalComponent({
               </div>
             </div>
             {formData.maxOutputTokens !== undefined && (
-              <div className="smtcmp-agent-model-control-adjust">
+              <div className="yolo-agent-model-control-adjust">
                 <input
                   type="range"
                   min={256}
@@ -1217,7 +1217,7 @@ function AddChatModelModalComponent({
                 />
                 <input
                   type="number"
-                  className="smtcmp-agent-model-number"
+                  className="yolo-agent-model-number"
                   min={1}
                   step={1}
                   value={
@@ -1268,7 +1268,7 @@ function AddChatModelModalComponent({
       {customParameters.map((param, index) => (
         <ObsidianSetting
           key={param.uid}
-          className="smtcmp-settings-kv-entry smtcmp-settings-kv-entry--inline"
+          className="yolo-settings-kv-entry yolo-settings-kv-entry--inline"
         >
           <ObsidianTextInput
             value={param.key}

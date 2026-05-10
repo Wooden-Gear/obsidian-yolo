@@ -45,7 +45,7 @@ import {
   getDisabledSkillIdSet,
   resolveAssistantSkillPolicy,
 } from '../../../core/skills/skillPolicy'
-import { SmartComposerSettings } from '../../../settings/schema/setting.types'
+import { YoloSettings } from '../../../settings/schema/setting.types'
 import {
   AgentPersona,
   Assistant,
@@ -197,7 +197,7 @@ async function estimateSkillDefaultContextTokens({
   skill,
 }: {
   app: App
-  settings: SmartComposerSettings
+  settings: YoloSettings
   skill: SkillRowView
 }): Promise<number> {
   if (skill.loadMode === 'lazy') {
@@ -356,11 +356,11 @@ export function AgentsSectionContent({
     }
 
     nav.style.setProperty(
-      '--smtcmp-agent-tab-glider-left',
+      '--yolo-agent-tab-glider-left',
       `${activeButton.offsetLeft}px`,
     )
     nav.style.setProperty(
-      '--smtcmp-agent-tab-glider-width',
+      '--yolo-agent-tab-glider-width',
       `${activeButton.offsetWidth}px`,
     )
   }, [])
@@ -1080,20 +1080,20 @@ export function AgentsSectionContent({
 
   return (
     <div
-      className={`smtcmp-settings-section smtcmp-agent-editor-panel${
-        isDirectEntry ? ' smtcmp-agent-editor-panel--direct' : ''
+      className={`yolo-settings-section yolo-agent-editor-panel${
+        isDirectEntry ? ' yolo-agent-editor-panel--direct' : ''
       }`}
     >
       {draftAgent && (
-        <div className="smtcmp-agent-editor-sheet">
-          <div className="smtcmp-agent-editor-sheet-top">
-            <div className="smtcmp-agent-editor-sheet-header">
+        <div className="yolo-agent-editor-sheet">
+          <div className="yolo-agent-editor-sheet-top">
+            <div className="yolo-agent-editor-sheet-header">
               <div>
-                <div className="smtcmp-settings-sub-header">
+                <div className="yolo-settings-sub-header">
                   {draftAgent.name ||
                     t('settings.agent.editorDefaultName', 'New agent')}
                 </div>
-                <div className="smtcmp-settings-desc">
+                <div className="yolo-settings-desc">
                   {t(
                     'settings.agent.editorIntro',
                     "Configure this agent's capabilities, model, and behavior.",
@@ -1101,7 +1101,7 @@ export function AgentsSectionContent({
                 </div>
               </div>
               {!isDirectEntry && (
-                <div className="smtcmp-agent-editor-sheet-actions">
+                <div className="yolo-agent-editor-sheet-actions">
                   <ObsidianButton
                     text={t('common.cancel', 'Cancel')}
                     onClick={() => setDraftAgent(null)}
@@ -1116,18 +1116,18 @@ export function AgentsSectionContent({
             </div>
 
             <div
-              className="smtcmp-agent-editor-tabs smtcmp-agent-editor-tabs--glider"
+              className="yolo-agent-editor-tabs yolo-agent-editor-tabs--glider"
               role="tablist"
               ref={tabsNavRef}
               style={
                 {
-                  '--smtcmp-agent-tab-count': AGENT_EDITOR_TABS.length,
-                  '--smtcmp-agent-tab-index': activeTabIndex,
+                  '--yolo-agent-tab-count': AGENT_EDITOR_TABS.length,
+                  '--yolo-agent-tab-index': activeTabIndex,
                 } as React.CSSProperties
               }
             >
               <div
-                className="smtcmp-agent-editor-tabs-glider"
+                className="yolo-agent-editor-tabs-glider"
                 aria-hidden="true"
               />
               {AGENT_EDITOR_TABS.map((tab, index) => {
@@ -1136,7 +1136,7 @@ export function AgentsSectionContent({
                   <button
                     key={tab}
                     type="button"
-                    className={`smtcmp-agent-editor-tab ${activeTab === tab ? 'is-active' : ''}`}
+                    className={`yolo-agent-editor-tab ${activeTab === tab ? 'is-active' : ''}`}
                     onClick={() => setActiveTab(tab)}
                     role="tab"
                     aria-selected={activeTab === tab}
@@ -1145,12 +1145,12 @@ export function AgentsSectionContent({
                     }}
                   >
                     <span
-                      className="smtcmp-agent-editor-tab-icon"
+                      className="yolo-agent-editor-tab-icon"
                       aria-hidden="true"
                     >
                       <TabIcon size={14} />
                     </span>
-                    <span className="smtcmp-agent-editor-tab-label">
+                    <span className="yolo-agent-editor-tab-label">
                       {
                         {
                           profile: t(
@@ -1173,7 +1173,7 @@ export function AgentsSectionContent({
           </div>
 
           {activeTab === 'profile' && (
-            <div className="smtcmp-agent-editor-body">
+            <div className="yolo-agent-editor-body">
               <ObsidianSetting
                 name={t('settings.agent.editorName', 'Name')}
                 desc={t('settings.agent.editorNameDesc', 'Agent display name')}
@@ -1215,19 +1215,19 @@ export function AgentsSectionContent({
                   }}
                 />
               </ObsidianSetting>
-              <div className="smtcmp-agent-model-setting-row">
-                <div className="smtcmp-agent-model-setting-info">
-                  <div className="smtcmp-agent-model-setting-title">
+              <div className="yolo-agent-model-setting-row">
+                <div className="yolo-agent-model-setting-info">
+                  <div className="yolo-agent-model-setting-title">
                     {t('settings.agent.editorModel', 'Model')}
                   </div>
-                  <div className="smtcmp-agent-model-setting-desc">
+                  <div className="yolo-agent-model-setting-desc">
                     {t(
                       'settings.agent.editorModelDesc',
                       'Select the model used by this agent',
                     )}
                   </div>
                 </div>
-                <div className="smtcmp-agent-model-select-wrap">
+                <div className="yolo-agent-model-select-wrap">
                   <SimpleSelect
                     value={draftAgent.modelId || settings.chatModelId}
                     groupedOptions={agentModelOptionGroups}
@@ -1235,7 +1235,7 @@ export function AgentsSectionContent({
                     side="bottom"
                     sideOffset={6}
                     placeholder={t('common.select', 'Select')}
-                    contentClassName="smtcmp-agent-model-select-content"
+                    contentClassName="yolo-agent-model-select-content"
                     onChange={(value: string) =>
                       setDraftAgent({
                         ...draftAgent,
@@ -1251,9 +1251,9 @@ export function AgentsSectionContent({
                   'settings.agent.editorSystemPromptDesc',
                   'Primary behavior instruction for this agent',
                 )}
-                className="smtcmp-settings-textarea-header smtcmp-settings-desc-copyable"
+                className="yolo-settings-textarea-header yolo-settings-desc-copyable"
               />
-              <ObsidianSetting className="smtcmp-settings-textarea">
+              <ObsidianSetting className="yolo-settings-textarea">
                 <ObsidianTextArea
                   value={draftAgent.systemPrompt}
                   onChange={(value) =>
@@ -1261,7 +1261,7 @@ export function AgentsSectionContent({
                   }
                   autoResize
                   maxAutoResizeHeight={360}
-                  inputClassName="smtcmp-agent-system-prompt-textarea"
+                  inputClassName="yolo-agent-system-prompt-textarea"
                 />
               </ObsidianSetting>
               <ObsidianSetting
@@ -1288,7 +1288,7 @@ export function AgentsSectionContent({
           )}
 
           {activeTab === 'tools' && (
-            <div className="smtcmp-agent-editor-body">
+            <div className="yolo-agent-editor-body">
               <ObsidianSetting
                 name={t('settings.agent.editorEnableTools', 'Enable tools')}
                 desc={t(
@@ -1374,17 +1374,17 @@ export function AgentsSectionContent({
                 />
               </ObsidianSetting>
               <div
-                className={`smtcmp-agent-tools-panel${
+                className={`yolo-agent-tools-panel${
                   draftAgent.enableTools ? '' : ' is-disabled'
                 }`}
               >
-                <div className="smtcmp-agent-tools-panel-head">
-                  <div className="smtcmp-agent-tools-panel-title-row">
-                    <div className="smtcmp-agent-tools-panel-title">
+                <div className="yolo-agent-tools-panel-head">
+                  <div className="yolo-agent-tools-panel-title-row">
+                    <div className="yolo-agent-tools-panel-title">
                       {t('settings.agent.tools', 'Tools')}
                     </div>
                     {estimatedToolContextTokens.value !== null && (
-                      <div className="smtcmp-agent-tools-panel-estimate">
+                      <div className="yolo-agent-tools-panel-estimate">
                         {t(
                           'settings.agent.editorEstimatedContextTokens',
                           '~{count} tokens',
@@ -1395,7 +1395,7 @@ export function AgentsSectionContent({
                       </div>
                     )}
                   </div>
-                  <div className="smtcmp-agent-tools-panel-count">
+                  <div className="yolo-agent-tools-panel-count">
                     {`${enabledVisibleToolsCount} / ${visibleToolsCount} ${t(
                       'settings.agent.toolsActive',
                       'active',
@@ -1413,12 +1413,12 @@ export function AgentsSectionContent({
                     (tool) => tool.toggleTargets,
                   )
                   return (
-                    <div key={group.key} className="smtcmp-agent-tool-group">
-                      <div className="smtcmp-agent-tool-group-title">
-                        <span className="smtcmp-agent-tool-group-title-main">
+                    <div key={group.key} className="yolo-agent-tool-group">
+                      <div className="yolo-agent-tool-group-title">
+                        <span className="yolo-agent-tool-group-title-main">
                           <span>{group.title}</span>
                           {estimatedToolContextTokens.perTool.size > 0 && (
-                            <span className="smtcmp-agent-tool-group-tokens">
+                            <span className="yolo-agent-tool-group-tokens">
                               {t(
                                 'settings.agent.editorEstimatedContextTokens',
                                 '~{count} tokens',
@@ -1431,8 +1431,8 @@ export function AgentsSectionContent({
                             </span>
                           )}
                         </span>
-                        <span className="smtcmp-agent-tool-group-meta">
-                          <span className="smtcmp-agent-tool-group-count">
+                        <span className="yolo-agent-tool-group-meta">
+                          <span className="yolo-agent-tool-group-count">
                             {`${groupEnabledCount} / ${group.tools.length} ${t(
                               'settings.agent.toolsActive',
                               'active',
@@ -1441,7 +1441,7 @@ export function AgentsSectionContent({
                           {group.tools.length > 0 && (
                             <button
                               type="button"
-                              className="smtcmp-agent-tool-group-bulk-toggle"
+                              className="yolo-agent-tool-group-bulk-toggle"
                               onClick={() =>
                                 toggleTool(
                                   groupToggleTargets,
@@ -1462,7 +1462,7 @@ export function AgentsSectionContent({
                           )}
                         </span>
                       </div>
-                      <div className="smtcmp-agent-tool-list">
+                      <div className="yolo-agent-tool-list">
                         {group.tools.map((tool) => {
                           const selected = tool.toggleTargets.every((target) =>
                             isAssistantToolEnabled(draftAgent, target),
@@ -1480,19 +1480,19 @@ export function AgentsSectionContent({
                           return (
                             <div
                               key={tool.fullName}
-                              className="smtcmp-agent-tool-row"
+                              className="yolo-agent-tool-row"
                             >
-                              <div className="smtcmp-agent-tool-main">
-                                <div className="smtcmp-agent-tool-name smtcmp-agent-tool-name--mono">
+                              <div className="yolo-agent-tool-main">
+                                <div className="yolo-agent-tool-name yolo-agent-tool-name--mono">
                                   {tool.displayName}
                                 </div>
-                                <div className="smtcmp-agent-tool-source smtcmp-agent-tool-source--preview">
+                                <div className="yolo-agent-tool-source yolo-agent-tool-source--preview">
                                   {tool.description}
                                 </div>
                               </div>
-                              <div className="smtcmp-agent-tool-controls">
+                              <div className="yolo-agent-tool-controls">
                                 {selected && (
-                                  <div className="smtcmp-agent-tool-approval">
+                                  <div className="yolo-agent-tool-approval">
                                     <SimpleSelect
                                       value={approvalMode}
                                       options={toolApprovalOptions}
@@ -1503,7 +1503,7 @@ export function AgentsSectionContent({
                                         )
                                       }
                                       align="end"
-                                      contentClassName="smtcmp-agent-tool-approval-menu"
+                                      contentClassName="yolo-agent-tool-approval-menu"
                                     />
                                   </div>
                                 )}
@@ -1523,7 +1523,7 @@ export function AgentsSectionContent({
                 })}
 
                 {visibleToolsCount === 0 && (
-                  <div className="smtcmp-agent-tools-empty">
+                  <div className="yolo-agent-tools-empty">
                     {t('settings.agent.noTools', 'No tools available')}
                   </div>
                 )}
@@ -1532,15 +1532,15 @@ export function AgentsSectionContent({
           )}
 
           {activeTab === 'skills' && (
-            <div className="smtcmp-agent-editor-body">
-              <div className="smtcmp-agent-tools-panel">
-                <div className="smtcmp-agent-tools-panel-head">
-                  <div className="smtcmp-agent-tools-panel-title-row">
-                    <div className="smtcmp-agent-tools-panel-title">
+            <div className="yolo-agent-editor-body">
+              <div className="yolo-agent-tools-panel">
+                <div className="yolo-agent-tools-panel-head">
+                  <div className="yolo-agent-tools-panel-title-row">
+                    <div className="yolo-agent-tools-panel-title">
                       {t('settings.agent.skills', 'Skills')}
                     </div>
                     {estimatedSkillContextTokens.value !== null && (
-                      <div className="smtcmp-agent-tools-panel-estimate">
+                      <div className="yolo-agent-tools-panel-estimate">
                         {t(
                           'settings.agent.editorEstimatedContextTokens',
                           '~{count} tokens',
@@ -1551,7 +1551,7 @@ export function AgentsSectionContent({
                       </div>
                     )}
                   </div>
-                  <div className="smtcmp-agent-tools-panel-count">
+                  <div className="yolo-agent-tools-panel-count">
                     {t(
                       'settings.agent.editorSkillsCountWithEnabled',
                       '{count} skills (enabled {enabled})',
@@ -1566,31 +1566,31 @@ export function AgentsSectionContent({
                   </div>
                 </div>
 
-                <div className="smtcmp-agent-skill-summary-row">
-                  <span className="smtcmp-agent-chip">
+                <div className="yolo-agent-skill-summary-row">
+                  <span className="yolo-agent-chip">
                     {t('settings.agent.skillLoadAlways', 'Full inject')}:{' '}
                     {alwaysSkillRows.length}
                   </span>
-                  <span className="smtcmp-agent-chip">
+                  <span className="yolo-agent-chip">
                     {t('settings.agent.skillLoadLazy', 'On demand')}:{' '}
                     {lazySkillRows.length}
                   </span>
                 </div>
 
                 {skillRows.length > 0 ? (
-                  <div className="smtcmp-agent-tool-list">
+                  <div className="yolo-agent-tool-list">
                     {skillRows.map((skill) => {
                       const disabledByGlobal = skill.globallyDisabled
                       return (
-                        <div key={skill.id} className="smtcmp-agent-tool-row">
-                          <div className="smtcmp-agent-tool-main">
-                            <div className="smtcmp-agent-tool-name">
+                        <div key={skill.id} className="yolo-agent-tool-row">
+                          <div className="yolo-agent-tool-main">
+                            <div className="yolo-agent-tool-name">
                               <span>{skill.name}</span>
                               {skill.enabled &&
                                 estimatedSkillContextTokens.perSkill.has(
                                   skill.id,
                                 ) && (
-                                  <span className="smtcmp-agent-skill-tokens">
+                                  <span className="yolo-agent-skill-tokens">
                                     {t(
                                       'settings.agent.editorEstimatedContextTokens',
                                       '~{count} tokens',
@@ -1605,18 +1605,18 @@ export function AgentsSectionContent({
                                   </span>
                                 )}
                             </div>
-                            <div className="smtcmp-agent-tool-source smtcmp-agent-tool-source--preview">
+                            <div className="yolo-agent-tool-source yolo-agent-tool-source--preview">
                               {skill.description}
                             </div>
-                            <div className="smtcmp-agent-skill-meta">
-                              <span className="smtcmp-agent-chip">
+                            <div className="yolo-agent-skill-meta">
+                              <span className="yolo-agent-chip">
                                 id: {skill.id}
                               </span>
-                              <span className="smtcmp-agent-chip">
+                              <span className="yolo-agent-chip">
                                 {skill.path}
                               </span>
                               {disabledByGlobal && (
-                                <span className="smtcmp-agent-chip">
+                                <span className="yolo-agent-chip">
                                   {t(
                                     'settings.agent.skillDisabledGlobally',
                                     'Disabled globally',
@@ -1625,7 +1625,7 @@ export function AgentsSectionContent({
                               )}
                             </div>
                           </div>
-                          <div className="smtcmp-agent-skill-controls">
+                          <div className="yolo-agent-skill-controls">
                             <ObsidianToggle
                               value={skill.enabled}
                               onChange={(value) => {
@@ -1661,7 +1661,7 @@ export function AgentsSectionContent({
                     })}
                   </div>
                 ) : (
-                  <div className="smtcmp-agent-tools-empty">
+                  <div className="yolo-agent-tools-empty">
                     {t(
                       'settings.agent.skillsEmptyHint',
                       'No skills found. Create skill markdown files under {path}.',
@@ -1673,7 +1673,7 @@ export function AgentsSectionContent({
           )}
 
           {activeTab === 'workspace' && (
-            <div className="smtcmp-agent-editor-body">
+            <div className="yolo-agent-editor-body">
               <AgentWorkspaceScopeEditor
                 app={app}
                 vault={app.vault}
@@ -1684,8 +1684,8 @@ export function AgentsSectionContent({
           )}
 
           {isDirectEntry && (
-            <div className="smtcmp-agent-editor-direct-footer">
-              <div className="smtcmp-agent-editor-direct-footer-actions">
+            <div className="yolo-agent-editor-direct-footer">
+              <div className="yolo-agent-editor-direct-footer-actions">
                 <ObsidianButton
                   text={t('common.cancel', 'Cancel')}
                   onClick={onClose}

@@ -203,24 +203,24 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
 
   return (
     <>
-      <div className="smtcmp-settings-section">
-        <section className="smtcmp-settings-block">
-          <div className="smtcmp-settings-block-head">
-            <div className="smtcmp-settings-block-head-title-row">
-              <div className="smtcmp-settings-sub-header smtcmp-settings-block-title">
+      <div className="yolo-settings-section">
+        <section className="yolo-settings-block">
+          <div className="yolo-settings-block-head">
+            <div className="yolo-settings-block-head-title-row">
+              <div className="yolo-settings-sub-header yolo-settings-block-title">
                 {t('settings.continuation.customSubsectionTitle')}
               </div>
-              <div className="smtcmp-settings-desc smtcmp-settings-block-desc">
+              <div className="yolo-settings-desc yolo-settings-block-desc">
                 {t('settings.continuation.smartSpaceDescription')}
               </div>
             </div>
           </div>
 
-          <div className="smtcmp-settings-block-content">
+          <div className="yolo-settings-block-content">
             <ObsidianSetting
               name={t('settings.continuation.smartSpaceToggle')}
               desc={t('settings.continuation.smartSpaceToggleDesc')}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianToggle
                 value={enableSmartSpace}
@@ -240,7 +240,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 <ObsidianSetting
                   name={t('settings.continuation.smartSpaceTriggerMode')}
                   desc={t('settings.continuation.smartSpaceTriggerModeDesc')}
-                  className="smtcmp-settings-card smtcmp-smart-space-trigger-setting"
+                  className="yolo-settings-card yolo-smart-space-trigger-setting"
                 >
                   <ObsidianDropdown
                     value={smartSpaceTriggerMode}
@@ -274,24 +274,24 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         </section>
       </div>
 
-      <div className="smtcmp-settings-section smtcmp-settings-section--tight">
-        <section className="smtcmp-settings-block">
-          <div className="smtcmp-settings-block-head">
-            <div className="smtcmp-settings-block-head-title-row">
-              <div className="smtcmp-settings-sub-header smtcmp-settings-block-title">
+      <div className="yolo-settings-section yolo-settings-section--tight">
+        <section className="yolo-settings-block">
+          <div className="yolo-settings-block-head">
+            <div className="yolo-settings-block-head-title-row">
+              <div className="yolo-settings-sub-header yolo-settings-block-title">
                 {t('settings.continuation.quickAskSubsectionTitle')}
               </div>
-              <div className="smtcmp-settings-desc smtcmp-settings-block-desc">
+              <div className="yolo-settings-desc yolo-settings-block-desc">
                 {t('settings.continuation.quickAskDescription')}
               </div>
             </div>
           </div>
 
-          <div className="smtcmp-settings-block-content">
+          <div className="yolo-settings-block-content">
             <ObsidianSetting
               name={t('settings.continuation.quickAskToggle')}
               desc={t('settings.continuation.quickAskToggleDesc')}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianToggle
                 value={settings.continuationOptions.enableQuickAsk ?? true}
@@ -317,7 +317,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     'settings.continuation.selectionChatAutoDockDesc',
                     '发送问题后自动移动到编辑器右上角（拖动后不再自动跟随）。',
                   )}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianToggle
                     value={
@@ -338,7 +338,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 <ObsidianSetting
                   name={t('settings.continuation.quickAskTrigger')}
                   desc={t('settings.continuation.quickAskTriggerDesc')}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianTextInput
                     value={settings.continuationOptions.quickAskTrigger ?? '@'}
@@ -360,7 +360,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   desc={t(
                     'settings.continuation.quickAskContextBeforeCharsDesc',
                   )}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianTextInput
                     type="number"
@@ -400,7 +400,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   desc={t(
                     'settings.continuation.quickAskContextAfterCharsDesc',
                   )}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianTextInput
                     type="number"
@@ -436,17 +436,17 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
               </>
             )}
 
-            <div className="smtcmp-settings-sub-header">
+            <div className="yolo-settings-sub-header">
               {t('settings.continuation.selectionChatSubsectionTitle')}
             </div>
-            <div className="smtcmp-settings-desc smtcmp-settings-callout">
+            <div className="yolo-settings-desc yolo-settings-callout">
               {t('settings.continuation.selectionChatDescription')}
             </div>
 
             <ObsidianSetting
               name={t('settings.continuation.selectionChatToggle')}
               desc={t('settings.continuation.selectionChatToggleDesc')}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianToggle
                 value={enableSelectionChat}
@@ -470,24 +470,24 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
         </section>
       </div>
 
-      <div className="smtcmp-settings-section smtcmp-settings-section--tight">
-        <section className="smtcmp-settings-block">
-          <div className="smtcmp-settings-block-head">
-            <div className="smtcmp-settings-block-head-title-row">
-              <div className="smtcmp-settings-sub-header smtcmp-settings-block-title">
+      <div className="yolo-settings-section yolo-settings-section--tight">
+        <section className="yolo-settings-block">
+          <div className="yolo-settings-block-head">
+            <div className="yolo-settings-block-head-title-row">
+              <div className="yolo-settings-sub-header yolo-settings-block-title">
                 {t('settings.continuation.tabSubsectionTitle')}
               </div>
-              <div className="smtcmp-settings-desc smtcmp-settings-block-desc">
+              <div className="yolo-settings-desc yolo-settings-block-desc">
                 {t('settings.continuation.tabCompletionBasicDesc')}
               </div>
             </div>
           </div>
 
-          <div className="smtcmp-settings-block-content">
+          <div className="yolo-settings-block-content">
             <ObsidianSetting
               name={t('settings.continuation.tabCompletion')}
               desc={t('settings.continuation.tabCompletionDesc')}
-              className="smtcmp-settings-card"
+              className="yolo-settings-card"
             >
               <ObsidianToggle
                 value={enableTabCompletion}
@@ -514,7 +514,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 <ObsidianSetting
                   name={t('settings.continuation.tabCompletionModel')}
                   desc={t('settings.continuation.tabCompletionModelDesc')}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianDropdown
                     value={
@@ -549,7 +549,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   desc={t(
                     'settings.continuation.tabCompletionMaxSuggestionLengthDesc',
                   )}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianTextInput
                     type="number"
@@ -580,22 +580,22 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   />
                 </ObsidianSetting>
 
-                <div className="smtcmp-settings-sub-header">
+                <div className="yolo-settings-sub-header">
                   {t('settings.continuation.tabCompletionTriggersTitle')}
                 </div>
-                <div className="smtcmp-settings-trigger-callout-row">
-                  <div className="smtcmp-settings-desc smtcmp-settings-callout">
+                <div className="yolo-settings-trigger-callout-row">
+                  <div className="yolo-settings-desc yolo-settings-callout">
                     {t('settings.continuation.tabCompletionTriggersDesc')}
                   </div>
-                  <div className="smtcmp-tab-trigger-add">
+                  <div className="yolo-tab-trigger-add">
                     <ObsidianButton
                       text={t('settings.continuation.tabCompletionTriggerAdd')}
                       onClick={handleAddTrigger}
                     />
                   </div>
                 </div>
-                <div className="smtcmp-settings-table-container">
-                  <table className="smtcmp-settings-table">
+                <div className="yolo-settings-table-container">
+                  <table className="yolo-settings-table">
                     <thead>
                       <tr>
                         <th>
@@ -693,7 +693,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                   desc={t(
                     'settings.continuation.tabCompletionTriggerDelayDesc',
                   )}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianTextInput
                     type="number"
@@ -726,7 +726,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 <ObsidianSetting
                   name={t('settings.continuation.tabCompletionAutoTrigger')}
                   desc={t('settings.continuation.tabCompletionAutoTriggerDesc')}
-                  className="smtcmp-settings-card"
+                  className="yolo-settings-card"
                 >
                   <ObsidianToggle
                     value={tabCompletionOptions.idleTriggerEnabled}
@@ -744,7 +744,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionAutoTriggerDelayDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -783,7 +783,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionAutoTriggerCooldownDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -819,7 +819,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                 )}
 
                 <div
-                  className={`smtcmp-settings-advanced-toggle smtcmp-clickable${
+                  className={`yolo-settings-advanced-toggle yolo-clickable${
                     showAdvancedTabSettings ? ' is-expanded' : ''
                   }`}
                   onClick={() => setShowAdvancedTabSettings((prev) => !prev)}
@@ -832,9 +832,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                     }
                   }}
                 >
-                  <span className="smtcmp-settings-advanced-toggle-icon">
-                    ▶
-                  </span>
+                  <span className="yolo-settings-advanced-toggle-icon">▶</span>
                   {t('settings.continuation.tabCompletionAdvanced')}
                 </div>
 
@@ -847,7 +845,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionContextRangeDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -885,7 +883,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionMinContextLengthDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -923,7 +921,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionTemperatureDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -962,7 +960,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       desc={t(
                         'settings.continuation.tabCompletionRequestTimeoutDesc',
                       )}
-                      className="smtcmp-settings-card"
+                      className="yolo-settings-card"
                     >
                       <ObsidianTextInput
                         type="number"
@@ -993,7 +991,7 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                       />
                     </ObsidianSetting>
 
-                    <div className="smtcmp-models-textarea-card">
+                    <div className="yolo-models-textarea-card">
                       <ObsidianSetting
                         name={t(
                           'settings.continuation.tabCompletionConstraints',
@@ -1001,9 +999,9 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
                         desc={t(
                           'settings.continuation.tabCompletionConstraintsDesc',
                         )}
-                        className="smtcmp-settings-textarea-header smtcmp-models-textarea-card-header"
+                        className="yolo-settings-textarea-header yolo-models-textarea-card-header"
                       />
-                      <ObsidianSetting className="smtcmp-settings-textarea smtcmp-models-textarea-card-body">
+                      <ObsidianSetting className="yolo-settings-textarea yolo-models-textarea-card-body">
                         <ObsidianTextArea
                           value={tabCompletionConstraints}
                           onChange={(value: string) => {

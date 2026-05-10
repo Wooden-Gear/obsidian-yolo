@@ -101,14 +101,14 @@ export function NotificationSettingsSection() {
   }
 
   return (
-    <div className="smtcmp-models-block-content">
+    <div className="yolo-models-block-content">
       <ObsidianSetting
         name={t('settings.etc.notificationsEnabled', '启用通知')}
         desc={t(
           'settings.etc.notificationsEnabledDesc',
           '为 Agent 任务开启或关闭提醒。',
         )}
-        className="smtcmp-models-select-card"
+        className="yolo-models-select-card"
       >
         <ObsidianToggle
           value={settings.notificationOptions.enabled ?? false}
@@ -123,7 +123,7 @@ export function NotificationSettingsSection() {
               'settings.etc.notificationChannelDesc',
               '选择使用音效、系统通知，或同时使用两者。',
             )}
-            className="smtcmp-models-select-card"
+            className="yolo-models-select-card"
           >
             <ObsidianDropdown
               value={settings.notificationOptions.channel ?? 'sound'}
@@ -147,7 +147,7 @@ export function NotificationSettingsSection() {
               'settings.etc.notificationTimingDesc',
               '选择始终提醒，或仅在 Obsidian 失焦时提醒。',
             )}
-            className="smtcmp-models-select-card"
+            className="yolo-models-select-card"
           >
             <ObsidianDropdown
               value={settings.notificationOptions.timing ?? 'when-unfocused'}
@@ -170,7 +170,7 @@ export function NotificationSettingsSection() {
               'settings.etc.notificationApprovalRequiredDesc',
               '当 YOLO 暂停并等待你审批工具调用时发出提醒。',
             )}
-            className="smtcmp-models-select-card"
+            className="yolo-models-select-card"
           >
             <ObsidianToggle
               value={
@@ -185,7 +185,7 @@ export function NotificationSettingsSection() {
               'settings.etc.notificationTaskCompletedDesc',
               '当当前 Agent 任务结束且不再等待审批时发出提醒。',
             )}
-            className="smtcmp-models-select-card"
+            className="yolo-models-select-card"
           >
             <ObsidianToggle
               value={settings.notificationOptions.notifyOnTaskCompleted ?? true}

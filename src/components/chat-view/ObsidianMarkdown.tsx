@@ -71,7 +71,7 @@ function highlightTrailingFreshText(
     }
 
     const freshTextSpan = document.createElement('span')
-    freshTextSpan.className = 'smtcmp-stream-fresh-text'
+    freshTextSpan.className = 'yolo-stream-fresh-text'
     trailingParent.replaceChild(freshTextSpan, trailingNode)
     freshTextSpan.appendChild(trailingNode)
     remainingLength -= wrapLength
@@ -169,7 +169,7 @@ const ObsidianMarkdown = memo(function ObsidianMarkdown({
   return (
     <div
       ref={containerRef}
-      className={`markdown-rendered smtcmp-markdown-rendered smtcmp-scale-${scale}`}
+      className={`markdown-rendered yolo-markdown-rendered yolo-scale-${scale}`}
     />
   )
 })
@@ -230,7 +230,7 @@ function ObsidianCodeBlock({
   animateIncrementalText?: boolean
 }) {
   return (
-    <div className="smtcmp-obsidian-code-block">
+    <div className="yolo-obsidian-code-block">
       <ObsidianMarkdown
         content={`\`\`\`${language ?? ''}\n${content}\n\`\`\``}
         scale={scale}

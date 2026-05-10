@@ -7,7 +7,7 @@ import {
   PROVIDER_PRESET_INFO,
 } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import {
   LLMProvider,
   ProviderHeader,
@@ -31,14 +31,14 @@ import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ReactModal } from '../../common/ReactModal'
 
 type ProviderFormComponentProps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   provider: LLMProvider | null // null for new provider
 }
 
 const CUSTOM_PROVIDER_TYPE_ENTRIES = Object.entries(PROVIDER_PRESET_INFO)
 
 export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin) {
+  constructor(app: App, plugin: YoloPlugin) {
     super({
       app: app,
       Component: ProviderFormComponent,
@@ -52,7 +52,7 @@ export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
 }
 
 export class EditProviderModal extends ReactModal<ProviderFormComponentProps> {
-  constructor(app: App, plugin: SmartComposerPlugin, provider: LLMProvider) {
+  constructor(app: App, plugin: YoloPlugin, provider: LLMProvider) {
     super({
       app: app,
       Component: ProviderFormComponent,
@@ -277,7 +277,7 @@ function ProviderFormComponent({
       : t('settings.providers.baseUrlPlaceholder')
 
   return (
-    <div className="smtcmp-provider-form">
+    <div className="yolo-provider-form">
       <ObsidianSetting
         name={t('settings.providers.providerId', 'ID')}
         desc={t(
@@ -480,7 +480,7 @@ function ProviderFormComponent({
       {(formData.customHeaders ?? []).map((header, index) => (
         <ObsidianSetting
           key={`${header.key}-${header.value}-${index}`}
-          className="smtcmp-settings-kv-entry smtcmp-settings-kv-entry--inline smtcmp-provider-headers-entry"
+          className="yolo-settings-kv-entry yolo-settings-kv-entry--inline yolo-provider-headers-entry"
         >
           <ObsidianTextInput
             value={header.key}

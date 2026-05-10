@@ -202,13 +202,13 @@ export const ModelSelect = forwardRef<
       <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
           ref={setTriggerRef}
-          className="smtcmp-chat-input-model-select"
+          className="yolo-chat-input-model-select"
           onKeyDown={handleTriggerKeyDown}
         >
-          <div className="smtcmp-chat-input-model-select__label smtcmp-chat-input-model-select__model-name">
+          <div className="yolo-chat-input-model-select__label yolo-chat-input-model-select__model-name">
             {getCurrentModelDisplay()}
           </div>
-          <div className="smtcmp-chat-input-model-select__icon">
+          <div className="yolo-chat-input-model-select__icon">
             {isOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
           </div>
         </DropdownMenu.Trigger>
@@ -236,7 +236,7 @@ export const ModelSelect = forwardRef<
           }}
         >
           <DropdownMenu.RadioGroup
-            className="smtcmp-model-select-list"
+            className="yolo-model-select-list"
             value={selectedModelId}
             onKeyDown={(event) => {
               if (event.key === 'ArrowDown') {
@@ -277,7 +277,7 @@ export const ModelSelect = forwardRef<
                 const groupHeader = (
                   <DropdownMenu.Label
                     key={`label-${pid}`}
-                    className="smtcmp-popover-group-label"
+                    className="yolo-popover-group-label"
                   >
                     {pid}
                   </DropdownMenu.Label>
@@ -293,7 +293,7 @@ export const ModelSelect = forwardRef<
                   return (
                     <DropdownMenu.RadioItem
                       key={chatModelOption.id}
-                      className="smtcmp-popover-item"
+                      className="yolo-popover-item"
                       value={chatModelOption.id}
                       ref={(element) => {
                         itemRefs.current[chatModelOption.id] = element
@@ -303,10 +303,10 @@ export const ModelSelect = forwardRef<
                         runningIndex === 1 && index === 0 ? 'true' : undefined
                       }
                     >
-                      <span className="smtcmp-popover-item__label">
+                      <span className="yolo-popover-item__label">
                         {displayName}
                       </span>
-                      <DropdownMenu.ItemIndicator className="smtcmp-popover-item__indicator">
+                      <DropdownMenu.ItemIndicator className="yolo-popover-item__indicator">
                         <Check size={12} />
                       </DropdownMenu.ItemIndicator>
                     </DropdownMenu.RadioItem>
@@ -320,7 +320,7 @@ export const ModelSelect = forwardRef<
                     ? [
                         <DropdownMenu.Separator
                           key={`sep-${pid}`}
-                          className="smtcmp-popover-group-separator"
+                          className="yolo-popover-group-separator"
                         />,
                       ]
                     : []),

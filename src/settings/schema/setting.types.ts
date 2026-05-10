@@ -245,7 +245,7 @@ const tabCompletionTriggerSchema = z
  * Settings
  */
 
-export const smartComposerSettingsSchema = z.object({
+export const yoloSettingsSchema = z.object({
   // Version
   version: z.literal(SETTINGS_SCHEMA_VERSION).catch(SETTINGS_SCHEMA_VERSION),
 
@@ -536,7 +536,7 @@ export const smartComposerSettingsSchema = z.object({
   // Quick Ask selected assistant ID
   quickAskAssistantId: z.string().optional(),
 })
-export type SmartComposerSettings = z.infer<typeof smartComposerSettingsSchema>
+export type YoloSettings = z.infer<typeof yoloSettingsSchema>
 
 export type SettingMigration = {
   fromVersion: number

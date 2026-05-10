@@ -22,8 +22,8 @@ import { clearPdfTextCache } from '../../../database/json/chat/pdfTextCacheStore
 import { clearAllPromptSnapshotStores } from '../../../database/json/chat/promptSnapshotStore'
 import { clearAllTimelineHeightCacheStores } from '../../../database/json/chat/timelineHeightCacheStore'
 import { CHAT_DIR } from '../../../database/json/constants'
-import SmartComposerPlugin from '../../../main'
-import { smartComposerSettingsSchema } from '../../../settings/schema/setting.types'
+import YoloPlugin from '../../../main'
+import { yoloSettingsSchema } from '../../../settings/schema/setting.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
@@ -32,7 +32,7 @@ import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type EtcSectionProps = {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   className?: string
 }
 
@@ -136,7 +136,7 @@ const StorageBadge = ({ value }: { value: number | null }) => {
   const { t } = useLanguage()
 
   return (
-    <span className="smtcmp-setting-size-badge">
+    <span className="yolo-setting-size-badge">
       {value === null ? t('common.loading', '加载中...') : formatBytes(value)}
     </span>
   )
@@ -203,7 +203,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
       ctaText: t('settings.etc.reset'),
       onConfirm: () => {
         void (async () => {
-          const defaultSettings = smartComposerSettingsSchema.parse({})
+          const defaultSettings = yoloSettingsSchema.parse({})
           await setSettings(defaultSettings)
           new Notice(t('settings.etc.resetSettingsSuccess'))
         })().catch((error: unknown) => {
@@ -229,7 +229,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
           const nextUsage = await loadStorageUsage(app, settings)
           setStorageUsage(nextUsage)
           // Notify UI hooks (useChatHistory) to refresh chat list immediately
-          window.dispatchEvent(new Event('smtcmp:chat-history-cleared'))
+          window.dispatchEvent(new Event('yolo:chat-history-cleared'))
           new Notice(t('settings.etc.clearChatHistorySuccess'))
         })().catch((error: unknown) => {
           console.error('Failed to clear chat history', error)
@@ -321,27 +321,25 @@ export function EtcSection({ app, className }: EtcSectionProps) {
 
   return (
     <div
-      className={['smtcmp-settings-section', className]
-        .filter(Boolean)
-        .join(' ')}
+      className={['yolo-settings-section', className].filter(Boolean).join(' ')}
     >
-      <section className="smtcmp-settings-block">
-        <div className="smtcmp-settings-block-head">
-          <div className="smtcmp-settings-block-head-title-row">
-            <div className="smtcmp-settings-sub-header smtcmp-settings-block-title">
+      <section className="yolo-settings-block">
+        <div className="yolo-settings-block-head">
+          <div className="yolo-settings-block-head-title-row">
+            <div className="yolo-settings-sub-header yolo-settings-block-title">
               {t('settings.etc.maintenanceSectionTitle', 'Maintenance')}
             </div>
           </div>
         </div>
 
-        <div className="smtcmp-settings-block-content">
+        <div className="yolo-settings-block-content">
           <ObsidianSetting
             name={t('settings.etc.yoloBaseDir', 'YOLO 根目录')}
             desc={t(
               'settings.etc.yoloBaseDirDesc',
               '用于存放 YOLO 管理文件的库内相对目录（例如：Config/YOLO）。技能将从 {path} 加载。',
             ).replace('{path}', `${yoloBaseDir}/skills`)}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianTextInput
               value={yoloBaseDirInput}
@@ -354,7 +352,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
           <ObsidianSetting
             name={t('settings.etc.logModelRequestContext')}
             desc={t('settings.etc.logModelRequestContextDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianToggle
               value={settings.debug?.logModelRequestContext ?? false}
@@ -374,7 +372,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
             name={t('settings.etc.clearChatHistory')}
             nameExtra={<StorageBadge value={storageUsage.chatHistoryBytes} />}
             desc={t('settings.etc.clearChatHistoryDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianButton
               text={t('common.clear')}
@@ -387,7 +385,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
             name={t('settings.etc.clearChatSnapshots')}
             nameExtra={<StorageBadge value={storageUsage.chatSnapshotBytes} />}
             desc={t('settings.etc.clearChatSnapshotsDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianButton
               text={t('common.clear')}
@@ -399,7 +397,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
           <ObsidianSetting
             name={t('settings.etc.resetProviders')}
             desc={t('settings.etc.resetProvidersDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianButton
               text={t('settings.etc.reset')}
@@ -411,7 +409,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
           <ObsidianSetting
             name={t('settings.etc.resetAgents')}
             desc={t('settings.etc.resetAgentsDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianButton
               text={t('settings.etc.reset')}
@@ -423,7 +421,7 @@ export function EtcSection({ app, className }: EtcSectionProps) {
           <ObsidianSetting
             name={t('settings.etc.resetSettings')}
             desc={t('settings.etc.resetSettingsDesc')}
-            className="smtcmp-settings-card"
+            className="yolo-settings-card"
           >
             <ObsidianButton
               text={t('settings.etc.reset')}

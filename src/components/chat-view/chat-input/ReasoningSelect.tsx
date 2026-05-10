@@ -217,16 +217,16 @@ export const ReasoningSelect = forwardRef<
       <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
           ref={setTriggerRef}
-          className="smtcmp-chat-input-model-select smtcmp-reasoning-select"
+          className="yolo-chat-input-model-select yolo-reasoning-select"
           onKeyDown={handleTriggerKeyDown}
         >
-          <div className="smtcmp-reasoning-select__icon">
+          <div className="yolo-reasoning-select__icon">
             <Brain size={14} />
           </div>
-          <div className="smtcmp-chat-input-model-select__label smtcmp-chat-input-model-select__model-name">
+          <div className="yolo-chat-input-model-select__label yolo-chat-input-model-select__model-name">
             {currentLabel}
           </div>
-          <div className="smtcmp-chat-input-model-select__icon">
+          <div className="yolo-chat-input-model-select__icon">
             {isOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
           </div>
         </DropdownMenu.Trigger>
@@ -237,7 +237,7 @@ export const ReasoningSelect = forwardRef<
           minWidth={360}
           maxWidth={460}
           maxHeight={400}
-          className="smtcmp-reasoning-popover"
+          className="yolo-reasoning-popover"
           side={side}
           sideOffset={sideOffset}
           align={align}
@@ -261,33 +261,30 @@ export const ReasoningSelect = forwardRef<
             }
           }}
         >
-          <div className="smtcmp-reasoning-popover__header">
-            <Brain
-              size={14}
-              className="smtcmp-reasoning-popover__header-icon"
-            />
-            <span className="smtcmp-reasoning-popover__header-title">
+          <div className="yolo-reasoning-popover__header">
+            <Brain size={14} className="yolo-reasoning-popover__header-icon" />
+            <span className="yolo-reasoning-popover__header-title">
               {t('reasoning.selectReasoning', 'Select reasoning')}
             </span>
-            <span className="smtcmp-reasoning-popover__header-current">
+            <span className="yolo-reasoning-popover__header-current">
               · {currentLabel}
             </span>
           </div>
 
           <div
-            className="smtcmp-segmented smtcmp-segmented--pill smtcmp-reasoning-segmented"
+            className="yolo-segmented yolo-segmented--pill yolo-reasoning-segmented"
             role="radiogroup"
             aria-label={t('reasoning.selectReasoning', 'Select reasoning')}
             style={
               {
-                '--smtcmp-segment-count': REASONING_OPTIONS.length,
-                '--smtcmp-segment-index': REASONING_OPTIONS.findIndex(
+                '--yolo-segment-count': REASONING_OPTIONS.length,
+                '--yolo-segment-index': REASONING_OPTIONS.findIndex(
                   (opt) => opt.value === safeValue,
                 ),
               } as React.CSSProperties
             }
           >
-            <div className="smtcmp-segmented-glider" aria-hidden="true" />
+            <div className="yolo-segmented-glider" aria-hidden="true" />
             {REASONING_OPTIONS.map((option) => {
               const selected = option.value === safeValue
               return (
@@ -311,11 +308,11 @@ export const ReasoningSelect = forwardRef<
             })}
           </div>
 
-          <div className="smtcmp-reasoning-popover__desc">
-            <span className="smtcmp-reasoning-popover__desc-label">
+          <div className="yolo-reasoning-popover__desc">
+            <span className="yolo-reasoning-popover__desc-label">
               {currentLabel}
             </span>
-            <span className="smtcmp-reasoning-popover__desc-sep"> — </span>
+            <span className="yolo-reasoning-popover__desc-sep"> — </span>
             {currentDesc}
           </div>
         </YoloDropdownContent>

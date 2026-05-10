@@ -64,24 +64,24 @@ const BranchStateIcon = ({
     return (
       <Loader2
         size={12}
-        className="smtcmp-multi-model-tab__status-icon is-spinning"
+        className="yolo-multi-model-tab__status-icon is-spinning"
       />
     )
   }
   if (state === 'waiting-approval') {
     return (
-      <CircleAlert size={12} className="smtcmp-multi-model-tab__status-icon" />
+      <CircleAlert size={12} className="yolo-multi-model-tab__status-icon" />
     )
   }
   if (state === 'error') {
     return (
-      <CircleAlert size={12} className="smtcmp-multi-model-tab__status-icon" />
+      <CircleAlert size={12} className="yolo-multi-model-tab__status-icon" />
     )
   }
   if (state === 'aborted') {
-    return <Ban size={12} className="smtcmp-multi-model-tab__status-icon" />
+    return <Ban size={12} className="yolo-multi-model-tab__status-icon" />
   }
-  return <Check size={12} className="smtcmp-multi-model-tab__status-icon" />
+  return <Check size={12} className="yolo-multi-model-tab__status-icon" />
 }
 
 const getBranchTabState = (
@@ -308,7 +308,7 @@ export default function AssistantToolMessageGroupItem({
       }
 
       const scrollContainer = containerRef.current?.closest<HTMLElement>(
-        '.smtcmp-chat-messages',
+        '.yolo-chat-messages',
       )
       if (scrollContainer) {
         pendingScrollRestoreRef.current = {
@@ -543,9 +543,9 @@ export default function AssistantToolMessageGroupItem({
   const effectiveGroupEditSummaryKey = groupEditSummaryKey ?? ''
 
   return (
-    <div className="smtcmp-assistant-tool-message-group" ref={containerRef}>
+    <div className="yolo-assistant-tool-message-group" ref={containerRef}>
       {hasMultipleBranches && (
-        <div className="smtcmp-multi-model-tabs" role="tablist">
+        <div className="yolo-multi-model-tabs" role="tablist">
           {branchGroups.map((group) => {
             const isActive = group.key === resolvedActiveBranchKey
             const state = getBranchTabState(group.messages)
@@ -556,20 +556,20 @@ export default function AssistantToolMessageGroupItem({
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                className={`smtcmp-multi-model-tab smtcmp-multi-model-tab--${state}${isActive ? ' is-active' : ''}`}
+                className={`yolo-multi-model-tab yolo-multi-model-tab--${state}${isActive ? ' is-active' : ''}`}
                 onClick={() => handleBranchSwitch(group.key)}
                 title={`${group.label} · ${stateLabel}`}
               >
-                <span className="smtcmp-multi-model-tab__label">
+                <span className="yolo-multi-model-tab__label">
                   {group.label}
                 </span>
                 <span
-                  className={`smtcmp-multi-model-tab__status${state === 'completed' ? ' is-icon-only' : ''}`}
+                  className={`yolo-multi-model-tab__status${state === 'completed' ? ' is-icon-only' : ''}`}
                   title={stateLabel}
                 >
                   <BranchStateIcon state={state} />
                   {state !== 'completed' && (
-                    <span className="smtcmp-multi-model-tab__status-text">
+                    <span className="yolo-multi-model-tab__status-text">
                       {stateLabel}
                     </span>
                   )}
@@ -619,7 +619,7 @@ export default function AssistantToolMessageGroupItem({
             !message.content &&
             !message.reasoning) ||
           shouldShowAssistantToolPreview ? (
-            <div key={message.id} className="smtcmp-chat-messages-assistant">
+            <div key={message.id} className="yolo-chat-messages-assistant">
               {(message.reasoning ||
                 (message.metadata?.generationState === 'streaming' &&
                   !message.content &&
@@ -725,7 +725,7 @@ export default function AssistantToolMessageGroupItem({
         !hasPendingAssistantShell &&
         !isRunActive &&
         !suppressFooter && (
-          <div className="smtcmp-assistant-message-footer">
+          <div className="yolo-assistant-message-footer">
             {showInlineInfo && (
               <LLMResponseInlineInfo messages={displayedMessages} />
             )}

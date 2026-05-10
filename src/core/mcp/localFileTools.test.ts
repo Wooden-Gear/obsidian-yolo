@@ -44,7 +44,7 @@ jest.mock('../../utils/pdf/slicePdfPages', () => ({
 import { App, TFile, TFolder } from 'obsidian'
 import { PDFDocument } from 'pdf-lib'
 
-import type { SmartComposerSettings } from '../../settings/schema/setting.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import {
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
@@ -481,7 +481,7 @@ describe('local fs tool action helpers', () => {
     >
     const buildSettings = (
       modalities: Array<'text' | 'vision'> | undefined,
-    ): SmartComposerSettings =>
+    ): YoloSettings =>
       ({
         chatOptions: {
           imageReadingEnabled: true,
@@ -497,12 +497,9 @@ describe('local fs tool action helpers', () => {
             modalities,
           },
         ],
-      }) as unknown as SmartComposerSettings
+      }) as unknown as YoloSettings
 
-    const buildCallArgs = (
-      settings: SmartComposerSettings,
-      modelId?: string,
-    ) => {
+    const buildCallArgs = (settings: YoloSettings, modelId?: string) => {
       const file = Object.assign(new TFile(), {
         path: 'note.md',
         stat: { size: 64 },
@@ -1006,7 +1003,7 @@ describe('local fs tool action helpers', () => {
           limit: 10,
         },
         embeddingModelId: 'test-embedding',
-      } as unknown as SmartComposerSettings,
+      } as unknown as YoloSettings,
       getRagEngine: async () =>
         ({
           processQuery: jest.fn().mockResolvedValue([
@@ -2084,9 +2081,7 @@ describe('fs_read PDF vision-downgrade warning', () => {
       stat: { size: 1024, mtime: 0 },
     })
 
-  const buildSettings = (
-    modalities: Array<'text' | 'vision'>,
-  ): SmartComposerSettings =>
+  const buildSettings = (modalities: Array<'text' | 'vision'>): YoloSettings =>
     ({
       chatOptions: {
         imageReadingEnabled: true,
@@ -2102,7 +2097,7 @@ describe('fs_read PDF vision-downgrade warning', () => {
           modalities,
         },
       ],
-    }) as unknown as SmartComposerSettings
+    }) as unknown as YoloSettings
 
   beforeEach(() => {
     extractMock.mockReset()
@@ -2221,7 +2216,7 @@ describe('fs_read PDF native slice', () => {
 
   const buildSettings = (
     modalities: Array<'text' | 'vision' | 'pdf'>,
-  ): SmartComposerSettings =>
+  ): YoloSettings =>
     ({
       chatOptions: {
         imageReadingEnabled: true,
@@ -2237,7 +2232,7 @@ describe('fs_read PDF native slice', () => {
           modalities,
         },
       ],
-    }) as unknown as SmartComposerSettings
+    }) as unknown as YoloSettings
 
   const FAKE_PDF_BYTES = new Uint8Array([1, 2, 3, 4])
 

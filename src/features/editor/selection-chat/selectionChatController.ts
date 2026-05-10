@@ -18,8 +18,8 @@ import {
   SelectionInfo,
   SelectionManager,
 } from '../../../components/selection/SelectionManager'
-import type SmartComposerPlugin from '../../../main'
-import { SmartComposerSettings } from '../../../settings/schema/setting.types'
+import type YoloPlugin from '../../../main'
+import { YoloSettings } from '../../../settings/schema/setting.types'
 import type {
   Mentionable,
   MentionableBlock,
@@ -48,9 +48,9 @@ export type PendingSelectionRewrite = {
 }
 
 type SelectionChatControllerDeps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   app: App
-  getSettings: () => SmartComposerSettings
+  getSettings: () => YoloSettings
   t: (key: string, fallback?: string) => string
   getEditorView: (editor: Editor) => EditorView | null
   showQuickAskWithOptions: (
@@ -113,9 +113,9 @@ type SelectionChatControllerDeps = {
 }
 
 export class SelectionChatController {
-  private readonly plugin: SmartComposerPlugin
+  private readonly plugin: YoloPlugin
   private readonly app: App
-  private readonly getSettings: () => SmartComposerSettings
+  private readonly getSettings: () => YoloSettings
   private readonly t: (key: string, fallback?: string) => string
   private readonly getEditorView: (editor: Editor) => EditorView | null
   private readonly showQuickAskWithOptions: (

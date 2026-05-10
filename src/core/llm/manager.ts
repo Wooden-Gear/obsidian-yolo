@@ -1,4 +1,4 @@
-import { SmartComposerSettings } from '../../settings/schema/setting.types'
+import { YoloSettings } from '../../settings/schema/setting.types'
 import { ChatModel } from '../../types/chat-model.types'
 import { LLMProvider } from '../../types/provider.types'
 
@@ -37,7 +37,7 @@ export function getProviderClient({
   providerId,
   onAutoPromoteTransportMode,
 }: {
-  settings: SmartComposerSettings
+  settings: YoloSettings
   providerId: string
   onAutoPromoteTransportMode?: (
     providerId: string,
@@ -173,7 +173,7 @@ export function getChatModelClient({
   modelId,
   onAutoPromoteTransportMode,
 }: {
-  settings: SmartComposerSettings
+  settings: YoloSettings
   modelId: string
   onAutoPromoteTransportMode?: (
     providerId: string,

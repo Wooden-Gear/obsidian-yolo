@@ -43,7 +43,7 @@
  *   [ ] consumer 用 <YoloDropdownContent> / <YoloPopoverContent>
  *   [ ] 显式传 minWidth / maxWidth / maxHeight，不依赖任何继承
  *   [ ] 非通用视觉需求自带 `yolo-popover-<purpose>` class，不复用别人的
- *   [ ] 新 class 一律 `yolo-` 前缀，不新增 `smtcmp-`
+ *   [ ] 新 class 一律 `yolo-` 前缀，不新增 `yolo-`
  *   [ ] 写 variant-scoped 规则时确认放在了对应变体的归属文件里
  */
 

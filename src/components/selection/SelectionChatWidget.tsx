@@ -6,7 +6,7 @@ import { LanguageProvider } from '../../contexts/language-context'
 import { PluginProvider } from '../../contexts/plugin-context'
 import { SettingsProvider } from '../../contexts/settings-context'
 import type { PdfSelectionResult } from '../../features/editor/selection-chat/getPdfSelectionData'
-import SmartComposerPlugin from '../../main'
+import YoloPlugin from '../../main'
 
 import type {
   SelectionActionMode,
@@ -20,7 +20,7 @@ import type { SelectionInfo } from './SelectionManager'
 
 type MarkdownWidgetOptions = {
   source: 'markdown'
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   editor: Editor
   selection: SelectionInfo
   /** The .cm-editor element — used as host and for scroll listeners. */
@@ -37,7 +37,7 @@ type MarkdownWidgetOptions = {
 
 type PdfWidgetOptions = {
   source: 'pdf'
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   selection: SelectionInfo
   pdfData: Extract<PdfSelectionResult, { kind: 'data' }>
   /** The PDF leaf content element — used as host and for scroll listeners. */
@@ -56,7 +56,7 @@ type SelectionChatWidgetOptions = MarkdownWidgetOptions | PdfWidgetOptions
 // ─── Body component (source-agnostic) ───────────────────────────────────────
 
 type SelectionChatWidgetBodyProps = {
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
   selection: SelectionInfo
   hostEl: HTMLElement
   source: 'markdown' | 'pdf'
@@ -201,7 +201,7 @@ export class SelectionChatWidget {
     this.overlayHost = this.options.hostEl
     const overlayRoot = SelectionChatWidget.getOverlayRoot(this.overlayHost)
     const overlayContainer = document.createElement('div')
-    overlayContainer.className = 'smtcmp-selection-chat-overlay'
+    overlayContainer.className = 'yolo-selection-chat-overlay'
     overlayRoot.appendChild(overlayContainer)
     this.overlayContainer = overlayContainer
 
@@ -237,7 +237,7 @@ export class SelectionChatWidget {
       const host = overlayRoot.parentElement
       overlayRoot.remove()
       SelectionChatWidget.overlayRoot = null
-      host?.classList.remove('smtcmp-selection-chat-overlay-host')
+      host?.classList.remove('yolo-selection-chat-overlay-host')
     }
 
     if (this.scrollThrottle !== null) {
@@ -256,7 +256,7 @@ export class SelectionChatWidget {
       SelectionChatWidget.overlayRoot.parentElement !== host
     ) {
       SelectionChatWidget.overlayRoot.parentElement?.classList.remove(
-        'smtcmp-selection-chat-overlay-host',
+        'yolo-selection-chat-overlay-host',
       )
       SelectionChatWidget.overlayRoot.remove()
       SelectionChatWidget.overlayRoot = null
@@ -265,9 +265,9 @@ export class SelectionChatWidget {
     if (SelectionChatWidget.overlayRoot) return SelectionChatWidget.overlayRoot
 
     const root = document.createElement('div')
-    root.className = 'smtcmp-selection-chat-overlay-root'
+    root.className = 'yolo-selection-chat-overlay-root'
     host.appendChild(root)
-    host.classList.add('smtcmp-selection-chat-overlay-host')
+    host.classList.add('yolo-selection-chat-overlay-host')
     SelectionChatWidget.overlayRoot = root
     return root
   }

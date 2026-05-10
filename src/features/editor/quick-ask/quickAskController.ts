@@ -7,8 +7,8 @@ import {
   QuickAskCapabilities,
   QuickAskOverlay,
 } from '../../../components/panels/quick-ask'
-import type SmartComposerPlugin from '../../../main'
-import type { SmartComposerSettings } from '../../../settings/schema/setting.types'
+import type YoloPlugin from '../../../main'
+import type { YoloSettings } from '../../../settings/schema/setting.types'
 import type { Mentionable } from '../../../types/mentionable'
 import { getPdfLeafContentEl } from '../selection-chat/getPdfSelectionData'
 import { pdfSelectionHighlightController } from '../selection-highlight/pdfSelectionHighlightController'
@@ -24,7 +24,7 @@ import type {
 type QuickAskWidgetPayload = {
   pos: number
   options: {
-    plugin: SmartComposerPlugin
+    plugin: YoloPlugin
     capabilities: QuickAskCapabilities
     anchor: ReturnType<typeof createCmAnchor>
     contextText: string
@@ -50,8 +50,8 @@ type QuickAskWidgetState = {
 } | null
 
 type QuickAskControllerDeps = {
-  plugin: SmartComposerPlugin
-  getSettings: () => SmartComposerSettings
+  plugin: YoloPlugin
+  getSettings: () => YoloSettings
   getActiveMarkdownView: () => MarkdownView | null
   getEditorView: (editor: Editor) => EditorView | null
   getActiveFileTitle: () => string

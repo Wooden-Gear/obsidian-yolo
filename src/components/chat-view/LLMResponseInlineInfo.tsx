@@ -87,8 +87,8 @@ function renderItems(
   return (
     <>
       {usage && (
-        <span className="smtcmp-llm-inline-info-item smtcmp-llm-inline-info-item--input">
-          <ArrowUp className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--input" />
+        <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--input">
+          <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
           <span>
             {formatTokenCount(usage.prompt_tokens)}
             {showInputUnit && ' tokens'}
@@ -104,8 +104,8 @@ function renderItems(
         </span>
       )}
       {showOutput && usage && (
-        <span className="smtcmp-llm-inline-info-item smtcmp-llm-inline-info-item--output">
-          <ArrowDown className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--output" />
+        <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--output">
+          <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
           <span>
             {formatTokenCount(usage.completion_tokens)}
             {showOutputUnit && ' tokens'}
@@ -113,8 +113,8 @@ function renderItems(
         </span>
       )}
       {showSpeed && tokensPerSecond !== null && (
-        <span className="smtcmp-llm-inline-info-item smtcmp-llm-inline-info-item--speed">
-          <Zap className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--speed" />
+        <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--speed">
+          <Zap className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--speed" />
           <span>
             {tokensPerSecond.toFixed(1)}
             {showSpeedUnit && ' tok/s'}
@@ -122,8 +122,8 @@ function renderItems(
         </span>
       )}
       {showTime && durationMs !== null && (
-        <span className="smtcmp-llm-inline-info-item smtcmp-llm-inline-info-item--time">
-          <Clock className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--time" />
+        <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--time">
+          <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
           <span>{formatDuration(durationMs)}</span>
         </span>
       )}
@@ -149,18 +149,18 @@ function renderTooltipDetails({
       : null
 
   return (
-    <div className="smtcmp-llm-inline-info-tooltip">
+    <div className="yolo-llm-inline-info-tooltip">
       {usage && (
         <>
-          <div className="smtcmp-llm-inline-info-tooltip-row">
-            <ArrowUp className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--input" />
-            <span className="smtcmp-llm-inline-info-tooltip-label">Input</span>
-            <span className="smtcmp-llm-inline-info-tooltip-value">
+          <div className="yolo-llm-inline-info-tooltip-row">
+            <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
+            <span className="yolo-llm-inline-info-tooltip-label">Input</span>
+            <span className="yolo-llm-inline-info-tooltip-value">
               {usage.prompt_tokens.toLocaleString()} tokens
             </span>
           </div>
           {cachedTokens !== null && cacheRatio !== null && (
-            <div className="smtcmp-llm-inline-info-tooltip-sub">
+            <div className="yolo-llm-inline-info-tooltip-sub">
               <span>
                 {cachedTokens.toLocaleString()} cached ·{' '}
                 {(cacheRatio * 100).toFixed(1)}% hit
@@ -168,33 +168,33 @@ function renderTooltipDetails({
             </div>
           )}
           {cacheCreation !== null && (
-            <div className="smtcmp-llm-inline-info-tooltip-sub">
+            <div className="yolo-llm-inline-info-tooltip-sub">
               <span>{cacheCreation.toLocaleString()} cache written</span>
             </div>
           )}
-          <div className="smtcmp-llm-inline-info-tooltip-row">
-            <ArrowDown className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--output" />
-            <span className="smtcmp-llm-inline-info-tooltip-label">Output</span>
-            <span className="smtcmp-llm-inline-info-tooltip-value">
+          <div className="yolo-llm-inline-info-tooltip-row">
+            <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
+            <span className="yolo-llm-inline-info-tooltip-label">Output</span>
+            <span className="yolo-llm-inline-info-tooltip-value">
               {usage.completion_tokens.toLocaleString()} tokens
             </span>
           </div>
         </>
       )}
       {tokensPerSecond !== null && (
-        <div className="smtcmp-llm-inline-info-tooltip-row">
-          <Zap className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--speed" />
-          <span className="smtcmp-llm-inline-info-tooltip-label">Speed</span>
-          <span className="smtcmp-llm-inline-info-tooltip-value">
+        <div className="yolo-llm-inline-info-tooltip-row">
+          <Zap className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--speed" />
+          <span className="yolo-llm-inline-info-tooltip-label">Speed</span>
+          <span className="yolo-llm-inline-info-tooltip-value">
             {tokensPerSecond.toFixed(1)} tok/s
           </span>
         </div>
       )}
       {durationMs !== null && (
-        <div className="smtcmp-llm-inline-info-tooltip-row">
-          <Clock className="smtcmp-llm-inline-info-icon smtcmp-llm-inline-info-icon--time" />
-          <span className="smtcmp-llm-inline-info-tooltip-label">Duration</span>
-          <span className="smtcmp-llm-inline-info-tooltip-value">
+        <div className="yolo-llm-inline-info-tooltip-row">
+          <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
+          <span className="yolo-llm-inline-info-tooltip-label">Duration</span>
+          <span className="yolo-llm-inline-info-tooltip-value">
             {formatDuration(durationMs)}
           </span>
         </div>
@@ -266,18 +266,18 @@ export default function LLMResponseInlineInfo({
     <Tooltip.Provider delayDuration={300} skipDelayDuration={100}>
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <div className="smtcmp-llm-inline-info">
-            <div className="smtcmp-llm-inline-info-content" ref={containerRef}>
+          <div className="yolo-llm-inline-info">
+            <div className="yolo-llm-inline-info-content" ref={containerRef}>
               {renderItems(inputs, LEVELS[levelIndex])}
             </div>
-            <div className="smtcmp-llm-inline-info-ghosts" aria-hidden="true">
+            <div className="yolo-llm-inline-info-ghosts" aria-hidden="true">
               {LEVELS.map((config, i) => (
                 <div
                   key={i}
                   ref={(node) => {
                     ghostRefs.current[i] = node
                   }}
-                  className="smtcmp-llm-inline-info-content smtcmp-llm-inline-info-ghost"
+                  className="yolo-llm-inline-info-content yolo-llm-inline-info-ghost"
                 >
                   {renderItems(inputs, config)}
                 </div>
@@ -287,7 +287,7 @@ export default function LLMResponseInlineInfo({
         </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
-            className="smtcmp-tooltip-content smtcmp-llm-inline-info-tooltip-content"
+            className="yolo-tooltip-content yolo-llm-inline-info-tooltip-content"
             side="top"
             sideOffset={6}
             align="start"

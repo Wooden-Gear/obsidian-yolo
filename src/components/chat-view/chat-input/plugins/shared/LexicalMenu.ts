@@ -574,10 +574,7 @@ export function useMenuAnchorRef(
     }
 
     // 通过动态样式类固定定位弹窗容器
-    containerDiv.classList.remove(
-      'smtcmp-menu-above',
-      'smtcmp-menu-right-align',
-    )
+    containerDiv.classList.remove('yolo-menu-above', 'yolo-menu-right-align')
 
     const menuEle = containerDiv.firstChild as HTMLElement | null
 
@@ -588,7 +585,7 @@ export function useMenuAnchorRef(
       if (className != null) {
         containerDiv.className = className
       }
-      containerDiv.classList.add('smtcmp-typeahead-menu')
+      containerDiv.classList.add('yolo-typeahead-menu')
       containerDiv.setAttribute('aria-label', 'Typeahead menu')
       containerDiv.setAttribute('id', 'typeahead-menu')
       containerDiv.setAttribute('role', 'listbox')
@@ -599,15 +596,15 @@ export function useMenuAnchorRef(
       const offsetTop = 4
       const margin = 8
       const containerEl = rootElement.closest(
-        '.smtcmp-chat-user-input-container, .smtcmp-quick-ask-input-row',
+        '.yolo-chat-user-input-container, .yolo-quick-ask-input-row',
       )
       const centeredChatContainer = rootElement.closest(
-        '.smtcmp-chat-container--centered',
+        '.yolo-chat-container--centered',
       )
       const isCenteredChatContainer = Boolean(centeredChatContainer)
       const centeredChatTypeaheadMaxWidth = centeredChatContainer
         ? getComputedStyle(centeredChatContainer)
-            .getPropertyValue('--smtcmp-chat-typeahead-max-width')
+            .getPropertyValue('--yolo-chat-typeahead-max-width')
             .trim() || '560px'
         : '560px'
 
@@ -653,7 +650,7 @@ export function useMenuAnchorRef(
             top: menuTop,
             width: menuWidth,
           }
-          updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+          updateDynamicStyleClass(containerDiv, 'yolo-typeahead-menu-pos', {
             position: 'fixed',
             left: menuLeft,
             top: menuTop,
@@ -665,13 +662,13 @@ export function useMenuAnchorRef(
         if (menuEle) {
           const available = Math.max(margin, Math.floor(rect.top - margin))
           const isMentionPopover = menuEle.classList.contains(
-            'smtcmp-smart-space-mention-popover',
+            'yolo-smart-space-mention-popover',
           )
           if (isMentionPopover) {
             const mentionPopoverWidth = isCenteredChatContainer
               ? `min(100%, ${centeredChatTypeaheadMaxWidth})`
               : '100%'
-            updateDynamicStyleClass(menuEle, 'smtcmp-typeahead-pop', {
+            updateDynamicStyleClass(menuEle, 'yolo-typeahead-pop', {
               position: 'absolute',
               left: 0,
               right: isCenteredChatContainer ? 'auto' : 0,
@@ -680,10 +677,10 @@ export function useMenuAnchorRef(
               maxWidth: mentionPopoverWidth,
               boxSizing: 'border-box',
               overflow: 'visible',
-              '--smtcmp-typeahead-available-height': `${available}px`,
+              '--yolo-typeahead-available-height': `${available}px`,
             })
           } else {
-            updateDynamicStyleClass(menuEle, 'smtcmp-typeahead-pop', {
+            updateDynamicStyleClass(menuEle, 'yolo-typeahead-pop', {
               position: 'absolute',
               left: 0,
               right: 0,
@@ -711,22 +708,22 @@ export function useMenuAnchorRef(
       if (!containerDiv.isConnected) {
         portalParent.append(containerDiv)
       }
-      updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+      updateDynamicStyleClass(containerDiv, 'yolo-typeahead-menu-pos', {
         position: 'fixed',
         left: Math.round(leftPos),
         top: Math.round(topPos),
         width: 360,
         zIndex: '1000',
       })
-      // Avoid adding smtcmp-menu-above here; topPos is already computed above the caret
+      // Avoid adding yolo-menu-above here; topPos is already computed above the caret
       if (menuEle) {
-        updateDynamicStyleClass(menuEle, 'smtcmp-typeahead-pop', {
+        updateDynamicStyleClass(menuEle, 'yolo-typeahead-pop', {
           width: '100%',
         })
         ownerWindow.requestAnimationFrame(() => {
           const finalH = menuEle.getBoundingClientRect().height || estimatedH
           const t2 = Math.max(margin, top - offsetTop - finalH)
-          updateDynamicStyleClass(containerDiv, 'smtcmp-typeahead-menu-pos', {
+          updateDynamicStyleClass(containerDiv, 'yolo-typeahead-menu-pos', {
             position: 'fixed',
             left: Math.round(leftPos),
             top: Math.round(t2),

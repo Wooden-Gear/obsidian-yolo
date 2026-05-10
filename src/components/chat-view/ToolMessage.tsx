@@ -782,12 +782,12 @@ const ToolMessage = memo(function ToolMessage({
   }) => Promise<boolean>
 }) {
   return (
-    <div className="smtcmp-toolcall-container">
+    <div className="yolo-toolcall-container">
       <AnimatePresence initial={false}>
         {message.toolCalls.map((toolCall, index) => (
           <motion.div
             key={toolCall.request.id}
-            className={cx(index > 0 && 'smtcmp-toolcall-border-top')}
+            className={cx(index > 0 && 'yolo-toolcall-border-top')}
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -977,15 +977,15 @@ function ToolCallItem({
   }, [renderCompactionPendingHint, response.status, showCompactionPendingHint])
 
   return (
-    <div className="smtcmp-toolcall">
+    <div className="yolo-toolcall">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="smtcmp-toolcall-header"
+        className="yolo-toolcall-header"
         aria-expanded={isOpen}
-        aria-controls={`smtcmp-toolcall-content-${request.id}`}
+        aria-controls={`yolo-toolcall-content-${request.id}`}
       >
-        <div className="smtcmp-toolcall-header-icon smtcmp-toolcall-header-icon--status-inline">
+        <div className="yolo-toolcall-header-icon yolo-toolcall-header-icon--status-inline">
           <AnimatePresence mode="wait">
             <motion.span
               key={response.status}
@@ -999,18 +999,18 @@ function ToolCallItem({
             </motion.span>
           </AnimatePresence>
         </div>
-        <div className="smtcmp-toolcall-header-content">
-          <span className="smtcmp-toolcall-header-tool-name">
-            <span className="smtcmp-toolcall-header-title">
+        <div className="yolo-toolcall-header-content">
+          <span className="yolo-toolcall-header-tool-name">
+            <span className="yolo-toolcall-header-title">
               {headlineParts.titleText}
             </span>
             {headlineParts.summaryText && (
               <>
-                <span className="smtcmp-toolcall-header-separator">: </span>
+                <span className="yolo-toolcall-header-separator">: </span>
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={response.status}
-                    className="smtcmp-toolcall-header-summary"
+                    className="yolo-toolcall-header-summary"
                     title={headlineParts.summaryText}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -1026,14 +1026,14 @@ function ToolCallItem({
               typeof headlineParts.removedLines === 'number' &&
               (headlineParts.addedLines > 0 ||
                 headlineParts.removedLines > 0) && (
-                <span className="smtcmp-toolcall-header-edit-deltas">
+                <span className="yolo-toolcall-header-edit-deltas">
                   {headlineParts.addedLines > 0 && (
-                    <span className="smtcmp-toolcall-header-edit-added">
+                    <span className="yolo-toolcall-header-edit-added">
                       +{headlineParts.addedLines}
                     </span>
                   )}
                   {headlineParts.removedLines > 0 && (
-                    <span className="smtcmp-toolcall-header-edit-removed">
+                    <span className="yolo-toolcall-header-edit-removed">
                       -{headlineParts.removedLines}
                     </span>
                   )}
@@ -1041,16 +1041,16 @@ function ToolCallItem({
               )}
           </span>
         </div>
-        <div className="smtcmp-toolcall-header-icon smtcmp-toolcall-header-icon--expand">
+        <div className="yolo-toolcall-header-icon yolo-toolcall-header-icon--expand">
           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
       </button>
       {isOpen && (
         <div
-          id={`smtcmp-toolcall-content-${request.id}`}
-          className="smtcmp-toolcall-content"
+          id={`yolo-toolcall-content-${request.id}`}
+          className="yolo-toolcall-content"
         >
-          <div className="smtcmp-toolcall-content-section">
+          <div className="yolo-toolcall-content-section">
             <div>{toolLabels.parameters}:</div>
             <ObsidianCodeBlock language="json" content={parameters} />
           </div>
@@ -1065,13 +1065,13 @@ function ToolCallItem({
           ) : (
             <>
               {response.status === ToolCallResponseStatus.Success && (
-                <div className="smtcmp-toolcall-content-section">
+                <div className="yolo-toolcall-content-section">
                   <div>{toolLabels.result}:</div>
                   <ObsidianCodeBlock content={response.data.text} />
                 </div>
               )}
               {response.status === ToolCallResponseStatus.Error && (
-                <div className="smtcmp-toolcall-content-section">
+                <div className="yolo-toolcall-content-section">
                   <div>{toolLabels.error}:</div>
                   <ObsidianCodeBlock content={response.error} />
                 </div>
@@ -1083,15 +1083,15 @@ function ToolCallItem({
       {renderCompactionPendingHint && (
         <div
           className={cx(
-            'smtcmp-toolcall-compaction-pending',
+            'yolo-toolcall-compaction-pending',
             isCompactionPendingHintExiting &&
-              'smtcmp-toolcall-compaction-pending--exiting',
+              'yolo-toolcall-compaction-pending--exiting',
           )}
           aria-live="polite"
         >
           <Loader2
             size={12}
-            className="smtcmp-toolcall-compaction-pending-icon"
+            className="yolo-toolcall-compaction-pending-icon"
           />
           <span>
             {t(
@@ -1105,7 +1105,7 @@ function ToolCallItem({
         {footerMode && (
           <motion.div
             key={footerMode}
-            className="smtcmp-toolcall-footer"
+            className="yolo-toolcall-footer"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -1116,7 +1116,7 @@ function ToolCallItem({
             style={{ overflow: 'hidden' }}
           >
             {footerMode === 'pending' && (
-              <div className="smtcmp-toolcall-footer-actions">
+              <div className="yolo-toolcall-footer-actions">
                 {isAlwaysAllowDisabled ? (
                   // 始终允许已禁用：直接渲染普通按钮，不展示下拉菜单
                   <button
@@ -1158,7 +1158,7 @@ function ToolCallItem({
               </div>
             )}
             {footerMode === 'running' && (
-              <div className="smtcmp-toolcall-footer-actions">
+              <div className="yolo-toolcall-footer-actions">
                 <button
                   type="button"
                   onClick={() => {
@@ -1273,17 +1273,17 @@ function useToolCall(
 function StatusIcon({ status }: { status: ToolCallResponseStatus }) {
   switch (status) {
     case ToolCallResponseStatus.PendingApproval:
-      return <span className="smtcmp-toolcall-status-dot" />
+      return <span className="yolo-toolcall-status-dot" />
     case ToolCallResponseStatus.Rejected:
     case ToolCallResponseStatus.Aborted:
     case ToolCallResponseStatus.Error:
-      return <X size={16} className="smtcmp-icon-error" />
+      return <X size={16} className="yolo-icon-error" />
     case ToolCallResponseStatus.Running:
-      return <Loader2 size={16} className="smtcmp-spinner" />
+      return <Loader2 size={16} className="yolo-spinner" />
     case ToolCallResponseStatus.Success:
       return (
-        <span className="smtcmp-toolcall-status-success-ring">
-          <Check size={11} className="smtcmp-toolcall-status-success-check" />
+        <span className="yolo-toolcall-status-success-ring">
+          <Check size={11} className="yolo-toolcall-status-success-check" />
         </span>
       )
     default:

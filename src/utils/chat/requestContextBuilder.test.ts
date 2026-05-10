@@ -13,7 +13,7 @@ jest.mock('../llm/image', () => ({
   tFileToImageDataUrl: jest.fn(async () => 'data:image/png;base64,fake'),
 }))
 
-import type { SmartComposerSettings } from '../../settings/schema/setting.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import type { ChatUserMessage } from '../../types/chat'
 import type { ChatModel } from '../../types/chat-model.types'
 import type { ContentPart, RequestMessage } from '../../types/llm/request'
@@ -144,7 +144,7 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
       mentionContextMode: 'light',
     },
     skills: {},
-  } as unknown as SmartComposerSettings
+  } as unknown as YoloSettings
 
   it('builds unified mentioned file context with outlines for files, current file, and folder files', async () => {
     const explicitFile = createMockFile('notes/explicit.md')
@@ -347,7 +347,7 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
           includeCurrentFileContent: true,
           mentionContextMode: 'full',
         },
-      } as unknown as SmartComposerSettings,
+      } as unknown as YoloSettings,
     )
 
     const result = await builder.compileUserMessagePrompt({
@@ -398,7 +398,7 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
           includeCurrentFileContent: true,
           mentionContextMode: 'full',
         },
-      } as unknown as SmartComposerSettings,
+      } as unknown as YoloSettings,
     )
 
     const result = await builder.compileUserMessagePrompt({
@@ -429,7 +429,7 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
           includeCurrentFileContent: true,
           mentionContextMode: 'full',
         },
-      } as unknown as SmartComposerSettings,
+      } as unknown as YoloSettings,
     )
 
     const result = await builder.compileUserMessagePrompt({
@@ -457,7 +457,7 @@ describe('RequestContextBuilder generateRequestMessages', () => {
       mentionContextMode: 'light',
     },
     skills: {},
-  } as unknown as SmartComposerSettings
+  } as unknown as YoloSettings
 
   const emptyArgs = createCompleteToolCallArguments({ value: {} })
 
@@ -1135,11 +1135,11 @@ describe('RequestContextBuilder project instructions injection', () => {
       mentionContextMode: 'light',
     },
     skills: {},
-  } as unknown as SmartComposerSettings
+  } as unknown as YoloSettings
 
   async function buildSystemContent(
     app: ReturnType<typeof makeApp>,
-    settings: SmartComposerSettings,
+    settings: YoloSettings,
   ): Promise<string> {
     const builder = new RequestContextBuilder(app as never, settings)
     const requestMessages = await builder.generateRequestMessages({
@@ -1194,7 +1194,7 @@ describe('RequestContextBuilder project instructions injection', () => {
           enableProjectInstructions: true,
         },
       ],
-    } as unknown as SmartComposerSettings
+    } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
     expect(content).toContain('## AGENTS.md')
     expect(content).toContain('rule from agents')
@@ -1219,7 +1219,7 @@ describe('RequestContextBuilder project instructions injection', () => {
           enableProjectInstructions: false,
         },
       ],
-    } as unknown as SmartComposerSettings
+    } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
     expect(content).not.toContain('## CLAUDE.md')
     expect(content).not.toContain('rule from claude')
@@ -1238,7 +1238,7 @@ describe('RequestContextBuilder project instructions injection', () => {
           enableProjectInstructions: true,
         },
       ],
-    } as unknown as SmartComposerSettings
+    } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
     expect(content).not.toContain('## CLAUDE.md')
     expect(content).not.toContain('rule from claude')
@@ -1250,7 +1250,7 @@ describe('RequestContextBuilder project instructions injection', () => {
       ...baseSettings,
       currentAssistantId: 'a-1',
       assistants: [{ id: 'a-1', name: 'Default', systemPrompt: '' }],
-    } as unknown as SmartComposerSettings
+    } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
     expect(content).not.toContain('## CLAUDE.md')
   })
@@ -1274,7 +1274,7 @@ describe('RequestContextBuilder generateRequestMessages currentFile merging', ()
       mentionContextMode: 'light',
     },
     skills: {},
-  } as unknown as SmartComposerSettings
+  } as unknown as YoloSettings
 
   function makeApp() {
     return {
@@ -1553,7 +1553,7 @@ describe('parseToolMessage document hoisting', () => {
         modalities: ['text', 'vision', 'pdf'],
       },
     ],
-  } as unknown as SmartComposerSettings
+  } as unknown as YoloSettings
 
   // Use this model ID when building request messages so the PDF modality gate passes.
   const PDF_MODEL_ID = 'pdf-provider/pdf-model'

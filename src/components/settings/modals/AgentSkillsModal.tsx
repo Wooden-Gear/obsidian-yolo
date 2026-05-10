@@ -15,18 +15,18 @@ import {
   YOLO_SKILLS_INDEX_TEMPLATE,
   getSkillsPathAwareTemplate,
 } from '../../../core/skills/templates'
-import SmartComposerPlugin from '../../../main'
+import YoloPlugin from '../../../main'
 import { ObsidianButton } from '../../common/ObsidianButton'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ReactModal } from '../../common/ReactModal'
 
 type AgentSkillsModalProps = {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }
 
 export class AgentSkillsModal extends ReactModal<AgentSkillsModalProps> {
-  constructor(app: App, plugin: SmartComposerPlugin) {
+  constructor(app: App, plugin: YoloPlugin) {
     super({
       app,
       Component: AgentSkillsModalWrapper,
@@ -36,7 +36,7 @@ export class AgentSkillsModal extends ReactModal<AgentSkillsModalProps> {
       },
       plugin,
     })
-    this.modalEl.classList.add('smtcmp-modal--wide')
+    this.modalEl.classList.add('yolo-modal--wide')
   }
 }
 
@@ -63,7 +63,7 @@ function AgentSkillsModalContent({
   plugin: _plugin,
 }: {
   app: App
-  plugin: SmartComposerPlugin
+  plugin: YoloPlugin
 }) {
   const { t } = useLanguage()
   const { settings, setSettings } = useSettings()
@@ -129,16 +129,16 @@ function AgentSkillsModalContent({
   }
 
   return (
-    <div className="smtcmp-settings-section">
-      <div className="smtcmp-settings-desc smtcmp-settings-callout">
+    <div className="yolo-settings-section">
+      <div className="yolo-settings-desc yolo-settings-callout">
         {t(
           'settings.agent.skillsGlobalDesc',
           'Skills are discovered from built-in skills and {path}/**/*.md (excluding Skills.md where applicable). Disable a skill here to block it for all agents.',
         ).replace('{path}', skillsDir)}
       </div>
 
-      <div className="smtcmp-agent-skills-toolbar">
-        <div className="smtcmp-settings-desc">
+      <div className="yolo-agent-skills-toolbar">
+        <div className="yolo-settings-desc">
           {t(
             'settings.agent.skillsSourcePath',
             'Source: built-in skills + {path}/*.md + {path}/**/SKILL.md',
@@ -146,7 +146,7 @@ function AgentSkillsModalContent({
             .split('{path}')
             .join(skillsDir)}
         </div>
-        <div className="smtcmp-agent-skills-toolbar-actions">
+        <div className="yolo-agent-skills-toolbar-actions">
           <ObsidianButton
             text={t(
               'settings.agent.createSkillTemplates',
@@ -161,12 +161,12 @@ function AgentSkillsModalContent({
         </div>
       </div>
 
-      <div className="smtcmp-agent-tools-panel smtcmp-agent-skills-modal-panel">
-        <div className="smtcmp-agent-tools-panel-head">
-          <div className="smtcmp-agent-tools-panel-title">
+      <div className="yolo-agent-tools-panel yolo-agent-skills-modal-panel">
+        <div className="yolo-agent-tools-panel-head">
+          <div className="yolo-agent-tools-panel-title">
             {t('settings.agent.skills', 'Skills')}
           </div>
-          <div className="smtcmp-agent-tools-panel-count">
+          <div className="yolo-agent-tools-panel-count">
             {t(
               'settings.agent.skillsCountWithEnabled',
               '{count} skills (enabled {enabled})',
@@ -183,22 +183,22 @@ function AgentSkillsModalContent({
         </div>
 
         {skills.length > 0 ? (
-          <div className="smtcmp-agent-tool-list">
+          <div className="yolo-agent-tool-list">
             {skills.map((skill) => {
               const enabled = !disabledSkillIdSet.has(skill.id)
               return (
-                <div key={skill.id} className="smtcmp-agent-tool-row">
-                  <div className="smtcmp-agent-tool-main">
-                    <div className="smtcmp-agent-tool-name">{skill.name}</div>
-                    <div className="smtcmp-agent-tool-source smtcmp-agent-tool-source--preview">
+                <div key={skill.id} className="yolo-agent-tool-row">
+                  <div className="yolo-agent-tool-main">
+                    <div className="yolo-agent-tool-name">{skill.name}</div>
+                    <div className="yolo-agent-tool-source yolo-agent-tool-source--preview">
                       {skill.description}
                     </div>
-                    <div className="smtcmp-agent-skill-meta">
-                      <span className="smtcmp-agent-chip">id: {skill.id}</span>
-                      <span className="smtcmp-agent-chip">{skill.path}</span>
+                    <div className="yolo-agent-skill-meta">
+                      <span className="yolo-agent-chip">id: {skill.id}</span>
+                      <span className="yolo-agent-chip">{skill.path}</span>
                     </div>
                   </div>
-                  <div className="smtcmp-agent-tool-toggle">
+                  <div className="yolo-agent-tool-toggle">
                     <ObsidianToggle
                       value={enabled}
                       onChange={(value) => handleToggleSkill(skill.id, value)}
@@ -209,7 +209,7 @@ function AgentSkillsModalContent({
             })}
           </div>
         ) : (
-          <div className="smtcmp-agent-tools-empty">
+          <div className="yolo-agent-tools-empty">
             {t(
               'settings.agent.skillsEmptyHint',
               'No skills found. Create skill markdown files under {path}.',

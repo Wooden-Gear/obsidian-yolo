@@ -125,8 +125,8 @@ export default function LexicalContentEditable({
   const initialConfig: InitialConfigType = {
     namespace: 'LexicalContentEditable',
     theme: {
-      root: 'smtcmp-lexical-content-editable-root',
-      paragraph: 'smtcmp-lexical-content-editable-paragraph',
+      root: 'yolo-lexical-content-editable-root',
+      paragraph: 'yolo-lexical-content-editable-paragraph',
     },
     nodes: [MentionNode, SkillNode],
     editorState: initialEditorState,
@@ -193,8 +193,7 @@ export default function LexicalContentEditable({
         contentEditable={
           <ContentEditable
             className={
-              contentClassName ??
-              'smtcmp-obsidian-textarea smtcmp-content-editable'
+              contentClassName ?? 'yolo-obsidian-textarea yolo-content-editable'
             }
             onFocus={onFocus}
             onKeyDown={onKeyDown}

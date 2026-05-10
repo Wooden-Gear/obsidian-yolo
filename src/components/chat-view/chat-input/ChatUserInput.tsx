@@ -329,8 +329,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
     useEffect(() => {
       return () => {
         document.body.setCssProps({
-          '--smtcmp-chat-input-resize-cursor': '',
-          '--smtcmp-chat-input-resize-user-select': '',
+          '--yolo-chat-input-resize-cursor': '',
+          '--yolo-chat-input-resize-user-select': '',
         })
       }
     }, [])
@@ -1090,8 +1090,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
     const clearResizeBodyStyles = useCallback(() => {
       document.body.setCssProps({
-        '--smtcmp-chat-input-resize-cursor': '',
-        '--smtcmp-chat-input-resize-user-select': '',
+        '--yolo-chat-input-resize-cursor': '',
+        '--yolo-chat-input-resize-user-select': '',
       })
     }, [])
 
@@ -1129,8 +1129,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           DEFAULT_INPUT_HEIGHT
 
         document.body.setCssProps({
-          '--smtcmp-chat-input-resize-cursor': 'ns-resize',
-          '--smtcmp-chat-input-resize-user-select': 'none',
+          '--yolo-chat-input-resize-cursor': 'ns-resize',
+          '--yolo-chat-input-resize-user-select': 'none',
         })
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -1194,7 +1194,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         }
 
         if (
-          target.closest('.smtcmp-chat-user-input-controls') ||
+          target.closest('.yolo-chat-user-input-controls') ||
           target.closest('button') ||
           target.closest('[role="button"]')
         ) {
@@ -1218,19 +1218,19 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       }
 
       return {
-        ['--smtcmp-chat-user-input-height' as string]: `${resizedHeight}px`,
+        ['--yolo-chat-user-input-height' as string]: `${resizedHeight}px`,
       }
     }, [compact, enableResize, resizedHeight])
 
     return (
       <div
-        className={`smtcmp-chat-user-input-wrapper${compact ? ' smtcmp-chat-user-input-wrapper--compact' : ''}`}
+        className={`yolo-chat-user-input-wrapper${compact ? ' yolo-chat-user-input-wrapper--compact' : ''}`}
         onBlur={handleBlur}
         role="presentation"
       >
         {enableResize && !compact && (
           <div
-            className="smtcmp-chat-user-input-resize-hitbox"
+            className="yolo-chat-user-input-resize-hitbox"
             onMouseDown={handleResizeHitboxMouseDown}
             onDoubleClick={handleResizeHitboxDoubleClick}
             role="presentation"
@@ -1238,7 +1238,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         )}
         {mentionDisplayMode === 'badge' &&
           effectiveSelectedSkills.length > 0 && (
-            <div className="smtcmp-chat-user-input-files">
+            <div className="yolo-chat-user-input-files">
               {effectiveSelectedSkills.map((skill) => (
                 <ChatSkillBadge
                   key={skill.id}
@@ -1251,7 +1251,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         {!hideBadgeMentionables &&
           mentionDisplayMode === 'badge' &&
           effectiveMentionables.length > 0 && (
-            <div className="smtcmp-chat-user-input-files">
+            <div className="yolo-chat-user-input-files">
               {effectiveMentionables.map((mentionable) => {
                 const mentionableKey = getMentionableKey(
                   serializeMentionable(mentionable),
@@ -1270,7 +1270,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             </div>
           )}
         <div
-          className="smtcmp-chat-user-input-container"
+          className="yolo-chat-user-input-container"
           ref={containerRef}
           data-resizable={enableResize && !compact ? 'true' : 'false'}
           onClick={compact ? onToggleCompact : undefined}
@@ -1290,7 +1290,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           style={containerStyle}
         >
           <div
-            className="smtcmp-chat-user-input-editor"
+            className="yolo-chat-user-input-editor"
             onMouseDown={handleEditorBackgroundMouseDown}
             role="presentation"
           >
@@ -1298,7 +1298,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               effectiveMentionables.length === 0 &&
               effectiveSelectedSkills.length === 0 &&
               compact && (
-                <div className="smtcmp-chat-user-input-placeholder">
+                <div className="yolo-chat-user-input-placeholder">
                   {t('chat.placeholderCompact', '点击展开编辑...')}
                 </div>
               )}
@@ -1307,10 +1307,10 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               inputText.trim().length === 0 &&
               effectiveMentionables.length === 0 &&
               effectiveSelectedSkills.length === 0 && (
-                <div className="smtcmp-chat-user-input-placeholder">
+                <div className="yolo-chat-user-input-placeholder">
                   {t('chat.placeholderPrefix', '输入消息...')}{' '}
                   <span
-                    className="smtcmp-placeholder-trigger"
+                    className="yolo-placeholder-trigger"
                     role="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
@@ -1322,7 +1322,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                   {t('chat.placeholderMention', '添加引用或模型')}
                   {'，'}
                   <span
-                    className="smtcmp-placeholder-trigger"
+                    className="yolo-placeholder-trigger"
                     role="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
@@ -1385,8 +1385,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           </div>
 
           {!compact && (
-            <div className="smtcmp-chat-user-input-controls">
-              <div className="smtcmp-chat-user-input-controls__left">
+            <div className="yolo-chat-user-input-controls">
+              <div className="yolo-chat-user-input-controls__left">
                 <FileUploadButton onUpload={handleUploadFiles} />
                 <ModelSelect
                   modelId={modelId}
@@ -1410,7 +1410,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                   />
                 )}
               </div>
-              <div className="smtcmp-chat-user-input-controls__right">
+              <div className="yolo-chat-user-input-controls__right">
                 <SubmitButton onClick={() => handleSubmit()} />
               </div>
             </div>
