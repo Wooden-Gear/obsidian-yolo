@@ -7,19 +7,21 @@
   position: absolute;
   left: var(--size-4-3);
   right: var(--size-4-3);
-  bottom: calc(100% + var(--size-2-2));
+  bottom: calc(100% + var(--size-2-1));
   z-index: 2;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m, 8px);
   background: var(--background-primary);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   font-size: var(--font-ui-small);
   overflow: hidden;
 }
 
-.yolo-todo-panel__header {
+/* 选择器写成 `button.yolo-todo-panel__header` 是为了对抗 Obsidian
+ * `app.css` 里的 `button:not(.clickable-icon) { box-shadow: var(--input-shadow) }`
+ * ——必须保持等同或更高特异度，否则会画出一条贴在 header 底部的投影线。 */
+button.yolo-todo-panel__header {
   display: flex;
   align-items: center;
   gap: var(--size-4-2);
@@ -27,14 +29,12 @@
   padding: var(--size-2-2) var(--size-4-2);
   background: transparent;
   border: 0;
+  box-shadow: none;
+  outline: 0;
   cursor: pointer;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   text-align: left;
-}
-
-.yolo-todo-panel__header:hover {
-  background: var(--background-modifier-hover);
 }
 
 .yolo-todo-panel__header-icon {
@@ -75,9 +75,6 @@
   overflow: hidden;
 }
 
-.yolo-todo-panel--expanded .yolo-todo-panel__body-inner {
-  border-top: 1px solid var(--background-modifier-border);
-}
 
 .yolo-todo-panel__list {
   list-style: none;
