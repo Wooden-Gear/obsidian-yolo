@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1190,6 +1191,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const chatUserInputRefs = useRef<Map<string, ChatUserInputRef>>(new Map())
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const bottomAnchorRef = useRef<HTMLDivElement>(null)
+  // Callback-ref + state for the overlay element. A plain useRef with a
+  // mount-once effect would lose its observation when the chat view unmounts
+  // (e.g. switching to the composer view and back), since the new overlay
+  // element never re-binds. Driving the measurement effect off element state
+  // ensures attach/detach cleanly drive observer setup/teardown.
+  const [inputOverlayElement, setInputOverlayElement] =
+    useState<HTMLDivElement | null>(null)
+  const [inputOverlayHeight, setInputOverlayHeight] = useState(0)
   const [timelineIsVirtualized, setTimelineIsVirtualized] = useState(false)
   const latexSelectionSyncFrameRef = useRef<number | null>(null)
   const chatSurfacePreset = getChatSurfacePreset('chat')
@@ -1205,6 +1214,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   const {
     autoScrollToBottom,
+    notifyContentFlushed,
     forceScrollToBottom,
     isAutoFollowEnabled,
     followOutput,
@@ -1215,6 +1225,78 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     isStreaming: hasStreamingMessages,
     contentFollowMode: timelineIsVirtualized ? 'explicit' : 'observer',
   })
+
+  // Measure the overlay above the input box so the timeline can reserve
+  // equivalent scrollable space at its bottom — keeps the last assistant
+  // message's metadata bar reachable instead of hidden behind the overlay.
+  // The overlay element is always rendered; height collapses to 0 when no
+  // todo/queued content is present. The gap between overlay bottom and the
+  // input top (CSS `bottom: calc(100% + var(--size-2-1))`) is included.
+  useLayoutEffect(() => {
+    if (!inputOverlayElement) {
+      // Element detached (e.g. switched to composer view). Reset budget so
+      // the timeline doesn't keep reserving phantom space.
+      setInputOverlayHeight(0)
+      return
+    }
+
+    let animationFrameId: number | null = null
+
+    const computeOverlayBudget = (): number => {
+      // offsetHeight already snaps to the integer pixel; 0 when empty.
+      const height = inputOverlayElement.offsetHeight
+      if (height <= 0) {
+        return 0
+      }
+      const gap = parseFloat(
+        getComputedStyle(inputOverlayElement).getPropertyValue('--size-2-1'),
+      )
+      const gapPx = Number.isFinite(gap) && gap > 0 ? gap : 4
+      return Math.ceil(height + gapPx)
+    }
+
+    const publishHeight = () => {
+      const nextHeight = computeOverlayBudget()
+      setInputOverlayHeight((previous) =>
+        previous === nextHeight ? previous : nextHeight,
+      )
+    }
+
+    publishHeight()
+
+    if (typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId)
+      }
+      animationFrameId = requestAnimationFrame(() => {
+        animationFrameId = null
+        publishHeight()
+      })
+    })
+    observer.observe(inputOverlayElement)
+
+    return () => {
+      observer.disconnect()
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [inputOverlayElement])
+
+  // When the overlay height changes (todo expand/collapse, queued bubbles
+  // appear/disappear), the scroll geometry shifts. If we are in auto-follow,
+  // re-anchor to the new bottom so the metadata bar stays visible above the
+  // overlay; otherwise leave the user's reading position alone.
+  useEffect(() => {
+    if (!isAutoFollowEnabled) {
+      return
+    }
+    notifyContentFlushed()
+  }, [inputOverlayHeight, isAutoFollowEnabled, notifyContentFlushed])
 
   const {
     abortConversationRun,
@@ -4766,6 +4848,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             '启用工具链，处理搜索、读写与多步骤任务',
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
+          bottomSpacerHeight={inputOverlayHeight}
           footerContent={
             <>
               {(settings.chatOptions.mentionDisplayMode ?? 'inline') ===
@@ -4790,36 +4873,39 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   </div>
                 )}
               <div className="yolo-chat-input-wrapper">
-                <div className="yolo-chat-input-overlay">
-                {queuedUserMessages.length > 0 && (
-                  <div className="yolo-chat-queued-messages">
-                    <div className="yolo-chat-queued-messages__hint">
-                      {t(
-                        'chat.queueMessage.hint',
-                        '等待 Agent 完成当前步骤...',
-                      )}
+                <div
+                  ref={setInputOverlayElement}
+                  className="yolo-chat-input-overlay"
+                >
+                  {queuedUserMessages.length > 0 && (
+                    <div className="yolo-chat-queued-messages">
+                      <div className="yolo-chat-queued-messages__hint">
+                        {t(
+                          'chat.queueMessage.hint',
+                          '等待 Agent 完成当前步骤...',
+                        )}
+                      </div>
+                      {queuedUserMessages.map((queued) => {
+                        const preview = queued.content
+                          ? editorStateToPlainText(queued.content).trim()
+                          : ''
+                        return (
+                          <div
+                            key={queued.id}
+                            className="yolo-chat-queued-messages__item"
+                            title={preview}
+                          >
+                            {preview || ' '}
+                          </div>
+                        )
+                      })}
                     </div>
-                    {queuedUserMessages.map((queued) => {
-                      const preview = queued.content
-                        ? editorStateToPlainText(queued.content).trim()
-                        : ''
-                      return (
-                        <div
-                          key={queued.id}
-                          className="yolo-chat-queued-messages__item"
-                          title={preview}
-                        >
-                          {preview || ' '}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-                <TodoListPanel
-                  key={currentConversationId}
-                  messages={displayedChatMessages}
-                  queuedMessageCount={queuedUserMessages.length}
-                />
+                  )}
+                  <TodoListPanel
+                    key={currentConversationId}
+                    messages={displayedChatMessages}
+                    queuedMessageCount={queuedUserMessages.length}
+                  />
                 </div>
                 <ChatUserInput
                   key={inputMessage.id}
@@ -4847,9 +4933,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                     // or fall through (fast-path / idle). Without this, a
                     // submit during a pending-approval state would abort the
                     // current run.
-                    if (
-                      currentConversationRunSummary.status === 'running'
-                    ) {
+                    if (currentConversationRunSummary.status === 'running') {
                       const enqueueResult = agentService.enqueueUserMessage(
                         currentConversationId,
                         messageForSubmit,

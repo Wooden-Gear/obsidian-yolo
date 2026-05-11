@@ -14,6 +14,28 @@ import {
   type VirtuosoHandle,
 } from 'react-virtuoso'
 
+type TimelineFooterContext = {
+  bottomSpacerHeight: number
+}
+
+function TimelineFooterSpacer({
+  context,
+}: {
+  context?: TimelineFooterContext
+}) {
+  const height = Math.max(0, context?.bottomSpacerHeight ?? 0)
+  if (height === 0) {
+    return null
+  }
+  return (
+    <div
+      aria-hidden
+      className="yolo-chat-timeline-bottom-spacer"
+      style={{ height }}
+    />
+  )
+}
+
 import { useApp } from '../../contexts/app-context'
 import { useSettings } from '../../contexts/settings-context'
 import {
@@ -140,6 +162,14 @@ type ChatTimelineListProps<TItem extends ChatTimelineItem> = {
   atBottomThreshold?: number
   onAtBottomStateChange?: (atBottom: boolean) => void
   onVirtualizationChange?: (isVirtualized: boolean) => void
+  /**
+   * Additional bottom spacer height (px). Used to keep the last item from
+   * being visually obscured by an absolute-positioned overlay (e.g. todo
+   * panel / queued bubbles) anchored above the input box. The spacer is
+   * rendered as the Virtuoso Footer when virtualized, or as a sibling
+   * `<div>` after items when not.
+   */
+  bottomSpacerHeight?: number
 }
 
 function setScrollContainerRef(
@@ -165,6 +195,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   atBottomThreshold = DEFAULT_AT_BOTTOM_THRESHOLD,
   onAtBottomStateChange,
   onVirtualizationChange,
+  bottomSpacerHeight = 0,
 }: ChatTimelineListProps<TItem>) {
   // Reserved for phase-2 pinned rendering semantics.
   void forceRenderItemIds
@@ -455,6 +486,13 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     [cachedHeightByItemId, items, onRenderStateChange],
   )
 
+  const safeSpacerHeight = Math.max(0, Math.ceil(bottomSpacerHeight))
+
+  const virtuosoContext = useMemo<TimelineFooterContext>(
+    () => ({ bottomSpacerHeight: safeSpacerHeight }),
+    [safeSpacerHeight],
+  )
+
   if (!isVirtualized) {
     return (
       <div
@@ -473,6 +511,13 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
             onMeasuredHeight={handleMeasuredRowHeight}
           />
         ))}
+        {safeSpacerHeight > 0 ? (
+          <div
+            aria-hidden
+            className="yolo-chat-timeline-bottom-spacer"
+            style={{ height: safeSpacerHeight }}
+          />
+        ) : null}
       </div>
     )
   }
@@ -500,6 +545,8 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
         top: overscanPx,
         bottom: overscanPx,
       }}
+      context={virtuosoContext}
+      components={{ Footer: TimelineFooterSpacer }}
       itemContent={(index, item) => (
         <TimelineRow
           item={item}

@@ -31,6 +31,7 @@ type ChatConversationPaneProps = {
   emptyStateAgentDescription: string
   footerContent: ReactNode
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
+  bottomSpacerHeight?: number
 }
 
 export function ChatConversationPane({
@@ -55,6 +56,7 @@ export function ChatConversationPane({
   emptyStateAgentDescription,
   footerContent,
   onTimelineVirtualizationChange,
+  bottomSpacerHeight,
 }: ChatConversationPaneProps) {
   const showEmptyState =
     groupedChatMessagesLength === 0 && !isCurrentConversationRunActive
@@ -110,6 +112,7 @@ export function ChatConversationPane({
         }
         scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
+        bottomSpacerHeight={bottomSpacerHeight}
       />
       <div className="yolo-chat-footer">
         {showScrollToBottomButton && (

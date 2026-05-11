@@ -1054,8 +1054,15 @@
   flex-direction: column;
   gap: var(--size-4-1);
   padding-block: var(--size-4-1);
-  padding-bottom: calc(var(--size-4-1) + 56px);
   margin-block: calc(var(--size-4-1) * -1);
+
+  /* Bottom spacer reserving scroll space for the input overlay (todo panel /
+   * queued bubbles). Must keep its inline `height` regardless of flex
+   * pressure — without flex-shrink:0, an over-full message list would
+   * collapse the spacer back to 0 and re-introduce the occlusion bug. */
+  > .yolo-chat-timeline-bottom-spacer {
+    flex: 0 0 auto;
+  }
 
   .yolo-chat-messages-user {
     position: relative;
