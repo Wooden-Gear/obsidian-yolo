@@ -154,11 +154,13 @@ function AddEmbeddingModelModalComponent({
             const baseNorm = base.replace(/\/+$/, '')
             const urlCandidates: string[] = []
             if (baseNorm.endsWith('/v1')) {
-              // Try with v1 first, then without v1
+              // Prefer embedding-specific list (OpenRouter exposes it here),
+              // then fall back to the generic models endpoint.
+              urlCandidates.push(`${baseNorm}/embeddings/models`)
               urlCandidates.push(`${baseNorm}/models`)
               urlCandidates.push(`${baseNorm.replace(/\/v1$/, '')}/models`)
             } else {
-              // Try without v1 first, then with v1
+              urlCandidates.push(`${baseNorm}/v1/embeddings/models`)
               urlCandidates.push(`${baseNorm}/models`)
               urlCandidates.push(`${baseNorm}/v1/models`)
             }
