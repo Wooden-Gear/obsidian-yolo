@@ -4,7 +4,6 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSettings } from '../../../contexts/settings-context'
 import {
-  getNodeBody,
   getNodeDocument,
   getNodeWindow,
 } from '../../../utils/dom/window-context'
@@ -61,7 +60,6 @@ export const ModelSelect = forwardRef<
     const triggerRef = useRef<HTMLButtonElement | null>(null)
     const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
     const selectedModelId = externalModelId ?? settings.chatModelId
-    const resolvedContainer = container ?? getNodeBody(triggerRef.current)
 
     const setTriggerRef = useCallback(
       (node: HTMLButtonElement | null) => {
@@ -214,7 +212,8 @@ export const ModelSelect = forwardRef<
         </DropdownMenu.Trigger>
 
         <YoloDropdownContent
-          container={resolvedContainer}
+          container={container}
+          anchorRef={triggerRef}
           variant={popover?.variant ?? 'default'}
           minWidth={popover?.minWidth}
           maxWidth={popover?.maxWidth}

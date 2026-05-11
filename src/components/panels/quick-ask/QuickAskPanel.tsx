@@ -70,7 +70,6 @@ import {
 import { groupAssistantAndToolMessages } from '../../../utils/chat/message-groups'
 import { RequestContextBuilder } from '../../../utils/chat/requestContextBuilder'
 import { buildMessageTimelineItems } from '../../../utils/chat/timeline'
-import { getNodeBody } from '../../../utils/dom/window-context'
 import { readTFileContent } from '../../../utils/obsidian'
 import AssistantToolMessageGroupItem from '../../chat-view/AssistantToolMessageGroupItem'
 import type { ChatUserInputRef } from '../../chat-view/chat-input/ChatUserInput'
@@ -2328,7 +2327,9 @@ export function QuickAskPanel({
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal
-              container={getNodeBody(assistantTriggerRef.current)}
+              container={
+                assistantTriggerRef.current?.ownerDocument?.body ?? undefined
+              }
             >
               <DropdownMenu.Content
                 side="top"

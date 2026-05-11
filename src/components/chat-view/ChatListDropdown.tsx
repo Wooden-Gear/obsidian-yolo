@@ -17,7 +17,7 @@ import type { ChatConversationMetadata } from '../../database/json/chat/types'
 import { useChatManager } from '../../hooks/useJsonManagers'
 import type { SerializedChatMessage } from '../../types/chat'
 import type { ContentPart } from '../../types/llm/request'
-import { getNodeBody, getNodeWindow } from '../../utils/dom/window-context'
+import { getNodeWindow } from '../../utils/dom/window-context'
 import { YoloPopoverContent } from '../common/popover'
 
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
@@ -761,7 +761,7 @@ export function ChatListDropdown({
 
       <YoloPopoverContent
         ref={contentRef}
-        container={getNodeBody(triggerRef.current)}
+        anchorRef={triggerRef}
         variant="default"
         minWidth={280}
         maxHeight={400}

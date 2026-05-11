@@ -3,7 +3,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
-import { getNodeBody, getNodeWindow } from '../../utils/dom/window-context'
+import { getNodeWindow } from '../../utils/dom/window-context'
 
 import { YoloDropdownContent, YoloPopoverVariant } from './popover'
 
@@ -200,7 +200,7 @@ const RollerSelect: React.FC<RollerSelectProps> = ({
       </DropdownMenu.Trigger>
 
       <YoloDropdownContent
-        container={getNodeBody(triggerRef.current)}
+        anchorRef={triggerRef}
         variant={popover?.variant ?? 'default'}
         minWidth={popover?.minWidth}
         maxWidth={popover?.maxWidth}

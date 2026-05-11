@@ -8,7 +8,7 @@ import {
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
-import { getNodeBody, getNodeWindow } from '../../../utils/dom/window-context'
+import { getNodeWindow } from '../../../utils/dom/window-context'
 import { YoloDropdownContent } from '../../common/popover'
 
 export type ChatMode = 'chat' | 'agent'
@@ -78,7 +78,6 @@ export const ChatModeSelect = forwardRef<
     const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(false)
     const triggerRef = useRef<HTMLButtonElement | null>(null)
-    const resolvedContainer = container ?? getNodeBody(triggerRef.current)
     const itemRefs = useRef<Record<ChatMode, HTMLDivElement | null>>({
       chat: null,
       agent: null,
@@ -191,7 +190,8 @@ export const ChatModeSelect = forwardRef<
         </DropdownMenu.Trigger>
 
         <YoloDropdownContent
-          container={resolvedContainer}
+          container={container}
+          anchorRef={triggerRef}
           variant="default"
           minWidth={220}
           maxHeight={400}

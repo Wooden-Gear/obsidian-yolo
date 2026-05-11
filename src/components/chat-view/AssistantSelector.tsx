@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { useSettings } from '../../contexts/settings-context'
@@ -10,7 +10,6 @@ import {
 } from '../../core/agent/default-assistant'
 import { Assistant } from '../../types/assistant.types'
 import { renderAssistantIcon } from '../../utils/assistant-icon'
-import { getNodeBody } from '../../utils/dom/window-context'
 import { YoloPopoverContent } from '../common/popover'
 
 type AssistantSelectorProps = {
@@ -122,7 +121,7 @@ export function AssistantSelector({
       </Popover.Trigger>
 
       <YoloPopoverContent
-        container={getNodeBody(triggerRef.current)}
+        anchorRef={triggerRef}
         variant="default"
         minWidth={280}
         maxHeight={400}

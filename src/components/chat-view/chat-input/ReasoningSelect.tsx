@@ -11,7 +11,6 @@ import {
   modelSupportsReasoning,
 } from '../../../types/reasoning'
 import {
-  getNodeBody,
   getNodeDocument,
   getNodeWindow,
 } from '../../../utils/dom/window-context'
@@ -114,7 +113,6 @@ export const ReasoningSelect = forwardRef<
     const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(false)
     const triggerRef = useRef<HTMLButtonElement | null>(null)
-    const resolvedContainer = container ?? getNodeBody(triggerRef.current)
     const segmentRefs = useRef<
       Record<ReasoningLevel, HTMLButtonElement | null>
     >(
@@ -232,7 +230,8 @@ export const ReasoningSelect = forwardRef<
         </DropdownMenu.Trigger>
 
         <YoloDropdownContent
-          container={resolvedContainer}
+          container={container}
+          anchorRef={triggerRef}
           variant="default"
           minWidth={360}
           maxWidth={460}
