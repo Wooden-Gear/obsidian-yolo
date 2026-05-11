@@ -1,14 +1,10 @@
-/* 任务清单面板：常驻输入框上方，可折叠
+/* 任务清单面板：作为 .yolo-chat-input-overlay 的子项，浮在输入框上方，可折叠。
+ * 定位与层级由 .yolo-chat-input-overlay 统一负责，本组件只关心自身样式。
  * 布局：header（摘要+折叠按钮） → body（列表）
  * 折叠动画：grid-template-rows 0fr ↔ 1fr，无需测量高度
  */
 
 .yolo-todo-panel {
-  position: absolute;
-  left: var(--size-4-3);
-  right: var(--size-4-3);
-  bottom: calc(100% + var(--size-2-1));
-  z-index: 2;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--background-modifier-border);

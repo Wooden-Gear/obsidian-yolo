@@ -2114,12 +2114,30 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   background: var(--background-modifier-hover);
 }
 
+/* 输入框上方浮层容器：承载 queued 气泡（顶）+ Todo 清单（底，贴近输入框）。
+ * 用 absolute 浮在 .yolo-chat-input-wrapper 之上，不挤压输入框高度。 */
+.yolo-chat-input-overlay {
+  position: absolute;
+  left: var(--size-4-3);
+  right: var(--size-4-3);
+  bottom: calc(100% + var(--size-2-1));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  pointer-events: none;
+}
+
+/* 让浮层内可交互元素恢复点击（如 Todo 折叠按钮）。 */
+.yolo-chat-input-overlay > * {
+  pointer-events: auto;
+}
+
 /* 运行中等待注入的用户消息：低饱和度气泡叠在输入框上方。 */
 .yolo-chat-queued-messages {
   display: flex;
   flex-direction: column;
   gap: var(--size-2-1);
-  margin-bottom: var(--size-2-2);
   padding: var(--size-2-2) var(--size-2-3);
   border: 1px dashed var(--background-modifier-border);
   border-radius: var(--radius-s);

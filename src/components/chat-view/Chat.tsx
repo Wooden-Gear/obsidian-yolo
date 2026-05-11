@@ -4790,7 +4790,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   </div>
                 )}
               <div className="yolo-chat-input-wrapper">
-                <TodoListPanel messages={displayedChatMessages} />
+                <div className="yolo-chat-input-overlay">
                 {queuedUserMessages.length > 0 && (
                   <div className="yolo-chat-queued-messages">
                     <div className="yolo-chat-queued-messages__hint">
@@ -4815,6 +4815,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                     })}
                   </div>
                 )}
+                <TodoListPanel
+                  key={currentConversationId}
+                  messages={displayedChatMessages}
+                  queuedMessageCount={queuedUserMessages.length}
+                />
+                </div>
                 <ChatUserInput
                   key={inputMessage.id}
                   ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}

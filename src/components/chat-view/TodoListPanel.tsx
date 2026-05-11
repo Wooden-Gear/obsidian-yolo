@@ -1,6 +1,6 @@
 import cx from 'clsx'
 import { Check, ChevronDown, Circle, ListTodo, Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import {
@@ -14,9 +14,16 @@ import type { ChatMessage } from '../../types/chat'
 
 type Props = {
   messages: ReadonlyArray<ChatMessage>
+  /**
+   * Count of user messages currently queued for mid-run injection. When this
+   * increases, the todo panel auto-collapses so the queued message bubble
+   * (rendered above this panel) stays the most prominent signal. User can
+   * still manually re-expand; subsequent enqueues will collapse again.
+   */
+  queuedMessageCount?: number
 }
 
-export function TodoListPanel({ messages }: Props) {
+export function TodoListPanel({ messages, queuedMessageCount = 0 }: Props) {
   const todos = useMemo(() => deriveTodosFromMessages(messages), [messages])
   const seriesStartId = useMemo(
     () => findTodoSeriesStartId(messages),
@@ -27,14 +34,28 @@ export function TodoListPanel({ messages }: Props) {
     [messages],
   )
   const { t } = useLanguage()
-  const [expanded, setExpanded] = useState(true)
+  // Default to collapsed: when a conversation is freshly opened (Obsidian
+  // reload, switching from the history list, opening a chat that already has
+  // todos persisted), the full body is just noise above the input. The
+  // collapsed header already carries the most useful signal ("Step 2/5:…",
+  // "All N done"); explicit expand stays one click away. Chat.tsx remounts
+  // this component per conversation via `key={conversationId}`, so this
+  // initial value also resets on conversation switch.
+  const [expanded, setExpanded] = useState(false)
 
-  // Auto-expand only when a new todo "series" begins (see findTodoSeriesStartId
-  // for the definition). Updates within an active series keep the user's
-  // collapse choice — Chat.tsx never unmounts this component, so we can't rely
-  // on useState's initial value to do this for us.
+  // Auto-expand only when a brand-new todo series starts WHILE the panel is
+  // mounted — i.e. the user is watching the agent plan in real time.
+  // Ref-based transition tracking is what distinguishes "series existed on
+  // mount" (do nothing) from "series just appeared / changed" (expand).
+  const previousSeriesStartIdRef = useRef<string | null>(seriesStartId)
   useEffect(() => {
-    if (seriesStartId !== null) setExpanded(true)
+    if (
+      seriesStartId !== null &&
+      seriesStartId !== previousSeriesStartIdRef.current
+    ) {
+      setExpanded(true)
+    }
+    previousSeriesStartIdRef.current = seriesStartId
   }, [seriesStartId])
 
   // Auto-collapse the moment a write lands that marks every item completed —
@@ -44,6 +65,18 @@ export function TodoListPanel({ messages }: Props) {
   useEffect(() => {
     if (completedWriteId !== null) setExpanded(false)
   }, [completedWriteId])
+
+  // Auto-collapse on each new queued user message so the queued bubble above
+  // this panel stays the user's primary focus. Tracks transitions in count,
+  // not absolute value, so the user's manual re-expand survives until the
+  // next enqueue arrives.
+  const previousQueuedCountRef = useRef(queuedMessageCount)
+  useEffect(() => {
+    if (queuedMessageCount > previousQueuedCountRef.current) {
+      setExpanded(false)
+    }
+    previousQueuedCountRef.current = queuedMessageCount
+  }, [queuedMessageCount])
 
   if (todos.length === 0) return null
 
