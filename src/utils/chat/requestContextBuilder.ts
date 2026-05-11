@@ -805,6 +805,7 @@ ${message.annotations
       switch (toolCall.response.status) {
         case ToolCallResponseStatus.PendingApproval:
         case ToolCallResponseStatus.Running:
+        case ToolCallResponseStatus.AwaitingUserInput:
           // Skip incomplete tool calls to avoid confusing the next planning step.
           break
         case ToolCallResponseStatus.Aborted:

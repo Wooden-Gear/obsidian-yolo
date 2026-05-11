@@ -33,6 +33,7 @@ describe('ToolMessage headline helpers', () => {
       [ToolCallResponseStatus.Success]: '',
       [ToolCallResponseStatus.Error]: 'Failed',
       [ToolCallResponseStatus.Aborted]: 'Aborted',
+      [ToolCallResponseStatus.AwaitingUserInput]: 'Awaiting',
     },
     unknownStatus: 'Unknown',
     displayNames: {
@@ -404,7 +405,11 @@ describe('ToolMessage headline helpers', () => {
           arguments: createCompleteToolCallArguments({
             value: {
               todos: [
-                { content: 'A done', activeForm: 'Doing A', status: 'completed' },
+                {
+                  content: 'A done',
+                  activeForm: 'Doing A',
+                  status: 'completed',
+                },
                 {
                   content: '完成第二步',
                   activeForm: '推进到第二步',

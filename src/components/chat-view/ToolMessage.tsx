@@ -11,10 +11,11 @@ import { ALWAYS_ALLOW_DISABLED_TOOL_NAMES } from '../../core/agent/tool-preferen
 import { InvalidToolNameException } from '../../core/mcp/exception'
 import {
   getLocalFileToolServerName,
+  isAskUserQuestionToolName,
   parseLocalFsActionFromToolArgs,
 } from '../../core/mcp/localFileTools'
 import { parseToolName } from '../../core/mcp/tool-name-utils'
-import { ChatToolMessage } from '../../types/chat'
+import { ChatMessage, ChatToolMessage } from '../../types/chat'
 import {
   ToolCallRequest,
   ToolCallResponse,
@@ -24,6 +25,7 @@ import {
 } from '../../types/tool-call.types'
 import { SplitButton } from '../common/SplitButton'
 
+import { AskUserQuestionPanel } from './AskUserQuestionPanel'
 import { ObsidianCodeBlock } from './ObsidianMarkdown'
 import { ExternalAgentToolCard } from './tool-cards/ExternalAgentToolCard'
 import {
@@ -67,6 +69,7 @@ const DEFAULT_STATUS_LABELS: Record<ToolCallResponseStatus, string> = {
   [ToolCallResponseStatus.Success]: '',
   [ToolCallResponseStatus.Error]: 'Failed',
   [ToolCallResponseStatus.Aborted]: 'Aborted',
+  [ToolCallResponseStatus.AwaitingUserInput]: 'Awaiting',
 }
 
 type ToolRequestLike = {
@@ -127,6 +130,10 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
         'chat.toolCall.status.aborted',
         DEFAULT_STATUS_LABELS[ToolCallResponseStatus.Aborted],
       ),
+      [ToolCallResponseStatus.AwaitingUserInput]: translate(
+        'chat.toolCall.status.awaitingUserInput',
+        DEFAULT_STATUS_LABELS[ToolCallResponseStatus.AwaitingUserInput],
+      ),
     },
     unknownStatus: translate('chat.toolCall.status.unknown', 'Unknown'),
     displayNames: {
@@ -167,6 +174,10 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       todo_write: translateBuiltinToolLabel('todo_write', translate),
       delegate_external_agent: translateBuiltinToolLabel(
         'delegate_external_agent',
+        translate,
+      ),
+      ask_user_question: translateBuiltinToolLabel(
+        'ask_user_question',
         translate,
       ),
     },
@@ -230,7 +241,10 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
         'Planned {count} tasks',
       ).replace('{count}', String(count)),
     todoWriteProgress: (done: number, total: number) =>
-      translate('chat.toolSummary.todoWrite.progress', 'Progress {done}/{total}')
+      translate(
+        'chat.toolSummary.todoWrite.progress',
+        'Progress {done}/{total}',
+      )
         .replace('{done}', String(done))
         .replace('{total}', String(total)),
   }
@@ -822,6 +836,7 @@ const ToolMessage = memo(function ToolMessage({
   showRunningFooter = true,
   onMessageUpdate,
   onRecoverToolCall,
+  onRecoverAnswerUserQuestion,
 }: {
   message: ChatToolMessage
   conversationId: string
@@ -834,6 +849,10 @@ const ToolMessage = memo(function ToolMessage({
     request: ToolCallRequest
     allowForConversation?: boolean
   }) => Promise<boolean>
+  onRecoverAnswerUserQuestion?: (payload: {
+    resolvedMessages: ChatMessage[]
+    toolCallId: string
+  }) => void
 }) {
   return (
     <div className="yolo-toolcall-container">
@@ -857,6 +876,7 @@ const ToolMessage = memo(function ToolMessage({
               }
               showRunningFooter={showRunningFooter}
               onRecoverToolCall={onRecoverToolCall}
+              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
               onResponseUpdate={(response) =>
                 onMessageUpdate({
                   ...message,
@@ -883,6 +903,7 @@ function ToolCallItem({
   showCompactionPendingHint = false,
   showRunningFooter = true,
   onRecoverToolCall,
+  onRecoverAnswerUserQuestion,
   onResponseUpdate,
 }: {
   request: ToolCallRequest
@@ -897,8 +918,45 @@ function ToolCallItem({
     request: ToolCallRequest
     allowForConversation?: boolean
   }) => Promise<boolean>
+  onRecoverAnswerUserQuestion?: (payload: {
+    resolvedMessages: ChatMessage[]
+    toolCallId: string
+  }) => void
   onResponseUpdate: (response: ToolCallResponse) => void
 }) {
+  const isAskUserQuestion = useMemo(
+    () => isAskUserQuestionToolName(request.name),
+    [request.name],
+  )
+  if (isAskUserQuestion) {
+    // The tool has no execute path: the gateway either parks it in
+    // AwaitingUserInput (interactive form), or short-circuits to Error /
+    // Rejected / Aborted / Success (recoveryless). Render the dedicated panel
+    // regardless and let it pick its sub-variant.
+    if (request.arguments?.kind === 'partial') {
+      return (
+        <div className="yolo-ask-user-question yolo-ask-user-question--pending">
+          <div className="yolo-ask-user-question-header">
+            <Loader2 size={14} className="yolo-spinner" />
+            <span>正在生成提问…</span>
+          </div>
+        </div>
+      )
+    }
+    if (!onRecoverAnswerUserQuestion) {
+      throw new Error(
+        'ask_user_question: hosting surface must pass onRecoverAnswerUserQuestion. The parent chat surface forgot to wire the recovery handler.',
+      )
+    }
+    return (
+      <AskUserQuestionPanel
+        request={request}
+        response={response}
+        conversationId={conversationId}
+        onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
+      />
+    )
+  }
   const COMPACTION_PENDING_EXIT_MS = 180
   const reduceMotion = useReducedMotion()
   const motionDuration = reduceMotion ? 0 : 0.16

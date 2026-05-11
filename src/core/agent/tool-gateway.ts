@@ -12,7 +12,12 @@ import {
   ToolCallResponseStatus,
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
-import { getLocalFileToolServerName } from '../mcp/localFileTools'
+import {
+  ASK_USER_QUESTION_TOOL_NAME,
+  getLocalFileToolServerName,
+  isAskUserQuestionToolName,
+  validateAskUserQuestionArgs,
+} from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
@@ -93,6 +98,18 @@ export class AgentToolGateway {
     branchModelId?: string
     branchLabel?: string
   }): ChatToolMessage {
+    // ask_user_question is exclusive within a single LLM turn. Detect this
+    // up-front so we can force all sibling outcomes accordingly before falling
+    // back to the per-tool routing for non-ask cases.
+    const askIndices: number[] = []
+    toolCallRequests.forEach((request, index) => {
+      if (isAskUserQuestionToolName(request.name)) {
+        askIndices.push(index)
+      }
+    })
+    const hasAsk = askIndices.length > 0
+    const firstAskIndex = hasAsk ? askIndices[0] : -1
+
     return {
       role: 'tool',
       id: uuidv4(),
@@ -103,19 +120,69 @@ export class AgentToolGateway {
         branchModelId,
         branchLabel,
       },
-      toolCalls: toolCallRequests.map((request) => ({
+      toolCalls: toolCallRequests.map((request, index) => ({
         request,
-        response: {
-          status:
-            !this.isToolAllowed(request.name) ||
-            !this.isRequestPathAllowed(request)
-              ? ToolCallResponseStatus.Rejected
-              : this.shouldStartToolCallRunning({ request, conversationId })
-                ? ToolCallResponseStatus.Running
-                : ToolCallResponseStatus.PendingApproval,
-        },
+        response: this.resolveInitialResponse({
+          request,
+          conversationId,
+          isAskRequest:
+            hasAsk && index === firstAskIndex
+              ? 'primary-ask'
+              : hasAsk && askIndices.includes(index)
+                ? 'duplicate-ask'
+                : hasAsk
+                  ? 'ask-sibling'
+                  : 'normal',
+        }),
       })),
     }
+  }
+
+  private resolveInitialResponse({
+    request,
+    conversationId,
+    isAskRequest,
+  }: {
+    request: ToolCallRequest
+    conversationId: string
+    isAskRequest: 'primary-ask' | 'duplicate-ask' | 'ask-sibling' | 'normal'
+  }): ToolCallResponse {
+    if (isAskRequest === 'duplicate-ask') {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `Only one ${ASK_USER_QUESTION_TOOL_NAME} call is allowed per turn.`,
+      }
+    }
+    if (isAskRequest === 'ask-sibling') {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: `This tool call cannot run alongside ${ASK_USER_QUESTION_TOOL_NAME} in the same turn.`,
+      }
+    }
+
+    if (
+      !this.isToolAllowed(request.name) ||
+      !this.isRequestPathAllowed(request)
+    ) {
+      return { status: ToolCallResponseStatus.Rejected }
+    }
+
+    if (isAskRequest === 'primary-ask') {
+      const validation = validateAskUserQuestionArgs(
+        getToolCallArgumentsObject(request.arguments) ?? {},
+      )
+      if (!validation.ok) {
+        return {
+          status: ToolCallResponseStatus.Error,
+          error: `ask_user_question schema validation failed: ${validation.error}`,
+        }
+      }
+      return { status: ToolCallResponseStatus.AwaitingUserInput }
+    }
+
+    return this.shouldStartToolCallRunning({ request, conversationId })
+      ? { status: ToolCallResponseStatus.Running }
+      : { status: ToolCallResponseStatus.PendingApproval }
   }
 
   async executeAutoToolCalls({
@@ -132,6 +199,9 @@ export class AgentToolGateway {
     chatModelId?: string
   }): Promise<ChatToolMessage> {
     const nextToolCalls = [...toolMessage.toolCalls]
+    // `AwaitingUserInput` is intentionally excluded here: it is a paused state
+    // (only used by `ask_user_question`) and must not be auto-executed. The
+    // gateway resumes it via `AgentService.answerUserQuestion` instead.
     const runnableEntries = nextToolCalls
       .map((toolCall, index) => ({ index, toolCall }))
       .filter(
@@ -374,10 +444,15 @@ export class AgentToolGateway {
   }
 
   hasPendingToolCalls(toolMessage: ChatToolMessage): boolean {
+    // `AwaitingUserInput` is a paused state (model is blocked waiting for the
+    // user to answer `ask_user_question`). The runtime treats it the same as
+    // PendingApproval/Running so the agent loop knows the round is not yet
+    // finished and will not try to continue without the user's input.
     return toolMessage.toolCalls.some((toolCall) =>
       [
         ToolCallResponseStatus.PendingApproval,
         ToolCallResponseStatus.Running,
+        ToolCallResponseStatus.AwaitingUserInput,
       ].includes(toolCall.response.status),
     )
   }

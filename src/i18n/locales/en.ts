@@ -399,6 +399,9 @@ export const en: TranslationKeys = {
       builtinTodoWriteLabel: 'Task List',
       builtinTodoWriteDesc:
         'Let the agent plan and track multi-step task progress autonomously. Agent mode only.',
+      builtinAskUserQuestionLabel: 'Ask User',
+      builtinAskUserQuestionDesc:
+        'Pause the agent and ask the user 1-3 structured questions (free text / single / multi). The run resumes after the user submits answers.',
       editorDefaultName: 'New agent',
       editorIntro: "Configure this agent's capabilities, model, and behavior.",
       editorTabProfile: 'Profile',
@@ -1178,9 +1181,22 @@ export const en: TranslationKeys = {
       hint: 'Waiting for the agent to finish the current step...',
       blockedApproval:
         'Approve or reject the pending tool call before sending a new message.',
+      blockedAwaitingInput:
+        'Answer the agent’s question in the chat before sending a new message.',
       abortedRestoredOne: 'Queued message restored to the input box',
       abortedRestoredMany:
         'Restored the latest queued message to the input box ({{count}} dropped)',
+    },
+    askUserQuestion: {
+      title: 'The agent has questions for you',
+      submit: 'Submit answers',
+      submitHint: 'Press Cmd / Ctrl + Enter to submit',
+      answeredBadge: 'Submitted',
+      rejected:
+        'The system rejected this question (one ask_user_question per turn, or tool disabled).',
+      aborted: 'Stopped before the user could answer.',
+      schemaError: 'The agent provided invalid question parameters: {{error}}',
+      stale: 'This question has expired or was already handled.',
     },
     selectModel: 'Select model',
     uploadImage: 'Upload image',
@@ -1371,6 +1387,7 @@ export const en: TranslationKeys = {
         failed: 'Failed',
         completed: 'Completed',
         aborted: 'Aborted',
+        awaitingUserInput: 'Awaiting',
         unknown: 'Unknown',
       },
       displayName: {

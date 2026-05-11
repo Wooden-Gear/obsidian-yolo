@@ -284,6 +284,8 @@ export type TranslationKeys = {
       builtinDelegateExternalAgentDesc?: string
       builtinTodoWriteLabel?: string
       builtinTodoWriteDesc?: string
+      builtinAskUserQuestionLabel?: string
+      builtinAskUserQuestionDesc?: string
       editorDefaultName?: string
       editorIntro?: string
       editorTabProfile?: string
@@ -1018,8 +1020,19 @@ export type TranslationKeys = {
       tooltip?: string
       hint?: string
       blockedApproval?: string
+      blockedAwaitingInput?: string
       abortedRestoredOne?: string
       abortedRestoredMany?: string
+    }
+    askUserQuestion?: {
+      title?: string
+      submit?: string
+      submitHint?: string
+      answeredBadge?: string
+      rejected?: string
+      aborted?: string
+      schemaError?: string
+      stale?: string
     }
     selectModel: string
     uploadImage: string
@@ -1166,6 +1179,7 @@ export type TranslationKeys = {
         failed?: string
         completed?: string
         aborted?: string
+        awaitingUserInput?: string
         unknown?: string
       }
       displayName?: {

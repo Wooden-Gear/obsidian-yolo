@@ -2713,6 +2713,51 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     ],
   )
 
+  /**
+   * Recovery path for ask_user_question: the service has already committed
+   * the user's answers to the persisted tool message but no live run remains
+   * (the conversation finalized before the user answered). Mirror the tail
+   * of handleRecoverPendingToolCall — persist immediately and kick off a
+   * fresh submit so the agent loop resumes from the resolved messages.
+   */
+  const handleRecoverAnswerUserQuestion = useCallback(
+    ({
+      resolvedMessages,
+      toolCallId: _toolCallId,
+    }: {
+      resolvedMessages: ChatMessage[]
+      toolCallId: string
+    }) => {
+      const conversationId = currentConversationId
+      setChatMessages(resolvedMessages)
+      chatMessagesStateRef.current = resolvedMessages
+      plugin
+        .getAgentService()
+        .replaceConversationMessages(
+          conversationId,
+          resolvedMessages,
+          effectiveCompactionState,
+          { persistState: true },
+        )
+      void persistConversationImmediately(resolvedMessages)
+      submitChatMutation.mutate({
+        chatMessages: resolvedMessages,
+        conversationId,
+        reasoningLevel: resolveReasoningLevelForMessages(resolvedMessages),
+        modelIds: getLatestUserSelectedModelIds(resolvedMessages),
+      })
+    },
+    [
+      currentConversationId,
+      effectiveCompactionState,
+      persistConversationImmediately,
+      plugin,
+      resolveReasoningLevelForMessages,
+      setChatMessages,
+      submitChatMutation,
+    ],
+  )
+
   const buildInputMessageForSubmit = useCallback(
     (content: ChatUserMessage['content']): ChatUserMessage => {
       const mentionables = inputMessage.mentionables
@@ -4498,6 +4543,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             onApply={handleApply}
             onToolMessageUpdate={handleToolMessageUpdate}
             onRecoverToolCall={handleRecoverPendingToolCall}
+            onRecoverAnswerUserQuestion={handleRecoverAnswerUserQuestion}
             editingAssistantMessageId={editingAssistantMessageId}
             onEditStart={(messageId) => {
               setEditingAssistantMessageId(messageId)
@@ -4926,6 +4972,21 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       return
                     }
                     const messageForSubmit = buildInputMessageForSubmit(content)
+
+                    // ask_user_question parks the agent in a paused state that
+                    // may outlive the run itself (run can finalize while the
+                    // panel is still awaiting answers). Intercept the submit
+                    // here so a new message can't bypass the awaiting panel —
+                    // the user must answer the panel first.
+                    if (currentConversationRunSummary.isWaitingUserInput) {
+                      new Notice(
+                        t(
+                          'chat.queueMessage.blockedAwaitingInput',
+                          '请先在对话中回答模型的提问，再发送新消息。',
+                        ),
+                      )
+                      return
+                    }
 
                     // While a run is active on the default branch, route the
                     // message through enqueue so the service decides whether

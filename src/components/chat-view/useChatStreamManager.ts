@@ -86,20 +86,30 @@ const buildRunSummary = ({
   status,
   messages,
 }: AgentConversationState): AgentConversationRunSummary => {
-  const isWaitingApproval = messages.some(
-    (message) =>
-      message.role === 'tool' &&
-      message.toolCalls.some(
-        (toolCall) =>
-          toolCall.response.status === ToolCallResponseStatus.PendingApproval,
-      ),
-  )
+  let hasApproval = false
+  let hasAwaitingUser = false
+  for (const message of messages) {
+    if (message.role !== 'tool') continue
+    for (const toolCall of message.toolCalls) {
+      if (toolCall.response.status === ToolCallResponseStatus.PendingApproval) {
+        hasApproval = true
+      } else if (
+        toolCall.response.status === ToolCallResponseStatus.AwaitingUserInput
+      ) {
+        hasAwaitingUser = true
+      }
+      if (hasApproval && hasAwaitingUser) break
+    }
+    if (hasApproval && hasAwaitingUser) break
+  }
+  const isWaitingApproval = hasApproval || hasAwaitingUser
 
   return {
     conversationId,
     status,
     isRunning: status === 'running' && !isWaitingApproval,
     isWaitingApproval,
+    isWaitingUserInput: hasAwaitingUser,
   }
 }
 
@@ -300,11 +310,15 @@ export function useChatStreamManager({
         const hasWaitingApproval = activeSummaries.some(
           (summary) => summary.isWaitingApproval,
         )
+        const hasWaitingUserInput = activeSummaries.some(
+          (summary) => summary.isWaitingUserInput,
+        )
         setCurrentConversationRunSummary({
           conversationId: currentConversationId,
           status: hasWaitingApproval ? 'running' : 'running',
           isRunning: activeSummaries.some((summary) => summary.isRunning),
           isWaitingApproval: hasWaitingApproval,
+          isWaitingUserInput: hasWaitingUserInput,
         })
       }
     },

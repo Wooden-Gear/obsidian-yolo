@@ -130,6 +130,13 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Let the agent plan and track multi-step task progress autonomously. Agent mode only.',
   },
+  ask_user_question: {
+    labelKey: 'settings.agent.builtinAskUserQuestionLabel',
+    descKey: 'settings.agent.builtinAskUserQuestionDesc',
+    labelFallback: 'Ask User',
+    descFallback:
+      'Pause the run and ask the user 1-3 structured questions (free text / single / multi). The agent resumes after the user submits answers.',
+  },
 }
 
 export const getBuiltinToolUiMeta = (
@@ -155,6 +162,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   context_prune_tool_results: 'context',
   context_compact: 'context',
   todo_write: 'context',
+  ask_user_question: 'context',
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
   open_skill: 'external',

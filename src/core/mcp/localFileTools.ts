@@ -61,6 +61,8 @@ import {
   runWebSearch,
 } from '../web-search'
 
+import { parseToolName } from './tool-name-utils'
+
 export { recoverLikelyEscapedBackslashSequences }
 
 const LOCAL_FILE_TOOL_SERVER = 'yolo_local'
@@ -129,6 +131,7 @@ type LocalFileToolName =
   | 'web_scrape'
   | 'delegate_external_agent'
   | 'todo_write'
+  | 'ask_user_question'
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
 type FsSearchMode = 'keyword' | 'rag' | 'hybrid'
 type LegacyFsSearchItem =
@@ -1051,6 +1054,59 @@ export function getLocalFileTools(options?: {
           },
         },
         required: ['provider', 'sandboxMode', 'prompt'],
+      },
+    },
+    {
+      name: 'ask_user_question',
+      description:
+        'Ask the user one or more structured questions when you are blocked by missing information that cannot be inferred from context or the vault. Group related questions in a single call instead of asking turn by turn. Use sparingly — never to confirm trivial actions. Prefer concrete options (single_select / multi_select) over free text. This call MUST be the only tool call in the turn; the agent run pauses until the user submits answers in a dedicated panel.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          questions: {
+            type: 'array',
+            minItems: 1,
+            description:
+              'One or more structured questions to ask the user. Group related questions together rather than splitting them across turns.',
+            items: {
+              type: 'object',
+              required: ['id', 'prompt', 'inputType'],
+              properties: {
+                id: {
+                  type: 'string',
+                  description:
+                    'Stable id used to key the answer back. Must be unique across the questions array.',
+                },
+                prompt: {
+                  type: 'string',
+                  description: 'The question text shown to the user.',
+                },
+                inputType: {
+                  type: 'string',
+                  enum: ['free_text', 'single_select', 'multi_select'],
+                  description:
+                    'free_text: open answer. single_select: pick exactly one option. multi_select: pick one or more options.',
+                },
+                options: {
+                  type: 'array',
+                  minItems: 2,
+                  maxItems: 6,
+                  description:
+                    'Required for single_select / multi_select. Each option has a stable id and a human-readable label. Disallowed for free_text.',
+                  items: {
+                    type: 'object',
+                    required: ['id', 'label'],
+                    properties: {
+                      id: { type: 'string' },
+                      label: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        required: ['questions'],
       },
     },
     {
@@ -1986,6 +2042,190 @@ const normalizeLocalToolName = (toolName: string): string => {
 
 export function isLocalFsWriteToolName(toolName: string): boolean {
   return LOCAL_FS_WRITE_TOOL_NAMES.has(normalizeLocalToolName(toolName))
+}
+
+export const ASK_USER_QUESTION_TOOL_NAME = 'ask_user_question'
+
+export type AskUserQuestionInputType =
+  | 'free_text'
+  | 'single_select'
+  | 'multi_select'
+
+export type AskUserQuestionOption = {
+  id: string
+  label: string
+}
+
+export type AskUserQuestionItem = {
+  id: string
+  prompt: string
+  inputType: AskUserQuestionInputType
+  options?: AskUserQuestionOption[]
+}
+
+export type AskUserQuestionArgs = {
+  questions: AskUserQuestionItem[]
+}
+
+export type AskUserQuestionValidationResult =
+  | { ok: true; value: AskUserQuestionArgs }
+  | { ok: false; error: string }
+
+/**
+ * Validate the model-provided arguments for the `ask_user_question` tool.
+ * The tool has no execution path — the gateway calls this and converts a
+ * failed result into a Tool Error response. A successful result is what the
+ * UI panel renders.
+ */
+export function validateAskUserQuestionArgs(
+  rawArgs: unknown,
+): AskUserQuestionValidationResult {
+  if (
+    rawArgs === null ||
+    typeof rawArgs !== 'object' ||
+    Array.isArray(rawArgs)
+  ) {
+    return { ok: false, error: 'arguments must be an object.' }
+  }
+  const args = rawArgs as Record<string, unknown>
+  const rawQuestions = args.questions
+  if (!Array.isArray(rawQuestions)) {
+    return { ok: false, error: 'questions must be an array.' }
+  }
+  if (rawQuestions.length < 1) {
+    return {
+      ok: false,
+      error: 'questions must contain at least 1 item.',
+    }
+  }
+
+  const seenIds = new Set<string>()
+  const validated: AskUserQuestionItem[] = []
+  for (let i = 0; i < rawQuestions.length; i++) {
+    const raw = rawQuestions[i]
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+      return { ok: false, error: `questions[${i}] must be an object.` }
+    }
+    const q = raw as Record<string, unknown>
+
+    const id = q.id
+    if (typeof id !== 'string' || id.trim() === '') {
+      return {
+        ok: false,
+        error: `questions[${i}].id must be a non-empty string.`,
+      }
+    }
+    if (seenIds.has(id)) {
+      return {
+        ok: false,
+        error: `questions[${i}].id "${id}" is duplicated; ids must be unique.`,
+      }
+    }
+    seenIds.add(id)
+
+    const prompt = q.prompt
+    if (typeof prompt !== 'string' || prompt.trim() === '') {
+      return {
+        ok: false,
+        error: `questions[${i}].prompt must be a non-empty string.`,
+      }
+    }
+
+    const inputType = q.inputType
+    if (
+      inputType !== 'free_text' &&
+      inputType !== 'single_select' &&
+      inputType !== 'multi_select'
+    ) {
+      return {
+        ok: false,
+        error: `questions[${i}].inputType must be "free_text", "single_select", or "multi_select".`,
+      }
+    }
+
+    let options: AskUserQuestionOption[] | undefined
+
+    if (inputType === 'single_select' || inputType === 'multi_select') {
+      if (!Array.isArray(q.options)) {
+        return {
+          ok: false,
+          error: `questions[${i}].options must be an array for ${inputType}.`,
+        }
+      }
+      if (q.options.length < 2 || q.options.length > 6) {
+        return {
+          ok: false,
+          error: `questions[${i}].options must contain between 2 and 6 items.`,
+        }
+      }
+      const seenOptionIds = new Set<string>()
+      const opts: AskUserQuestionOption[] = []
+      for (let j = 0; j < q.options.length; j++) {
+        const rawOpt = q.options[j]
+        if (
+          rawOpt === null ||
+          typeof rawOpt !== 'object' ||
+          Array.isArray(rawOpt)
+        ) {
+          return {
+            ok: false,
+            error: `questions[${i}].options[${j}] must be an object.`,
+          }
+        }
+        const opt = rawOpt as Record<string, unknown>
+        if (typeof opt.id !== 'string' || opt.id.trim() === '') {
+          return {
+            ok: false,
+            error: `questions[${i}].options[${j}].id must be a non-empty string.`,
+          }
+        }
+        if (typeof opt.label !== 'string' || opt.label.trim() === '') {
+          return {
+            ok: false,
+            error: `questions[${i}].options[${j}].label must be a non-empty string.`,
+          }
+        }
+        if (seenOptionIds.has(opt.id)) {
+          return {
+            ok: false,
+            error: `questions[${i}].options[${j}].id "${opt.id}" is duplicated within the question.`,
+          }
+        }
+        seenOptionIds.add(opt.id)
+        opts.push({ id: opt.id, label: opt.label })
+      }
+      options = opts
+    } else {
+      // free_text
+      if (q.options !== undefined) {
+        return {
+          ok: false,
+          error: `questions[${i}].options is not allowed for free_text inputType.`,
+        }
+      }
+    }
+
+    validated.push({
+      id,
+      prompt,
+      inputType,
+      ...(options ? { options } : {}),
+    })
+  }
+
+  return { ok: true, value: { questions: validated } }
+}
+
+export function isAskUserQuestionToolName(toolName: string): boolean {
+  try {
+    const parsed = parseToolName(toolName)
+    return (
+      parsed.serverName === LOCAL_FILE_TOOL_SERVER &&
+      parsed.toolName === ASK_USER_QUESTION_TOOL_NAME
+    )
+  } catch {
+    return false
+  }
 }
 
 export function parseLocalFsActionFromToolArgs({

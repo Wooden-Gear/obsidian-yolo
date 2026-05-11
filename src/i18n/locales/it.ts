@@ -402,6 +402,9 @@ export const it: TranslationKeys = {
       builtinTodoWriteLabel: 'Lista delle attività',
       builtinTodoWriteDesc:
         "Consente all'agente di pianificare e tracciare autonomamente i progressi su task in più fasi. Solo modalità agente.",
+      builtinAskUserQuestionLabel: "Chiedi all'utente",
+      builtinAskUserQuestionDesc:
+        "Mette in pausa l'agente per porre 1-3 domande strutturate (testo libero / scelta singola / scelta multipla). L'esecuzione riprende dopo l'invio delle risposte.",
       editorDefaultName: 'Nuovo agent',
       editorIntro:
         'Configura le capacità, il modello e il comportamento di questo agent.',
@@ -1158,10 +1161,25 @@ export const it: TranslationKeys = {
         'Metti in coda questo messaggio — verrà inviato al termine del passaggio corrente',
       hint: "In attesa che l'agente completi il passaggio corrente...",
       blockedApproval:
-        "Approva o rifiuta lo strumento in attesa prima di inviare un nuovo messaggio.",
-      abortedRestoredOne: 'Messaggio in coda ripristinato nella casella di input',
+        'Approva o rifiuta lo strumento in attesa prima di inviare un nuovo messaggio.',
+      blockedAwaitingInput:
+        "Rispondi alla domanda dell'agente nella chat prima di inviare un nuovo messaggio.",
+      abortedRestoredOne:
+        'Messaggio in coda ripristinato nella casella di input',
       abortedRestoredMany:
         "Ripristinato l'ultimo messaggio in coda nella casella di input ({{count}} scartati)",
+    },
+    askUserQuestion: {
+      title: "L'agente ti pone delle domande",
+      submit: 'Invia risposte',
+      submitHint: 'Premi Cmd / Ctrl + Invio per inviare',
+      answeredBadge: 'Inviato',
+      rejected:
+        'Il sistema ha rifiutato la domanda (massimo una ask_user_question per turno, oppure strumento disabilitato).',
+      aborted: "Interrotto prima che l'utente potesse rispondere.",
+      schemaError:
+        "L'agente ha fornito parametri non validi per la domanda: {{error}}",
+      stale: 'Questa domanda è scaduta o è già stata gestita.',
     },
     selectModel: 'Seleziona modello',
     uploadImage: 'Carica immagine',
@@ -1370,6 +1388,7 @@ export const it: TranslationKeys = {
         failed: 'Fallito',
         completed: 'Completato',
         aborted: 'Interrotto',
+        awaitingUserInput: 'In attesa',
         unknown: 'Sconosciuto',
       },
       displayName: {

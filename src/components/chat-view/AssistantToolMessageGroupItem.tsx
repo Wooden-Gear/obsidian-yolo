@@ -16,6 +16,7 @@ import { readEditReviewSnapshot } from '../../database/json/chat/editReviewSnaps
 import {
   AssistantToolMessageGroup,
   ChatAssistantMessage,
+  ChatMessage,
   ChatToolMessage,
 } from '../../types/chat'
 import { shouldRenderAssistantToolPreview } from '../../utils/chat/assistantToolPreview'
@@ -195,6 +196,10 @@ export type AssistantToolMessageGroupItemProps = {
     request: ChatToolMessage['toolCalls'][number]['request']
     allowForConversation?: boolean
   }) => Promise<boolean>
+  onRecoverAnswerUserQuestion?: (payload: {
+    resolvedMessages: ChatMessage[]
+    toolCallId: string
+  }) => void
   editingAssistantMessageId?: string | null
   onEditStart: (messageId: string) => void
   onEditCancel: () => void
@@ -235,6 +240,7 @@ export default function AssistantToolMessageGroupItem({
   onApply,
   onToolMessageUpdate,
   onRecoverToolCall,
+  onRecoverAnswerUserQuestion,
   editingAssistantMessageId,
   onEditStart,
   onEditCancel,
@@ -677,6 +683,7 @@ export default function AssistantToolMessageGroupItem({
                 // 异步派遣结果是终态消息，UI 内部不会触发 update；
                 // 万一调到这里也不持久化（result message 有自己的存储路径）。
               }}
+              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
           </div>
         ) : (
@@ -690,6 +697,7 @@ export default function AssistantToolMessageGroupItem({
               showRunningFooter={showRunningToolFooter}
               onMessageUpdate={onToolMessageUpdate}
               onRecoverToolCall={onRecoverToolCall}
+              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
           </div>
         )

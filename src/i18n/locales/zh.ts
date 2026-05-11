@@ -364,6 +364,9 @@ export const zh: TranslationKeys = {
       builtinTodoWriteLabel: '任务清单',
       builtinTodoWriteDesc:
         '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）。',
+      builtinAskUserQuestionLabel: '向用户提问',
+      builtinAskUserQuestionDesc:
+        '在缺少必要信息时暂停 Agent，向用户发起 1-3 个结构化问题（单选 / 多选 / 自由文本），用户提交后继续。',
       editorDefaultName: '新建 Agent',
       editorIntro: '配置此 Agent 的能力、模型与行为。',
       editorTabProfile: '资料',
@@ -1108,9 +1111,20 @@ export const zh: TranslationKeys = {
       tooltip: '加入排队，等当前回合完成后继续',
       hint: '等待 Agent 完成当前步骤...',
       blockedApproval: '请先批准或拒绝待审批工具，再发送新消息。',
+      blockedAwaitingInput: '请先在对话中回答模型的提问，再发送新消息。',
       abortedRestoredOne: '已将排队消息恢复到输入框',
       abortedRestoredMany:
         '已恢复最新 1 条排队消息到输入框（共取消 {{count}} 条）',
+    },
+    askUserQuestion: {
+      title: '模型向你发起提问',
+      submit: '提交答案',
+      submitHint: 'Cmd / Ctrl + Enter 提交',
+      answeredBadge: '已提交',
+      rejected: '系统已拒绝该提问（仅允许每轮一次，或被禁用）。',
+      aborted: '已被停止。',
+      schemaError: '模型的提问参数不合法：{{error}}',
+      stale: '该提问已过期或已被处理，无法再次提交。',
     },
     selectModel: '选择模型',
     uploadImage: '上传图片',
@@ -1282,6 +1296,7 @@ export const zh: TranslationKeys = {
         failed: '失败',
         completed: '已完成',
         aborted: '已中止',
+        awaitingUserInput: '等待回答',
         unknown: '未知状态',
       },
       displayName: {

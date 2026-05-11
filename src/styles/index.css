@@ -14,6 +14,7 @@
 @import './chat/popover.css';
 @import './chat/external-agent-card.css';
 @import './chat/todo-list-panel.css';
+@import './chat/ask-user-question-panel.css';
 
 @import './panels/smart-space.css';
 @import './panels/quick-ask.css';
