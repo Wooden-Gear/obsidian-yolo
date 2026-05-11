@@ -360,13 +360,13 @@ export const zh: TranslationKeys = {
       builtinWebOpsDesc: '网页搜索与正文抓取',
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
       builtinDelegateExternalAgentDesc:
-        '以子进程方式启动本机 CLI Agent（codex exec 或 claude -p），将其实时输出流式回灌到聊天窗口，并把最终结果传给 LLM 继续推理。仅桌面端可用，每次调用都需人工审批。',
+        '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）。',
       builtinTodoWriteLabel: '任务清单',
       builtinTodoWriteDesc:
         '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）。',
       builtinAskUserQuestionLabel: '向用户提问',
       builtinAskUserQuestionDesc:
-        '在缺少必要信息时暂停 Agent，向用户发起 1-3 个结构化问题（单选 / 多选 / 自由文本），用户提交后继续。',
+        '在缺少必要信息时向用户提问，等待回答后继续。',
       editorDefaultName: '新建 Agent',
       editorIntro: '配置此 Agent 的能力、模型与行为。',
       editorTabProfile: '资料',

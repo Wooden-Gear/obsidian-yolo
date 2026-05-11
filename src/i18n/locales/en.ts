@@ -395,13 +395,13 @@ export const en: TranslationKeys = {
       builtinWebOpsDesc: 'Web search and page scraping',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
-        'Spawn a local CLI agent (codex exec or claude -p) as a subprocess, stream its output back into the chat, and feed the result to the LLM. Desktop-only. Requires manual approval every time.',
+        'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',
       builtinTodoWriteLabel: 'Task List',
       builtinTodoWriteDesc:
         'Let the agent plan and track multi-step task progress autonomously. Agent mode only.',
       builtinAskUserQuestionLabel: 'Ask User',
       builtinAskUserQuestionDesc:
-        'Pause the agent and ask the user 1-3 structured questions (free text / single / multi). The run resumes after the user submits answers.',
+        'Ask the user a question when required information is missing, then resume after the answer.',
       editorDefaultName: 'New agent',
       editorIntro: "Configure this agent's capabilities, model, and behavior.",
       editorTabProfile: 'Profile',
