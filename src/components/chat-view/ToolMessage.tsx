@@ -6,7 +6,10 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
-import { getBuiltinToolUiMeta } from '../../core/agent/builtinToolUiMeta'
+import {
+  BUILTIN_TOOL_UI_META,
+  getBuiltinToolUiMeta,
+} from '../../core/agent/builtinToolUiMeta'
 import { ALWAYS_ALLOW_DISABLED_TOOL_NAMES } from '../../core/agent/tool-preferences'
 import { InvalidToolNameException } from '../../core/mcp/exception'
 import {
@@ -136,16 +139,17 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       ),
     },
     unknownStatus: translate('chat.toolCall.status.unknown', 'Unknown'),
+    // Every name registered in BUILTIN_TOOL_UI_META is wired here automatically
+    // so adding a new built-in tool only needs the meta entry (+ i18n keys),
+    // not a manual update of this map. fs_* write-action labels live in a
+    // separate translation namespace and stay as explicit overrides.
     displayNames: {
-      fs_list: translateBuiltinToolLabel('fs_list', translate),
-      fs_search: translateBuiltinToolLabel('fs_search', translate),
-      fs_read: translateBuiltinToolLabel('fs_read', translate),
-      context_prune_tool_results: translateBuiltinToolLabel(
-        'context_prune_tool_results',
-        translate,
+      ...Object.fromEntries(
+        Object.keys(BUILTIN_TOOL_UI_META).map((name) => [
+          name,
+          translateBuiltinToolLabel(name, translate),
+        ]),
       ),
-      context_compact: translateBuiltinToolLabel('context_compact', translate),
-      fs_edit: translateBuiltinToolLabel('fs_edit', translate),
       fs_create_file: translate(
         'chat.toolCall.writeAction.create_file',
         DEFAULT_LOCAL_FILE_TOOL_DISPLAY_NAMES.fs_create_file,
@@ -165,20 +169,6 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       fs_move: translate(
         'chat.toolCall.writeAction.move',
         DEFAULT_LOCAL_FILE_TOOL_DISPLAY_NAMES.fs_move,
-      ),
-      memory_add: translateBuiltinToolLabel('memory_add', translate),
-      memory_update: translateBuiltinToolLabel('memory_update', translate),
-      memory_delete: translateBuiltinToolLabel('memory_delete', translate),
-      web_search: translateBuiltinToolLabel('web_search', translate),
-      web_scrape: translateBuiltinToolLabel('web_scrape', translate),
-      todo_write: translateBuiltinToolLabel('todo_write', translate),
-      delegate_external_agent: translateBuiltinToolLabel(
-        'delegate_external_agent',
-        translate,
-      ),
-      ask_user_question: translateBuiltinToolLabel(
-        'ask_user_question',
-        translate,
       ),
     },
     writeActionLabels: {
