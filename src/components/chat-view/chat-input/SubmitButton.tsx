@@ -5,16 +5,18 @@ import { useLanguage } from '../../../contexts/language-context'
 type SubmitButtonProps = {
   onClick: () => void
   /**
-   * When true, the button switches into a "stop generation" affordance and
-   * clicking it triggers `onAbort` instead of `onClick`. This unifies the
-   * send/stop control so it never overlaps with the floating todo panel.
+   * True while a conversation run is in flight. The button takes one of two
+   * forms depending on whether the input has content:
+   * - empty input → stop button (clicking aborts the run)
+   * - non-empty input → send button (clicking enqueues the message for
+   *   injection at the next safe boundary)
    */
   isGenerating?: boolean
   onAbort?: () => void
   /**
-   * When true (and not generating), the button is rendered in a faded,
-   * non-interactive state — used to hint "no content to send yet". Ignored
-   * while `isGenerating` is true, since stopping is always allowed.
+   * True when the input is empty. While idle this disables the send button;
+   * while generating this is what makes the button render as a stop button
+   * instead of a queueing-send button.
    */
   disabled?: boolean
 }
@@ -27,35 +29,42 @@ export function SubmitButton({
 }: SubmitButtonProps) {
   const { t } = useLanguage()
   const sendLabel = t('chat.sendMessage', 'Chat')
+  const queueLabel = t(
+    'chat.queueMessage.tooltip',
+    '加入排队，等当前回合完成后继续',
+  )
   const stopLabel = t('chat.stopGeneration', 'Stop generation')
-  const label = isGenerating ? stopLabel : sendLabel
-  const isDisabled = !isGenerating && disabled
 
-  const handleClick = () => {
-    if (isGenerating) {
-      onAbort?.()
-      return
-    }
-    if (isDisabled) return
-    onClick()
+  if (isGenerating && disabled) {
+    return (
+      <button
+        type="button"
+        className="yolo-chat-user-input-submit-button-circle is-stop"
+        onClick={() => onAbort?.()}
+        aria-label={stopLabel}
+        title={stopLabel}
+      >
+        <Square size={12} fill="currentColor" strokeWidth={0} />
+      </button>
+    )
   }
 
+  const label = isGenerating ? queueLabel : sendLabel
   return (
     <button
       type="button"
       className={`yolo-chat-user-input-submit-button-circle${
-        isGenerating ? ' is-generating' : ''
+        isGenerating ? ' is-queueing' : ''
       }`}
-      disabled={isDisabled}
-      onClick={handleClick}
+      disabled={!isGenerating && disabled}
+      onClick={() => {
+        if (!isGenerating && disabled) return
+        onClick()
+      }}
       aria-label={label}
       title={label}
     >
-      {isGenerating ? (
-        <Square size={12} fill="currentColor" strokeWidth={0} />
-      ) : (
-        <ArrowUp size={16} strokeWidth={2.5} />
-      )}
+      <ArrowUp size={16} strokeWidth={2.5} />
     </button>
   )
 }

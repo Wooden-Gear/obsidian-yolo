@@ -1014,6 +1014,13 @@ export type TranslationKeys = {
     newChat: string
     continueResponse?: string
     stopGeneration?: string
+    queueMessage?: {
+      tooltip?: string
+      hint?: string
+      blockedApproval?: string
+      abortedRestoredOne?: string
+      abortedRestoredMany?: string
+    }
     selectModel: string
     uploadImage: string
     uploadFile?: string

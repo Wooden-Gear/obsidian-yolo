@@ -1104,6 +1104,14 @@ export const zh: TranslationKeys = {
     newChat: '新建聊天',
     continueResponse: '继续生成',
     stopGeneration: '停止生成',
+    queueMessage: {
+      tooltip: '加入排队，等当前回合完成后继续',
+      hint: '等待 Agent 完成当前步骤...',
+      blockedApproval: '请先批准或拒绝待审批工具，再发送新消息。',
+      abortedRestoredOne: '已将排队消息恢复到输入框',
+      abortedRestoredMany:
+        '已恢复最新 1 条排队消息到输入框（共取消 {{count}} 条）',
+    },
     selectModel: '选择模型',
     uploadImage: '上传图片',
     uploadFile: '添加文件',

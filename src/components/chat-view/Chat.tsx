@@ -1238,6 +1238,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   })
   const [runSummariesByConversationId, setRunSummariesByConversationId] =
     useState<Map<string, AgentConversationRunSummary>>(new Map())
+  const [queuedUserMessages, setQueuedUserMessages] = useState<
+    ChatUserMessage[]
+  >(() => agentService.peekPendingUserMessages(currentConversationId))
   const isCurrentConversationRunActive =
     currentConversationRunSummary.isRunning ||
     currentConversationRunSummary.isWaitingApproval
@@ -1382,6 +1385,67 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       unsubscribe()
     }
   }, [agentService])
+
+  // Re-peek the mid-run user message queue on every conversation state push
+  // so the queued bubble stays in sync with enqueue / drain / abort events.
+  useEffect(() => {
+    const refreshQueued = () => {
+      setQueuedUserMessages(
+        agentService.peekPendingUserMessages(currentConversationId),
+      )
+    }
+    refreshQueued()
+    const unsubscribe = agentService.subscribe(
+      currentConversationId,
+      refreshQueued,
+      { emitCurrent: false },
+    )
+    return () => {
+      unsubscribe()
+    }
+  }, [agentService, currentConversationId])
+
+  // When the user aborts a run, restore the most recently queued message into
+  // the input box so its content is not silently lost. If multiple messages
+  // were queued, only the latest is restored (it best reflects the user's
+  // current intent); a notice surfaces the count of dropped earlier entries.
+  useEffect(() => {
+    const unsubscribe = agentService.subscribeToAbortedQueuedMessages(
+      (conversationId, messages) => {
+        if (conversationId !== currentConversationId) return
+        if (messages.length === 0) return
+        const latest = messages[messages.length - 1]
+        setInputMessage((prev) => ({
+          ...prev,
+          content: latest.content,
+          promptContent: latest.promptContent,
+          snapshotRef: latest.snapshotRef,
+          mentionables: latest.mentionables,
+          selectedSkills: latest.selectedSkills,
+          selectedModelIds: latest.selectedModelIds,
+          reasoningLevel: latest.reasoningLevel ?? prev.reasoningLevel,
+        }))
+        if (messages.length > 1) {
+          new Notice(
+            t(
+              'chat.queueMessage.abortedRestoredMany',
+              '已恢复最新 1 条排队消息到输入框（共取消 {{count}} 条）',
+            ).replace('{{count}}', String(messages.length)),
+          )
+        } else {
+          new Notice(
+            t(
+              'chat.queueMessage.abortedRestoredOne',
+              '已将排队消息恢复到输入框',
+            ),
+          )
+        }
+      },
+    )
+    return () => {
+      unsubscribe()
+    }
+  }, [agentService, currentConversationId, t])
 
   // Auto-run when external agent results arrive for the current conversation
   useEffect(() => {
@@ -4727,6 +4791,30 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 )}
               <div className="yolo-chat-input-wrapper">
                 <TodoListPanel messages={displayedChatMessages} />
+                {queuedUserMessages.length > 0 && (
+                  <div className="yolo-chat-queued-messages">
+                    <div className="yolo-chat-queued-messages__hint">
+                      {t(
+                        'chat.queueMessage.hint',
+                        '等待 Agent 完成当前步骤...',
+                      )}
+                    </div>
+                    {queuedUserMessages.map((queued) => {
+                      const preview = queued.content
+                        ? editorStateToPlainText(queued.content).trim()
+                        : ''
+                      return (
+                        <div
+                          key={queued.id}
+                          className="yolo-chat-queued-messages__item"
+                          title={preview}
+                        >
+                          {preview || ' '}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
                 <ChatUserInput
                   key={inputMessage.id}
                   ref={(ref) => registerChatUserInputRef(inputMessage.id, ref)}
@@ -4746,6 +4834,41 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       return
                     }
                     const messageForSubmit = buildInputMessageForSubmit(content)
+
+                    // While a run is active on the default branch, route the
+                    // message through enqueue so the service decides whether
+                    // to queue (mid-run injection), reject (pending approval),
+                    // or fall through (fast-path / idle). Without this, a
+                    // submit during a pending-approval state would abort the
+                    // current run.
+                    if (
+                      currentConversationRunSummary.status === 'running'
+                    ) {
+                      const enqueueResult = agentService.enqueueUserMessage(
+                        currentConversationId,
+                        messageForSubmit,
+                      )
+                      if (enqueueResult === 'enqueued') {
+                        setMessageReasoningMap((prev) => {
+                          const next = new Map(prev)
+                          next.set(inputMessage.id, reasoningLevel)
+                          return next
+                        })
+                        setInputMessage(getNewInputMessage(reasoningLevel))
+                        return
+                      }
+                      if (enqueueResult === 'blocked_awaiting_approval') {
+                        new Notice(
+                          t(
+                            'chat.queueMessage.blockedApproval',
+                            '请先批准或拒绝待审批工具，再发送新消息。',
+                          ),
+                        )
+                        return
+                      }
+                      // 'idle' → fall through to the normal submit path below.
+                    }
+
                     const nextMessageModelMap = new Map(messageModelMap)
                     nextMessageModelMap.set(
                       inputMessage.id,

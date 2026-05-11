@@ -1173,6 +1173,15 @@ export const en: TranslationKeys = {
     newChat: 'New chat',
     continueResponse: 'Continue response',
     stopGeneration: 'Stop generation',
+    queueMessage: {
+      tooltip: 'Queue this message — it will be sent after the current step',
+      hint: 'Waiting for the agent to finish the current step...',
+      blockedApproval:
+        'Approve or reject the pending tool call before sending a new message.',
+      abortedRestoredOne: 'Queued message restored to the input box',
+      abortedRestoredMany:
+        'Restored the latest queued message to the input box ({{count}} dropped)',
+    },
     selectModel: 'Select model',
     uploadImage: 'Upload image',
     uploadFile: 'Add file',

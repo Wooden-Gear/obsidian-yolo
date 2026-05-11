@@ -63,6 +63,15 @@ export type AgentRuntimeRunInput = {
     useWebSearch?: boolean
     useUrlContext?: boolean
   }
+  /**
+   * Optional hook called at every `llm_request` boundary inside the runtime
+   * loop. Returns user messages that should be merged into the response stream
+   * before the next LLM turn. Used to inject mid-run user messages enqueued by
+   * the service layer. Returning an empty array is a no-op.
+   *
+   * Not invoked by the single-turn fast path (single LLM call, no boundary).
+   */
+  drainPendingUserMessages?: () => ChatMessage[]
 }
 
 export type AgentRuntimeLoopConfig = {

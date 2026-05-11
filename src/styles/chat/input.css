@@ -2098,9 +2098,47 @@ button.yolo-chat-user-input-submit-button-circle:disabled {
 }
 
 /* 生成中：方块图标比箭头略小一点（实心方块视觉重，需要瘦身） */
-button.yolo-chat-user-input-submit-button-circle.is-generating svg {
+button.yolo-chat-user-input-submit-button-circle.is-generating svg,
+button.yolo-chat-user-input-submit-button-circle.is-stop svg {
   width: 10px;
   height: 10px;
+}
+
+/* 停止按钮：用次级语义色对，避免和"主提交"撞色。 */
+button.yolo-chat-user-input-submit-button-circle.is-stop {
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+}
+
+/* 运行中等待注入的用户消息：低饱和度气泡叠在输入框上方。 */
+.yolo-chat-queued-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  margin-bottom: var(--size-2-2);
+  padding: var(--size-2-2) var(--size-2-3);
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
+.yolo-chat-queued-messages__hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+
+.yolo-chat-queued-messages__item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
 }
 
 /* Chat Mode Select */

@@ -1153,6 +1153,16 @@ export const it: TranslationKeys = {
     newChat: 'Nuova chat',
     continueResponse: 'Continua risposta',
     stopGeneration: 'Ferma generazione',
+    queueMessage: {
+      tooltip:
+        'Metti in coda questo messaggio — verrà inviato al termine del passaggio corrente',
+      hint: "In attesa che l'agente completi il passaggio corrente...",
+      blockedApproval:
+        "Approva o rifiuta lo strumento in attesa prima di inviare un nuovo messaggio.",
+      abortedRestoredOne: 'Messaggio in coda ripristinato nella casella di input',
+      abortedRestoredMany:
+        "Ripristinato l'ultimo messaggio in coda nella casella di input ({{count}} scartati)",
+    },
     selectModel: 'Seleziona modello',
     uploadImage: 'Carica immagine',
     uploadFile: 'Aggiungi file',

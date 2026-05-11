@@ -126,6 +126,16 @@ export class NativeAgentRuntime implements AgentRuntime {
                   return
                 }
 
+                if (input.drainPendingUserMessages) {
+                  const injected = input.drainPendingUserMessages()
+                  if (injected.length > 0) {
+                    for (const injectedMessage of injected) {
+                      this.messages.push(injectedMessage)
+                    }
+                    this.notifySubscribers()
+                  }
+                }
+
                 const llmTurnExecutor = new AgentLlmTurnExecutor({
                   providerClient: input.providerClient,
                   model: input.model,

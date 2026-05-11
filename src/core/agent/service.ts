@@ -5,6 +5,7 @@ import {
   ChatConversationCompactionState,
   ChatExternalAgentResultMessage,
   ChatMessage,
+  ChatUserMessage,
   normalizeChatConversationCompactionState,
 } from '../../types/chat'
 import {
@@ -284,6 +285,15 @@ const isAssistantOrToolMessage = (
   return message.role === 'assistant' || message.role === 'tool'
 }
 
+// Mirrors NativeAgentRuntime.shouldUseSingleTurnFastPath. A fast-path run does
+// not call drainPendingUserMessages (no llm_request boundary), so queued
+// messages can never be consumed inside that run. Treat fast-path runs as
+// "not enqueueable" and skip after-run continuation that would otherwise loop
+// forever re-launching fast-path runs that ignore the queue.
+const isFastPathLoopConfig = (config: AgentRuntimeLoopConfig): boolean => {
+  return !config.enableTools && config.maxAutoIterations <= 1
+}
+
 const matchesBranchMessage = (
   message: ChatMessage,
   sourceUserMessageId: string,
@@ -400,6 +410,16 @@ export type PendingExternalAgentResultsSubscriber = (
   conversationId: string,
 ) => void
 
+export type EnqueueUserMessageResult =
+  | 'enqueued'
+  | 'idle'
+  | 'blocked_awaiting_approval'
+
+export type AbortedQueuedMessagesSubscriber = (
+  conversationId: string,
+  messages: ChatUserMessage[],
+) => void
+
 export class AgentService {
   private conversationEntries = new Map<string, ConversationEntry>()
   private runEntriesByKey = new Map<string, AgentRunEntry>()
@@ -419,8 +439,84 @@ export class AgentService {
   // auto-runs when multiple task-completed events arrive in the gap between
   // `submitChatMutation.mutate` and `agentService.run` actually starting.
   private autoRunScheduled = new Set<string>()
+  /**
+   * Mid-run user messages queued per run key (conversationId+branchId), waiting
+   * to be injected at the next `llm_request` boundary by the runtime, or used
+   * to drive an after-run continuation when the current run finishes.
+   */
+  private pendingUserMessagesByKey = new Map<string, ChatUserMessage[]>()
+  /**
+   * Latch preventing duplicate after-run continuations for the same run key
+   * while the microtask spawning the next `run()` is still pending.
+   */
+  private continuationScheduledByKey = new Set<string>()
+  private abortedQueuedMessagesSubscribers =
+    new Set<AbortedQueuedMessagesSubscriber>()
 
   constructor(private readonly options: AgentServiceOptions = {}) {}
+
+  /**
+   * Enqueue a user message to be injected mid-run at the next safe LLM
+   * boundary. v1 only supports the default branch; calls for non-default
+   * branches return 'idle' so the caller falls through to the normal run path.
+   */
+  enqueueUserMessage(
+    conversationId: string,
+    message: ChatUserMessage,
+    branchId?: string,
+  ): EnqueueUserMessageResult {
+    const effectiveBranchId = branchId ?? DEFAULT_BRANCH_ID
+    if (effectiveBranchId !== DEFAULT_BRANCH_ID) {
+      return 'idle'
+    }
+    const runKey = getRunKey(conversationId, effectiveBranchId)
+    const runEntry = this.runEntriesByKey.get(runKey)
+    if (!runEntry || runEntry.state.status !== 'running') {
+      return 'idle'
+    }
+    if (
+      runEntry.lastLoopConfig &&
+      isFastPathLoopConfig(runEntry.lastLoopConfig)
+    ) {
+      // Fast-path runs have no llm_request boundary to drain at. Fall through
+      // to the normal submit path so the caller starts a fresh run instead.
+      return 'idle'
+    }
+    if (hasPendingApproval(runEntry.state.messages)) {
+      return 'blocked_awaiting_approval'
+    }
+
+    const queue = this.pendingUserMessagesByKey.get(runKey) ?? []
+    queue.push(message)
+    this.pendingUserMessagesByKey.set(runKey, queue)
+    this.notifyConversationSubscribers(conversationId)
+    return 'enqueued'
+  }
+
+  /**
+   * Peek at currently queued mid-run user messages for the conversation's
+   * default branch run. Returns an empty array if nothing is queued.
+   */
+  peekPendingUserMessages(
+    conversationId: string,
+    branchId?: string,
+  ): ChatUserMessage[] {
+    const runKey = getRunKey(conversationId, branchId ?? DEFAULT_BRANCH_ID)
+    return [...(this.pendingUserMessagesByKey.get(runKey) ?? [])]
+  }
+
+  /**
+   * Subscribe to abort events that carry the queued user messages dropped at
+   * abort time, so the UI can restore them into the input box.
+   */
+  subscribeToAbortedQueuedMessages(
+    fn: AbortedQueuedMessagesSubscriber,
+  ): () => void {
+    this.abortedQueuedMessagesSubscribers.add(fn)
+    return () => {
+      this.abortedQueuedMessagesSubscribers.delete(fn)
+    }
+  }
 
   /** Subscribe to be notified when pending external agent results are ready to drain */
   subscribeToPendingExternalAgentResults(
@@ -808,6 +904,23 @@ export class AgentService {
     runEntry.runToken = runToken
     runEntry.lastRunInput = input
     runEntry.lastLoopConfig = loopConfig
+
+    const runtimeInput: AgentRuntimeRunInput = {
+      ...input,
+      drainPendingUserMessages: () => {
+        const queue = this.pendingUserMessagesByKey.get(runKey)
+        if (!queue || queue.length === 0) {
+          return []
+        }
+        this.pendingUserMessagesByKey.delete(runKey)
+        // Notify so the UI removes the "queued" bubble immediately; the
+        // injected messages will materialize in the runtime snapshot next.
+        this.notifyConversationSubscribers(conversationId)
+        return queue
+      },
+    }
+    // Clear the continuation latch now that the new run is actually starting.
+    this.continuationScheduledByKey.delete(runKey)
     runEntry.sourceUserMessageId = input.sourceUserMessageId
     runEntry.state = {
       conversationId,
@@ -848,7 +961,7 @@ export class AgentService {
     })
 
     try {
-      await runtime.run(input)
+      await runtime.run(runtimeInput)
 
       const currentRunEntry = this.runEntriesByKey.get(runKey)
       if (!currentRunEntry || currentRunEntry.runToken !== runToken) {
@@ -892,7 +1005,95 @@ export class AgentService {
         }
       }
       this.finalizeSettledConversationRuns(conversationId)
+      this.maybeScheduleAfterRunContinuation({
+        conversationId,
+        branchId,
+        runKey,
+        lastRunInput: input,
+        lastLoopConfig: loopConfig,
+      })
     }
+  }
+
+  private maybeScheduleAfterRunContinuation({
+    conversationId,
+    branchId,
+    runKey,
+    lastRunInput,
+    lastLoopConfig,
+  }: {
+    conversationId: string
+    branchId: string
+    runKey: string
+    lastRunInput: AgentRuntimeRunInput
+    lastLoopConfig: AgentRuntimeLoopConfig
+  }): void {
+    const queue = this.pendingUserMessagesByKey.get(runKey)
+    if (!queue || queue.length === 0) {
+      return
+    }
+    if (this.continuationScheduledByKey.has(runKey)) {
+      return
+    }
+    if (lastRunInput.abortSignal?.aborted) {
+      // Abort path is responsible for clearing the queue; do not continue.
+      return
+    }
+    if (isFastPathLoopConfig(lastLoopConfig)) {
+      // Defensive: enqueueUserMessage already rejects fast-path runs, but a
+      // queued message could in principle reach here through other paths.
+      // Skip continuation to avoid an infinite loop of fast-path runs that
+      // never drain the queue.
+      return
+    }
+    this.continuationScheduledByKey.add(runKey)
+
+    queueMicrotask(() => {
+      const pending = this.pendingUserMessagesByKey.get(runKey)
+      if (!pending || pending.length === 0) {
+        this.continuationScheduledByKey.delete(runKey)
+        return
+      }
+      const conversationEntry = this.conversationEntries.get(conversationId)
+      if (!conversationEntry) {
+        this.continuationScheduledByKey.delete(runKey)
+        return
+      }
+      const existingRunEntry = this.runEntriesByKey.get(runKey)
+      if (existingRunEntry?.state.status === 'running') {
+        // Another run already picked up; let it drain the queue at the next
+        // llm_request boundary.
+        this.continuationScheduledByKey.delete(runKey)
+        return
+      }
+
+      const baselineMessages: ChatMessage[] = [
+        ...conversationEntry.state.messages,
+      ]
+      // Keep the queue intact: the new run's drain callback (bound inside
+      // run()) will pull the queue at its first llm_request boundary and merge
+      // through the same snapshot → persist path used for mid-run injection.
+      void this.run({
+        conversationId,
+        loopConfig: lastLoopConfig,
+        input: {
+          ...lastRunInput,
+          messages: baselineMessages,
+          requestMessages: baselineMessages,
+          // The injected user messages become the new "anchor" of this run;
+          // drop the prior sourceUserMessageId so the runtime treats this as a
+          // fresh top-level turn rather than a branch continuation.
+          sourceUserMessageId: undefined,
+          branchId,
+          abortSignal: undefined,
+        },
+      }).catch((error: unknown) => {
+        console.error(
+          '[YOLO] after-run continuation for queued user messages failed',
+          error,
+        )
+      })
+    })
   }
 
   abortConversation(conversationId: string): boolean {
@@ -901,7 +1102,16 @@ export class AgentService {
       return false
     }
 
+    const droppedQueuedByConversation: ChatUserMessage[] = []
     runEntries.forEach((runEntry) => {
+      const runKey = getRunKey(conversationId, runEntry.branchId)
+      const queued = this.pendingUserMessagesByKey.get(runKey)
+      if (queued && queued.length > 0) {
+        droppedQueuedByConversation.push(...queued)
+      }
+      this.pendingUserMessagesByKey.delete(runKey)
+      this.continuationScheduledByKey.delete(runKey)
+
       runEntry.runtime?.abort()
       runEntry.state = {
         ...runEntry.state,
@@ -911,6 +1121,12 @@ export class AgentService {
       }
     })
     this.recomputeConversationState(conversationId)
+
+    if (droppedQueuedByConversation.length > 0) {
+      for (const subscriber of this.abortedQueuedMessagesSubscribers) {
+        subscriber(conversationId, droppedQueuedByConversation)
+      }
+    }
     return true
   }
 
