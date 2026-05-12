@@ -18,6 +18,8 @@
     "lint:fix": "npm run prettier:write && eslint --cache --cache-location node_modules/.cache/.eslintcache --fix src __mocks__ drizzle.config.ts",
     "type:check": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/tsconfig.typecheck.tsbuildinfo",
     "test": "jest --maxWorkers=50%",
+    "test:watch": "jest --watch",
+    "test:changed": "jest -o",
     "migrate:compile": "node compile-migration.js"
   },
   "keywords": [],
