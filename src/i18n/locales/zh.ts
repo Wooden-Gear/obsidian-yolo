@@ -654,7 +654,7 @@ export const zh: TranslationKeys = {
       geminiThinkingBudgetPlaceholder: '例如：-1（动态，0=关闭）',
       builtinToolProvider: 'Provider 内置工具',
       builtinToolProviderDesc:
-        '由模型提供商执行的服务端工具（如联网搜索），与 function-calling 工具相互独立。',
+        '由 Provider 提供的原生工具，与 YOLO 内置工具相互独立。',
       builtinToolProviderNone: '不启用',
       builtinToolProviderGemini: 'Gemini',
       builtinToolProviderGpt: 'OpenAI',

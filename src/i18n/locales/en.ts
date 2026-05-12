@@ -702,7 +702,7 @@ export const en: TranslationKeys = {
       geminiThinkingBudgetPlaceholder: 'For example, -1 (dynamic, 0=off)',
       builtinToolProvider: 'Built-in provider tools',
       builtinToolProviderDesc:
-        'Server-side tools executed by the model provider (e.g. web search). Independent of function-calling tools.',
+        'Native tools provided by the model provider. Independent of YOLO built-in tools.',
       builtinToolProviderNone: 'Disabled',
       builtinToolProviderGemini: 'Gemini',
       builtinToolProviderGpt: 'OpenAI',

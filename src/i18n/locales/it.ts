@@ -692,7 +692,7 @@ export const it: TranslationKeys = {
       inputModalityPdf: 'PDF (nativo)',
       builtinToolProvider: 'Strumenti integrati del provider',
       builtinToolProviderDesc:
-        'Strumenti server-side eseguiti dal provider del modello (es. ricerca web). Indipendenti dagli strumenti di function-calling.',
+        'Strumenti nativi forniti dal provider del modello. Indipendenti dagli strumenti integrati di YOLO.',
       builtinToolProviderNone: 'Disabilitato',
       builtinToolProviderGemini: 'Gemini',
       builtinToolProviderGpt: 'OpenAI',
