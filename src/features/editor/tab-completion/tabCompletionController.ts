@@ -440,6 +440,8 @@ export class TabCompletionController {
         messages: requestMessages,
         stream: false,
         max_tokens: Math.max(16, Math.min(options.maxTokens, 2000)),
+        // Tab 补全是延迟敏感场景，默认 'off'；用户可在设置中改为 'low'/'auto' 以适配强制推理的模型
+        reasoningLevel: options.reasoningLevel,
       }
       if (typeof options.temperature === 'number') {
         baseRequest.temperature = Math.min(Math.max(options.temperature, 0), 2)

@@ -2268,6 +2268,25 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   padding: 12px 14px;
   /* Sizing is declared via <YoloDropdownContent> props in ReasoningSelect.tsx. */
 }
+
+/* Inline reasoning panel: same content as the popover body, framed as a card
+   when used outside the popover (e.g. Sparkle sidebar's Tab completion tab).
+   When rendered inside `.yolo-reasoning-popover`, the popover already supplies
+   its own padding/background, so we strip the card chrome below. */
+.yolo-reasoning-panel {
+  display: flex;
+  flex-direction: column;
+  padding: var(--size-4-3);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: transparent;
+}
+
+.yolo-reasoning-popover .yolo-reasoning-panel {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
 .yolo-reasoning-popover__header {
   display: flex;
   align-items: center;

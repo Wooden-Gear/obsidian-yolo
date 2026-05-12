@@ -17,6 +17,7 @@ import { ObsidianDropdown } from '../common/ObsidianDropdown'
 import { ObsidianTextArea } from '../common/ObsidianTextArea'
 import { ObsidianTextInput } from '../common/ObsidianTextInput'
 import { ObsidianToggle } from '../common/ObsidianToggle'
+import { ReasoningPanel } from '../common/ReasoningPanel'
 import { SimpleSelect } from '../common/SimpleSelect'
 import { SelectionChatActionsSettings } from '../settings/SelectionChatActionsSettings'
 import { SmartSpaceQuickActionsSettings } from '../settings/SmartSpaceQuickActionsSettings'
@@ -258,6 +259,11 @@ const Composer: React.FC<ComposerProps> = (_props) => {
     settings.continuationOptions.continuationModelId ??
     orderedEnabledModels[0]?.id ??
     ''
+  const tabCompletionChatModel = useMemo(
+    () =>
+      orderedEnabledModels.find((m) => m.id === tabCompletionModelId) ?? null,
+    [orderedEnabledModels, tabCompletionModelId],
+  )
 
   return (
     <div className="yolo-composer-container" ref={composerRef}>
@@ -809,6 +815,14 @@ const Composer: React.FC<ComposerProps> = (_props) => {
                       </div>
                     </div>
                   </div>
+
+                  <ReasoningPanel
+                    model={tabCompletionChatModel}
+                    value={tabCompletionOptions.reasoningLevel}
+                    onChange={(level) => {
+                      updateTabCompletionOptions({ reasoningLevel: level })
+                    }}
+                  />
 
                   <div className="yolo-composer-option">
                     <div className="yolo-composer-option-info">

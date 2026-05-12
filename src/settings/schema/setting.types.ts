@@ -13,7 +13,7 @@ import {
   mcpServerToolOptionsSchema,
 } from '../../types/mcp.types'
 import { llmProviderSchema } from '../../types/provider.types'
-import { REASONING_LEVELS } from '../../types/reasoning'
+import { REASONING_LEVELS, ReasoningLevel } from '../../types/reasoning'
 
 import { SETTINGS_SCHEMA_VERSION } from './migrations'
 
@@ -54,6 +54,7 @@ type TabCompletionOptionDefaults = {
   maxSuggestionLength: number
   temperature: number
   requestTimeoutMs: number
+  reasoningLevel: ReasoningLevel
 }
 
 // Legacy fields for migration compatibility
@@ -99,6 +100,8 @@ export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
   maxSuggestionLength: 2000,
   temperature: 0.5,
   requestTimeoutMs: 12000,
+  // Tab 补全是延迟敏感场景，默认关闭推理；用户可在设置中改为 low / auto 以适配强制推理的模型（如 gpt-oss）
+  reasoningLevel: 'off',
 }
 
 export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 60000
@@ -218,6 +221,9 @@ const tabCompletionOptionsSchema = z
       .min(1000)
       .max(60000)
       .catch(DEFAULT_TAB_COMPLETION_OPTIONS.requestTimeoutMs),
+    reasoningLevel: z
+      .enum(REASONING_LEVELS)
+      .catch(DEFAULT_TAB_COMPLETION_OPTIONS.reasoningLevel),
     // Legacy fields kept for migration compatibility (will be removed in future)
     maxBeforeChars: z.number().optional(),
     maxAfterChars: z.number().optional(),
