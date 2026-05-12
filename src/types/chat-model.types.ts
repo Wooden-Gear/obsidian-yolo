@@ -16,14 +16,19 @@ const webSearchToggleSchema = z
   })
   .optional()
 
-// OpenRouter web plugin supports an `engine` selector (auto / native / exa) and
-// a `max_results` knob per https://openrouter.ai/docs/guides/features/plugins/web-search.
+// OpenRouter web plugin
+// (https://openrouter.ai/docs/guides/features/plugins/web-search). Five
+// engines are supported: `auto` (default — native if available, else Exa),
+// `native` (model provider's built-in search), `exa`, `firecrawl` (BYOK in
+// the OpenRouter dashboard), and `parallel`.
 const openRouterWebSearchToggleSchema = z
   .object({
     webSearch: z
       .object({
         enabled: z.boolean(),
-        engine: z.enum(['auto', 'native', 'exa']).optional(),
+        engine: z
+          .enum(['auto', 'native', 'exa', 'firecrawl', 'parallel'])
+          .optional(),
         maxResults: z.number().int().min(1).max(25).optional(),
       })
       .optional(),

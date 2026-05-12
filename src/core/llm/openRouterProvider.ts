@@ -212,8 +212,17 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
   /**
    * Serialize OpenRouter's hosted web search to the official `plugins` array
    * (https://openrouter.ai/docs/guides/features/plugins/web-search). Carries
-   * optional `engine` (auto/native/exa — `auto` is encoded by omitting the
-   * field so OpenRouter picks the default) and `max_results` (1–25).
+   * optional `engine` (auto/native/exa/firecrawl/parallel — `auto` is encoded
+   * by omitting the field so OpenRouter picks the default) and `max_results`
+   * (1–25).
+   *
+   * NOTE: we intentionally use the (currently deprecated but stable) plugin
+   * path rather than the newer `tools:[{type:'openrouter:web_search'}]`
+   * server-tool path. The server-tool path requires the upstream model to
+   * recognize a non-`function`-typed tool entry; in practice only OpenAI's
+   * GPT-5 family reliably does so. Plugin mode executes at the OpenRouter
+   * router layer and stitches results into the prompt, so it works uniformly
+   * across Claude / MiniMax / Gemini / etc.
    *
    * Other built-in tool families are dropped: forwarding `{type:'web_search'}`
    * or `grok:live_search` to OpenRouter would be rejected (or change the

@@ -673,13 +673,15 @@ export const zh: TranslationKeys = {
       builtinToolUrlContextDesc: '允许模型抓取消息里出现的链接作为上下文',
       openRouterWebSearchEngine: '搜索引擎',
       openRouterWebSearchEngineDesc:
-        '可选：Auto 让 OpenRouter 自动选择；Native 使用模型原生搜索；Exa 强制走 Exa。',
+        '可选：Auto 由 OpenRouter 自动选择（默认）；Native 使用模型原生搜索；Exa / Firecrawl / Parallel 强制走对应引擎。Firecrawl 需在 OpenRouter 后台填写自己的 API Key。',
       openRouterWebSearchEngineAuto: 'Auto（默认）',
       openRouterWebSearchEngineNative: 'Native',
       openRouterWebSearchEngineExa: 'Exa',
+      openRouterWebSearchEngineFirecrawl: 'Firecrawl（BYOK）',
+      openRouterWebSearchEngineParallel: 'Parallel',
       openRouterWebSearchMaxResults: '最大结果数',
       openRouterWebSearchMaxResultsDesc:
-        '可选，1–25，留空使用 OpenRouter 默认值。',
+        '可选，1–25。留空使用 OpenRouter 默认值。',
       openRouterWebSearchMaxResultsPlaceholder: '默认',
       sampling: '自定义参数',
       restoreDefaults: '恢复默认值',

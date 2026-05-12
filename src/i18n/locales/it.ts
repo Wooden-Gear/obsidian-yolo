@@ -714,10 +714,12 @@ export const it: TranslationKeys = {
         'Consenti al modello di leggere i link citati nella conversazione come contesto.',
       openRouterWebSearchEngine: 'Motore di ricerca',
       openRouterWebSearchEngineDesc:
-        'Opzionale. Auto lascia decidere a OpenRouter; Native usa la ricerca nativa del modello; Exa forza Exa.',
+        'Auto lascia decidere a OpenRouter (predefinito). Native usa la ricerca nativa del provider. Exa / Firecrawl / Parallel forzano il motore corrispondente. Firecrawl richiede la tua API key configurata nel pannello OpenRouter.',
       openRouterWebSearchEngineAuto: 'Auto (predefinito)',
       openRouterWebSearchEngineNative: 'Native',
       openRouterWebSearchEngineExa: 'Exa',
+      openRouterWebSearchEngineFirecrawl: 'Firecrawl (BYOK)',
+      openRouterWebSearchEngineParallel: 'Parallel',
       openRouterWebSearchMaxResults: 'Risultati max',
       openRouterWebSearchMaxResultsDesc:
         'Opzionale, 1–25. Lascia vuoto per usare il valore predefinito di OpenRouter.',

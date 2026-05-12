@@ -122,6 +122,29 @@ describe('getBuiltinProviderTools', () => {
     ])
   })
 
+  it('accepts the firecrawl and parallel engines', () => {
+    expect(
+      getBuiltinProviderTools({
+        builtinToolProvider: 'openrouter',
+        builtinTools: {
+          openrouter: { webSearch: { enabled: true, engine: 'firecrawl' } },
+        },
+      }),
+    ).toEqual([
+      { type: 'openrouter:web_search', engine: 'firecrawl' },
+    ])
+    expect(
+      getBuiltinProviderTools({
+        builtinToolProvider: 'openrouter',
+        builtinTools: {
+          openrouter: { webSearch: { enabled: true, engine: 'parallel' } },
+        },
+      }),
+    ).toEqual([
+      { type: 'openrouter:web_search', engine: 'parallel' },
+    ])
+  })
+
   it('drops engine when set to auto (so OpenRouter picks the default)', () => {
     expect(
       getBuiltinProviderTools({

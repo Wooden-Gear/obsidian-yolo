@@ -568,6 +568,8 @@ export type TranslationKeys = {
       openRouterWebSearchEngineAuto?: string
       openRouterWebSearchEngineNative?: string
       openRouterWebSearchEngineExa?: string
+      openRouterWebSearchEngineFirecrawl?: string
+      openRouterWebSearchEngineParallel?: string
       openRouterWebSearchMaxResults?: string
       openRouterWebSearchMaxResultsDesc?: string
       openRouterWebSearchMaxResultsPlaceholder?: string

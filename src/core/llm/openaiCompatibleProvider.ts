@@ -399,6 +399,11 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
           tools: [...existing, { type: 'web_search' }],
         }
       } else if (tool.type === 'openrouter:web_search' && isOpenRouterGateway) {
+        // Use OpenRouter's `plugins` path rather than the newer server-tools
+        // path: only GPT-5 reliably recognizes a non-`function`-typed tool
+        // entry, so the plugin path is the one that works uniformly across
+        // Claude / MiniMax / Gemini / etc. See openRouterProvider.ts for the
+        // longer rationale.
         const plugin: Record<string, unknown> = { id: 'web' }
         if (tool.engine) plugin.engine = tool.engine
         if (typeof tool.maxResults === 'number')

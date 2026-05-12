@@ -724,10 +724,12 @@ export const en: TranslationKeys = {
         'Allow the model to fetch links mentioned in the conversation as context.',
       openRouterWebSearchEngine: 'Search engine',
       openRouterWebSearchEngineDesc:
-        'Optional. Auto lets OpenRouter pick; Native uses the model’s native search; Exa forces Exa.',
+        'Auto lets OpenRouter pick (default). Native uses the model provider’s built-in search. Exa / Firecrawl / Parallel force the corresponding engine. Firecrawl requires your own API key configured in the OpenRouter dashboard.',
       openRouterWebSearchEngineAuto: 'Auto (default)',
       openRouterWebSearchEngineNative: 'Native',
       openRouterWebSearchEngineExa: 'Exa',
+      openRouterWebSearchEngineFirecrawl: 'Firecrawl (BYOK)',
+      openRouterWebSearchEngineParallel: 'Parallel',
       openRouterWebSearchMaxResults: 'Max results',
       openRouterWebSearchMaxResultsDesc:
         'Optional, 1–25. Leave empty to use the OpenRouter default.',

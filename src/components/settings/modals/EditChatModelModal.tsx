@@ -43,7 +43,13 @@ const BUILTIN_TOOL_PROVIDERS = [
 ] as const
 type BuiltinToolProvider = (typeof BUILTIN_TOOL_PROVIDERS)[number]
 
-const OPENROUTER_WEB_SEARCH_ENGINES = ['auto', 'native', 'exa'] as const
+const OPENROUTER_WEB_SEARCH_ENGINES = [
+  'auto',
+  'native',
+  'exa',
+  'firecrawl',
+  'parallel',
+] as const
 type OpenRouterWebSearchEngine = (typeof OPENROUTER_WEB_SEARCH_ENGINES)[number]
 const isOpenRouterWebSearchEngine = (
   value: string,
@@ -679,6 +685,12 @@ function EditChatModelModalComponent({
                           ),
                           exa: t(
                             'settings.models.openRouterWebSearchEngineExa',
+                          ),
+                          firecrawl: t(
+                            'settings.models.openRouterWebSearchEngineFirecrawl',
+                          ),
+                          parallel: t(
+                            'settings.models.openRouterWebSearchEngineParallel',
                           ),
                         }}
                         onChange={(v: string) =>
