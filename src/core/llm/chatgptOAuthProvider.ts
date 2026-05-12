@@ -106,11 +106,8 @@ export class ChatGPTOAuthProvider extends BaseLLMProvider<LLMProvider> {
     ) {
       formattedRequest = {
         ...formattedRequest,
-        reasoning_effort:
-          level === 'off'
-            ? 'low'
-            : (REASONING_META[level]
-                .effort as LLMRequestNonStreaming['reasoning_effort']),
+        reasoning_effort: REASONING_META[level]
+          .effort as LLMRequestNonStreaming['reasoning_effort'],
       }
     }
 
@@ -162,11 +159,8 @@ export class ChatGPTOAuthProvider extends BaseLLMProvider<LLMProvider> {
     ) {
       formattedRequest = {
         ...formattedRequest,
-        reasoning_effort:
-          level === 'off'
-            ? 'low'
-            : (REASONING_META[level]
-                .effort as LLMRequestStreaming['reasoning_effort']),
+        reasoning_effort: REASONING_META[level]
+          .effort as LLMRequestStreaming['reasoning_effort'],
       }
     }
 

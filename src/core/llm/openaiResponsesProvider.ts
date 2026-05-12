@@ -81,11 +81,8 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
     if (level === undefined || level === 'auto' || request.reasoning_effort) {
       return request
     }
-    const reasoning_effort =
-      level === 'off'
-        ? 'low'
-        : (REASONING_META[level]
-            .effort as LLMRequestNonStreaming['reasoning_effort'])
+    const reasoning_effort = REASONING_META[level]
+      .effort as LLMRequestNonStreaming['reasoning_effort']
     return {
       ...request,
       reasoning_effort,

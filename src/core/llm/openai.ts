@@ -58,10 +58,7 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<LLMProvider> {
       const level = resolveRequestReasoningLevel(model, request.reasoningLevel)
       let reasoning_effort: ReasoningEffort | undefined
       if (level !== undefined && level !== 'auto') {
-        reasoning_effort =
-          level === 'off'
-            ? 'low'
-            : (REASONING_META[level].effort as ReasoningEffort)
+        reasoning_effort = REASONING_META[level].effort as ReasoningEffort
       }
       let formattedRequest = {
         ...request,
@@ -128,10 +125,7 @@ export class OpenAIAuthenticatedProvider extends BaseLLMProvider<LLMProvider> {
       const level = resolveRequestReasoningLevel(model, request.reasoningLevel)
       let reasoning_effort: ReasoningEffort | undefined
       if (level !== undefined && level !== 'auto') {
-        reasoning_effort =
-          level === 'off'
-            ? 'low'
-            : (REASONING_META[level].effort as ReasoningEffort)
+        reasoning_effort = REASONING_META[level].effort as ReasoningEffort
       }
       let formattedRequest = {
         ...request,
