@@ -135,8 +135,15 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
     model: ChatModel,
     body: ResponseCreateParamsStreaming,
   ): ResponseCreateParamsStreaming {
-    const builtinTools = getBuiltinProviderTools(model)
-    if (builtinTools.length === 0) {
+    // Only the OpenAI hosted `web_search` family is forwarded on the Responses
+    // transport (mapped to `web_search_preview`). Other families
+    // (`openrouter:web_search`, `grok:live_search`, `gemini:web_search`) are
+    // dropped — they target different endpoints and rewriting them here would
+    // change user intent.
+    const webSearchCount = getBuiltinProviderTools(model).filter(
+      (t) => t.type === 'web_search',
+    ).length
+    if (webSearchCount === 0) {
       return body
     }
 
@@ -144,7 +151,9 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
       ...body,
       tools: [
         ...(body.tools ?? []),
-        ...builtinTools.map(() => ({ type: 'web_search_preview' as const })),
+        ...Array.from({ length: webSearchCount }, () => ({
+          type: 'web_search_preview' as const,
+        })),
       ],
     }
   }

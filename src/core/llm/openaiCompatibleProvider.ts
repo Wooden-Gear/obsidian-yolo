@@ -49,7 +49,49 @@ type OpenAICompatibleExtras = {
   }
   reasoning?: Record<string, unknown>
   extra_body?: Record<string, unknown>
+  plugins?: Record<string, unknown>[]
 }
+
+const GOOGLE_SEARCH_FUNCTION_TOOL: RequestTool = {
+  type: 'function',
+  function: {
+    name: 'googleSearch',
+    description: 'Search the web using Google Search',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query',
+        },
+      },
+    },
+  },
+}
+
+const URL_CONTEXT_FUNCTION_TOOL: RequestTool = {
+  type: 'function',
+  function: {
+    name: 'urlContext',
+    description: 'Get context from a URL',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'The URL to get context from',
+        },
+      },
+    },
+  },
+}
+
+const hasFunctionToolNamed = (
+  tools: RequestTool[] | undefined,
+  name: string,
+): boolean =>
+  Array.isArray(tools) &&
+  tools.some((t) => t.type === 'function' && t.function?.name === name)
 
 type OpenAICompatibleRequest = LLMRequestNonStreaming &
   Record<string, unknown> &
@@ -147,81 +189,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
       messages: formatMessages(request.messages),
     }
 
-    // Handle Gemini tools for OpenAI-compatible gateways
-    const geminiToolsSettings = options?.geminiTools
-    if (model.builtinToolProvider === 'gemini' && geminiToolsSettings) {
-      const openaiTools: RequestTool[] = []
-
-      if (geminiToolsSettings.useWebSearch) {
-        openaiTools.push({
-          type: 'function',
-          function: {
-            name: 'googleSearch',
-            description: 'Search the web using Google Search',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'The search query',
-                },
-              },
-            },
-          },
-        })
-      }
-
-      if (geminiToolsSettings.useUrlContext) {
-        openaiTools.push({
-          type: 'function',
-          function: {
-            name: 'urlContext',
-            description: 'Get context from a URL',
-            parameters: {
-              type: 'object',
-              properties: {
-                url: {
-                  type: 'string',
-                  description: 'The URL to get context from',
-                },
-              },
-            },
-          },
-        })
-      }
-
-      if (openaiTools.length > 0) {
-        formattedRequest.tools = [
-          ...(formattedRequest.tools ?? []),
-          ...openaiTools,
-        ]
-      }
-    }
-
-    // Built-in (hosted) provider tools. Different providers use different
-    // request slots: OpenAI-style hosted `web_search` goes into `extra_body`
-    // (it's an out-of-OpenAI-Chat-spec hint forwarded by some gateways),
-    // while OpenRouter's server tools must sit in the top-level `tools` array
-    // alongside function tools, per the OpenRouter server-tools spec.
-    const builtinTools = getBuiltinProviderTools(model)
-    if (builtinTools.length > 0) {
-      const extraBodyTools = builtinTools.filter((t) => t.type === 'web_search')
-      const inlineTools = builtinTools.filter(
-        (t) => t.type === 'openrouter:web_search',
-      )
-      if (extraBodyTools.length > 0) {
-        formattedRequest.extra_body = {
-          ...(formattedRequest.extra_body ?? {}),
-          tools: extraBodyTools,
-        }
-      }
-      if (inlineTools.length > 0) {
-        formattedRequest.tools = [
-          ...(formattedRequest.tools ?? []),
-          ...(inlineTools as unknown as RequestTool[]),
-        ]
-      }
-    }
+    this.applyConversationGeminiTools(formattedRequest, model, options)
+    this.applyBuiltinProviderTools(formattedRequest, model)
 
     applyOpenAICompatibleCapabilities({
       request: formattedRequest,
@@ -275,81 +244,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
       messages: formatMessages(request.messages),
     }
 
-    // Handle Gemini tools for OpenAI-compatible gateways (streaming)
-    const streamingGeminiTools = options?.geminiTools
-    if (model.builtinToolProvider === 'gemini' && streamingGeminiTools) {
-      const openaiTools: RequestTool[] = []
-
-      if (streamingGeminiTools.useWebSearch) {
-        openaiTools.push({
-          type: 'function',
-          function: {
-            name: 'googleSearch',
-            description: 'Search the web using Google Search',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'The search query',
-                },
-              },
-            },
-          },
-        })
-      }
-
-      if (streamingGeminiTools.useUrlContext) {
-        openaiTools.push({
-          type: 'function',
-          function: {
-            name: 'urlContext',
-            description: 'Get context from a URL',
-            parameters: {
-              type: 'object',
-              properties: {
-                url: {
-                  type: 'string',
-                  description: 'The URL to get context from',
-                },
-              },
-            },
-          },
-        })
-      }
-
-      if (openaiTools.length > 0) {
-        formattedRequest.tools = [
-          ...(formattedRequest.tools ?? []),
-          ...openaiTools,
-        ]
-      }
-    }
-
-    // Built-in (hosted) provider tools. Different providers use different
-    // request slots: OpenAI-style hosted `web_search` goes into `extra_body`
-    // (it's an out-of-OpenAI-Chat-spec hint forwarded by some gateways),
-    // while OpenRouter's server tools must sit in the top-level `tools` array
-    // alongside function tools, per the OpenRouter server-tools spec.
-    const builtinTools = getBuiltinProviderTools(model)
-    if (builtinTools.length > 0) {
-      const extraBodyTools = builtinTools.filter((t) => t.type === 'web_search')
-      const inlineTools = builtinTools.filter(
-        (t) => t.type === 'openrouter:web_search',
-      )
-      if (extraBodyTools.length > 0) {
-        formattedRequest.extra_body = {
-          ...(formattedRequest.extra_body ?? {}),
-          tools: extraBodyTools,
-        }
-      }
-      if (inlineTools.length > 0) {
-        formattedRequest.tools = [
-          ...(formattedRequest.tools ?? []),
-          ...(inlineTools as unknown as RequestTool[]),
-        ]
-      }
-    }
+    this.applyConversationGeminiTools(formattedRequest, model, options)
+    this.applyBuiltinProviderTools(formattedRequest, model)
 
     applyOpenAICompatibleCapabilities({
       request: formattedRequest,
@@ -420,5 +316,114 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
         }),
     })
     return extractEmbeddingVector(embedding)
+  }
+
+  /**
+   * Conversation-level Gemini tool overrides (`options.geminiTools` set by the
+   * chat input bar). Only triggers when the model is configured for the
+   * Gemini built-in tool family. Synthesizes `googleSearch` / `urlContext`
+   * function tools that Vertex-style OpenAI-compatible gateways understand.
+   */
+  private applyConversationGeminiTools(
+    formattedRequest: OpenAICompatibleRequest | OpenAICompatibleStreamingRequest,
+    model: ChatModel,
+    options: LLMOptions | undefined,
+  ) {
+    const geminiToolsSettings = options?.geminiTools
+    if (model.builtinToolProvider !== 'gemini' || !geminiToolsSettings) {
+      return
+    }
+    const openaiTools: RequestTool[] = []
+    if (
+      geminiToolsSettings.useWebSearch &&
+      !hasFunctionToolNamed(formattedRequest.tools, 'googleSearch')
+    ) {
+      openaiTools.push(GOOGLE_SEARCH_FUNCTION_TOOL)
+    }
+    if (
+      geminiToolsSettings.useUrlContext &&
+      !hasFunctionToolNamed(formattedRequest.tools, 'urlContext')
+    ) {
+      openaiTools.push(URL_CONTEXT_FUNCTION_TOOL)
+    }
+    if (openaiTools.length > 0) {
+      formattedRequest.tools = [
+        ...(formattedRequest.tools ?? []),
+        ...openaiTools,
+      ]
+    }
+  }
+
+  /**
+   * Model-level built-in provider tools. Dispatched per family — each provider
+   * uses a different request slot:
+   *
+   * - `web_search` → `extra_body.tools=[{type:'web_search'}]` (OpenAI Chat
+   *   Completions hosted web search, forwarded by Azure / DeepSeek-style
+   *   gateways that opt-in).
+   * - `openrouter:web_search` → `plugins=[{id:'web', engine?, max_results?}]`
+   *   per https://openrouter.ai/docs/guides/features/plugins/web-search.
+   *   Only emitted when the gateway base URL targets openrouter.ai — other
+   *   openai-compatible gateways would reject the unknown field.
+   * - `grok:live_search` → `extra_body.search_parameters={mode:'auto', return_citations:true}`
+   *   per xAI's Live Search extension on chat completions. Only emitted when
+   *   the gateway base URL targets api.x.ai.
+   * - `gemini:web_search` → synthetic `googleSearch` function tool, matching
+   *   the conversation-override path so Vertex-style gateways see a single,
+   *   recognizable shape. Skipped if already present (dedup with conversation
+   *   overrides).
+   *
+   * Cross-family mismatches silently no-op rather than rewriting the user's
+   * intent — see `model-tools.ts` for the rationale.
+   */
+  private applyBuiltinProviderTools(
+    formattedRequest: OpenAICompatibleRequest | OpenAICompatibleStreamingRequest,
+    model: ChatModel,
+  ) {
+    const tools = getBuiltinProviderTools(model)
+    if (tools.length === 0) return
+    const baseUrlLower = this.resolvedBaseUrl?.toLowerCase() ?? ''
+    // Host-anchored matchers — a bare `substring.includes` would also match
+    // e.g. `evilopenrouter.ai`, which we don't want to silently forward to.
+    const isOpenRouterGateway =
+      /(^|\/\/)([^/]*\.)?openrouter\.ai(\/|$|:)/.test(baseUrlLower)
+    const isXaiGateway = /(^|\/\/)([^/]*\.)?x\.ai(\/|$|:)/.test(baseUrlLower)
+
+    for (const tool of tools) {
+      if (tool.type === 'web_search') {
+        const existing = Array.isArray(formattedRequest.extra_body?.tools)
+          ? (formattedRequest.extra_body?.tools as unknown[])
+          : []
+        formattedRequest.extra_body = {
+          ...(formattedRequest.extra_body ?? {}),
+          tools: [...existing, { type: 'web_search' }],
+        }
+      } else if (tool.type === 'openrouter:web_search' && isOpenRouterGateway) {
+        const plugin: Record<string, unknown> = { id: 'web' }
+        if (tool.engine) plugin.engine = tool.engine
+        if (typeof tool.maxResults === 'number')
+          plugin.max_results = tool.maxResults
+        formattedRequest.plugins = [
+          ...(formattedRequest.plugins ?? []),
+          plugin,
+        ]
+      } else if (tool.type === 'grok:live_search' && isXaiGateway) {
+        formattedRequest.extra_body = {
+          ...(formattedRequest.extra_body ?? {}),
+          search_parameters: { mode: 'auto', return_citations: true },
+        }
+      }
+      // else: cross-family mismatch — drop silently.
+      //
+      // In particular, `gemini:web_search` / `gemini:url_context` are NOT
+      // dispatched here even when they appear: Gemini's hosted tool family
+      // only lands when the request hits a native Gemini transport
+      // (`gemini.ts` / `geminiOAuthProvider.ts`). Synthesizing them as
+      // OpenAI-style `function` tools on an openai-compatible gateway would
+      // look reasonable but would NOT actually run web search — the gateway
+      // has no way to execute the synthetic `googleSearch` call. The
+      // pre-existing conversation-level synthesis is preserved as-is for
+      // backwards compatibility but is intentionally not extended.
+    }
   }
 }

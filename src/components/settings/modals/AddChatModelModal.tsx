@@ -53,8 +53,23 @@ const MODEL_IDENTIFIER_KEYS = ['id', 'name', 'model'] as const
 const REASONING_TYPES = ['none', 'openai', 'gemini', 'anthropic'] as const
 type ReasoningType = (typeof REASONING_TYPES)[number]
 
-const BUILTIN_TOOL_PROVIDERS = ['none', 'gemini', 'gpt', 'openrouter'] as const
+const BUILTIN_TOOL_PROVIDERS = [
+  'none',
+  'gemini',
+  'gpt',
+  'openrouter',
+  'grok',
+] as const
 type BuiltinToolProvider = (typeof BUILTIN_TOOL_PROVIDERS)[number]
+
+const OPENROUTER_WEB_SEARCH_ENGINES = ['auto', 'native', 'exa'] as const
+type OpenRouterWebSearchEngine = (typeof OPENROUTER_WEB_SEARCH_ENGINES)[number]
+const isOpenRouterWebSearchEngine = (
+  value: string,
+): value is OpenRouterWebSearchEngine =>
+  (OPENROUTER_WEB_SEARCH_ENGINES as readonly string[]).includes(value)
+const OPENROUTER_MAX_RESULTS_MIN = 1
+const OPENROUTER_MAX_RESULTS_MAX = 25
 const CUSTOM_PARAMETER_TYPES = ['text', 'number', 'boolean', 'json'] as const
 const RESERVED_CUSTOM_PARAMETER_KEYS = new Set([
   'temperature',
@@ -190,25 +205,10 @@ const isReasoningTypeCompatible = (
   }
 }
 
-const supportsGeminiTools = (provider: LLMProvider | undefined): boolean =>
-  provider?.apiType === 'gemini' || provider?.apiType === 'openai-compatible'
-
-const supportsGptTools = (provider: LLMProvider | undefined): boolean =>
-  provider?.apiType === 'openai-compatible' ||
-  provider?.apiType === 'openai-responses'
-
-const supportsOpenRouterTools = (
-  provider: LLMProvider | undefined,
-): boolean => {
-  if (!provider) return false
-  if (provider.presetType === 'openrouter') return true
-  if (provider.apiType !== 'openai-compatible') return false
-  // Allow only openai-compatible providers explicitly pointed at openrouter.ai
-  // — other openai-compatible gateways (DeepSeek, Groq, LM Studio, …) would
-  // reject the OpenRouter-shaped server tool.
-  const baseUrl = provider.baseUrl?.toLowerCase() ?? ''
-  return baseUrl.includes('openrouter.ai')
-}
+// Provider–family alignment is the user's responsibility (per upstream
+// request): every family is selectable on every model, and downstream provider
+// clients only forward families they understand. Picking a family on a
+// gateway that doesn't support it is silently a no-op rather than an error.
 
 export class AddChatModelModal extends ReactModal<AddChatModelModalComponentProps> {
   constructor(app: App, plugin: YoloPlugin, provider?: LLMProvider) {
@@ -277,6 +277,16 @@ function AddChatModelModalComponent({
   }
   const [gptWebSearchEnabled, setGptWebSearchEnabled] = useState<boolean>(false)
   const [openRouterWebSearchEnabled, setOpenRouterWebSearchEnabled] =
+    useState<boolean>(false)
+  const [openRouterWebSearchEngine, setOpenRouterWebSearchEngine] =
+    useState<OpenRouterWebSearchEngine>('auto')
+  const [openRouterWebSearchMaxResultsInput, setOpenRouterWebSearchMaxResultsInput] =
+    useState<string>('')
+  const [grokWebSearchEnabled, setGrokWebSearchEnabled] =
+    useState<boolean>(false)
+  const [geminiWebSearchEnabled, setGeminiWebSearchEnabled] =
+    useState<boolean>(false)
+  const [geminiUrlContextEnabled, setGeminiUrlContextEnabled] =
     useState<boolean>(false)
   const [modelParamCache, setModelParamCache] = useState<{
     temperature: number
@@ -700,14 +710,34 @@ function AddChatModelModalComponent({
           : formData.model,
       modalities:
         modalities.length > 0 ? Array.from(new Set(modalities)) : ['text'],
-      ...(supportsGeminiTools(selectedProvider) ||
-      supportsGptTools(selectedProvider) ||
-      supportsOpenRouterTools(selectedProvider)
-        ? { builtinToolProvider }
-        : {}),
+      builtinToolProvider,
       builtinTools: {
         gpt: { webSearch: { enabled: gptWebSearchEnabled } },
-        openrouter: { webSearch: { enabled: openRouterWebSearchEnabled } },
+        openrouter: {
+          webSearch: {
+            enabled: openRouterWebSearchEnabled,
+            ...(openRouterWebSearchEngine !== 'auto'
+              ? { engine: openRouterWebSearchEngine }
+              : {}),
+            ...((): { maxResults?: number } => {
+              const trimmed = openRouterWebSearchMaxResultsInput.trim()
+              if (trimmed.length === 0) return {}
+              const parsed = Number(trimmed)
+              if (!Number.isFinite(parsed)) return {}
+              return {
+                maxResults: Math.min(
+                  OPENROUTER_MAX_RESULTS_MAX,
+                  Math.max(OPENROUTER_MAX_RESULTS_MIN, Math.floor(parsed)),
+                ),
+              }
+            })(),
+          },
+        },
+        grok: { webSearch: { enabled: grokWebSearchEnabled } },
+        gemini: {
+          webSearch: { enabled: geminiWebSearchEnabled },
+          urlContext: { enabled: geminiUrlContextEnabled },
+        },
       },
       ...(sanitizedCustomParameters.length > 0
         ? { customParameters: sanitizedCustomParameters }
@@ -897,44 +927,28 @@ function AddChatModelModalComponent({
       </div>
 
       {/* Built-in (hosted) provider tools selector */}
-      {(supportsGeminiTools(selectedProvider) ||
-        supportsGptTools(selectedProvider) ||
-        supportsOpenRouterTools(selectedProvider)) && (
-        <ObsidianSetting
-          name={t('settings.models.builtinToolProvider')}
-          desc={t('settings.models.builtinToolProviderDesc')}
-        >
-          <ObsidianDropdown
-            value={builtinToolProvider}
-            options={Object.fromEntries(
-              [
-                ['none', t('settings.models.builtinToolProviderNone')],
-                supportsGeminiTools(selectedProvider)
-                  ? ['gemini', t('settings.models.builtinToolProviderGemini')]
-                  : null,
-                supportsGptTools(selectedProvider)
-                  ? ['gpt', t('settings.models.builtinToolProviderGpt')]
-                  : null,
-                supportsOpenRouterTools(selectedProvider)
-                  ? [
-                      'openrouter',
-                      t('settings.models.builtinToolProviderOpenRouter'),
-                    ]
-                  : null,
-              ].filter((entry): entry is [string, string] => entry !== null),
-            )}
-            onChange={(value: string) =>
-              setBuiltinToolProvider(
-                isBuiltinToolProvider(value)
-                  ? value
-                  : BUILTIN_TOOL_PROVIDERS[0],
-              )
-            }
-          />
-        </ObsidianSetting>
-      )}
+      <ObsidianSetting
+        name={t('settings.models.builtinToolProvider')}
+        desc={t('settings.models.builtinToolProviderDesc')}
+      >
+        <ObsidianDropdown
+          value={builtinToolProvider}
+          options={{
+            none: t('settings.models.builtinToolProviderNone'),
+            gemini: t('settings.models.builtinToolProviderGemini'),
+            gpt: t('settings.models.builtinToolProviderGpt'),
+            openrouter: t('settings.models.builtinToolProviderOpenRouter'),
+            grok: t('settings.models.builtinToolProviderGrok'),
+          }}
+          onChange={(value: string) =>
+            setBuiltinToolProvider(
+              isBuiltinToolProvider(value) ? value : BUILTIN_TOOL_PROVIDERS[0],
+            )
+          }
+        />
+      </ObsidianSetting>
 
-      {builtinToolProvider === 'gpt' && supportsGptTools(selectedProvider) && (
+      {builtinToolProvider === 'gpt' && (
         <div className="yolo-agent-tools-panel yolo-agent-model-panel">
           <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
             <div className="yolo-agent-tools-panel-title">
@@ -965,37 +979,184 @@ function AddChatModelModalComponent({
         </div>
       )}
 
-      {builtinToolProvider === 'openrouter' &&
-        supportsOpenRouterTools(selectedProvider) && (
-          <div className="yolo-agent-tools-panel yolo-agent-model-panel">
-            <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
-              <div className="yolo-agent-tools-panel-title">
-                {t('settings.models.builtinToolsOpenRouter')}
+      {builtinToolProvider === 'openrouter' && (
+        <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+          <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+            <div className="yolo-agent-tools-panel-title">
+              {t('settings.models.builtinToolsOpenRouter')}
+            </div>
+          </div>
+
+          <div className="yolo-agent-model-controls">
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
+                    {t('settings.models.builtinToolWebSearch')}
+                  </div>
+                  <div className="yolo-agent-model-control-desc">
+                    {t('settings.models.builtinToolWebSearchDesc')}
+                  </div>
+                </div>
+                <div className="yolo-agent-model-control-actions">
+                  <ObsidianToggle
+                    value={openRouterWebSearchEnabled}
+                    onChange={setOpenRouterWebSearchEnabled}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="yolo-agent-model-controls">
-              <div className="yolo-agent-model-control">
-                <div className="yolo-agent-model-control-top">
-                  <div className="yolo-agent-model-control-meta">
-                    <div className="yolo-agent-model-control-label">
-                      {t('settings.models.builtinToolWebSearch')}
+            {openRouterWebSearchEnabled && (
+              <>
+                <div className="yolo-agent-model-control">
+                  <div className="yolo-agent-model-control-top">
+                    <div className="yolo-agent-model-control-meta">
+                      <div className="yolo-agent-model-control-label">
+                        {t('settings.models.openRouterWebSearchEngine')}
+                      </div>
+                      <div className="yolo-agent-model-control-desc">
+                        {t('settings.models.openRouterWebSearchEngineDesc')}
+                      </div>
                     </div>
-                    <div className="yolo-agent-model-control-desc">
-                      {t('settings.models.builtinToolWebSearchDesc')}
+                    <div className="yolo-agent-model-control-actions">
+                      <ObsidianDropdown
+                        value={openRouterWebSearchEngine}
+                        options={{
+                          auto: t(
+                            'settings.models.openRouterWebSearchEngineAuto',
+                          ),
+                          native: t(
+                            'settings.models.openRouterWebSearchEngineNative',
+                          ),
+                          exa: t(
+                            'settings.models.openRouterWebSearchEngineExa',
+                          ),
+                        }}
+                        onChange={(v: string) =>
+                          setOpenRouterWebSearchEngine(
+                            isOpenRouterWebSearchEngine(v) ? v : 'auto',
+                          )
+                        }
+                      />
                     </div>
                   </div>
-                  <div className="yolo-agent-model-control-actions">
-                    <ObsidianToggle
-                      value={openRouterWebSearchEnabled}
-                      onChange={setOpenRouterWebSearchEnabled}
-                    />
+                </div>
+                <div className="yolo-agent-model-control">
+                  <div className="yolo-agent-model-control-top">
+                    <div className="yolo-agent-model-control-meta">
+                      <div className="yolo-agent-model-control-label">
+                        {t('settings.models.openRouterWebSearchMaxResults')}
+                      </div>
+                      <div className="yolo-agent-model-control-desc">
+                        {t(
+                          'settings.models.openRouterWebSearchMaxResultsDesc',
+                        )}
+                      </div>
+                    </div>
+                    <div className="yolo-agent-model-control-actions">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        className="yolo-agent-model-number"
+                        placeholder={t(
+                          'settings.models.openRouterWebSearchMaxResultsPlaceholder',
+                        )}
+                        value={openRouterWebSearchMaxResultsInput}
+                        onChange={(event) => {
+                          const next = event.currentTarget.value
+                          if (!/^\d*$/.test(next)) return
+                          setOpenRouterWebSearchMaxResultsInput(next)
+                        }}
+                      />
+                    </div>
                   </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {builtinToolProvider === 'grok' && (
+        <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+          <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+            <div className="yolo-agent-tools-panel-title">
+              {t('settings.models.builtinToolsGrok')}
+            </div>
+          </div>
+
+          <div className="yolo-agent-model-controls">
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
+                    {t('settings.models.builtinToolWebSearch')}
+                  </div>
+                  <div className="yolo-agent-model-control-desc">
+                    {t('settings.models.builtinToolWebSearchDesc')}
+                  </div>
+                </div>
+                <div className="yolo-agent-model-control-actions">
+                  <ObsidianToggle
+                    value={grokWebSearchEnabled}
+                    onChange={setGrokWebSearchEnabled}
+                  />
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {builtinToolProvider === 'gemini' && (
+        <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+          <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+            <div className="yolo-agent-tools-panel-title">
+              {t('settings.models.builtinToolsGemini')}
+            </div>
+          </div>
+
+          <div className="yolo-agent-model-controls">
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
+                    {t('settings.models.builtinToolWebSearch')}
+                  </div>
+                  <div className="yolo-agent-model-control-desc">
+                    {t('settings.models.builtinToolWebSearchDesc')}
+                  </div>
+                </div>
+                <div className="yolo-agent-model-control-actions">
+                  <ObsidianToggle
+                    value={geminiWebSearchEnabled}
+                    onChange={setGeminiWebSearchEnabled}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
+                    {t('settings.models.builtinToolUrlContext')}
+                  </div>
+                  <div className="yolo-agent-model-control-desc">
+                    {t('settings.models.builtinToolUrlContextDesc')}
+                  </div>
+                </div>
+                <div className="yolo-agent-model-control-actions">
+                  <ObsidianToggle
+                    value={geminiUrlContextEnabled}
+                    onChange={setGeminiUrlContextEnabled}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Provider is derived from the current group context; field removed intentionally */}
 

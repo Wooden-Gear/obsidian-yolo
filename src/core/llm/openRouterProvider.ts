@@ -210,33 +210,38 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
   }
 
   /**
-   * Inject OpenRouter server tools (e.g. `openrouter:web_search`) into the
-   * top-level `tools` array per the OpenRouter server-tools spec. They sit
-   * alongside function-calling tools and are not OpenAI-style `extra_body`
-   * hosted tools.
+   * Serialize OpenRouter's hosted web search to the official `plugins` array
+   * (https://openrouter.ai/docs/guides/features/plugins/web-search). Carries
+   * optional `engine` (auto/native/exa — `auto` is encoded by omitting the
+   * field so OpenRouter picks the default) and `max_results` (1–25).
    *
-   * We only forward OpenRouter-shaped server tools here. If a stale config
-   * (e.g. user previously set `builtinToolProvider: 'gpt'` and later changed
-   * the provider to OpenRouter) yields OpenAI-shaped `{type:'web_search'}`,
-   * we drop it — OpenRouter rejects that shape, and silently swapping it to
-   * `openrouter:web_search` would change the user's intent without consent.
+   * Other built-in tool families are dropped: forwarding `{type:'web_search'}`
+   * or `grok:live_search` to OpenRouter would be rejected (or change the
+   * user's intent), so a stale cross-provider config silently no-ops on this
+   * transport instead.
    */
   private applyBuiltinProviderTools<
     RequestType extends LLMRequestNonStreaming | LLMRequestStreaming,
   >(model: ChatModel, request: RequestType): RequestType {
-    const builtinTools = getBuiltinProviderTools(model).filter(
+    const orTool = getBuiltinProviderTools(model).find(
       (t) => t.type === 'openrouter:web_search',
     )
-    if (builtinTools.length === 0) {
+    if (!orTool || orTool.type !== 'openrouter:web_search') {
       return request
     }
-    return {
-      ...request,
-      tools: [
-        ...(request.tools ?? []),
-        ...(builtinTools as unknown as NonNullable<RequestType['tools']>),
-      ],
+    const plugin: Record<string, unknown> = { id: 'web' }
+    if (orTool.engine) {
+      plugin.engine = orTool.engine
     }
+    if (typeof orTool.maxResults === 'number') {
+      plugin.max_results = orTool.maxResults
+    }
+    const next = { ...request } as RequestType & Record<string, unknown>
+    const existingPlugins = Array.isArray(next.plugins)
+      ? (next.plugins as Record<string, unknown>[])
+      : []
+    next.plugins = [...existingPlugins, plugin]
+    return next
   }
 
   private applyReasoningConfig<

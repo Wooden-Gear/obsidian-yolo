@@ -706,16 +706,32 @@ export const en: TranslationKeys = {
       geminiThinkingBudgetPlaceholder: 'For example, -1 (dynamic, 0=off)',
       builtinToolProvider: 'Built-in provider tools',
       builtinToolProviderDesc:
-        'Native tools provided by the model provider. Independent of YOLO built-in tools.',
+        'Native tools provided by the model provider. Independent of YOLO built-in tools. Whether they actually take effect depends on the gateway the request runs through.',
       builtinToolProviderNone: 'Disabled',
       builtinToolProviderGemini: 'Gemini',
       builtinToolProviderGpt: 'OpenAI',
       builtinToolProviderOpenRouter: 'OpenRouter',
+      builtinToolProviderGrok: 'Grok',
       builtinToolsGpt: 'OpenAI built-in tools',
       builtinToolsOpenRouter: 'OpenRouter built-in tools',
+      builtinToolsGrok: 'Grok built-in tools',
+      builtinToolsGemini: 'Gemini built-in tools',
       builtinToolWebSearch: 'Web Search',
       builtinToolWebSearchDesc:
         'Allow the model to search the web and return cited sources.',
+      builtinToolUrlContext: 'URL Context',
+      builtinToolUrlContextDesc:
+        'Allow the model to fetch links mentioned in the conversation as context.',
+      openRouterWebSearchEngine: 'Search engine',
+      openRouterWebSearchEngineDesc:
+        'Optional. Auto lets OpenRouter pick; Native uses the model’s native search; Exa forces Exa.',
+      openRouterWebSearchEngineAuto: 'Auto (default)',
+      openRouterWebSearchEngineNative: 'Native',
+      openRouterWebSearchEngineExa: 'Exa',
+      openRouterWebSearchMaxResults: 'Max results',
+      openRouterWebSearchMaxResultsDesc:
+        'Optional, 1–25. Leave empty to use the OpenRouter default.',
+      openRouterWebSearchMaxResultsPlaceholder: 'default',
       sampling: 'Custom parameters',
       restoreDefaults: 'Restore defaults',
       maxContextTokens: 'Context window tokens',

@@ -237,7 +237,7 @@ export class GeminiOAuthProvider extends BaseLLMProvider<LLMProvider> {
       }
     }
 
-    const tools = this.prepareTools(request, options)
+    const tools = this.prepareTools(request, model, options)
     const requestPayloadBase = {
       contents: GeminiProvider.buildRequestContents(request.messages),
       ...(Object.keys(config).length > 0 ? { generationConfig: config } : {}),
@@ -528,15 +528,27 @@ export class GeminiOAuthProvider extends BaseLLMProvider<LLMProvider> {
 
   private prepareTools(
     request: LLMRequestNonStreaming | LLMRequestStreaming,
+    model: ChatModel,
     options?: LLMOptions,
   ): GeminiTool[] | undefined {
     const tools: GeminiTool[] = []
 
-    if (options?.geminiTools?.useWebSearch) {
+    // Conversation-level override (chat input bar) OR model-level toggle
+    // (model settings) activates each tool; dedup so each lands at most once.
+    const modelLevelGemini =
+      model.builtinToolProvider === 'gemini'
+        ? model.builtinTools?.gemini
+        : undefined
+    const useWebSearch =
+      (options?.geminiTools?.useWebSearch ?? false) ||
+      modelLevelGemini?.webSearch?.enabled === true
+    const useUrlContext =
+      (options?.geminiTools?.useUrlContext ?? false) ||
+      modelLevelGemini?.urlContext?.enabled === true
+    if (useWebSearch) {
       tools.push({ googleSearch: {} })
     }
-
-    if (options?.geminiTools?.useUrlContext) {
+    if (useUrlContext) {
       tools.push({ urlContext: {} })
     }
 

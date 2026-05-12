@@ -10,6 +10,7 @@ import {
   LLMOptions,
   LLMRequestNonStreaming,
   LLMRequestStreaming,
+  RequestTool,
 } from '../../types/llm/request'
 import {
   LLMResponseNonStreaming,
@@ -20,6 +21,7 @@ import {
   REASONING_META,
   resolveRequestReasoningLevel,
 } from '../../types/reasoning'
+import { getBuiltinProviderTools } from '../../utils/llm/model-tools'
 import { createObsidianFetch } from '../../utils/llm/obsidian-fetch'
 import { toProviderHeadersRecord } from '../../utils/llm/provider-headers'
 import { getChatGPTOAuthService } from '../auth/chatgptOAuthRuntime'
@@ -36,6 +38,31 @@ import {
   runWithRequestTransportForStream,
 } from './requestTransport'
 import { createDesktopNodeFetch } from './sdkFetch'
+
+/**
+ * Forward only the OpenAI-shaped hosted `web_search` family on this ChatGPT
+ * OAuth transport — the adapter remaps it to `web_search_preview`. Other
+ * built-in families (OpenRouter / Grok / Gemini) target different endpoints
+ * and silently no-op here so a stale cross-provider config never changes
+ * user intent.
+ */
+function injectChatgptHostedTools<
+  RequestType extends LLMRequestNonStreaming | LLMRequestStreaming,
+>(request: RequestType, model: ChatModel): RequestType {
+  const hostedTools = getBuiltinProviderTools(model).filter(
+    (t) => t.type === 'web_search',
+  )
+  if (hostedTools.length === 0) {
+    return request
+  }
+  return {
+    ...request,
+    tools: [
+      ...(request.tools ?? []),
+      ...(hostedTools as unknown as RequestTool[]),
+    ],
+  }
+}
 
 const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex'
 const CODEX_API_ENDPOINT = 'https://chatgpt.com/backend-api/codex/responses'
@@ -98,7 +125,7 @@ export class ChatGPTOAuthProvider extends BaseLLMProvider<LLMProvider> {
     options?: LLMOptions,
   ): Promise<LLMResponseNonStreaming> {
     const level = resolveRequestReasoningLevel(model, request.reasoningLevel)
-    let formattedRequest = request
+    let formattedRequest = injectChatgptHostedTools(request, model)
     if (
       level !== undefined &&
       level !== 'auto' &&
@@ -151,7 +178,7 @@ export class ChatGPTOAuthProvider extends BaseLLMProvider<LLMProvider> {
     options?: LLMOptions,
   ): Promise<AsyncIterable<LLMResponseStreaming>> {
     const level = resolveRequestReasoningLevel(model, request.reasoningLevel)
-    let formattedRequest = request
+    let formattedRequest = injectChatgptHostedTools(request, model)
     if (
       level !== undefined &&
       level !== 'auto' &&

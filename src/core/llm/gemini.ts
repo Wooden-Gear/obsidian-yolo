@@ -1147,19 +1147,24 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
   ): GeminiTool[] | undefined {
     const tools: GeminiTool[] = []
 
-    // Add Gemini native tools if enabled
-    if (options?.geminiTools) {
-      const geminiTools = options.geminiTools
-
-      // Add Google Search tool
-      if (geminiTools.useWebSearch) {
-        tools.push({ googleSearch: {} })
-      }
-
-      // Add URL Context tool
-      if (geminiTools.useUrlContext) {
-        tools.push({ urlContext: {} })
-      }
+    // Activation sources (OR-combined, dedup so each tool lands at most once):
+    //   1. Conversation override (chat input bar) → `options.geminiTools.*`
+    //   2. Model-level toggle (model settings)    → `builtinTools.gemini.*`
+    const modelLevelGemini =
+      model.builtinToolProvider === 'gemini'
+        ? model.builtinTools?.gemini
+        : undefined
+    const useWebSearch =
+      (options?.geminiTools?.useWebSearch ?? false) ||
+      modelLevelGemini?.webSearch?.enabled === true
+    const useUrlContext =
+      (options?.geminiTools?.useUrlContext ?? false) ||
+      modelLevelGemini?.urlContext?.enabled === true
+    if (useWebSearch) {
+      tools.push({ googleSearch: {} })
+    }
+    if (useUrlContext) {
+      tools.push({ urlContext: {} })
     }
 
     // Add function calling tools if provided

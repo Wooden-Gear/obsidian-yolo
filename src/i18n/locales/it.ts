@@ -696,16 +696,32 @@ export const it: TranslationKeys = {
         'Richiede un modello con supporto PDF nativo (Gemini / Anthropic).',
       builtinToolProvider: 'Strumenti integrati del provider',
       builtinToolProviderDesc:
-        'Strumenti nativi forniti dal provider del modello. Indipendenti dagli strumenti integrati di YOLO.',
+        'Strumenti nativi forniti dal provider del modello. Indipendenti dagli strumenti integrati di YOLO. L’effetto reale dipende dal supporto del gateway su cui passa la richiesta.',
       builtinToolProviderNone: 'Disabilitato',
       builtinToolProviderGemini: 'Gemini',
       builtinToolProviderGpt: 'OpenAI',
       builtinToolProviderOpenRouter: 'OpenRouter',
+      builtinToolProviderGrok: 'Grok',
       builtinToolsGpt: 'Strumenti integrati OpenAI',
       builtinToolsOpenRouter: 'Strumenti integrati OpenRouter',
+      builtinToolsGrok: 'Strumenti integrati Grok',
+      builtinToolsGemini: 'Strumenti integrati Gemini',
       builtinToolWebSearch: 'Web Search',
       builtinToolWebSearchDesc:
         'Consenti al modello di cercare sul web e restituire fonti citate.',
+      builtinToolUrlContext: 'URL Context',
+      builtinToolUrlContextDesc:
+        'Consenti al modello di leggere i link citati nella conversazione come contesto.',
+      openRouterWebSearchEngine: 'Motore di ricerca',
+      openRouterWebSearchEngineDesc:
+        'Opzionale. Auto lascia decidere a OpenRouter; Native usa la ricerca nativa del modello; Exa forza Exa.',
+      openRouterWebSearchEngineAuto: 'Auto (predefinito)',
+      openRouterWebSearchEngineNative: 'Native',
+      openRouterWebSearchEngineExa: 'Exa',
+      openRouterWebSearchMaxResults: 'Risultati max',
+      openRouterWebSearchMaxResultsDesc:
+        'Opzionale, 1–25. Lascia vuoto per usare il valore predefinito di OpenRouter.',
+      openRouterWebSearchMaxResultsPlaceholder: 'predefinito',
       sampling: 'Parametri personalizzati',
       restoreDefaults: 'Ripristina predefiniti',
       maxContextTokens: 'Token finestra di contesto',

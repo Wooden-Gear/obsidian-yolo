@@ -554,10 +554,23 @@ export type TranslationKeys = {
       builtinToolProviderGemini?: string
       builtinToolProviderGpt?: string
       builtinToolProviderOpenRouter?: string
+      builtinToolProviderGrok?: string
       builtinToolsGpt?: string
       builtinToolsOpenRouter?: string
+      builtinToolsGrok?: string
+      builtinToolsGemini?: string
       builtinToolWebSearch?: string
       builtinToolWebSearchDesc?: string
+      builtinToolUrlContext?: string
+      builtinToolUrlContextDesc?: string
+      openRouterWebSearchEngine?: string
+      openRouterWebSearchEngineDesc?: string
+      openRouterWebSearchEngineAuto?: string
+      openRouterWebSearchEngineNative?: string
+      openRouterWebSearchEngineExa?: string
+      openRouterWebSearchMaxResults?: string
+      openRouterWebSearchMaxResultsDesc?: string
+      openRouterWebSearchMaxResultsPlaceholder?: string
       sampling?: string
       restoreDefaults?: string
       maxContextTokens?: string
