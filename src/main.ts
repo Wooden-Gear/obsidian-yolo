@@ -39,6 +39,7 @@ import {
   BackgroundActivityAction,
   BackgroundActivityRegistry,
 } from './core/background/backgroundActivityRegistry'
+import { setLogFinalRequestPayloadEnabled } from './core/llm/base'
 import { clearRequestTransportMemory } from './core/llm/requestTransport'
 import { McpCoordinator } from './core/mcp/mcpCoordinator'
 import type { McpManager } from './core/mcp/mcpManager'
@@ -2004,6 +2005,9 @@ export default class YoloPlugin extends Plugin {
 
     this.settings = normalizedSettings
     this.currentSettingsMeta = sourceMeta
+    setLogFinalRequestPayloadEnabled(
+      this.settings.debug?.logModelRequestContext ?? false,
+    )
   }
 
   private getDeviceId(): string {
@@ -2390,6 +2394,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
     this.settings = normalizedSettings
     await this.persistPluginDirSettings(normalizedSettings)
+    setLogFinalRequestPayloadEnabled(
+      this.settings.debug?.logModelRequestContext ?? false,
+    )
 
     this.syncOAuthRuntimesFromSettings(normalizedSettings)
     this.ragCoordinator?.updateSettings(normalizedSettings)

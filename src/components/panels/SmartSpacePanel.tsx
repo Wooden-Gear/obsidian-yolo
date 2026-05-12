@@ -470,7 +470,7 @@ function SmartSpacePanelBody({
         settings: plugin.settings,
         modelId: continuationModelId,
       })
-      return model.toolType === 'gemini'
+      return model.builtinToolProvider === 'gemini'
     } catch {
       return false
     }

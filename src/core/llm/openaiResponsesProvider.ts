@@ -20,7 +20,7 @@ import {
   REASONING_META,
   resolveRequestReasoningLevel,
 } from '../../types/reasoning'
-import { getHostedToolsForModel } from '../../utils/llm/model-tools'
+import { getBuiltinProviderTools } from '../../utils/llm/model-tools'
 import { createObsidianFetch } from '../../utils/llm/obsidian-fetch'
 import { resolveProviderBaseUrl } from '../../utils/llm/provider-base-url'
 import { toProviderHeadersRecord } from '../../utils/llm/provider-headers'
@@ -134,12 +134,12 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
     })
   }
 
-  private mergeHostedTools(
+  private mergeBuiltinProviderTools(
     model: ChatModel,
     body: ResponseCreateParamsStreaming,
   ): ResponseCreateParamsStreaming {
-    const hostedTools = getHostedToolsForModel(model)
-    if (hostedTools.length === 0) {
+    const builtinTools = getBuiltinProviderTools(model)
+    if (builtinTools.length === 0) {
       return body
     }
 
@@ -147,7 +147,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
       ...body,
       tools: [
         ...(body.tools ?? []),
-        ...hostedTools.map(() => ({ type: 'web_search_preview' as const })),
+        ...builtinTools.map(() => ({ type: 'web_search_preview' as const })),
       ],
     }
   }
@@ -164,7 +164,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
     }
 
     try {
-      const body = this.mergeHostedTools(
+      const body = this.mergeBuiltinProviderTools(
         model,
         this.adapter.buildRequest(
           this.applyCustomModelParameters(model, {
@@ -214,7 +214,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider<LLMProvider> {
       )
     }
 
-    const body = this.mergeHostedTools(
+    const body = this.mergeBuiltinProviderTools(
       model,
       this.adapter.buildRequest(
         this.applyCustomModelParameters(

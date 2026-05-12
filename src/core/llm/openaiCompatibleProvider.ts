@@ -13,7 +13,7 @@ import {
 } from '../../types/llm/response'
 import { LLMProvider, RequestTransportMode } from '../../types/provider.types'
 import { resolveRequestReasoningLevel } from '../../types/reasoning'
-import { getHostedToolsForModel } from '../../utils/llm/model-tools'
+import { getBuiltinProviderTools } from '../../utils/llm/model-tools'
 import { createObsidianFetch } from '../../utils/llm/obsidian-fetch'
 import { resolveProviderBaseUrl } from '../../utils/llm/provider-base-url'
 import { toProviderHeadersRecord } from '../../utils/llm/provider-headers'
@@ -149,7 +149,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
 
     // Handle Gemini tools for OpenAI-compatible gateways
     const geminiToolsSettings = options?.geminiTools
-    if (model.toolType === 'gemini' && geminiToolsSettings) {
+    if (model.builtinToolProvider === 'gemini' && geminiToolsSettings) {
       const openaiTools: RequestTool[] = []
 
       if (geminiToolsSettings.useWebSearch) {
@@ -198,11 +198,28 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
       }
     }
 
-    const hostedTools = getHostedToolsForModel(model)
-    if (hostedTools.length > 0) {
-      formattedRequest.extra_body = {
-        ...(formattedRequest.extra_body ?? {}),
-        tools: hostedTools,
+    // Built-in (hosted) provider tools. Different providers use different
+    // request slots: OpenAI-style hosted `web_search` goes into `extra_body`
+    // (it's an out-of-OpenAI-Chat-spec hint forwarded by some gateways),
+    // while OpenRouter's server tools must sit in the top-level `tools` array
+    // alongside function tools, per the OpenRouter server-tools spec.
+    const builtinTools = getBuiltinProviderTools(model)
+    if (builtinTools.length > 0) {
+      const extraBodyTools = builtinTools.filter((t) => t.type === 'web_search')
+      const inlineTools = builtinTools.filter(
+        (t) => t.type === 'openrouter:web_search',
+      )
+      if (extraBodyTools.length > 0) {
+        formattedRequest.extra_body = {
+          ...(formattedRequest.extra_body ?? {}),
+          tools: extraBodyTools,
+        }
+      }
+      if (inlineTools.length > 0) {
+        formattedRequest.tools = [
+          ...(formattedRequest.tools ?? []),
+          ...(inlineTools as unknown as RequestTool[]),
+        ]
       }
     }
 
@@ -260,7 +277,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
 
     // Handle Gemini tools for OpenAI-compatible gateways (streaming)
     const streamingGeminiTools = options?.geminiTools
-    if (model.toolType === 'gemini' && streamingGeminiTools) {
+    if (model.builtinToolProvider === 'gemini' && streamingGeminiTools) {
       const openaiTools: RequestTool[] = []
 
       if (streamingGeminiTools.useWebSearch) {
@@ -309,11 +326,28 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
       }
     }
 
-    const hostedTools = getHostedToolsForModel(model)
-    if (hostedTools.length > 0) {
-      formattedRequest.extra_body = {
-        ...(formattedRequest.extra_body ?? {}),
-        tools: hostedTools,
+    // Built-in (hosted) provider tools. Different providers use different
+    // request slots: OpenAI-style hosted `web_search` goes into `extra_body`
+    // (it's an out-of-OpenAI-Chat-spec hint forwarded by some gateways),
+    // while OpenRouter's server tools must sit in the top-level `tools` array
+    // alongside function tools, per the OpenRouter server-tools spec.
+    const builtinTools = getBuiltinProviderTools(model)
+    if (builtinTools.length > 0) {
+      const extraBodyTools = builtinTools.filter((t) => t.type === 'web_search')
+      const inlineTools = builtinTools.filter(
+        (t) => t.type === 'openrouter:web_search',
+      )
+      if (extraBodyTools.length > 0) {
+        formattedRequest.extra_body = {
+          ...(formattedRequest.extra_body ?? {}),
+          tools: extraBodyTools,
+        }
+      }
+      if (inlineTools.length > 0) {
+        formattedRequest.tools = [
+          ...(formattedRequest.tools ?? []),
+          ...(inlineTools as unknown as RequestTool[]),
+        ]
       }
     }
 

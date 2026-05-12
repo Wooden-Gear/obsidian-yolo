@@ -13,7 +13,7 @@ import {
 } from '../../types/llm/response'
 import { LLMProvider, RequestTransportMode } from '../../types/provider.types'
 import { resolveRequestReasoningLevel } from '../../types/reasoning'
-import { getHostedToolsForModel } from '../../utils/llm/model-tools'
+import { getBuiltinProviderTools } from '../../utils/llm/model-tools'
 import { createObsidianFetch } from '../../utils/llm/obsidian-fetch'
 import { toProviderHeadersRecord } from '../../utils/llm/provider-headers'
 import { formatMessages } from '../../utils/llm/request'
@@ -147,7 +147,7 @@ export class QwenOAuthProvider extends BaseLLMProvider<LLMProvider> {
     }
 
     const geminiToolsSettings = options?.geminiTools
-    if (model.toolType === 'gemini' && geminiToolsSettings) {
+    if (model.builtinToolProvider === 'gemini' && geminiToolsSettings) {
       const openaiTools: RequestTool[] = []
 
       if (geminiToolsSettings.useWebSearch) {
@@ -196,11 +196,11 @@ export class QwenOAuthProvider extends BaseLLMProvider<LLMProvider> {
       }
     }
 
-    const hostedTools = getHostedToolsForModel(model)
-    if (hostedTools.length > 0) {
+    const builtinTools = getBuiltinProviderTools(model)
+    if (builtinTools.length > 0) {
       formattedRequest.extra_body = {
         ...(formattedRequest.extra_body ?? {}),
-        tools: hostedTools,
+        tools: builtinTools,
       }
     }
 
@@ -250,11 +250,11 @@ export class QwenOAuthProvider extends BaseLLMProvider<LLMProvider> {
       messages: formatMessages(request.messages),
     }
 
-    const hostedTools = getHostedToolsForModel(model)
-    if (hostedTools.length > 0) {
+    const builtinTools = getBuiltinProviderTools(model)
+    if (builtinTools.length > 0) {
       formattedRequest.extra_body = {
         ...(formattedRequest.extra_body ?? {}),
-        tools: hostedTools,
+        tools: builtinTools,
       }
     }
 

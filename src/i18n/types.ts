@@ -546,15 +546,16 @@ export type TranslationKeys = {
       geminiThinkingBudget?: string
       geminiThinkingBudgetDesc?: string
       geminiThinkingBudgetPlaceholder?: string
-      toolType?: string
-      toolTypeDesc?: string
-      toolTypeNone?: string
-      toolTypeGemini?: string
-      toolTypeGpt?: string
-      gptTools?: string
-      gptToolsDesc?: string
-      gptToolWebSearch?: string
-      gptToolWebSearchDesc?: string
+      builtinToolProvider?: string
+      builtinToolProviderDesc?: string
+      builtinToolProviderNone?: string
+      builtinToolProviderGemini?: string
+      builtinToolProviderGpt?: string
+      builtinToolProviderOpenRouter?: string
+      builtinToolsGpt?: string
+      builtinToolsOpenRouter?: string
+      builtinToolWebSearch?: string
+      builtinToolWebSearchDesc?: string
       sampling?: string
       restoreDefaults?: string
       maxContextTokens?: string

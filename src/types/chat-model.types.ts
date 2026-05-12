@@ -6,13 +6,28 @@ export const CHAT_MODEL_MODALITIES = ['text', 'vision', 'pdf'] as const
 export const chatModelModalitySchema = z.enum(CHAT_MODEL_MODALITIES)
 export type ChatModelModality = z.infer<typeof chatModelModalitySchema>
 
-export const gptToolsConfigSchema = z
+const webSearchToggleSchema = z
   .object({
     webSearch: z
       .object({
         enabled: z.boolean(),
       })
       .optional(),
+  })
+  .optional()
+
+/**
+ * Built-in (a.k.a. hosted / server-side) tools provided by the model provider
+ * itself — not function-calling tools the agent runs. They typically share the
+ * same `tools` array slot in the request payload but use provider-specific
+ * shapes (e.g. `{type:"web_search"}` for OpenAI, `{type:"openrouter:web_search"}`
+ * for OpenRouter). Configure which provider's built-in tools to enable via
+ * `builtinToolProvider`, and per-provider toggles via the matching sub-key.
+ */
+export const builtinToolsConfigSchema = z
+  .object({
+    gpt: webSearchToggleSchema,
+    openrouter: webSearchToggleSchema,
   })
   .optional()
 
@@ -42,8 +57,14 @@ export const chatModelSchema = z.object({
   maxOutputTokens: z.number().int().min(1).optional(),
   customParameters: z.array(customParameterSchema).optional(),
   modalities: z.array(chatModelModalitySchema).optional(),
-  toolType: z.enum(['none', 'gemini', 'gpt']).default('none').optional(),
-  gptTools: gptToolsConfigSchema,
+  // Which provider's built-in (hosted) tools to enable on this model.
+  // 'gemini' / 'gpt' / 'openrouter' map to the provider-native tool family in
+  // the request body. See `builtinTools` for per-family toggles.
+  builtinToolProvider: z
+    .enum(['none', 'gemini', 'gpt', 'openrouter'])
+    .default('none')
+    .optional(),
+  builtinTools: builtinToolsConfigSchema,
   web_search_options: z
     .object({
       search_context_size: z.string(),

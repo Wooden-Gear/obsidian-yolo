@@ -15,6 +15,7 @@ import {
   REASONING_META,
   resolveRequestReasoningLevel,
 } from '../../types/reasoning'
+import { getBuiltinProviderTools } from '../../utils/llm/model-tools'
 import { createObsidianFetch } from '../../utils/llm/obsidian-fetch'
 import { resolveProviderBaseUrl } from '../../utils/llm/provider-base-url'
 import { toProviderHeadersRecord } from '../../utils/llm/provider-headers'
@@ -105,7 +106,10 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
   ): Promise<LLMResponseNonStreaming> {
     const mergedRequest = this.applyCustomModelParameters(
       model,
-      this.applyReasoningConfig(model, request),
+      this.applyBuiltinProviderTools(
+        model,
+        this.applyReasoningConfig(model, request),
+      ),
     )
 
     return runWithRequestTransport({
@@ -136,7 +140,10 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
   ): Promise<AsyncIterable<LLMResponseStreaming>> {
     const mergedRequest = this.applyCustomModelParameters(
       model,
-      this.applyReasoningConfig(model, request),
+      this.applyBuiltinProviderTools(
+        model,
+        this.applyReasoningConfig(model, request),
+      ),
     )
 
     return runWithRequestTransportForStream({
@@ -199,6 +206,36 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
       throw new Error(
         `Failed to get embedding from OpenRouter: ${error instanceof Error ? error.message : 'Unknown error'}`,
       )
+    }
+  }
+
+  /**
+   * Inject OpenRouter server tools (e.g. `openrouter:web_search`) into the
+   * top-level `tools` array per the OpenRouter server-tools spec. They sit
+   * alongside function-calling tools and are not OpenAI-style `extra_body`
+   * hosted tools.
+   *
+   * We only forward OpenRouter-shaped server tools here. If a stale config
+   * (e.g. user previously set `builtinToolProvider: 'gpt'` and later changed
+   * the provider to OpenRouter) yields OpenAI-shaped `{type:'web_search'}`,
+   * we drop it — OpenRouter rejects that shape, and silently swapping it to
+   * `openrouter:web_search` would change the user's intent without consent.
+   */
+  private applyBuiltinProviderTools<
+    RequestType extends LLMRequestNonStreaming | LLMRequestStreaming,
+  >(model: ChatModel, request: RequestType): RequestType {
+    const builtinTools = getBuiltinProviderTools(model).filter(
+      (t) => t.type === 'openrouter:web_search',
+    )
+    if (builtinTools.length === 0) {
+      return request
+    }
+    return {
+      ...request,
+      tools: [
+        ...(request.tools ?? []),
+        ...(builtinTools as unknown as NonNullable<RequestType['tools']>),
+      ],
     }
   }
 

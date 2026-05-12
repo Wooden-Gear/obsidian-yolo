@@ -690,17 +690,17 @@ export const it: TranslationKeys = {
       inputModalityText: 'Testo',
       inputModalityVision: 'Immagini',
       inputModalityPdf: 'PDF (nativo)',
-      toolType: 'Tipo di strumento',
-      toolTypeDesc:
-        'Tipo di chiamata di strumento supportato da questo modello.',
-      toolTypeNone: 'Nessuno',
-      toolTypeGemini: 'Gemini',
-      toolTypeGpt: 'Strumenti GPT',
-      gptTools: 'Strumenti GPT',
-      gptToolsDesc:
-        'Scegli gli strumenti GPT integrati disponibili per questo modello.',
-      gptToolWebSearch: 'Web Search',
-      gptToolWebSearchDesc:
+      builtinToolProvider: 'Strumenti integrati del provider',
+      builtinToolProviderDesc:
+        'Strumenti server-side eseguiti dal provider del modello (es. ricerca web). Indipendenti dagli strumenti di function-calling.',
+      builtinToolProviderNone: 'Disabilitato',
+      builtinToolProviderGemini: 'Gemini',
+      builtinToolProviderGpt: 'OpenAI',
+      builtinToolProviderOpenRouter: 'OpenRouter',
+      builtinToolsGpt: 'Strumenti integrati OpenAI',
+      builtinToolsOpenRouter: 'Strumenti integrati OpenRouter',
+      builtinToolWebSearch: 'Web Search',
+      builtinToolWebSearchDesc:
         'Consenti al modello di cercare sul web e restituire fonti citate.',
       sampling: 'Parametri personalizzati',
       restoreDefaults: 'Ripristina predefiniti',

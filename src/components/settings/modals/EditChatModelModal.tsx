@@ -34,8 +34,8 @@ type CustomParameterFormEntry = CustomParameter & {
   uid: string
 }
 
-const TOOL_TYPES = ['none', 'gemini', 'gpt'] as const
-type ToolType = (typeof TOOL_TYPES)[number]
+const BUILTIN_TOOL_PROVIDERS = ['none', 'gemini', 'gpt', 'openrouter'] as const
+type BuiltinToolProvider = (typeof BUILTIN_TOOL_PROVIDERS)[number]
 const CUSTOM_PARAMETER_TYPES = ['text', 'number', 'boolean', 'json'] as const
 const RESERVED_CUSTOM_PARAMETER_KEYS = new Set([
   'temperature',
@@ -103,8 +103,10 @@ function EditChatModelModalComponent({
     return 'none'
   }
 
-  const normalizeToolType = (value: string): ToolType =>
-    TOOL_TYPES.includes(value as ToolType) ? (value as ToolType) : 'none'
+  const normalizeBuiltinToolProvider = (value: string): BuiltinToolProvider =>
+    BUILTIN_TOOL_PROVIDERS.includes(value as BuiltinToolProvider)
+      ? (value as BuiltinToolProvider)
+      : 'none'
 
   const supportsGeminiTools =
     selectedProvider?.apiType === 'gemini' ||
@@ -112,6 +114,19 @@ function EditChatModelModalComponent({
   const supportsGptTools =
     selectedProvider?.apiType === 'openai-compatible' ||
     selectedProvider?.apiType === 'openai-responses'
+  // OpenRouter server tools (e.g. openrouter:web_search) only make sense when
+  // the request actually lands on OpenRouter. The official OpenRouter preset
+  // is the obvious case; we also allow custom `openai-compatible` providers
+  // that point at openrouter.ai (some users configure OpenRouter behind a
+  // proxy / personal gateway). Other openai-compatible providers (DeepSeek,
+  // Groq, LM Studio, …) would reject the OpenRouter-shaped tool.
+  const supportsOpenRouterTools = (() => {
+    if (!selectedProvider) return false
+    if (selectedProvider.presetType === 'openrouter') return true
+    if (selectedProvider.apiType !== 'openai-compatible') return false
+    const baseUrl = selectedProvider.baseUrl?.toLowerCase() ?? ''
+    return baseUrl.includes('openrouter.ai')
+  })()
 
   // Update modal title
   React.useEffect(() => {
@@ -148,13 +163,19 @@ function EditChatModelModalComponent({
   // If user changes dropdown manually, disable auto detection
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
 
-  // Tool type state
-  const [toolType, setToolType] = useState<ToolType>(
-    normalizeToolType(editableModel.toolType ?? 'none'),
-  )
+  // Built-in (hosted) provider tools state — note: this is intentionally
+  // unrelated to function-calling tools the agent runs. See ChatModel.
+  const [builtinToolProvider, setBuiltinToolProvider] =
+    useState<BuiltinToolProvider>(
+      normalizeBuiltinToolProvider(editableModel.builtinToolProvider ?? 'none'),
+    )
   const [gptWebSearchEnabled, setGptWebSearchEnabled] = useState<boolean>(
-    editableModel.gptTools?.webSearch?.enabled === true,
+    editableModel.builtinTools?.gpt?.webSearch?.enabled === true,
   )
+  const [openRouterWebSearchEnabled, setOpenRouterWebSearchEnabled] =
+    useState<boolean>(
+      editableModel.builtinTools?.openrouter?.webSearch?.enabled === true,
+    )
   const [modalities, setModalities] = useState<ChatModelModality[]>(() => {
     if (editableModel.modalities && editableModel.modalities.length > 0) {
       return [...editableModel.modalities]
@@ -356,11 +377,14 @@ function EditChatModelModalComponent({
         updatedModel.modalities =
           modalities.length > 0 ? Array.from(new Set(modalities)) : ['text']
 
-        // Apply tool type
-        updatedModel.toolType = toolType
-        updatedModel.gptTools = {
-          webSearch: {
-            enabled: gptWebSearchEnabled,
+        // Apply built-in (hosted) provider tools selection. The per-family
+        // toggle objects are always written (even when the family isn't the
+        // active one) so the user's prior choice persists across switches.
+        updatedModel.builtinToolProvider = builtinToolProvider
+        updatedModel.builtinTools = {
+          gpt: { webSearch: { enabled: gptWebSearchEnabled } },
+          openrouter: {
+            webSearch: { enabled: openRouterWebSearchEnabled },
           },
         }
 
@@ -503,34 +527,42 @@ function EditChatModelModalComponent({
         </div>
       </div>
 
-      {(supportsGeminiTools || supportsGptTools) && (
+      {(supportsGeminiTools || supportsGptTools || supportsOpenRouterTools) && (
         <ObsidianSetting
-          name={t('settings.models.toolType')}
-          desc={t('settings.models.toolTypeDesc')}
+          name={t('settings.models.builtinToolProvider')}
+          desc={t('settings.models.builtinToolProviderDesc')}
         >
           <ObsidianDropdown
-            value={toolType}
+            value={builtinToolProvider}
             options={Object.fromEntries(
               [
-                ['none', t('settings.models.toolTypeNone')],
+                ['none', t('settings.models.builtinToolProviderNone')],
                 supportsGeminiTools
-                  ? ['gemini', t('settings.models.toolTypeGemini')]
+                  ? ['gemini', t('settings.models.builtinToolProviderGemini')]
                   : null,
                 supportsGptTools
-                  ? ['gpt', t('settings.models.toolTypeGpt')]
+                  ? ['gpt', t('settings.models.builtinToolProviderGpt')]
+                  : null,
+                supportsOpenRouterTools
+                  ? [
+                      'openrouter',
+                      t('settings.models.builtinToolProviderOpenRouter'),
+                    ]
                   : null,
               ].filter((entry): entry is [string, string] => entry !== null),
             )}
-            onChange={(v: string) => setToolType(normalizeToolType(v))}
+            onChange={(v: string) =>
+              setBuiltinToolProvider(normalizeBuiltinToolProvider(v))
+            }
           />
         </ObsidianSetting>
       )}
 
-      {toolType === 'gpt' && supportsGptTools && (
+      {builtinToolProvider === 'gpt' && supportsGptTools && (
         <div className="yolo-agent-tools-panel yolo-agent-model-panel">
           <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
             <div className="yolo-agent-tools-panel-title">
-              {t('settings.models.gptTools')}
+              {t('settings.models.builtinToolsGpt')}
             </div>
           </div>
 
@@ -539,16 +571,47 @@ function EditChatModelModalComponent({
               <div className="yolo-agent-model-control-top">
                 <div className="yolo-agent-model-control-meta">
                   <div className="yolo-agent-model-control-label">
-                    {t('settings.models.gptToolWebSearch')}
+                    {t('settings.models.builtinToolWebSearch')}
                   </div>
                   <div className="yolo-agent-model-control-desc">
-                    {t('settings.models.gptToolWebSearchDesc')}
+                    {t('settings.models.builtinToolWebSearchDesc')}
                   </div>
                 </div>
                 <div className="yolo-agent-model-control-actions">
                   <ObsidianToggle
                     value={gptWebSearchEnabled}
                     onChange={setGptWebSearchEnabled}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {builtinToolProvider === 'openrouter' && supportsOpenRouterTools && (
+        <div className="yolo-agent-tools-panel yolo-agent-model-panel">
+          <div className="yolo-agent-tools-panel-head yolo-agent-model-panel-head">
+            <div className="yolo-agent-tools-panel-title">
+              {t('settings.models.builtinToolsOpenRouter')}
+            </div>
+          </div>
+
+          <div className="yolo-agent-model-controls">
+            <div className="yolo-agent-model-control">
+              <div className="yolo-agent-model-control-top">
+                <div className="yolo-agent-model-control-meta">
+                  <div className="yolo-agent-model-control-label">
+                    {t('settings.models.builtinToolWebSearch')}
+                  </div>
+                  <div className="yolo-agent-model-control-desc">
+                    {t('settings.models.builtinToolWebSearchDesc')}
+                  </div>
+                </div>
+                <div className="yolo-agent-model-control-actions">
+                  <ObsidianToggle
+                    value={openRouterWebSearchEnabled}
+                    onChange={setOpenRouterWebSearchEnabled}
                   />
                 </div>
               </div>

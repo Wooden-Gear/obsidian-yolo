@@ -700,15 +700,17 @@ export const en: TranslationKeys = {
       geminiThinkingBudgetDesc:
         'Units are thinking tokens. 0 = off; -1 = dynamic (gemini only); ranges vary by model.',
       geminiThinkingBudgetPlaceholder: 'For example, -1 (dynamic, 0=off)',
-      toolType: 'Tool type',
-      toolTypeDesc: 'Select the tool type supported by the model',
-      toolTypeNone: 'No tools',
-      toolTypeGemini: 'Gemini tools',
-      toolTypeGpt: 'GPT tools',
-      gptTools: 'GPT tools',
-      gptToolsDesc: 'Choose the built-in GPT tools available to this model',
-      gptToolWebSearch: 'Web Search',
-      gptToolWebSearchDesc:
+      builtinToolProvider: 'Built-in provider tools',
+      builtinToolProviderDesc:
+        'Server-side tools executed by the model provider (e.g. web search). Independent of function-calling tools.',
+      builtinToolProviderNone: 'Disabled',
+      builtinToolProviderGemini: 'Gemini',
+      builtinToolProviderGpt: 'OpenAI',
+      builtinToolProviderOpenRouter: 'OpenRouter',
+      builtinToolsGpt: 'OpenAI built-in tools',
+      builtinToolsOpenRouter: 'OpenRouter built-in tools',
+      builtinToolWebSearch: 'Web Search',
+      builtinToolWebSearchDesc:
         'Allow the model to search the web and return cited sources.',
       sampling: 'Custom parameters',
       restoreDefaults: 'Restore defaults',

@@ -59,10 +59,7 @@ describe('deriveTodosFromMessages', () => {
   it('returns todos from the latest todo_write tool call', () => {
     const messages: ChatMessage[] = [
       userMessage('start'),
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
       todoWriteToolMessage(
         [
           { content: 'A', status: 'completed' },
@@ -79,10 +76,7 @@ describe('deriveTodosFromMessages', () => {
 
   it('returns empty when the latest todo_write was an empty list (explicit clear)', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
       todoWriteToolMessage([], 'm2'),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([])
@@ -138,10 +132,7 @@ describe('deriveTodosFromMessages', () => {
 
   it('skips a failed todo_write and falls back to the previous successful state', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
       todoWriteToolMessage('not-an-array', 'm2', {
         status: ToolCallResponseStatus.Error,
         error: 'todos must be an array.',
@@ -154,15 +145,10 @@ describe('deriveTodosFromMessages', () => {
 
   it('skips a rejected todo_write and falls back to the previous successful state', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm2',
-        { status: ToolCallResponseStatus.Rejected },
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm2', {
+        status: ToolCallResponseStatus.Rejected,
+      }),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([
       { content: 'A', status: 'pending' },
@@ -171,15 +157,10 @@ describe('deriveTodosFromMessages', () => {
 
   it('skips a still-running todo_write so UI never shows un-committed args', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'in_progress' }],
-        'm2',
-        { status: ToolCallResponseStatus.Running },
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
+      todoWriteToolMessage([{ content: 'B', status: 'in_progress' }], 'm2', {
+        status: ToolCallResponseStatus.Running,
+      }),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([
       { content: 'A', status: 'pending' },
@@ -188,15 +169,10 @@ describe('deriveTodosFromMessages', () => {
 
   it('skips an aborted todo_write and falls back to the previous successful state', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm2',
-        { status: ToolCallResponseStatus.Aborted },
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm2', {
+        status: ToolCallResponseStatus.Aborted,
+      }),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([
       { content: 'A', status: 'pending' },
@@ -205,15 +181,10 @@ describe('deriveTodosFromMessages', () => {
 
   it('skips a pending-approval todo_write', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm2',
-        { status: ToolCallResponseStatus.PendingApproval },
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm2', {
+        status: ToolCallResponseStatus.PendingApproval,
+      }),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([
       { content: 'A', status: 'pending' },
@@ -222,11 +193,9 @@ describe('deriveTodosFromMessages', () => {
 
   it('returns empty when the only todo_write call has not succeeded yet', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-        { status: ToolCallResponseStatus.Running },
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1', {
+        status: ToolCallResponseStatus.Running,
+      }),
     ]
     expect(deriveTodosFromMessages(messages)).toEqual([])
   })
@@ -251,10 +220,7 @@ describe('deriveTodosFromMessages', () => {
 
   it('returns frozen array (callers cannot mutate)', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
     ]
     const result = deriveTodosFromMessages(messages)
     expect(Object.isFrozen(result)).toBe(true)
@@ -269,10 +235,7 @@ describe('findTodoSeriesStartId', () => {
 
   it('returns the first call id as the series start', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
     ]
     expect(findTodoSeriesStartId(messages)).toBe('m1-call')
   })
@@ -307,48 +270,30 @@ describe('findTodoSeriesStartId', () => {
 
   it('starts a new series when the previous list was all completed', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm2',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm1'),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm2'),
     ]
     expect(findTodoSeriesStartId(messages)).toBe('m2-call')
   })
 
   it('starts a new series when the previous list was empty (explicit clear)', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
       todoWriteToolMessage([], 'm2'),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm3',
-      ),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm3'),
     ]
     expect(findTodoSeriesStartId(messages)).toBe('m3-call')
   })
 
   it('ignores non-success todo_write calls when computing the series', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
       // Failed write does not affect series detection.
       todoWriteToolMessage('bad', 'm2', {
         status: ToolCallResponseStatus.Error,
         error: 'todos must be an array.',
       }),
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm3',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm3'),
     ]
     // m3 follows m1 (m2 ignored); m1 had an active item so m3 is a continuation.
     expect(findTodoSeriesStartId(messages)).toBe('m1-call')
@@ -356,22 +301,10 @@ describe('findTodoSeriesStartId', () => {
 
   it('handles multiple series in one message stream', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'pending' }],
-        'm1',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm2',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'pending' }],
-        'm3',
-      ),
-      todoWriteToolMessage(
-        [{ content: 'B', status: 'in_progress' }],
-        'm4',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'pending' }], 'm1'),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm2'),
+      todoWriteToolMessage([{ content: 'B', status: 'pending' }], 'm3'),
+      todoWriteToolMessage([{ content: 'B', status: 'in_progress' }], 'm4'),
     ]
     expect(findTodoSeriesStartId(messages)).toBe('m3-call')
   })
@@ -398,10 +331,7 @@ describe('findLatestCompletedTodoWriteId', () => {
 
   it('returns null when latest list is an explicit empty (no completion to mark)', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm1'),
       todoWriteToolMessage([], 'm2'),
     ]
     expect(findLatestCompletedTodoWriteId(messages)).toBeNull()
@@ -422,10 +352,7 @@ describe('findLatestCompletedTodoWriteId', () => {
 
   it('returns the latest matching write, not an older one', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm1'),
       todoWriteToolMessage(
         [
           { content: 'A', status: 'completed' },
@@ -439,10 +366,7 @@ describe('findLatestCompletedTodoWriteId', () => {
 
   it('skips non-success todo_write calls', () => {
     const messages: ChatMessage[] = [
-      todoWriteToolMessage(
-        [{ content: 'A', status: 'completed' }],
-        'm1',
-      ),
+      todoWriteToolMessage([{ content: 'A', status: 'completed' }], 'm1'),
       // Failed write does not change the "completed write" identity.
       todoWriteToolMessage('bad', 'm2', {
         status: ToolCallResponseStatus.Error,

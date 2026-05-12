@@ -425,7 +425,7 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     model: 'gemini-2.5-pro',
     enable: false,
     reasoningType: 'gemini',
-    toolType: 'gemini',
+    builtinToolProvider: 'gemini',
   },
   {
     providerId: PROVIDER_PRESET_INFO['gemini-oauth'].defaultProviderId,
@@ -433,7 +433,7 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     model: 'gemini-2.5-flash',
     enable: false,
     reasoningType: 'gemini',
-    toolType: 'gemini',
+    builtinToolProvider: 'gemini',
   },
   {
     providerId: PROVIDER_PRESET_INFO['gemini-oauth'].defaultProviderId,
@@ -441,7 +441,7 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     model: 'gemini-2.5-flash-lite',
     enable: false,
     reasoningType: 'gemini',
-    toolType: 'gemini',
+    builtinToolProvider: 'gemini',
   },
   {
     providerId: PROVIDER_PRESET_INFO['qwen-oauth'].defaultProviderId,
