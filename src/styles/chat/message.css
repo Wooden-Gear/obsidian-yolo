@@ -174,6 +174,13 @@
   animation: fadeIn 0.1s ease-in-out;
 }
 
+/* Radix 渲染的 popper wrapper 默认 z-index: auto，在 Obsidian Settings Modal
+   （--layer-modal）里会被盖住。给含 yolo-tooltip-content 的 wrapper 显式抬到
+   menu 层级，保证 modal 内 hover 也能看到 tooltip。 */
+[data-radix-popper-content-wrapper]:has(.yolo-tooltip-content) {
+  z-index: var(--layer-menu);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

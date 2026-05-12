@@ -2111,10 +2111,39 @@
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   cursor: pointer;
+  position: relative;
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
     color 0.12s ease;
+}
+
+/* 纯 CSS tooltip：以 chip 自身为定位锚点，绕开 Radix Portal + fixed 在 Obsidian
+   宿主里被祖先 transform/contain 污染坐标系的问题。 */
+
+.yolo-modality-chip[data-tooltip]:hover::after,
+.yolo-modality-chip[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: max-content;
+  max-width: 280px;
+  padding: var(--size-4-1) var(--size-4-2);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  font-size: var(--font-smallest);
+  font-weight: var(--font-normal);
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  animation: fadeIn 0.1s ease-in-out;
 }
 
 .yolo-modality-chip:hover {
@@ -8708,6 +8737,14 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   padding: var(--size-4-1) var(--size-4-2);
   font-size: var(--font-smallest);
   animation: fadeIn 0.1s ease-in-out;
+}
+
+/* Radix 渲染的 popper wrapper 默认 z-index: auto，在 Obsidian Settings Modal
+   （--layer-modal）里会被盖住。给含 yolo-tooltip-content 的 wrapper 显式抬到
+   menu 层级，保证 modal 内 hover 也能看到 tooltip。 */
+
+[data-radix-popper-content-wrapper]:has(.yolo-tooltip-content) {
+  z-index: var(--layer-menu);
 }
 
 @keyframes fadeIn {

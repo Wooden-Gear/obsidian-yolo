@@ -1,4 +1,3 @@
-import * as Tooltip from '@radix-ui/react-tooltip'
 import { FileText, Image as ImageIcon, Type } from 'lucide-react'
 import { App, Notice } from 'obsidian'
 import React, { useEffect, useState } from 'react'
@@ -485,75 +484,49 @@ function EditChatModelModalComponent({
             {t('settings.models.inputModalityDesc')}
           </div>
         </div>
-        <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
-          <div className="yolo-modality-chips">
-            <button
-              type="button"
-              className={`yolo-modality-chip${
-                modalities.includes('text') ? ' is-active' : ''
-              }`}
-              onClick={() => toggleModality('text')}
-            >
-              <Type size={14} />
-              <span className="yolo-modality-chip-label">
-                {t('settings.models.inputModalityText')}
-              </span>
-              <span className="yolo-modality-chip-sub">Text</span>
-            </button>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button
-                  type="button"
-                  className={`yolo-modality-chip${
-                    modalities.includes('vision') ? ' is-active' : ''
-                  }`}
-                  onClick={() => toggleModality('vision')}
-                >
-                  <ImageIcon size={14} />
-                  <span className="yolo-modality-chip-label">
-                    {t('settings.models.inputModalityVision')}
-                  </span>
-                  <span className="yolo-modality-chip-sub">Vision</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  className="yolo-tooltip-content"
-                  side="top"
-                  sideOffset={6}
-                >
-                  {t('settings.models.inputModalityVisionTooltip')}
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button
-                  type="button"
-                  className={`yolo-modality-chip${
-                    modalities.includes('pdf') ? ' is-active' : ''
-                  }`}
-                  onClick={() => toggleModality('pdf')}
-                >
-                  <FileText size={14} />
-                  <span className="yolo-modality-chip-label">
-                    {t('settings.models.inputModalityPdf')}
-                  </span>
-                  <span className="yolo-modality-chip-sub">PDF</span>
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  className="yolo-tooltip-content"
-                  side="top"
-                  sideOffset={6}
-                >
-                  {t('settings.models.inputModalityPdfTooltip')}
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-          </div>
-        </Tooltip.Provider>
+        <div className="yolo-modality-chips">
+          <button
+            type="button"
+            className={`yolo-modality-chip${
+              modalities.includes('text') ? ' is-active' : ''
+            }`}
+            onClick={() => toggleModality('text')}
+          >
+            <Type size={14} />
+            <span className="yolo-modality-chip-label">
+              {t('settings.models.inputModalityText')}
+            </span>
+            <span className="yolo-modality-chip-sub">Text</span>
+          </button>
+          <button
+            type="button"
+            className={`yolo-modality-chip${
+              modalities.includes('vision') ? ' is-active' : ''
+            }`}
+            data-tooltip={t('settings.models.inputModalityVisionTooltip')}
+            onClick={() => toggleModality('vision')}
+          >
+            <ImageIcon size={14} />
+            <span className="yolo-modality-chip-label">
+              {t('settings.models.inputModalityVision')}
+            </span>
+            <span className="yolo-modality-chip-sub">Vision</span>
+          </button>
+          <button
+            type="button"
+            className={`yolo-modality-chip${
+              modalities.includes('pdf') ? ' is-active' : ''
+            }`}
+            data-tooltip={t('settings.models.inputModalityPdfTooltip')}
+            onClick={() => toggleModality('pdf')}
+          >
+            <FileText size={14} />
+            <span className="yolo-modality-chip-label">
+              {t('settings.models.inputModalityPdf')}
+            </span>
+            <span className="yolo-modality-chip-sub">PDF</span>
+          </button>
+        </div>
       </div>
 
       {(supportsGeminiTools || supportsGptTools || supportsOpenRouterTools) && (
