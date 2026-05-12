@@ -23,6 +23,8 @@ export const zh: TranslationKeys = {
     triggerTabCompletion: '触发 Tab 补全',
     acceptInlineSuggestion: '接受补全',
     capturePdfRegion: '截取 PDF 区域到聊天',
+    exportSettings: '导出插件配置',
+    importSettings: '导入插件配置',
   },
 
   common: {
@@ -1002,6 +1004,13 @@ export const zh: TranslationKeys = {
     },
     etc: {
       title: '其他',
+      exportConfig: '导出配置',
+      exportConfigDesc:
+        '将当前插件配置导出为 JSON 文件，方便在其他笔记库中导入使用。',
+      export: '导出',
+      importConfig: '导入配置',
+      importConfigDesc: '从导出文件或其他笔记库导入插件配置。',
+      import: '导入',
       resetSettings: '重置设置',
       resetSettingsDesc: '将所有设置重置为默认值',
       resetSettingsConfirm: '确定要将所有设置重置为默认值吗？此操作无法撤销。',

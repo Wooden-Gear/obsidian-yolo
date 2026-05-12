@@ -23,6 +23,8 @@ export const en: TranslationKeys = {
     triggerTabCompletion: 'Trigger tab completion',
     acceptInlineSuggestion: 'Accept completion',
     capturePdfRegion: 'Capture PDF region to chat',
+    exportSettings: 'Export plugin settings',
+    importSettings: 'Import plugin settings',
   },
 
   common: {
@@ -1083,6 +1085,14 @@ export const en: TranslationKeys = {
     },
     etc: {
       title: 'Other',
+      exportConfig: 'Export settings',
+      exportConfigDesc:
+        'Export current plugin settings to a JSON file for use in other vaults.',
+      export: 'Export',
+      importConfig: 'Import settings',
+      importConfigDesc:
+        'Import plugin settings from an export file or another vault.',
+      import: 'Import',
       resetSettings: 'Reset settings',
       resetSettingsDesc: 'Reset all settings to default values',
       resetSettingsConfirm:

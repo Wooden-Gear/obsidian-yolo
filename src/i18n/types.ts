@@ -24,6 +24,8 @@ export type TranslationKeys = {
     triggerTabCompletion: string
     acceptInlineSuggestion: string
     capturePdfRegion?: string
+    exportSettings?: string
+    importSettings?: string
   }
 
   // UI Common
@@ -850,6 +852,12 @@ export type TranslationKeys = {
     }
     etc: {
       title: string
+      exportConfig?: string
+      exportConfigDesc?: string
+      export?: string
+      importConfig?: string
+      importConfigDesc?: string
+      import?: string
       resetSettings: string
       resetSettingsDesc: string
       resetSettingsConfirm: string

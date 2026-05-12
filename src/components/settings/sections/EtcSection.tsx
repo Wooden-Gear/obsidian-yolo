@@ -22,6 +22,8 @@ import { clearPdfTextCache } from '../../../database/json/chat/pdfTextCacheStore
 import { clearAllPromptSnapshotStores } from '../../../database/json/chat/promptSnapshotStore'
 import { clearAllTimelineHeightCacheStores } from '../../../database/json/chat/timelineHeightCacheStore'
 import { CHAT_DIR } from '../../../database/json/constants'
+import { ExportConfigModal } from '../../../features/config-transfer/components/ExportConfigModal'
+import { ImportConfigModal } from '../../../features/config-transfer/components/ImportConfigModal'
 import YoloPlugin from '../../../main'
 import { yoloSettingsSchema } from '../../../settings/schema/setting.types'
 import { ObsidianButton } from '../../common/ObsidianButton'
@@ -142,7 +144,7 @@ const StorageBadge = ({ value }: { value: number | null }) => {
   )
 }
 
-export function EtcSection({ app, className }: EtcSectionProps) {
+export function EtcSection({ app, plugin, className }: EtcSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
   const yoloBaseDir = settings.yolo?.baseDir ?? 'YOLO'
@@ -333,6 +335,34 @@ export function EtcSection({ app, className }: EtcSectionProps) {
         </div>
 
         <div className="yolo-settings-block-content">
+          <ObsidianSetting
+            name={t('settings.etc.exportConfig', '导出配置')}
+            desc={t(
+              'settings.etc.exportConfigDesc',
+              '将当前插件配置导出为 JSON 文件，方便在其他笔记库中导入使用。',
+            )}
+            className="yolo-settings-card"
+          >
+            <ObsidianButton
+              text={t('settings.etc.export', '导出')}
+              onClick={() => new ExportConfigModal(app, plugin).open()}
+            />
+          </ObsidianSetting>
+
+          <ObsidianSetting
+            name={t('settings.etc.importConfig', '导入配置')}
+            desc={t(
+              'settings.etc.importConfigDesc',
+              '从导出文件或其他笔记库导入插件配置。',
+            )}
+            className="yolo-settings-card"
+          >
+            <ObsidianButton
+              text={t('settings.etc.import', '导入')}
+              onClick={() => new ImportConfigModal(app, plugin).open()}
+            />
+          </ObsidianSetting>
+
           <ObsidianSetting
             name={t('settings.etc.yoloBaseDir', 'YOLO 根目录')}
             desc={t(
