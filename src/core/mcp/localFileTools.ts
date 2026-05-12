@@ -7,6 +7,7 @@ import type { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
 import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
+import type { ChatModelModality } from '../../types/chat-model.types'
 import type { ContentPart } from '../../types/llm/request'
 import { McpTool } from '../../types/mcp.types'
 import {
@@ -139,18 +140,25 @@ type LegacyFsSearchItem =
   | { kind: 'dir'; path: string }
   | { kind: 'content_match'; path: string; line: number; snippet: string }
 type FsListScope = 'files' | 'dirs' | 'all'
-type FsReadModality = 'auto' | 'text' | 'image' | 'pdf'
+// PDF read modality override. Omitted = default behavior (native PDF when the
+// chat model supports it, otherwise text). Concrete values are presented to
+// the model via a per-capability schema (see buildFsReadModalitySchema):
+//   - PDF-capable models: ['text', 'pdf']
+//   - vision-capable (non-PDF): ['text', 'image']
+//   - text-only: field is omitted from the schema entirely
+// The parser still accepts the full superset for resilience (see notes there).
+type FsReadModality = 'text' | 'image' | 'pdf'
 type FsReadOperation =
   | {
       type: 'full'
-      modality: FsReadModality
+      modality?: FsReadModality
     }
   | {
       type: 'lines'
       startLine: number
       endLine?: number
       maxLines: number
-      modality: FsReadModality
+      modality?: FsReadModality
     }
 type ContextPruneMode = 'selected' | 'all'
 
@@ -387,10 +395,69 @@ export function getLocalFileToolServerName(): string {
   return LOCAL_FILE_TOOL_SERVER
 }
 
+/**
+ * Build the modality enum + description fragment exposed to the current chat
+ * model in fs_read's schema.
+ *
+ *   - PDF-capable model      → ['text', 'pdf']
+ *   - vision (non-PDF) model → ['text', 'image']
+ *   - text-only model        → undefined (field is omitted from schema)
+ *   - no model context       → ['text', 'image', 'pdf'] (superset; used by UI
+ *                              listings and permission persistence — the LLM
+ *                              never sees this branch because every runtime
+ *                              call site threads the active model through)
+ *
+ * Image and pdf are mutually exclusive by product definition: image is only a
+ * workaround for models lacking native PDF input, and pdf is meaningless on
+ * models that can't accept it. Tailoring the enum per model collapses the
+ * "model picks a value that has to be silently corrected" failure mode into
+ * "the wrong value isn't representable to begin with."
+ */
+const buildFsReadModalitySchema = (
+  modalities: ChatModelModality[] | undefined,
+): { type: 'string'; enum: string[]; description: string } | undefined => {
+  const isPdfCapable = modalities?.includes('pdf')
+  const isVisionCapable = modalities?.includes('vision')
+
+  if (!modalities) {
+    // Superset (UI / permission listing). Not seen by any live LLM call.
+    return {
+      type: 'string',
+      enum: ['text', 'image', 'pdf'],
+      description:
+        'PDF-only modality override. Omit for the default per active model. text = plain text extraction. image = render pages as images (only available on vision-capable, non-PDF-capable models). pdf = native PDF input (only available on PDF-capable models). Ignored for non-PDF files.',
+    }
+  }
+
+  if (isPdfCapable) {
+    return {
+      type: 'string',
+      enum: ['text', 'pdf'],
+      description:
+        'PDF-only modality override. Omit for default (= "pdf"). "text" = plain text extraction (cheap and fast; pick this only when the user explicitly asks for text-only). "pdf" = native PDF input (highest fidelity). Ignored for non-PDF files.',
+    }
+  }
+
+  if (isVisionCapable) {
+    return {
+      type: 'string',
+      enum: ['text', 'image'],
+      description:
+        'PDF-only modality override. Omit for default (= "text"). "text" = plain text extraction. "image" = render the requested pages as images — opt in ONLY when text is insufficient (formulas, figures, scans, complex layout); avoid for large page ranges. Ignored for non-PDF files.',
+    }
+  }
+
+  // Text-only model: no override is meaningful. Field is omitted from schema
+  // entirely so the model has no decision to make.
+  return undefined
+}
+
 export function getLocalFileTools(options?: {
   vaultBasePath?: string
+  chatModelModalities?: ChatModelModality[]
 }): McpTool[] {
   const vaultBasePath = options?.vaultBasePath
+  const modalitySchema = buildFsReadModalitySchema(options?.chatModelModalities)
   return [
     {
       name: 'fs_list',
@@ -472,7 +539,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        "Read vault files. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. PDFs default to auto modality which picks the best strategy based on the active model's capabilities.",
+        'Read vault files. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -505,12 +572,7 @@ export function getLocalFileTools(options?: {
                 description:
                   'Inclusive end line/page. If set, maxLines is ignored.',
               },
-              modality: {
-                type: 'string',
-                enum: ['auto', 'text', 'image', 'pdf'],
-                description:
-                  "Read modality (PDF only; ignored for non-PDF files). auto (default): automatically pick the best modality based on the chat model's input capabilities (PDF native > image > text). Recommended for general use. text: extract plain text from PDF pages, returned with <page N> tags — cheap, fast, works for full or multi-page reads. image: render the requested pages to images for vision models — use only when text is insufficient (formulas, figures, scans, complex layout); avoid for large page ranges. pdf: send the requested pages as a native PDF slice — falls back to text if the model does not support native PDF.",
-              },
+              ...(modalitySchema ? { modality: modalitySchema } : {}),
             },
             required: ['type'],
           },
@@ -1936,23 +1998,30 @@ const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
   const parsedOperation = coerceOperationObject(args.operation)
   const type = asOptionalString(parsedOperation.type).trim().toLowerCase()
 
-  // Strict modality parsing: only accept undefined/null (→ default auto) or a
-  // string that normalizes to 'auto' / 'text' / 'image' / 'pdf'. Numbers,
-  // booleans, objects, arrays all reject — silently coercing them would hide
-  // model bugs.
+  // Strict modality parsing: accept undefined / null / empty string (→ unset,
+  // use default per active model) or one of 'text' / 'image' / 'pdf'. Numbers,
+  // booleans, objects, arrays, and any other strings (including legacy 'auto')
+  // all reject.
+  //
+  // The schema presented to the model is tailored per model capability
+  // (see buildFsReadModalitySchema), so e.g. PDF-capable models only see
+  // ['text','pdf']. The parser accepts the full superset because (a) it
+  // doesn't have model context here, and (b) resolveModality below maps any
+  // request to a sensible effective modality given the active model — a
+  // model that somehow sends 'image' to a PDF-capable model gets upgraded to
+  // native PDF rather than rejected, which is the more conservative path.
   const rawModalityValue = parsedOperation.modality
-  let modality: FsReadModality = 'auto'
+  let modality: FsReadModality | undefined
   if (rawModalityValue !== undefined && rawModalityValue !== null) {
     if (typeof rawModalityValue !== 'string') {
       throw new Error(
-        'operation.modality must be a string: auto, text, image, or pdf.',
+        "operation.modality must be 'text', 'image', or 'pdf' (or omitted for default behavior).",
       )
     }
     const normalized = rawModalityValue.trim().toLowerCase()
     if (normalized === '') {
-      // Empty string is treated as "not provided" → default auto.
+      // Empty string is treated as "not provided" → default behavior.
     } else if (
-      normalized === 'auto' ||
       normalized === 'text' ||
       normalized === 'image' ||
       normalized === 'pdf'
@@ -1960,7 +2029,7 @@ const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
       modality = normalized
     } else {
       throw new Error(
-        'operation.modality must be one of: auto, text, image, pdf.',
+        "operation.modality must be 'text', 'image', or 'pdf' (or omitted for default behavior).",
       )
     }
   }
@@ -2780,33 +2849,53 @@ export async function callLocalFileTool({
               continue
             }
 
-            // Resolve the effective modality for this PDF read in one shot —
-            // capabilities are checked here, downstream branches just dispatch
-            // on `resolvedModality` without re-checking. Decision rules:
-            //   • 'auto'   → pdf if model accepts pdf;
-            //                else image if model accepts vision AND image-read
-            //                  is enabled;
-            //                else text.
-            //   • 'pdf'    → pdf if model accepts pdf, else text.
-            //   • 'image'  → image if model accepts vision AND image-read is
-            //                  enabled, else text.
-            //   • 'text'   → text.
+            // Resolve the effective modality for this PDF read. The schema
+            // exposed to the model is tailored per capability (see
+            // buildFsReadModalitySchema), so normally the requested modality
+            // is already aligned with what the model can use. The branches
+            // below also handle the "out-of-schema" cases (model somehow
+            // sends image to a PDF-capable model, or pdf to a vision-only
+            // model) — those resolve to the strictly-better alternative
+            // rather than failing.
+            //
+            // Decision table:
+            //   ── PDF-capable model ──
+            //     undefined → pdf
+            //     'pdf'     → pdf
+            //     'text'    → text  (cheap path; respected verbatim)
+            //     'image'   → pdf   (image is redundant when native PDF is
+            //                       available — native PDF is strictly more
+            //                       informative; this branch is a safety net,
+            //                       schema doesn't expose image to these
+            //                       models)
+            //   ── vision-capable (non-PDF) ──
+            //     undefined → text
+            //     'pdf'     → text  (pdf not supported; safety-net downgrade)
+            //     'text'    → text
+            //     'image'   → image if image-read setting enabled, else text
+            //   ── text-only ──
+            //     all paths → text (no other modality is supported)
             const imageReadingEnabled =
               settings?.chatOptions?.imageReadingEnabled ?? true
             const canUseImage = chatModelAcceptsImages && imageReadingEnabled
             const resolvedModality: 'pdf' | 'image' | 'text' = (() => {
+              if (chatModelAcceptsPdf) {
+                switch (operation.modality) {
+                  case undefined:
+                  case 'pdf':
+                  case 'image':
+                    return 'pdf'
+                  case 'text':
+                    return 'text'
+                }
+              }
               switch (operation.modality) {
-                case 'auto':
-                  if (chatModelAcceptsPdf) return 'pdf'
-                  if (canUseImage) return 'image'
-                  return 'text'
+                case undefined:
                 case 'pdf':
-                  return chatModelAcceptsPdf ? 'pdf' : 'text'
+                case 'text':
+                  return 'text'
                 case 'image':
                   return canUseImage ? 'image' : 'text'
-                case 'text':
-                default:
-                  return 'text'
               }
             })()
 
@@ -3149,14 +3238,24 @@ export async function callLocalFileTool({
               ? rangeEndPageInclusive + 1
               : null
 
-            // Signal silent fallbacks to the model so it can observe the downgrade.
-            // 'auto' selects intelligently so no warning is needed for that case.
-            // visionDowngraded: user explicitly asked for image but model lacks vision.
-            // pdfDowngraded: user explicitly asked for pdf but model lacks native PDF.
+            // When an explicit modality request was silently re-mapped to
+            // text by the resolver, mark `effectiveModality` so callers /
+            // log readers can observe the divergence between requested and
+            // executed mode. Default (undefined) lands here too — but we
+            // only emit the marker when there's an actual divergence.
+            //
+            // Two visible divergences trigger metadata:
+            //   - 'image' on text-only model → text (caller asked for image
+            //     but the model can't do vision). Carries a model-visible
+            //     warning so the model knows its visual request was lost.
+            //   - 'pdf' on non-PDF model → text (caller asked for native
+            //     PDF, model doesn't support it). No warning text — the
+            //     downgrade is the system's choice, not something the model
+            //     should try to "correct" by asking again.
             const visionDowngraded =
               operation.modality === 'image' && !chatModelAcceptsImages
             const pdfDowngraded =
-              operation.modality === 'pdf' && resolvedModality === 'text'
+              operation.modality === 'pdf' && !chatModelAcceptsPdf
 
             results.push({
               path,
@@ -3178,11 +3277,7 @@ export async function callLocalFileTool({
                     warning: '当前模型不支持图像输入，已自动降级为文本读取',
                   }
                 : pdfDowngraded
-                  ? {
-                      effectiveModality: 'text' as const,
-                      warning:
-                        '当前模型不支持原生 PDF 输入，已自动降级为文本读取',
-                    }
+                  ? { effectiveModality: 'text' as const }
                   : {}),
             })
             continue

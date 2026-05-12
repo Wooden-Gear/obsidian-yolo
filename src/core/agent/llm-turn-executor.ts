@@ -92,6 +92,11 @@ export class AgentLlmTurnExecutor {
     const availableTools = this.input.enableTools
       ? await this.input.mcpManager.listAvailableTools({
           includeBuiltinTools: this.input.includeBuiltinTools,
+          // Pass the active model's modalities so built-in tool schemas
+          // (notably fs_read's modality enum) are tailored — PDF-capable
+          // models see ['text','pdf'], vision-capable see ['text','image'],
+          // text-only see no modality field at all.
+          chatModelModalities: this.input.model.modalities,
         })
       : []
     const {

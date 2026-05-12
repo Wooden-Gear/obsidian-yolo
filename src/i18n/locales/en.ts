@@ -692,7 +692,11 @@ export const en: TranslationKeys = {
         'Input types this model actually supports. A wrong pick will cause request failures.',
       inputModalityText: 'Text',
       inputModalityVision: 'Vision',
+      inputModalityVisionTooltip:
+        'Requires a model with native vision capability.',
       inputModalityPdf: 'PDF (native)',
+      inputModalityPdfTooltip:
+        'Requires a model that supports native PDF input (Gemini / Anthropic).',
       openaiReasoningEffort: 'Reasoning effort',
       openaiReasoningEffortDesc:
         'Choose effort: minimal (gpt-5 only) / low / medium / high',

@@ -2643,6 +2643,16 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           conversationId,
           conversationMessages: runningMessages,
           roundId: toolMessageId,
+          // Pass the model that produced this tool call (recorded as
+          // branchModelId on the tool message when the LLM turn ran), not the
+          // current conversation model — the user may have switched models
+          // after the call was generated but before approving it, and we
+          // need capability-gated resolution (e.g. fs_read modality) to
+          // match the model whose schema the call was emitted under.
+          // Falls back to the conversation model for legacy tool messages
+          // without branchModelId metadata.
+          chatModelId:
+            toolMessage.metadata?.branchModelId ?? conversationModelId,
           workspaceScope:
             chatMode === 'agent'
               ? selectedAssistant?.workspaceScope

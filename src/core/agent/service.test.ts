@@ -571,7 +571,7 @@ describe('AgentService mid-run user message queue', () => {
     // message queued under a fast-path run. The continuation guard must keep
     // us from looping forever even in that scenario.
     const runKey = 'conv-fast-cont::__default__'
-     
+
     ;(service as any).pendingUserMessagesByKey.set(runKey, [
       makeUserMessage('u2', 'orphan'),
     ])

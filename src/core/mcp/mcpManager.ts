@@ -5,6 +5,7 @@ import { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
 import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
+import type { ChatModelModality } from '../../types/chat-model.types'
 import {
   McpServerConfig,
   McpServerState,
@@ -564,16 +565,30 @@ export class McpManager {
     }
   }
 
-  private getAvailableToolsCacheKey(includeBuiltinTools: boolean): string {
-    return includeBuiltinTools ? 'with_builtin' : 'mcp_only'
+  private getAvailableToolsCacheKey(
+    includeBuiltinTools: boolean,
+    chatModelModalities: ChatModelModality[] | undefined,
+  ): string {
+    // Modalities are part of the cache key because built-in tool schemas
+    // (notably fs_read) are tailored per-model. Sort to be stable across the
+    // few call sites that may pass them in different order.
+    const modalityFingerprint = chatModelModalities
+      ? [...chatModelModalities].sort().join(',')
+      : 'superset'
+    return `${includeBuiltinTools ? 'with_builtin' : 'mcp_only'}|${modalityFingerprint}`
   }
 
   public async listAvailableTools({
     includeBuiltinTools = false,
+    chatModelModalities,
   }: {
     includeBuiltinTools?: boolean
+    chatModelModalities?: ChatModelModality[]
   } = {}): Promise<McpTool[]> {
-    const cacheKey = this.getAvailableToolsCacheKey(includeBuiltinTools)
+    const cacheKey = this.getAvailableToolsCacheKey(
+      includeBuiltinTools,
+      chatModelModalities,
+    )
     const cached = this.availableToolsCache.get(cacheKey)
     if (cached) {
       return cached
@@ -612,6 +627,7 @@ export class McpManager {
           ...availableTools,
           ...getLocalFileTools({
             vaultBasePath: getVaultBasePath(this.app),
+            chatModelModalities,
           })
             .filter((tool) => this.isLocalToolEnabled(tool.name))
             .map((tool) => ({

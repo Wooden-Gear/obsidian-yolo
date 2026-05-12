@@ -689,7 +689,11 @@ export const it: TranslationKeys = {
         'Tipi di input effettivamente supportati dal modello. Una scelta errata può causare errori di richiesta.',
       inputModalityText: 'Testo',
       inputModalityVision: 'Immagini',
+      inputModalityVisionTooltip:
+        'Richiede un modello con capacità di visione native.',
       inputModalityPdf: 'PDF (nativo)',
+      inputModalityPdfTooltip:
+        'Richiede un modello con supporto PDF nativo (Gemini / Anthropic).',
       builtinToolProvider: 'Strumenti integrati del provider',
       builtinToolProviderDesc:
         'Strumenti nativi forniti dal provider del modello. Indipendenti dagli strumenti integrati di YOLO.',

@@ -465,8 +465,9 @@ describe('local fs tool action helpers', () => {
     expect(payload.toolCallId).toBe('read-call-1')
     expect(payload.requestedOperation).toMatchObject({
       type: 'full',
-      modality: 'auto',
     })
+    // modality omitted by caller → echoed as undefined / dropped from JSON.
+    expect(payload.requestedOperation.modality).toBeUndefined()
     expect(payload.results[0]).toMatchObject({
       ok: true,
       content: ['1|one', '2|two', '3|three'].join('\n'),
@@ -615,8 +616,8 @@ describe('local fs tool action helpers', () => {
 
     expect(payload.requestedOperation).toMatchObject({
       type: 'full',
-      modality: 'auto',
     })
+    expect(payload.requestedOperation.modality).toBeUndefined()
     expect(payload.results[0]).toMatchObject({
       ok: true,
       content: `1|${longLine}`,
@@ -668,7 +669,6 @@ describe('local fs tool action helpers', () => {
     expect(payload.toolCallId).toBeNull()
     expect(payload.requestedOperation).toEqual({
       type: 'lines',
-      modality: 'auto',
     })
     expect(payload.results[0]).toMatchObject({
       ok: true,
@@ -728,25 +728,34 @@ describe('local fs tool action helpers', () => {
 
     const expectModality = (
       result: Awaited<ReturnType<typeof callRead>>,
-      expected: 'auto' | 'text' | 'image' | 'pdf',
+      expected: 'text' | 'image' | undefined,
     ) => {
       expect(result.status).toBe(ToolCallResponseStatus.Success)
       if (result.status !== ToolCallResponseStatus.Success) {
         throw new Error('expected success')
       }
       const payload = JSON.parse(result.text) as {
-        requestedOperation: { modality: string }
+        requestedOperation: { modality?: string }
       }
+      // The echo is undefined / missing from JSON when the caller did not
+      // provide a modality (default behavior). It only carries a value when
+      // the caller explicitly opts into 'text' or 'image'.
       expect(payload.requestedOperation.modality).toBe(expected)
     }
 
-    it('defaults to auto when modality is omitted', async () => {
-      expectModality(await callRead({ type: 'full' }), 'auto')
+    it('echoes undefined when modality is omitted', async () => {
+      expectModality(await callRead({ type: 'full' }), undefined)
     })
 
-    it('defaults to auto when modality is null or empty string', async () => {
-      expectModality(await callRead({ type: 'full', modality: null }), 'auto')
-      expectModality(await callRead({ type: 'full', modality: '   ' }), 'auto')
+    it('treats null / empty / whitespace-only modality as omitted', async () => {
+      expectModality(
+        await callRead({ type: 'full', modality: null }),
+        undefined,
+      )
+      expectModality(
+        await callRead({ type: 'full', modality: '   ' }),
+        undefined,
+      )
     })
 
     it('accepts modality case-insensitively and trims whitespace', async () => {
@@ -764,15 +773,19 @@ describe('local fs tool action helpers', () => {
       const result = await callRead({ type: 'full', modality: 123 })
       expect(result.status).toBe(ToolCallResponseStatus.Error)
       if (result.status === ToolCallResponseStatus.Error) {
-        expect(result.error).toContain('operation.modality must be a string')
+        expect(result.error).toMatch(/operation\.modality must be/)
       }
     })
 
-    it('rejects unknown modality strings', async () => {
-      const result = await callRead({ type: 'full', modality: 'video' })
-      expect(result.status).toBe(ToolCallResponseStatus.Error)
-      if (result.status === ToolCallResponseStatus.Error) {
-        expect(result.error).toContain('operation.modality must be one of')
+    it("rejects unknown modality strings (including legacy 'auto')", async () => {
+      // 'pdf' is intentionally NOT in this list — it's a valid value used by
+      // the PDF-capable schema branch.
+      for (const bad of ['video', 'auto', 'random-junk']) {
+        const result = await callRead({ type: 'full', modality: bad })
+        expect(result.status).toBe(ToolCallResponseStatus.Error)
+        if (result.status === ToolCallResponseStatus.Error) {
+          expect(result.error).toMatch(/operation\.modality must be/)
+        }
       }
     })
 
@@ -2053,6 +2066,74 @@ describe('local fs tool action helpers', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────
+// fs_read modality schema is tailored per active chat model capability
+// ──────────────────────────────────────────────────────────────────
+
+describe('fs_read modality schema is tailored per model capability', () => {
+  type FsReadInputSchema = {
+    properties?: {
+      operation?: {
+        properties?: {
+          modality?: {
+            type?: string
+            enum?: string[]
+            description?: string
+          }
+        }
+      }
+    }
+  }
+  const getModalitySchema = (modalities?: Array<'text' | 'vision' | 'pdf'>) => {
+    const tools = getLocalFileTools({ chatModelModalities: modalities })
+    const fsRead = tools.find((t) => t.name === 'fs_read')
+    if (!fsRead) throw new Error('fs_read not found')
+    const schema = fsRead.inputSchema as FsReadInputSchema
+    return schema.properties?.operation?.properties?.modality
+  }
+
+  it('exposes the full superset (text/image/pdf) when no model context is passed', () => {
+    // The UI / persistence call sites use this branch so the user-facing
+    // permission editor can show every possible modality independent of
+    // which model happens to be active.
+    const modality = getModalitySchema(undefined)
+    expect(modality).toBeDefined()
+    expect(modality?.enum).toEqual(['text', 'image', 'pdf'])
+  })
+
+  it("PDF-capable model: enum is ['text', 'pdf']; image is NOT exposed", () => {
+    // Image is meaningless on PDF-capable models — native PDF strictly
+    // dominates. Removing it from the enum makes the wrong choice
+    // structurally unrepresentable.
+    const modality = getModalitySchema(['text', 'vision', 'pdf'])
+    expect(modality).toBeDefined()
+    expect(modality?.enum).toEqual(['text', 'pdf'])
+    expect(modality?.enum).not.toContain('image')
+  })
+
+  it("vision-capable (non-PDF) model: enum is ['text', 'image']; pdf is NOT exposed", () => {
+    // pdf is meaningless without native PDF support. Image is the
+    // legitimate visual workaround in this case.
+    const modality = getModalitySchema(['text', 'vision'])
+    expect(modality).toBeDefined()
+    expect(modality?.enum).toEqual(['text', 'image'])
+    expect(modality?.enum).not.toContain('pdf')
+  })
+
+  it('text-only model: modality field is omitted from the schema entirely', () => {
+    // No override is meaningful — every path collapses to text. The
+    // cleanest signal to the model is to not show the field at all.
+    expect(getModalitySchema(['text'])).toBeUndefined()
+  })
+
+  it('pdf-only (hypothetical, no vision) model: enum still excludes image', () => {
+    // Defensive: even a model declared pdf-capable but not vision-capable
+    // should never see image as a choice.
+    const modality = getModalitySchema(['text', 'pdf'])
+    expect(modality?.enum).toEqual(['text', 'pdf'])
+  })
+})
+
+// ──────────────────────────────────────────────────────────────────
 // fs_read PDF vision-downgrade warning
 // ──────────────────────────────────────────────────────────────────
 
@@ -2192,7 +2273,7 @@ describe('fs_read PDF vision-downgrade warning', () => {
   })
 })
 
-// fs_read PDF native slice (modality='pdf' / 'auto')
+// fs_read PDF native slice (default modality + explicit overrides)
 // ──────────────────────────────────────────────────────────────────
 
 describe('fs_read PDF native slice', () => {
@@ -2254,14 +2335,26 @@ describe('fs_read PDF native slice', () => {
     })
   })
 
+  // `modality` may be:
+  //   • undefined → omitted from the request, exercising default behavior
+  //   • 'text' / 'image' / 'pdf' → explicit caller override
+  // The schema exposed to the model is tailored per capability, but the
+  // parser still accepts the full superset for resilience (see resolver
+  // safety-net tests near the bottom of this describe block).
+  // Legacy value 'auto' is not accepted — see the dedicated rejection test.
   const callPdfSliceRead = (
-    modality: 'pdf' | 'auto' | 'text' | 'image',
+    modality: 'text' | 'image' | 'pdf' | undefined,
     modalities: Array<'text' | 'vision' | 'pdf'>,
     operationType: 'full' | 'lines' = 'lines',
     startLine = 1,
     endLine = 2,
   ) => {
     const file = makePdfFile()
+    const baseOp =
+      operationType === 'full'
+        ? { type: 'full' as const }
+        : { type: 'lines' as const, startLine, endLine }
+    const operation = modality === undefined ? baseOp : { ...baseOp, modality }
     return callLocalFileTool({
       app: {
         vault: {
@@ -2274,18 +2367,18 @@ describe('fs_read PDF native slice', () => {
       toolCallId: 'tc-pdf-native',
       args: {
         paths: ['report.pdf'],
-        operation:
-          operationType === 'full'
-            ? { type: 'full', modality }
-            : { type: 'lines', startLine, endLine, modality },
+        operation,
       },
       settings: buildSettings(modalities),
       chatModelId: 'provider/model',
     })
   }
 
-  it('modality=pdf + pdf-capable model → returns document contentPart with original page range in name', async () => {
-    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+  it('no modality + pdf-capable model → takes native pdf path with original page range in name', async () => {
+    // Default behavior (modality omitted): the runtime decides based on the
+    // active model's capabilities. With a PDF-capable model this MUST land on
+    // the native pdf slice path — that's the whole point of leaving it unset.
+    const result = await callPdfSliceRead(undefined, ['text', 'vision', 'pdf'])
     expect(result.status).toBe(ToolCallResponseStatus.Success)
     if (result.status !== ToolCallResponseStatus.Success)
       throw new Error('expected success')
@@ -2307,59 +2400,33 @@ describe('fs_read PDF native slice', () => {
     expect(payload.results[0]?.effectiveModality).toBe('pdf')
   })
 
-  it('modality=pdf + non-pdf model → falls back to text, result carries warning', async () => {
-    const result = await callPdfSliceRead('pdf', ['text', 'vision'])
-    expect(result.status).toBe(ToolCallResponseStatus.Success)
-    if (result.status !== ToolCallResponseStatus.Success)
-      throw new Error('expected success')
-
-    // Should NOT have attempted a slice
-    expect(sliceMock).not.toHaveBeenCalled()
-    expect(extractMockNative).toHaveBeenCalled()
-
-    const payload = JSON.parse(result.text) as {
-      results: Array<{ effectiveModality?: string; warning?: string }>
-    }
-    expect(payload.results[0]?.effectiveModality).toBe('text')
-    expect(payload.results[0]?.warning).toContain('原生 PDF')
-  })
-
-  it('modality=auto + pdf-capable model → takes pdf path', async () => {
-    const result = await callPdfSliceRead('auto', ['text', 'vision', 'pdf'])
-    expect(result.status).toBe(ToolCallResponseStatus.Success)
-    if (result.status !== ToolCallResponseStatus.Success)
-      throw new Error('expected success')
-
-    expect(sliceMock).toHaveBeenCalled()
-    expect(result.contentParts).toBeDefined()
-    expect(result.contentParts?.[0]?.type).toBe('document')
-  })
-
-  it('modality=auto + vision-only model → takes image path (not pdf)', async () => {
+  it('no modality + vision-only model → takes text path (image is NEVER auto-selected)', async () => {
+    // Regression guard for the auto-priority fix: previously the default
+    // resolved to `pdf > image > text`, silently rendering every page to a
+    // PNG for any vision-capable model — extremely expensive and almost
+    // never what the caller wants. The new contract is `pdf > text`; image
+    // must be opted into explicitly via modality:'image'.
     const renderMock = renderPdfPagesToImages as jest.MockedFunction<
       typeof renderPdfPagesToImages
     >
-    renderMock.mockResolvedValue({
-      totalPages: 3,
-      rendered: [{ page: 1, dataUrl: 'data:image/png;base64,ABC' }],
-    } as unknown as Awaited<ReturnType<typeof renderPdfPagesToImages>>)
 
-    const result = await callPdfSliceRead('auto', ['text', 'vision'])
+    const result = await callPdfSliceRead(undefined, ['text', 'vision'])
     expect(result.status).toBe(ToolCallResponseStatus.Success)
     if (result.status !== ToolCallResponseStatus.Success)
       throw new Error('expected success')
 
     expect(sliceMock).not.toHaveBeenCalled()
-    expect(renderMock).toHaveBeenCalled()
-    // No document part expected
+    expect(renderMock).not.toHaveBeenCalled()
+    expect(extractMockNative).toHaveBeenCalled()
+    // No document/image parts expected — text is returned inline as result.text
     const docParts = (result.contentParts ?? []).filter(
       (p) => p.type === 'document',
     )
     expect(docParts).toHaveLength(0)
   })
 
-  it('modality=auto + text-only model → takes text path', async () => {
-    const result = await callPdfSliceRead('auto', ['text'])
+  it('no modality + text-only model → takes text path', async () => {
+    const result = await callPdfSliceRead(undefined, ['text'])
     expect(result.status).toBe(ToolCallResponseStatus.Success)
     if (result.status !== ToolCallResponseStatus.Success)
       throw new Error('expected success')
@@ -2369,7 +2436,7 @@ describe('fs_read PDF native slice', () => {
     expect(result.contentParts).toBeUndefined()
   })
 
-  it('no chatModelId → auto does NOT take pdf path (conservative fallback)', async () => {
+  it('no chatModelId → default modality does NOT take pdf path (conservative fallback)', async () => {
     const file = makePdfFile()
     const result = await callLocalFileTool({
       app: {
@@ -2386,7 +2453,7 @@ describe('fs_read PDF native slice', () => {
           type: 'lines',
           startLine: 1,
           endLine: 2,
-          modality: 'auto',
+          // modality intentionally omitted
         },
       },
       // No settings / chatModelId supplied
@@ -2401,7 +2468,7 @@ describe('fs_read PDF native slice', () => {
       new PdfSliceError('load-failed', 'encrypted PDF'),
     )
 
-    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+    const result = await callPdfSliceRead(undefined, ['text', 'vision', 'pdf'])
     expect(result.status).toBe(ToolCallResponseStatus.Success)
     if (result.status !== ToolCallResponseStatus.Success)
       throw new Error('expected success')
@@ -2417,14 +2484,14 @@ describe('fs_read PDF native slice', () => {
 
   // ── Bug fix tests ──────────────────────────────────────────────────
 
-  it('pdf modality full + slice failure → fallback returns all pages (bug 1)', async () => {
+  it('full read + slice failure on pdf path → fallback returns all pages (bug 1)', async () => {
     // extractMock returns 3 pages; slice fails → fallback should cover all 3
     sliceMock.mockRejectedValueOnce(
       new PdfSliceError('load-failed', 'corrupt PDF'),
     )
 
     const result = await callPdfSliceRead(
-      'pdf',
+      undefined,
       ['text', 'vision', 'pdf'],
       'full',
     )
@@ -2443,7 +2510,7 @@ describe('fs_read PDF native slice', () => {
     expect(content).toContain('page three')
   })
 
-  it('pdf modality lines without endLine → returns single page (bug 2)', async () => {
+  it('lines read without endLine on pdf path → returns single page (bug 2)', async () => {
     const file = makePdfFile()
     const result = await callLocalFileTool({
       app: {
@@ -2460,8 +2527,7 @@ describe('fs_read PDF native slice', () => {
         operation: {
           type: 'lines',
           startLine: 2,
-          // endLine intentionally omitted
-          modality: 'pdf',
+          // endLine and modality intentionally omitted
         },
       },
       settings: buildSettings(['text', 'vision', 'pdf']),
@@ -2479,41 +2545,7 @@ describe('fs_read PDF native slice', () => {
     })
   })
 
-  it('explicit pdf modality + no chatModelId → downgrades to text with warning', async () => {
-    const file = makePdfFile()
-    const result = await callLocalFileTool({
-      app: {
-        vault: {
-          getFileByPath: jest.fn().mockReturnValue(file),
-          read: jest.fn().mockResolvedValue(''),
-        },
-      } as unknown as App,
-      toolName: 'fs_read',
-      toolCallId: 'tc-no-chatModelId',
-      args: {
-        paths: ['report.pdf'],
-        operation: { type: 'full', modality: 'pdf' },
-      },
-      settings: buildSettings(['text', 'vision', 'pdf']),
-      // No chatModelId → activeChatModel = null → chatModelAcceptsPdf = false
-    })
-
-    expect(result.status).toBe(ToolCallResponseStatus.Success)
-    if (result.status !== ToolCallResponseStatus.Success)
-      throw new Error('expected success')
-
-    // Native slice must NOT have been attempted
-    expect(sliceMock).not.toHaveBeenCalled()
-    expect(extractMockNative).toHaveBeenCalled()
-
-    const payload = JSON.parse(result.text) as {
-      results: Array<{ effectiveModality?: string; warning?: string }>
-    }
-    expect(payload.results[0]?.effectiveModality).toBe('text')
-    expect(payload.results[0]?.warning).toContain('原生 PDF')
-  })
-
-  it('pdf modality + page count >100 → PdfSliceError → fallback returns all pages (bug 1)', async () => {
+  it('page count >100 on pdf path → PdfSliceError → fallback returns all pages (bug 1)', async () => {
     // Set pdf-lib to report 150 pages; sliceMock throws because >MAX_SLICE_PAGES
     pdfLibMock.__setPageCount(150)
     extractMockNative.mockResolvedValueOnce({
@@ -2530,7 +2562,7 @@ describe('fs_read PDF native slice', () => {
     )
 
     const result = await callPdfSliceRead(
-      'pdf',
+      undefined,
       ['text', 'vision', 'pdf'],
       'full',
     )
@@ -2558,7 +2590,7 @@ describe('fs_read PDF native slice', () => {
       ),
     )
 
-    const result = await callPdfSliceRead('pdf', ['text', 'vision', 'pdf'])
+    const result = await callPdfSliceRead(undefined, ['text', 'vision', 'pdf'])
     expect(result.status).toBe(ToolCallResponseStatus.Success)
     if (result.status !== ToolCallResponseStatus.Success)
       throw new Error('expected success')
@@ -2571,5 +2603,85 @@ describe('fs_read PDF native slice', () => {
     }
     expect(payload.results[0]?.ok).toBe(false)
     expect(payload.results[0]?.error).toContain('exceeds')
+  })
+
+  // ── Strict modality rejection (regression guard) ──────────────────────
+  // Legacy 'auto' was removed when we simplified the schema. The parser
+  // must hard-reject it rather than silently coerce — silent acceptance
+  // would let the deprecated value live forever in tool-call contexts.
+  // 'pdf' was reinstated as a valid value (used by the PDF-capable
+  // schema) and is intentionally NOT in this rejection list.
+
+  it.each([['auto'], ['video'], ['random-junk']])(
+    "modality='%s' is rejected as invalid input",
+    async (invalidValue) => {
+      const file = makePdfFile()
+      const result = await callLocalFileTool({
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(file) },
+        } as unknown as App,
+        toolName: 'fs_read',
+        toolCallId: 'tc-invalid-modality',
+        args: {
+          paths: ['report.pdf'],
+          operation: { type: 'full', modality: invalidValue },
+        },
+        settings: buildSettings(['text', 'vision', 'pdf']),
+        chatModelId: 'provider/model',
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Error)
+      if (result.status !== ToolCallResponseStatus.Error)
+        throw new Error('expected error')
+      expect(result.error).toMatch(/modality/i)
+    },
+  )
+
+  // ── Out-of-schema safety net ─────────────────────────────────────────
+  // The schema exposed to the model is tailored per capability, so e.g.
+  // PDF-capable models normally don't see 'image' as an option. But if a
+  // model somehow sends an out-of-schema modality value (stale tool-call
+  // history, copy-paste from another conversation, etc.), the resolver
+  // maps it to the strictly-better alternative instead of failing.
+
+  it("modality='image' on PDF-capable model → resolves to native PDF (safety-net upgrade)", async () => {
+    // The PDF-capable schema doesn't expose 'image' to the model, so
+    // landing here means the value came in via some unintended channel.
+    // We resolve to native PDF because it strictly dominates image on
+    // PDF-capable models — image was only ever a workaround for models
+    // lacking native PDF support.
+    const result = await callPdfSliceRead('image', ['text', 'vision', 'pdf'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).toHaveBeenCalled()
+    expect(result.contentParts?.[0]?.type).toBe('document')
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ effectiveModality?: string }>
+    }
+    expect(payload.results[0]?.effectiveModality).toBe('pdf')
+  })
+
+  it("modality='pdf' on vision-only model → resolves to text with effectiveModality marker (safety-net downgrade)", async () => {
+    // pdf is not exposed in the vision-only schema; if it leaks through,
+    // there's no way to honor it, so fall back to text. The result is
+    // marked with effectiveModality so log readers can see requested vs
+    // executed diverged — no model-visible warning text is attached,
+    // because this is the system's choice, not something the model should
+    // try to "correct" by retrying with a different modality.
+    const result = await callPdfSliceRead('pdf', ['text', 'vision'])
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success)
+      throw new Error('expected success')
+
+    expect(sliceMock).not.toHaveBeenCalled()
+    expect(extractMockNative).toHaveBeenCalled()
+
+    const payload = JSON.parse(result.text) as {
+      results: Array<{ effectiveModality?: string; warning?: string }>
+    }
+    expect(payload.results[0]?.effectiveModality).toBe('text')
+    expect(payload.results[0]?.warning).toBeUndefined()
   })
 })

@@ -38,7 +38,12 @@ export const estimateContinuationRequestContextTokens = async ({
   contextualInjections?: ContextualInjection[]
 }): Promise<number> => {
   const availableTools = enableTools
-    ? await mcpManager.listAvailableTools({ includeBuiltinTools })
+    ? await mcpManager.listAvailableTools({
+        includeBuiltinTools,
+        // Tailor built-in tool schemas to the active model so the token
+        // estimate reflects what the model will actually see at request time.
+        chatModelModalities: model.modalities,
+      })
     : []
   const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
     availableTools,

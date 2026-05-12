@@ -644,7 +644,10 @@ export const zh: TranslationKeys = {
       inputModalityDesc: '该模型实际支持的输入类型，选错会导致调用失败',
       inputModalityText: '文本',
       inputModalityVision: '图片',
+      inputModalityVisionTooltip: '需要模型本身具备视觉能力',
       inputModalityPdf: 'PDF 原生输入',
+      inputModalityPdfTooltip:
+        '需要底层模型支持 PDF 原生输入（Gemini / Anthropic）',
       openaiReasoningEffort: '推理强度 (effort)',
       openaiReasoningEffortDesc:
         '选择推理强度：minimal（更快更省，仅 GPT-5）/ low / medium / high',
