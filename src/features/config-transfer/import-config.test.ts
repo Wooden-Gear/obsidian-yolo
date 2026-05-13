@@ -4,6 +4,7 @@ import { parseYoloSettings } from '../../settings/schema/settings'
 import { buildExportData, computeChecksum } from './export-config'
 import {
   applyImport,
+  ImportValidationError,
   parseVaultData,
   validateExportFile,
 } from './import-config'
@@ -103,6 +104,28 @@ describe('validateExportFile', () => {
     }
   })
 
+  it('should reject settingsVersion lower than current schema version', async () => {
+    const result = await validateExportFile({
+      ...validFile,
+      settingsVersion: SETTINGS_SCHEMA_VERSION - 1,
+    })
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.error).toContain('旧版本')
+    }
+  })
+
+  it('should reject settingsVersion higher than current schema version', async () => {
+    const result = await validateExportFile({
+      ...validFile,
+      settingsVersion: SETTINGS_SCHEMA_VERSION + 1,
+    })
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.error).toContain('更高版本')
+    }
+  })
+
   it('should reject empty keys array', async () => {
     const result = await validateExportFile({ ...validFile, keys: [] })
     expect(result.valid).toBe(false)
@@ -183,9 +206,9 @@ describe('validateExportFile', () => {
 })
 
 describe('parseVaultData', () => {
-  it('should parse valid vault data.json content', () => {
+  it('should parse vault data.json with matching version', () => {
     const vaultData = {
-      version: 45,
+      version: SETTINGS_SCHEMA_VERSION,
       __meta: { deviceId: 'other-device' },
       providers: [{ id: 'openai', apiKey: 'sk-xxx' }],
       chatModels: [
@@ -197,7 +220,7 @@ describe('parseVaultData', () => {
     const result = parseVaultData(vaultData, '1.5.0')
     expect(result.valid).toBe(true)
     if (result.valid) {
-      expect(result.data.settingsVersion).toBe(45)
+      expect(result.data.settingsVersion).toBe(SETTINGS_SCHEMA_VERSION)
       expect(result.data.keys).toContain('providers')
       expect(result.data.keys).toContain('chatModels')
       expect(result.data.keys).toContain('chatModelId')
@@ -214,32 +237,60 @@ describe('parseVaultData', () => {
   })
 
   it('should reject empty object (no exportable keys)', () => {
-    const result = parseVaultData({ version: 51, __meta: {} })
+    const result = parseVaultData({
+      version: SETTINGS_SCHEMA_VERSION,
+      __meta: {},
+    })
     expect(result.valid).toBe(false)
     if (!result.valid) {
       expect(result.error).toContain('为空')
     }
   })
 
-  it('should default settingsVersion to 0 if version field is missing', () => {
+  it('should reject when version field is missing', () => {
     const result = parseVaultData({ providers: [] })
-    expect(result.valid).toBe(true)
-    if (result.valid) {
-      expect(result.data.settingsVersion).toBe(0)
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.error).toContain('version')
     }
   })
 
-  it('should include unknown keys from vault data (future settings fields)', () => {
+  it('should reject older vault version', () => {
+    const result = parseVaultData({
+      version: SETTINGS_SCHEMA_VERSION - 1,
+      providers: [],
+    })
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.error).toContain('旧版本')
+    }
+  })
+
+  it('should reject newer vault version', () => {
+    const result = parseVaultData({
+      version: SETTINGS_SCHEMA_VERSION + 1,
+      providers: [],
+    })
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.error).toContain('更高版本')
+    }
+  })
+
+  it('should drop unknown top-level keys not in EXPORTABLE_CONFIG_KEYS', () => {
+    // 同版本策略下，未在白名单内的字段被 schema strip 后不会落盘，
+    // 不应让用户在 UI 里勾选它们造成"导入成功但无效"的错觉。
     const vaultData = {
-      version: 51,
+      version: SETTINGS_SCHEMA_VERSION,
       providers: [],
       futureFeature: { enabled: true },
     }
     const result = parseVaultData(vaultData)
     expect(result.valid).toBe(true)
     if (result.valid) {
-      expect(result.data.keys).toContain('futureFeature')
-      expect(result.data.data).toHaveProperty('futureFeature')
+      expect(result.data.keys).toContain('providers')
+      expect(result.data.keys).not.toContain('futureFeature')
+      expect(result.data.data).not.toHaveProperty('futureFeature')
     }
   })
 })
@@ -337,22 +388,68 @@ describe('applyImport', () => {
     expect(result.ragOptions.chunkSize).toBe(1000)
   })
 
-  it('should run migration for older settings versions', () => {
+  it('should throw ImportValidationError when settingsVersion does not match', () => {
     const importData = makeImportData({
-      settingsVersion: 38,
+      settingsVersion: SETTINGS_SCHEMA_VERSION - 1,
       pluginVersion: '1.4.0',
       keys: ['chatModelId'],
       data: { chatModelId: 'existing/gpt-4' },
     })
 
+    expect(() =>
+      applyImport({
+        importData,
+        selectedKeys: ['chatModelId'],
+        currentSettings,
+        mergeStrategy: 'overwrite',
+      }),
+    ).toThrow(ImportValidationError)
+  })
+
+  it('should silently replace malformed field with schema default (known schema .catch behavior)', () => {
+    // 已知限制：yoloSettingsSchema 每个字段都用 .catch(default)，
+    // 所以同版本下"字段格式非法"不会抛错，会被默默替换成默认值。
+    // 本测试用于固化当前行为，避免后续 review 误以为 applyImport 能拦截。
+    // 真正的字段级严格化需要在 schema 层单独 issue 解决。
+    const importData = makeImportData({
+      keys: ['ragOptions'],
+      data: { ragOptions: 'not-an-object' as unknown as Record<string, unknown> },
+    })
+
     const result = applyImport({
       importData,
-      selectedKeys: ['chatModelId'],
+      selectedKeys: ['ragOptions'],
       currentSettings,
       mergeStrategy: 'overwrite',
     })
 
-    expect(result.version).toBe(SETTINGS_SCHEMA_VERSION)
+    // 没有抛错；坏字段被默认值替换
+    expect(result.ragOptions).toBeDefined()
+    expect(typeof result.ragOptions).toBe('object')
+    expect(typeof result.ragOptions.chunkSize).toBe('number')
+  })
+
+  it('should not silently fall back to defaults when version mismatches', () => {
+    // 回归：旧实现走 parseYoloSettings 的兜底，跨版本会返回一个被默认值覆盖
+    // 的"成功"结果。新实现必须显式抛错，调用方据此保留原配置。
+    const importData = makeImportData({
+      settingsVersion: SETTINGS_SCHEMA_VERSION + 1,
+      keys: ['ragOptions'],
+      data: { ragOptions: { enabled: false, chunkSize: 999 } },
+    })
+
+    expect(() =>
+      applyImport({
+        importData,
+        selectedKeys: ['ragOptions'],
+        currentSettings,
+        mergeStrategy: 'overwrite',
+      }),
+    ).toThrow(ImportValidationError)
+
+    // currentSettings 未被改动
+    expect(currentSettings.ragOptions.chunkSize).toBe(1000)
+    expect(currentSettings.ragOptions.enabled).toBe(true)
   })
 
   it('should normalize references after import (orphan model references)', () => {

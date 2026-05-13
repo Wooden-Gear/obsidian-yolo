@@ -1,11 +1,12 @@
+import { ensureDefaultAssistantInSettings } from '../../core/agent/default-assistant'
+import { SETTINGS_SCHEMA_VERSION } from '../../settings/schema/migrations'
 import {
-  SETTINGS_SCHEMA_VERSION,
-  SETTING_MIGRATIONS,
-} from '../../settings/schema/migrations'
-import { YoloSettings } from '../../settings/schema/setting.types'
-import { parseYoloSettings } from '../../settings/schema/settings'
+  YoloSettings,
+  yoloSettingsSchema,
+} from '../../settings/schema/setting.types'
+import { normalizeYoloSettingsReferences } from '../../settings/schema/settings'
 
-import { EXCLUDED_KEYS } from './config-keys'
+import { EXCLUDED_KEYS, EXPORTABLE_CONFIG_KEYS } from './config-keys'
 import { computeChecksum } from './export-config'
 import { deepMerge } from './merge-utils'
 import { ConfigExportFile, MergeStrategy } from './types'
@@ -40,6 +41,16 @@ export async function validateExportFile(
 
   if (typeof obj.settingsVersion !== 'number' || obj.settingsVersion < 0) {
     return { valid: false, error: '配置文件中的设置版本号不合法，可能已损坏。' }
+  }
+
+  if (obj.settingsVersion !== SETTINGS_SCHEMA_VERSION) {
+    return {
+      valid: false,
+      error:
+        obj.settingsVersion > SETTINGS_SCHEMA_VERSION
+          ? `配置文件来自更高版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`
+          : `配置文件来自旧版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请在源端升级 YOLO 插件后重新导出。`,
+    }
   }
 
   if (!Array.isArray(obj.keys) || obj.keys.length === 0) {
@@ -89,16 +100,35 @@ export function parseVaultData(
   }
 
   const obj = raw as Record<string, unknown>
-  const settingsVersion = (obj.version as number) ?? 0
 
-  // 提取所有非排除字段作为可导入数据
+  if (typeof obj.version !== 'number') {
+    return {
+      valid: false,
+      error: '目标笔记库的配置数据缺少 version 字段，无法判断版本兼容性。',
+    }
+  }
+
+  if (obj.version !== SETTINGS_SCHEMA_VERSION) {
+    return {
+      valid: false,
+      error:
+        obj.version > SETTINGS_SCHEMA_VERSION
+          ? `目标笔记库使用更高版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`
+          : `目标笔记库使用旧版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请先在目标笔记库升级 YOLO 插件后再导入。`,
+    }
+  }
+
+  // 严格同版本策略下，未在 EXPORTABLE_CONFIG_KEYS 中声明的顶层字段不应进入
+  // 候选列表 —— 否则用户能勾选这些字段，但 yoloSettingsSchema 会 strip 掉，
+  // 最终"导入成功"但实际未生效，造成误导。
+  const exportableKeySet = new Set(EXPORTABLE_CONFIG_KEYS.map((k) => k.key))
   const data: Record<string, unknown> = {}
   const keys: string[] = []
   for (const [key, value] of Object.entries(obj)) {
-    if (!EXCLUDED_KEYS.has(key)) {
-      data[key] = value
-      keys.push(key)
-    }
+    if (EXCLUDED_KEYS.has(key)) continue
+    if (!exportableKeySet.has(key)) continue
+    data[key] = value
+    keys.push(key)
   }
 
   if (keys.length === 0) {
@@ -108,7 +138,7 @@ export function parseVaultData(
   const exportFile: ConfigExportFile = {
     $schema: 'yolo-config-export',
     formatVersion: 1,
-    settingsVersion,
+    settingsVersion: obj.version,
     exportedAt: new Date().toISOString(),
     pluginVersion: pluginVersion ?? 'unknown',
     redacted: false,
@@ -121,7 +151,7 @@ export function parseVaultData(
 }
 
 export type ImportOptions = {
-  /** 导入的配置数据（已校验） */
+  /** 导入的配置数据（已校验，版本与当前一致） */
   importData: ConfigExportFile
   /** 用户选择要导入的 key 列表 */
   selectedKeys: string[]
@@ -131,62 +161,51 @@ export type ImportOptions = {
   mergeStrategy: MergeStrategy
 }
 
-/**
- * 对导入数据执行迁移链（不做 schema parse 和默认值填充）。
- * 仅升级数据结构到当前版本。
- */
-function migrateImportData(
-  data: Record<string, unknown>,
-  fromVersion: number,
-): Record<string, unknown> {
-  let currentData: Record<string, unknown> = { ...data, version: fromVersion }
-  let currentVersion = fromVersion
-
-  for (const migration of SETTING_MIGRATIONS) {
-    if (
-      currentVersion >= migration.fromVersion &&
-      currentVersion < migration.toVersion &&
-      migration.toVersion <= SETTINGS_SCHEMA_VERSION
-    ) {
-      currentData = migration.migrate(currentData)
-      currentVersion = migration.toVersion
-    }
+export class ImportValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly issues: string[],
+  ) {
+    super(message)
+    this.name = 'ImportValidationError'
   }
-
-  return currentData
 }
 
 /**
  * 执行配置导入，返回合并后的完整 settings。
  *
+ * 前置约束：importData.settingsVersion 必须等于 SETTINGS_SCHEMA_VERSION
+ * （由 validateExportFile / parseVaultData 保证）。本函数不再处理跨版本迁移。
+ *
  * 流程：
- * 1. 将导入数据通过迁移链升级到当前版本（不填充默认值）
- * 2. 根据合并策略将迁移后的数据合并到当前配置
- * 3. 通过 parseYoloSettings 进行 schema 校验和引用规范化
+ * 1. 按合并策略将 importData.data 合并到 currentSettings
+ * 2. 通过 yoloSettingsSchema 显式校验；失败时抛出 ImportValidationError，
+ *    调用方负责提示用户并保留原配置（不静默回退到默认值）
+ * 3. 在合法结果上做引用规范化与默认 assistant 兜底
  */
 export function applyImport(options: ImportOptions): YoloSettings {
   const { importData, selectedKeys, currentSettings, mergeStrategy } = options
 
-  // 1. 迁移导入数据到当前版本（仅结构升级，不填充默认值）
-  const migratedData = migrateImportData(
-    importData.data,
-    importData.settingsVersion,
-  )
+  if (importData.settingsVersion !== SETTINGS_SCHEMA_VERSION) {
+    throw new ImportValidationError(
+      `导入数据版本（${importData.settingsVersion}）与当前插件版本（${SETTINGS_SCHEMA_VERSION}）不一致，无法导入。`,
+      [],
+    )
+  }
 
-  // 2. 根据合并策略合并到当前配置
+  // 1. 按合并策略合并到当前配置
   const currentRaw = currentSettings as unknown as Record<string, unknown>
   const merged: Record<string, unknown> = { ...currentRaw }
 
   for (const key of selectedKeys) {
     if (EXCLUDED_KEYS.has(key)) continue
 
-    const importedValue = migratedData[key]
+    const importedValue = importData.data[key]
     if (importedValue === undefined) continue
 
     if (mergeStrategy === 'overwrite') {
       merged[key] = importedValue
     } else {
-      // JSON merge
       const currentValue = merged[key]
       if (
         typeof currentValue === 'object' &&
@@ -201,13 +220,30 @@ export function applyImport(options: ImportOptions): YoloSettings {
           importedValue as Record<string, unknown>,
         )
       } else {
-        // 非对象类型（数组、基本类型）直接覆盖
         merged[key] = importedValue
       }
     }
   }
 
-  // 3. 通过 parseYoloSettings 校验和规范化最终结果
   merged.version = SETTINGS_SCHEMA_VERSION
-  return parseYoloSettings(merged)
+
+  // 2. 显式 schema 校验，失败时抛错（不走 parseYoloSettings 的默认值兜底）
+  const parsed = yoloSettingsSchema.safeParse(merged)
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : '(root)'
+      return `${path}: ${issue.message}`
+    })
+    throw new ImportValidationError(
+      '导入的配置未通过校验，可能存在字段缺失或格式错误。',
+      issues,
+    )
+  }
+
+  // 3. 引用规范化 + 默认 assistant 兜底
+  const normalized = normalizeYoloSettingsReferences(parsed.data)
+  return ensureDefaultAssistantInSettings({
+    ...normalized,
+    version: SETTINGS_SCHEMA_VERSION,
+  })
 }

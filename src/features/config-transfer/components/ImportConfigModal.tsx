@@ -6,6 +6,7 @@ import YoloPlugin from '../../../main'
 import { EXCLUDED_KEYS, EXPORTABLE_CONFIG_KEYS } from '../config-keys'
 import {
   applyImport,
+  ImportValidationError,
   parseVaultData,
   validateExportFile,
 } from '../import-config'
@@ -185,20 +186,19 @@ function ImportConfigModalComponent({
       onClose()
     } catch (err) {
       console.error('Failed to import config', err)
-      new Notice('配置导入失败，请检查控制台日志')
+      if (err instanceof ImportValidationError) {
+        const detail =
+          err.issues.length > 0 ? `\n${err.issues.slice(0, 5).join('\n')}` : ''
+        new Notice(`配置导入失败：${err.message}${detail}`, 8000)
+      } else {
+        const message = err instanceof Error ? err.message : String(err)
+        new Notice(`配置导入失败：${message}`, 8000)
+      }
     }
   }
 
   const availableKeys = importData
     ? EXPORTABLE_CONFIG_KEYS.filter((k) => importData.keys.includes(k.key))
-    : []
-
-  const extraKeys = importData
-    ? importData.keys.filter(
-        (k) =>
-          !EXCLUDED_KEYS.has(k) &&
-          !EXPORTABLE_CONFIG_KEYS.some((ek) => ek.key === k),
-      )
     : []
 
   if (step === 'source') {
@@ -258,19 +258,6 @@ function ImportConfigModalComponent({
             {item.sensitive && (
               <span className="yolo-config-transfer-sensitive">含 API Key</span>
             )}
-          </label>
-        ))}
-        {extraKeys.map((key) => (
-          <label key={key} className="yolo-config-transfer-item">
-            <input
-              type="checkbox"
-              checked={selectedKeys.has(key)}
-              onChange={() => toggleKey(key)}
-            />
-            <span className="yolo-config-transfer-item-label">
-              {key}
-              <span className="yolo-config-transfer-item-key">{key}</span>
-            </span>
           </label>
         ))}
       </div>
