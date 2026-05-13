@@ -286,8 +286,10 @@ function AddChatModelModalComponent({
     useState<boolean>(false)
   const [openRouterWebSearchEngine, setOpenRouterWebSearchEngine] =
     useState<OpenRouterWebSearchEngine>('auto')
-  const [openRouterWebSearchMaxResultsInput, setOpenRouterWebSearchMaxResultsInput] =
-    useState<string>('')
+  const [
+    openRouterWebSearchMaxResultsInput,
+    setOpenRouterWebSearchMaxResultsInput,
+  ] = useState<string>('')
   const [grokWebSearchEnabled, setGrokWebSearchEnabled] =
     useState<boolean>(false)
   const [geminiWebSearchEnabled, setGeminiWebSearchEnabled] =
@@ -1061,9 +1063,7 @@ function AddChatModelModalComponent({
                         {t('settings.models.openRouterWebSearchMaxResults')}
                       </div>
                       <div className="yolo-agent-model-control-desc">
-                        {t(
-                          'settings.models.openRouterWebSearchMaxResultsDesc',
-                        )}
+                        {t('settings.models.openRouterWebSearchMaxResultsDesc')}
                       </div>
                     </div>
                     <div className="yolo-agent-model-control-actions">

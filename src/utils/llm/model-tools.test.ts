@@ -67,10 +67,7 @@ describe('getBuiltinProviderTools', () => {
           },
         },
       }),
-    ).toEqual([
-      { type: 'gemini:web_search' },
-      { type: 'gemini:url_context' },
-    ])
+    ).toEqual([{ type: 'gemini:web_search' }, { type: 'gemini:url_context' }])
   })
 
   it('returns only gemini:url_context when URL context alone is enabled', () => {
@@ -117,9 +114,7 @@ describe('getBuiltinProviderTools', () => {
           },
         },
       }),
-    ).toEqual([
-      { type: 'openrouter:web_search', engine: 'exa', maxResults: 3 },
-    ])
+    ).toEqual([{ type: 'openrouter:web_search', engine: 'exa', maxResults: 3 }])
   })
 
   it('accepts the firecrawl and parallel engines', () => {
@@ -130,9 +125,7 @@ describe('getBuiltinProviderTools', () => {
           openrouter: { webSearch: { enabled: true, engine: 'firecrawl' } },
         },
       }),
-    ).toEqual([
-      { type: 'openrouter:web_search', engine: 'firecrawl' },
-    ])
+    ).toEqual([{ type: 'openrouter:web_search', engine: 'firecrawl' }])
     expect(
       getBuiltinProviderTools({
         builtinToolProvider: 'openrouter',
@@ -140,9 +133,7 @@ describe('getBuiltinProviderTools', () => {
           openrouter: { webSearch: { enabled: true, engine: 'parallel' } },
         },
       }),
-    ).toEqual([
-      { type: 'openrouter:web_search', engine: 'parallel' },
-    ])
+    ).toEqual([{ type: 'openrouter:web_search', engine: 'parallel' }])
   })
 
   it('drops engine when set to auto (so OpenRouter picks the default)', () => {

@@ -190,12 +190,14 @@ function EditChatModelModalComponent({
     })
   const initialOpenRouterMaxResults =
     editableModel.builtinTools?.openrouter?.webSearch?.maxResults
-  const [openRouterWebSearchMaxResultsInput, setOpenRouterWebSearchMaxResultsInput] =
-    useState<string>(
-      typeof initialOpenRouterMaxResults === 'number'
-        ? String(initialOpenRouterMaxResults)
-        : '',
-    )
+  const [
+    openRouterWebSearchMaxResultsInput,
+    setOpenRouterWebSearchMaxResultsInput,
+  ] = useState<string>(
+    typeof initialOpenRouterMaxResults === 'number'
+      ? String(initialOpenRouterMaxResults)
+      : '',
+  )
   const [grokWebSearchEnabled, setGrokWebSearchEnabled] = useState<boolean>(
     editableModel.builtinTools?.grok?.webSearch?.enabled === true,
   )
@@ -419,7 +421,10 @@ function EditChatModelModalComponent({
           trimmedMaxResults !== null && Number.isFinite(trimmedMaxResults)
             ? Math.min(
                 OPENROUTER_MAX_RESULTS_MAX,
-                Math.max(OPENROUTER_MAX_RESULTS_MIN, Math.floor(trimmedMaxResults)),
+                Math.max(
+                  OPENROUTER_MAX_RESULTS_MIN,
+                  Math.floor(trimmedMaxResults),
+                ),
               )
             : undefined
         updatedModel.builtinTools = {
@@ -709,9 +714,7 @@ function EditChatModelModalComponent({
                         {t('settings.models.openRouterWebSearchMaxResults')}
                       </div>
                       <div className="yolo-agent-model-control-desc">
-                        {t(
-                          'settings.models.openRouterWebSearchMaxResultsDesc',
-                        )}
+                        {t('settings.models.openRouterWebSearchMaxResultsDesc')}
                       </div>
                     </div>
                     <div className="yolo-agent-model-control-actions">

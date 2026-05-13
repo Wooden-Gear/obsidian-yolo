@@ -44,7 +44,7 @@ describe('parseYoloSettings', () => {
       mentionContextMode: 'light',
       chatInputHeight: undefined,
       chatApplyMode: 'review-required',
-      chatMode: 'chat',
+      chatMode: 'agent',
       agentModeWarningConfirmed: false,
       reasoningLevelByModelId: {},
     })

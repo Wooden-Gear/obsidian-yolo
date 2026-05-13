@@ -1209,9 +1209,7 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
   }
 
   private static parseRequestTool(tool: RequestTool): GeminiTool {
-    const cleanedSchema = this.sanitizeSchemaForGemini(
-      tool.function.parameters,
-    )
+    const cleanedSchema = this.sanitizeSchemaForGemini(tool.function.parameters)
 
     return {
       functionDeclarations: [

@@ -325,7 +325,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
    * function tools that Vertex-style OpenAI-compatible gateways understand.
    */
   private applyConversationGeminiTools(
-    formattedRequest: OpenAICompatibleRequest | OpenAICompatibleStreamingRequest,
+    formattedRequest:
+      | OpenAICompatibleRequest
+      | OpenAICompatibleStreamingRequest,
     model: ChatModel,
     options: LLMOptions | undefined,
   ) {
@@ -377,7 +379,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
    * intent — see `model-tools.ts` for the rationale.
    */
   private applyBuiltinProviderTools(
-    formattedRequest: OpenAICompatibleRequest | OpenAICompatibleStreamingRequest,
+    formattedRequest:
+      | OpenAICompatibleRequest
+      | OpenAICompatibleStreamingRequest,
     model: ChatModel,
   ) {
     const tools = getBuiltinProviderTools(model)
@@ -385,8 +389,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
     const baseUrlLower = this.resolvedBaseUrl?.toLowerCase() ?? ''
     // Host-anchored matchers — a bare `substring.includes` would also match
     // e.g. `evilopenrouter.ai`, which we don't want to silently forward to.
-    const isOpenRouterGateway =
-      /(^|\/\/)([^/]*\.)?openrouter\.ai(\/|$|:)/.test(baseUrlLower)
+    const isOpenRouterGateway = /(^|\/\/)([^/]*\.)?openrouter\.ai(\/|$|:)/.test(
+      baseUrlLower,
+    )
     const isXaiGateway = /(^|\/\/)([^/]*\.)?x\.ai(\/|$|:)/.test(baseUrlLower)
 
     for (const tool of tools) {
@@ -408,10 +413,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
         if (tool.engine) plugin.engine = tool.engine
         if (typeof tool.maxResults === 'number')
           plugin.max_results = tool.maxResults
-        formattedRequest.plugins = [
-          ...(formattedRequest.plugins ?? []),
-          plugin,
-        ]
+        formattedRequest.plugins = [...(formattedRequest.plugins ?? []), plugin]
       } else if (tool.type === 'grok:live_search' && isXaiGateway) {
         formattedRequest.extra_body = {
           ...(formattedRequest.extra_body ?? {}),
