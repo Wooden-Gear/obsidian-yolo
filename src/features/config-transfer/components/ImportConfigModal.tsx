@@ -1,5 +1,5 @@
 import { App, Notice, Platform } from 'obsidian'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import { ReactModal } from '../../../components/common/ReactModal'
 import { useLanguage } from '../../../contexts/language-context'
@@ -12,6 +12,7 @@ import {
   renderImportError,
   validateExportFile,
 } from '../import-config'
+import { hasNonEmptyCredentials } from '../redact'
 import { ConfigExportFile, MergeStrategy } from '../types'
 
 type ImportConfigModalComponentProps = {
@@ -249,6 +250,18 @@ function ImportConfigModalComponent({
     ? EXPORTABLE_CONFIG_KEYS.filter((k) => importData.keys.includes(k.key))
     : []
 
+  // 基于待导入数据的实际内容判定哪些 key 含凭证。脱敏导出（redacted=true）
+  // 时所有敏感字段都是随机字符串，仍判定为"含凭证"——因为提示用户"这部分
+  // 涉及凭证、会被清空"是正确的语义。
+  const credentialsByKey = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    if (!importData) return map
+    for (const item of availableKeys) {
+      map[item.key] = hasNonEmptyCredentials(importData.data[item.key])
+    }
+    return map
+  }, [importData, availableKeys])
+
   if (step === 'source') {
     return (
       <div className="yolo-config-transfer-modal">
@@ -323,7 +336,7 @@ function ImportConfigModalComponent({
               {t(`configTransfer.keyLabels.${item.key}`, item.fallbackLabel)}
               <span className="yolo-config-transfer-item-key">{item.key}</span>
             </span>
-            {item.sensitive && (
+            {credentialsByKey[item.key] && (
               <span className="yolo-config-transfer-sensitive">
                 {t('configTransfer.import.sensitive', '含凭证')}
               </span>

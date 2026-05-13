@@ -36,8 +36,6 @@ export type ConfigKeyMeta = {
   key: string
   /** i18n 缺失时使用的可读默认 label（中文） */
   fallbackLabel: string
-  /** 是否包含敏感信息（API Key / 凭证等） */
-  sensitive?: boolean
 }
 
 /** 当前导出文件格式版本 */

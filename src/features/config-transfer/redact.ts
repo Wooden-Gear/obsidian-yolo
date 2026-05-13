@@ -97,6 +97,42 @@ export function clearSensitive(data: unknown): unknown {
   return mapSensitiveValues(data, () => '')
 }
 
+/**
+ * 探测对象树中是否实际存在任意"非空字符串"的敏感值。
+ * 用于 UI 动态判定某个顶层 key 的实例是否真的含凭证，
+ * 替代过去基于类目的静态 `sensitive: true` 标记，
+ * 避免给"没配 apiKey 的 Ollama / 无 env 的 MCP"误打标。
+ */
+export function hasNonEmptyCredentials(data: unknown): boolean {
+  if (Array.isArray(data)) {
+    return data.some((item) => hasNonEmptyCredentials(item))
+  }
+  if (!isPlainObject(data)) return false
+
+  for (const [key, value] of Object.entries(data)) {
+    if (SENSITIVE_STRING_FIELDS.has(key)) {
+      if (typeof value === 'string' && value.length > 0) return true
+      continue
+    }
+    if (SENSITIVE_RECORD_FIELDS.has(key) && isPlainObject(value)) {
+      for (const inner of Object.values(value)) {
+        if (typeof inner === 'string' && inner.length > 0) return true
+      }
+      continue
+    }
+    if (key === 'customHeaders' && Array.isArray(value)) {
+      for (const item of value) {
+        if (!isPlainObject(item)) continue
+        const v = item['value']
+        if (typeof v === 'string' && v.length > 0) return true
+      }
+      continue
+    }
+    if (hasNonEmptyCredentials(value)) return true
+  }
+  return false
+}
+
 function randomString(length: number): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let result = ''

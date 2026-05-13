@@ -1,11 +1,12 @@
 import { App, Notice } from 'obsidian'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import { ReactModal } from '../../../components/common/ReactModal'
 import { useLanguage } from '../../../contexts/language-context'
 import YoloPlugin from '../../../main'
 import { EXPORTABLE_CONFIG_KEYS } from '../config-keys'
 import { buildExportData } from '../export-config'
+import { hasNonEmptyCredentials } from '../redact'
 
 type ExportConfigModalComponentProps = {
   plugin: YoloPlugin
@@ -34,6 +35,18 @@ function ExportConfigModalComponent({
     new Set(EXPORTABLE_CONFIG_KEYS.map((k) => k.key)),
   )
   const [redacted, setRedacted] = useState(false)
+
+  // 基于当前实际配置探测每个顶层 key 是否含有非空凭证；
+  // 取自 plugin.settings 而非懒加载 loadData()，因为 settings 已在内存且
+  // 包含所有 schema 内字段，仅用于 UI 标记，不影响导出流程的真实数据来源。
+  const credentialsByKey = useMemo(() => {
+    const settings = plugin.settings as unknown as Record<string, unknown>
+    const map: Record<string, boolean> = {}
+    for (const item of EXPORTABLE_CONFIG_KEYS) {
+      map[item.key] = hasNonEmptyCredentials(settings?.[item.key])
+    }
+    return map
+  }, [plugin.settings])
 
   const toggleKey = (key: string) => {
     setSelectedKeys((prev) => {
@@ -143,7 +156,7 @@ function ExportConfigModalComponent({
               {t(`configTransfer.keyLabels.${item.key}`, item.fallbackLabel)}
               <span className="yolo-config-transfer-item-key">{item.key}</span>
             </span>
-            {item.sensitive && (
+            {credentialsByKey[item.key] && (
               <span className="yolo-config-transfer-sensitive">
                 {t('configTransfer.export.sensitive', '含凭证')}
               </span>

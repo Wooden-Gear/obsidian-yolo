@@ -1,7 +1,11 @@
 import { SETTINGS_SCHEMA_VERSION } from '../../settings/schema/migrations'
 
 import { buildExportData, computeChecksum } from './export-config'
-import { clearSensitive, redactSensitive } from './redact'
+import {
+  clearSensitive,
+  hasNonEmptyCredentials,
+  redactSensitive,
+} from './redact'
 import { CONFIG_EXPORT_FORMAT_VERSION } from './types'
 
 describe('redactSensitive', () => {
@@ -165,6 +169,138 @@ describe('clearSensitive', () => {
     const params = mcpServers[0].parameters as Record<string, unknown>
     expect((params.headers as Record<string, string>).Authorization).toBe('')
     expect((params.env as Record<string, string>).TOKEN).toBe('')
+  })
+})
+
+describe('hasNonEmptyCredentials', () => {
+  it('returns false for empty / missing data', () => {
+    expect(hasNonEmptyCredentials(undefined)).toBe(false)
+    expect(hasNonEmptyCredentials(null)).toBe(false)
+    expect(hasNonEmptyCredentials({})).toBe(false)
+    expect(hasNonEmptyCredentials([])).toBe(false)
+  })
+
+  it('returns false when sensitive fields exist but are empty strings', () => {
+    expect(
+      hasNonEmptyCredentials({
+        providers: [{ id: 'a', apiKey: '' }],
+      }),
+    ).toBe(false)
+    expect(
+      hasNonEmptyCredentials({
+        mcp: {
+          servers: [
+            { parameters: { headers: { Authorization: '' }, env: {} } },
+          ],
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('returns true when apiKey contains a value', () => {
+    expect(
+      hasNonEmptyCredentials({
+        providers: [{ id: 'a', apiKey: 'sk-real' }],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns true when password contains a value', () => {
+    expect(
+      hasNonEmptyCredentials({
+        providers: [{ type: 'searxng', password: 'pw' }],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns true when any header value is non-empty', () => {
+    expect(
+      hasNonEmptyCredentials({
+        mcp: {
+          servers: [
+            {
+              parameters: {
+                headers: { Authorization: 'Bearer x' },
+              },
+            },
+          ],
+        },
+      }),
+    ).toBe(true)
+  })
+
+  it('returns true when any env value is non-empty', () => {
+    expect(
+      hasNonEmptyCredentials({
+        mcp: {
+          servers: [{ parameters: { env: { OPENAI_API_KEY: 'sk-env' } } }],
+        },
+      }),
+    ).toBe(true)
+  })
+
+  it('returns true when customHeaders has a non-empty value', () => {
+    expect(
+      hasNonEmptyCredentials({
+        providers: [
+          {
+            customHeaders: [{ key: 'Authorization', value: 'Bearer xyz' }],
+          },
+        ],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns false for typical category without configured credentials (Ollama-only providers)', () => {
+    // 真实场景：用户只用本地 Ollama，没填 apiKey
+    expect(
+      hasNonEmptyCredentials({
+        providers: [
+          {
+            id: 'ollama',
+            presetType: 'ollama',
+            baseUrl: 'http://localhost:11434',
+            apiKey: '',
+          },
+        ],
+      }),
+    ).toBe(false)
+  })
+
+  it('returns false for stdio MCP server without env', () => {
+    expect(
+      hasNonEmptyCredentials({
+        servers: [
+          {
+            parameters: {
+              transport: 'stdio',
+              command: 'npx',
+              args: ['some-mcp'],
+            },
+          },
+        ],
+      }),
+    ).toBe(false)
+  })
+
+  it('returns true if any element in an array has credentials', () => {
+    expect(
+      hasNonEmptyCredentials({
+        providers: [
+          { id: 'a', apiKey: '' },
+          { id: 'b', apiKey: 'sk-only-on-b' },
+        ],
+      }),
+    ).toBe(true)
+  })
+
+  it('ignores unrelated string fields with credential-like names', () => {
+    // 字段名不在白名单（如 key/secret/token）一律不算
+    expect(
+      hasNonEmptyCredentials({
+        providers: [{ id: 'a', key: 'not-an-apikey', token: 'still-no' }],
+      }),
+    ).toBe(false)
   })
 })
 
