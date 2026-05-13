@@ -382,7 +382,7 @@ export const yoloSettingsSchema = z.object({
       chatInputHeight: undefined,
       chatApplyMode: 'review-required',
       chatTitlePrompt: '',
-      chatMode: 'chat',
+      chatMode: 'agent',
       agentModeWarningConfirmed: false,
       reasoningLevelByModelId: {},
       historyArchiveEnabled: true,

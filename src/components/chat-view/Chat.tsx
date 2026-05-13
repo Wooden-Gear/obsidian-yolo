@@ -809,7 +809,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [conversationOverrides, setConversationOverrides] =
     useState<ConversationOverrideSettings | null>(null)
   const [chatMode, setChatMode] = useState<ChatMode>(() => {
-    const defaultMode = settings.chatOptions.chatMode ?? 'chat'
+    const defaultMode = settings.chatOptions.chatMode ?? 'agent'
     return defaultMode
   })
 
@@ -2063,7 +2063,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         const loadedChatMode: ChatMode =
           loadedChatModeRaw === 'agent' || loadedChatModeRaw === 'chat'
             ? loadedChatModeRaw
-            : (settings.chatOptions.chatMode ?? 'chat')
+            : (settings.chatOptions.chatMode ?? 'agent')
         setChatMode(loadedChatMode)
         if (conversation.overrides) {
           conversationOverridesRef.current.set(
