@@ -9,11 +9,27 @@ import { normalizeYoloSettingsReferences } from '../../settings/schema/settings'
 import { EXCLUDED_KEYS, EXPORTABLE_CONFIG_KEYS } from './config-keys'
 import { computeChecksum } from './export-config'
 import { deepMerge } from './merge-utils'
-import { ConfigExportFile, MergeStrategy } from './types'
+import { clearSensitive } from './redact'
+import { ConfigExportFile, ImportErrorKey, MergeStrategy } from './types'
+
+export type ValidationFailure = {
+  valid: false
+  errorKey: ImportErrorKey
+  fallback: string
+  params?: Record<string, string | number>
+}
 
 export type ValidationResult =
   | { valid: true; data: ConfigExportFile }
-  | { valid: false; error: string }
+  | ValidationFailure
+
+function failure(
+  errorKey: ImportErrorKey,
+  fallback: string,
+  params?: Record<string, string | number>,
+): ValidationFailure {
+  return { valid: false, errorKey, fallback, params }
+}
 
 /**
  * 校验导出文件格式是否合法。
@@ -22,43 +38,59 @@ export async function validateExportFile(
   raw: unknown,
 ): Promise<ValidationResult> {
   if (!raw || typeof raw !== 'object') {
-    return { valid: false, error: '文件内容不是有效的 JSON 对象' }
+    return failure('errorNotJson', '文件内容不是有效的 JSON 对象')
   }
 
   const obj = raw as Record<string, unknown>
 
   if (obj.$schema !== 'yolo-config-export') {
-    return {
-      valid: false,
-      error:
-        '该文件不是 YOLO 插件的配置导出文件，请选择通过「导出配置」功能生成的 .json 文件。',
-    }
+    return failure(
+      'errorNotExportFile',
+      '该文件不是 YOLO 插件的配置导出文件，请选择通过「导出配置」功能生成的 .json 文件。',
+    )
   }
 
   if (typeof obj.formatVersion !== 'number' || obj.formatVersion < 1) {
-    return { valid: false, error: '配置文件格式版本不合法，可能已损坏。' }
+    return failure(
+      'errorInvalidFormatVersion',
+      '配置文件格式版本不合法，可能已损坏。',
+    )
   }
 
   if (typeof obj.settingsVersion !== 'number' || obj.settingsVersion < 0) {
-    return { valid: false, error: '配置文件中的设置版本号不合法，可能已损坏。' }
+    return failure(
+      'errorInvalidSettingsVersion',
+      '配置文件中的设置版本号不合法，可能已损坏。',
+    )
   }
 
   if (obj.settingsVersion !== SETTINGS_SCHEMA_VERSION) {
-    return {
-      valid: false,
-      error:
-        obj.settingsVersion > SETTINGS_SCHEMA_VERSION
-          ? `配置文件来自更高版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`
-          : `配置文件来自旧版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请在源端升级 YOLO 插件后重新导出。`,
+    if (obj.settingsVersion > SETTINGS_SCHEMA_VERSION) {
+      return failure(
+        'errorFileFromNewerVersion',
+        `配置文件来自更高版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`,
+        {
+          fileVersion: obj.settingsVersion,
+          currentVersion: SETTINGS_SCHEMA_VERSION,
+        },
+      )
     }
+    return failure(
+      'errorFileFromOlderVersion',
+      `配置文件来自旧版本的插件（版本 ${obj.settingsVersion}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请在源端升级 YOLO 插件后重新导出。`,
+      {
+        fileVersion: obj.settingsVersion,
+        currentVersion: SETTINGS_SCHEMA_VERSION,
+      },
+    )
   }
 
   if (!Array.isArray(obj.keys) || obj.keys.length === 0) {
-    return { valid: false, error: '配置文件中没有包含任何配置项。' }
+    return failure('errorEmptyKeys', '配置文件中没有包含任何配置项。')
   }
 
   if (!obj.data || typeof obj.data !== 'object') {
-    return { valid: false, error: '配置文件中的数据字段缺失或不合法。' }
+    return failure('errorMissingData', '配置文件中的数据字段缺失或不合法。')
   }
 
   // 校验 keys 与 data 的一致性
@@ -66,10 +98,11 @@ export async function validateExportFile(
   const declaredKeys = new Set(obj.keys as string[])
   const undeclaredKeys = dataKeys.filter((k) => !declaredKeys.has(k))
   if (undeclaredKeys.length > 0) {
-    return {
-      valid: false,
-      error: `配置文件数据与声明不一致：data 中包含未在 keys 中声明的字段（${undeclaredKeys.join(', ')}），文件可能已被篡改。`,
-    }
+    return failure(
+      'errorTampered',
+      `配置文件数据与声明不一致：data 中包含未在 keys 中声明的字段（${undeclaredKeys.join(', ')}），文件可能已被篡改。`,
+      { fields: undeclaredKeys.join(', ') },
+    )
   }
 
   // 校验 checksum 完整性
@@ -77,10 +110,10 @@ export async function validateExportFile(
     const { checksum, ...payload } = obj
     const expectedChecksum = await computeChecksum(JSON.stringify(payload))
     if (checksum !== expectedChecksum) {
-      return {
-        valid: false,
-        error: '配置文件完整性校验失败，文件内容可能已被修改。',
-      }
+      return failure(
+        'errorChecksumMismatch',
+        '配置文件完整性校验失败，文件内容可能已被修改。',
+      )
     }
   }
 
@@ -96,26 +129,31 @@ export function parseVaultData(
   pluginVersion?: string,
 ): ValidationResult {
   if (!raw || typeof raw !== 'object') {
-    return { valid: false, error: '无法解析目标笔记库的配置数据' }
+    return failure('errorVaultParseFailed', '无法解析目标笔记库的配置数据')
   }
 
   const obj = raw as Record<string, unknown>
 
   if (typeof obj.version !== 'number') {
-    return {
-      valid: false,
-      error: '目标笔记库的配置数据缺少 version 字段，无法判断版本兼容性。',
-    }
+    return failure(
+      'errorVaultMissingVersion',
+      '目标笔记库的配置数据缺少 version 字段，无法判断版本兼容性。',
+    )
   }
 
   if (obj.version !== SETTINGS_SCHEMA_VERSION) {
-    return {
-      valid: false,
-      error:
-        obj.version > SETTINGS_SCHEMA_VERSION
-          ? `目标笔记库使用更高版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`
-          : `目标笔记库使用旧版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请先在目标笔记库升级 YOLO 插件后再导入。`,
+    if (obj.version > SETTINGS_SCHEMA_VERSION) {
+      return failure(
+        'errorVaultFromNewerVersion',
+        `目标笔记库使用更高版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}，请先升级当前插件后再导入。`,
+        { vaultVersion: obj.version, currentVersion: SETTINGS_SCHEMA_VERSION },
+      )
     }
+    return failure(
+      'errorVaultFromOlderVersion',
+      `目标笔记库使用旧版本的插件（版本 ${obj.version}），当前插件版本为 ${SETTINGS_SCHEMA_VERSION}。请先在目标笔记库升级 YOLO 插件后再导入。`,
+      { vaultVersion: obj.version, currentVersion: SETTINGS_SCHEMA_VERSION },
+    )
   }
 
   // 严格同版本策略下，未在 EXPORTABLE_CONFIG_KEYS 中声明的顶层字段不应进入
@@ -132,7 +170,7 @@ export function parseVaultData(
   }
 
   if (keys.length === 0) {
-    return { valid: false, error: '目标笔记库的配置数据为空' }
+    return failure('errorVaultEmpty', '目标笔记库的配置数据为空')
   }
 
   const exportFile: ConfigExportFile = {
@@ -161,12 +199,47 @@ export type ImportOptions = {
   mergeStrategy: MergeStrategy
 }
 
+type TranslateFn = (keyPath: string, fallback?: string) => string
+
+function interpolate(
+  template: string,
+  params?: Record<string, string | number>,
+): string {
+  if (!params) return template
+  return template.replace(/\{(\w+)\}/g, (_, name) =>
+    name in params ? String(params[name]) : `{${name}}`,
+  )
+}
+
+/**
+ * 把 ValidationFailure / ImportValidationError 中的 errorKey + fallback + params
+ * 渲染成最终展示给用户的字符串。
+ */
+export function renderImportError(
+  failure:
+    | ValidationFailure
+    | {
+        errorKey: ImportErrorKey
+        fallback: string
+        params?: Record<string, string | number>
+      },
+  t: TranslateFn,
+): string {
+  const template = t(
+    `configTransfer.errors.${failure.errorKey}`,
+    failure.fallback,
+  )
+  return interpolate(template, failure.params)
+}
+
 export class ImportValidationError extends Error {
   constructor(
-    message: string,
-    public readonly issues: string[],
+    public readonly errorKey: ImportErrorKey,
+    public readonly fallback: string,
+    public readonly issues: string[] = [],
+    public readonly params?: Record<string, string | number>,
   ) {
-    super(message)
+    super(fallback)
     this.name = 'ImportValidationError'
   }
 }
@@ -179,6 +252,7 @@ export class ImportValidationError extends Error {
  *
  * 流程：
  * 1. 按合并策略将 importData.data 合并到 currentSettings
+ *    （脱敏导出时先把所有敏感字段清空，避免假凭证被写入）
  * 2. 通过 yoloSettingsSchema 显式校验；失败时抛出 ImportValidationError，
  *    调用方负责提示用户并保留原配置（不静默回退到默认值）
  * 3. 在合法结果上做引用规范化与默认 assistant 兜底
@@ -188,19 +262,30 @@ export function applyImport(options: ImportOptions): YoloSettings {
 
   if (importData.settingsVersion !== SETTINGS_SCHEMA_VERSION) {
     throw new ImportValidationError(
+      'errorApplyVersionMismatch',
       `导入数据版本（${importData.settingsVersion}）与当前插件版本（${SETTINGS_SCHEMA_VERSION}）不一致，无法导入。`,
       [],
+      {
+        importVersion: importData.settingsVersion,
+        currentVersion: SETTINGS_SCHEMA_VERSION,
+      },
     )
   }
 
-  // 1. 按合并策略合并到当前配置
+  // 1. 按合并策略合并到当前配置。脱敏导出时所有敏感字段（apiKey/password/
+  //    headers/env/customHeaders.value）已是随机字符串，导入前清空，
+  //    避免被当成真凭证写回 providers/webSearch/mcp。
+  const incomingData = importData.redacted
+    ? (clearSensitive(importData.data) as Record<string, unknown>)
+    : importData.data
+
   const currentRaw = currentSettings as unknown as Record<string, unknown>
   const merged: Record<string, unknown> = { ...currentRaw }
 
   for (const key of selectedKeys) {
     if (EXCLUDED_KEYS.has(key)) continue
 
-    const importedValue = importData.data[key]
+    const importedValue = incomingData[key]
     if (importedValue === undefined) continue
 
     if (mergeStrategy === 'overwrite') {
@@ -235,6 +320,7 @@ export function applyImport(options: ImportOptions): YoloSettings {
       return `${path}: ${issue.message}`
     })
     throw new ImportValidationError(
+      'errorApplySchema',
       '导入的配置未通过校验，可能存在字段缺失或格式错误。',
       issues,
     )

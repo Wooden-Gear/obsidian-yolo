@@ -14,7 +14,7 @@ export type ConfigExportFile = {
   exportedAt: string
   /** 导出时的插件版本号 */
   pluginVersion: string
-  /** 是否为脱敏导出（API Key 已替换为随机字符串） */
+  /** 是否为脱敏导出（敏感字段已替换为随机字符串） */
   redacted: boolean
   /** 导出的配置 key 列表 */
   keys: string[]
@@ -34,11 +34,33 @@ export type MergeStrategy = 'overwrite' | 'merge'
 export type ConfigKeyMeta = {
   /** data.json 中的 key */
   key: string
-  /** 显示名称 */
-  label: string
-  /** 是否包含敏感信息（API Key） */
+  /** i18n 缺失时使用的可读默认 label（中文） */
+  fallbackLabel: string
+  /** 是否包含敏感信息（API Key / 凭证等） */
   sensitive?: boolean
 }
 
 /** 当前导出文件格式版本 */
 export const CONFIG_EXPORT_FORMAT_VERSION = 1
+
+/**
+ * 导入/校验失败时使用的错误 key，配合 `configTransfer.errors.*` 翻译条目。
+ */
+export type ImportErrorKey =
+  | 'errorNotJson'
+  | 'errorNotExportFile'
+  | 'errorInvalidFormatVersion'
+  | 'errorInvalidSettingsVersion'
+  | 'errorFileFromNewerVersion'
+  | 'errorFileFromOlderVersion'
+  | 'errorEmptyKeys'
+  | 'errorMissingData'
+  | 'errorTampered'
+  | 'errorChecksumMismatch'
+  | 'errorVaultParseFailed'
+  | 'errorVaultMissingVersion'
+  | 'errorVaultFromNewerVersion'
+  | 'errorVaultFromOlderVersion'
+  | 'errorVaultEmpty'
+  | 'errorApplyVersionMismatch'
+  | 'errorApplySchema'

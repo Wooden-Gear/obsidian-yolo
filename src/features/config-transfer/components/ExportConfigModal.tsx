@@ -2,6 +2,7 @@ import { App, Notice } from 'obsidian'
 import React, { useState } from 'react'
 
 import { ReactModal } from '../../../components/common/ReactModal'
+import { useLanguage } from '../../../contexts/language-context'
 import YoloPlugin from '../../../main'
 import { EXPORTABLE_CONFIG_KEYS } from '../config-keys'
 import { buildExportData } from '../export-config'
@@ -16,7 +17,9 @@ export class ExportConfigModal extends ReactModal<ExportConfigModalComponentProp
       app,
       Component: ExportConfigModalComponent,
       props: { plugin },
-      options: { title: '导出配置' },
+      options: {
+        title: plugin.t('configTransfer.export.title', '导出配置'),
+      },
       plugin,
     })
   }
@@ -26,6 +29,7 @@ function ExportConfigModalComponent({
   plugin,
   onClose,
 }: ExportConfigModalComponentProps & { onClose: () => void }) {
+  const { t } = useLanguage()
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
     new Set(EXPORTABLE_CONFIG_KEYS.map((k) => k.key)),
   )
@@ -53,7 +57,9 @@ function ExportConfigModalComponent({
 
   const handleExport = async () => {
     if (selectedKeys.size === 0) {
-      new Notice('请至少选择一项配置')
+      new Notice(
+        t('configTransfer.export.noticeAtLeastOne', '请至少选择一项配置'),
+      )
       return
     }
 
@@ -63,7 +69,9 @@ function ExportConfigModalComponent({
         unknown
       > | null
       if (!settingsData || typeof settingsData !== 'object') {
-        new Notice('无法读取当前配置数据')
+        new Notice(
+          t('configTransfer.export.noticeReadFailed', '无法读取当前配置数据'),
+        )
         return
       }
 
@@ -90,21 +98,36 @@ function ExportConfigModalComponent({
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      new Notice(`配置已导出为 ${fileName}`)
+      const successTemplate = t(
+        'configTransfer.export.noticeSuccess',
+        '配置已导出为 {fileName}',
+      )
+      new Notice(successTemplate.replace('{fileName}', fileName))
       onClose()
     } catch (err) {
       console.error('Failed to export config', err)
-      new Notice('配置导出失败，请检查控制台日志')
+      new Notice(
+        t(
+          'configTransfer.export.noticeFailed',
+          '配置导出失败，请检查控制台日志',
+        ),
+      )
     }
   }
 
   return (
     <div className="yolo-config-transfer-modal">
       <div className="yolo-config-transfer-toolbar">
-        <div className="yolo-config-transfer-desc">选择要导出的配置项</div>
+        <div className="yolo-config-transfer-desc">
+          {t('configTransfer.export.description', '选择要导出的配置项')}
+        </div>
         <div className="yolo-config-transfer-toolbar-actions">
-          <button onClick={selectAll}>全选</button>
-          <button onClick={selectNone}>全不选</button>
+          <button onClick={selectAll}>
+            {t('configTransfer.export.selectAll', '全选')}
+          </button>
+          <button onClick={selectNone}>
+            {t('configTransfer.export.selectNone', '全不选')}
+          </button>
         </div>
       </div>
 
@@ -117,11 +140,13 @@ function ExportConfigModalComponent({
               onChange={() => toggleKey(item.key)}
             />
             <span className="yolo-config-transfer-item-label">
-              {item.label}
+              {t(`configTransfer.keyLabels.${item.key}`, item.fallbackLabel)}
               <span className="yolo-config-transfer-item-key">{item.key}</span>
             </span>
             {item.sensitive && (
-              <span className="yolo-config-transfer-sensitive">含 API Key</span>
+              <span className="yolo-config-transfer-sensitive">
+                {t('configTransfer.export.sensitive', '含凭证')}
+              </span>
             )}
           </label>
         ))}
@@ -133,15 +158,18 @@ function ExportConfigModalComponent({
           checked={redacted}
           onChange={(e) => setRedacted(e.target.checked)}
         />
-        脱敏导出（将 API Key 替换为随机字符串）
+        {t(
+          'configTransfer.export.redactedOption',
+          '脱敏导出（替换 API Key / 密码 / Header / 环境变量等凭证为随机字符串）',
+        )}
       </label>
 
       <div className="modal-button-container">
         <button className="mod-cta" onClick={() => void handleExport()}>
-          导出
+          {t('configTransfer.export.submit', '导出')}
         </button>
         <button className="mod-cancel" onClick={onClose}>
-          取消
+          {t('configTransfer.export.cancel', '取消')}
         </button>
       </div>
     </div>

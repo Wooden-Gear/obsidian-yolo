@@ -3,9 +3,10 @@ import { parseYoloSettings } from '../../settings/schema/settings'
 
 import { buildExportData, computeChecksum } from './export-config'
 import {
-  applyImport,
   ImportValidationError,
+  applyImport,
   parseVaultData,
+  renderImportError,
   validateExportFile,
 } from './import-config'
 import { CONFIG_EXPORT_FORMAT_VERSION, ConfigExportFile } from './types'
@@ -52,7 +53,7 @@ describe('validateExportFile', () => {
     const result = await validateExportFile(fileWithBadChecksum)
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('完整性校验失败')
+      expect(result.errorKey).toBe('errorChecksumMismatch')
     }
   })
 
@@ -60,7 +61,7 @@ describe('validateExportFile', () => {
     const result = await validateExportFile(null)
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('JSON 对象')
+      expect(result.errorKey).toBe('errorNotJson')
     }
   })
 
@@ -76,7 +77,7 @@ describe('validateExportFile', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('不是 YOLO 插件的配置导出文件')
+      expect(result.errorKey).toBe('errorNotExportFile')
     }
   })
 
@@ -89,7 +90,7 @@ describe('validateExportFile', () => {
     const result = await validateExportFile({ ...validFile, formatVersion: 0 })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('格式版本')
+      expect(result.errorKey).toBe('errorInvalidFormatVersion')
     }
   })
 
@@ -100,7 +101,7 @@ describe('validateExportFile', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('设置版本号')
+      expect(result.errorKey).toBe('errorInvalidSettingsVersion')
     }
   })
 
@@ -111,7 +112,8 @@ describe('validateExportFile', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('旧版本')
+      expect(result.errorKey).toBe('errorFileFromOlderVersion')
+      expect(result.params?.fileVersion).toBe(SETTINGS_SCHEMA_VERSION - 1)
     }
   })
 
@@ -122,7 +124,8 @@ describe('validateExportFile', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('更高版本')
+      expect(result.errorKey).toBe('errorFileFromNewerVersion')
+      expect(result.params?.fileVersion).toBe(SETTINGS_SCHEMA_VERSION + 1)
     }
   })
 
@@ -130,7 +133,7 @@ describe('validateExportFile', () => {
     const result = await validateExportFile({ ...validFile, keys: [] })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('没有包含任何配置项')
+      expect(result.errorKey).toBe('errorEmptyKeys')
     }
   })
 
@@ -138,7 +141,7 @@ describe('validateExportFile', () => {
     const result = await validateExportFile({ ...validFile, data: undefined })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('数据字段')
+      expect(result.errorKey).toBe('errorMissingData')
     }
   })
 
@@ -154,8 +157,8 @@ describe('validateExportFile', () => {
     const result = await validateExportFile(tampered)
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('篡改')
-      expect(result.error).toContain('systemPrompt')
+      expect(result.errorKey).toBe('errorTampered')
+      expect(String(result.params?.fields)).toContain('systemPrompt')
     }
   })
 
@@ -200,7 +203,7 @@ describe('validateExportFile', () => {
     const tamperedResult = await validateExportFile(tampered)
     expect(tamperedResult.valid).toBe(false)
     if (!tamperedResult.valid) {
-      expect(tamperedResult.error).toContain('完整性校验失败')
+      expect(tamperedResult.errorKey).toBe('errorChecksumMismatch')
     }
   })
 })
@@ -243,7 +246,7 @@ describe('parseVaultData', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('为空')
+      expect(result.errorKey).toBe('errorVaultEmpty')
     }
   })
 
@@ -251,7 +254,7 @@ describe('parseVaultData', () => {
     const result = parseVaultData({ providers: [] })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('version')
+      expect(result.errorKey).toBe('errorVaultMissingVersion')
     }
   })
 
@@ -262,7 +265,7 @@ describe('parseVaultData', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('旧版本')
+      expect(result.errorKey).toBe('errorVaultFromOlderVersion')
     }
   })
 
@@ -273,7 +276,7 @@ describe('parseVaultData', () => {
     })
     expect(result.valid).toBe(false)
     if (!result.valid) {
-      expect(result.error).toContain('更高版本')
+      expect(result.errorKey).toBe('errorVaultFromNewerVersion')
     }
   })
 
@@ -406,6 +409,64 @@ describe('applyImport', () => {
     ).toThrow(ImportValidationError)
   })
 
+  it('should clear apiKey fields when importData.redacted is true', () => {
+    const importData = makeImportData({
+      redacted: true,
+      keys: ['providers'],
+      data: {
+        providers: [
+          {
+            id: 'redacted-provider',
+            presetType: 'openai',
+            // 脱敏导出的随机字符串绝不能当成真的 key 写入
+            apiKey: 'FAKE_RANDOM_KEY_abcdefghijklmnop',
+          },
+        ],
+      },
+    })
+
+    const result = applyImport({
+      importData,
+      selectedKeys: ['providers'],
+      currentSettings,
+      mergeStrategy: 'overwrite',
+    })
+
+    const importedProvider = result.providers.find(
+      (p) => p.id === 'redacted-provider',
+    )
+    expect(importedProvider).toBeDefined()
+    expect(importedProvider?.apiKey).toBe('')
+  })
+
+  it('should not touch apiKey when importData.redacted is false', () => {
+    const importData = makeImportData({
+      redacted: false,
+      keys: ['providers'],
+      data: {
+        providers: [
+          {
+            id: 'real-provider',
+            presetType: 'openai',
+            apiKey: 'sk-real-key',
+          },
+        ],
+      },
+    })
+
+    const result = applyImport({
+      importData,
+      selectedKeys: ['providers'],
+      currentSettings,
+      mergeStrategy: 'overwrite',
+    })
+
+    const importedProvider = result.providers.find(
+      (p) => p.id === 'real-provider',
+    )
+    expect(importedProvider?.apiKey).toBe('sk-real-key')
+  })
+
   it('should silently replace malformed field with schema default (known schema .catch behavior)', () => {
     // 已知限制：yoloSettingsSchema 每个字段都用 .catch(default)，
     // 所以同版本下"字段格式非法"不会抛错，会被默默替换成默认值。
@@ -413,7 +474,9 @@ describe('applyImport', () => {
     // 真正的字段级严格化需要在 schema 层单独 issue 解决。
     const importData = makeImportData({
       keys: ['ragOptions'],
-      data: { ragOptions: 'not-an-object' as unknown as Record<string, unknown> },
+      data: {
+        ragOptions: 'not-an-object' as unknown as Record<string, unknown>,
+      },
     })
 
     const result = applyImport({
@@ -541,5 +604,50 @@ describe('applyImport', () => {
     // systemPrompt 不在 migratedData 中，应保持当前值
     expect(result.systemPrompt).toBe(currentSettings.systemPrompt)
     expect(result.chatModelId).toBe('existing/gpt-4')
+  })
+})
+
+describe('renderImportError', () => {
+  it('interpolates params into the i18n template', () => {
+    const t = (keyPath: string, fallback?: string): string => {
+      if (keyPath === 'configTransfer.errors.errorFileFromOlderVersion') {
+        return 'File v{fileVersion} < current v{currentVersion}'
+      }
+      return fallback ?? keyPath
+    }
+    const out = renderImportError(
+      {
+        valid: false,
+        errorKey: 'errorFileFromOlderVersion',
+        fallback: 'old version',
+        params: { fileVersion: 50, currentVersion: 52 },
+      },
+      t,
+    )
+    expect(out).toBe('File v50 < current v52')
+  })
+
+  it('falls back to the fallback string when translation is missing', () => {
+    const t = (_key: string, fallback?: string): string => fallback ?? _key
+    const out = renderImportError(
+      {
+        valid: false,
+        errorKey: 'errorNotJson',
+        fallback: '文件不是 JSON',
+      },
+      t,
+    )
+    expect(out).toBe('文件不是 JSON')
+  })
+
+  it('renders ImportValidationError via the same path', () => {
+    const t = (_key: string, fallback?: string): string => fallback ?? _key
+    const err = new ImportValidationError(
+      'errorApplyVersionMismatch',
+      'fallback {importVersion}/{currentVersion}',
+      [],
+      { importVersion: 49, currentVersion: 52 },
+    )
+    expect(renderImportError(err, t)).toBe('fallback 49/52')
   })
 })

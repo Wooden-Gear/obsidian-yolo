@@ -2,12 +2,14 @@ import { App, Notice, Platform } from 'obsidian'
 import React, { useCallback, useState } from 'react'
 
 import { ReactModal } from '../../../components/common/ReactModal'
+import { useLanguage } from '../../../contexts/language-context'
 import YoloPlugin from '../../../main'
 import { EXCLUDED_KEYS, EXPORTABLE_CONFIG_KEYS } from '../config-keys'
 import {
-  applyImport,
   ImportValidationError,
+  applyImport,
   parseVaultData,
+  renderImportError,
   validateExportFile,
 } from '../import-config'
 import { ConfigExportFile, MergeStrategy } from '../types'
@@ -22,7 +24,9 @@ export class ImportConfigModal extends ReactModal<ImportConfigModalComponentProp
       app,
       Component: ImportConfigModalComponent,
       props: { plugin },
-      options: { title: '导入配置' },
+      options: {
+        title: plugin.t('configTransfer.import.title', '导入配置'),
+      },
       plugin,
     })
   }
@@ -34,6 +38,7 @@ function ImportConfigModalComponent({
   plugin,
   onClose,
 }: ImportConfigModalComponentProps & { onClose: () => void }) {
+  const { t } = useLanguage()
   const [step, setStep] = useState<ImportStep>('source')
   const [importData, setImportData] = useState<ConfigExportFile | null>(null)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -54,28 +59,43 @@ function ImportConfigModalComponent({
           raw = JSON.parse(text)
         } catch {
           new Notice(
-            '文件不是有效的 JSON 格式，请确认选择了正确的配置文件。',
+            t(
+              'configTransfer.import.noticeInvalidJson',
+              '文件不是有效的 JSON 格式，请确认选择了正确的配置文件。',
+            ),
             5000,
           )
           return
         }
         const result = await validateExportFile(raw)
         if (!result.valid) {
-          new Notice(result.error, 5000)
+          new Notice(renderImportError(result, t), 5000)
           return
         }
         setImportData(result.data)
         setSelectedKeys(new Set(result.data.keys))
         setStep('select')
         if (result.data.redacted) {
-          new Notice('注意：该配置为脱敏导出，API Key 需导入后手动补填', 5000)
+          new Notice(
+            t(
+              'configTransfer.import.noticeRedactedHint',
+              '注意：该配置为脱敏导出，所有 API Key / 密码 / Header / 环境变量已被清空，需导入后手动补填。',
+            ),
+            5000,
+          )
         }
       } catch {
-        new Notice('文件读取失败，请重试。', 5000)
+        new Notice(
+          t(
+            'configTransfer.import.noticeFileReadFailed',
+            '文件读取失败，请重试。',
+          ),
+          5000,
+        )
       }
     }
     input.click()
-  }, [])
+  }, [t])
 
   const handleVaultImport = useCallback(() => {
     const input = document.createElement('input')
@@ -106,7 +126,13 @@ function ImportConfigModalComponent({
       }
 
       if (!dataJsonFile) {
-        new Notice('未在该目录找到 YOLO 插件配置', 5000)
+        new Notice(
+          t(
+            'configTransfer.import.noticePluginNotFound',
+            '未在该目录找到 YOLO 插件配置',
+          ),
+          5000,
+        )
         return
       }
 
@@ -116,12 +142,18 @@ function ImportConfigModalComponent({
         try {
           raw = JSON.parse(text)
         } catch {
-          new Notice('配置文件不是有效的 JSON 格式', 5000)
+          new Notice(
+            t(
+              'configTransfer.import.noticeInvalidJson',
+              '配置文件不是有效的 JSON 格式',
+            ),
+            5000,
+          )
           return
         }
         const result = parseVaultData(raw, plugin.manifest.version)
         if (!result.valid) {
-          new Notice(result.error, 5000)
+          new Notice(renderImportError(result, t), 5000)
           return
         }
         setImportData(result.data)
@@ -130,11 +162,14 @@ function ImportConfigModalComponent({
         )
         setStep('select')
       } catch {
-        new Notice('配置文件读取失败', 5000)
+        new Notice(
+          t('configTransfer.import.noticeFileReadFailed', '配置文件读取失败'),
+          5000,
+        )
       }
     }
     input.click()
-  }, [plugin])
+  }, [plugin, t])
 
   const toggleKey = (key: string) => {
     setSelectedKeys((prev) => {
@@ -163,7 +198,9 @@ function ImportConfigModalComponent({
   const handleImport = async () => {
     if (!importData) return
     if (selectedKeys.size === 0) {
-      new Notice('请至少选择一项配置')
+      new Notice(
+        t('configTransfer.import.noticeAtLeastOne', '请至少选择一项配置'),
+      )
       return
     }
 
@@ -177,22 +214,33 @@ function ImportConfigModalComponent({
       })
 
       await plugin.setSettings(result)
-      new Notice('配置导入成功')
+      new Notice(t('configTransfer.import.noticeSuccess', '配置导入成功'))
 
       if (importData.redacted) {
-        new Notice('注意：该配置为脱敏导出，API Key 需手动补填', 5000)
+        new Notice(
+          t(
+            'configTransfer.import.noticeRedactedReminder',
+            '注意：该配置为脱敏导出，所有 API Key / 密码 / Header / 环境变量已被清空，请前往设置补填。',
+          ),
+          5000,
+        )
       }
 
       onClose()
     } catch (err) {
       console.error('Failed to import config', err)
+      const failedPrefix = t(
+        'configTransfer.import.noticeFailed',
+        '配置导入失败',
+      )
       if (err instanceof ImportValidationError) {
+        const reason = renderImportError(err, t)
         const detail =
           err.issues.length > 0 ? `\n${err.issues.slice(0, 5).join('\n')}` : ''
-        new Notice(`配置导入失败：${err.message}${detail}`, 8000)
+        new Notice(`${failedPrefix}：${reason}${detail}`, 8000)
       } else {
         const message = err instanceof Error ? err.message : String(err)
-        new Notice(`配置导入失败：${message}`, 8000)
+        new Notice(`${failedPrefix}：${message}`, 8000)
       }
     }
   }
@@ -209,8 +257,15 @@ function ImportConfigModalComponent({
             className="yolo-config-transfer-source-btn"
             onClick={handleFileImport}
           >
-            <strong>从配置文件导入</strong>
-            <span>选择之前导出的 .json 文件</span>
+            <strong>
+              {t('configTransfer.import.sourceFile', '从配置文件导入')}
+            </strong>
+            <span>
+              {t(
+                'configTransfer.import.sourceFileDesc',
+                '选择之前导出的 .json 文件',
+              )}
+            </span>
           </button>
 
           {Platform.isDesktop && (
@@ -218,15 +273,22 @@ function ImportConfigModalComponent({
               className="yolo-config-transfer-source-btn"
               onClick={handleVaultImport}
             >
-              <strong>从其他笔记库导入</strong>
-              <span>选择已安装 YOLO 的笔记库目录</span>
+              <strong>
+                {t('configTransfer.import.sourceVault', '从其他笔记库导入')}
+              </strong>
+              <span>
+                {t(
+                  'configTransfer.import.sourceVaultDesc',
+                  '选择已安装 YOLO 的笔记库目录',
+                )}
+              </span>
             </button>
           )}
         </div>
 
         <div className="modal-button-container">
           <button className="mod-cancel" onClick={onClose}>
-            取消
+            {t('configTransfer.import.cancel', '取消')}
           </button>
         </div>
       </div>
@@ -236,10 +298,16 @@ function ImportConfigModalComponent({
   return (
     <div className="yolo-config-transfer-modal">
       <div className="yolo-config-transfer-toolbar">
-        <div className="yolo-config-transfer-desc">选择要导入的配置项</div>
+        <div className="yolo-config-transfer-desc">
+          {t('configTransfer.import.description', '选择要导入的配置项')}
+        </div>
         <div className="yolo-config-transfer-toolbar-actions">
-          <button onClick={selectAll}>全选</button>
-          <button onClick={selectNone}>全不选</button>
+          <button onClick={selectAll}>
+            {t('configTransfer.import.selectAll', '全选')}
+          </button>
+          <button onClick={selectNone}>
+            {t('configTransfer.import.selectNone', '全不选')}
+          </button>
         </div>
       </div>
 
@@ -252,11 +320,13 @@ function ImportConfigModalComponent({
               onChange={() => toggleKey(item.key)}
             />
             <span className="yolo-config-transfer-item-label">
-              {item.label}
+              {t(`configTransfer.keyLabels.${item.key}`, item.fallbackLabel)}
               <span className="yolo-config-transfer-item-key">{item.key}</span>
             </span>
             {item.sensitive && (
-              <span className="yolo-config-transfer-sensitive">含 API Key</span>
+              <span className="yolo-config-transfer-sensitive">
+                {t('configTransfer.import.sensitive', '含凭证')}
+              </span>
             )}
           </label>
         ))}
@@ -273,7 +343,14 @@ function ImportConfigModalComponent({
             )}
           </span>
           <span>
-            <strong>全量覆盖</strong> — 用导入的配置替换选中项
+            <strong>
+              {t('configTransfer.import.strategyOverwriteTitle', '全量覆盖')}
+            </strong>
+            {' — '}
+            {t(
+              'configTransfer.import.strategyOverwriteDesc',
+              '用导入的配置替换选中项',
+            )}
           </span>
         </label>
         <label
@@ -286,20 +363,27 @@ function ImportConfigModalComponent({
             )}
           </span>
           <span>
-            <strong>JSON 合并</strong> — 深度合并，保留未冲突的现有值
+            <strong>
+              {t('configTransfer.import.strategyMergeTitle', 'JSON 合并')}
+            </strong>
+            {' — '}
+            {t(
+              'configTransfer.import.strategyMergeDesc',
+              '深度合并，保留未冲突的现有值',
+            )}
           </span>
         </label>
       </div>
 
       <div className="modal-button-container">
         <button className="mod-cta" onClick={() => void handleImport()}>
-          确认导入
+          {t('configTransfer.import.submit', '确认导入')}
         </button>
         <button className="mod-cancel" onClick={() => setStep('source')}>
-          返回
+          {t('configTransfer.import.back', '返回')}
         </button>
         <button className="mod-cancel" onClick={onClose}>
-          取消
+          {t('configTransfer.import.cancel', '取消')}
         </button>
       </div>
     </div>

@@ -1,15 +1,12 @@
 export { EXPORTABLE_CONFIG_KEYS, EXCLUDED_KEYS } from './config-keys'
-export {
-  buildExportData,
-  redactApiKeys,
-  computeChecksum,
-} from './export-config'
+export { buildExportData, computeChecksum } from './export-config'
 export {
   validateExportFile,
   parseVaultData,
   applyImport,
 } from './import-config'
 export { deepMerge } from './merge-utils'
+export { redactSensitive, clearSensitive } from './redact'
 export type {
   ConfigExportFile,
   ImportSource,

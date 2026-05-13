@@ -1,33 +1,35 @@
 import { SETTINGS_SCHEMA_VERSION } from '../../settings/schema/migrations'
 
-import {
-  buildExportData,
-  computeChecksum,
-  redactApiKeys,
-} from './export-config'
+import { buildExportData, computeChecksum } from './export-config'
+import { clearSensitive, redactSensitive } from './redact'
 import { CONFIG_EXPORT_FORMAT_VERSION } from './types'
 
-describe('redactApiKeys', () => {
-  it('should replace apiKey string values with random strings of same length', () => {
+describe('redactSensitive', () => {
+  it('replaces apiKey/password with equal-length random strings', () => {
     const data = {
       id: 'provider-1',
       apiKey: 'sk-1234567890abcdef',
       baseUrl: 'https://api.example.com',
+      webSearch: { type: 'searxng', password: 'p@ss123' },
     }
-    const result = redactApiKeys(data) as Record<string, unknown>
+    const result = redactSensitive(data) as Record<string, unknown>
     expect(result.id).toBe('provider-1')
     expect(result.baseUrl).toBe('https://api.example.com')
     expect(result.apiKey).not.toBe('sk-1234567890abcdef')
     expect((result.apiKey as string).length).toBe('sk-1234567890abcdef'.length)
+    const ws = result.webSearch as Record<string, unknown>
+    expect(ws.password).not.toBe('p@ss123')
+    expect((ws.password as string).length).toBe('p@ss123'.length)
   })
 
-  it('should handle empty apiKey', () => {
-    const data = { apiKey: '' }
-    const result = redactApiKeys(data) as Record<string, unknown>
+  it('handles empty sensitive values', () => {
+    const data = { apiKey: '', password: '' }
+    const result = redactSensitive(data) as Record<string, unknown>
     expect(result.apiKey).toBe('')
+    expect(result.password).toBe('')
   })
 
-  it('should recursively redact apiKey in nested objects', () => {
+  it('recursively redacts apiKey in nested objects/arrays', () => {
     const data = {
       providers: [
         { id: 'a', apiKey: 'key-aaa' },
@@ -37,33 +39,132 @@ describe('redactApiKeys', () => {
         providers: [{ id: 'c', apiKey: 'key-ccc' }],
       },
     }
-    const result = redactApiKeys(data) as Record<string, unknown>
+    const result = redactSensitive(data) as Record<string, unknown>
     const providers = result.providers as Array<Record<string, unknown>>
     expect(providers[0].apiKey).not.toBe('key-aaa')
     expect((providers[0].apiKey as string).length).toBe('key-aaa'.length)
-    expect(providers[1].apiKey).not.toBe('key-bbb')
 
     const webSearch = result.webSearch as Record<string, unknown>
     const wsProviders = webSearch.providers as Array<Record<string, unknown>>
     expect(wsProviders[0].apiKey).not.toBe('key-ccc')
-    expect((wsProviders[0].apiKey as string).length).toBe('key-ccc'.length)
   })
 
-  it('should not modify non-apiKey fields', () => {
+  it('redacts every value inside headers / env objects', () => {
+    const data = {
+      mcp: {
+        servers: [
+          {
+            id: 's1',
+            parameters: {
+              transport: 'http',
+              url: 'https://example.com',
+              headers: {
+                Authorization: 'Bearer real-token',
+                'X-Org': 'org-id',
+              },
+            },
+          },
+          {
+            id: 's2',
+            parameters: {
+              transport: 'stdio',
+              command: 'node',
+              env: { OPENAI_API_KEY: 'sk-env', NODE_ENV: 'production' },
+            },
+          },
+        ],
+      },
+    }
+    const result = redactSensitive(data) as Record<string, unknown>
+    const mcp = result.mcp as Record<string, unknown>
+    const servers = mcp.servers as Array<Record<string, unknown>>
+
+    const headers = (servers[0].parameters as Record<string, unknown>)
+      .headers as Record<string, string>
+    expect(headers.Authorization).not.toBe('Bearer real-token')
+    expect(headers.Authorization.length).toBe('Bearer real-token'.length)
+    expect(headers['X-Org']).not.toBe('org-id')
+
+    const env = (servers[1].parameters as Record<string, unknown>)
+      .env as Record<string, string>
+    expect(env.OPENAI_API_KEY).not.toBe('sk-env')
+    expect(env.NODE_ENV).not.toBe('production')
+  })
+
+  it("redacts each customHeaders entry's value but preserves its key", () => {
+    const data = {
+      providers: [
+        {
+          id: 'p1',
+          customHeaders: [
+            { key: 'Authorization', value: 'Bearer xyz' },
+            { key: 'X-Trace', value: 'trace-1' },
+          ],
+        },
+      ],
+    }
+    const result = redactSensitive(data) as Record<string, unknown>
+    const providers = result.providers as Array<Record<string, unknown>>
+    const headers = providers[0].customHeaders as Array<Record<string, string>>
+    expect(headers[0].key).toBe('Authorization')
+    expect(headers[0].value).not.toBe('Bearer xyz')
+    expect(headers[0].value.length).toBe('Bearer xyz'.length)
+    expect(headers[1].key).toBe('X-Trace')
+    expect(headers[1].value).not.toBe('trace-1')
+  })
+
+  it('does not modify non-sensitive fields', () => {
     const data = {
       name: 'test',
       key: 'not-an-api-key',
       nested: { value: 123 },
     }
-    const result = redactApiKeys(data)
+    const result = redactSensitive(data)
     expect(result).toEqual(data)
   })
 
-  it('should handle null and primitive values', () => {
-    expect(redactApiKeys(null)).toBeNull()
-    expect(redactApiKeys(42)).toBe(42)
-    expect(redactApiKeys('hello')).toBe('hello')
-    expect(redactApiKeys(undefined)).toBeUndefined()
+  it('handles null and primitive values', () => {
+    expect(redactSensitive(null)).toBeNull()
+    expect(redactSensitive(42)).toBe(42)
+    expect(redactSensitive('hello')).toBe('hello')
+    expect(redactSensitive(undefined)).toBeUndefined()
+  })
+})
+
+describe('clearSensitive', () => {
+  it('clears every sensitive field covered by redactSensitive', () => {
+    const data = {
+      providers: [
+        {
+          apiKey: 'sk-real',
+          customHeaders: [{ key: 'Authorization', value: 'Bearer real' }],
+        },
+      ],
+      webSearch: { password: 'pw' },
+      mcp: {
+        servers: [
+          {
+            parameters: {
+              headers: { Authorization: 'Bearer' },
+              env: { TOKEN: 'tok' },
+            },
+          },
+        ],
+      },
+    }
+    const result = clearSensitive(data) as Record<string, unknown>
+    const providers = result.providers as Array<Record<string, unknown>>
+    expect(providers[0].apiKey).toBe('')
+    const ch = providers[0].customHeaders as Array<Record<string, string>>
+    expect(ch[0].value).toBe('')
+    expect(ch[0].key).toBe('Authorization')
+    expect((result.webSearch as Record<string, unknown>).password).toBe('')
+    const mcpServers = (result.mcp as Record<string, unknown>).servers as Array<
+      Record<string, unknown>
+    >
+    const params = mcpServers[0].parameters as Record<string, unknown>
+    expect((params.headers as Record<string, string>).Authorization).toBe('')
+    expect((params.env as Record<string, string>).TOKEN).toBe('')
   })
 })
 

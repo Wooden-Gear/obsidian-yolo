@@ -1,19 +1,8 @@
 import { SETTINGS_SCHEMA_VERSION } from '../../settings/schema/migrations'
 
 import { EXCLUDED_KEYS } from './config-keys'
+import { redactSensitive } from './redact'
 import { CONFIG_EXPORT_FORMAT_VERSION, ConfigExportFile } from './types'
-
-/**
- * 生成与原始 API Key 等长的随机字符串，用于脱敏导出。
- */
-function generateRandomString(length: number): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
 
 /**
  * 计算字符串的 SHA-256 哈希（hex 格式）。
@@ -24,31 +13,6 @@ export async function computeChecksum(content: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-/**
- * 递归遍历对象，将所有名为 apiKey 的字段替换为等长随机字符串。
- */
-export function redactApiKeys(data: unknown): unknown {
-  if (Array.isArray(data)) {
-    return data.map((item) => redactApiKeys(item))
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    const result: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(
-      data as Record<string, unknown>,
-    )) {
-      if (key === 'apiKey' && typeof value === 'string') {
-        result[key] = value.length > 0 ? generateRandomString(value.length) : ''
-      } else {
-        result[key] = redactApiKeys(value)
-      }
-    }
-    return result
-  }
-
-  return data
 }
 
 export type ExportOptions = {
@@ -81,7 +45,7 @@ export async function buildExportData(
 
   // 脱敏处理
   const finalData = redacted
-    ? (redactApiKeys(data) as Record<string, unknown>)
+    ? (redactSensitive(data) as Record<string, unknown>)
     : data
 
   // 构建不含 checksum 的对象

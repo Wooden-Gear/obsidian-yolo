@@ -1445,6 +1445,90 @@ export type TranslationKeys = {
     extraHighDesc?: string
   }
 
+  // Config import / export
+  configTransfer?: {
+    export: {
+      title: string
+      description: string
+      selectAll: string
+      selectNone: string
+      sensitive: string
+      redactedOption: string
+      submit: string
+      cancel: string
+      noticeAtLeastOne: string
+      noticeReadFailed: string
+      noticeSuccess: string
+      noticeFailed: string
+    }
+    import: {
+      title: string
+      sourceFile: string
+      sourceFileDesc: string
+      sourceVault: string
+      sourceVaultDesc: string
+      description: string
+      selectAll: string
+      selectNone: string
+      sensitive: string
+      strategyOverwriteTitle: string
+      strategyOverwriteDesc: string
+      strategyMergeTitle: string
+      strategyMergeDesc: string
+      submit: string
+      back: string
+      cancel: string
+      noticeInvalidJson: string
+      noticeFileReadFailed: string
+      noticeRedactedHint: string
+      noticeRedactedReminder: string
+      noticePluginNotFound: string
+      noticeAtLeastOne: string
+      noticeSuccess: string
+      noticeFailed: string
+    }
+    errors: {
+      errorNotJson: string
+      errorNotExportFile: string
+      errorInvalidFormatVersion: string
+      errorInvalidSettingsVersion: string
+      errorFileFromNewerVersion: string
+      errorFileFromOlderVersion: string
+      errorEmptyKeys: string
+      errorMissingData: string
+      errorTampered: string
+      errorChecksumMismatch: string
+      errorVaultParseFailed: string
+      errorVaultMissingVersion: string
+      errorVaultFromNewerVersion: string
+      errorVaultFromOlderVersion: string
+      errorVaultEmpty: string
+      errorApplyVersionMismatch: string
+      errorApplySchema: string
+    }
+    keyLabels: {
+      providers: string
+      chatModels: string
+      embeddingModels: string
+      chatModelId: string
+      chatTitleModelId: string
+      embeddingModelId: string
+      systemPrompt: string
+      ragOptions: string
+      mcp: string
+      webSearch: string
+      skills: string
+      yolo: string
+      debug: string
+      chatOptions: string
+      notificationOptions: string
+      continuationOptions: string
+      assistants: string
+      currentAssistantId: string
+      quickAskAssistantId: string
+    }
+  }
+
   // Plugin update banner (GitHub release check)
   update: {
     newVersionAvailable: string
