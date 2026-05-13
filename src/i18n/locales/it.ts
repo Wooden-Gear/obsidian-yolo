@@ -333,6 +333,64 @@ export const it: TranslationKeys = {
         'Nessuna skill trovata. Crea file markdown skill sotto {path}.',
       createSkillTemplates: 'Inizializza sistema Skills',
       skillsTemplateCreated: 'Sistema Skills inizializzato in {path}.',
+      importSkill: 'Importa Skill',
+      importSkillDesc:
+        'Importa pacchetti skill in {path}. Supporta file .md singoli o cartelle standard Agent Skills.',
+      importSkillDropzoneText: 'Trascina file o cartelle skill qui',
+      importSkillBrowseFiles: 'Sfoglia File',
+      importSkillBrowseFolder: 'Sfoglia Cartella',
+      importSkillFileCount: '{count} skill selezionate ({files} file totali)',
+      importSkillFilesInPackage: 'file',
+      importSkillRemoveFile: 'Rimuovi',
+      importSkillConfirm: 'Importa',
+      importSkillSuccess: 'Importate con successo {count} skill.',
+      importSkillInvalidFile: 'Nessun file o pacchetto skill valido trovato.',
+      importSkillReadError: 'Impossibile leggere i file.',
+      importSkillWriteError: 'Impossibile importare {name}: {error}',
+      importSkillErrHeader: '"{name}" non può essere importato:',
+      importSkillErrNoSkillMd: 'file SKILL.md mancante nella cartella',
+      importSkillErrNoFrontmatter:
+        'intestazione metadati (---) mancante in cima al file',
+      importSkillErrNoName: 'campo "name" mancante nei metadati',
+      importSkillErrNameTooLong: '"name" troppo lungo (massimo 64 caratteri)',
+      importSkillErrNameUppercase: '"name" deve essere tutto minuscolo',
+      importSkillErrNameHyphenEdge:
+        '"name" non può iniziare o terminare con un trattino',
+      importSkillErrNameDoubleHyphen:
+        '"name" non può contenere trattini consecutivi (--)',
+      importSkillErrNameInvalidChars:
+        '"name" può contenere solo lettere minuscole, numeri e trattini',
+      importSkillErrNameMismatch:
+        '"name" deve corrispondere al nome della cartella',
+      importSkillErrNoDescription: 'campo "description" mancante nei metadati',
+      importSkillErrDescTooLong:
+        '"description" troppo lungo (massimo 1024 caratteri)',
+      importSkillErrCompatTooLong:
+        '"compatibility" troppo lungo (massimo 500 caratteri)',
+      importSkillConflictTitle: 'Skill già esistente',
+      importSkillConflictMessage:
+        'Esiste già una skill con lo stesso nome. Vuoi sovrascriverla?',
+      importSkillConflictOverwrite: 'Sovrascrivi tutto',
+      importSkillConflictMessageList:
+        'Le seguenti skill esistono già: {names}\n\nClicca "Sovrascrivi tutto" per sostituirle, "Salta conflitti" per mantenerle, o chiudi questa finestra per annullare l\'importazione.',
+      importSkillConflictSkip: 'Salta conflitti',
+      importSkillUnsafePath:
+        'Percorso non sicuro rifiutato in "{name}": {path}',
+      importSkillDuplicateInBatch:
+        'Nome skill duplicato in questo batch: "{name}" (da "{source}"). Viene mantenuta solo la prima occorrenza.',
+      deleteSkillTitle: 'Elimina skill',
+      deleteSkillMessage:
+        'Sei sicuro di voler eliminare "{name}"? Questa azione non può essere annullata.',
+      deleteSkillConfirm: 'Elimina',
+      deleteSkillSuccess: '"{name}" è stata eliminata.',
+      deleteSkillError: 'Impossibile eliminare "{name}": {error}',
+      deleteSkillBatchMessage:
+        'Sei sicuro di voler eliminare {count} skill? Questa azione non può essere annullata.',
+      deleteSkillBatchSuccess: 'Eliminate {count} skill.',
+      deleteSkillBatchBtn: 'Elimina',
+      deleteSkillSelectAll: 'Seleziona tutto',
+      deleteSkillCancel: 'Annulla',
+      selectSkills: 'Seleziona',
       agents: 'Agent',
       agentsDesc:
         'Clicca Configura per modificare il profilo e il prompt di ciascun agent.',

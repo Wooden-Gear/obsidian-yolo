@@ -6,6 +6,7 @@ export type ConfirmModalOptions = {
   title: string
   message: string
   ctaText?: string
+  cancelText?: string
   onConfirm: () => void
   onCancel?: () => void
 }
@@ -13,6 +14,7 @@ export type ConfirmModalOptions = {
 type ConfirmModalComponentProps = {
   message: string
   ctaText?: string
+  cancelText?: string
   onConfirm: () => void
   onCancel?: () => void
 }
@@ -25,6 +27,7 @@ export class ConfirmModal extends ReactModal<ConfirmModalComponentProps> {
       props: {
         message: options.message,
         ctaText: options.ctaText,
+        cancelText: options.cancelText,
         onConfirm: options.onConfirm,
         onCancel: options.onCancel,
       },
@@ -38,6 +41,7 @@ export class ConfirmModal extends ReactModal<ConfirmModalComponentProps> {
 function ConfirmModalComponent({
   message,
   ctaText,
+  cancelText,
   onConfirm,
   onCancel,
   onClose,
@@ -68,7 +72,7 @@ function ConfirmModalComponent({
             }
           }}
         >
-          Cancel
+          {cancelText ?? 'Cancel'}
         </button>
       </div>
     </div>

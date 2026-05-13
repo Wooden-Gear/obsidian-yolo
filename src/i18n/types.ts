@@ -221,6 +221,50 @@ export type TranslationKeys = {
       skillsEmptyHint?: string
       createSkillTemplates?: string
       skillsTemplateCreated?: string
+      importSkill?: string
+      importSkillDesc?: string
+      importSkillDropzoneText?: string
+      importSkillBrowseFiles?: string
+      importSkillBrowseFolder?: string
+      importSkillFileCount?: string
+      importSkillFilesInPackage?: string
+      importSkillRemoveFile?: string
+      importSkillConfirm?: string
+      importSkillSuccess?: string
+      importSkillInvalidFile?: string
+      importSkillReadError?: string
+      importSkillWriteError?: string
+      importSkillErrHeader?: string
+      importSkillErrNoSkillMd?: string
+      importSkillErrNoFrontmatter?: string
+      importSkillErrNoName?: string
+      importSkillErrNameTooLong?: string
+      importSkillErrNameUppercase?: string
+      importSkillErrNameHyphenEdge?: string
+      importSkillErrNameDoubleHyphen?: string
+      importSkillErrNameInvalidChars?: string
+      importSkillErrNameMismatch?: string
+      importSkillErrNoDescription?: string
+      importSkillErrDescTooLong?: string
+      importSkillErrCompatTooLong?: string
+      importSkillConflictTitle?: string
+      importSkillConflictMessage?: string
+      importSkillConflictMessageList?: string
+      importSkillConflictOverwrite?: string
+      importSkillConflictSkip?: string
+      importSkillUnsafePath?: string
+      importSkillDuplicateInBatch?: string
+      deleteSkillTitle?: string
+      deleteSkillMessage?: string
+      deleteSkillConfirm?: string
+      deleteSkillSuccess?: string
+      deleteSkillError?: string
+      deleteSkillBatchMessage?: string
+      deleteSkillBatchSuccess?: string
+      deleteSkillBatchBtn?: string
+      deleteSkillSelectAll?: string
+      deleteSkillCancel?: string
+      selectSkills?: string
       agents?: string
       agentsDesc?: string
       configureAgents?: string
