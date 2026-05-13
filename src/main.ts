@@ -79,6 +79,8 @@ import {
 } from './features/chat/chatLeafSessionManager'
 import { ChatViewNavigator } from './features/chat/chatViewNavigator'
 import { NewTabEmptyStateEnhancer } from './features/chat/newTabEmptyStateEnhancer'
+import { ExportConfigModal } from './features/config-transfer/components/ExportConfigModal'
+import { ImportConfigModal } from './features/config-transfer/components/ImportConfigModal'
 import { DiffReviewController } from './features/editor/diff-review/diffReviewController'
 import {
   buildFullReviewBlocks,
@@ -1876,6 +1878,23 @@ export default class YoloPlugin extends Plugin {
         }
       },
     })
+
+    this.addCommand({
+      id: 'export-settings',
+      name: this.t('commands.exportSettings', '导出插件配置'),
+      callback: () => {
+        new ExportConfigModal(this.app, this).open()
+      },
+    })
+
+    this.addCommand({
+      id: 'import-settings',
+      name: this.t('commands.importSettings', '导入插件配置'),
+      callback: () => {
+        new ImportConfigModal(this.app, this).open()
+      },
+    })
+
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new YoloSettingTab(this.app, this))
 

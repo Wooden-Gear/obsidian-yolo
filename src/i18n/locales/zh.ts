@@ -23,6 +23,8 @@ export const zh: TranslationKeys = {
     triggerTabCompletion: '触发 Tab 补全',
     acceptInlineSuggestion: '接受补全',
     capturePdfRegion: '截取 PDF 区域到聊天',
+    exportSettings: '导出插件配置',
+    importSettings: '导入插件配置',
   },
 
   common: {
@@ -1024,6 +1026,13 @@ export const zh: TranslationKeys = {
     },
     etc: {
       title: '其他',
+      exportConfig: '导出配置',
+      exportConfigDesc:
+        '将当前插件配置导出为 JSON 文件，方便在其他笔记库中导入使用。',
+      export: '导出',
+      importConfig: '导入配置',
+      importConfigDesc: '从导出文件或其他笔记库导入插件配置。',
+      import: '导入',
       resetSettings: '重置设置',
       resetSettingsDesc: '将所有设置重置为默认值',
       resetSettingsConfirm: '确定要将所有设置重置为默认值吗？此操作无法撤销。',
@@ -1568,6 +1577,101 @@ export const zh: TranslationKeys = {
     mediumDesc: '平衡的思考深度',
     highDesc: '深入思考，适合复杂问题',
     extraHighDesc: '极致思考，处理最棘手的推理',
+  },
+
+  configTransfer: {
+    export: {
+      title: '导出配置',
+      description: '选择要导出的配置项',
+      selectAll: '全选',
+      selectNone: '全不选',
+      sensitive: '含凭证',
+      redactedOption:
+        '脱敏导出（替换 API Key / 密码 / Header / 环境变量等凭证为随机字符串）',
+      submit: '导出',
+      cancel: '取消',
+      noticeAtLeastOne: '请至少选择一项配置',
+      noticeReadFailed: '无法读取当前配置数据',
+      noticeSuccess: '配置已导出为 {fileName}',
+      noticeFailed: '配置导出失败，请检查控制台日志',
+    },
+    import: {
+      title: '导入配置',
+      sourceFile: '从配置文件导入',
+      sourceFileDesc: '选择之前导出的 .json 文件',
+      sourceVault: '从其他笔记库导入',
+      sourceVaultDesc: '选择已安装 YOLO 的笔记库目录',
+      description: '选择要导入的配置项',
+      selectAll: '全选',
+      selectNone: '全不选',
+      sensitive: '含凭证',
+      strategyOverwriteTitle: '全量覆盖',
+      strategyOverwriteDesc: '用导入的配置替换选中项',
+      strategyMergeTitle: 'JSON 合并',
+      strategyMergeDesc: '深度合并，保留未冲突的现有值',
+      submit: '确认导入',
+      back: '返回',
+      cancel: '取消',
+      noticeInvalidJson:
+        '文件不是有效的 JSON 格式，请确认选择了正确的配置文件。',
+      noticeFileReadFailed: '文件读取失败，请重试。',
+      noticeRedactedHint:
+        '注意：该配置为脱敏导出，所有 API Key / 密码 / Header / 环境变量已被清空，需导入后手动补填。',
+      noticeRedactedReminder:
+        '注意：该配置为脱敏导出，所有 API Key / 密码 / Header / 环境变量已被清空，请前往设置补填。',
+      noticePluginNotFound: '未在该目录找到 YOLO 插件配置',
+      noticeAtLeastOne: '请至少选择一项配置',
+      noticeSuccess: '配置导入成功',
+      noticeFailed: '配置导入失败',
+    },
+    errors: {
+      errorNotJson: '文件内容不是有效的 JSON 对象',
+      errorNotExportFile:
+        '该文件不是 YOLO 插件的配置导出文件，请选择通过「导出配置」功能生成的 .json 文件。',
+      errorInvalidFormatVersion: '配置文件格式版本不合法，可能已损坏。',
+      errorInvalidSettingsVersion: '配置文件中的设置版本号不合法，可能已损坏。',
+      errorFileFromNewerVersion:
+        '配置文件来自更高版本的插件（版本 {fileVersion}），当前插件版本为 {currentVersion}，请先升级当前插件后再导入。',
+      errorFileFromOlderVersion:
+        '配置文件来自旧版本的插件（版本 {fileVersion}），当前插件版本为 {currentVersion}。请在源端升级 YOLO 插件后重新导出。',
+      errorEmptyKeys: '配置文件中没有包含任何配置项。',
+      errorMissingData: '配置文件中的数据字段缺失或不合法。',
+      errorTampered:
+        '配置文件数据与声明不一致：data 中包含未在 keys 中声明的字段（{fields}），文件可能已被篡改。',
+      errorChecksumMismatch: '配置文件完整性校验失败，文件内容可能已被修改。',
+      errorVaultParseFailed: '无法解析目标笔记库的配置数据',
+      errorVaultMissingVersion:
+        '目标笔记库的配置数据缺少 version 字段，无法判断版本兼容性。',
+      errorVaultFromNewerVersion:
+        '目标笔记库使用更高版本的插件（版本 {vaultVersion}），当前插件版本为 {currentVersion}，请先升级当前插件后再导入。',
+      errorVaultFromOlderVersion:
+        '目标笔记库使用旧版本的插件（版本 {vaultVersion}），当前插件版本为 {currentVersion}。请先在目标笔记库升级 YOLO 插件后再导入。',
+      errorVaultEmpty: '目标笔记库的配置数据为空',
+      errorApplyVersionMismatch:
+        '导入数据版本（{importVersion}）与当前插件版本（{currentVersion}）不一致，无法导入。',
+      errorApplySchema: '导入的配置未通过校验，可能存在字段缺失或格式错误。',
+    },
+    keyLabels: {
+      providers: 'AI 服务商',
+      chatModels: '对话模型',
+      embeddingModels: '嵌入模型',
+      chatModelId: '默认对话模型',
+      chatTitleModelId: '标题生成模型',
+      embeddingModelId: '默认嵌入模型',
+      systemPrompt: '系统提示词',
+      ragOptions: '知识库设置',
+      mcp: 'MCP 工具',
+      webSearch: '联网搜索',
+      skills: '技能设置',
+      yolo: '基础设置',
+      debug: '调试设置',
+      chatOptions: '对话偏好',
+      notificationOptions: '通知设置',
+      continuationOptions: '续写与补全',
+      assistants: 'Agent 配置',
+      currentAssistantId: '当前 Agent',
+      quickAskAssistantId: 'Quick Ask Agent',
+    },
   },
 
   update: {

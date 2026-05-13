@@ -23,6 +23,8 @@ export const en: TranslationKeys = {
     triggerTabCompletion: 'Trigger tab completion',
     acceptInlineSuggestion: 'Accept completion',
     capturePdfRegion: 'Capture PDF region to chat',
+    exportSettings: 'Export plugin settings',
+    importSettings: 'Import plugin settings',
   },
 
   common: {
@@ -1107,6 +1109,14 @@ export const en: TranslationKeys = {
     },
     etc: {
       title: 'Other',
+      exportConfig: 'Export settings',
+      exportConfigDesc:
+        'Export current plugin settings to a JSON file for use in other vaults.',
+      export: 'Export',
+      importConfig: 'Import settings',
+      importConfigDesc:
+        'Import plugin settings from an export file or another vault.',
+      import: 'Import',
       resetSettings: 'Reset settings',
       resetSettingsDesc: 'Reset all settings to default values',
       resetSettingsConfirm:
@@ -1675,6 +1685,109 @@ export const en: TranslationKeys = {
     mediumDesc: 'Balanced thinking depth',
     highDesc: 'Deep thinking, suited for complex problems',
     extraHighDesc: 'Maximum thinking, for the toughest reasoning',
+  },
+
+  configTransfer: {
+    export: {
+      title: 'Export settings',
+      description: 'Select the settings to export',
+      selectAll: 'Select all',
+      selectNone: 'Select none',
+      sensitive: 'Contains credentials',
+      redactedOption:
+        'Redact credentials (replace API keys / passwords / headers / env vars with random strings)',
+      submit: 'Export',
+      cancel: 'Cancel',
+      noticeAtLeastOne: 'Please select at least one item',
+      noticeReadFailed: 'Failed to read current settings',
+      noticeSuccess: 'Settings exported as {fileName}',
+      noticeFailed: 'Failed to export settings — check console for details',
+    },
+    import: {
+      title: 'Import settings',
+      sourceFile: 'Import from file',
+      sourceFileDesc: 'Choose a previously exported .json file',
+      sourceVault: 'Import from another vault',
+      sourceVaultDesc: 'Choose a vault directory with YOLO installed',
+      description: 'Select the settings to import',
+      selectAll: 'Select all',
+      selectNone: 'Select none',
+      sensitive: 'Contains credentials',
+      strategyOverwriteTitle: 'Overwrite',
+      strategyOverwriteDesc: 'Replace selected settings with the imported ones',
+      strategyMergeTitle: 'JSON merge',
+      strategyMergeDesc:
+        'Deep merge, keep existing values for fields not present in the import',
+      submit: 'Import',
+      back: 'Back',
+      cancel: 'Cancel',
+      noticeInvalidJson:
+        'File is not valid JSON. Please pick the correct settings file.',
+      noticeFileReadFailed: 'Failed to read the file. Please try again.',
+      noticeRedactedHint:
+        'Note: this export was redacted. All API keys / passwords / headers / env vars have been cleared and must be re-entered after import.',
+      noticeRedactedReminder:
+        'Note: this export was redacted. All API keys / passwords / headers / env vars have been cleared — please re-enter them in settings.',
+      noticePluginNotFound:
+        'No YOLO plugin settings found in the selected directory.',
+      noticeAtLeastOne: 'Please select at least one item',
+      noticeSuccess: 'Settings imported successfully',
+      noticeFailed: 'Failed to import settings',
+    },
+    errors: {
+      errorNotJson: 'File content is not a valid JSON object.',
+      errorNotExportFile:
+        'This file is not a YOLO plugin export file. Please pick a .json produced by the "Export settings" feature.',
+      errorInvalidFormatVersion:
+        'Invalid export format version — the file may be corrupted.',
+      errorInvalidSettingsVersion:
+        'Invalid settings version in the export file — it may be corrupted.',
+      errorFileFromNewerVersion:
+        'This file was exported by a newer plugin version ({fileVersion}); current plugin schema is {currentVersion}. Please upgrade this plugin before importing.',
+      errorFileFromOlderVersion:
+        'This file was exported by an older plugin version ({fileVersion}); current plugin schema is {currentVersion}. Please upgrade YOLO on the source vault and re-export.',
+      errorEmptyKeys: 'The export file contains no settings to import.',
+      errorMissingData:
+        'The data field is missing or invalid in the export file.',
+      errorTampered:
+        'Export file is inconsistent: data contains fields not declared in keys ({fields}). The file may have been tampered with.',
+      errorChecksumMismatch:
+        'Export file integrity check failed — the content may have been modified.',
+      errorVaultParseFailed:
+        'Could not parse the settings data from the target vault.',
+      errorVaultMissingVersion:
+        'Target vault settings are missing the version field — cannot check compatibility.',
+      errorVaultFromNewerVersion:
+        'Target vault uses a newer plugin version ({vaultVersion}); current is {currentVersion}. Please upgrade this plugin before importing.',
+      errorVaultFromOlderVersion:
+        'Target vault uses an older plugin version ({vaultVersion}); current is {currentVersion}. Please upgrade YOLO in the target vault before importing.',
+      errorVaultEmpty: 'Target vault contains no exportable settings.',
+      errorApplyVersionMismatch:
+        'Import data version ({importVersion}) does not match current plugin schema ({currentVersion}).',
+      errorApplySchema:
+        'The imported settings failed validation — fields may be missing or malformed.',
+    },
+    keyLabels: {
+      providers: 'AI providers',
+      chatModels: 'Chat models',
+      embeddingModels: 'Embedding models',
+      chatModelId: 'Default chat model',
+      chatTitleModelId: 'Title-generation model',
+      embeddingModelId: 'Default embedding model',
+      systemPrompt: 'System prompt',
+      ragOptions: 'Knowledge base settings',
+      mcp: 'MCP tools',
+      webSearch: 'Web search',
+      skills: 'Skills',
+      yolo: 'Base settings',
+      debug: 'Debug settings',
+      chatOptions: 'Chat preferences',
+      notificationOptions: 'Notifications',
+      continuationOptions: 'Continuation & completion',
+      assistants: 'Agents',
+      currentAssistantId: 'Current agent',
+      quickAskAssistantId: 'Quick Ask agent',
+    },
   },
 
   update: {
