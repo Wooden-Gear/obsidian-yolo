@@ -84,9 +84,27 @@ describe('parseFrontmatter', () => {
       '---',
     ].join('\n')
     const result = parseFrontmatter(content)
+    // js-yaml '|' 保留换行,末尾默认带一个 newline
     expect(result).toEqual({
       name: 'my-skill',
-      description: 'Line one Line two',
+      description: 'Line one\nLine two\n',
+    })
+  })
+
+  it('does not treat --- in YAML value as closing delimiter', () => {
+    // 中间的 `bar---` 不应被视为 closing delimiter,因为它不独占一行
+    const content = [
+      '---',
+      'name: my-skill',
+      'description: "foo bar---baz"',
+      '---',
+      '',
+      '# Body',
+    ].join('\n')
+    const result = parseFrontmatter(content)
+    expect(result).toEqual({
+      name: 'my-skill',
+      description: 'foo bar---baz',
     })
   })
 
@@ -336,6 +354,40 @@ describe('validateDirectoryPackage', () => {
     expect(errors).toContainEqual({
       field: 'compatibility',
       message: 'exceeds 500 characters',
+    })
+  })
+
+  it('fails when frontmatter.name does not match folder name', () => {
+    const content = [
+      '---',
+      'name: pdf-processing',
+      'description: A useful skill.',
+      '---',
+    ].join('\n')
+    const files = [{ relativePath: 'SKILL.md', content }]
+    const errors = validateDirectoryPackage('different-folder', files)
+    expect(errors).toContainEqual({
+      field: 'name',
+      message: 'must match folder name',
+    })
+  })
+
+  it('does not report mismatch when name is already invalid', () => {
+    const content = [
+      '---',
+      'name: PDF-Processing',
+      'description: A useful skill.',
+      '---',
+    ].join('\n')
+    const files = [{ relativePath: 'SKILL.md', content }]
+    const errors = validateDirectoryPackage('pdf-processing', files)
+    expect(errors).toContainEqual({
+      field: 'name',
+      message: 'uppercase not allowed',
+    })
+    expect(errors).not.toContainEqual({
+      field: 'name',
+      message: 'must match folder name',
     })
   })
 

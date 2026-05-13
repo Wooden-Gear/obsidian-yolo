@@ -4155,6 +4155,10 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   gap: var(--size-4-3);
 }
 
+.yolo-import-skill-hidden-input {
+  display: none;
+}
+
 .yolo-import-skill-dropzone {
   border: 2px dashed var(--background-modifier-border);
   border-radius: var(--radius-m);

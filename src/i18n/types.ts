@@ -247,7 +247,11 @@ export type TranslationKeys = {
       importSkillErrCompatTooLong?: string
       importSkillConflictTitle?: string
       importSkillConflictMessage?: string
+      importSkillConflictMessageList?: string
       importSkillConflictOverwrite?: string
+      importSkillConflictSkip?: string
+      importSkillUnsafePath?: string
+      importSkillDuplicateInBatch?: string
       deleteSkillTitle?: string
       deleteSkillMessage?: string
       deleteSkillConfirm?: string

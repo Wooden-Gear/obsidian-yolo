@@ -370,7 +370,14 @@ export const it: TranslationKeys = {
       importSkillConflictTitle: 'Skill già esistente',
       importSkillConflictMessage:
         'Esiste già una skill con lo stesso nome. Vuoi sovrascriverla?',
-      importSkillConflictOverwrite: 'Sovrascrivi',
+      importSkillConflictOverwrite: 'Sovrascrivi tutto',
+      importSkillConflictMessageList:
+        'Le seguenti skill esistono già: {names}\n\nClicca "Sovrascrivi tutto" per sostituirle, "Salta conflitti" per mantenerle, o chiudi questa finestra per annullare l\'importazione.',
+      importSkillConflictSkip: 'Salta conflitti',
+      importSkillUnsafePath:
+        'Percorso non sicuro rifiutato in "{name}": {path}',
+      importSkillDuplicateInBatch:
+        'Nome skill duplicato in questo batch: "{name}" (da "{source}"). Viene mantenuta solo la prima occorrenza.',
       deleteSkillTitle: 'Elimina skill',
       deleteSkillMessage:
         'Sei sicuro di voler eliminare "{name}"? Questa azione non può essere annullata.',

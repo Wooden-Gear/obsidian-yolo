@@ -55,7 +55,6 @@ function ImportSkillModalWrapper({
     >
       <ImportSkillModalContent
         app={app}
-        plugin={plugin}
         onImported={onImported}
         onClose={onClose}
       />
@@ -67,16 +66,23 @@ function ImportSkillModalWrapper({
 // 类型定义
 // ---------------------------------------------------------------------------
 
+/**
+ * 一个准备导入的 skill 包(已经识别出根目录 / 单文件)。
+ */
 type SkillPackage = {
-  /** 用于文件系统操作的名称（文件名或文件夹名） */
-  skillName: string
-  /** 从 frontmatter 中解析的 name，用于列表显示 */
+  /** 用作错误信息显示的源名称(原文件夹名 / 文件名) */
+  sourceName: string
+  /** 目标名称:目录模式 = frontmatter.name;单文件模式 = 源文件名 */
+  targetName: string
+  /** 用于列表显示 */
   displayName: string
-  /** 从 frontmatter 中解析的 description */
   description: string
   files: FileEntry[]
   isDirectory: boolean
 }
+
+const SKILL_MD = 'SKILL.md'
+const MAX_PATH_DEPTH = 16
 
 // ---------------------------------------------------------------------------
 // 校验错误转为通俗提示
@@ -86,7 +92,7 @@ type TranslateFn = (key: string, fallback: string) => string
 
 function formatValidationErrors(
   errors: ValidationError[],
-  skillName: string,
+  sourceName: string,
   t: TranslateFn,
 ): string {
   const reasons = errors.map((err) => {
@@ -132,6 +138,11 @@ function formatValidationErrors(
           'settings.agent.importSkillErrNameInvalidChars',
           '"name" can only contain lowercase letters, numbers, and hyphens',
         )
+      case 'name:must match folder name':
+        return t(
+          'settings.agent.importSkillErrNameMismatch',
+          '"name" must match the folder name',
+        )
       case 'description:missing':
         return t(
           'settings.agent.importSkillErrNoDescription',
@@ -148,16 +159,6 @@ function formatValidationErrors(
           '"compatibility" is too long (max 500 characters)',
         )
       default:
-        // name 与文件夹名不匹配
-        if (
-          err.field === 'name' &&
-          err.message.startsWith('must match folder name')
-        ) {
-          return t(
-            'settings.agent.importSkillErrNameMismatch',
-            '"name" must match the folder name',
-          )
-        }
         return `${err.field}: ${err.message}`
     }
   })
@@ -165,37 +166,44 @@ function formatValidationErrors(
   const header = t(
     'settings.agent.importSkillErrHeader',
     '"{name}" cannot be imported:',
-  ).replace('{name}', skillName)
+  ).replace('{name}', sourceName)
 
   return `${header}\n${reasons.map((r) => `• ${r}`).join('\n')}`
 }
 
 // ---------------------------------------------------------------------------
-// 文件系统读取工具函数
+// 文件系统读取(同步收集 entries,再异步读取)
 // ---------------------------------------------------------------------------
 
-async function readAllFilesFromDirectoryEntry(
+type RawCandidate = {
+  rootName: string
+  files: FileEntry[]
+  isSingleFile: boolean
+}
+
+async function readDirectoryEntryRecursively(
   dirEntry: FileSystemDirectoryEntry,
   basePath: string,
+  depth: number,
 ): Promise<FileEntry[]> {
-  const results: FileEntry[] = []
+  if (depth > MAX_PATH_DEPTH) return []
 
-  const readEntries = (
+  const readBatch = (
     reader: FileSystemDirectoryReader,
-  ): Promise<FileSystemEntry[]> => {
-    return new Promise((resolve, reject) => {
+  ): Promise<FileSystemEntry[]> =>
+    new Promise((resolve, reject) => {
       reader.readEntries(resolve, reject)
     })
-  }
 
   const reader = dirEntry.createReader()
-  let entries: FileSystemEntry[] = []
-  let batch = await readEntries(reader)
+  const entries: FileSystemEntry[] = []
+  let batch = await readBatch(reader)
   while (batch.length > 0) {
-    entries = entries.concat(batch)
-    batch = await readEntries(reader)
+    entries.push(...batch)
+    batch = await readBatch(reader)
   }
 
+  const results: FileEntry[] = []
   for (const entry of entries) {
     if (entry.isFile) {
       const fileEntry = entry as FileSystemFileEntry
@@ -208,126 +216,203 @@ async function readAllFilesFromDirectoryEntry(
         : fileEntry.name
       results.push({ relativePath, content })
     } else if (entry.isDirectory) {
-      const subDirEntry = entry as FileSystemDirectoryEntry
-      const subPath = basePath
-        ? `${basePath}/${subDirEntry.name}`
-        : subDirEntry.name
-      const subResults = await readAllFilesFromDirectoryEntry(
-        subDirEntry,
+      const subDir = entry as FileSystemDirectoryEntry
+      const subPath = basePath ? `${basePath}/${subDir.name}` : subDir.name
+      const subFiles = await readDirectoryEntryRecursively(
+        subDir,
         subPath,
+        depth + 1,
       )
-      results.push(...subResults)
+      results.push(...subFiles)
     }
   }
-
   return results
 }
 
-async function parseSkillPackagesFromDataTransfer(
+/**
+ * 从 DataTransferItemList 解析 raw candidates。
+ * 必须先同步收集所有 entry,因为 await 之后 webkitGetAsEntry 可能返回 null。
+ */
+async function readRawCandidatesFromDataTransfer(
   items: DataTransferItemList,
-): Promise<SkillPackage[]> {
-  const packages: SkillPackage[] = []
-
+): Promise<RawCandidate[]> {
+  // Step 1: 同步收集所有 entry
+  const rootEntries: FileSystemEntry[] = []
   for (let i = 0; i < items.length; i++) {
-    const item = items[i]
-    const entry = item.webkitGetAsEntry?.()
+    const entry = items[i].webkitGetAsEntry?.()
+    if (entry) rootEntries.push(entry)
+  }
 
-    if (!entry) continue
-
+  // Step 2: 异步读取
+  const candidates: RawCandidate[] = []
+  for (const entry of rootEntries) {
     if (entry.isDirectory) {
       const dirEntry = entry as FileSystemDirectoryEntry
-      const files = await readAllFilesFromDirectoryEntry(dirEntry, '')
-      packages.push({
-        skillName: dirEntry.name,
-        displayName: dirEntry.name,
-        description: '',
+      const files = await readDirectoryEntryRecursively(dirEntry, '', 0)
+      candidates.push({
+        rootName: dirEntry.name,
         files,
-        isDirectory: true,
+        isSingleFile: false,
       })
     } else if (entry.isFile) {
       const fileEntry = entry as FileSystemFileEntry
-      if (
-        fileEntry.name.endsWith('.md') ||
-        fileEntry.name.endsWith('.markdown')
-      ) {
-        const file = await new Promise<File>((resolve, reject) => {
-          fileEntry.file(resolve, reject)
-        })
-        const content = await file.text()
-        packages.push({
-          skillName: fileEntry.name,
-          displayName: fileEntry.name,
-          description: '',
-          files: [{ relativePath: fileEntry.name, content }],
-          isDirectory: false,
-        })
-      }
+      if (!isMarkdownFileName(fileEntry.name)) continue
+      const file = await new Promise<File>((resolve, reject) => {
+        fileEntry.file(resolve, reject)
+      })
+      const content = await file.text()
+      candidates.push({
+        rootName: fileEntry.name,
+        files: [{ relativePath: fileEntry.name, content }],
+        isSingleFile: true,
+      })
     }
   }
-
-  return packages
+  return candidates
 }
 
-function parseSkillPackagesFromFileList(
+async function readRawCandidatesFromFileList(
   files: FileList,
-): Promise<SkillPackage[]> {
-  return (async () => {
-    const fileArray = Array.from(files)
-    if (fileArray.length === 0) return []
+): Promise<RawCandidate[]> {
+  const fileArray = Array.from(files)
+  if (fileArray.length === 0) return []
 
-    const firstRelPath = (fileArray[0] as { webkitRelativePath?: string })
-      .webkitRelativePath
-    const isFolderMode = !!firstRelPath && firstRelPath.includes('/')
+  const firstRelPath = (fileArray[0] as { webkitRelativePath?: string })
+    .webkitRelativePath
+  const isFolderMode = !!firstRelPath && firstRelPath.includes('/')
 
-    if (isFolderMode) {
-      const groupedByRoot = new Map<string, FileEntry[]>()
-
-      for (const file of fileArray) {
-        const relPath =
-          (file as { webkitRelativePath?: string }).webkitRelativePath || ''
-        if (!relPath) continue
-
-        const slashIdx = relPath.indexOf('/')
-        const rootDir = slashIdx > 0 ? relPath.slice(0, slashIdx) : relPath
-        const innerPath = slashIdx > 0 ? relPath.slice(slashIdx + 1) : ''
-        if (!innerPath) continue
-
-        const content = await file.text()
-        const entries = groupedByRoot.get(rootDir) ?? []
-        entries.push({ relativePath: innerPath, content })
-        groupedByRoot.set(rootDir, entries)
-      }
-
-      const packages: SkillPackage[] = []
-      for (const [rootDir, entries] of groupedByRoot) {
-        if (entries.length > 0) {
-          packages.push({
-            skillName: rootDir,
-            displayName: rootDir,
-            description: '',
-            files: entries,
-            isDirectory: true,
-          })
-        }
-      }
-      return packages
-    } else {
-      const packages: SkillPackage[] = []
-      for (const file of fileArray) {
-        if (file.name.endsWith('.md') || file.name.endsWith('.markdown')) {
-          const content = await file.text()
-          packages.push({
-            skillName: file.name,
-            displayName: file.name,
-            description: '',
-            files: [{ relativePath: file.name, content }],
-            isDirectory: false,
-          })
-        }
-      }
-      return packages
+  if (!isFolderMode) {
+    const candidates: RawCandidate[] = []
+    for (const file of fileArray) {
+      if (!isMarkdownFileName(file.name)) continue
+      const content = await file.text()
+      candidates.push({
+        rootName: file.name,
+        files: [{ relativePath: file.name, content }],
+        isSingleFile: true,
+      })
     }
-  })()
+    return candidates
+  }
+
+  // 文件夹选择:浏览器一次性返回所有文件,根据 webkitRelativePath 的首段分组成一个 root
+  const groupedByRoot = new Map<string, FileEntry[]>()
+  for (const file of fileArray) {
+    const relPath =
+      (file as { webkitRelativePath?: string }).webkitRelativePath ?? ''
+    if (!relPath) continue
+    const slashIdx = relPath.indexOf('/')
+    const rootDir = slashIdx > 0 ? relPath.slice(0, slashIdx) : relPath
+    const innerPath = slashIdx > 0 ? relPath.slice(slashIdx + 1) : ''
+    if (!innerPath) continue
+    const content = await file.text()
+    const entries = groupedByRoot.get(rootDir) ?? []
+    entries.push({ relativePath: innerPath, content })
+    groupedByRoot.set(rootDir, entries)
+  }
+
+  return [...groupedByRoot.entries()].map(([rootName, files]) => ({
+    rootName,
+    files,
+    isSingleFile: false,
+  }))
+}
+
+function isMarkdownFileName(name: string): boolean {
+  return name.endsWith('.md') || name.endsWith('.markdown')
+}
+
+// ---------------------------------------------------------------------------
+// 父目录展开:从 raw candidate 中提取一到多个 skill 包
+// ---------------------------------------------------------------------------
+
+type ExtractedSkill = {
+  /** 在 raw root 内的相对目录路径('' 表示就是 root) */
+  rootRelDir: string
+  /** 报错用名称:rootRelDir 的最后一段(或 raw rootName) */
+  sourceName: string
+  /** 该 skill 子树的所有文件,relativePath 相对于 skill 根 */
+  files: FileEntry[]
+}
+
+function extractSkillsFromDirectoryCandidate(
+  candidate: RawCandidate,
+): ExtractedSkill[] {
+  // 找出所有 SKILL.md 的目录路径(相对 root)
+  const skillDirs: string[] = []
+  for (const file of candidate.files) {
+    if (
+      !file.relativePath.endsWith(`/${SKILL_MD}`) &&
+      file.relativePath !== SKILL_MD
+    ) {
+      continue
+    }
+    const dir =
+      file.relativePath === SKILL_MD
+        ? ''
+        : file.relativePath.slice(0, -SKILL_MD.length - 1)
+    skillDirs.push(dir)
+  }
+
+  if (skillDirs.length === 0) {
+    // 没有 SKILL.md → 仍然返回 root,让后续校验报"missing SKILL.md"
+    return [
+      {
+        rootRelDir: '',
+        sourceName: candidate.rootName,
+        files: candidate.files,
+      },
+    ]
+  }
+
+  // 排除嵌套:若一个 skillDir 是另一个的子孙,则跳过子孙
+  skillDirs.sort((a, b) => a.length - b.length)
+  const accepted: string[] = []
+  for (const dir of skillDirs) {
+    const isNested = accepted.some((parent) =>
+      parent === '' ? true : dir.startsWith(`${parent}/`),
+    )
+    if (!isNested) accepted.push(dir)
+  }
+
+  return accepted.map((rootRelDir) => {
+    const prefix = rootRelDir === '' ? '' : `${rootRelDir}/`
+    const files = candidate.files
+      .filter((f) =>
+        rootRelDir === ''
+          ? !accepted.some(
+              (other) => other !== '' && f.relativePath.startsWith(`${other}/`),
+            )
+          : f.relativePath.startsWith(prefix),
+      )
+      .map((f) => ({
+        relativePath:
+          rootRelDir === ''
+            ? f.relativePath
+            : f.relativePath.slice(prefix.length),
+        content: f.content,
+      }))
+    const sourceName =
+      rootRelDir === ''
+        ? candidate.rootName
+        : (rootRelDir.split('/').pop() ?? candidate.rootName)
+    return { rootRelDir, sourceName, files }
+  })
+}
+
+// ---------------------------------------------------------------------------
+// 路径安全:确保相对路径解析后仍在目标目录内
+// ---------------------------------------------------------------------------
+
+function isSafeRelativePath(relativePath: string): boolean {
+  if (!relativePath) return false
+  if (relativePath.startsWith('/') || relativePath.startsWith('\\'))
+    return false
+  // Windows 风格 / 绝对路径 / 父级回退
+  if (/(^|\/)\.\.(\/|$)/.test(relativePath)) return false
+  if (/\\/.test(relativePath)) return false
+  if (/^[a-zA-Z]:/.test(relativePath)) return false
+  return true
 }
 
 // ---------------------------------------------------------------------------
@@ -336,10 +421,9 @@ function parseSkillPackagesFromFileList(
 
 function ImportSkillModalContent({
   app,
-  plugin: _plugin,
   onImported,
   onClose,
-}: ImportSkillModalProps & { onClose: () => void }) {
+}: Omit<ImportSkillModalProps, 'plugin'> & { onClose: () => void }) {
   const { t } = useLanguage()
   const { settings } = useSettings()
   const skillsDir = getYoloSkillsDir(settings)
@@ -350,9 +434,149 @@ function ImportSkillModalContent({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
-  const addPackages = useCallback(
-    (newPackages: SkillPackage[]) => {
-      if (newPackages.length === 0) {
+  const buildSkillPackagesFromCandidates = useCallback(
+    (
+      candidates: RawCandidate[],
+    ): { valid: SkillPackage[]; errors: string[] } => {
+      const valid: SkillPackage[] = []
+      const errors: string[] = []
+      const seenTargets = new Set<string>()
+      const pushValid = (pkg: SkillPackage) => {
+        if (seenTargets.has(pkg.targetName)) {
+          errors.push(
+            t(
+              'settings.agent.importSkillDuplicateInBatch',
+              'Duplicate skill name in this batch: "{name}" (from "{source}"). Only the first occurrence is kept.',
+            )
+              .replace('{name}', pkg.targetName)
+              .replace('{source}', pkg.sourceName),
+          )
+          return
+        }
+        seenTargets.add(pkg.targetName)
+        valid.push(pkg)
+      }
+
+      for (const candidate of candidates) {
+        // 路径安全校验(整批候选,提前拦截 — 任意一个文件不安全就丢弃整包)
+        const unsafe = candidate.files.find(
+          (f) => !isSafeRelativePath(f.relativePath),
+        )
+        if (unsafe) {
+          errors.push(
+            t(
+              'settings.agent.importSkillUnsafePath',
+              'Refused unsafe path in "{name}": {path}',
+            )
+              .replace('{name}', candidate.rootName)
+              .replace('{path}', unsafe.relativePath),
+          )
+          continue
+        }
+
+        if (candidate.isSingleFile) {
+          const content = candidate.files[0]?.content ?? ''
+          const validationErrors = validateSingleFileSkill(content)
+          if (validationErrors.length > 0) {
+            errors.push(
+              formatValidationErrors(validationErrors, candidate.rootName, t),
+            )
+            continue
+          }
+          const fm = parseFrontmatter(content)
+          const fmName =
+            typeof fm?.name === 'string' && fm.name.trim()
+              ? fm.name.trim()
+              : null
+          const description =
+            (typeof fm?.description === 'string' && fm.description.trim()) || ''
+          if (!isSafeRelativePath(candidate.rootName)) {
+            errors.push(
+              t(
+                'settings.agent.importSkillUnsafePath',
+                'Refused unsafe path in "{name}": {path}',
+              )
+                .replace('{name}', candidate.rootName)
+                .replace('{path}', candidate.rootName),
+            )
+            continue
+          }
+          pushValid({
+            sourceName: candidate.rootName,
+            targetName: candidate.rootName,
+            displayName: fmName ?? candidate.rootName,
+            description,
+            files: candidate.files,
+            isDirectory: false,
+          })
+          continue
+        }
+
+        // 目录模式:展开嵌套
+        const extracted = extractSkillsFromDirectoryCandidate(candidate)
+        for (const skill of extracted) {
+          const validationErrors = validateDirectoryPackage(
+            skill.sourceName,
+            skill.files,
+          )
+          if (validationErrors.length > 0) {
+            errors.push(
+              formatValidationErrors(validationErrors, skill.sourceName, t),
+            )
+            continue
+          }
+          const skillMd = skill.files.find((f) => f.relativePath === SKILL_MD)
+          const fm = parseFrontmatter(skillMd?.content ?? '')
+          const fmName =
+            typeof fm?.name === 'string' && fm.name.trim()
+              ? fm.name.trim()
+              : skill.sourceName
+          const description =
+            (typeof fm?.description === 'string' && fm.description.trim()) || ''
+          pushValid({
+            sourceName: skill.sourceName,
+            targetName: fmName,
+            displayName: fmName,
+            description,
+            files: skill.files,
+            isDirectory: true,
+          })
+        }
+      }
+
+      return { valid, errors }
+    },
+    [t],
+  )
+
+  const detectConflicts = useCallback(
+    (packages: SkillPackage[]) => {
+      const conflicts: SkillPackage[] = []
+      const noConflict: SkillPackage[] = []
+      for (const pkg of packages) {
+        const targetPath = normalizePath(`${skillsDir}/${pkg.targetName}`)
+        if (app.vault.getAbstractFileByPath(targetPath)) {
+          conflicts.push(pkg)
+        } else {
+          noConflict.push(pkg)
+        }
+      }
+      return { conflicts, noConflict }
+    },
+    [app, skillsDir],
+  )
+
+  const mergeIntoList = useCallback((additions: SkillPackage[]) => {
+    setSkillPackages((prev) => {
+      const seen = new Set(prev.map((p) => p.targetName))
+      const deduped = additions.filter((p) => !seen.has(p.targetName))
+      return [...prev, ...deduped]
+    })
+  }, [])
+
+  const addCandidates = useCallback(
+    (candidates: RawCandidate[]) => {
+      if (candidates.length === 0) {
         new Notice(
           t(
             'settings.agent.importSkillInvalidFile',
@@ -362,97 +586,48 @@ function ImportSkillModalContent({
         return
       }
 
-      const validPackages: SkillPackage[] = []
+      const { valid, errors } = buildSkillPackagesFromCandidates(candidates)
 
-      for (const pkg of newPackages) {
-        const errors = pkg.isDirectory
-          ? validateDirectoryPackage(pkg.skillName, pkg.files)
-          : validateSingleFileSkill(pkg.files[0]?.content ?? '')
-
-        if (errors.length > 0) {
-          new Notice(formatValidationErrors(errors, pkg.skillName, t))
-        } else {
-          // 从 frontmatter 中提取 displayName 和 description
-          const skillMdContent = pkg.isDirectory
-            ? (pkg.files.find((f) => f.relativePath === 'SKILL.md')?.content ??
-              '')
-            : (pkg.files[0]?.content ?? '')
-          const fm = parseFrontmatter(skillMdContent)
-          const displayName =
-            (typeof fm?.name === 'string' && fm.name.trim()) || pkg.skillName
-          const description =
-            (typeof fm?.description === 'string' && fm.description.trim()) || ''
-
-          validPackages.push({ ...pkg, displayName, description })
-        }
+      if (errors.length > 0) {
+        new Notice(errors.join('\n\n'))
       }
 
-      if (validPackages.length === 0) return
+      if (valid.length === 0) return
 
-      // 检查是否与 vault 中已有的 skill 重名
-      const conflictPackages: SkillPackage[] = []
-      const newOnlyPackages: SkillPackage[] = []
-
-      for (const pkg of validPackages) {
-        const targetPath = normalizePath(`${skillsDir}/${pkg.skillName}`)
-        if (app.vault.getAbstractFileByPath(targetPath)) {
-          conflictPackages.push(pkg)
-        } else {
-          newOnlyPackages.push(pkg)
-        }
+      const { conflicts, noConflict } = detectConflicts(valid)
+      if (conflicts.length === 0) {
+        mergeIntoList(valid)
+        return
       }
 
-      if (conflictPackages.length > 0) {
-        // 有冲突，弹出确认框
-        const modal = new ConfirmModal(app, {
-          title: t(
-            'settings.agent.importSkillConflictTitle',
-            'Skill already exists',
-          ),
-          message: t(
-            'settings.agent.importSkillConflictMessage',
-            'A skill with the same name already exists. Do you want to overwrite it?',
-          ),
-          ctaText: t(
-            'settings.agent.importSkillConflictOverwrite',
-            'Overwrite',
-          ),
-          onConfirm: () => {
-            // 用户选择覆盖：全部加入列表
-            setSkillPackages((prev) => {
-              const existingNames = new Set(prev.map((p) => p.skillName))
-              const deduped = validPackages.filter(
-                (p) => !existingNames.has(p.skillName),
-              )
-              return [...prev, ...deduped]
-            })
-          },
-          onCancel: () => {
-            // 用户选择放弃：只加入无冲突的
-            if (newOnlyPackages.length > 0) {
-              setSkillPackages((prev) => {
-                const existingNames = new Set(prev.map((p) => p.skillName))
-                const deduped = newOnlyPackages.filter(
-                  (p) => !existingNames.has(p.skillName),
-                )
-                return [...prev, ...deduped]
-              })
-            }
-          },
-        })
-        modal.open()
-      } else {
-        // 无冲突，直接加入列表
-        setSkillPackages((prev) => {
-          const existingNames = new Set(prev.map((p) => p.skillName))
-          const deduped = validPackages.filter(
-            (p) => !existingNames.has(p.skillName),
-          )
-          return [...prev, ...deduped]
-        })
-      }
+      // 列出冲突 + 三选项
+      const conflictList = conflicts.map((p) => p.targetName).join(', ')
+      const message = t(
+        'settings.agent.importSkillConflictMessageList',
+        'The following skill(s) already exist: {names}\n\nOverwrite all, skip conflicts, or cancel?',
+      ).replace('{names}', conflictList)
+      const modal = new ConfirmModal(app, {
+        title: t(
+          'settings.agent.importSkillConflictTitle',
+          'Skill already exists',
+        ),
+        message,
+        ctaText: t(
+          'settings.agent.importSkillConflictOverwrite',
+          'Overwrite all',
+        ),
+        cancelText: t(
+          'settings.agent.importSkillConflictSkip',
+          'Skip conflicts',
+        ),
+        onConfirm: () => mergeIntoList(valid),
+        onCancel: () => {
+          if (noConflict.length > 0) mergeIntoList(noConflict)
+        },
+      })
+      modal.open()
     },
-    [app, skillsDir, t],
+    [app, buildSkillPackagesFromCandidates, detectConflicts, mergeIntoList, t],
   )
 
   const handleFileSelect = useCallback(
@@ -461,8 +636,8 @@ function ImportSkillModalContent({
       if (!files || files.length === 0) return
 
       try {
-        const packages = await parseSkillPackagesFromFileList(files)
-        addPackages(packages)
+        const candidates = await readRawCandidatesFromFileList(files)
+        addCandidates(candidates)
       } catch {
         new Notice(
           t('settings.agent.importSkillReadError', 'Failed to read files.'),
@@ -470,7 +645,7 @@ function ImportSkillModalContent({
       }
       e.target.value = ''
     },
-    [addPackages, t],
+    [addCandidates, t],
   )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -494,8 +669,8 @@ function ImportSkillModalContent({
       const items = e.dataTransfer.items
       if (items && items.length > 0) {
         try {
-          const packages = await parseSkillPackagesFromDataTransfer(items)
-          addPackages(packages)
+          const candidates = await readRawCandidatesFromDataTransfer(items)
+          addCandidates(candidates)
         } catch {
           new Notice(
             t('settings.agent.importSkillReadError', 'Failed to read files.'),
@@ -503,11 +678,11 @@ function ImportSkillModalContent({
         }
       }
     },
-    [addPackages, t],
+    [addCandidates, t],
   )
 
-  const handleRemovePackage = useCallback((skillName: string) => {
-    setSkillPackages((prev) => prev.filter((p) => p.skillName !== skillName))
+  const handleRemovePackage = useCallback((targetName: string) => {
+    setSkillPackages((prev) => prev.filter((p) => p.targetName !== targetName))
   }, [])
 
   const handleImport = useCallback(async () => {
@@ -515,65 +690,78 @@ function ImportSkillModalContent({
 
     setIsImporting(true)
     let successCount = 0
+    const errors: string[] = []
+
+    // 递归保证目录存在(Obsidian createFolder 不会递归创建父目录)
+    const ensureFolder = async (path: string) => {
+      const segments = path.split('/').filter((s) => s.length > 0)
+      let cur = ''
+      for (const seg of segments) {
+        cur = cur ? `${cur}/${seg}` : seg
+        if (!app.vault.getAbstractFileByPath(cur)) {
+          await app.vault.createFolder(cur)
+        }
+      }
+    }
 
     try {
-      // 确保 skills 根目录存在
-      if (!app.vault.getAbstractFileByPath(skillsDir)) {
-        await app.vault.createFolder(skillsDir)
-      }
+      await ensureFolder(skillsDir)
 
       for (const pkg of skillPackages) {
         try {
           if (pkg.isDirectory) {
-            const pkgDir = normalizePath(`${skillsDir}/${pkg.skillName}`)
-            if (!app.vault.getAbstractFileByPath(pkgDir)) {
-              await app.vault.createFolder(pkgDir)
+            const pkgDir = normalizePath(`${skillsDir}/${pkg.targetName}`)
+            // 覆盖时:无论已存在的是文件还是目录,先 trash 再写新,避免遗留旧资源 / 类型冲突
+            const existing = app.vault.getAbstractFileByPath(pkgDir)
+            if (existing) {
+              await app.fileManager.trashFile(existing)
             }
+            await app.vault.createFolder(pkgDir)
 
             for (const file of pkg.files) {
+              if (!isSafeRelativePath(file.relativePath)) {
+                throw new Error(`unsafe path: ${file.relativePath}`)
+              }
               const targetPath = normalizePath(`${pkgDir}/${file.relativePath}`)
+              if (!targetPath.startsWith(`${pkgDir}/`)) {
+                throw new Error(`path escaped target: ${file.relativePath}`)
+              }
               const parentDir = targetPath.substring(
                 0,
                 targetPath.lastIndexOf('/'),
               )
-              if (parentDir && !app.vault.getAbstractFileByPath(parentDir)) {
-                await app.vault.createFolder(parentDir)
+              if (parentDir) {
+                await ensureFolder(parentDir)
               }
-
-              const existing = app.vault.getAbstractFileByPath(targetPath)
-              if (existing) {
-                await app.vault.modify(
-                  existing as import('obsidian').TFile,
-                  file.content,
-                )
-              } else {
-                await app.vault.create(targetPath, file.content)
-              }
+              await app.vault.create(targetPath, file.content)
             }
           } else {
-            const targetPath = normalizePath(`${skillsDir}/${pkg.skillName}`)
+            const targetPath = normalizePath(`${skillsDir}/${pkg.targetName}`)
+            if (!targetPath.startsWith(`${skillsDir}/`)) {
+              throw new Error(`path escaped target: ${pkg.targetName}`)
+            }
             const existing = app.vault.getAbstractFileByPath(targetPath)
             if (existing) {
-              await app.vault.modify(
-                existing as import('obsidian').TFile,
-                pkg.files[0].content,
-              )
-            } else {
-              await app.vault.create(targetPath, pkg.files[0].content)
+              await app.fileManager.trashFile(existing)
             }
+            await app.vault.create(targetPath, pkg.files[0].content)
           }
           successCount++
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Unknown error'
-          new Notice(
+          errors.push(
             t(
               'settings.agent.importSkillWriteError',
               'Failed to import {name}: {error}',
             )
-              .replace('{name}', pkg.skillName)
+              .replace('{name}', pkg.sourceName)
               .replace('{error}', message),
           )
         }
+      }
+
+      if (errors.length > 0) {
+        new Notice(errors.join('\n\n'))
       }
 
       if (successCount > 0) {
@@ -605,7 +793,6 @@ function ImportSkillModalContent({
         ).replace('{path}', skillsDir)}
       </div>
 
-      {/* 拖拽区域 */}
       <div
         className={`yolo-import-skill-dropzone ${isDragOver ? 'is-drag-over' : ''}`}
         onDragOver={handleDragOver}
@@ -625,7 +812,7 @@ function ImportSkillModalContent({
           accept=".md,.markdown"
           multiple
           onChange={(e) => void handleFileSelect(e)}
-          style={{ display: 'none' }}
+          className="yolo-import-skill-hidden-input"
         />
         <input
           ref={folderInputRef}
@@ -634,7 +821,7 @@ function ImportSkillModalContent({
           webkitdirectory=""
           multiple
           onChange={(e) => void handleFileSelect(e)}
-          style={{ display: 'none' }}
+          className="yolo-import-skill-hidden-input"
         />
         <div className="yolo-import-skill-dropzone-text">
           {t(
@@ -666,7 +853,6 @@ function ImportSkillModalContent({
         </div>
       </div>
 
-      {/* 已选 skill 包列表 */}
       {skillPackages.length > 0 && (
         <div className="yolo-import-skill-file-list">
           <div className="yolo-import-skill-file-list-title">
@@ -678,7 +864,7 @@ function ImportSkillModalContent({
               .replace('{files}', String(totalFileCount))}
           </div>
           {skillPackages.map((pkg) => (
-            <div key={pkg.skillName} className="yolo-import-skill-file-item">
+            <div key={pkg.targetName} className="yolo-import-skill-file-item">
               <div className="yolo-import-skill-file-info">
                 <span className="yolo-import-skill-file-name">
                   {pkg.displayName}
@@ -692,7 +878,7 @@ function ImportSkillModalContent({
               <button
                 type="button"
                 className="yolo-import-skill-file-remove"
-                onClick={() => handleRemovePackage(pkg.skillName)}
+                onClick={() => handleRemovePackage(pkg.targetName)}
                 aria-label={t('settings.agent.importSkillRemoveFile', 'Remove')}
               >
                 ✕
@@ -702,7 +888,6 @@ function ImportSkillModalContent({
         </div>
       )}
 
-      {/* 操作按钮 */}
       <div className="yolo-import-skill-actions">
         <ObsidianButton
           text={t('settings.agent.importSkillConfirm', 'Import')}

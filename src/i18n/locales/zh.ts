@@ -324,7 +324,13 @@ export const zh: TranslationKeys = {
       importSkillErrCompatTooLong: '"compatibility" 过长（最多 500 个字符）',
       importSkillConflictTitle: '技能已存在',
       importSkillConflictMessage: '已存在同名技能，是否覆盖？',
-      importSkillConflictOverwrite: '覆盖',
+      importSkillConflictOverwrite: '全部覆盖',
+      importSkillConflictMessageList:
+        '以下技能已存在：{names}\n\n点击「全部覆盖」替换它们；点击「跳过冲突」保留旧的并导入其余；关闭对话框则取消整次导入。',
+      importSkillConflictSkip: '跳过冲突',
+      importSkillUnsafePath: '已拒绝「{name}」中的不安全路径：{path}',
+      importSkillDuplicateInBatch:
+        '本次导入中存在同名技能：「{name}」（来自「{source}」），仅保留第一个。',
       deleteSkillTitle: '删除技能',
       deleteSkillMessage: '确定要删除「{name}」吗？此操作无法撤销。',
       deleteSkillConfirm: '删除',

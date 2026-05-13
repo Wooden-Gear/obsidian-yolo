@@ -1,7 +1,9 @@
 /**
  * Agent Skills 开放标准校验模块。
- * 参考规范：https://agentskills.io/specification
+ * 参考规范:https://agentskills.io/specification
  */
+
+import { parseYaml } from 'obsidian'
 
 export type ValidationError = {
   field: string
@@ -13,7 +15,7 @@ export type ValidationError = {
 // ---------------------------------------------------------------------------
 
 /**
- * Agent Skills 标准 name 规则：
+ * Agent Skills 标准 name 规则:
  * - 1-64 字符
  * - 仅允许小写字母 (a-z)、数字 (0-9)、连字符 (-)
  * - 不能以连字符开头或结尾
@@ -80,7 +82,7 @@ export function validateDescription(description: unknown): ValidationError[] {
 }
 
 // ---------------------------------------------------------------------------
-// compatibility 字段校验（可选）
+// compatibility 字段校验(可选)
 // ---------------------------------------------------------------------------
 
 export function validateCompatibility(
@@ -94,112 +96,37 @@ export function validateCompatibility(
 }
 
 // ---------------------------------------------------------------------------
-// Frontmatter 解析
+// Frontmatter 解析(使用 Obsidian parseYaml)
 // ---------------------------------------------------------------------------
-
-function stripQuotes(value: string): string {
-  const trimmed = value.trim()
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1)
-  }
-  return trimmed
-}
 
 /**
  * 从 Markdown 内容中解析 YAML frontmatter。
- * 返回 null 表示没有 frontmatter。
+ * closing `---` 必须独占一行,避免 YAML 值中含 `---` 被误截断。
+ * 返回 null 表示没有合法 frontmatter(缺失分隔符 / YAML 语法错误 / 非 object 顶层)。
  */
 export function parseFrontmatter(
   content: string,
 ): Record<string, unknown> | null {
-  if (!content.startsWith('---\n') && !content.startsWith('---\r\n')) {
+  // 用按行切分定位 closing delimiter,确保 `---` 是独立一行
+  const normalized = content.replace(/\r\n/g, '\n')
+  if (!normalized.startsWith('---\n') && normalized !== '---') {
     return null
   }
-
-  // 找到 frontmatter 开始后的第一个换行位置
-  const firstNewline = content.indexOf('\n')
-  const searchStart = firstNewline
-
-  const endMarkerIdx = content.indexOf('\n---', searchStart)
-  if (endMarkerIdx === -1) return null
-
-  const yamlText = content.slice(firstNewline + 1, endMarkerIdx)
-  const result: Record<string, unknown> = {}
-
-  let currentMultilineKey: string | null = null
-  let multilineLines: string[] = []
-  let currentMapKey: string | null = null
-  let currentMap: Record<string, string> | null = null
-
-  const flushMultiline = () => {
-    if (currentMultilineKey) {
-      result[currentMultilineKey] = multilineLines.join(' ').trim()
-      currentMultilineKey = null
-      multilineLines = []
-    }
+  const lines = normalized.split('\n')
+  if (lines[0].trim() !== '---') return null
+  const endIdx = lines.findIndex(
+    (line, idx) => idx >= 1 && line.trim() === '---',
+  )
+  if (endIdx === -1) return null
+  const yamlText = lines.slice(1, endIdx).join('\n')
+  try {
+    const parsed: unknown = parseYaml(yamlText)
+    if (parsed === null || parsed === undefined) return {}
+    if (typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
   }
-
-  const flushMap = () => {
-    if (currentMapKey && currentMap) {
-      result[currentMapKey] = currentMap
-      currentMapKey = null
-      currentMap = null
-    }
-  }
-
-  for (const line of yamlText.split('\n')) {
-    const trimmed = line.replace(/\r$/, '')
-
-    // 多行文本的续行（缩进行）
-    if (currentMultilineKey && /^\s+\S/.test(trimmed)) {
-      multilineLines.push(trimmed.trim())
-      continue
-    }
-
-    // 结束多行文本
-    if (currentMultilineKey) {
-      flushMultiline()
-    }
-
-    // 嵌套 map 的值行
-    if (currentMapKey && currentMap && /^\s+\S/.test(trimmed)) {
-      const nestedMatch = trimmed.match(/^\s+([A-Za-z0-9_-]+)\s*:\s*(.*)$/)
-      if (nestedMatch) {
-        currentMap[nestedMatch[1]] = stripQuotes(nestedMatch[2])
-      }
-      continue
-    }
-
-    // 结束当前 map
-    flushMap()
-
-    const match = trimmed.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/)
-    if (!match) continue
-
-    const key = match[1]
-    const value = match[2].trim()
-
-    if (value === '|' || value === '>' || value === '|-' || value === '>-') {
-      // 多行文本标记
-      currentMultilineKey = key
-      multilineLines = []
-    } else if (value === '') {
-      // 空值：可能是嵌套 map
-      currentMapKey = key
-      currentMap = {}
-    } else {
-      result[key] = stripQuotes(value)
-    }
-  }
-
-  // 处理最后的多行文本或 map
-  flushMultiline()
-  flushMap()
-
-  return result
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +139,8 @@ export type FileEntry = {
 }
 
 /**
- * 对文件夹格式的 skill 包进行完整校验（Agent Skills 标准）。
+ * 对文件夹格式的 skill 包进行完整校验(Agent Skills 标准)。
+ * 当 dirName 提供时,会校验 frontmatter.name 与 dirName 是否一致。
  */
 export function validateDirectoryPackage(
   dirName: string,
@@ -238,17 +166,26 @@ export function validateDirectoryPackage(
   const nameErrors = validateSkillName(frontmatter.name)
   errors.push(...nameErrors)
 
-  // 4. 校验 description 字段
+  // 4. name 必须与文件夹名一致(Agent Skills 规范要求)
+  if (
+    nameErrors.length === 0 &&
+    typeof frontmatter.name === 'string' &&
+    frontmatter.name.trim() !== dirName
+  ) {
+    errors.push({ field: 'name', message: 'must match folder name' })
+  }
+
+  // 5. 校验 description 字段
   errors.push(...validateDescription(frontmatter.description))
 
-  // 4. 校验可选字段
+  // 6. 校验可选字段
   errors.push(...validateCompatibility(frontmatter.compatibility))
 
   return errors
 }
 
 /**
- * 对单文件格式的 skill 进行校验（Legacy 格式）。
+ * 对单文件格式的 skill 进行校验(Legacy 格式)。
  * 要求有 frontmatter 且包含 name 字段。
  */
 export function validateSingleFileSkill(content: string): ValidationError[] {

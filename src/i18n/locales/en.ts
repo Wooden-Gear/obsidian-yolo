@@ -361,7 +361,13 @@ export const en: TranslationKeys = {
       importSkillConflictTitle: 'Skill already exists',
       importSkillConflictMessage:
         'A skill with the same name already exists. Do you want to overwrite it?',
-      importSkillConflictOverwrite: 'Overwrite',
+      importSkillConflictOverwrite: 'Overwrite all',
+      importSkillConflictMessageList:
+        'The following skill(s) already exist: {names}\n\nClick "Overwrite all" to replace them, "Skip conflicts" to keep them, or close this dialog to cancel the import.',
+      importSkillConflictSkip: 'Skip conflicts',
+      importSkillUnsafePath: 'Refused unsafe path in "{name}": {path}',
+      importSkillDuplicateInBatch:
+        'Duplicate skill name in this batch: "{name}" (from "{source}"). Only the first occurrence is kept.',
       deleteSkillTitle: 'Delete skill',
       deleteSkillMessage:
         'Are you sure you want to delete "{name}"? This cannot be undone.',
