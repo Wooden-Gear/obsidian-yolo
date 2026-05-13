@@ -303,6 +303,8 @@ export const en: TranslationKeys = {
       noAssistants: 'No assistants available',
       noAssistant: 'Default',
       selectAssistant: 'Select assistant',
+      duplicate: 'Duplicate',
+      manageAll: 'Manage all…',
     },
     agent: {
       title: 'Agent',

@@ -308,6 +308,7 @@ export const it: TranslationKeys = {
       duplicate: 'Duplica',
       copySuffix: '(copia)',
       currentBadge: 'Corrente',
+      manageAll: 'Gestisci tutti…',
     },
     agent: {
       title: 'Agent',
@@ -818,7 +819,7 @@ export const it: TranslationKeys = {
       limitDesc: 'Numero massimo di chunk da recuperare.',
       embeddingConcurrency: 'Concorrenza embedding',
       embeddingConcurrencyDesc:
-        'Numero massimo di richieste di embedding in parallelo durante l\'indicizzazione (1–24, predefinito 10). Riducilo se il provider restituisce errori 429 / limite di frequenza.',
+        "Numero massimo di richieste di embedding in parallelo durante l'indicizzazione (1–24, predefinito 10). Riducilo se il provider restituisce errori 429 / limite di frequenza.",
       includePatterns: 'Pattern di inclusione',
       includePatternsDesc:
         "Pattern glob per i file da includere nell'indice (uno per riga).",

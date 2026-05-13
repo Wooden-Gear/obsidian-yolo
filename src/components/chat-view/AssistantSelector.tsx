@@ -1,8 +1,19 @@
 import * as Popover from '@radix-ui/react-popover'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Cpu,
+  Pencil,
+  Settings,
+  Wrench,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { useApp } from '../../contexts/app-context'
 import { useLanguage } from '../../contexts/language-context'
+import { usePlugin } from '../../contexts/plugin-context'
 import { useSettings } from '../../contexts/settings-context'
 import {
   DEFAULT_ASSISTANT_ID,
@@ -11,6 +22,7 @@ import {
 import { Assistant } from '../../types/assistant.types'
 import { renderAssistantIcon } from '../../utils/assistant-icon'
 import { YoloPopoverContent } from '../common/popover'
+import { AssistantsModal } from '../settings/modals/AssistantsModal'
 
 type AssistantSelectorProps = {
   currentAssistantId?: string
@@ -27,21 +39,20 @@ export function AssistantSelector({
 }: AssistantSelectorProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
+  const app = useApp()
+  const plugin = usePlugin()
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const isControlled = typeof currentAssistantId === 'string'
 
-  // Get assistant list and currently selected assistant
   const assistants = settings.assistants || []
   const resolvedCurrentAssistantId =
     currentAssistantId ?? settings.currentAssistantId ?? DEFAULT_ASSISTANT_ID
 
-  // Get the current assistant object
   const currentAssistant = assistants.find(
     (a) => a.id === resolvedCurrentAssistantId,
   )
 
-  // Handler function for selecting an assistant
   const handleSelectAssistant = (assistant: Assistant) => {
     if (isControlled) {
       onAssistantChange?.(assistant)
@@ -62,12 +73,11 @@ export function AssistantSelector({
     })()
   }
 
-  // Handler function for selecting default assistant
   const handleSelectDefaultAssistant = () => {
+    const fallbackDefaultAssistant = assistants.find((assistant) =>
+      isDefaultAssistantId(assistant.id),
+    )
     if (isControlled) {
-      const fallbackDefaultAssistant = assistants.find((assistant) =>
-        isDefaultAssistantId(assistant.id),
-      )
       if (fallbackDefaultAssistant) {
         onAssistantChange?.(fallbackDefaultAssistant)
       }
@@ -80,9 +90,6 @@ export function AssistantSelector({
           ...settings,
           currentAssistantId: DEFAULT_ASSISTANT_ID,
         })
-        const fallbackDefaultAssistant = assistants.find((assistant) =>
-          isDefaultAssistantId(assistant.id),
-        )
         if (fallbackDefaultAssistant) {
           onAssistantChange?.(fallbackDefaultAssistant)
         }
@@ -91,6 +98,149 @@ export function AssistantSelector({
         console.error('Failed to select default assistant', error)
       }
     })()
+  }
+
+  const handleEditAssistant = (assistantId: string) => {
+    setOpen(false)
+    const modal = new AssistantsModal(app, plugin, assistantId, false)
+    modal.open()
+  }
+
+  const handleManageAll = () => {
+    setOpen(false)
+    // Pre-select the Agent tab; SettingsTabs reads this on mount.
+    // Key kept in sync with SettingsTabs.STORAGE_KEY.
+    app.saveLocalStorage('yolo_settings_active_tab', 'agent')
+    // @ts-expect-error: setting property exists in Obsidian's App but is not typed
+    app.setting.open()
+    // @ts-expect-error: setting property exists in Obsidian's App but is not typed
+    app.setting.openTabById(plugin.manifest.id)
+  }
+
+  const handleDuplicateAssistant = (assistant: Assistant) => {
+    void (async () => {
+      try {
+        const copied: Assistant = {
+          ...assistant,
+          id: crypto.randomUUID(),
+          name: `${assistant.name}${t('settings.agent.copySuffix', ' (copy)')}`,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+        await setSettings({
+          ...settings,
+          assistants: [...assistants, copied],
+        })
+      } catch (error: unknown) {
+        console.error('Failed to duplicate assistant', error)
+      }
+    })()
+  }
+
+  const defaultAssistant = assistants.find((assistant) =>
+    isDefaultAssistantId(assistant.id),
+  )
+  const customAssistants = assistants.filter(
+    (assistant) => !isDefaultAssistantId(assistant.id),
+  )
+  const fallbackModelId = settings.chatModelId
+
+  const renderMetaRow = (assistant: Assistant) => {
+    const rawModelId = assistant.modelId || fallbackModelId || ''
+    const modelLabel = rawModelId.includes('/')
+      ? rawModelId.slice(rawModelId.lastIndexOf('/') + 1)
+      : rawModelId
+    const toolCount = assistant.enableTools
+      ? (assistant.enabledToolNames?.length ?? 0)
+      : 0
+    return (
+      <div className="yolo-assistant-selector-item-meta">
+        {modelLabel && (
+          <span className="yolo-assistant-selector-meta-chip">
+            <Cpu size={10} />
+            <span>{modelLabel}</span>
+          </span>
+        )}
+        <span className="yolo-assistant-selector-meta-chip">
+          <Wrench size={10} />
+          <span>
+            {t('settings.agent.toolsCount', '{count} tools').replace(
+              '{count}',
+              String(toolCount),
+            )}
+          </span>
+        </span>
+      </div>
+    )
+  }
+
+  const renderAssistantRow = (assistant: Assistant) => {
+    const isDefault = isDefaultAssistantId(assistant.id)
+    const isActive = isDefault
+      ? isDefaultAssistantId(resolvedCurrentAssistantId)
+      : assistant.id === resolvedCurrentAssistantId
+    const onSelect = isDefault
+      ? handleSelectDefaultAssistant
+      : () => handleSelectAssistant(assistant)
+    return (
+      <li key={assistant.id} className="yolo-assistant-selector-row">
+        <div
+          className={`yolo-assistant-selector-item ${
+            isActive ? 'selected' : ''
+          }`}
+        >
+          <button
+            type="button"
+            className="yolo-assistant-selector-item-main"
+            onClick={onSelect}
+          >
+            <div className="yolo-assistant-selector-item-icon">
+              {renderAssistantIcon(assistant.icon, 14)}
+            </div>
+            <div className="yolo-assistant-selector-item-content">
+              <div className="yolo-assistant-selector-item-name-row">
+                <span className="yolo-assistant-selector-item-name">
+                  {assistant.name}
+                </span>
+                {isActive && (
+                  <Check
+                    size={11}
+                    className="yolo-assistant-selector-item-check"
+                  />
+                )}
+              </div>
+              {renderMetaRow(assistant)}
+            </div>
+          </button>
+          <div className="yolo-assistant-selector-item-actions">
+            <button
+              type="button"
+              className="yolo-assistant-selector-action-btn"
+              title={t('settings.assistants.editAssistant')}
+              aria-label={t('settings.assistants.editAssistant')}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleEditAssistant(assistant.id)
+              }}
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              type="button"
+              className="yolo-assistant-selector-action-btn"
+              title={t('settings.assistants.duplicate', 'Duplicate')}
+              aria-label={t('settings.assistants.duplicate', 'Duplicate')}
+              onClick={(event) => {
+                event.stopPropagation()
+                handleDuplicateAssistant(assistant)
+              }}
+            >
+              <Copy size={12} />
+            </button>
+          </div>
+        </div>
+      </li>
+    )
   }
 
   return (
@@ -124,67 +274,27 @@ export function AssistantSelector({
         anchorRef={triggerRef}
         variant="default"
         minWidth={280}
-        maxHeight={400}
-        className={
-          contentClassName
-            ? `yolo-assistant-selector-content ${contentClassName}`
-            : 'yolo-assistant-selector-content'
-        }
+        maxHeight={460}
+        className={`yolo-assistant-selector-content yolo-assistant-selector-content--palette${
+          contentClassName ? ` ${contentClassName}` : ''
+        }`}
         sideOffset={14}
       >
         <ul className="yolo-assistant-selector-list yolo-model-select-list">
-          {/* "No Assistant" option */}
-          <li className="yolo-assistant-selector-row">
-            <button
-              type="button"
-              className={`yolo-assistant-selector-item ${
-                isDefaultAssistantId(resolvedCurrentAssistantId)
-                  ? 'selected'
-                  : ''
-              }`}
-              onClick={handleSelectDefaultAssistant}
-            >
-              <div className="yolo-assistant-selector-item-content">
-                <div className="yolo-assistant-selector-item-name">
-                  {assistants.find((assistant) =>
-                    isDefaultAssistantId(assistant.id),
-                  )?.name ?? t('settings.assistants.noAssistant')}
-                </div>
-              </div>
-            </button>
-          </li>
-
-          {/* Available assistants */}
-          {assistants
-            .filter((assistant) => !isDefaultAssistantId(assistant.id))
-            .map((assistant) => (
-              <li key={assistant.id} className="yolo-assistant-selector-row">
-                <button
-                  type="button"
-                  className={`yolo-assistant-selector-item ${
-                    assistant.id === resolvedCurrentAssistantId
-                      ? 'selected'
-                      : ''
-                  }`}
-                  onClick={() => handleSelectAssistant(assistant)}
-                >
-                  <div className="yolo-assistant-selector-item-icon">
-                    {renderAssistantIcon(assistant.icon, 14)}
-                  </div>
-                  <div className="yolo-assistant-selector-item-content">
-                    <div className="yolo-assistant-selector-item-name">
-                      {assistant.name}
-                    </div>
-                    {assistant.description && (
-                      <div className="yolo-assistant-selector-item-description">
-                        {assistant.description}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              </li>
-            ))}
+          {defaultAssistant && renderAssistantRow(defaultAssistant)}
+          {customAssistants.map((assistant) => renderAssistantRow(assistant))}
         </ul>
+
+        <div className="yolo-assistant-selector-footer">
+          <button
+            type="button"
+            className="yolo-assistant-selector-footer-btn"
+            onClick={handleManageAll}
+          >
+            <Settings size={12} />
+            <span>{t('settings.assistants.manageAll', 'Manage all…')}</span>
+          </button>
+        </div>
       </YoloPopoverContent>
     </Popover.Root>
   )

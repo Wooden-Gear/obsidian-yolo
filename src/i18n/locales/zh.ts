@@ -274,6 +274,7 @@ export const zh: TranslationKeys = {
       selectAssistant: '选择助手',
       copySuffix: ' (副本)',
       currentBadge: '当前',
+      manageAll: '管理全部…',
     },
     agent: {
       title: 'Agent',

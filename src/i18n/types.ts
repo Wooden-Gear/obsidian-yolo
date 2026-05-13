@@ -200,6 +200,7 @@ export type TranslationKeys = {
       duplicate?: string
       copySuffix?: string
       currentBadge?: string
+      manageAll?: string
     }
     agent?: {
       title?: string
