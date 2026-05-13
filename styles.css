@@ -3388,9 +3388,12 @@ button.yolo-assistant-selector-item-main {
 }
 
 .yolo-assistant-selector-item-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   gap: 2px;
-  padding-right: 8px;
   opacity: 0;
   transition: opacity 0.12s ease;
   pointer-events: none;
