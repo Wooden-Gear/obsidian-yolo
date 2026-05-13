@@ -1177,29 +1177,39 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
     return tools.length > 0 ? tools : undefined
   }
 
-  private static removeAdditionalProperties(schema: unknown): unknown {
-    // TODO: Remove this function when Gemini supports additionalProperties field in JSON schema
+  // Normalize arbitrary JSON Schema (mostly from third-party MCP tools) into
+  // the subset Gemini actually accepts. Currently:
+  //   - drop `additionalProperties` (Gemini rejects it)
+  //   - for `type: 'array'` without `items`, inject a fallback `items` so the
+  //     request passes Gemini's strict validation. `string` is the safest
+  //     placeholder — it's a degraded representation, not the original schema.
+  // Extend with new branches only when Gemini reports a concrete failure.
+  static sanitizeSchemaForGemini(schema: unknown): unknown {
     if (typeof schema !== 'object' || schema === null) {
       return schema
     }
 
     if (Array.isArray(schema)) {
-      return schema.map((item) => this.removeAdditionalProperties(item))
+      return schema.map((item) => this.sanitizeSchemaForGemini(item))
     }
 
     const rest = { ...(schema as Record<string, unknown>) }
     delete rest.additionalProperties
 
+    if (rest.type === 'array' && !('items' in rest)) {
+      rest.items = { type: 'string' }
+    }
+
     return Object.fromEntries(
       Object.entries(rest).map(([key, value]) => [
         key,
-        this.removeAdditionalProperties(value),
+        this.sanitizeSchemaForGemini(value),
       ]),
     )
   }
 
   private static parseRequestTool(tool: RequestTool): GeminiTool {
-    const cleanedSchema = this.removeAdditionalProperties(
+    const cleanedSchema = this.sanitizeSchemaForGemini(
       tool.function.parameters,
     )
 

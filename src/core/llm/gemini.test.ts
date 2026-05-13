@@ -479,3 +479,90 @@ describe('GeminiProvider response parsing', () => {
     expect(parsed.choices[0]?.delta.content).toBe('partial')
   })
 })
+
+describe('GeminiProvider.sanitizeSchemaForGemini', () => {
+  it('injects items fallback for array properties missing items (issue #293)', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        elements: {
+          type: 'array',
+          description: 'Array of elements',
+        },
+        coordinate: { type: 'array' },
+      },
+    }
+
+    const result = GeminiProvider.sanitizeSchemaForGemini(schema) as {
+      properties: {
+        elements: { type: string; items: unknown; description: string }
+        coordinate: { type: string; items: unknown }
+      }
+    }
+
+    expect(result.properties.elements.items).toEqual({ type: 'string' })
+    expect(result.properties.elements.description).toBe('Array of elements')
+    expect(result.properties.coordinate.items).toEqual({ type: 'string' })
+  })
+
+  it('preserves existing items and recursively sanitizes them', () => {
+    const schema = {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          tags: { type: 'array' },
+        },
+      },
+    }
+
+    const result = GeminiProvider.sanitizeSchemaForGemini(schema) as {
+      type: string
+      items: {
+        type: string
+        additionalProperties?: unknown
+        properties: { tags: { items: unknown } }
+      }
+    }
+
+    expect(result.items.type).toBe('object')
+    expect(result.items.additionalProperties).toBeUndefined()
+    expect(result.items.properties.tags.items).toEqual({ type: 'string' })
+  })
+
+  it('still strips additionalProperties (regression for original behavior)', () => {
+    const schema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        name: { type: 'string' },
+      },
+    }
+
+    const result = GeminiProvider.sanitizeSchemaForGemini(schema) as Record<
+      string,
+      unknown
+    >
+
+    expect(result.additionalProperties).toBeUndefined()
+    expect(result.type).toBe('object')
+  })
+
+  it('leaves non-array schemas without items untouched', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        age: { type: 'integer' },
+      },
+    }
+
+    const result = GeminiProvider.sanitizeSchemaForGemini(schema) as {
+      properties: Record<string, { items?: unknown }>
+    }
+
+    expect(result.properties.name.items).toBeUndefined()
+    expect(result.properties.age.items).toBeUndefined()
+  })
+})
