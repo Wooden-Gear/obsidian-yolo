@@ -913,11 +913,6 @@ export const it: TranslationKeys = {
       pgliteDeliveryManual: 'Download manuale',
       pgliteDownload: 'Scarica risorse',
       pgliteRedownload: 'Scarica di nuovo',
-      pgliteVerifyIntegrity: 'Verifica integrità',
-      pgliteVerifyingIntegrity: 'Verifica in corso…',
-      pgliteIntegrityOk: 'Verifica integrità del runtime PGlite superata.',
-      pgliteIntegrityFailed: 'Verifica integrità fallita',
-      pgliteIntegrityFailedHint: 'Scarica di nuovo il runtime.',
       pgliteRecheck: 'Controlla di nuovo',
       pgliteDeleteLocal: 'Elimina risorse locali',
       pgliteDownloadPlaceholder:

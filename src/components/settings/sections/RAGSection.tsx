@@ -110,7 +110,6 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   const [isCheckingPgliteResources, setIsCheckingPgliteResources] =
     useState(false)
   const [isRunningPgliteAction, setIsRunningPgliteAction] = useState(false)
-  const [isVerifyingIntegrity, setIsVerifyingIntegrity] = useState(false)
   const [pgliteResourceStatus, setPgliteResourceStatus] =
     useState<PGliteRuntimeStatus | null>(null)
   const isRagEnabled = settings.ragOptions.enabled ?? true
@@ -596,31 +595,6 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
     })()
   }, [pgliteResourceStatus?.kind, plugin, refreshPgliteResourceStatus, t])
 
-  const runVerifyIntegrity = useCallback(() => {
-    if (pgliteResourceStatus?.kind !== 'ready') return
-    const versionDir = pgliteResourceStatus.dir
-    setIsVerifyingIntegrity(true)
-    void (async () => {
-      try {
-        await plugin.getPGliteRuntimeManager().verifyIntegrity(versionDir)
-        new Notice(
-          t(
-            'settings.rag.pgliteIntegrityOk',
-            'PGlite runtime integrity check passed.',
-          ),
-        )
-      } catch (error: unknown) {
-        const reason = error instanceof Error ? error.message : String(error)
-        new Notice(
-          `${t('settings.rag.pgliteIntegrityFailed', 'Integrity check failed')}: ${reason}. ${t('settings.rag.pgliteIntegrityFailedHint', 'Please re-download the runtime.')}`,
-          8000,
-        )
-      } finally {
-        setIsVerifyingIntegrity(false)
-      }
-    })()
-  }, [pgliteResourceStatus, plugin, t])
-
   const runIndexJob = useCallback(
     async ({ mode, successNotice, failureNotice }: IndexJob) => {
       try {
@@ -824,32 +798,15 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
             '管理知识库运行所需的数据库运行时资源。',
           )}
           actions={
-            <>
-              {pgliteResourceStatus?.kind === 'ready' && (
-                <ObsidianButton
-                  text={
-                    isVerifyingIntegrity
-                      ? t('settings.rag.pgliteVerifyingIntegrity', 'Verifying…')
-                      : t(
-                          'settings.rag.pgliteVerifyIntegrity',
-                          'Verify integrity',
-                        )
-                  }
-                  onClick={() => runVerifyIntegrity()}
-                  disabled={isVerifyingIntegrity || isRunningPgliteAction}
-                />
-              )}
-              <ObsidianButton
-                text={pglitePrimaryActionLabel}
-                onClick={() => runPgliteAction()}
-                disabled={
-                  isCheckingPgliteResources ||
-                  isRunningPgliteAction ||
-                  isVerifyingIntegrity ||
-                  pgliteResourceStatus?.kind === 'downloading'
-                }
-              />
-            </>
+            <ObsidianButton
+              text={pglitePrimaryActionLabel}
+              onClick={() => runPgliteAction()}
+              disabled={
+                isCheckingPgliteResources ||
+                isRunningPgliteAction ||
+                pgliteResourceStatus?.kind === 'downloading'
+              }
+            />
           }
         >
           <div className="yolo-rag-resource-summary">
