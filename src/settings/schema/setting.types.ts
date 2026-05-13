@@ -34,6 +34,12 @@ const ragOptionsSchema = z.object({
   thresholdTokens: z.number().catch(20000),
   minSimilarity: z.number().catch(0.0),
   limit: z.number().catch(10),
+  /**
+   * Max parallel embedding requests during indexing. Lower this when the
+   * embedding provider returns 429 / rate-limit errors (e.g. Azure S0 tier
+   * or per-minute-quota free tiers). Clamped to [1, 24] at the call site.
+   */
+  embeddingConcurrency: z.number().catch(10),
   excludePatterns: z.array(z.string()).catch([]),
   includePatterns: z.array(z.string()).catch([]),
   /** When true, index `.pdf` files for RAG (text extraction). */
@@ -275,6 +281,7 @@ export const yoloSettingsSchema = z.object({
     thresholdTokens: 20000,
     minSimilarity: 0.0,
     limit: 10,
+    embeddingConcurrency: 10,
     excludePatterns: [],
     includePatterns: [],
     indexPdf: true,

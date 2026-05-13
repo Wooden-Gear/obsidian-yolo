@@ -770,6 +770,9 @@ export const zh: TranslationKeys = {
       limit: '限制',
       limitDesc:
         '在提示中包含的RAG结果的最大数量。更高的值提供更多上下文但增加令牌使用量。',
+      embeddingConcurrency: '嵌入并发数',
+      embeddingConcurrencyDesc:
+        '建立索引时的最大并发嵌入请求数（1–24，默认 10）。如果嵌入服务返回 429 / 频率限制错误（例如 Azure S0 等级或按分钟限额的免费档），请调低此值。',
       includePatterns: '包含模式',
       includePatternsDesc:
         '指定要在索引中包含文件的全局模式（每行一个）。例如：使用"notes/**"包含notes文件夹中的所有文件。留空以包含所有文件。更改后需要"重建整个库索引"。',

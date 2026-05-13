@@ -88,6 +88,7 @@ export class RAGEngine {
           excludePatterns: this.settings.ragOptions.excludePatterns,
           includePatterns: this.settings.ragOptions.includePatterns,
           indexPdf: this.settings.ragOptions.indexPdf ?? true,
+          embeddingConcurrency: this.settings.ragOptions.embeddingConcurrency,
           settings: this.settings,
         },
         {

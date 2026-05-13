@@ -131,6 +131,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   const [limitInput, setLimitInput] = useState(
     String(settings.ragOptions.limit),
   )
+  const [embeddingConcurrencyInput, setEmbeddingConcurrencyInput] = useState(
+    String(settings.ragOptions.embeddingConcurrency ?? 10),
+  )
   const [showAdvancedRagSettings, setShowAdvancedRagSettings] = useState(false)
   const syncInputsRef = useRef<{
     enabled: boolean
@@ -159,6 +162,12 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
   useEffect(() => {
     setLimitInput(String(settings.ragOptions.limit))
   }, [settings.ragOptions.limit])
+
+  useEffect(() => {
+    setEmbeddingConcurrencyInput(
+      String(settings.ragOptions.embeddingConcurrency ?? 10),
+    )
+  }, [settings.ragOptions.embeddingConcurrency])
 
   const applySettingsUpdate = useCallback(
     (nextSettings: typeof settings, errorMessage: string = ragUpdateError) => {
@@ -1344,6 +1353,48 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                         const limit = parseIntegerInput(limitInput)
                         if (limit === null) {
                           setLimitInput(String(settings.ragOptions.limit))
+                        }
+                      }}
+                    />
+                  </ObsidianSetting>
+
+                  <ObsidianSetting
+                    name={t('settings.rag.embeddingConcurrency')}
+                    desc={t('settings.rag.embeddingConcurrencyDesc')}
+                    className="yolo-settings-card"
+                  >
+                    <ObsidianTextInput
+                      value={embeddingConcurrencyInput}
+                      placeholder="10"
+                      onChange={(value) => {
+                        setEmbeddingConcurrencyInput(value)
+                        const parsed = parseIntegerInput(value)
+                        if (parsed !== null) {
+                          const clamped = Math.max(1, Math.min(24, parsed))
+                          applySettingsUpdate({
+                            ...settings,
+                            ragOptions: {
+                              ...settings.ragOptions,
+                              embeddingConcurrency: clamped,
+                            },
+                          })
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseIntegerInput(
+                          embeddingConcurrencyInput,
+                        )
+                        if (parsed === null) {
+                          setEmbeddingConcurrencyInput(
+                            String(
+                              settings.ragOptions.embeddingConcurrency ?? 10,
+                            ),
+                          )
+                          return
+                        }
+                        const clamped = Math.max(1, Math.min(24, parsed))
+                        if (clamped !== parsed) {
+                          setEmbeddingConcurrencyInput(String(clamped))
                         }
                       }}
                     />

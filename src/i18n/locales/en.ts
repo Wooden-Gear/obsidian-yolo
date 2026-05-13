@@ -829,6 +829,9 @@ export const en: TranslationKeys = {
       limit: 'Limit',
       limitDesc:
         'Maximum number of retrieval-augmented generation results to include in the prompt; higher values provide more context but increase token usage.',
+      embeddingConcurrency: 'Embedding concurrency',
+      embeddingConcurrencyDesc:
+        'Maximum parallel embedding requests during indexing (1–24, default 10). Lower this if the embedding provider returns 429 / rate-limit errors (e.g. Azure S0 tier or per-minute-quota free tiers).',
       includePatterns: 'Include patterns',
       includePatternsDesc:
         "Specify glob patterns to include files in indexing (one per line); for example, use 'notes/**' for all files in the notes folder, leave empty to include all files, and rebuild the entire vault index after changes.",

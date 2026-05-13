@@ -654,6 +654,8 @@ export type TranslationKeys = {
       minSimilarityDesc: string
       limit: string
       limitDesc: string
+      embeddingConcurrency: string
+      embeddingConcurrencyDesc: string
       includePatterns: string
       includePatternsDesc: string
       excludePatterns: string
