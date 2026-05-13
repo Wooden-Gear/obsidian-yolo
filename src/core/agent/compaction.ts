@@ -448,6 +448,7 @@ export const createConversationCompactionSummary = async ({
       ],
     },
     stream: false,
+    purpose: 'auxiliary',
   })
 
   const summary = response.content.trim()

@@ -14,6 +14,7 @@ import {
 } from '../../types/tool-call.types'
 import { createToolCallArguments } from '../../utils/chat/tool-arguments'
 import { BaseLLMProvider } from '../llm/base'
+import { stripProviderFeatures } from '../llm/strip-provider-features'
 import { isLocalFsWriteToolName } from '../mcp/localFileTools'
 
 import {
@@ -64,6 +65,14 @@ type SingleTurnExecutionInput = {
     useWebSearch?: boolean
     useUrlContext?: boolean
   }
+  /**
+   * `standard` (default): forward the model as-configured, including any
+   * hosted tools, reasoning, and custom-parameter injections.
+   * `auxiliary`: strip those features for one-shot helper calls
+   * (title generation, conversation compaction) that should be a plain
+   * "messages in, short reply out" round trip.
+   */
+  purpose?: 'standard' | 'auxiliary'
   onStreamDelta?: (delta: {
     contentDelta: string
     reasoningDelta: string
@@ -305,11 +314,18 @@ export async function executeSingleTurn({
   primaryRequestTimeoutMs = DEFAULT_PRIMARY_REQUEST_TIMEOUT_MS,
   streamFallbackRecoveryEnabled = true,
   geminiTools,
+  purpose = 'standard',
   onStreamDelta,
 }: SingleTurnExecutionInput): Promise<SingleTurnExecutionResult> {
+  const isAuxiliary = purpose === 'auxiliary'
+  const effectiveModel = isAuxiliary ? stripProviderFeatures(model) : model
+  // Auxiliary calls must never carry Gemini-native hosted tools, regardless of
+  // what the caller passes in — the option lives outside the ChatModel object
+  // and would otherwise bypass stripProviderFeatures.
+  const effectiveGeminiTools = isAuxiliary ? undefined : geminiTools
   const runNonStreaming = async (): Promise<SingleTurnExecutionResult> => {
     const response = await providerClient.generateResponse(
-      model,
+      effectiveModel,
       {
         ...request,
         tools,
@@ -318,7 +334,7 @@ export async function executeSingleTurn({
       },
       {
         signal,
-        geminiTools,
+        geminiTools: effectiveGeminiTools,
       },
     )
 
@@ -383,7 +399,7 @@ export async function executeSingleTurn({
     }, primaryRequestTimeoutMs)
 
     const streamIterator = await providerClient.streamResponse(
-      model,
+      effectiveModel,
       {
         ...request,
         tools,
@@ -392,7 +408,7 @@ export async function executeSingleTurn({
       },
       {
         signal: streamController.signal,
-        geminiTools,
+        geminiTools: effectiveGeminiTools,
       },
     )
 

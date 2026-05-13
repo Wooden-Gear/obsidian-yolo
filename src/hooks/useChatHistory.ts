@@ -11,6 +11,7 @@ import {
 import { useApp } from '../contexts/app-context'
 import { useLanguage } from '../contexts/language-context'
 import { useSettings } from '../contexts/settings-context'
+import { executeSingleTurn } from '../core/ai/single-turn'
 import { getChatModelClient } from '../core/llm/manager'
 import { promoteProviderTransportModeToObsidian } from '../core/llm/transportModePromotion'
 import { batchLookupImageCache } from '../database/json/chat/imageCacheStore'
@@ -602,21 +603,22 @@ export function useChatHistory(): UseChatHistory {
                 ? customizedPrompt
                 : defaultTitlePrompt
 
-            const response = await providerClient.generateResponse(
+            const response = await executeSingleTurn({
+              providerClient,
               model,
-              {
+              request: {
                 model: model.model,
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: titleInput },
                 ],
-                stream: false,
               },
-              { signal: controller.signal },
-            )
+              stream: false,
+              purpose: 'auxiliary',
+              signal: controller.signal,
+            })
 
-            const generated = response.choices?.[0]?.message?.content ?? ''
-            const nextTitle = (generated || '')
+            const nextTitle = (response.content || '')
               .trim()
               .replace(/^["']+|["']+$/g, '')
             return nextTitle || null
