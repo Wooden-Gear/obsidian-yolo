@@ -1121,7 +1121,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'ask_user_question',
       description:
-        'Ask the user one or more structured questions when you are blocked by missing information that cannot be inferred from context or the vault. Group related questions in a single call instead of asking turn by turn. Use sparingly — never to confirm trivial actions. Prefer concrete options (single_select / multi_select) over free text. This call MUST be the only tool call in the turn; the agent run pauses until the user submits answers in a dedicated panel.',
+        'Ask the user one or more structured questions when you are blocked by missing information that cannot be inferred from context or the vault. Group related questions in a single call instead of asking turn by turn. Use sparingly — never to confirm trivial actions. Prefer concrete options (single_select / multi_select) over free text for the main questions. Whenever possible, append one final free_text question at the end as an open-ended catch-all (e.g. "Anything else to add or clarify? (optional)") so the user can supply context the preset options do not cover; skip this only when the answer space is fully closed (e.g. a yes/no confirmation). This call MUST be the only tool call in the turn; the agent run pauses until the user submits answers in a dedicated panel.',
       inputSchema: {
         type: 'object',
         properties: {

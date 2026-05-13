@@ -1,4 +1,4 @@
-import { Check, CornerDownLeft, MessageCircleQuestion } from 'lucide-react'
+import { Check, CornerDownLeft, MessageCircleQuestion, X } from 'lucide-react'
 import { Notice } from 'obsidian'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -273,6 +273,14 @@ export function AskUserQuestionPanel({
     )
   }
 
+  const handleCancel = () => {
+    if (submitting) return
+    plugin.getAgentService().cancelAskUserQuestion({
+      conversationId,
+      toolCallId: request.id,
+    })
+  }
+
   // Pending (AwaitingUserInput) — interactive form.
   const complete = isComplete(parsedQuestions, answers)
   return (
@@ -292,15 +300,30 @@ export function AskUserQuestionPanel({
         <span className="yolo-ask-user-question-footer-hint">
           {t('chat.askUserQuestion.submitHint', 'Cmd / Ctrl + Enter 提交')}
         </span>
-        <button
-          type="button"
-          className="yolo-ask-user-question-submit"
-          disabled={!complete || submitting}
-          onClick={() => void handleSubmit()}
-        >
-          <span>{t('chat.askUserQuestion.submit', '提交答案')}</span>
-          <CornerDownLeft size={12} />
-        </button>
+        <div className="yolo-ask-user-question-footer-actions">
+          <button
+            type="button"
+            className="yolo-ask-user-question-cancel"
+            disabled={submitting}
+            onClick={handleCancel}
+            title={t(
+              'chat.askUserQuestion.cancelTooltip',
+              '取消本轮提问并结束当前回合',
+            )}
+          >
+            <X size={12} />
+            <span>{t('chat.askUserQuestion.cancel', '取消')}</span>
+          </button>
+          <button
+            type="button"
+            className="yolo-ask-user-question-submit"
+            disabled={!complete || submitting}
+            onClick={() => void handleSubmit()}
+          >
+            <span>{t('chat.askUserQuestion.submit', '提交答案')}</span>
+            <CornerDownLeft size={12} />
+          </button>
+        </div>
       </div>
     </PanelShell>
   )

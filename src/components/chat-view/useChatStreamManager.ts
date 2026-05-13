@@ -380,6 +380,14 @@ export function useChatStreamManager({
       }
     }
 
+    // Reset summary on conversation switch — syncConversationState below
+    // bails out early for fresh/idle conversations and would otherwise leave
+    // stale flags (e.g. isWaitingUserInput) from the previous conversation
+    // bleeding into the new one's input-box guards.
+    setCurrentConversationRunSummary(
+      agentService.getConversationRunSummary(currentConversationId),
+    )
+
     syncConversationState(agentService.getState(currentConversationId))
 
     const unsubscribe = agentService.subscribe(

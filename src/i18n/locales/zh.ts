@@ -1197,6 +1197,8 @@ export const zh: TranslationKeys = {
       title: '模型向你发起提问',
       submit: '提交答案',
       submitHint: 'Cmd / Ctrl + Enter 提交',
+      cancel: '取消',
+      cancelTooltip: '取消本轮提问并结束当前回合',
       answeredBadge: '已提交',
       rejected: '系统已拒绝该提问（仅允许每轮一次，或被禁用）。',
       aborted: '已被停止。',

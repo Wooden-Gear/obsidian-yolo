@@ -13102,6 +13102,36 @@ button.yolo-todo-panel__header {
   font-size: var(--font-ui-smaller);
 }
 
+.yolo-ask-user-question-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.yolo-ask-user-question-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-4-1) var(--size-4-3);
+  border-radius: var(--radius-s);
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.yolo-ask-user-question-cancel:hover:not(:disabled) {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+  box-shadow: none;
+}
+
+.yolo-ask-user-question-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .yolo-ask-user-question-submit {
   display: inline-flex;
   align-items: center;

@@ -1096,6 +1096,8 @@ export type TranslationKeys = {
       title?: string
       submit?: string
       submitHint?: string
+      cancel?: string
+      cancelTooltip?: string
       answeredBadge?: string
       rejected?: string
       aborted?: string

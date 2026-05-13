@@ -1280,6 +1280,8 @@ export const en: TranslationKeys = {
       title: 'The agent has questions for you',
       submit: 'Submit answers',
       submitHint: 'Press Cmd / Ctrl + Enter to submit',
+      cancel: 'Cancel',
+      cancelTooltip: 'Dismiss the questions and end this turn',
       answeredBadge: 'Submitted',
       rejected:
         'The system rejected this question (one ask_user_question per turn, or tool disabled).',

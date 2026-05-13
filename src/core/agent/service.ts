@@ -1035,6 +1035,58 @@ export class AgentService {
     return { kind: 'needs_recovery', resolvedMessages: updatedMessages }
   }
 
+  /**
+   * Cancel a pending ask_user_question prompt: flip the awaiting tool call
+   * to Aborted and terminate the surrounding run. Handles both the active
+   * run case (runtime still alive while the user is being prompted) and the
+   * recovery case where the run already finalized while the panel was open.
+   */
+  cancelAskUserQuestion({
+    conversationId,
+    toolCallId,
+  }: {
+    conversationId: string
+    toolCallId: string
+  }): boolean {
+    // Active-run path: the awaiting tool call still lives inside a runEntry.
+    // Delegate to abortConversation so the runtime is aborted, run status
+    // flipped to 'aborted', and queued user messages restored — mirroring
+    // the global Stop button.
+    const located = this.findToolCall(conversationId, toolCallId)
+    if (located) {
+      if (
+        located.toolCall.response.status !==
+        ToolCallResponseStatus.AwaitingUserInput
+      ) {
+        return false
+      }
+      return this.abortConversation(conversationId)
+    }
+
+    // Recovery path: the run finalized before the user answered. Patch the
+    // awaiting tool call in conversation-level state to Aborted and notify.
+    const conversationEntry = this.conversationEntries.get(conversationId)
+    if (!conversationEntry) {
+      return false
+    }
+    const { updatedMessages, didPatch, wasAwaiting } =
+      patchAwaitingUserInputInMessages(
+        conversationEntry.state.messages,
+        toolCallId,
+        { status: ToolCallResponseStatus.Aborted },
+      )
+    if (!didPatch || !wasAwaiting) {
+      return false
+    }
+    conversationEntry.baseMessages = updatedMessages
+    conversationEntry.state = {
+      ...conversationEntry.state,
+      messages: updatedMessages,
+    }
+    this.notifyConversationSubscribers(conversationId)
+    return true
+  }
+
   rejectToolCall({
     conversationId,
     toolCallId,

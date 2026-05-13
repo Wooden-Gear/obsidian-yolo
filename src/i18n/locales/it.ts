@@ -1252,6 +1252,8 @@ export const it: TranslationKeys = {
       title: "L'agente ti pone delle domande",
       submit: 'Invia risposte',
       submitHint: 'Premi Cmd / Ctrl + Invio per inviare',
+      cancel: 'Annulla',
+      cancelTooltip: 'Ignora le domande e termina questo turno',
       answeredBadge: 'Inviato',
       rejected:
         'Il sistema ha rifiutato la domanda (massimo una ask_user_question per turno, oppure strumento disabilitato).',
