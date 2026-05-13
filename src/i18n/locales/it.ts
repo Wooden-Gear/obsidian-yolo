@@ -1261,6 +1261,11 @@ export const it: TranslationKeys = {
       schemaError:
         "L'agente ha fornito parametri non validi per la domanda: {{error}}",
       stale: 'Questa domanda è scaduta o è già stata gestita.',
+      otherOption: 'Altro (specificare)',
+      otherPlaceholder: 'Aggiungi la tua risposta…',
+      otherAnswerPrefix: 'Altro: ',
+      otherAnswerFallback: 'Altro',
+      freeTextOptional: 'Facoltativo · lascia vuoto per inviare senza risposta',
     },
     selectModel: 'Seleziona modello',
     uploadImage: 'Carica immagine',

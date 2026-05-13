@@ -12,7 +12,10 @@ import type {
   AskUserQuestionInputType,
   AskUserQuestionItem,
 } from '../../core/mcp/localFileTools'
-import { validateAskUserQuestionArgs } from '../../core/mcp/localFileTools'
+import {
+  ASK_USER_QUESTION_OTHER_ID,
+  validateAskUserQuestionArgs,
+} from '../../core/mcp/localFileTools'
 import { ChatMessage } from '../../types/chat'
 import {
   ToolCallRequest,
@@ -35,6 +38,8 @@ type AnswerState = {
   freeText: Record<string, string>
   singleSelect: Record<string, string>
   multiSelect: Record<string, string[]>
+  /** Free-text the user typed for the auto-appended "Other" option, keyed by question id. */
+  otherText: Record<string, string>
 }
 
 const buildInitialAnswers = (questions: AskUserQuestionItem[]): AnswerState => {
@@ -42,14 +47,17 @@ const buildInitialAnswers = (questions: AskUserQuestionItem[]): AnswerState => {
     freeText: {},
     singleSelect: {},
     multiSelect: {},
+    otherText: {},
   }
   for (const question of questions) {
     if (question.inputType === 'free_text') {
       state.freeText[question.id] = ''
     } else if (question.inputType === 'single_select') {
       state.singleSelect[question.id] = ''
+      state.otherText[question.id] = ''
     } else {
       state.multiSelect[question.id] = []
+      state.otherText[question.id] = ''
     }
   }
   return state
@@ -61,11 +69,27 @@ const isComplete = (
 ): boolean => {
   for (const question of questions) {
     if (question.inputType === 'free_text') {
-      if ((answers.freeText[question.id] ?? '').trim() === '') return false
-    } else if (question.inputType === 'single_select') {
-      if (!answers.singleSelect[question.id]) return false
+      // free_text is treated as optional — never blocks submission.
+      continue
+    }
+    if (question.inputType === 'single_select') {
+      const picked = answers.singleSelect[question.id]
+      if (!picked) return false
+      if (
+        picked === ASK_USER_QUESTION_OTHER_ID &&
+        (answers.otherText[question.id] ?? '').trim() === ''
+      ) {
+        return false
+      }
     } else {
-      if ((answers.multiSelect[question.id] ?? []).length === 0) return false
+      const picked = answers.multiSelect[question.id] ?? []
+      if (picked.length === 0) return false
+      if (
+        picked.includes(ASK_USER_QUESTION_OTHER_ID) &&
+        (answers.otherText[question.id] ?? '').trim() === ''
+      ) {
+        return false
+      }
     }
   }
   return true
@@ -114,6 +138,7 @@ export function AskUserQuestionPanel({
           freeText: {},
           singleSelect: {},
           multiSelect: {},
+          otherText: {},
         },
   )
   const [submitting, setSubmitting] = useState(false)
@@ -141,19 +166,26 @@ export function AskUserQuestionPanel({
             value: answers.freeText[question.id] ?? '',
           }
         }
+        const otherText = (answers.otherText[question.id] ?? '').trim()
         if (question.inputType === 'single_select') {
+          const value = answers.singleSelect[question.id] ?? ''
+          const includesOther = value === ASK_USER_QUESTION_OTHER_ID
           return {
             id: question.id,
             question: question.prompt,
             inputType: 'single_select',
-            value: answers.singleSelect[question.id] ?? '',
+            value,
+            ...(includesOther && otherText ? { otherText } : {}),
           }
         }
+        const value = [...(answers.multiSelect[question.id] ?? [])]
+        const includesOther = value.includes(ASK_USER_QUESTION_OTHER_ID)
         return {
           id: question.id,
           question: question.prompt,
           inputType: 'multi_select',
-          value: [...(answers.multiSelect[question.id] ?? [])],
+          value,
+          ...(includesOther && otherText ? { otherText } : {}),
         }
       }),
     }
@@ -260,7 +292,7 @@ export function AskUserQuestionPanel({
                   <span>{question.prompt}</span>
                 </div>
                 <div className="yolo-ask-user-question-answer">
-                  {renderAnsweredValue(question, answer)}
+                  {renderAnsweredValue(question, answer, t)}
                 </div>
               </div>
             )
@@ -364,8 +396,36 @@ function QuestionRow({
   setAnswers: React.Dispatch<React.SetStateAction<AnswerState>>
   onSubmit: () => void
 }) {
+  const { t } = useLanguage()
+  const otherLabel = t('chat.askUserQuestion.otherOption', '其他（请说明）')
+  const otherPlaceholder = t(
+    'chat.askUserQuestion.otherPlaceholder',
+    '请补充你的回答…',
+  )
+
+  const handleOtherTextChange = (next: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      otherText: { ...prev.otherText, [question.id]: next },
+    }))
+  }
+
+  const handleOtherKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (
+    event,
+  ) => {
+    if (
+      event.key === 'Enter' &&
+      (event.metaKey || event.ctrlKey) &&
+      !event.shiftKey
+    ) {
+      event.preventDefault()
+      onSubmit()
+    }
+  }
+
   if (question.inputType === 'single_select') {
     const selected = answers.singleSelect[question.id] ?? ''
+    const otherSelected = selected === ASK_USER_QUESTION_OTHER_ID
     return (
       <div className="yolo-ask-user-question-item">
         <div className="yolo-ask-user-question-prompt">{question.prompt}</div>
@@ -393,13 +453,42 @@ function QuestionRow({
               </button>
             )
           })}
+          <button
+            key={ASK_USER_QUESTION_OTHER_ID}
+            type="button"
+            className={`yolo-ask-user-question-chip yolo-ask-user-question-chip--other${
+              otherSelected ? ' yolo-ask-user-question-chip--selected' : ''
+            }`}
+            onClick={() =>
+              setAnswers((prev) => ({
+                ...prev,
+                singleSelect: {
+                  ...prev.singleSelect,
+                  [question.id]: ASK_USER_QUESTION_OTHER_ID,
+                },
+              }))
+            }
+          >
+            {otherLabel}
+          </button>
         </div>
+        {otherSelected && (
+          <textarea
+            className="yolo-ask-user-question-textarea yolo-ask-user-question-textarea--other"
+            rows={2}
+            placeholder={otherPlaceholder}
+            value={answers.otherText[question.id] ?? ''}
+            onChange={(event) => handleOtherTextChange(event.target.value)}
+            onKeyDown={handleOtherKeyDown}
+          />
+        )}
       </div>
     )
   }
 
   if (question.inputType === 'multi_select') {
     const selected = answers.multiSelect[question.id] ?? []
+    const otherSelected = selected.includes(ASK_USER_QUESTION_OTHER_ID)
     return (
       <div className="yolo-ask-user-question-item">
         <div className="yolo-ask-user-question-prompt">{question.prompt}</div>
@@ -435,16 +524,61 @@ function QuestionRow({
               </label>
             )
           })}
+          <label
+            key={ASK_USER_QUESTION_OTHER_ID}
+            className="yolo-ask-user-question-checkbox-label yolo-ask-user-question-checkbox-label--other"
+          >
+            <input
+              type="checkbox"
+              checked={otherSelected}
+              onChange={(event) => {
+                const checked = event.target.checked
+                setAnswers((prev) => {
+                  const current = prev.multiSelect[question.id] ?? []
+                  const next = checked
+                    ? [...current, ASK_USER_QUESTION_OTHER_ID]
+                    : current.filter((id) => id !== ASK_USER_QUESTION_OTHER_ID)
+                  return {
+                    ...prev,
+                    multiSelect: {
+                      ...prev.multiSelect,
+                      [question.id]: next,
+                    },
+                  }
+                })
+              }}
+            />
+            <span>{otherLabel}</span>
+          </label>
         </div>
+        {otherSelected && (
+          <textarea
+            className="yolo-ask-user-question-textarea yolo-ask-user-question-textarea--other"
+            rows={2}
+            placeholder={otherPlaceholder}
+            value={answers.otherText[question.id] ?? ''}
+            onChange={(event) => handleOtherTextChange(event.target.value)}
+            onKeyDown={handleOtherKeyDown}
+          />
+        )}
       </div>
     )
   }
 
-  // free_text
+  // free_text (optional)
   const value = answers.freeText[question.id] ?? ''
+  const optionalHint = t(
+    'chat.askUserQuestion.freeTextOptional',
+    '可选 · 留空将以空答案提交',
+  )
   return (
     <div className="yolo-ask-user-question-item">
-      <div className="yolo-ask-user-question-prompt">{question.prompt}</div>
+      <div className="yolo-ask-user-question-prompt">
+        <span>{question.prompt}</span>
+        <span className="yolo-ask-user-question-optional-hint">
+          {optionalHint}
+        </span>
+      </div>
       <textarea
         className="yolo-ask-user-question-textarea"
         rows={3}
@@ -476,25 +610,30 @@ function QuestionRow({
 function renderAnsweredValue(
   question: AskUserQuestionItem,
   answer: AnswerUserQuestionAnswer | undefined,
+  t: ReturnType<typeof useLanguage>['t'],
 ): string {
   if (!answer) return '—'
+  const otherText = (answer.otherText ?? '').trim()
+  const otherFallback = t('chat.askUserQuestion.otherAnswerFallback', '其他')
+  const otherPrefix = t('chat.askUserQuestion.otherAnswerPrefix', '其他：')
+  const labelForId = (id: string): string => {
+    if (id === ASK_USER_QUESTION_OTHER_ID) {
+      return otherText ? `${otherPrefix}${otherText}` : otherFallback
+    }
+    return question.options?.find((option) => option.id === id)?.label ?? id
+  }
   if (question.inputType === 'single_select') {
     const id = typeof answer.value === 'string' ? answer.value : ''
-    return (
-      question.options?.find((option) => option.id === id)?.label ?? id ?? '—'
-    )
+    if (!id) return '—'
+    return labelForId(id)
   }
   if (question.inputType === 'multi_select') {
     const ids: string[] = Array.isArray(answer.value) ? answer.value : []
     if (ids.length === 0) return '—'
-    return ids
-      .map(
-        (id) =>
-          question.options?.find((option) => option.id === id)?.label ?? id,
-      )
-      .join(' / ')
+    return ids.map(labelForId).join(' / ')
   }
-  return typeof answer.value === 'string' ? answer.value : '—'
+  const text = typeof answer.value === 'string' ? answer.value : ''
+  return text.trim() === '' ? '—' : text
 }
 
 export function isAskUserQuestionInputType(

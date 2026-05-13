@@ -1103,6 +1103,11 @@ export type TranslationKeys = {
       aborted?: string
       schemaError?: string
       stale?: string
+      otherOption?: string
+      otherPlaceholder?: string
+      otherAnswerPrefix?: string
+      otherAnswerFallback?: string
+      freeTextOptional?: string
     }
     selectModel: string
     uploadImage: string

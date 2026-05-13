@@ -66,7 +66,7 @@ describe('validateAskUserQuestionArgs', () => {
     expect(result.error).toMatch(/duplicated/)
   })
 
-  it('requires options for single_select / multi_select with 2-6 items', () => {
+  it('requires single_select / multi_select to have at least 2 options, with no upper bound', () => {
     expect(
       validateAskUserQuestionArgs({
         questions: [{ id: 'a', prompt: 'p', inputType: 'single_select' }],
@@ -84,7 +84,7 @@ describe('validateAskUserQuestionArgs', () => {
         ],
       }).ok,
     ).toBe(false)
-    const many = Array.from({ length: 7 }).map((_, i) => ({
+    const many = Array.from({ length: 12 }).map((_, i) => ({
       id: `o${i}`,
       label: `L${i}`,
     }))
@@ -99,7 +99,26 @@ describe('validateAskUserQuestionArgs', () => {
           },
         ],
       }).ok,
-    ).toBe(false)
+    ).toBe(true)
+  })
+
+  it('rejects the reserved "__other__" option id', () => {
+    const result = validateAskUserQuestionArgs({
+      questions: [
+        {
+          id: 'a',
+          prompt: 'p',
+          inputType: 'single_select',
+          options: [
+            { id: 'x', label: 'X' },
+            { id: '__other__', label: 'Other' },
+          ],
+        },
+      ],
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toMatch(/reserved/)
   })
 
   it('rejects duplicate option ids inside a single question', () => {

@@ -226,3 +226,29 @@
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
+
+/* "Other" escape hatch — distinguished from preset options with a dashed border. */
+.yolo-ask-user-question-chip--other {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.yolo-ask-user-question-chip--other.yolo-ask-user-question-chip--selected {
+  color: var(--text-normal);
+}
+
+.yolo-ask-user-question-checkbox-label--other {
+  color: var(--text-muted);
+}
+
+.yolo-ask-user-question-textarea--other {
+  min-height: 44px;
+  margin-top: var(--size-4-1);
+}
+
+.yolo-ask-user-question-optional-hint {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-normal);
+}

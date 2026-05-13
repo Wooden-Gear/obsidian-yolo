@@ -1121,7 +1121,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'ask_user_question',
       description:
-        'Ask the user one or more structured questions when you are blocked by missing information that cannot be inferred from context or the vault. Group related questions in a single call instead of asking turn by turn. Use sparingly — never to confirm trivial actions. Prefer concrete options (single_select / multi_select) over free text for the main questions. Whenever possible, append one final free_text question at the end as an open-ended catch-all (e.g. "Anything else to add or clarify? (optional)") so the user can supply context the preset options do not cover; skip this only when the answer space is fully closed (e.g. a yes/no confirmation). This call MUST be the only tool call in the turn; the agent run pauses until the user submits answers in a dedicated panel.',
+        'Ask the user one or more structured questions when you are blocked by missing information that cannot be inferred from context or the vault. Group related questions in a single call instead of asking turn by turn. Use sparingly — never to confirm trivial actions. Prefer concrete options (single_select / multi_select) over free text for the main questions. The UI automatically appends an "Other" escape hatch to every single_select / multi_select (with a free-text input that lands in the answer as `otherText`), so you do NOT need to add your own "Other" / "其他" option. The trailing free_text catch-all is also useful when an open-ended answer is plausible (e.g. "Anything else to add? (optional)") — note that free_text answers are treated as optional and may come back empty. This call MUST be the only tool call in the turn; the agent run pauses until the user submits answers in a dedicated panel.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -1152,9 +1152,8 @@ export function getLocalFileTools(options?: {
                 options: {
                   type: 'array',
                   minItems: 2,
-                  maxItems: 6,
                   description:
-                    'Required for single_select / multi_select. Each option has a stable id and a human-readable label. Disallowed for free_text.',
+                    'Required for single_select / multi_select. Each option has a stable id and a human-readable label. Disallowed for free_text. The id "__other__" is reserved — the UI appends its own "Other" entry, so do not include one yourself.',
                   items: {
                     type: 'object',
                     required: ['id', 'label'],
@@ -2125,6 +2124,14 @@ export type AskUserQuestionOption = {
   label: string
 }
 
+/**
+ * Reserved option id used by the UI to inject an "Other" escape hatch into
+ * every single_select / multi_select. The model is forbidden from emitting an
+ * option with this id (the validator rejects it) so the UI can rely on the id
+ * being free.
+ */
+export const ASK_USER_QUESTION_OTHER_ID = '__other__'
+
 export type AskUserQuestionItem = {
   id: string
   prompt: string
@@ -2221,10 +2228,10 @@ export function validateAskUserQuestionArgs(
           error: `questions[${i}].options must be an array for ${inputType}.`,
         }
       }
-      if (q.options.length < 2 || q.options.length > 6) {
+      if (q.options.length < 2) {
         return {
           ok: false,
-          error: `questions[${i}].options must contain between 2 and 6 items.`,
+          error: `questions[${i}].options must contain at least 2 items.`,
         }
       }
       const seenOptionIds = new Set<string>()
@@ -2246,6 +2253,12 @@ export function validateAskUserQuestionArgs(
           return {
             ok: false,
             error: `questions[${i}].options[${j}].id must be a non-empty string.`,
+          }
+        }
+        if (opt.id === ASK_USER_QUESTION_OTHER_ID) {
+          return {
+            ok: false,
+            error: `questions[${i}].options[${j}].id "${ASK_USER_QUESTION_OTHER_ID}" is reserved by the UI; remove this option and rely on the auto-appended "Other" entry.`,
           }
         }
         if (typeof opt.label !== 'string' || opt.label.trim() === '') {

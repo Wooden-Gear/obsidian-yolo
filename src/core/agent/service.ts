@@ -505,6 +505,13 @@ export type AnswerUserQuestionAnswer = {
   question: string
   inputType: 'free_text' | 'single_select' | 'multi_select'
   value: string | string[]
+  /**
+   * Free-text content the user typed into the auto-appended "Other" escape
+   * hatch. Present only when `value` is (or contains) the reserved
+   * `__other__` id; absent otherwise. The model should read this alongside
+   * `value` to recover what the user actually meant.
+   */
+  otherText?: string
 }
 
 export type AnswerUserQuestionPayload = {
