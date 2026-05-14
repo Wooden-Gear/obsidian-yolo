@@ -82,7 +82,11 @@ export function getProviderClient({
           requestPolicy,
         })
       }
-      return new GeminiProvider(provider as never, { requestPolicy })
+      return new GeminiProvider(provider as never, {
+        requestPolicy,
+        onAutoPromoteTransportMode: (mode) =>
+          onAutoPromoteTransportMode?.(provider.id, mode),
+      })
     }
     case 'amazon-bedrock': {
       // Base URL is constructed internally by the AWS SDK as

@@ -115,7 +115,7 @@ export const PROVIDER_PRESET_INFO = {
     requireApiKey: true,
     requireBaseUrl: false,
     supportEmbedding: true,
-    additionalSettings: [],
+    additionalSettings: [REQUEST_TRANSPORT_MODE_SETTING],
   },
   groq: {
     label: 'Groq',
