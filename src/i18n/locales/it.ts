@@ -1246,6 +1246,12 @@ export const it: TranslationKeys = {
     placeholderMention: 'aggiungere riferimenti o modelli',
     placeholderSkill: 'scegliere una skill o un comando',
     contextUsage: 'Utilizzo finestra di contesto',
+    inlineInfo: {
+      callsTitle: '{{count}} chiamate in questo turno',
+      nextTurnContext: 'Contesto utilizzato: ~{{tokens}} token',
+      nextTurnContextCached:
+        'Contesto utilizzato: ~{{tokens}} token ({{cached}} in cache)',
+    },
     sendMessage: 'Invia messaggio',
     newChat: 'Nuova chat',
     continueResponse: 'Continua risposta',

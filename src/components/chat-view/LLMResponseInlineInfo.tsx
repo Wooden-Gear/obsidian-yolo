@@ -1,7 +1,8 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { ArrowDown, ArrowUp, ChevronDown, Clock, Zap } from 'lucide-react'
+import { ArrowDown, ArrowUp, Clock, Zap } from 'lucide-react'
 import { ReactNode, useLayoutEffect, useRef, useState } from 'react'
 
+import { useLanguage } from '../../contexts/language-context'
 import { AssistantToolMessageGroup } from '../../types/chat'
 import { ResponseUsage } from '../../types/llm/response'
 
@@ -238,15 +239,13 @@ function renderTooltipBlock(
 }
 
 function renderBreakdownRow(request: LLMRequestEntry): ReactNode {
-  const inputs = buildInputs(request.usage, request.durationMs)
-  const { usage, cachedTokens, tokensPerSecond, durationMs } = inputs
-  if (!usage) {
-    return null
-  }
+  const { usage } = request
+  const cachedTokens = getCachedTokens(usage)
   const cacheRatio =
     cachedTokens !== null && usage.prompt_tokens > 0
       ? cachedTokens / usage.prompt_tokens
       : null
+  const tokensPerSecond = getTokensPerSecond(usage, request.durationMs)
 
   return (
     <div key={request.messageId} className="yolo-llm-inline-info-breakdown-row">
@@ -272,7 +271,9 @@ function renderBreakdownRow(request: LLMRequestEntry): ReactNode {
       </span>
       <span className="yolo-llm-inline-info-breakdown-cell">
         <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
-        <span>{durationMs !== null ? formatDuration(durationMs) : '-'}</span>
+        <span>
+          {request.durationMs !== null ? formatDuration(request.durationMs) : '-'}
+        </span>
       </span>
     </div>
   )
@@ -283,6 +284,7 @@ export default function LLMResponseInlineInfo({
 }: {
   messages: AssistantToolMessageGroup
 }) {
+  const { t } = useLanguage()
   const {
     usage,
     durationMs,
@@ -295,7 +297,6 @@ export default function LLMResponseInlineInfo({
   const containerRef = useRef<HTMLDivElement>(null)
   const ghostRefs = useRef<Array<HTMLDivElement | null>>([])
   const [levelIndex, setLevelIndex] = useState(0)
-  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -322,7 +323,7 @@ export default function LLMResponseInlineInfo({
     const observer = new ResizeObserver(pickLevel)
     observer.observe(container)
     return () => observer.disconnect()
-  }, [usage, durationMs])
+  }, [usage, durationMs, totalUsage, requestCount])
 
   if (!usage && durationMs === null) {
     return null
@@ -335,13 +336,27 @@ export default function LLMResponseInlineInfo({
       : null
   const hasMultipleRequests = requestCount >= 2 && totalInputs !== null
 
+  // Inline bar: when there are multiple LLM calls in this Agent turn, show
+  // aggregated values across the whole turn — tokens, duration, and speed all
+  // reflect the cumulative cost. Speed is derived from totalUsage/totalDuration
+  // so the four numbers reconcile (output / duration ≈ speed).
+  const inlineInputs: RenderInputs =
+    hasMultipleRequests && totalInputs ? totalInputs : lastInputs
+
+  // 已占用上下文 ≈ 最后一次的 prompt + completion，反映当前对话历史大小。
+  // cached 取自 last call 的命中量，因为 completion 不会被 cache。
+  const nextTurnTokens = usage
+    ? usage.prompt_tokens + usage.completion_tokens
+    : null
+  const nextTurnCachedTokens = getCachedTokens(usage)
+
   return (
     <Tooltip.Provider delayDuration={300} skipDelayDuration={100}>
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <div className="yolo-llm-inline-info">
             <div className="yolo-llm-inline-info-content" ref={containerRef}>
-              {renderItems(lastInputs, LEVELS[levelIndex])}
+              {renderItems(inlineInputs, LEVELS[levelIndex])}
             </div>
             <div className="yolo-llm-inline-info-ghosts" aria-hidden="true">
               {LEVELS.map((config, i) => (
@@ -352,7 +367,7 @@ export default function LLMResponseInlineInfo({
                   }}
                   className="yolo-llm-inline-info-content yolo-llm-inline-info-ghost"
                 >
-                  {renderItems(lastInputs, config)}
+                  {renderItems(inlineInputs, config)}
                 </div>
               ))}
             </div>
@@ -366,38 +381,73 @@ export default function LLMResponseInlineInfo({
             align="start"
           >
             <div className="yolo-llm-inline-info-tooltip">
-              {renderTooltipBlock(
-                lastInputs,
-                hasMultipleRequests ? { title: 'Last call' } : undefined,
+              {hasMultipleRequests && totalUsage ? (
+                <>
+                  <div className="yolo-llm-inline-info-tooltip-title">
+                    <span>
+                      {t(
+                        'chat.inlineInfo.callsTitle',
+                        '{{count}} calls this turn',
+                      ).replace('{{count}}', String(requestCount))}
+                    </span>
+                    <span className="yolo-llm-inline-info-tooltip-title-summary">
+                      <span className="yolo-llm-inline-info-breakdown-cell">
+                        <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
+                        <span>
+                          {formatTokenCount(totalUsage.prompt_tokens)}
+                          {(() => {
+                            const totalCached = getCachedTokens(totalUsage)
+                            return totalCached !== null &&
+                              totalUsage.prompt_tokens > 0
+                              ? ` (${(
+                                  (totalCached / totalUsage.prompt_tokens) *
+                                  100
+                                ).toFixed(1)}%)`
+                              : null
+                          })()}
+                        </span>
+                      </span>
+                      <span className="yolo-llm-inline-info-breakdown-cell">
+                        <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
+                        <span>
+                          {formatTokenCount(totalUsage.completion_tokens)}
+                        </span>
+                      </span>
+                    </span>
+                  </div>
+                  <div className="yolo-llm-inline-info-tooltip-divider" />
+                  <div className="yolo-llm-inline-info-breakdown-list">
+                    {requests.map(renderBreakdownRow)}
+                  </div>
+                </>
+              ) : (
+                renderTooltipBlock(lastInputs)
               )}
-              {hasMultipleRequests && totalInputs && (
+              {nextTurnTokens !== null && (
                 <>
                   <div className="yolo-llm-inline-info-tooltip-divider" />
-                  {renderTooltipBlock(totalInputs, {
-                    title: `Total (${requestCount} calls)`,
-                    showSpeed: false,
-                  })}
-                  <button
-                    type="button"
-                    className="yolo-llm-inline-info-breakdown-toggle"
-                    aria-expanded={showBreakdown}
-                    onClick={() => setShowBreakdown((prev) => !prev)}
-                  >
-                    <ChevronDown
-                      className={`yolo-llm-inline-info-breakdown-chevron${
-                        showBreakdown ? ' is-expanded' : ''
-                      }`}
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {showBreakdown ? 'Hide breakdown' : 'Show breakdown'}
-                    </span>
-                  </button>
-                  {showBreakdown && (
-                    <div className="yolo-llm-inline-info-breakdown-list">
-                      {requests.map(renderBreakdownRow)}
-                    </div>
-                  )}
+                  <div className="yolo-llm-inline-info-tooltip-footer">
+                    {nextTurnCachedTokens !== null
+                      ? t(
+                          'chat.inlineInfo.nextTurnContextCached',
+                          'Context used: ~{{tokens}} tokens ({{cached}} cached)',
+                        )
+                          .replace(
+                            '{{tokens}}',
+                            formatTokenCount(nextTurnTokens),
+                          )
+                          .replace(
+                            '{{cached}}',
+                            formatTokenCount(nextTurnCachedTokens),
+                          )
+                      : t(
+                          'chat.inlineInfo.nextTurnContext',
+                          'Context used: ~{{tokens}} tokens',
+                        ).replace(
+                          '{{tokens}}',
+                          formatTokenCount(nextTurnTokens),
+                        )}
+                  </div>
                 </>
               )}
             </div>

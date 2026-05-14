@@ -1295,6 +1295,12 @@ export const en: TranslationKeys = {
     placeholderMention: 'add references or models',
     placeholderSkill: 'choose a skill or command',
     contextUsage: 'Context window usage',
+    inlineInfo: {
+      callsTitle: '{{count}} calls this turn',
+      nextTurnContext: 'Context used: ~{{tokens}} tokens',
+      nextTurnContextCached:
+        'Context used: ~{{tokens}} tokens ({{cached}} cached)',
+    },
     sendMessage: 'Send message',
     newChat: 'New chat',
     continueResponse: 'Continue response',

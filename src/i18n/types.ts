@@ -1096,6 +1096,11 @@ export type TranslationKeys = {
     placeholderMention?: string
     placeholderSkill?: string
     contextUsage?: string
+    inlineInfo?: {
+      callsTitle?: string
+      nextTurnContext?: string
+      nextTurnContextCached?: string
+    }
     sendMessage: string
     newChat: string
     continueResponse?: string

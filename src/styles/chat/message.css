@@ -979,7 +979,7 @@
 .yolo-llm-inline-info-tooltip-content {
   z-index: 1000;
   padding: var(--size-4-3) var(--size-4-4);
-  min-width: 240px;
+  min-width: 360px;
 }
 
 .yolo-llm-inline-info-tooltip {
@@ -997,10 +997,19 @@
 }
 
 .yolo-llm-inline-info-tooltip-title {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.yolo-llm-inline-info-tooltip-title-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  margin-left: auto;
 }
 
 .yolo-llm-inline-info-tooltip-divider {
@@ -1012,58 +1021,36 @@
 /* Override Obsidian's default <button> chrome (white bg, shadow). The
  * `button.<class>` selector is needed because Obsidian's `button { ... }`
  * rule out-specifies a plain class. */
-button.yolo-llm-inline-info-breakdown-toggle,
-button.yolo-llm-inline-info-breakdown-toggle:hover,
-button.yolo-llm-inline-info-breakdown-toggle:focus,
-button.yolo-llm-inline-info-breakdown-toggle:focus-visible,
-button.yolo-llm-inline-info-breakdown-toggle:active {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--size-2-2);
-  align-self: flex-start;
-  margin: 0;
-  padding: var(--size-2-1) 0;
-  background-color: transparent;
-  background-image: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  cursor: var(--cursor);
-  font-size: var(--font-ui-smaller);
-  line-height: 1;
-}
-
-button.yolo-llm-inline-info-breakdown-toggle {
-  color: var(--text-faint);
-}
-
-button.yolo-llm-inline-info-breakdown-toggle:hover,
-button.yolo-llm-inline-info-breakdown-toggle:focus-visible {
-  color: var(--text-muted);
-}
-
-.yolo-llm-inline-info-breakdown-chevron {
-  width: var(--size-4-3);
-  height: var(--size-4-3);
-  transition: transform 120ms ease;
-}
-
-.yolo-llm-inline-info-breakdown-chevron.is-expanded {
-  transform: rotate(180deg);
-}
-
-/* Compact per-call grid: index + ↑ ↓ ⚡ 🕐. Keeps the same icon vocabulary
- * as the upper Last/Total blocks so users can scan it without re-learning. */
+/* Compact per-call grid: index + ↑(含 cached %) + ↓ + ⚡ + 🕐. Negative
+ * right-margin + matching padding-right extends the scroll track to the
+ * tooltip's right edge — otherwise the scrollbar floats mid-air and visually
+ * suggests "a box inside a box". The padding keeps the row content aligned
+ * with the title/footer above and below. */
 .yolo-llm-inline-info-breakdown-list {
   display: grid;
-  grid-template-columns: 2ch repeat(4, max-content);
+  /* Last column is 1fr so the duration cell extends to the grid's right edge,
+   * visually aligning with the summary block in the title (which also hugs the
+   * tooltip's right inner wall via margin-left: auto). */
+  grid-template-columns: 3ch repeat(3, max-content) 1fr;
   column-gap: var(--size-4-3);
   row-gap: var(--size-2-2);
-  /* ~5 rows visible; beyond that scrolls within the panel without flicker
+  /* ~8 rows visible; beyond that scrolls within the panel without flicker
    * because Radix Tooltip keeps content alive while pointer is over it. */
-  max-height: calc(var(--font-ui-small) * 1.4 * 5 + var(--size-2-2) * 4);
+  max-height: calc(var(--font-ui-small) * 1.4 * 8 + var(--size-2-2) * 7);
   overflow-y: auto;
-  padding-right: var(--size-2-2);
+  margin-right: calc(-1 * var(--size-4-4));
+  padding-right: var(--size-4-4);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.yolo-llm-inline-info-breakdown-row
+  > .yolo-llm-inline-info-breakdown-cell:last-child {
+  justify-self: end;
+}
+
+.yolo-llm-inline-info-tooltip-footer {
+  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   font-variant-numeric: tabular-nums;
 }

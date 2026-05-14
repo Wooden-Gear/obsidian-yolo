@@ -1214,6 +1214,11 @@ export const zh: TranslationKeys = {
     placeholderMention: '添加引用或模型',
     placeholderSkill: '选择技能或命令',
     contextUsage: '上下文窗口占用',
+    inlineInfo: {
+      callsTitle: '本轮 {{count}} 次调用',
+      nextTurnContext: '已占用上下文：~{{tokens}} tokens',
+      nextTurnContextCached: '已占用上下文：~{{tokens}} tokens ({{cached}} cached)',
+    },
     sendMessage: '发送消息',
     newChat: '新建聊天',
     continueResponse: '继续生成',
