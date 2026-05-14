@@ -45,7 +45,7 @@ const REQUEST_TRANSPORT_MODE_SETTING = {
     node: 'Desktop Node fetch',
   },
   description:
-    'Auto: try browser fetch first, then desktop Node fetch, and finally Obsidian requestUrl on CORS/network errors. Obsidian mode buffers streaming responses. Node mode uses desktop-only Node fetch for real streaming.',
+    'Auto: on desktop tries Node fetch first, then browser fetch, and finally Obsidian requestUrl on CORS/network errors; on mobile tries browser fetch then Obsidian requestUrl. Obsidian mode buffers streaming responses. Node mode uses desktop-only Node fetch for real streaming.',
 }
 
 // Surfaced dynamically when a provider's apiType is 'anthropic'
