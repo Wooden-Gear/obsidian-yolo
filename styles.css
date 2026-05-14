@@ -10509,6 +10509,89 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   margin: var(--size-2-1) 0;
 }
 
+/* Override Obsidian's default <button> chrome (white bg, shadow). The
+ * `button.<class>` selector is needed because Obsidian's `button { ... }`
+ * rule out-specifies a plain class. */
+
+button.yolo-llm-inline-info-breakdown-toggle,
+button.yolo-llm-inline-info-breakdown-toggle:hover,
+button.yolo-llm-inline-info-breakdown-toggle:focus,
+button.yolo-llm-inline-info-breakdown-toggle:focus-visible,
+button.yolo-llm-inline-info-breakdown-toggle:active {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  align-self: flex-start;
+  margin: 0;
+  padding: var(--size-2-1) 0;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: var(--cursor);
+  font-size: var(--font-ui-smaller);
+  line-height: 1;
+}
+
+button.yolo-llm-inline-info-breakdown-toggle {
+  color: var(--text-faint);
+}
+
+button.yolo-llm-inline-info-breakdown-toggle:hover,
+button.yolo-llm-inline-info-breakdown-toggle:focus-visible {
+  color: var(--text-muted);
+}
+
+.yolo-llm-inline-info-breakdown-chevron {
+  width: var(--size-4-3);
+  height: var(--size-4-3);
+  transition: transform 120ms ease;
+}
+
+.yolo-llm-inline-info-breakdown-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+/* Compact per-call grid: index + ↑ ↓ ⚡ 🕐. Keeps the same icon vocabulary
+ * as the upper Last/Total blocks so users can scan it without re-learning. */
+
+.yolo-llm-inline-info-breakdown-list {
+  display: grid;
+  grid-template-columns: 2ch repeat(4, max-content);
+  column-gap: var(--size-4-3);
+  row-gap: var(--size-2-2);
+  /* ~5 rows visible; beyond that scrolls within the panel without flicker
+   * because Radix Tooltip keeps content alive while pointer is over it. */
+  max-height: calc(var(--font-ui-small) * 1.4 * 5 + var(--size-2-2) * 4);
+  overflow-y: auto;
+  padding-right: var(--size-2-2);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.yolo-llm-inline-info-breakdown-row {
+  display: contents;
+}
+
+.yolo-llm-inline-info-breakdown-index {
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.yolo-llm-inline-info-breakdown-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  color: var(--text-muted);
+}
+
+.yolo-llm-inline-info-breakdown-cell .yolo-llm-inline-info-icon {
+  height: var(--size-4-3);
+  width: var(--size-4-3);
+  opacity: 0.85;
+}
+
 .yolo-llm-inline-info-tooltip-row {
   display: grid;
   grid-template-columns: auto 1fr auto;

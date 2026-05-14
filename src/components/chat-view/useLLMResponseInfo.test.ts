@@ -78,6 +78,12 @@ describe('collectLLMResponseInfo', () => {
     expect(info.totalUsage).toBeNull()
     expect(info.totalDurationMs).toBeNull()
     expect(info.totalCost).toBeNull()
+
+    // Single billable call still surfaces as a request entry for the
+    // breakdown view (which won't actually render at requestCount < 2).
+    expect(info.requests).toHaveLength(1)
+    expect(info.requests[0].index).toBe(1)
+    expect(info.requests[0].messageId).toBe('assistant-1')
   })
 
   it('multi request: top-level = last call, total = sum across calls', () => {
@@ -114,6 +120,37 @@ describe('collectLLMResponseInfo', () => {
     })
     expect(info.totalDurationMs).toBe(2500)
     expect(info.totalCost).toBe(0)
+
+    // Each billable call gets a dense entry with its own usage/duration.
+    expect(info.requests).toHaveLength(2)
+    expect(info.requests.map((r) => r.index)).toEqual([1, 2])
+    expect(info.requests[0].usage.prompt_tokens).toBe(100)
+    expect(info.requests[0].durationMs).toBe(1000)
+    expect(info.requests[1].usage.prompt_tokens).toBe(200)
+    expect(info.requests[1].durationMs).toBe(1500)
+  })
+
+  it('duration-only assistant in the middle does not occupy an index slot', () => {
+    // A duration-only assistant between two billable calls must not bump the
+    // index — the breakdown list would otherwise show "1, 3" with no row 2.
+    const durationOnly: ChatAssistantMessage = {
+      role: 'assistant',
+      id: 'assistant-noop',
+      content: '',
+      metadata: { model, durationMs: 9999 },
+    }
+    const info = collectLLMResponseInfo([
+      makeAssistant('assistant-1', 100, 20, 1000),
+      durationOnly,
+      makeAssistant('assistant-2', 200, 30, 1500),
+    ])
+
+    expect(info.requests).toHaveLength(2)
+    expect(info.requests.map((r) => r.index)).toEqual([1, 2])
+    expect(info.requests.map((r) => r.messageId)).toEqual([
+      'assistant-1',
+      'assistant-2',
+    ])
   })
 
   it('duration-only assistant trailing after a usage call is ignored', () => {

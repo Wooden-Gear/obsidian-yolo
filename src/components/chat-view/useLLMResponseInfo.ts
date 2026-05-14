@@ -5,6 +5,17 @@ import { ChatModel } from '../../types/chat-model.types'
 import { ResponseUsage } from '../../types/llm/response'
 import { calculateLLMCost } from '../../utils/llm/price-calculator'
 
+export type LLMRequestEntry = {
+  // 1-based, dense across billable (usage-bearing) calls — duration-only
+  // assistants are skipped, so the index never has gaps.
+  index: number
+  messageId: string
+  usage: ResponseUsage
+  durationMs: number | null
+  model: ChatModel | undefined
+  cost: number | null
+}
+
 export type LLMResponseInfo = {
   // Last-call semantics — what the user-visible final round-trip cost was.
   // The inline bar always renders these values; tooltip's "current" block too.
@@ -24,6 +35,11 @@ export type LLMResponseInfo = {
   totalDurationMs: number | null
   totalCost: number | null
   requestCount: number
+
+  // Per-billable-call breakdown for the "Show breakdown" surface. Always
+  // populated (empty array when no billable calls). Each entry binds its
+  // usage/durationMs/model/cost to a single assistant message.
+  requests: LLMRequestEntry[]
 }
 
 const addOptionalUsageTokenCount = (
@@ -73,17 +89,10 @@ const sumUsages = (usages: ResponseUsage[]): ResponseUsage | null => {
   return total
 }
 
-type CallEntry = {
-  usage: ResponseUsage
-  durationMs: number | null
-  model: ChatModel | undefined
-  cost: number | null
-}
-
 export function collectLLMResponseInfo(
   messages: AssistantToolMessageGroup,
 ): LLMResponseInfo {
-  const calls: CallEntry[] = []
+  const calls: LLMRequestEntry[] = []
   let fallbackModel: ChatModel | undefined
 
   for (const message of messages) {
@@ -107,6 +116,8 @@ export function collectLLMResponseInfo(
         : null
 
     calls.push({
+      index: calls.length + 1,
+      messageId: message.id,
       usage,
       durationMs,
       model,
@@ -169,6 +180,7 @@ export function collectLLMResponseInfo(
     totalDurationMs,
     totalCost,
     requestCount: calls.length,
+    requests: calls,
   }
 }
 

@@ -1,11 +1,11 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { ArrowDown, ArrowUp, Clock, Zap } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronDown, Clock, Zap } from 'lucide-react'
 import { ReactNode, useLayoutEffect, useRef, useState } from 'react'
 
 import { AssistantToolMessageGroup } from '../../types/chat'
 import { ResponseUsage } from '../../types/llm/response'
 
-import { useLLMResponseInfo } from './useLLMResponseInfo'
+import { LLMRequestEntry, useLLMResponseInfo } from './useLLMResponseInfo'
 
 const formatTokenCount = (value: number) => {
   if (value >= 1000) {
@@ -237,17 +237,65 @@ function renderTooltipBlock(
   )
 }
 
+function renderBreakdownRow(request: LLMRequestEntry): ReactNode {
+  const inputs = buildInputs(request.usage, request.durationMs)
+  const { usage, cachedTokens, tokensPerSecond, durationMs } = inputs
+  if (!usage) {
+    return null
+  }
+  const cacheRatio =
+    cachedTokens !== null && usage.prompt_tokens > 0
+      ? cachedTokens / usage.prompt_tokens
+      : null
+
+  return (
+    <div key={request.messageId} className="yolo-llm-inline-info-breakdown-row">
+      <span className="yolo-llm-inline-info-breakdown-index">
+        {request.index}
+      </span>
+      <span className="yolo-llm-inline-info-breakdown-cell">
+        <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
+        <span>
+          {formatTokenCount(usage.prompt_tokens)}
+          {cacheRatio !== null && ` (${(cacheRatio * 100).toFixed(1)}%)`}
+        </span>
+      </span>
+      <span className="yolo-llm-inline-info-breakdown-cell">
+        <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
+        <span>{formatTokenCount(usage.completion_tokens)}</span>
+      </span>
+      <span className="yolo-llm-inline-info-breakdown-cell">
+        <Zap className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--speed" />
+        <span>
+          {tokensPerSecond !== null ? `${tokensPerSecond.toFixed(1)}` : '-'}
+        </span>
+      </span>
+      <span className="yolo-llm-inline-info-breakdown-cell">
+        <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
+        <span>{durationMs !== null ? formatDuration(durationMs) : '-'}</span>
+      </span>
+    </div>
+  )
+}
+
 export default function LLMResponseInlineInfo({
   messages,
 }: {
   messages: AssistantToolMessageGroup
 }) {
-  const { usage, durationMs, totalUsage, totalDurationMs, requestCount } =
-    useLLMResponseInfo(messages)
+  const {
+    usage,
+    durationMs,
+    totalUsage,
+    totalDurationMs,
+    requestCount,
+    requests,
+  } = useLLMResponseInfo(messages)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const ghostRefs = useRef<Array<HTMLDivElement | null>>([])
   const [levelIndex, setLevelIndex] = useState(0)
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -329,6 +377,27 @@ export default function LLMResponseInlineInfo({
                     title: `Total (${requestCount} calls)`,
                     showSpeed: false,
                   })}
+                  <button
+                    type="button"
+                    className="yolo-llm-inline-info-breakdown-toggle"
+                    aria-expanded={showBreakdown}
+                    onClick={() => setShowBreakdown((prev) => !prev)}
+                  >
+                    <ChevronDown
+                      className={`yolo-llm-inline-info-breakdown-chevron${
+                        showBreakdown ? ' is-expanded' : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {showBreakdown ? 'Hide breakdown' : 'Show breakdown'}
+                    </span>
+                  </button>
+                  {showBreakdown && (
+                    <div className="yolo-llm-inline-info-breakdown-list">
+                      {requests.map(renderBreakdownRow)}
+                    </div>
+                  )}
                 </>
               )}
             </div>
