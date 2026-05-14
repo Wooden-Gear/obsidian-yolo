@@ -10527,7 +10527,7 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
 }
 
 .yolo-llm-inline-info-detail-row--total > * {
-  padding-top: var(--size-2-3);
+  padding-top: var(--size-2-2);
 }
 
 .yolo-llm-inline-info-detail-index {
