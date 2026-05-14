@@ -2234,15 +2234,28 @@
 }
 
 /* Stretch the host modal so we get the ~3-column grid by default,
-   but never push past the viewport (no horizontal scroll). */
+   but never push past the viewport (no horizontal scroll, capped height).
+   `padding-right: 0` lets the scrollable `.modal-content` reach the modal's
+   right edge so the scrollbar sits flush against the frame. We re-add the
+   horizontal breathing room on the inner `.yolo-provider-picker` so content
+   still has visual margin from the scrollbar. */
 
 .yolo-provider-picker-modal {
   width: min(880px, calc(100vw - 40px));
   max-width: min(880px, calc(100vw - 40px));
+  max-height: min(720px, calc(100vh - 80px));
+  padding-right: 0 !important;
 }
 
 .yolo-provider-picker-modal .modal-content {
   overflow-x: hidden;
+  overflow-y: auto;
+  max-height: calc(min(720px, 100vh - 80px) - 60px);
+  padding-right: 0 !important;
+}
+
+.yolo-provider-picker-modal .modal-content > .yolo-provider-picker {
+  padding-right: 24px;
 }
 
 body.theme-dark .yolo-provider-picker {

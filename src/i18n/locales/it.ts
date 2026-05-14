@@ -627,7 +627,7 @@ export const it: TranslationKeys = {
       pickerCustomDesc: 'Inserisci manualmente base URL e API key',
       pickerEmpty: 'Nessun provider corrispondente',
       categoryAll: 'Tutti',
-      categoryMain: 'Internazionali',
+      categoryMain: 'Internazionale',
       categoryCn: 'Cina',
       categoryGateway: 'Aggregatori',
       categoryCloud: 'Cloud',

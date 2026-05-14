@@ -34,6 +34,16 @@ export const providerPresetTypeSchema = z.enum([
   'morph',
   'azure-openai',
   'amazon-bedrock',
+  'zhipu',
+  'doubao',
+  'siliconflow',
+  'stepfun',
+  'minimax',
+  'hunyuan',
+  'xai',
+  'together-ai',
+  'cerebras',
+  'sambanova',
   'openai-compatible',
 ])
 
@@ -106,6 +116,16 @@ const DEFAULT_PROVIDER_API_TYPE_BY_PRESET: Record<
   morph: 'openai-compatible',
   'azure-openai': 'openai-compatible',
   'amazon-bedrock': 'amazon-bedrock',
+  zhipu: 'openai-compatible',
+  doubao: 'openai-compatible',
+  siliconflow: 'openai-compatible',
+  stepfun: 'openai-compatible',
+  minimax: 'openai-compatible',
+  hunyuan: 'openai-compatible',
+  xai: 'openai-compatible',
+  'together-ai': 'openai-compatible',
+  cerebras: 'openai-compatible',
+  sambanova: 'openai-compatible',
   'openai-compatible': 'openai-compatible',
 }
 
