@@ -10798,7 +10798,7 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
 
 .yolo-popover-surface--default .yolo-model-select-list {
   padding: 4px 0;
-  max-height: 380px;
+  max-height: 540px;
   overflow-y: auto;
   scrollbar-width: thin;
 }

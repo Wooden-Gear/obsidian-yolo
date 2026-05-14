@@ -1403,9 +1403,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                   sideOffset={8}
                   popover={{
                     variant: 'default',
-                    minWidth: 260,
+                    minWidth: 240,
                     maxWidth: 320,
-                    maxHeight: 400,
+                    maxHeight: 560,
                   }}
                 />
                 {showReasoningSelect && supportsReasoning(currentModel) && (
