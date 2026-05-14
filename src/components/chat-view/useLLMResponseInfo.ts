@@ -1,28 +1,29 @@
 import { useMemo } from 'react'
 
-import {
-  AssistantToolMessageGroup,
-  ChatAssistantMessage,
-} from '../../types/chat'
+import { AssistantToolMessageGroup } from '../../types/chat'
 import { ChatModel } from '../../types/chat-model.types'
 import { ResponseUsage } from '../../types/llm/response'
 import { calculateLLMCost } from '../../utils/llm/price-calculator'
 
-export type LLMResponseInfoEntry = {
-  messageId: string
-  requestNumber: number
-  usage: ResponseUsage | null
-  model: ChatModel | undefined
-  cost: number | null
-  durationMs: number | null
-}
-
 export type LLMResponseInfo = {
-  requests: LLMResponseInfoEntry[]
+  // Last-call semantics — what the user-visible final round-trip cost was.
+  // The inline bar always renders these values; tooltip's "current" block too.
+  // usage/durationMs/model/cost are all bound to the same last-with-usage call,
+  // so derived values like tok/s in the UI stay consistent.
   usage: ResponseUsage | null
   model: ChatModel | undefined
   cost: number | null
   durationMs: number | null
+
+  // Aggregate across every billable (usage-bearing) call in this group.
+  // Populated only when there are >= 2 such calls; otherwise null.
+  // Any field is null if it can't be computed cleanly (missing duration on
+  // any counted call, unknown cost on any counted call, etc.) — better than
+  // silently displaying a number that under-counts.
+  totalUsage: ResponseUsage | null
+  totalDurationMs: number | null
+  totalCost: number | null
+  requestCount: number
 }
 
 const addOptionalUsageTokenCount = (
@@ -53,7 +54,6 @@ const sumUsages = (usages: ResponseUsage[]): ResponseUsage | null => {
   for (const usage of usages) {
     total.prompt_tokens += usage.prompt_tokens
     total.completion_tokens += usage.completion_tokens
-    total.total_tokens += usage.total_tokens
     addOptionalUsageTokenCount(
       total,
       'cache_read_input_tokens',
@@ -66,94 +66,109 @@ const sumUsages = (usages: ResponseUsage[]): ResponseUsage | null => {
     )
   }
 
+  // Derive total_tokens from the summed components — upstream providers'
+  // total_tokens semantics around cache aren't always consistent.
+  total.total_tokens = total.prompt_tokens + total.completion_tokens
+
   return total
+}
+
+type CallEntry = {
+  usage: ResponseUsage
+  durationMs: number | null
+  model: ChatModel | undefined
+  cost: number | null
 }
 
 export function collectLLMResponseInfo(
   messages: AssistantToolMessageGroup,
 ): LLMResponseInfo {
-  const requests: LLMResponseInfoEntry[] = []
-  let latestAssistantMessage: ChatAssistantMessage | undefined
-  let latestAssistantWithUsage: ChatAssistantMessage | undefined
-  let totalDurationMs = 0
-  let hasDuration = false
+  const calls: CallEntry[] = []
+  let fallbackModel: ChatModel | undefined
 
   for (const message of messages) {
     if (message.role !== 'assistant') {
       continue
     }
 
-    latestAssistantMessage = message
-
-    if (message.metadata?.usage) {
-      latestAssistantWithUsage = message
+    const model = message.metadata?.model
+    if (model) {
+      fallbackModel = model
     }
 
-    const usage = message.metadata?.usage ?? null
+    const usage = message.metadata?.usage
+    if (!usage) {
+      continue
+    }
+
     const durationMs =
       typeof message.metadata?.durationMs === 'number'
         ? message.metadata.durationMs
         : null
 
-    if (durationMs !== null) {
-      totalDurationMs += durationMs
-      hasDuration = true
-    }
-
-    if (!usage && durationMs === null) {
-      continue
-    }
-
-    const model = message.metadata?.model
-    requests.push({
-      messageId: message.id,
-      requestNumber: requests.length + 1,
+    calls.push({
       usage,
-      model,
-      cost:
-        usage && model
-          ? calculateLLMCost({
-              model,
-              usage,
-            })
-          : null,
       durationMs,
+      model,
+      cost: model ? calculateLLMCost({ model, usage }) : null,
     })
   }
 
-  const usage = sumUsages(
-    requests
-      .map((request) => request.usage)
-      .filter((requestUsage): requestUsage is ResponseUsage =>
-        Boolean(requestUsage),
-      ),
-  )
+  const lastCall = calls.length > 0 ? calls[calls.length - 1] : null
 
-  const model =
-    latestAssistantWithUsage?.metadata?.model ??
-    latestAssistantMessage?.metadata?.model
+  // Top-level reflects the last billable call only — usage/duration/model are
+  // pulled from the same entry, so the inline bar's tok/s stays coherent.
+  const usage = lastCall?.usage ?? null
+  const durationMs = lastCall?.durationMs ?? null
+  // When a billable call exists, model is bound to that same entry — even if
+  // that entry's model is undefined. Only fall back when there were no
+  // billable calls at all (e.g. an in-flight stream that hasn't reported
+  // usage yet).
+  const model = lastCall ? lastCall.model : fallbackModel
+  const cost = lastCall?.cost ?? null
 
-  let totalCost = 0
-  let hasCost = false
-  let hasUnknownCost = false
-  for (const request of requests) {
-    if (!request.usage) {
-      continue
+  const hasMultipleRequests = calls.length >= 2
+  const totalUsage = hasMultipleRequests
+    ? sumUsages(calls.map((call) => call.usage))
+    : null
+
+  let totalDurationMs: number | null = null
+  if (hasMultipleRequests) {
+    let runningDuration = 0
+    let anyMissing = false
+    for (const call of calls) {
+      if (call.durationMs === null) {
+        anyMissing = true
+        break
+      }
+      runningDuration += call.durationMs
     }
-    if (request.cost === null) {
-      hasUnknownCost = true
-      continue
+    totalDurationMs = anyMissing ? null : runningDuration
+  }
+
+  let totalCost: number | null = null
+  if (hasMultipleRequests) {
+    let runningCost = 0
+    let anyUnknown = false
+    for (const call of calls) {
+      if (call.cost === null) {
+        anyUnknown = true
+        break
+      }
+      runningCost += call.cost
     }
-    hasCost = true
-    totalCost += request.cost
+    totalCost = anyUnknown ? null : runningCost
   }
 
   return {
-    requests,
     usage,
     model,
-    cost: hasCost && !hasUnknownCost ? totalCost : null,
-    durationMs: hasDuration ? totalDurationMs : null,
+    cost,
+    durationMs,
+    totalUsage,
+    totalDurationMs,
+    totalCost,
+    requestCount: calls.length,
   }
 }
 

@@ -1,12 +1,11 @@
-import * as Popover from '@radix-ui/react-popover'
-import { ArrowDown, ArrowUp, ChevronDown, Clock, Zap } from 'lucide-react'
+import * as Tooltip from '@radix-ui/react-tooltip'
+import { ArrowDown, ArrowUp, Clock, Zap } from 'lucide-react'
 import { ReactNode, useLayoutEffect, useRef, useState } from 'react'
 
 import { AssistantToolMessageGroup } from '../../types/chat'
 import { ResponseUsage } from '../../types/llm/response'
-import { YoloPopoverContent } from '../common/popover'
 
-import { LLMResponseInfoEntry, useLLMResponseInfo } from './useLLMResponseInfo'
+import { useLLMResponseInfo } from './useLLMResponseInfo'
 
 const formatTokenCount = (value: number) => {
   if (value >= 1000) {
@@ -19,19 +18,6 @@ const formatDuration = (durationMs: number) => {
   const seconds = durationMs / 1000
   return `${seconds.toFixed(1)}s`
 }
-
-type LevelConfig = {
-  showSpeedUnit: boolean
-  showInputUnit: boolean
-  showOutputUnit: boolean
-  showInputCachedWord: boolean
-  showTime: boolean
-  showSpeed: boolean
-  showOutput: boolean
-  showInputCache: boolean
-}
-
-const LEVEL_COUNT = 8
 
 /**
  * Progressive compression — each level drops exactly one thing vs the previous
@@ -46,9 +32,21 @@ const LEVEL_COUNT = 8
  *   5. ⚡ speed     — fully derivable from ↓ and 🕐
  *   6. (cached)     — drop the whole cache breakdown, keep only total input
  *
- * The full detail is accessible via the expanded popover, so these drops never
- * actually hide information — they just move it to a secondary surface.
+ * The full detail is always accessible via the hover tooltip, so these drops
+ * never actually hide information — they just move it to a secondary surface.
  */
+type LevelConfig = {
+  showSpeedUnit: boolean
+  showInputUnit: boolean
+  showOutputUnit: boolean
+  showInputCachedWord: boolean
+  showTime: boolean
+  showSpeed: boolean
+  showInputCache: boolean
+}
+
+const LEVEL_COUNT = 7
+
 const configForLevel = (level: number): LevelConfig => ({
   showSpeedUnit: level < 1,
   showInputUnit: level < 2,
@@ -56,8 +54,7 @@ const configForLevel = (level: number): LevelConfig => ({
   showInputCachedWord: level < 3,
   showTime: level < 4,
   showSpeed: level < 5,
-  showOutput: true,
-  showInputCache: level < 7,
+  showInputCache: level < 6,
 })
 
 const LEVELS: LevelConfig[] = Array.from({ length: LEVEL_COUNT }, (_, i) =>
@@ -67,6 +64,7 @@ const LEVELS: LevelConfig[] = Array.from({ length: LEVEL_COUNT }, (_, i) =>
 type RenderInputs = {
   usage: ResponseUsage | null
   cachedTokens: number | null
+  cacheCreationTokens: number | null
   durationMs: number | null
   tokensPerSecond: number | null
 }
@@ -91,8 +89,16 @@ const getTokensPerSecond = (
     ? usage.completion_tokens / (durationMs / 1000)
     : null
 
-const formatDetailTokenCount = (value: number) =>
-  `${formatTokenCount(value)} tokens`
+const buildInputs = (
+  usage: ResponseUsage | null,
+  durationMs: number | null,
+): RenderInputs => ({
+  usage,
+  cachedTokens: getCachedTokens(usage),
+  cacheCreationTokens: getCacheCreationTokens(usage),
+  durationMs,
+  tokensPerSecond: getTokensPerSecond(usage, durationMs),
+})
 
 function renderItems(
   { usage, cachedTokens, durationMs, tokensPerSecond }: RenderInputs,
@@ -103,7 +109,6 @@ function renderItems(
     showInputCachedWord,
     showTime,
     showSpeed,
-    showOutput,
     showInputCache,
   }: LevelConfig,
 ): ReactNode {
@@ -126,7 +131,7 @@ function renderItems(
           </span>
         </span>
       )}
-      {showOutput && usage && (
+      {usage && (
         <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--output">
           <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
           <span>
@@ -154,111 +159,80 @@ function renderItems(
   )
 }
 
-function getRequestInputs(request: LLMResponseInfoEntry): RenderInputs {
-  return {
-    usage: request.usage,
-    cachedTokens: getCachedTokens(request.usage),
-    durationMs: request.durationMs,
-    tokensPerSecond: getTokensPerSecond(request.usage, request.durationMs),
-  }
+type TooltipBlockOptions = {
+  title?: string
+  showSpeed?: boolean
 }
 
-function UsageDetailItem({
-  icon,
-  ariaLabel,
-  value,
-}: {
-  icon: ReactNode
-  ariaLabel: string
-  value: string
-}) {
-  return (
-    <span
-      className="yolo-llm-inline-info-item yolo-llm-inline-info-detail-item"
-      aria-label={ariaLabel}
-    >
-      {icon}
-      <span>{value}</span>
-    </span>
-  )
-}
-
-function UsageDetailRow({
-  indexLabel,
-  inputs,
-  isTotal = false,
-}: {
-  indexLabel: string
-  inputs: RenderInputs
-  isTotal?: boolean
-}) {
-  const usage = inputs.usage
-  if (!usage) {
-    return null
-  }
-
+function renderTooltipBlock(
+  {
+    usage,
+    cachedTokens,
+    cacheCreationTokens,
+    durationMs,
+    tokensPerSecond,
+  }: RenderInputs,
+  { title, showSpeed = true }: TooltipBlockOptions = {},
+): ReactNode {
   const cacheRatio =
-    inputs.cachedTokens !== null && usage.prompt_tokens > 0
-      ? inputs.cachedTokens / usage.prompt_tokens
+    usage && cachedTokens !== null && usage.prompt_tokens > 0
+      ? cachedTokens / usage.prompt_tokens
       : null
-  const cacheCreation = getCacheCreationTokens(usage)
-  const inputDetails: string[] = [formatDetailTokenCount(usage.prompt_tokens)]
-
-  if (inputs.cachedTokens !== null && cacheRatio !== null) {
-    inputDetails.push(
-      `(${inputs.cachedTokens.toLocaleString()} cached / ${(
-        cacheRatio * 100
-      ).toFixed(1)}%)`,
-    )
-  }
-
-  if (cacheCreation !== null) {
-    inputDetails.push(`(${cacheCreation.toLocaleString()} written)`)
-  }
 
   return (
-    <div
-      className={`yolo-llm-inline-info-detail-row${
-        isTotal ? ' yolo-llm-inline-info-detail-row--total' : ''
-      }`}
-    >
-      <div className="yolo-llm-inline-info-detail-index">
-        <span>{indexLabel}</span>
-      </div>
-      <UsageDetailItem
-        icon={
-          <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
-        }
-        ariaLabel="Input tokens"
-        value={inputDetails.join(' ')}
-      />
-      <UsageDetailItem
-        icon={
-          <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
-        }
-        ariaLabel="Output tokens"
-        value={formatDetailTokenCount(usage.completion_tokens)}
-      />
-      <UsageDetailItem
-        icon={
+    <div className="yolo-llm-inline-info-tooltip-block">
+      {title && (
+        <div className="yolo-llm-inline-info-tooltip-title">{title}</div>
+      )}
+      {usage && (
+        <>
+          <div className="yolo-llm-inline-info-tooltip-row">
+            <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
+            <span className="yolo-llm-inline-info-tooltip-label">Input</span>
+            <span className="yolo-llm-inline-info-tooltip-value">
+              {usage.prompt_tokens.toLocaleString()} tokens
+            </span>
+          </div>
+          {cachedTokens !== null && cacheRatio !== null && (
+            <div className="yolo-llm-inline-info-tooltip-sub">
+              <span>
+                {cachedTokens.toLocaleString()} cached ·{' '}
+                {(cacheRatio * 100).toFixed(1)}% hit
+              </span>
+            </div>
+          )}
+          {cacheCreationTokens !== null && (
+            <div className="yolo-llm-inline-info-tooltip-sub">
+              <span>{cacheCreationTokens.toLocaleString()} cache written</span>
+            </div>
+          )}
+          <div className="yolo-llm-inline-info-tooltip-row">
+            <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
+            <span className="yolo-llm-inline-info-tooltip-label">Output</span>
+            <span className="yolo-llm-inline-info-tooltip-value">
+              {usage.completion_tokens.toLocaleString()} tokens
+            </span>
+          </div>
+        </>
+      )}
+      {showSpeed && tokensPerSecond !== null && (
+        <div className="yolo-llm-inline-info-tooltip-row">
           <Zap className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--speed" />
-        }
-        ariaLabel="Speed"
-        value={
-          inputs.tokensPerSecond !== null
-            ? `${inputs.tokensPerSecond.toFixed(1)} tok/s`
-            : '-'
-        }
-      />
-      <UsageDetailItem
-        icon={
+          <span className="yolo-llm-inline-info-tooltip-label">Speed</span>
+          <span className="yolo-llm-inline-info-tooltip-value">
+            {tokensPerSecond.toFixed(1)} tok/s
+          </span>
+        </div>
+      )}
+      {durationMs !== null && (
+        <div className="yolo-llm-inline-info-tooltip-row">
           <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
-        }
-        ariaLabel="Duration"
-        value={
-          inputs.durationMs !== null ? formatDuration(inputs.durationMs) : '-'
-        }
-      />
+          <span className="yolo-llm-inline-info-tooltip-label">Duration</span>
+          <span className="yolo-llm-inline-info-tooltip-value">
+            {formatDuration(durationMs)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -268,14 +242,12 @@ export default function LLMResponseInlineInfo({
 }: {
   messages: AssistantToolMessageGroup
 }) {
-  const { requests, usage, durationMs } = useLLMResponseInfo(messages)
-  const tokensPerSecond = getTokensPerSecond(usage, durationMs)
+  const { usage, durationMs, totalUsage, totalDurationMs, requestCount } =
+    useLLMResponseInfo(messages)
 
-  const triggerRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const ghostRefs = useRef<Array<HTMLDivElement | null>>([])
   const [levelIndex, setLevelIndex] = useState(0)
-  const [isExpanded, setIsExpanded] = useState(false)
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -304,87 +276,65 @@ export default function LLMResponseInlineInfo({
     return () => observer.disconnect()
   }, [usage, durationMs])
 
-  if (!usage && durationMs === null && requests.length === 0) {
+  if (!usage && durationMs === null) {
     return null
   }
 
-  const inputs: RenderInputs = {
-    usage,
-    cachedTokens: getCachedTokens(usage),
-    durationMs,
-    tokensPerSecond,
-  }
+  const lastInputs = buildInputs(usage, durationMs)
+  const totalInputs =
+    totalUsage || totalDurationMs !== null
+      ? buildInputs(totalUsage, totalDurationMs)
+      : null
+  const hasMultipleRequests = requestCount >= 2 && totalInputs !== null
 
   return (
-    <Popover.Root open={isExpanded} onOpenChange={setIsExpanded}>
-      <Popover.Trigger asChild>
-        <div
-          className="yolo-llm-inline-info"
-          ref={triggerRef}
-          role="button"
-          tabIndex={0}
-          aria-expanded={isExpanded}
-          aria-label="Show request usage details"
-        >
-          <div className="yolo-llm-inline-info-content" ref={containerRef}>
-            {renderItems(inputs, LEVELS[levelIndex])}
+    <Tooltip.Provider delayDuration={300} skipDelayDuration={100}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <div className="yolo-llm-inline-info">
+            <div className="yolo-llm-inline-info-content" ref={containerRef}>
+              {renderItems(lastInputs, LEVELS[levelIndex])}
+            </div>
+            <div className="yolo-llm-inline-info-ghosts" aria-hidden="true">
+              {LEVELS.map((config, i) => (
+                <div
+                  key={i}
+                  ref={(node) => {
+                    ghostRefs.current[i] = node
+                  }}
+                  className="yolo-llm-inline-info-content yolo-llm-inline-info-ghost"
+                >
+                  {renderItems(lastInputs, config)}
+                </div>
+              ))}
+            </div>
           </div>
-          <ChevronDown
-            className={`yolo-llm-inline-info-chevron${
-              isExpanded ? ' is-expanded' : ''
-            }`}
-            aria-hidden="true"
-          />
-          <div className="yolo-llm-inline-info-ghosts" aria-hidden="true">
-            {LEVELS.map((config, i) => (
-              <div
-                key={i}
-                ref={(node) => {
-                  ghostRefs.current[i] = node
-                }}
-                className="yolo-llm-inline-info-content yolo-llm-inline-info-ghost"
-              >
-                {renderItems(inputs, config)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </Popover.Trigger>
-      <YoloPopoverContent
-        anchorRef={triggerRef}
-        variant="default"
-        maxWidth="min(680px, calc(100vw - 48px))"
-        maxHeight="min(70vh, 520px)"
-        className="yolo-llm-usage-popover"
-        side="top"
-        sideOffset={6}
-        align="start"
-        collisionPadding={8}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-        }}
-        onCloseAutoFocus={(event) => {
-          event.preventDefault()
-          triggerRef.current?.focus({ preventScroll: true })
-        }}
-      >
-        <div
-          className="yolo-llm-inline-info-panel"
-          role="dialog"
-          aria-label="Request usage details"
-        >
-          <div className="yolo-llm-inline-info-detail-list">
-            {requests.map((request) => (
-              <UsageDetailRow
-                key={request.messageId}
-                indexLabel={String(request.requestNumber)}
-                inputs={getRequestInputs(request)}
-              />
-            ))}
-            <UsageDetailRow indexLabel={'\u03A3'} inputs={inputs} isTotal />
-          </div>
-        </div>
-      </YoloPopoverContent>
-    </Popover.Root>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="yolo-tooltip-content yolo-llm-inline-info-tooltip-content"
+            side="top"
+            sideOffset={6}
+            align="start"
+          >
+            <div className="yolo-llm-inline-info-tooltip">
+              {renderTooltipBlock(
+                lastInputs,
+                hasMultipleRequests ? { title: 'Last call' } : undefined,
+              )}
+              {hasMultipleRequests && totalInputs && (
+                <>
+                  <div className="yolo-llm-inline-info-tooltip-divider" />
+                  {renderTooltipBlock(totalInputs, {
+                    title: `Total (${requestCount} calls)`,
+                    showSpeed: false,
+                  })}
+                </>
+              )}
+            </div>
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   )
 }
