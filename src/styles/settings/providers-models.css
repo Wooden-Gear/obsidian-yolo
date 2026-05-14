@@ -192,8 +192,8 @@
 
 .yolo-provider-main-trigger {
   all: unset;
-  flex: 0 0 auto;
-  min-width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--size-4-2);
@@ -202,6 +202,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .yolo-provider-main-trigger:hover,
@@ -263,16 +264,23 @@
 }
 
 .yolo-provider-info {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
 }
 
 .yolo-provider-id {
+  display: block;
   font-weight: 600;
-  min-width: 120px;
+  min-width: 0;
+  max-width: 100%;
   color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .yolo-provider-type {
