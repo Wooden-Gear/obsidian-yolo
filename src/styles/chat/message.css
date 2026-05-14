@@ -990,6 +990,25 @@
   color: var(--text-muted);
 }
 
+.yolo-llm-inline-info-tooltip-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
+}
+
+.yolo-llm-inline-info-tooltip-title {
+  font-size: var(--font-ui-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.yolo-llm-inline-info-tooltip-divider {
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: var(--size-2-1) 0;
+}
+
 .yolo-llm-inline-info-tooltip-row {
   display: grid;
   grid-template-columns: auto 1fr auto;

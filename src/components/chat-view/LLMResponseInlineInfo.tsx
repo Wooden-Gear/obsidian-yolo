@@ -30,8 +30,7 @@ const formatDuration = (durationMs: number) => {
  *   3. "cached"     — the parens + number next to ↑ remain contextual
  *   4. 🕐 duration  — nice-to-have
  *   5. ⚡ speed     — fully derivable from ↓ and 🕐
- *   6. ↓ output     — less info-dense than ↑
- *   7. (cached)     — drop the whole cache breakdown, keep only total input
+ *   6. (cached)     — drop the whole cache breakdown, keep only total input
  *
  * The full detail is always accessible via the hover tooltip, so these drops
  * never actually hide information — they just move it to a secondary surface.
@@ -43,11 +42,10 @@ type LevelConfig = {
   showInputCachedWord: boolean
   showTime: boolean
   showSpeed: boolean
-  showOutput: boolean
   showInputCache: boolean
 }
 
-const LEVEL_COUNT = 8
+const LEVEL_COUNT = 7
 
 const configForLevel = (level: number): LevelConfig => ({
   showSpeedUnit: level < 1,
@@ -56,8 +54,7 @@ const configForLevel = (level: number): LevelConfig => ({
   showInputCachedWord: level < 3,
   showTime: level < 4,
   showSpeed: level < 5,
-  showOutput: level < 6,
-  showInputCache: level < 7,
+  showInputCache: level < 6,
 })
 
 const LEVELS: LevelConfig[] = Array.from({ length: LEVEL_COUNT }, (_, i) =>
@@ -67,9 +64,41 @@ const LEVELS: LevelConfig[] = Array.from({ length: LEVEL_COUNT }, (_, i) =>
 type RenderInputs = {
   usage: ResponseUsage | null
   cachedTokens: number | null
+  cacheCreationTokens: number | null
   durationMs: number | null
   tokensPerSecond: number | null
 }
+
+const getCachedTokens = (usage: ResponseUsage | null) =>
+  usage?.cache_read_input_tokens !== undefined &&
+  usage.cache_read_input_tokens > 0
+    ? usage.cache_read_input_tokens
+    : null
+
+const getCacheCreationTokens = (usage: ResponseUsage | null) =>
+  usage?.cache_creation_input_tokens !== undefined &&
+  usage.cache_creation_input_tokens > 0
+    ? usage.cache_creation_input_tokens
+    : null
+
+const getTokensPerSecond = (
+  usage: ResponseUsage | null,
+  durationMs: number | null,
+) =>
+  usage && durationMs && durationMs > 0
+    ? usage.completion_tokens / (durationMs / 1000)
+    : null
+
+const buildInputs = (
+  usage: ResponseUsage | null,
+  durationMs: number | null,
+): RenderInputs => ({
+  usage,
+  cachedTokens: getCachedTokens(usage),
+  cacheCreationTokens: getCacheCreationTokens(usage),
+  durationMs,
+  tokensPerSecond: getTokensPerSecond(usage, durationMs),
+})
 
 function renderItems(
   { usage, cachedTokens, durationMs, tokensPerSecond }: RenderInputs,
@@ -80,7 +109,6 @@ function renderItems(
     showInputCachedWord,
     showTime,
     showSpeed,
-    showOutput,
     showInputCache,
   }: LevelConfig,
 ): ReactNode {
@@ -103,7 +131,7 @@ function renderItems(
           </span>
         </span>
       )}
-      {showOutput && usage && (
+      {usage && (
         <span className="yolo-llm-inline-info-item yolo-llm-inline-info-item--output">
           <ArrowDown className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--output" />
           <span>
@@ -131,25 +159,31 @@ function renderItems(
   )
 }
 
-function renderTooltipDetails({
-  usage,
-  cachedTokens,
-  durationMs,
-  tokensPerSecond,
-}: RenderInputs): ReactNode {
-  const cacheCreation =
-    usage?.cache_creation_input_tokens !== undefined &&
-    usage.cache_creation_input_tokens > 0
-      ? usage.cache_creation_input_tokens
-      : null
+type TooltipBlockOptions = {
+  title?: string
+  showSpeed?: boolean
+}
 
+function renderTooltipBlock(
+  {
+    usage,
+    cachedTokens,
+    cacheCreationTokens,
+    durationMs,
+    tokensPerSecond,
+  }: RenderInputs,
+  { title, showSpeed = true }: TooltipBlockOptions = {},
+): ReactNode {
   const cacheRatio =
     usage && cachedTokens !== null && usage.prompt_tokens > 0
       ? cachedTokens / usage.prompt_tokens
       : null
 
   return (
-    <div className="yolo-llm-inline-info-tooltip">
+    <div className="yolo-llm-inline-info-tooltip-block">
+      {title && (
+        <div className="yolo-llm-inline-info-tooltip-title">{title}</div>
+      )}
       {usage && (
         <>
           <div className="yolo-llm-inline-info-tooltip-row">
@@ -167,9 +201,9 @@ function renderTooltipDetails({
               </span>
             </div>
           )}
-          {cacheCreation !== null && (
+          {cacheCreationTokens !== null && (
             <div className="yolo-llm-inline-info-tooltip-sub">
-              <span>{cacheCreation.toLocaleString()} cache written</span>
+              <span>{cacheCreationTokens.toLocaleString()} cache written</span>
             </div>
           )}
           <div className="yolo-llm-inline-info-tooltip-row">
@@ -181,7 +215,7 @@ function renderTooltipDetails({
           </div>
         </>
       )}
-      {tokensPerSecond !== null && (
+      {showSpeed && tokensPerSecond !== null && (
         <div className="yolo-llm-inline-info-tooltip-row">
           <Zap className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--speed" />
           <span className="yolo-llm-inline-info-tooltip-label">Speed</span>
@@ -208,11 +242,8 @@ export default function LLMResponseInlineInfo({
 }: {
   messages: AssistantToolMessageGroup
 }) {
-  const { usage, durationMs } = useLLMResponseInfo(messages)
-  const tokensPerSecond =
-    usage && durationMs && durationMs > 0
-      ? usage.completion_tokens / (durationMs / 1000)
-      : null
+  const { usage, durationMs, totalUsage, totalDurationMs, requestCount } =
+    useLLMResponseInfo(messages)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const ghostRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -249,18 +280,12 @@ export default function LLMResponseInlineInfo({
     return null
   }
 
-  const cachedTokens =
-    usage?.cache_read_input_tokens !== undefined &&
-    usage.cache_read_input_tokens > 0
-      ? usage.cache_read_input_tokens
+  const lastInputs = buildInputs(usage, durationMs)
+  const totalInputs =
+    totalUsage || totalDurationMs !== null
+      ? buildInputs(totalUsage, totalDurationMs)
       : null
-
-  const inputs: RenderInputs = {
-    usage,
-    cachedTokens,
-    durationMs,
-    tokensPerSecond,
-  }
+  const hasMultipleRequests = requestCount >= 2 && totalInputs !== null
 
   return (
     <Tooltip.Provider delayDuration={300} skipDelayDuration={100}>
@@ -268,7 +293,7 @@ export default function LLMResponseInlineInfo({
         <Tooltip.Trigger asChild>
           <div className="yolo-llm-inline-info">
             <div className="yolo-llm-inline-info-content" ref={containerRef}>
-              {renderItems(inputs, LEVELS[levelIndex])}
+              {renderItems(lastInputs, LEVELS[levelIndex])}
             </div>
             <div className="yolo-llm-inline-info-ghosts" aria-hidden="true">
               {LEVELS.map((config, i) => (
@@ -279,7 +304,7 @@ export default function LLMResponseInlineInfo({
                   }}
                   className="yolo-llm-inline-info-content yolo-llm-inline-info-ghost"
                 >
-                  {renderItems(inputs, config)}
+                  {renderItems(lastInputs, config)}
                 </div>
               ))}
             </div>
@@ -292,7 +317,21 @@ export default function LLMResponseInlineInfo({
             sideOffset={6}
             align="start"
           >
-            {renderTooltipDetails(inputs)}
+            <div className="yolo-llm-inline-info-tooltip">
+              {renderTooltipBlock(
+                lastInputs,
+                hasMultipleRequests ? { title: 'Last call' } : undefined,
+              )}
+              {hasMultipleRequests && totalInputs && (
+                <>
+                  <div className="yolo-llm-inline-info-tooltip-divider" />
+                  {renderTooltipBlock(totalInputs, {
+                    title: `Total (${requestCount} calls)`,
+                    showSpeed: false,
+                  })}
+                </>
+              )}
+            </div>
           </Tooltip.Content>
         </Tooltip.Portal>
       </Tooltip.Root>
