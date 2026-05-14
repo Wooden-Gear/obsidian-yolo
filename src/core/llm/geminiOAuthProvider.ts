@@ -1,7 +1,4 @@
-import type {
-  GenerateContentResponse as GeminiGenerateContentResponse,
-  Tool as GeminiTool,
-} from '@google/genai'
+import type { GenerateContentResponse as GeminiGenerateContentResponse } from '@google/genai'
 import { Platform } from 'obsidian'
 
 import { ChatModel } from '../../types/chat-model.types'
@@ -9,7 +6,6 @@ import {
   LLMOptions,
   LLMRequestNonStreaming,
   LLMRequestStreaming,
-  RequestTool,
 } from '../../types/llm/request'
 import {
   LLMResponseNonStreaming,
@@ -237,11 +233,12 @@ export class GeminiOAuthProvider extends BaseLLMProvider<LLMProvider> {
       }
     }
 
-    const tools = this.prepareTools(request, model, options)
+    const prepared = GeminiProvider.prepareTools(request, model, options)
     const requestPayloadBase = {
       contents: GeminiProvider.buildRequestContents(request.messages),
       ...(Object.keys(config).length > 0 ? { generationConfig: config } : {}),
-      ...(tools ? { tools } : {}),
+      ...(prepared ? { tools: prepared.tools } : {}),
+      ...(prepared?.toolConfig ? { toolConfig: prepared.toolConfig } : {}),
       ...(systemInstruction
         ? {
             systemInstruction: {
@@ -524,74 +521,5 @@ export class GeminiOAuthProvider extends BaseLLMProvider<LLMProvider> {
         stream.destroy()
       },
     })
-  }
-
-  private prepareTools(
-    request: LLMRequestNonStreaming | LLMRequestStreaming,
-    model: ChatModel,
-    options?: LLMOptions,
-  ): GeminiTool[] | undefined {
-    const tools: GeminiTool[] = []
-
-    // Conversation-level override (chat input bar) OR model-level toggle
-    // (model settings) activates each tool; dedup so each lands at most once.
-    const modelLevelGemini =
-      model.builtinToolProvider === 'gemini'
-        ? model.builtinTools?.gemini
-        : undefined
-    const useWebSearch =
-      (options?.geminiTools?.useWebSearch ?? false) ||
-      modelLevelGemini?.webSearch?.enabled === true
-    const useUrlContext =
-      (options?.geminiTools?.useUrlContext ?? false) ||
-      modelLevelGemini?.urlContext?.enabled === true
-    if (useWebSearch) {
-      tools.push({ googleSearch: {} })
-    }
-    if (useUrlContext) {
-      tools.push({ urlContext: {} })
-    }
-
-    if (request.tools && request.tools.length > 0) {
-      tools.push(...request.tools.map((tool) => this.parseRequestTool(tool)))
-    }
-
-    return tools.length > 0 ? tools : undefined
-  }
-
-  private parseRequestTool(tool: RequestTool): GeminiTool {
-    const cleanedSchema = this.removeAdditionalProperties(
-      tool.function.parameters,
-    )
-
-    return {
-      functionDeclarations: [
-        {
-          name: tool.function.name,
-          description: tool.function.description,
-          parametersJsonSchema: cleanedSchema,
-        },
-      ],
-    }
-  }
-
-  private removeAdditionalProperties(schema: unknown): unknown {
-    if (typeof schema !== 'object' || schema === null) {
-      return schema
-    }
-
-    if (Array.isArray(schema)) {
-      return schema.map((item) => this.removeAdditionalProperties(item))
-    }
-
-    const rest = { ...(schema as Record<string, unknown>) }
-    delete rest.additionalProperties
-
-    return Object.fromEntries(
-      Object.entries(rest).map(([key, value]) => [
-        key,
-        this.removeAdditionalProperties(value),
-      ]),
-    )
   }
 }
