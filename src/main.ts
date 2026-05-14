@@ -91,6 +91,7 @@ import { InlineSuggestionController } from './features/editor/inline-suggestion/
 import type { QuickAskSelectionScope } from './features/editor/quick-ask/quickAsk.types'
 import type { QuickAskLaunchMode } from './features/editor/quick-ask/quickAsk.types'
 import { QuickAskController } from './features/editor/quick-ask/quickAskController'
+import { resolveSelectionChatActions } from './features/editor/selection-chat/resolveSelectionChatActions'
 import { SelectionChatController } from './features/editor/selection-chat/selectionChatController'
 import { selectionHighlightController } from './features/editor/selection-highlight/selectionHighlightController'
 import {
@@ -153,6 +154,10 @@ export default class YoloPlugin extends Plugin {
   private smartSpaceController: SmartSpaceController | null = null
   // Selection chat state
   private selectionChatController: SelectionChatController | null = null
+  // Obsidian command IDs (un-namespaced) registered for selection-chat shortcuts.
+  // Tracked so we can drop stale commands when the user edits the action list.
+  private registeredSelectionChatCommandIds: string[] = []
+  private selectionChatCommandsFingerprint: string | null = null
   private chatViewNavigator: ChatViewNavigator | null = null
   private chatLeafSessionManager: ChatLeafSessionManager | null = null
   private newTabEmptyStateEnhancer: NewTabEmptyStateEnhancer | null = null
@@ -551,6 +556,69 @@ export default class YoloPlugin extends Plugin {
 
   private initializeSelectionChat() {
     this.getSelectionChatController().initialize()
+  }
+
+  /**
+   * Mirror the user's Cursor Chat 快捷指令 list into Obsidian commands so they
+   * can be assigned hotkeys or surfaced by third-party menu/launcher plugins.
+   * Each call fully rebuilds the set: previously-registered command IDs are
+   * removed first, then the current resolved list is re-registered. Action IDs
+   * are uuid-stable, so user-bound hotkeys persist across label/instruction
+   * edits.
+   */
+  private syncSelectionChatCommands() {
+    const actions = resolveSelectionChatActions(
+      this.settings,
+      (key, fallback) => this.t(key, fallback),
+    )
+    const fingerprint = JSON.stringify(
+      actions.map((a) => [
+        a.id,
+        a.label,
+        a.instruction,
+        a.mode,
+        a.rewriteBehavior,
+      ]),
+    )
+    if (fingerprint === this.selectionChatCommandsFingerprint) {
+      return
+    }
+    this.selectionChatCommandsFingerprint = fingerprint
+
+    const commandsApi = (
+      this.app as unknown as {
+        commands: { removeCommand: (id: string) => void }
+      }
+    ).commands
+    const pluginId = this.manifest.id
+
+    for (const id of this.registeredSelectionChatCommandIds) {
+      commandsApi.removeCommand(`${pluginId}:${id}`)
+    }
+    this.registeredSelectionChatCommandIds = []
+
+    for (const action of actions) {
+      const commandId = `selection-chat-action:${action.id}`
+      this.addCommand({
+        id: commandId,
+        name: `[Cursor Chat] ${action.label}`,
+        editorCallback: (editor: Editor) => {
+          const selected = editor.getSelection()
+          if (!selected || selected.trim().length === 0) {
+            new Notice('请先选中文本')
+            return
+          }
+          void this.getSelectionChatController().executeAction(
+            action.id,
+            editor,
+            action.instruction,
+            action.mode,
+            action.rewriteBehavior,
+          )
+        },
+      })
+      this.registeredSelectionChatCommandIds.push(commandId)
+    }
   }
 
   private getChatViewNavigator(): ChatViewNavigator {
@@ -1923,6 +1991,7 @@ export default class YoloPlugin extends Plugin {
 
     // Initialize selection chat
     this.initializeSelectionChat()
+    this.syncSelectionChatCommands()
 
     // Listen for settings changes to reinitialize Selection Chat
     this.addSettingsChangeListener((newSettings) => {
@@ -1934,6 +2003,7 @@ export default class YoloPlugin extends Plugin {
         // Re-initialize when the setting changes
         this.initializeSelectionChat()
       }
+      this.syncSelectionChatCommands()
     })
   }
 

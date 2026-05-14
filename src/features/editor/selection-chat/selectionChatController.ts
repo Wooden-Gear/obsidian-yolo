@@ -376,14 +376,13 @@ export class SelectionChatController {
         },
         onAction: (
           actionId: string,
-          sel: SelectionInfo,
+          _sel: SelectionInfo,
           instruction: string,
           mode: SelectionActionMode,
           rewriteBehavior?: SelectionActionRewriteBehavior,
         ) => {
-          void this.handleSelectionAction(
+          void this.executeAction(
             actionId,
-            sel,
             editor,
             instruction,
             mode,
@@ -395,21 +394,15 @@ export class SelectionChatController {
     }
   }
 
-  private async handleSelectionAction(
+  async executeAction(
     actionId: string,
-    selection: SelectionInfo,
     editor: Editor,
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
   ) {
     if (mode === 'rewrite') {
-      await this.rewriteSelection(
-        editor,
-        selection,
-        instruction,
-        rewriteBehavior,
-      )
+      await this.rewriteSelection(editor, instruction, rewriteBehavior)
       return
     }
 
@@ -826,7 +819,6 @@ export class SelectionChatController {
 
   private async rewriteSelection(
     editor: Editor,
-    _selection: SelectionInfo,
     instruction: string,
     rewriteBehavior?: SelectionActionRewriteBehavior,
   ) {
