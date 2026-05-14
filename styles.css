@@ -2266,14 +2266,6 @@ body.theme-dark .yolo-provider-picker {
   --pp-teal-fg: oklch(0.80 0.08 195);
 }
 
-/* ── Subtitle (below Obsidian's native title bar) ────────────────────── */
-
-.yolo-provider-picker__sub {
-  font-size: 12px;
-  color: var(--pp-mute);
-  margin-top: -4px;
-}
-
 /* ── Toolbar: search + count ─────────────────────────────────────────── */
 
 .yolo-provider-picker__toolbar {
@@ -2283,34 +2275,48 @@ body.theme-dark .yolo-provider-picker {
 }
 
 .yolo-provider-picker__search {
-  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius-sm);
+  background: var(--pp-surface);
 }
 
 .yolo-provider-picker__search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: var(--font-monospace);
-  font-size: 12px;
+  flex-shrink: 0;
   color: var(--pp-mute2);
   pointer-events: none;
 }
 
-.yolo-provider-picker__search-input {
-  width: 100%;
-  padding: 7px 10px 7px 28px;
-  border: 1px solid var(--pp-line);
-  border-radius: var(--pp-radius-sm);
-  background: var(--pp-surface);
+/* Obsidian's modal/settings CSS styles `input` heavily and changes border /
+   background / padding across idle/hover/focus states. We draw the visual
+   frame on the parent `.search` container and want the bare `<input>` to
+   contribute zero chrome. `all: unset` is the only reliable way to detach
+   from Obsidian's input baseline — anything less leaks padding shifts or
+   focus rings in one state or another. */
+
+.yolo-provider-picker .yolo-provider-picker__search-input,
+.yolo-provider-picker .yolo-provider-picker__search-input:hover,
+.yolo-provider-picker .yolo-provider-picker__search-input:focus,
+.yolo-provider-picker .yolo-provider-picker__search-input:focus-visible,
+.yolo-provider-picker .yolo-provider-picker__search-input:active {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 0;
+  font-family: inherit;
   font-size: 12.5px;
+  line-height: 1.4;
   color: var(--pp-ink);
-  outline: none;
+  cursor: text;
 }
 
-.yolo-provider-picker__search-input:focus {
-  border-color: var(--pp-accent);
+.yolo-provider-picker .yolo-provider-picker__search-input::placeholder {
+  color: var(--pp-mute2);
+  opacity: 1;
 }
 
 .yolo-provider-picker__count {
@@ -2328,7 +2334,14 @@ body.theme-dark .yolo-provider-picker {
   gap: 6px;
 }
 
-.yolo-provider-picker__chip {
+/* Obsidian's default `button` style adds a box-shadow that leaks through to
+   our chip/tile buttons. Nest under the picker root to outscope it. */
+
+.yolo-provider-picker .yolo-provider-picker__chip,
+.yolo-provider-picker .yolo-provider-picker__chip:hover,
+.yolo-provider-picker .yolo-provider-picker__chip:focus,
+.yolo-provider-picker .yolo-provider-picker__chip:focus-visible,
+.yolo-provider-picker .yolo-provider-picker__chip:active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2340,10 +2353,12 @@ body.theme-dark .yolo-provider-picker {
   font-weight: 500;
   border-radius: 100px;
   cursor: pointer;
+  box-shadow: none;
+  outline: none;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.yolo-provider-picker__chip:hover {
+.yolo-provider-picker .yolo-provider-picker__chip:hover {
   border-color: var(--pp-ink2);
 }
 
@@ -2377,9 +2392,19 @@ body.theme-dark .yolo-provider-picker__chip--on {
      overflow on narrow viewports, gracefully expands on wide ones. */
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
+  /* Pin the grid to a minimum height roughly equal to the full catalogue
+     (~7 rows at 3 columns: 7×72 tile + 6×10 gap). Switching categories with
+     few items now leaves whitespace below instead of collapsing the modal,
+     so the overall popup height stays stable. */
+  min-height: 564px;
+  align-content: start;
 }
 
-.yolo-provider-picker__tile {
+.yolo-provider-picker .yolo-provider-picker__tile,
+.yolo-provider-picker .yolo-provider-picker__tile:hover,
+.yolo-provider-picker .yolo-provider-picker__tile:focus,
+.yolo-provider-picker .yolo-provider-picker__tile:focus-visible,
+.yolo-provider-picker .yolo-provider-picker__tile:active {
   position: relative;
   text-align: left;
   padding: 12px 12px 11px;
@@ -2387,29 +2412,21 @@ body.theme-dark .yolo-provider-picker__chip--on {
   background: var(--pp-surface);
   border-radius: var(--pp-radius);
   cursor: pointer;
+  box-shadow: none;
+  outline: none;
   transition:
     border-color 0.12s ease,
     background 0.12s ease,
-    box-shadow 0.12s ease,
     transform 0.12s ease;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: stretch;
   min-height: 72px;
 }
 
-.yolo-provider-picker__tile:hover {
+.yolo-provider-picker .yolo-provider-picker__tile:hover {
   border-color: var(--pp-ink2);
-  box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.02),
-    0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.yolo-provider-picker__tile--selected,
-.yolo-provider-picker__tile--selected:hover {
-  border-color: var(--pp-accent);
-  background: var(--pp-accent-soft);
-  box-shadow: none;
 }
 
 .yolo-provider-picker__tile--custom {
@@ -2422,7 +2439,9 @@ body.theme-dark .yolo-provider-picker__chip--on {
 .yolo-provider-picker__tile-head {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
+  width: 100%;
 }
 
 .yolo-provider-picker__tile-text {
@@ -2581,78 +2600,6 @@ body.theme-dark .yolo-pp-badge--mute {
 .yolo-pp-badge--purple {
   background: var(--pp-accent-soft);
   color: var(--pp-accent-text);
-}
-
-/* ── Selected check pill ─────────────────────────────────────────────── */
-
-.yolo-provider-picker__tile-check {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--pp-accent);
-  color: #fff;
-  font-size: 9px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0 0 2px var(--pp-surface);
-}
-
-/* ── Footer ──────────────────────────────────────────────────────────── */
-
-.yolo-provider-picker__footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--pp-line2);
-}
-
-.yolo-provider-picker__footer-msg {
-  flex: 1;
-  font-size: 11.5px;
-  color: var(--pp-mute);
-}
-
-.yolo-provider-picker__footer-name {
-  font-family: var(--font-monospace);
-  color: var(--pp-ink);
-}
-
-.yolo-provider-picker__btn {
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--pp-radius-sm);
-  cursor: pointer;
-  transition: background 0.12s, opacity 0.12s;
-}
-
-.yolo-provider-picker__btn--ghost {
-  background: var(--pp-surface);
-  color: var(--pp-ink);
-  border: 1px solid var(--pp-line);
-}
-
-.yolo-provider-picker__btn--ghost:hover {
-  background: var(--pp-surface2);
-}
-
-.yolo-provider-picker__btn--primary {
-  background: var(--pp-accent);
-  color: #fff;
-  border: 1px solid var(--pp-accent);
-}
-
-.yolo-provider-picker__btn--primary:hover:not(:disabled) {
-  filter: brightness(1.05);
-}
-
-.yolo-provider-picker__btn--primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 /* MCP Section Styles */

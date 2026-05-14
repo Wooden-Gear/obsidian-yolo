@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { App } from 'obsidian'
 import { useMemo, useState } from 'react'
 
@@ -25,7 +26,6 @@ type ProviderPickerProps = {
 }
 
 type CategoryId = 'all' | ProviderPickerCategory
-type SelectionId = LLMProviderPresetType | '__custom'
 
 export class ProviderPickerModal extends ReactModal<ProviderPickerProps> {
   constructor(app: App, plugin: YoloPlugin) {
@@ -49,9 +49,13 @@ function ProviderPickerComponent({
 }: ProviderPickerProps & { onClose: () => void }) {
   const { t } = useLanguage()
 
+  // `draft` is what the user is typing; `query` is what actually drives
+  // filtering. We only commit draft → query on Enter (or when the field is
+  // cleared back to empty) so the grid does not reflow on every keystroke,
+  // which is jarring because the modal height is content-sized.
+  const [draft, setDraft] = useState('')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<CategoryId>('all')
-  const [selected, setSelected] = useState<SelectionId | null>(null)
 
   // Which presets the user has already configured at least one instance of.
   // Surfaced as an "已添加" badge to gently discourage duplicates without
@@ -77,18 +81,12 @@ function ProviderPickerComponent({
       if (category !== 'all' && catalog.category !== category) return false
       if (!normalized) return true
       const info = PROVIDER_PRESET_INFO[presetType]
-      const haystack = [
-        info.label,
-        presetType,
-        catalog.monogram,
-        catalog.kindFallback,
-        t(`settings.providers.kind.${catalog.kindKey}`, catalog.kindFallback),
-      ]
+      const haystack = [info.label, presetType, catalog.monogram]
         .join(' ')
         .toLowerCase()
       return haystack.includes(normalized)
     })
-  }, [query, category, t])
+  }, [query, category])
 
   const categoryCounts = useMemo(() => {
     const counts: Record<CategoryId, number> = {
@@ -122,42 +120,39 @@ function ProviderPickerComponent({
     )
   })()
 
-  const selectedLabel = (() => {
-    if (!selected) return null
-    if (selected === '__custom') return customLabel
-    return PROVIDER_PRESET_INFO[selected].label
-  })()
-
-  const handleConfirm = () => {
-    if (!selected) return
-    const presetType: LLMProviderPresetType =
-      selected === '__custom' ? 'openai-compatible' : selected
+  const openProvider = (presetType: LLMProviderPresetType) => {
     onClose()
     new AddProviderModal(app, plugin, presetType).open()
   }
 
   return (
     <div className="yolo-provider-picker">
-      <div className="yolo-provider-picker__sub">
-        {t(
-          'settings.providers.pickerSubtitle',
-          'Pick a provider to continue configuration',
-        )}
-      </div>
-
       <div className="yolo-provider-picker__toolbar">
         <div className="yolo-provider-picker__search">
-          <span aria-hidden className="yolo-provider-picker__search-icon">
-            ⌕
-          </span>
+          <Search
+            aria-hidden
+            className="yolo-provider-picker__search-icon"
+            size={14}
+            strokeWidth={2}
+          />
           <input
             type="text"
             autoFocus
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={draft}
+            onChange={(event) => {
+              const next = event.target.value
+              setDraft(next)
+              if (next === '') setQuery('')
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                setQuery(draft)
+              }
+            }}
             placeholder={t(
               'settings.providers.pickerSearchPlaceholder',
-              'Search by name, protocol or description',
+              'Search providers · press Enter',
             )}
             className="yolo-provider-picker__search-input"
           />
@@ -195,10 +190,36 @@ function ProviderPickerComponent({
       </div>
 
       <div className="yolo-provider-picker__grid">
+        {customMatchesQuery && (
+          <button
+            type="button"
+            className="yolo-provider-picker__tile yolo-provider-picker__tile--custom"
+            onClick={() => openProvider('openai-compatible')}
+          >
+            <div className="yolo-provider-picker__tile-head">
+              <div className="yolo-provider-picker__tile-icon yolo-provider-picker__tile-icon--custom">
+                +
+              </div>
+              <div className="yolo-provider-picker__tile-text">
+                <div className="yolo-provider-picker__tile-name">
+                  {customLabel}
+                </div>
+                <div className="yolo-provider-picker__tile-badges">
+                  <span className="yolo-pp-badge yolo-pp-badge--mute">
+                    {t(
+                      'settings.providers.pickerCustomDesc',
+                      'Manually enter base URL and API key',
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </button>
+        )}
+
         {filtered.map((presetType) => {
           const catalog = PROVIDER_CATALOG[presetType]
           const info = PROVIDER_PRESET_INFO[presetType]
-          const isSelected = selected === presetType
           const isAdded = addedPresets.has(presetType)
           const isOpenAiCompatible =
             getDefaultApiTypeForPresetType(presetType) === 'openai-compatible'
@@ -206,15 +227,9 @@ function ProviderPickerComponent({
             <button
               key={presetType}
               type="button"
-              className={`yolo-provider-picker__tile${
-                isSelected ? ' yolo-provider-picker__tile--selected' : ''
-              }`}
+              className="yolo-provider-picker__tile"
               data-tint={catalog.tint}
-              onClick={() => setSelected(presetType)}
-              onDoubleClick={() => {
-                setSelected(presetType)
-                handleConfirm()
-              }}
+              onClick={() => openProvider(presetType)}
             >
               <div className="yolo-provider-picker__tile-head">
                 <TileIcon catalog={catalog} />
@@ -251,85 +266,11 @@ function ProviderPickerComponent({
                   </div>
                 </div>
               </div>
-              {isSelected && (
-                <span className="yolo-provider-picker__tile-check">✓</span>
-              )}
             </button>
           )
         })}
-
-        {customMatchesQuery && (
-          <button
-            type="button"
-            className={`yolo-provider-picker__tile yolo-provider-picker__tile--custom${
-              selected === '__custom'
-                ? ' yolo-provider-picker__tile--selected'
-                : ''
-            }`}
-            onClick={() => setSelected('__custom')}
-            onDoubleClick={() => {
-              setSelected('__custom')
-              handleConfirm()
-            }}
-          >
-            <div className="yolo-provider-picker__tile-head">
-              <div className="yolo-provider-picker__tile-icon yolo-provider-picker__tile-icon--custom">
-                +
-              </div>
-              <div className="yolo-provider-picker__tile-text">
-                <div className="yolo-provider-picker__tile-name">
-                  {customLabel}
-                </div>
-                <div className="yolo-provider-picker__tile-badges">
-                  <span className="yolo-pp-badge yolo-pp-badge--mute">
-                    {t(
-                      'settings.providers.pickerCustomDesc',
-                      'Manually enter base URL and API key',
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </button>
-        )}
       </div>
 
-      <div className="yolo-provider-picker__footer">
-        <div className="yolo-provider-picker__footer-msg">
-          {selected ? (
-            <>
-              {t('settings.providers.pickerSelected', 'Selected')}{' '}
-              <span className="yolo-provider-picker__footer-name">
-                {selectedLabel}
-              </span>
-              {t(
-                'settings.providers.pickerSelectedTail',
-                ', next opens the configuration dialog',
-              )}
-            </>
-          ) : (
-            t(
-              'settings.providers.pickerEmptyHint',
-              'Pick a provider to continue',
-            )
-          )}
-        </div>
-        <button
-          type="button"
-          className="yolo-provider-picker__btn yolo-provider-picker__btn--ghost"
-          onClick={onClose}
-        >
-          {t('common.cancel', 'Cancel')}
-        </button>
-        <button
-          type="button"
-          className="yolo-provider-picker__btn yolo-provider-picker__btn--primary"
-          disabled={!selected}
-          onClick={handleConfirm}
-        >
-          {t('settings.providers.pickerNext', 'Next →')}
-        </button>
-      </div>
     </div>
   )
 }

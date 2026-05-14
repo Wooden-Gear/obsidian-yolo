@@ -484,15 +484,10 @@ export type TranslationKeys = {
       howToGetApiKeys: string
       addProvider: string
       pickerTitle?: string
-      pickerSubtitle?: string
       pickerSearchPlaceholder?: string
       pickerCustomLabel?: string
       pickerCustomDesc?: string
       pickerEmpty?: string
-      pickerEmptyHint?: string
-      pickerSelected?: string
-      pickerSelectedTail?: string
-      pickerNext?: string
       categoryAll?: string
       categoryMain?: string
       categoryCn?: string
