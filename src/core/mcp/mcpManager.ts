@@ -537,6 +537,7 @@ export class McpManager {
         })
       }
       case 'sse': {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- SSEClientTransport is deprecated but still required for legacy SSE servers during MCP migration period
         const { SSEClientTransport } = await import(
           '@modelcontextprotocol/sdk/client/sse.js'
         )

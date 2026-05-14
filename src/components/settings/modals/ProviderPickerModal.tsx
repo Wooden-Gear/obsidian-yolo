@@ -175,12 +175,7 @@ function ProviderPickerComponent({
               }`}
               onClick={() => setCategory(c.id)}
             >
-              <span>
-                {t(
-                  `settings.providers.${c.labelKey}`,
-                  c.fallback,
-                )}
-              </span>
+              <span>{t(`settings.providers.${c.labelKey}`, c.fallback)}</span>
               <span className="yolo-provider-picker__chip-count">
                 {categoryCounts[c.id]}
               </span>
@@ -270,7 +265,6 @@ function ProviderPickerComponent({
           )
         })}
       </div>
-
     </div>
   )
 }
@@ -298,4 +292,3 @@ function TileIcon({ catalog }: { catalog: ProviderCatalogEntry }) {
     </div>
   )
 }
-

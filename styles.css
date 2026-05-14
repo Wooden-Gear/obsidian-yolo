@@ -2214,13 +2214,13 @@
 
   --pp-accent: oklch(0.58 0.18 285);
   --pp-accent-soft: oklch(0.95 0.04 285);
-  --pp-accent-border: oklch(0.78 0.10 285);
+  --pp-accent-border: oklch(0.78 0.1 285);
   --pp-accent-text: oklch(0.42 0.18 285);
 
   --pp-amber-bg: oklch(0.94 0.05 75);
-  --pp-amber-fg: oklch(0.40 0.10 75);
+  --pp-amber-fg: oklch(0.4 0.1 75);
   --pp-teal-bg: oklch(0.94 0.04 195);
-  --pp-teal-fg: oklch(0.36 0.10 195);
+  --pp-teal-fg: oklch(0.36 0.1 195);
 
   --pp-radius: 8px;
   --pp-radius-sm: 6px;
@@ -2268,15 +2268,15 @@ body.theme-dark .yolo-provider-picker {
   --pp-surface: #15151a;
   --pp-surface2: #1c1c22;
 
-  --pp-accent: oklch(0.72 0.20 285);
+  --pp-accent: oklch(0.72 0.2 285);
   --pp-accent-soft: oklch(0.28 0.12 285);
-  --pp-accent-border: oklch(0.50 0.16 285);
+  --pp-accent-border: oklch(0.5 0.16 285);
   --pp-accent-text: oklch(0.84 0.14 285);
 
   --pp-amber-bg: oklch(0.28 0.06 75);
-  --pp-amber-fg: oklch(0.82 0.10 75);
+  --pp-amber-fg: oklch(0.82 0.1 75);
   --pp-teal-bg: oklch(0.26 0.06 195);
-  --pp-teal-fg: oklch(0.80 0.08 195);
+  --pp-teal-fg: oklch(0.8 0.08 195);
 }
 
 /* ── Toolbar: search + count ─────────────────────────────────────────── */
@@ -2368,7 +2368,10 @@ body.theme-dark .yolo-provider-picker {
   cursor: pointer;
   box-shadow: none;
   outline: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .yolo-provider-picker .yolo-provider-picker__chip:hover {
@@ -2512,52 +2515,107 @@ body.theme-dark .yolo-provider-picker__chip--on {
 /* Per-tint colour palettes for monogram fallbacks (and the subtle ring on
    logo tiles below). Values mirror PP_TINTS from the design exploration. */
 
-.yolo-provider-picker__tile-icon--mono[data-tint='blue']    { background: oklch(0.94 0.04 250); color: oklch(0.42 0.12 250); }
+.yolo-provider-picker__tile-icon--mono[data-tint='blue'] {
+  background: oklch(0.94 0.04 250);
+  color: oklch(0.42 0.12 250);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='indigo']  { background: oklch(0.94 0.04 275); color: oklch(0.42 0.14 275); }
+.yolo-provider-picker__tile-icon--mono[data-tint='indigo'] {
+  background: oklch(0.94 0.04 275);
+  color: oklch(0.42 0.14 275);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='purple']  { background: oklch(0.94 0.04 295); color: oklch(0.42 0.14 295); }
+.yolo-provider-picker__tile-icon--mono[data-tint='purple'] {
+  background: oklch(0.94 0.04 295);
+  color: oklch(0.42 0.14 295);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='rose']    { background: oklch(0.94 0.04 15);  color: oklch(0.46 0.12 15);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='rose'] {
+  background: oklch(0.94 0.04 15);
+  color: oklch(0.46 0.12 15);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='amber']   { background: oklch(0.94 0.05 75);  color: oklch(0.46 0.12 75);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='amber'] {
+  background: oklch(0.94 0.05 75);
+  color: oklch(0.46 0.12 75);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='orange']  { background: oklch(0.93 0.05 45);  color: oklch(0.46 0.12 45);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='orange'] {
+  background: oklch(0.93 0.05 45);
+  color: oklch(0.46 0.12 45);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='teal']    { background: oklch(0.93 0.04 195); color: oklch(0.42 0.10 195); }
+.yolo-provider-picker__tile-icon--mono[data-tint='teal'] {
+  background: oklch(0.93 0.04 195);
+  color: oklch(0.42 0.1 195);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='green']   { background: oklch(0.93 0.05 160); color: oklch(0.42 0.10 160); }
+.yolo-provider-picker__tile-icon--mono[data-tint='green'] {
+  background: oklch(0.93 0.05 160);
+  color: oklch(0.42 0.1 160);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='pink']    { background: oklch(0.94 0.04 350); color: oklch(0.46 0.12 350); }
+.yolo-provider-picker__tile-icon--mono[data-tint='pink'] {
+  background: oklch(0.94 0.04 350);
+  color: oklch(0.46 0.12 350);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='slate']   { background: oklch(0.94 0.005 270); color: oklch(0.40 0.01 270); }
+.yolo-provider-picker__tile-icon--mono[data-tint='slate'] {
+  background: oklch(0.94 0.005 270);
+  color: oklch(0.4 0.01 270);
+}
 
-.yolo-provider-picker__tile-icon--mono[data-tint='ink']     { background: oklch(0.20 0.01 270); color: oklch(0.96 0 0); }
+.yolo-provider-picker__tile-icon--mono[data-tint='ink'] {
+  background: oklch(0.2 0.01 270);
+  color: oklch(0.96 0 0);
+}
 
 /* Subtle ring on logo tiles carries a hint of each provider's tint — the
    "color rhythm" the design wanted, without fighting the brand logo. */
 
-.yolo-provider-picker__tile-icon--logo[data-tint='blue']    { box-shadow: inset 0 0 0 1px oklch(0.42 0.12 250 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='blue'] {
+  box-shadow: inset 0 0 0 1px oklch(0.42 0.12 250 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='indigo']  { box-shadow: inset 0 0 0 1px oklch(0.42 0.14 275 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='indigo'] {
+  box-shadow: inset 0 0 0 1px oklch(0.42 0.14 275 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='purple']  { box-shadow: inset 0 0 0 1px oklch(0.42 0.14 295 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='purple'] {
+  box-shadow: inset 0 0 0 1px oklch(0.42 0.14 295 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='rose']    { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 15 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='rose'] {
+  box-shadow: inset 0 0 0 1px oklch(0.46 0.12 15 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='amber']   { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 75 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='amber'] {
+  box-shadow: inset 0 0 0 1px oklch(0.46 0.12 75 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='orange']  { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 45 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='orange'] {
+  box-shadow: inset 0 0 0 1px oklch(0.46 0.12 45 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='teal']    { box-shadow: inset 0 0 0 1px oklch(0.42 0.10 195 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='teal'] {
+  box-shadow: inset 0 0 0 1px oklch(0.42 0.1 195 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='green']   { box-shadow: inset 0 0 0 1px oklch(0.42 0.10 160 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='green'] {
+  box-shadow: inset 0 0 0 1px oklch(0.42 0.1 160 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='pink']    { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 350 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='pink'] {
+  box-shadow: inset 0 0 0 1px oklch(0.46 0.12 350 / 0.18);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='slate']   { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.yolo-provider-picker__tile-icon--logo[data-tint='slate'] {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
 
-.yolo-provider-picker__tile-icon--logo[data-tint='ink']     { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.20); }
+.yolo-provider-picker__tile-icon--logo[data-tint='ink'] {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
 
 .yolo-provider-picker__tile-name {
   font-size: 13.5px;
