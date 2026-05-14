@@ -486,6 +486,7 @@ export default class YoloPlugin extends Plugin {
       prompt: string
       mentionables: Mentionable[]
       selectionScope?: QuickAskSelectionScope
+      initialAssistantId?: string
     },
   ) {
     this.getQuickAskController().showWithAutoSend(editor, view, options)
@@ -503,6 +504,7 @@ export default class YoloPlugin extends Plugin {
       editSelectionFrom?: { line: number; ch: number }
       selectionScope?: QuickAskSelectionScope
       autoSend?: boolean
+      initialAssistantId?: string
     },
   ) {
     this.getQuickAskController().showWithOptions(editor, view, options)
@@ -531,10 +533,15 @@ export default class YoloPlugin extends Plugin {
           this.getQuickAskController().pruneOrphanedPdfInstance(
             activePdfLeaves,
           ),
-        openChatWithSelectionAndPrefill: async (selectedBlock, text) => {
+        openChatWithSelectionAndPrefill: async (
+          selectedBlock,
+          text,
+          assistantId,
+        ) => {
           await this.getChatViewNavigator().openChatWithSelectionAndPrefill(
             selectedBlock,
             text,
+            assistantId,
           )
         },
         addSelectionToSidebarChat: async (selectedBlock) => {
@@ -542,10 +549,15 @@ export default class YoloPlugin extends Plugin {
             selectedBlock,
           )
         },
-        openChatWithSelectionAndSend: async (selectedBlock, text) => {
+        openChatWithSelectionAndSend: async (
+          selectedBlock,
+          text,
+          assistantId,
+        ) => {
           await this.getChatViewNavigator().openChatWithSelectionAndSend(
             selectedBlock,
             text,
+            assistantId,
           )
         },
         isSmartSpaceOpen: () => this.smartSpaceController?.isOpen() ?? false,
@@ -578,6 +590,7 @@ export default class YoloPlugin extends Plugin {
         a.instruction,
         a.mode,
         a.rewriteBehavior,
+        a.assistantId,
       ]),
     )
     if (fingerprint === this.selectionChatCommandsFingerprint) {
@@ -614,6 +627,7 @@ export default class YoloPlugin extends Plugin {
             action.instruction,
             action.mode,
             action.rewriteBehavior,
+            action.assistantId,
           )
         },
       })

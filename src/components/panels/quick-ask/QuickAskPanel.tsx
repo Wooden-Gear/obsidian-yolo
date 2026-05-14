@@ -158,6 +158,7 @@ type QuickAskPanelPropsBase = {
   initialMode?: QuickAskLaunchMode
   initialInput?: string
   autoSend?: boolean
+  initialAssistantId?: string
   onClose: () => void
   containerRef?: React.RefObject<HTMLDivElement>
   onOverlayStateChange?: (isOverlayActive: boolean) => void
@@ -194,6 +195,7 @@ export function QuickAskPanel({
   initialMode,
   initialInput,
   autoSend,
+  initialAssistantId,
   onClose,
   containerRef,
   onOverlayStateChange,
@@ -225,8 +227,17 @@ export function QuickAskPanel({
   const currentAssistantId = settings.quickAskAssistantId
 
   // State
+  // initialAssistantId (e.g. from a selection chat shortcut) is a one-shot
+  // override and takes precedence over the persisted quickAskAssistantId, but
+  // we do NOT write it back to settings — the user's persisted preference is
+  // preserved for future Quick Ask sessions. If the override does not match a
+  // known assistant (e.g. it was deleted), fall back to the persisted choice.
   const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(
     () => {
+      const overrideAssistant = initialAssistantId
+        ? assistants.find((a) => a.id === initialAssistantId)
+        : null
+      if (overrideAssistant) return overrideAssistant
       if (currentAssistantId) {
         return assistants.find((a) => a.id === currentAssistantId) || null
       }

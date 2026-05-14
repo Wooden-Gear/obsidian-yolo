@@ -190,6 +190,7 @@ export class ChatViewNavigator {
   async openChatWithSelectionAndPrefill(
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) {
     const pinnedSelection = this.toPinnedSelectionBlock(selectedBlock)
     const existingLeaf = this.resolveTargetChatLeaf()
@@ -198,6 +199,7 @@ export class ChatViewNavigator {
       (await this.createChatLeaf('sidebar', {
         selectedBlock: pinnedSelection,
         prefillText: text,
+        assistantId,
       }))
     if (!targetLeaf || !(targetLeaf.view instanceof ChatView)) {
       return
@@ -207,12 +209,15 @@ export class ChatViewNavigator {
     if (!existingLeaf) {
       return
     }
-    targetLeaf.view.applySelectionToMainInput(pinnedSelection, text)
+    targetLeaf.view.applySelectionToMainInput(pinnedSelection, text, {
+      assistantId,
+    })
   }
 
   async openChatWithSelectionAndSend(
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) {
     const pinnedSelection = this.toPinnedSelectionBlock(selectedBlock)
     const existingLeaf = this.resolveTargetChatLeaf()
@@ -222,6 +227,7 @@ export class ChatViewNavigator {
         selectedBlock: pinnedSelection,
         prefillText: text,
         autoSend: true,
+        assistantId,
       }))
     if (!targetLeaf || !(targetLeaf.view instanceof ChatView)) {
       return
@@ -233,6 +239,7 @@ export class ChatViewNavigator {
     }
     targetLeaf.view.applySelectionToMainInput(pinnedSelection, text, {
       submit: true,
+      assistantId,
     })
   }
 

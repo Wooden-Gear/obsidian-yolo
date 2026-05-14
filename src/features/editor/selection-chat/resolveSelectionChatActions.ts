@@ -10,6 +10,7 @@ export type ResolvedSelectionChatAction = {
   instruction: string
   mode: SelectionActionMode
   rewriteBehavior?: SelectionActionRewriteBehavior
+  assistantId?: string
 }
 
 type TranslateFn = (key: string, fallback?: string) => string
@@ -20,6 +21,7 @@ type SelectionActionPreset = {
   instruction: string
   mode: SelectionActionMode
   rewriteBehavior?: SelectionActionRewriteBehavior
+  assistantId?: string
 }
 
 const FIXED_ACTION_IDS = new Set([
@@ -112,6 +114,7 @@ export function resolveSelectionChatActions(
             resolveMode(action.id, action.mode),
             action.rewriteBehavior,
           ),
+          assistantId: action.assistantId,
         }))
     : defaultActions
 
@@ -135,6 +138,13 @@ export function resolveSelectionChatActions(
       mode === 'chat-send'
         ? rawInstruction
         : rawInstruction || label || action.id
-    return { id: action.id, label, instruction, mode, rewriteBehavior }
+    return {
+      id: action.id,
+      label,
+      instruction,
+      mode,
+      rewriteBehavior,
+      assistantId: action.assistantId,
+    }
   })
 }

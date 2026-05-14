@@ -51,6 +51,7 @@ type QuickAskOverlayOptions = {
   editSelectionFrom?: { line: number; ch: number }
   selectionScope?: QuickAskSelectionScope
   autoSend?: boolean
+  initialAssistantId?: string
   onClose: () => void
 }
 
@@ -244,6 +245,7 @@ export class QuickAskOverlay {
                         editSelectionFrom={this.options.editSelectionFrom}
                         selectionScope={this.options.selectionScope}
                         autoSend={this.options.autoSend}
+                        initialAssistantId={this.options.initialAssistantId}
                         onClose={this.closeWithAnimation}
                         containerRef={this.containerRef}
                         onOverlayStateChange={this.handleOverlayStateChange}
@@ -265,6 +267,7 @@ export class QuickAskOverlay {
                         initialMode={this.options.initialMode}
                         initialInput={this.options.initialInput}
                         autoSend={this.options.autoSend}
+                        initialAssistantId={this.options.initialAssistantId}
                         onClose={this.closeWithAnimation}
                         containerRef={this.containerRef}
                         onOverlayStateChange={this.handleOverlayStateChange}

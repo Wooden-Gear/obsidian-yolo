@@ -451,6 +451,7 @@ export type ChatRef = {
     text: string,
     options?: {
       submit?: boolean
+      assistantId?: string
     },
   ) => void
   syncSelectionToChat: (selectedBlock: MentionableBlockData) => void
@@ -1085,8 +1086,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     collectFrom(inputMessage.mentionables)
     if (focusedMessageId && focusedMessageId !== inputMessage.id) {
       const focusedHistorical = chatMessages.find(
-        (message) =>
-          message.role === 'user' && message.id === focusedMessageId,
+        (message) => message.role === 'user' && message.id === focusedMessageId,
       )
       if (focusedHistorical?.role === 'user') {
         collectFrom(focusedHistorical.mentionables)
@@ -1094,7 +1094,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     }
     selectionHighlightController.reconcileActiveIds(activeIds)
     pdfSelectionHighlightController.reconcileActiveIds(activeIds)
-  }, [inputMessage.mentionables, inputMessage.id, chatMessages, focusedMessageId])
+  }, [
+    inputMessage.mentionables,
+    inputMessage.id,
+    chatMessages,
+    focusedMessageId,
+  ])
 
   // Clear chat-owned highlights when the chat view unmounts (tab closed).
   // Lives in its own effect so it only fires on unmount, not on every mention change.
@@ -4014,6 +4019,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       text: string,
       options?: {
         submit?: boolean
+        assistantId?: string
       },
     ) => {
       const mentionable = createSelectionBlockMentionable({
@@ -4022,7 +4028,28 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       })
 
       setAddedBlockKey(null)
+      // Override the conversation's assistant/model inside the same flushSync
+      // as the mentionable update so the subsequent submit() reads the new
+      // state. The override is scoped to this conversation: we do NOT persist
+      // it to settings.currentAssistantId, so the user's global default is
+      // preserved.
+      const overrideAssistantId = options?.assistantId
+      const overrideAssistant = overrideAssistantId
+        ? (settings.assistants.find(
+            (assistant) => assistant.id === overrideAssistantId,
+          ) ?? null)
+        : null
       flushSync(() => {
+        if (overrideAssistant) {
+          setConversationAssistantId(overrideAssistant.id)
+          conversationAssistantIdRef.current.set(
+            currentConversationId,
+            overrideAssistant.id,
+          )
+          if (overrideAssistant.modelId) {
+            applyAssistantDefaultModel(overrideAssistant.modelId)
+          }
+        }
         upsertSelectionMentionableInMainInput(mentionable)
       })
 

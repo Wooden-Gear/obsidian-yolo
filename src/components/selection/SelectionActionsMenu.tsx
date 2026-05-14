@@ -15,6 +15,7 @@ export type SelectionAction = {
   instruction: string
   mode: SelectionActionMode
   rewriteBehavior?: SelectionActionRewriteBehavior
+  assistantId?: string
   handler: () => void | Promise<void>
 }
 
@@ -30,6 +31,7 @@ type SelectionActionsMenuProps = {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => void | Promise<void>
   onHoverChange: (isHovering: boolean) => void
   /** PDF selections cannot be rewritten — pass 'pdf' to hide rewrite actions. */
@@ -115,6 +117,7 @@ export function SelectionActionsMenu({
                     ? 'chat-input'
                     : 'ask'),
             rewriteBehavior: action.rewriteBehavior,
+            assistantId: action.assistantId,
           }))
       : defaultActions
 
@@ -165,8 +168,15 @@ export function SelectionActionsMenu({
         instruction: resolvedInstruction,
         mode,
         rewriteBehavior,
+        assistantId: action.assistantId,
         handler: () =>
-          onAction(action.id, resolvedInstruction, mode, rewriteBehavior),
+          onAction(
+            action.id,
+            resolvedInstruction,
+            mode,
+            rewriteBehavior,
+            action.assistantId,
+          ),
       }
     })
   }, [

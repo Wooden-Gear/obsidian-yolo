@@ -112,6 +112,7 @@ describe('ChatViewNavigator', () => {
         source: 'selection-pinned',
       },
       'Explain this',
+      { assistantId: undefined },
     )
     expect(view.setMainInputText).not.toHaveBeenCalled()
     expect(view.focusMainInput).not.toHaveBeenCalled()
@@ -146,6 +147,7 @@ describe('ChatViewNavigator', () => {
       '',
       {
         submit: true,
+        assistantId: undefined,
       },
     )
     expect(view.setMainInputText).not.toHaveBeenCalled()

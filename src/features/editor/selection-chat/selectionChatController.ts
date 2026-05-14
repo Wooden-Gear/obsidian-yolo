@@ -65,6 +65,7 @@ type SelectionChatControllerDeps = {
       editSelectionFrom?: { line: number; ch: number }
       selectionScope?: QuickAskSelectionScope
       autoSend?: boolean
+      initialAssistantId?: string
     },
   ) => void
   showQuickAskWithAutoSend: (
@@ -74,6 +75,7 @@ type SelectionChatControllerDeps = {
       prompt: string
       mentionables: Mentionable[]
       selectionScope?: QuickAskSelectionScope
+      initialAssistantId?: string
     },
   ) => void
   /**
@@ -90,6 +92,7 @@ type SelectionChatControllerDeps = {
     initialPrompt?: string
     initialMode?: QuickAskLaunchMode
     autoSend?: boolean
+    initialAssistantId?: string
   }) => void
   /**
    * Drop any PDF Quick Ask instance whose owning leaf is no longer in
@@ -101,6 +104,7 @@ type SelectionChatControllerDeps = {
   openChatWithSelectionAndPrefill: (
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) => Promise<void>
   addSelectionToSidebarChat: (
     selectedBlock: MentionableBlockData,
@@ -108,6 +112,7 @@ type SelectionChatControllerDeps = {
   openChatWithSelectionAndSend: (
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) => Promise<void>
   isSmartSpaceOpen: () => boolean
 }
@@ -130,6 +135,7 @@ export class SelectionChatController {
       editSelectionFrom?: { line: number; ch: number }
       selectionScope?: QuickAskSelectionScope
       autoSend?: boolean
+      initialAssistantId?: string
     },
   ) => void
   private readonly showQuickAskWithAutoSend: (
@@ -139,6 +145,7 @@ export class SelectionChatController {
       prompt: string
       mentionables: Mentionable[]
       selectionScope?: QuickAskSelectionScope
+      initialAssistantId?: string
     },
   ) => void
   private readonly showQuickAskFromPdf: SelectionChatControllerDeps['showQuickAskFromPdf']
@@ -146,6 +153,7 @@ export class SelectionChatController {
   private readonly openChatWithSelectionAndPrefill: (
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) => Promise<void>
   private readonly addSelectionToSidebarChat: (
     selectedBlock: MentionableBlockData,
@@ -153,6 +161,7 @@ export class SelectionChatController {
   private readonly openChatWithSelectionAndSend: (
     selectedBlock: MentionableBlockData,
     text: string,
+    assistantId?: string,
   ) => Promise<void>
   private readonly isSmartSpaceOpen: () => boolean
 
@@ -380,6 +389,7 @@ export class SelectionChatController {
           instruction: string,
           mode: SelectionActionMode,
           rewriteBehavior?: SelectionActionRewriteBehavior,
+          assistantId?: string,
         ) => {
           void this.executeAction(
             actionId,
@@ -387,6 +397,7 @@ export class SelectionChatController {
             instruction,
             mode,
             rewriteBehavior,
+            assistantId,
           )
         },
       })
@@ -400,9 +411,15 @@ export class SelectionChatController {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) {
     if (mode === 'rewrite') {
-      await this.rewriteSelection(editor, instruction, rewriteBehavior)
+      await this.rewriteSelection(
+        editor,
+        instruction,
+        rewriteBehavior,
+        assistantId,
+      )
       return
     }
 
@@ -411,24 +428,24 @@ export class SelectionChatController {
         await this.addToSidebar(editor)
         return
       }
-      await this.addToChatInput(editor, instruction)
+      await this.addToChatInput(editor, instruction, assistantId)
       return
     }
 
     if (mode === 'chat-send') {
-      await this.addToChatAndSend(editor, instruction)
+      await this.addToChatAndSend(editor, instruction, assistantId)
       return
     }
 
     const prompt = instruction.trim()
     if (!prompt) {
-      await this.openCustomAsk(editor)
+      await this.openCustomAsk(editor, assistantId)
       return
     }
-    await this.explainSelection(editor, prompt)
+    await this.explainSelection(editor, prompt, assistantId)
   }
 
-  private async openCustomAsk(editor: Editor) {
+  private async openCustomAsk(editor: Editor, assistantId?: string) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!editor || !view) {
       new Notice('无法获取当前编辑器')
@@ -451,6 +468,7 @@ export class SelectionChatController {
       initialMode: 'chat',
       initialMentionables: [mentionable],
       selectionScope: this.createSelectionScope(mentionable, editor),
+      initialAssistantId: assistantId,
     })
   }
 
@@ -708,6 +726,7 @@ export class SelectionChatController {
         instruction: string,
         mode: SelectionActionMode,
         rewriteBehavior?: SelectionActionRewriteBehavior,
+        assistantId?: string,
       ) => {
         void this.handlePdfSelectionAction(
           actionId,
@@ -717,6 +736,7 @@ export class SelectionChatController {
           pdfData,
           blockData,
           pdfPageContextPromise,
+          assistantId,
         )
       },
     })
@@ -734,6 +754,7 @@ export class SelectionChatController {
     pdfData: Extract<PdfSelectionResult, { kind: 'data' }>,
     blockData: MentionableBlockData,
     pdfPageContextPromise: Promise<PdfPageContextResult | null>,
+    assistantId?: string,
   ): Promise<void> {
     // rewrite is filtered out at the menu level — this branch is unreachable
     if (mode === 'rewrite') {
@@ -773,7 +794,11 @@ export class SelectionChatController {
         await this.addSelectionToSidebarChat(pinned)
         return
       }
-      await this.openChatWithSelectionAndPrefill(pinned, instruction.trim())
+      await this.openChatWithSelectionAndPrefill(
+        pinned,
+        instruction.trim(),
+        assistantId,
+      )
       return
     }
 
@@ -781,6 +806,7 @@ export class SelectionChatController {
       await this.openChatWithSelectionAndSend(
         buildPinnedBlock(),
         instruction.trim(),
+        assistantId,
       )
       return
     }
@@ -810,6 +836,7 @@ export class SelectionChatController {
       file: pdfData.file,
       pageNumber: pdfData.pageNumber,
       contextText,
+      initialAssistantId: assistantId,
       initialMentionables: [mentionable],
       initialPrompt: prompt || undefined,
       initialMode: 'chat',
@@ -821,6 +848,7 @@ export class SelectionChatController {
     editor: Editor,
     instruction: string,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!view) {
@@ -862,10 +890,15 @@ export class SelectionChatController {
       editSelectionFrom: editor.getCursor('from'),
       selectionScope: this.createSelectionScope(mentionable, editor),
       autoSend: behavior === 'preset',
+      initialAssistantId: assistantId,
     })
   }
 
-  private async explainSelection(editor: Editor, prompt?: string) {
+  private async explainSelection(
+    editor: Editor,
+    prompt?: string,
+    assistantId?: string,
+  ) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!editor || !view) {
       new Notice('无法获取当前编辑器')
@@ -890,10 +923,15 @@ export class SelectionChatController {
       prompt: basePrompt,
       mentionables: [mentionable],
       selectionScope: this.createSelectionScope(mentionable, editor),
+      initialAssistantId: assistantId,
     })
   }
 
-  private async addToChatInput(editor: Editor, prompt?: string) {
+  private async addToChatInput(
+    editor: Editor,
+    prompt?: string,
+    assistantId?: string,
+  ) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!editor || !view) {
       new Notice('无法获取当前编辑器')
@@ -926,6 +964,7 @@ export class SelectionChatController {
     await this.openChatWithSelectionAndPrefill(
       { ...data, source: 'selection-pinned', highlightId },
       resolvedPrompt,
+      assistantId,
     )
   }
 
@@ -965,7 +1004,11 @@ export class SelectionChatController {
     })
   }
 
-  private async addToChatAndSend(editor: Editor, prompt?: string) {
+  private async addToChatAndSend(
+    editor: Editor,
+    prompt?: string,
+    assistantId?: string,
+  ) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView)
     if (!editor || !view) {
       new Notice('无法获取当前编辑器')
@@ -997,6 +1040,7 @@ export class SelectionChatController {
     await this.openChatWithSelectionAndSend(
       { ...data, source: 'selection-pinned', highlightId },
       prompt?.trim() ?? '',
+      assistantId,
     )
   }
 

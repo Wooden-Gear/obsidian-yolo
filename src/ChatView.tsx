@@ -180,6 +180,7 @@ export class ChatView extends ItemView {
     text: string,
     options?: {
       submit?: boolean
+      assistantId?: string
     },
   ) {
     this.plugin.getChatLeafSessionManager().touchLeafInteracted(this.leaf)
@@ -304,6 +305,7 @@ export class ChatView extends ItemView {
         payload.prefillText,
         {
           submit: payload.autoSend,
+          assistantId: payload.assistantId,
         },
       )
       return

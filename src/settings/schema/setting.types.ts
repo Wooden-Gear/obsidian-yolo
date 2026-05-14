@@ -468,6 +468,7 @@ export const yoloSettingsSchema = z.object({
               .enum(['ask', 'rewrite', 'chat-input', 'chat-send'])
               .optional(),
             rewriteBehavior: z.enum(['custom', 'preset']).optional(),
+            assistantId: z.string().optional(),
             enabled: z.boolean().default(true),
           }),
         )

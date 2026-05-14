@@ -39,6 +39,7 @@ type QuickAskWidgetPayload = {
     selectionScope?: QuickAskSelectionScope
     selectionAnchor?: { from: number; to: number }
     autoSend?: boolean
+    initialAssistantId?: string
     onClose: () => void
   }
 }
@@ -180,6 +181,7 @@ export class QuickAskController {
       prompt: string
       mentionables?: Mentionable[]
       selectionScope?: QuickAskSelectionScope
+      initialAssistantId?: string
     },
   ) {
     this.showWithOptions(editor, view, {
@@ -188,6 +190,7 @@ export class QuickAskController {
       initialPrompt: options.prompt,
       initialMentionables: options.mentionables,
       selectionScope: options.selectionScope,
+      initialAssistantId: options.initialAssistantId,
     })
   }
 
@@ -234,6 +237,7 @@ export class QuickAskController {
     const editSelectionFrom = options?.editSelectionFrom
     const selectionScope = options?.selectionScope
     const autoSend = options?.autoSend
+    const initialAssistantId = options?.initialAssistantId
 
     // Close any existing Quick Ask panel (CM or PDF)
     this.close(false)
@@ -284,6 +288,7 @@ export class QuickAskController {
             selectionScope,
             selectionAnchor,
             autoSend,
+            initialAssistantId,
             onClose: () => close(true),
           },
         }),
@@ -309,6 +314,7 @@ export class QuickAskController {
     initialMode?: QuickAskLaunchMode
     initialInput?: string
     autoSend?: boolean
+    initialAssistantId?: string
   }): void {
     const hostEl = getPdfLeafContentEl(args.leaf)
     if (!hostEl) {
@@ -356,6 +362,7 @@ export class QuickAskController {
       initialMode: args.initialMode ?? 'chat',
       initialInput: args.initialInput,
       autoSend: args.autoSend,
+      initialAssistantId: args.initialAssistantId,
       onClose,
     })
 

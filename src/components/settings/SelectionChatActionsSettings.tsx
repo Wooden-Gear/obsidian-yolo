@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
@@ -35,7 +35,12 @@ type SelectionChatAction = {
   enabled: boolean
   mode?: SelectionChatActionMode
   rewriteBehavior?: SelectionChatActionRewriteBehavior
+  assistantId?: string
 }
+
+// Sentinel for the "follow current selection" option in the assistant dropdown.
+// Maps to `assistantId === undefined` when persisted.
+const FOLLOW_CURRENT_ASSISTANT_VALUE = '__follow_current__'
 
 type SelectionChatActionMode = 'ask' | 'rewrite' | 'chat-input' | 'chat-send'
 type SelectionChatActionRewriteBehavior = 'custom' | 'preset'
@@ -229,6 +234,23 @@ export function SelectionChatActionsSettingsContent() {
       '预置指令（直接生成）',
     ),
   }
+  const assistantOptions = useMemo<Record<string, string>>(() => {
+    const followCurrentLabel = t(
+      'settings.selectionChat.actionAssistantFollowCurrent',
+      '跟随当前选择',
+    )
+    const options: Record<string, string> = {
+      [FOLLOW_CURRENT_ASSISTANT_VALUE]: followCurrentLabel,
+    }
+    for (const assistant of settings.assistants ?? []) {
+      options[assistant.id] = assistant.name || assistant.id
+    }
+    return options
+  }, [settings.assistants, t])
+  const resolveAssistantDropdownValue = (value?: string) =>
+    value && assistantOptions[value] ? value : FOLLOW_CURRENT_ASSISTANT_VALUE
+  const normalizeAssistantDropdownValue = (value: string) =>
+    value === FOLLOW_CURRENT_ASSISTANT_VALUE ? undefined : value
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -580,6 +602,29 @@ export function SelectionChatActionsSettingsContent() {
           )}
 
           <ObsidianSetting
+            name={t('settings.selectionChat.actionAssistant', '使用助手')}
+            desc={t(
+              'settings.selectionChat.actionAssistantDesc',
+              '运行此指令时使用的助手；留空则跟随当前选择。',
+            )}
+          >
+            <ObsidianDropdown
+              value={resolveAssistantDropdownValue(editingAction.assistantId)}
+              options={assistantOptions}
+              onChange={(value) =>
+                setEditingAction((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        assistantId: normalizeAssistantDropdownValue(value),
+                      }
+                    : prev,
+                )
+              }
+            />
+          </ObsidianSetting>
+
+          <ObsidianSetting
             name={t('settings.selectionChat.actionInstruction', '提示词')}
             desc={getInstructionDesc(editingAction.mode ?? 'ask')}
             className="yolo-settings-textarea-header"
@@ -647,6 +692,11 @@ export function SelectionChatActionsSettingsContent() {
                   handleSaveAction={handleSaveAction}
                   actionModeOptions={actionModeOptions}
                   actionRewriteTypeOptions={actionRewriteTypeOptions}
+                  assistantOptions={assistantOptions}
+                  resolveAssistantDropdownValue={resolveAssistantDropdownValue}
+                  normalizeAssistantDropdownValue={
+                    normalizeAssistantDropdownValue
+                  }
                   getInstructionDesc={getInstructionDesc}
                   getInstructionPlaceholder={getInstructionPlaceholder}
                   canSaveAction={canSaveAction}
@@ -674,6 +724,9 @@ type QuickActionItemProps = {
   handleSaveAction: () => void | Promise<void>
   actionModeOptions: Record<SelectionChatActionMode, string>
   actionRewriteTypeOptions: Record<SelectionChatActionRewriteBehavior, string>
+  assistantOptions: Record<string, string>
+  resolveAssistantDropdownValue: (value?: string) => string
+  normalizeAssistantDropdownValue: (value: string) => string | undefined
   getInstructionDesc: (mode: SelectionChatActionMode) => string
   getInstructionPlaceholder: (mode: SelectionChatActionMode) => string
   canSaveAction: (action: SelectionChatAction | null) => boolean
@@ -691,6 +744,9 @@ function QuickActionItem({
   handleSaveAction,
   actionModeOptions,
   actionRewriteTypeOptions,
+  assistantOptions,
+  resolveAssistantDropdownValue,
+  normalizeAssistantDropdownValue,
   getInstructionDesc,
   getInstructionPlaceholder,
   canSaveAction,
@@ -843,6 +899,29 @@ function QuickActionItem({
               />
             </ObsidianSetting>
           )}
+
+          <ObsidianSetting
+            name={t('settings.selectionChat.actionAssistant', '使用助手')}
+            desc={t(
+              'settings.selectionChat.actionAssistantDesc',
+              '运行此指令时使用的助手；留空则跟随当前选择。',
+            )}
+          >
+            <ObsidianDropdown
+              value={resolveAssistantDropdownValue(currentEditing.assistantId)}
+              options={assistantOptions}
+              onChange={(value) =>
+                setEditingAction((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        assistantId: normalizeAssistantDropdownValue(value),
+                      }
+                    : prev,
+                )
+              }
+            />
+          </ObsidianSetting>
 
           <ObsidianSetting
             name={t('settings.selectionChat.actionInstruction', '提示词')}

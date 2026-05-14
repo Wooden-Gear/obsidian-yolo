@@ -32,6 +32,7 @@ type MarkdownWidgetOptions = {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => void | Promise<void>
 }
 
@@ -48,6 +49,7 @@ type PdfWidgetOptions = {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => void | Promise<void>
 }
 
@@ -66,6 +68,7 @@ type SelectionChatWidgetBodyProps = {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => void | Promise<void>
 }
 
@@ -141,9 +144,10 @@ function SelectionChatWidgetBody({
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => {
     onClose()
-    await onAction(actionId, instruction, mode, rewriteBehavior)
+    await onAction(actionId, instruction, mode, rewriteBehavior, assistantId)
   }
 
   const handleIndicatorPress = () => {
@@ -373,17 +377,19 @@ export class SelectionChatWidget {
     instruction: string,
     mode: SelectionActionMode,
     rewriteBehavior?: SelectionActionRewriteBehavior,
+    assistantId?: string,
   ) => void | Promise<void> {
     const opts = this.options
     if (opts.source === 'markdown') {
       // For markdown, we pass the selection to the onAction callback
-      return (actionId, instruction, mode, rewriteBehavior) =>
+      return (actionId, instruction, mode, rewriteBehavior, assistantId) =>
         opts.onAction(
           actionId,
           this.currentSelection,
           instruction,
           mode,
           rewriteBehavior,
+          assistantId,
         )
     }
     // For PDF, onAction doesn't need selection (it's already captured in pdfData)
