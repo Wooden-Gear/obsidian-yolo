@@ -2,11 +2,13 @@ import { GoogleGenAI } from '@google/genai'
 import type {
   Content as GeminiContent,
   FunctionCall as GeminiFunctionCall,
+  FunctionDeclaration as GeminiFunctionDeclaration,
   GenerateContentConfig as GeminiGenerateContentConfig,
   GenerateContentParameters as GeminiGenerateContentParams,
   GenerateContentResponse as GeminiGenerateContentResponse,
   Part as GeminiPart,
   Tool as GeminiTool,
+  ToolConfig as GeminiToolConfig,
 } from '@google/genai'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -173,7 +175,7 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
             config.thinkingConfig = {
               thinkingLevel: 'minimal',
               includeThoughts: false,
-            } as GeminiRequestConfig['thinkingConfig']
+            } as unknown as GeminiRequestConfig['thinkingConfig']
           } else {
             config.thinkingConfig = {
               thinkingBudget: 0,
@@ -184,7 +186,7 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
           config.thinkingConfig = {
             thinkingLevel: level === 'extra-high' ? 'high' : level,
             includeThoughts: true,
-          } as GeminiRequestConfig['thinkingConfig']
+          } as unknown as GeminiRequestConfig['thinkingConfig']
         } else {
           config.thinkingConfig = {
             thinkingBudget: REASONING_META[level].budget,
@@ -197,12 +199,12 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
       }
 
       // Prepare tools including Gemini native tools
-      const tools = this.prepareTools(request, model, options)
+      const prepared = GeminiProvider.prepareTools(request, model, options)
 
       const contents = GeminiProvider.buildRequestContents(request.messages)
 
       const shouldIncludeConfig =
-        (tools?.length ?? 0) > 0 ||
+        prepared !== undefined ||
         Object.values(config).some((value) => value !== undefined) ||
         Boolean(systemInstruction) ||
         Boolean(options?.signal)
@@ -214,7 +216,10 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
           ? {
               config: {
                 ...config,
-                ...(tools ? { tools } : {}),
+                ...(prepared ? { tools: prepared.tools } : {}),
+                ...(prepared?.toolConfig
+                  ? { toolConfig: prepared.toolConfig }
+                  : {}),
                 ...(systemInstruction ? { systemInstruction } : {}),
               },
             }
@@ -300,7 +305,7 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
             config.thinkingConfig = {
               thinkingLevel: 'minimal',
               includeThoughts: false,
-            } as GeminiRequestConfig['thinkingConfig']
+            } as unknown as GeminiRequestConfig['thinkingConfig']
           } else {
             config.thinkingConfig = {
               thinkingBudget: 0,
@@ -311,7 +316,7 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
           config.thinkingConfig = {
             thinkingLevel: streamLevel === 'extra-high' ? 'high' : streamLevel,
             includeThoughts: true,
-          } as GeminiRequestConfig['thinkingConfig']
+          } as unknown as GeminiRequestConfig['thinkingConfig']
         } else {
           config.thinkingConfig = {
             thinkingBudget: REASONING_META[streamLevel].budget,
@@ -324,12 +329,12 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
       }
 
       // Prepare tools including Gemini native tools
-      const tools = this.prepareTools(request, model, options)
+      const prepared = GeminiProvider.prepareTools(request, model, options)
 
       const contents = GeminiProvider.buildRequestContents(request.messages)
 
       const shouldIncludeConfig =
-        (tools?.length ?? 0) > 0 ||
+        prepared !== undefined ||
         Object.values(config).some((value) => value !== undefined) ||
         Boolean(systemInstruction) ||
         Boolean(options?.signal)
@@ -341,7 +346,10 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
           ? {
               config: {
                 ...config,
-                ...(tools ? { tools } : {}),
+                ...(prepared ? { tools: prepared.tools } : {}),
+                ...(prepared?.toolConfig
+                  ? { toolConfig: prepared.toolConfig }
+                  : {}),
                 ...(systemInstruction ? { systemInstruction } : {}),
               },
             }
@@ -1140,11 +1148,11 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
     }
   }
 
-  private prepareTools(
+  static prepareTools(
     request: LLMRequestNonStreaming | LLMRequestStreaming,
     model: ChatModel,
     options?: LLMOptions,
-  ): GeminiTool[] | undefined {
+  ): { tools: GeminiTool[]; toolConfig?: GeminiToolConfig } | undefined {
     const tools: GeminiTool[] = []
 
     // Activation sources (OR-combined, dedup so each tool lands at most once):
@@ -1167,14 +1175,27 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
       tools.push({ urlContext: {} })
     }
 
-    // Add function calling tools if provided
+    // Merge all function calling tools into a single `functionDeclarations`
+    // entry to match Gemini's canonical request format.
     if (request.tools && request.tools.length > 0) {
-      tools.push(
-        ...request.tools.map((tool) => GeminiProvider.parseRequestTool(tool)),
-      )
+      tools.push({
+        functionDeclarations: request.tools.map((tool) =>
+          GeminiProvider.parseRequestFunctionDeclaration(tool),
+        ),
+      })
     }
 
-    return tools.length > 0 ? tools : undefined
+    if (tools.length === 0) {
+      return undefined
+    }
+
+    const hasBuiltinTool = useWebSearch || useUrlContext
+    return {
+      tools,
+      ...(hasBuiltinTool
+        ? { toolConfig: { includeServerSideToolInvocations: true } }
+        : {}),
+    }
   }
 
   // Normalize arbitrary JSON Schema (mostly from third-party MCP tools) into
@@ -1208,17 +1229,15 @@ export class GeminiProvider extends BaseLLMProvider<LLMProvider> {
     )
   }
 
-  private static parseRequestTool(tool: RequestTool): GeminiTool {
+  private static parseRequestFunctionDeclaration(
+    tool: RequestTool,
+  ): GeminiFunctionDeclaration {
     const cleanedSchema = this.sanitizeSchemaForGemini(tool.function.parameters)
 
     return {
-      functionDeclarations: [
-        {
-          name: tool.function.name,
-          description: tool.function.description,
-          parametersJsonSchema: cleanedSchema,
-        },
-      ],
+      name: tool.function.name,
+      description: tool.function.description,
+      parametersJsonSchema: cleanedSchema,
     }
   }
 

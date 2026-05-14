@@ -1,3 +1,5 @@
+import { ChatModel } from '../../types/chat-model.types'
+import { LLMRequestNonStreaming } from '../../types/llm/request'
 import { createCompleteToolCallArguments } from '../../types/tool-call.types'
 
 import { GeminiProvider } from './gemini'
@@ -564,5 +566,94 @@ describe('GeminiProvider.sanitizeSchemaForGemini', () => {
 
     expect(result.properties.name.items).toBeUndefined()
     expect(result.properties.age.items).toBeUndefined()
+  })
+})
+
+describe('GeminiProvider.prepareTools', () => {
+  const baseModel = {
+    providerId: 'gemini',
+    providerType: 'gemini',
+    id: 'gemini-3-pro-preview',
+    model: 'gemini-3-pro-preview',
+  } as unknown as ChatModel
+
+  const buildRequest = (
+    overrides: Partial<LLMRequestNonStreaming> = {},
+  ): LLMRequestNonStreaming =>
+    ({
+      model: 'gemini-3-pro-preview',
+      messages: [],
+      ...overrides,
+    }) as LLMRequestNonStreaming
+
+  const fnTool = (name: string) =>
+    ({
+      type: 'function',
+      function: {
+        name,
+        description: `${name} description`,
+        parameters: {
+          type: 'object' as const,
+          properties: { q: { type: 'string' } },
+        },
+      },
+    }) as unknown as NonNullable<LLMRequestNonStreaming['tools']>[number]
+
+  it('merges all function declarations into a single tool entry', () => {
+    const prepared = GeminiProvider.prepareTools(
+      buildRequest({
+        tools: [fnTool('alpha'), fnTool('beta'), fnTool('gamma')],
+      }),
+      baseModel,
+    )
+
+    expect(prepared).toBeDefined()
+    expect(prepared!.tools).toHaveLength(1)
+    expect(prepared!.tools[0]).toEqual({
+      functionDeclarations: [
+        expect.objectContaining({ name: 'alpha' }),
+        expect.objectContaining({ name: 'beta' }),
+        expect.objectContaining({ name: 'gamma' }),
+      ],
+    })
+    expect(prepared!.toolConfig).toBeUndefined()
+  })
+
+  it('sets toolConfig whenever a Gemini built-in tool is enabled', () => {
+    const prepared = GeminiProvider.prepareTools(buildRequest(), baseModel, {
+      geminiTools: { useWebSearch: true },
+    })
+
+    expect(prepared).toBeDefined()
+    expect(prepared!.tools).toEqual([{ googleSearch: {} }])
+    expect(prepared!.toolConfig).toEqual({
+      includeServerSideToolInvocations: true,
+    })
+  })
+
+  it('adds includeServerSideToolInvocations when built-in and function tools coexist', () => {
+    const prepared = GeminiProvider.prepareTools(
+      buildRequest({ tools: [fnTool('alpha')] }),
+      baseModel,
+      { geminiTools: { useWebSearch: true, useUrlContext: true } },
+    )
+
+    expect(prepared).toBeDefined()
+    expect(prepared!.tools).toEqual([
+      { googleSearch: {} },
+      { urlContext: {} },
+      {
+        functionDeclarations: [expect.objectContaining({ name: 'alpha' })],
+      },
+    ])
+    expect(prepared!.toolConfig).toEqual({
+      includeServerSideToolInvocations: true,
+    })
+  })
+
+  it('returns undefined when no tools are configured', () => {
+    expect(
+      GeminiProvider.prepareTools(buildRequest(), baseModel),
+    ).toBeUndefined()
   })
 })
