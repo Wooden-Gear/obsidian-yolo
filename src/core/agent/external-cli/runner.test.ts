@@ -146,6 +146,18 @@ function simulateSuccess(stdout: string, exitCode = 0) {
   })
 }
 
+function expectChildKillRequested(child: MockChild): void {
+  if (process.platform === 'win32') {
+    expect(taskkillCalls).toContainEqual({
+      args: ['/T', '/F', '/PID', String(child.pid)],
+    })
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- jest spy assertion must reference the original method
+  expect(process.kill).toHaveBeenCalledWith(-child.pid, 'SIGTERM')
+}
+
 describe('runExternalAgent', () => {
   it('spawn 成功 — 返回 stdout', async () => {
     const promise = runExternalAgent({
@@ -201,8 +213,7 @@ describe('runExternalAgent', () => {
 
     const result = (await promise) as RunExternalAgentResult
     expect(result.stdout).toBe('some output')
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- jest spy 断言必须引用原始方法
-    expect(process.kill).toHaveBeenCalledWith(-mockChild.pid, 'SIGTERM')
+    expectChildKillRequested(mockChild)
   })
 
   it('超时 — reject 并调用 kill', async () => {
@@ -229,8 +240,7 @@ describe('runExternalAgent', () => {
     })
 
     await promise
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- jest spy 断言
-    expect(process.kill).toHaveBeenCalledWith(-mockChild.pid, 'SIGTERM')
+    expectChildKillRequested(mockChild)
   }, 10000)
 
   it('输出超过 1MB — 双端截断并设置 truncated metadata', async () => {
