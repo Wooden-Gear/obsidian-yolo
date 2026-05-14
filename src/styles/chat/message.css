@@ -940,6 +940,19 @@
   text-overflow: ellipsis;
 }
 
+.yolo-llm-inline-info-chevron {
+  flex: 0 0 auto;
+  width: var(--size-4-3);
+  height: var(--size-4-3);
+  color: var(--text-faint);
+  transform: rotate(180deg);
+  transition: transform 120ms ease;
+}
+
+.yolo-llm-inline-info-chevron.is-expanded {
+  transform: rotate(0deg);
+}
+
 .yolo-llm-inline-info-item {
   display: inline-flex;
   align-items: center;
@@ -976,6 +989,73 @@
  * Design goal: a single calm tone. One row per metric, icon/label/value in the
  * same muted color family, only the numeric values tinted stronger. Cache
  * detail folds under Input as a tight sub-line. */
+.yolo-llm-usage-popover {
+  width: max-content;
+  margin-left: calc((2ch + var(--size-4-2)) * -1);
+  padding: var(--size-4-2);
+  overflow-y: auto;
+  color: var(--text-faint);
+  font-size: calc(var(--font-smallest) * 0.9);
+  line-height: 1.4;
+}
+
+.yolo-llm-inline-info-panel {
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+}
+
+.yolo-llm-inline-info-detail-list {
+  display: grid;
+  grid-template-columns: 2ch max-content max-content max-content max-content;
+  column-gap: var(--size-4-2);
+  row-gap: var(--size-2-2);
+}
+
+.yolo-llm-inline-info-detail-row {
+  display: contents;
+  font-size: inherit;
+  color: inherit;
+}
+
+.yolo-llm-inline-info-detail-row--total::before {
+  content: '';
+  grid-column: 1 / -1;
+  height: 1px;
+  margin-top: var(--size-2-2);
+  background: var(--background-modifier-border);
+}
+
+.yolo-llm-inline-info-detail-row--total > * {
+  padding-top: var(--size-2-2);
+}
+
+.yolo-llm-inline-info-detail-index {
+  flex: 0 0 2ch;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  text-align: right;
+}
+
+.yolo-llm-inline-info-detail-item {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yolo-llm-inline-info-detail-item .yolo-llm-inline-info-icon {
+  flex: 0 0 auto;
+  height: var(--size-4-3);
+  width: var(--size-4-3);
+  color: inherit;
+}
+
 .yolo-llm-inline-info-tooltip-content {
   z-index: 1000;
   padding: var(--size-4-3) var(--size-4-4);
