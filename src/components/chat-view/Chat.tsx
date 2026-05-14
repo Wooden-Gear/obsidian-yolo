@@ -1061,12 +1061,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }, [chatMessages])
 
   // Reconcile visual highlights with the current mention list.
-  // The chat mention list is the single source of truth: when a mention with a
-  // highlightId is removed (× button, mention text deletion, input clear), the
-  // matching highlight is dropped here.
-  // We scan both the input message and all user messages in chatMessages, since
-  // syncSelectionMentionable can attach selection mentions to either depending
-  // on which message currently has focus.
+  // The mention list is bound to whatever input currently has focus: either
+  // the main input box, or a historical user message being edited in-place.
+  // Once a message is sent, its mentionables move into chatMessages but the
+  // input loses focus on that mention, so the highlight should clear.
+  // Scanning every historical user message would keep highlights alive forever
+  // after submit, which is the bug we are guarding against here.
   useEffect(() => {
     const activeIds = new Set<string>()
     const collectFrom = (mentionables: Mentionable[]) => {
@@ -1083,14 +1083,18 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       }
     }
     collectFrom(inputMessage.mentionables)
-    for (const message of chatMessages) {
-      if (message.role === 'user') {
-        collectFrom(message.mentionables)
+    if (focusedMessageId && focusedMessageId !== inputMessage.id) {
+      const focusedHistorical = chatMessages.find(
+        (message) =>
+          message.role === 'user' && message.id === focusedMessageId,
+      )
+      if (focusedHistorical?.role === 'user') {
+        collectFrom(focusedHistorical.mentionables)
       }
     }
     selectionHighlightController.reconcileActiveIds(activeIds)
     pdfSelectionHighlightController.reconcileActiveIds(activeIds)
-  }, [inputMessage.mentionables, chatMessages])
+  }, [inputMessage.mentionables, inputMessage.id, chatMessages, focusedMessageId])
 
   // Clear chat-owned highlights when the chat view unmounts (tab closed).
   // Lives in its own effect so it only fires on unmount, not on every mention change.
