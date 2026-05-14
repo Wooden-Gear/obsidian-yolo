@@ -483,6 +483,27 @@ export type TranslationKeys = {
       desc: string
       howToGetApiKeys: string
       addProvider: string
+      pickerTitle?: string
+      pickerSubtitle?: string
+      pickerSearchPlaceholder?: string
+      pickerCustomLabel?: string
+      pickerCustomDesc?: string
+      pickerEmpty?: string
+      pickerEmptyHint?: string
+      pickerSelected?: string
+      pickerSelectedTail?: string
+      pickerNext?: string
+      categoryAll?: string
+      categoryMain?: string
+      categoryCn?: string
+      categoryGateway?: string
+      categoryCloud?: string
+      categoryLocal?: string
+      badgeOpenAiCompatible?: string
+      badgeNative?: string
+      badgeOAuth?: string
+      badgeAdded?: string
+      kind?: Record<string, string>
       providersCount: string
       editProvider: string
       editProviderTitle: string

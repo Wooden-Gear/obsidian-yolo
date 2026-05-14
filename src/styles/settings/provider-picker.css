@@ -1,0 +1,440 @@
+/*
+  Provider picker modal — V1 grid design.
+
+  Color tokens are scoped to the picker so the modal stays visually
+  consistent even when the active Obsidian theme overrides global vars.
+  Dark mode picks up the `.theme-dark` body class to swap surfaces while
+  keeping monogram/logo tile tints constant (mirrors the macOS app-icon
+  pattern: light tiles sit on top of any wallpaper, dark or light).
+*/
+
+.yolo-provider-picker {
+  /* Design tokens */
+  --pp-ink: #1a1a1f;
+  --pp-ink2: #2a2a30;
+  --pp-mute: #6b6b74;
+  --pp-mute2: #9a9aa3;
+  --pp-line: #e8e6e1;
+  --pp-line2: #f0ede7;
+  --pp-surface: #ffffff;
+  --pp-surface2: #f7f5f0;
+
+  --pp-accent: oklch(0.58 0.18 285);
+  --pp-accent-soft: oklch(0.95 0.04 285);
+  --pp-accent-border: oklch(0.78 0.10 285);
+  --pp-accent-text: oklch(0.42 0.18 285);
+
+  --pp-amber-bg: oklch(0.94 0.05 75);
+  --pp-amber-fg: oklch(0.40 0.10 75);
+  --pp-teal-bg: oklch(0.94 0.04 195);
+  --pp-teal-fg: oklch(0.36 0.10 195);
+
+  --pp-radius: 8px;
+  --pp-radius-sm: 6px;
+
+  font-family: var(--font-interface);
+  color: var(--pp-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Stretch the host modal so we get the ~3-column grid by default,
+   but never push past the viewport (no horizontal scroll). */
+.yolo-provider-picker-modal {
+  width: min(880px, calc(100vw - 40px));
+  max-width: min(880px, calc(100vw - 40px));
+}
+
+.yolo-provider-picker-modal .modal-content {
+  overflow-x: hidden;
+}
+
+body.theme-dark .yolo-provider-picker {
+  --pp-ink: #e8e8ec;
+  --pp-ink2: #c8c8d0;
+  --pp-mute: #8a8a94;
+  --pp-mute2: #6a6a74;
+  --pp-line: #26262e;
+  --pp-line2: #1c1c22;
+  --pp-surface: #15151a;
+  --pp-surface2: #1c1c22;
+
+  --pp-accent: oklch(0.72 0.20 285);
+  --pp-accent-soft: oklch(0.28 0.12 285);
+  --pp-accent-border: oklch(0.50 0.16 285);
+  --pp-accent-text: oklch(0.84 0.14 285);
+
+  --pp-amber-bg: oklch(0.28 0.06 75);
+  --pp-amber-fg: oklch(0.82 0.10 75);
+  --pp-teal-bg: oklch(0.26 0.06 195);
+  --pp-teal-fg: oklch(0.80 0.08 195);
+}
+
+/* ── Subtitle (below Obsidian's native title bar) ────────────────────── */
+
+.yolo-provider-picker__sub {
+  font-size: 12px;
+  color: var(--pp-mute);
+  margin-top: -4px;
+}
+
+/* ── Toolbar: search + count ─────────────────────────────────────────── */
+
+.yolo-provider-picker__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yolo-provider-picker__search {
+  position: relative;
+  flex: 1;
+}
+
+.yolo-provider-picker__search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--pp-mute2);
+  pointer-events: none;
+}
+
+.yolo-provider-picker__search-input {
+  width: 100%;
+  padding: 7px 10px 7px 28px;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius-sm);
+  background: var(--pp-surface);
+  font-size: 12.5px;
+  color: var(--pp-ink);
+  outline: none;
+}
+
+.yolo-provider-picker__search-input:focus {
+  border-color: var(--pp-accent);
+}
+
+.yolo-provider-picker__count {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  color: var(--pp-mute2);
+  white-space: nowrap;
+}
+
+/* ── Category chips ──────────────────────────────────────────────────── */
+
+.yolo-provider-picker__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.yolo-provider-picker__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-surface);
+  color: var(--pp-ink2);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.yolo-provider-picker__chip:hover {
+  border-color: var(--pp-ink2);
+}
+
+.yolo-provider-picker__chip--on {
+  background: var(--pp-ink);
+  border-color: var(--pp-ink);
+  color: #fff;
+}
+
+body.theme-dark .yolo-provider-picker__chip--on {
+  background: var(--pp-accent);
+  border-color: var(--pp-accent);
+  color: #fff;
+}
+
+.yolo-provider-picker__chip-count {
+  font-family: var(--font-monospace);
+  font-size: 10px;
+  color: var(--pp-mute2);
+}
+
+.yolo-provider-picker__chip--on .yolo-provider-picker__chip-count {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ── Tile grid ───────────────────────────────────────────────────────── */
+
+.yolo-provider-picker__grid {
+  display: grid;
+  /* auto-fill reflows the columns to fit the available width — no horizontal
+     overflow on narrow viewports, gracefully expands on wide ones. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.yolo-provider-picker__tile {
+  position: relative;
+  text-align: left;
+  padding: 12px 12px 11px;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-surface);
+  border-radius: var(--pp-radius);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease,
+    transform 0.12s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 72px;
+}
+
+.yolo-provider-picker__tile:hover {
+  border-color: var(--pp-ink2);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.yolo-provider-picker__tile--selected,
+.yolo-provider-picker__tile--selected:hover {
+  border-color: var(--pp-accent);
+  background: var(--pp-accent-soft);
+  box-shadow: none;
+}
+
+.yolo-provider-picker__tile--custom {
+  border-style: dashed;
+  background: var(--pp-surface2);
+}
+
+/* ── Tile head: icon + name/kind ─────────────────────────────────────── */
+
+.yolo-provider-picker__tile-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yolo-provider-picker__tile-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.yolo-provider-picker__tile-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: -0.3px;
+  /* Hairline ring grounds the icon on the card (design pattern). */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.yolo-provider-picker__tile-icon--logo {
+  /* Brand logos sit on a constant light tile in both themes — same idea as
+     the macOS dock, where colored app icons live on a neutral surface. */
+  background: #fafaf7;
+  padding: 4px;
+}
+
+.yolo-provider-picker__tile-icon--logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.yolo-provider-picker__tile-icon--cjk {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.yolo-provider-picker__tile-icon--custom {
+  background: var(--pp-surface);
+  color: var(--pp-mute);
+  font-family: var(--font-monospace);
+  font-size: 16px;
+  border: 1px dashed var(--pp-line);
+  box-shadow: none;
+}
+
+/* Per-tint colour palettes for monogram fallbacks (and the subtle ring on
+   logo tiles below). Values mirror PP_TINTS from the design exploration. */
+.yolo-provider-picker__tile-icon--mono[data-tint='blue']    { background: oklch(0.94 0.04 250); color: oklch(0.42 0.12 250); }
+.yolo-provider-picker__tile-icon--mono[data-tint='indigo']  { background: oklch(0.94 0.04 275); color: oklch(0.42 0.14 275); }
+.yolo-provider-picker__tile-icon--mono[data-tint='purple']  { background: oklch(0.94 0.04 295); color: oklch(0.42 0.14 295); }
+.yolo-provider-picker__tile-icon--mono[data-tint='rose']    { background: oklch(0.94 0.04 15);  color: oklch(0.46 0.12 15);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='amber']   { background: oklch(0.94 0.05 75);  color: oklch(0.46 0.12 75);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='orange']  { background: oklch(0.93 0.05 45);  color: oklch(0.46 0.12 45);  }
+.yolo-provider-picker__tile-icon--mono[data-tint='teal']    { background: oklch(0.93 0.04 195); color: oklch(0.42 0.10 195); }
+.yolo-provider-picker__tile-icon--mono[data-tint='green']   { background: oklch(0.93 0.05 160); color: oklch(0.42 0.10 160); }
+.yolo-provider-picker__tile-icon--mono[data-tint='pink']    { background: oklch(0.94 0.04 350); color: oklch(0.46 0.12 350); }
+.yolo-provider-picker__tile-icon--mono[data-tint='slate']   { background: oklch(0.94 0.005 270); color: oklch(0.40 0.01 270); }
+.yolo-provider-picker__tile-icon--mono[data-tint='ink']     { background: oklch(0.20 0.01 270); color: oklch(0.96 0 0); }
+
+/* Subtle ring on logo tiles carries a hint of each provider's tint — the
+   "color rhythm" the design wanted, without fighting the brand logo. */
+.yolo-provider-picker__tile-icon--logo[data-tint='blue']    { box-shadow: inset 0 0 0 1px oklch(0.42 0.12 250 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='indigo']  { box-shadow: inset 0 0 0 1px oklch(0.42 0.14 275 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='purple']  { box-shadow: inset 0 0 0 1px oklch(0.42 0.14 295 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='rose']    { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 15 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='amber']   { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 75 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='orange']  { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 45 / 0.18);  }
+.yolo-provider-picker__tile-icon--logo[data-tint='teal']    { box-shadow: inset 0 0 0 1px oklch(0.42 0.10 195 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='green']   { box-shadow: inset 0 0 0 1px oklch(0.42 0.10 160 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='pink']    { box-shadow: inset 0 0 0 1px oklch(0.46 0.12 350 / 0.18); }
+.yolo-provider-picker__tile-icon--logo[data-tint='slate']   { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.yolo-provider-picker__tile-icon--logo[data-tint='ink']     { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.20); }
+
+.yolo-provider-picker__tile-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--pp-ink);
+  letter-spacing: -0.1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────── */
+
+.yolo-provider-picker__tile-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.yolo-pp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.yolo-pp-badge--mute {
+  background: #f3f1ec;
+  color: var(--pp-mute);
+}
+body.theme-dark .yolo-pp-badge--mute {
+  background: #23232a;
+  color: var(--pp-mute);
+}
+
+.yolo-pp-badge--amber {
+  background: var(--pp-amber-bg);
+  color: var(--pp-amber-fg);
+}
+
+.yolo-pp-badge--teal {
+  background: var(--pp-teal-bg);
+  color: var(--pp-teal-fg);
+}
+
+.yolo-pp-badge--purple {
+  background: var(--pp-accent-soft);
+  color: var(--pp-accent-text);
+}
+
+/* ── Selected check pill ─────────────────────────────────────────────── */
+
+.yolo-provider-picker__tile-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pp-accent);
+  color: #fff;
+  font-size: 9px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--pp-surface);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.yolo-provider-picker__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pp-line2);
+}
+
+.yolo-provider-picker__footer-msg {
+  flex: 1;
+  font-size: 11.5px;
+  color: var(--pp-mute);
+}
+
+.yolo-provider-picker__footer-name {
+  font-family: var(--font-monospace);
+  color: var(--pp-ink);
+}
+
+.yolo-provider-picker__btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--pp-radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.yolo-provider-picker__btn--ghost {
+  background: var(--pp-surface);
+  color: var(--pp-ink);
+  border: 1px solid var(--pp-line);
+}
+
+.yolo-provider-picker__btn--ghost:hover {
+  background: var(--pp-surface2);
+}
+
+.yolo-provider-picker__btn--primary {
+  background: var(--pp-accent);
+  color: #fff;
+  border: 1px solid var(--pp-accent);
+}
+
+.yolo-provider-picker__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.yolo-provider-picker__btn--primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+

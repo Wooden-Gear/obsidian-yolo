@@ -10,6 +10,7 @@ import { useLanguage } from '../../../contexts/language-context'
 import YoloPlugin from '../../../main'
 import {
   LLMProvider,
+  LLMProviderPresetType,
   ProviderHeader,
   getDefaultApiTypeForPresetType,
   getDefaultRequestTransportModeForPresetType,
@@ -33,16 +34,21 @@ import { ReactModal } from '../../common/ReactModal'
 type ProviderFormComponentProps = {
   plugin: YoloPlugin
   provider: LLMProvider | null // null for new provider
+  initialPresetType?: LLMProviderPresetType
 }
 
 const CUSTOM_PROVIDER_TYPE_ENTRIES = Object.entries(PROVIDER_PRESET_INFO)
 
 export class AddProviderModal extends ReactModal<ProviderFormComponentProps> {
-  constructor(app: App, plugin: YoloPlugin) {
+  constructor(
+    app: App,
+    plugin: YoloPlugin,
+    initialPresetType?: LLMProviderPresetType,
+  ) {
     super({
       app: app,
       Component: ProviderFormComponent,
-      props: { plugin, provider: null },
+      props: { plugin, provider: null, initialPresetType },
       options: {
         title: 'Add custom provider', // Will be translated in component
       },
@@ -68,6 +74,7 @@ export class EditProviderModal extends ReactModal<ProviderFormComponentProps> {
 function ProviderFormComponent({
   plugin,
   provider,
+  initialPresetType,
   onClose,
 }: ProviderFormComponentProps & { onClose: () => void }) {
   const { t } = useLanguage()
@@ -93,14 +100,17 @@ function ProviderFormComponent({
             ? { ...provider.additionalSettings }
             : undefined,
         } as LLMProvider)
-      : {
-          presetType: 'openai-compatible',
-          apiType: getDefaultApiTypeForPresetType('openai-compatible'),
-          id: '',
-          apiKey: '',
-          baseUrl: '',
-          additionalSettings: getDefaultAdditionalSettings('openai-compatible'),
-        },
+      : ((): LLMProvider => {
+          const presetType = initialPresetType ?? 'openai-compatible'
+          return {
+            presetType,
+            apiType: getDefaultApiTypeForPresetType(presetType),
+            id: '',
+            apiKey: '',
+            baseUrl: getDefaultBaseUrlForPreset(presetType) ?? '',
+            additionalSettings: getDefaultAdditionalSettings(presetType),
+          } as LLMProvider
+        })(),
   )
   const handleSubmit = () => {
     const execute = async () => {

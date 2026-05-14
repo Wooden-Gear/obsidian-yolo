@@ -1,6 +1,5 @@
 import { Settings, Trash2 } from 'lucide-react'
 import { App, Notice } from 'obsidian'
-import React from 'react'
 
 import { DEFAULT_PROVIDERS, PROVIDER_TYPES_INFO } from '../../../constants'
 import { useLanguage } from '../../../contexts/language-context'
@@ -8,10 +7,8 @@ import { useSettings } from '../../../contexts/settings-context'
 import YoloPlugin from '../../../main'
 import { LLMProvider } from '../../../types/provider.types'
 import { ConfirmModal } from '../../modals/ConfirmModal'
-import {
-  AddProviderModal,
-  EditProviderModal,
-} from '../modals/ProviderFormModal'
+import { EditProviderModal } from '../modals/ProviderFormModal'
+import { ProviderPickerModal } from '../modals/ProviderPickerModal'
 
 type ProvidersSectionProps = {
   app: App
@@ -162,7 +159,7 @@ export function ProvidersSection({ app, plugin }: ProvidersSectionProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    new AddProviderModal(app, plugin).open()
+                    new ProviderPickerModal(app, plugin).open()
                   }}
                 >
                   Add custom provider

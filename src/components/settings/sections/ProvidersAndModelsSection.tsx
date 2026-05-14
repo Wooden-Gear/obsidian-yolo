@@ -40,10 +40,8 @@ import { AddChatModelModal } from '../modals/AddChatModelModal'
 import { AddEmbeddingModelModal } from '../modals/AddEmbeddingModelModal'
 import { EditChatModelModal } from '../modals/EditChatModelModal'
 import { EditEmbeddingModelModal } from '../modals/EditEmbeddingModelModal'
-import {
-  AddProviderModal,
-  EditProviderModal,
-} from '../modals/ProviderFormModal'
+import { EditProviderModal } from '../modals/ProviderFormModal'
+import { ProviderPickerModal } from '../modals/ProviderPickerModal'
 
 type ProvidersAndModelsSectionProps = {
   app: App
@@ -1576,7 +1574,7 @@ export function ProvidersAndModelsSection({
           <div className="yolo-models-block-action yolo-providers-models-block-action">
             <ObsidianButton
               text={t('settings.providers.addProvider')}
-              onClick={() => new AddProviderModal(app, plugin).open()}
+              onClick={() => new ProviderPickerModal(app, plugin).open()}
               cta
             />
           </div>

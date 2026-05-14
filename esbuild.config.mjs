@@ -122,6 +122,7 @@ const context = await esbuild.context({
   minify: prod,
   metafile: true,
   loader: {
+    '.svg': 'dataurl',
   },
   plugins: [pgliteShimPlugin, inlinePgliteWorkerPlugin],
 })
