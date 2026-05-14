@@ -3,7 +3,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Copy,
   Cpu,
   Pencil,
   Settings,
@@ -117,26 +116,6 @@ export function AssistantSelector({
     app.setting.openTabById(plugin.manifest.id)
   }
 
-  const handleDuplicateAssistant = (assistant: Assistant) => {
-    void (async () => {
-      try {
-        const copied: Assistant = {
-          ...assistant,
-          id: crypto.randomUUID(),
-          name: `${assistant.name}${t('settings.agent.copySuffix', ' (copy)')}`,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        }
-        await setSettings({
-          ...settings,
-          assistants: [...assistants, copied],
-        })
-      } catch (error: unknown) {
-        console.error('Failed to duplicate assistant', error)
-      }
-    })()
-  }
-
   const defaultAssistant = assistants.find((assistant) =>
     isDefaultAssistantId(assistant.id),
   )
@@ -224,18 +203,6 @@ export function AssistantSelector({
               }}
             >
               <Pencil size={12} />
-            </button>
-            <button
-              type="button"
-              className="yolo-assistant-selector-action-btn"
-              title={t('settings.assistants.duplicate', 'Duplicate')}
-              aria-label={t('settings.assistants.duplicate', 'Duplicate')}
-              onClick={(event) => {
-                event.stopPropagation()
-                handleDuplicateAssistant(assistant)
-              }}
-            >
-              <Copy size={12} />
             </button>
           </div>
         </div>
