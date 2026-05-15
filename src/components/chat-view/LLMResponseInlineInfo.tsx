@@ -272,7 +272,9 @@ function renderBreakdownRow(request: LLMRequestEntry): ReactNode {
       <span className="yolo-llm-inline-info-breakdown-cell">
         <Clock className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--time" />
         <span>
-          {request.durationMs !== null ? formatDuration(request.durationMs) : '-'}
+          {request.durationMs !== null
+            ? formatDuration(request.durationMs)
+            : '-'}
         </span>
       </span>
     </div>

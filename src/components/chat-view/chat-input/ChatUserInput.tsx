@@ -29,8 +29,10 @@ import {
 import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { getYoloSnippetsPath } from '../../../core/paths/yoloPaths'
 import { listLiteSkillEntries } from '../../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../../core/skills/skillPolicy'
+import { openSnippetsFileInVault } from '../../../core/snippets/snippetsFile'
 import { ChatSelectedSkill } from '../../../types/chat'
 import { ChatModel } from '../../../types/chat-model.types'
 import {
@@ -52,6 +54,7 @@ import {
 import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
+import { useSnippetEntries } from '../hooks/useSnippetEntries'
 
 import ChatSkillBadge from './ChatSkillBadge'
 import { FileUploadButton } from './FileUploadButton'
@@ -267,6 +270,20 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         }),
       )
     }, [app, currentAssistantId, settings])
+
+    const availableSnippets = useSnippetEntries()
+
+    const handleCreateSnippetsFile = useCallback(() => {
+      void (async () => {
+        const snippetsPath = getYoloSnippetsPath(settings)
+        try {
+          await openSnippetsFileInVault(app, settings)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          new Notice(`Failed to open ${snippetsPath}: ${message}`)
+        }
+      })()
+    }, [app, settings])
 
     const resolvedReasoningLevel = useMemo(() => {
       if (reasoningLevel) return reasoningLevel
@@ -1381,6 +1398,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               )}
               onSelectSkill={handleSelectSkill}
               onRunSlashCommand={onRunSlashCommand}
+              snippets={availableSnippets}
+              onCreateSnippetsFile={handleCreateSnippetsFile}
               autoFocus={autoFocus}
               plugins={{
                 onEnter: {

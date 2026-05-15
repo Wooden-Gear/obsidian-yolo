@@ -22,6 +22,7 @@ import siliconflowLogo from '../assets/provider-icons/siliconflow.svg'
 import stepfunLogo from '../assets/provider-icons/stepfun.svg'
 import togetherAiLogo from '../assets/provider-icons/together-ai.svg'
 import xaiLogo from '../assets/provider-icons/xai.svg'
+import xiaomimimoLogo from '../assets/provider-icons/xiaomimimo.svg'
 import zhipuLogo from '../assets/provider-icons/zhipu.svg'
 import { LLMProviderPresetType } from '../types/provider.types'
 
@@ -202,6 +203,12 @@ export const PROVIDER_CATALOG: Record<
     category: 'cn',
     logo: hunyuanLogo,
   },
+  xiaomimimo: {
+    monogram: 'MiMo',
+    tint: 'orange',
+    category: 'cn',
+    logo: xiaomimimoLogo,
+  },
   xai: {
     monogram: 'xAI',
     tint: 'ink',
@@ -255,6 +262,7 @@ const FLAT_ORDER: Exclude<LLMProviderPresetType, 'openai-compatible'>[] = [
   'stepfun',
   'minimax',
   'hunyuan',
+  'xiaomimimo',
   // Gateway
   'openrouter',
   // Cloud

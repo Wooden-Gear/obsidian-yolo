@@ -25,6 +25,7 @@ import { PerplexityProvider } from './perplexityProvider'
 import { QwenOAuthProvider } from './qwenOAuthProvider'
 import { resolveModelRequestPolicy } from './requestPolicy'
 import { AutoPromotedTransportMode } from './requestTransport'
+import { XiaomimimoProvider } from './xiaomimimoProvider'
 
 /*
  * OpenAI, OpenAI-compatible, and Anthropic providers include token usage statistics
@@ -157,6 +158,12 @@ export function getProviderClient({
           })
         case 'azure-openai':
           return new AzureOpenAIProvider(provider as never, {
+            requestPolicy,
+            onAutoPromoteTransportMode: (mode) =>
+              onAutoPromoteTransportMode?.(provider.id, mode),
+          })
+        case 'xiaomimimo':
+          return new XiaomimimoProvider(provider as never, {
             requestPolicy,
             onAutoPromoteTransportMode: (mode) =>
               onAutoPromoteTransportMode?.(provider.id, mode),

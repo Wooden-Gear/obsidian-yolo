@@ -44,6 +44,7 @@ const DEFAULT_BASE_URL_BY_PRESET: Partial<
   'together-ai': 'https://api.together.xyz/v1',
   cerebras: 'https://api.cerebras.ai/v1',
   sambanova: 'https://api.sambanova.ai/v1',
+  xiaomimimo: 'https://api.xiaomimimo.com/v1',
 }
 
 export function getDefaultBaseUrlForPreset(

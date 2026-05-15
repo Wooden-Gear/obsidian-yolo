@@ -1077,6 +1077,33 @@ export const en: TranslationKeys = {
       name: 'Name',
       actions: 'Actions',
     },
+    editor: {
+      snippets: {
+        sectionTitle: 'Snippets',
+        sectionDesc:
+          'Type / in the chat input and pick a snippet to insert a preset prompt. Snippets live in YOLO/snippets.md.',
+        cardName: 'Snippet library',
+        cardDescCount: '{count} snippets',
+        cardDescMissing: 'No snippets.md file yet',
+        manageBtn: 'Manage snippets',
+        initBtn: 'Initialize snippets',
+        modalTitle: 'Manage snippets',
+        modalCallout:
+          'Snippets live in YOLO/snippets.md. Trigger the chat input with / and pick one to insert its body.',
+        openFileBtn: 'Open snippets.md',
+        createFileBtn: 'Create snippets.md',
+        empty: 'No snippets yet',
+        jumpBtn: 'Edit',
+        deleteBtn: 'Delete',
+        deleteTitle: 'Delete snippet',
+        deleteMessage:
+          'Are you sure you want to delete snippet "{trigger}"? This cannot be undone.',
+        deleteConfirm: 'Delete',
+        deleteSuccess: 'Deleted snippet "{trigger}"',
+        deleteError: 'Delete failed: {error}',
+        openError: 'Failed to open snippets.md: {error}',
+      },
+    },
     continuation: {
       title: 'Sparkle mode',
       aiSubsectionTitle: 'Super continuation',
@@ -1373,6 +1400,11 @@ export const en: TranslationKeys = {
         description:
           'Manually compress earlier conversation history and continue the current task in a fresh context window.',
       },
+    },
+    slashMenu: {
+      entrySkill: 'Skills',
+      entrySnippet: 'Snippets',
+      createSnippetsFile: 'Click to create snippets.md',
     },
     emptyState: {
       chatTitle: 'Think first, then write',

@@ -44,6 +44,7 @@ export const providerPresetTypeSchema = z.enum([
   'together-ai',
   'cerebras',
   'sambanova',
+  'xiaomimimo',
   'openai-compatible',
 ])
 
@@ -126,6 +127,7 @@ const DEFAULT_PROVIDER_API_TYPE_BY_PRESET: Record<
   'together-ai': 'openai-compatible',
   cerebras: 'openai-compatible',
   sambanova: 'openai-compatible',
+  xiaomimimo: 'openai-compatible',
   'openai-compatible': 'openai-compatible',
 }
 

@@ -1036,6 +1036,33 @@ export const it: TranslationKeys = {
       name: 'Nome',
       actions: 'Azioni',
     },
+    editor: {
+      snippets: {
+        sectionTitle: 'Snippet',
+        sectionDesc:
+          "Digita / nell'input della chat e scegli uno snippet per inserire un prompt predefinito. Gli snippet sono in YOLO/snippets.md.",
+        cardName: 'Libreria snippet',
+        cardDescCount: '{count} snippet',
+        cardDescMissing: 'Nessun file snippets.md',
+        manageBtn: 'Gestisci snippet',
+        initBtn: 'Inizializza snippet',
+        modalTitle: 'Gestisci snippet',
+        modalCallout:
+          "Gli snippet sono in YOLO/snippets.md. Attiva l'input della chat con / e selezionane uno per inserire il corpo.",
+        openFileBtn: 'Apri snippets.md',
+        createFileBtn: 'Crea snippets.md',
+        empty: 'Nessuno snippet',
+        jumpBtn: 'Modifica',
+        deleteBtn: 'Elimina',
+        deleteTitle: 'Elimina snippet',
+        deleteMessage:
+          'Vuoi eliminare lo snippet "{trigger}"? Questa operazione non può essere annullata.',
+        deleteConfirm: 'Elimina',
+        deleteSuccess: 'Snippet "{trigger}" eliminato',
+        deleteError: 'Eliminazione fallita: {error}',
+        openError: 'Apertura di snippets.md fallita: {error}',
+      },
+    },
     continuation: {
       title: 'Continuazione',
       aiSubsectionTitle: 'Continuazione AI',
@@ -1324,6 +1351,11 @@ export const it: TranslationKeys = {
         description:
           'Comprimi manualmente la cronologia precedente e continua il task corrente in una nuova finestra di contesto.',
       },
+    },
+    slashMenu: {
+      entrySkill: 'Abilità',
+      entrySnippet: 'Snippet',
+      createSnippetsFile: 'Clicca per creare snippets.md',
     },
     emptyState: {
       chatTitle: 'Pensa prima, poi scrivi',

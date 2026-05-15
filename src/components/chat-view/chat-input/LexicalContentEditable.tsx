@@ -14,6 +14,7 @@ import { RefObject, useCallback, useEffect, useState } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
 import { LiteSkillEntry } from '../../../core/skills/liteSkills'
+import { SnippetEntry } from '../../../core/snippets/snippetsManager'
 import { Assistant } from '../../../types/assistant.types'
 import { ChatModel } from '../../../types/chat-model.types'
 import { MentionableFolder } from '../../../types/mentionable'
@@ -74,6 +75,8 @@ export type LexicalContentEditableProps = {
   selectedSkillIds?: string[]
   onSelectSkill?: (skill: LiteSkillEntry) => void
   onRunSlashCommand?: (command: SlashCommand) => void
+  snippets?: SnippetEntry[]
+  onCreateSnippetsFile?: () => void
   plugins?: {
     onEnter?: {
       onVaultChat: () => void
@@ -115,6 +118,8 @@ export default function LexicalContentEditable({
   selectedSkillIds = [],
   onSelectSkill,
   onRunSlashCommand,
+  snippets = [],
+  onCreateSnippetsFile,
   plugins,
 }: LexicalContentEditableProps) {
   const app = useApp()
@@ -221,9 +226,13 @@ export default function LexicalContentEditable({
         selectedModelIds={selectedModelIds}
         searchFoldersByQuery={searchFoldersByQuery}
       />
-      {(skills.length > 0 || onRunSlashCommand) && (
+      {(skills.length > 0 ||
+        snippets.length > 0 ||
+        onRunSlashCommand ||
+        onCreateSnippetsFile) && (
         <SkillSlashPlugin
           skills={skills}
+          snippets={snippets}
           selectedSkillIds={selectedSkillIds}
           mentionDisplayMode={mentionDisplayMode}
           onMenuOpenChange={onMentionMenuToggle}
@@ -231,6 +240,7 @@ export default function LexicalContentEditable({
           placement={mentionMenuPlacement}
           onSelectSkill={onSelectSkill}
           onRunCommand={onRunSlashCommand}
+          onCreateSnippetsFile={onCreateSnippetsFile}
         />
       )}
       <OnChangePlugin

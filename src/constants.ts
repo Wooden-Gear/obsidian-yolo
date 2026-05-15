@@ -310,6 +310,14 @@ export const PROVIDER_PRESET_INFO = {
     supportEmbedding: false,
     additionalSettings: [REQUEST_TRANSPORT_MODE_SETTING],
   },
+  xiaomimimo: {
+    label: 'Xiaomi MiMo',
+    defaultProviderId: 'xiaomimimo',
+    requireApiKey: true,
+    requireBaseUrl: false,
+    supportEmbedding: false,
+    additionalSettings: [REQUEST_TRANSPORT_MODE_SETTING],
+  },
   'openai-compatible': {
     label: 'OpenAI Compatible',
     defaultProviderId: null, // no default provider for this type
@@ -435,6 +443,11 @@ export const DEFAULT_PROVIDERS: readonly LLMProvider[] = [
     presetType: 'openrouter',
     apiType: getDefaultApiTypeForPresetType('openrouter'),
     id: PROVIDER_PRESET_INFO.openrouter.defaultProviderId,
+  },
+  {
+    presetType: 'xiaomimimo',
+    apiType: getDefaultApiTypeForPresetType('xiaomimimo'),
+    id: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
   },
 ]
 
@@ -632,6 +645,41 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
     id: 'deepseek/deepseek-reasoner',
     model: 'deepseek-reasoner',
     enable: false,
+  },
+  {
+    providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
+    id: 'xiaomimimo/mimo-v2.5-pro',
+    model: 'mimo-v2.5-pro',
+    enable: false,
+    reasoningType: 'openai',
+  },
+  {
+    providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
+    id: 'xiaomimimo/mimo-v2.5',
+    model: 'mimo-v2.5',
+    enable: false,
+    reasoningType: 'openai',
+  },
+  {
+    providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
+    id: 'xiaomimimo/mimo-v2-pro',
+    model: 'mimo-v2-pro',
+    enable: false,
+    reasoningType: 'openai',
+  },
+  {
+    providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
+    id: 'xiaomimimo/mimo-v2-omni',
+    model: 'mimo-v2-omni',
+    enable: false,
+    reasoningType: 'openai',
+  },
+  {
+    providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,
+    id: 'xiaomimimo/mimo-v2-flash',
+    model: 'mimo-v2-flash',
+    enable: false,
+    reasoningType: 'openai',
   },
 ]
 
