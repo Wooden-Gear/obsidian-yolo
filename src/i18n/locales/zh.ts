@@ -1164,6 +1164,14 @@ export const zh: TranslationKeys = {
       resetAgentsConfirm:
         '确定要重置 Agent 配置吗？此操作将删除自定义 Agent 并重置当前选择。',
       resetAgentsSuccess: 'Agent 配置已重置为默认',
+      captureRawRequestDebug: '捕获原始请求调试数据',
+      captureRawRequestDebugDesc:
+        '在 Obsidian 关闭前，将 LLM、MCP 和网络搜索请求 trace 原文保留在内存中。API 密钥会被脱敏，但对话、工具和响应内容仍可能可见。开启后，当前会话的回答会显示 debug 按钮。',
+      captureRawRequestDebugExcludeLogsTitle: '将调试日志排除出知识库？',
+      captureRawRequestDebugExcludeLogsMessage:
+        '调试 trace 笔记可能包含原始对话、工具和响应内容。是否将 {{path}} 加入知识库排除列表，避免保存的调试日志被索引？',
+      captureRawRequestDebugExcludeLogsCta: '排除日志',
+      captureRawRequestDebugExcludeLogsSuccess: '已将 {{path}} 排除出知识库。',
       logModelRequestContext: '记录模型请求上下文',
       logModelRequestContextDesc:
         '在开发者控制台输出每一轮 Agent 实际发送给模型的最终请求载荷。',
@@ -1245,6 +1253,18 @@ export const zh: TranslationKeys = {
       nextTurnContext: '已占用上下文：~{{tokens}} tokens',
       nextTurnContextCached:
         '已占用上下文：~{{tokens}} tokens ({{cached}} cached)',
+    },
+    llmDebug: {
+      title: 'LLM 调试数据',
+      open: '打开 LLM 调试数据',
+      openFailed: '打开调试数据失败',
+      copy: '复制',
+      copied: '已复制',
+      copyFailed: '复制调试数据失败',
+      save: '保存',
+      savedShort: '已保存',
+      saved: 'LLM 调试数据已保存到 {{path}}',
+      saveFailed: '保存调试数据失败',
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',

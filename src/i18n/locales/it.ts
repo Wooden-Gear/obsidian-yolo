@@ -1217,6 +1217,16 @@ export const it: TranslationKeys = {
         'Sei sicuro di voler ripristinare la configurazione degli agent? Questa azione rimuoverà gli agent personalizzati e reimposterà la selezione corrente.',
       resetAgentsSuccess:
         'La configurazione degli agent è stata ripristinata ai valori predefiniti.',
+      captureRawRequestDebug: 'Acquisisci dati debug richieste raw',
+      captureRawRequestDebugDesc:
+        'Mantiene in memoria fino alla chiusura di Obsidian le trace raw di richieste LLM, MCP e ricerca web. Le chiavi API vengono redatte, ma contenuti di conversazioni, strumenti e risposte possono restare visibili. Abilita il pulsante debug sulle risposte della sessione corrente.',
+      captureRawRequestDebugExcludeLogsTitle:
+        'Escludere i log di debug dalla knowledge base?',
+      captureRawRequestDebugExcludeLogsMessage:
+        'Le note trace di debug possono contenere contenuti raw di conversazioni, strumenti e risposte. Aggiungere {{path}} alla lista di esclusione della knowledge base per evitare che i log di debug salvati vengano indicizzati?',
+      captureRawRequestDebugExcludeLogsCta: 'Escludi log',
+      captureRawRequestDebugExcludeLogsSuccess:
+        '{{path}} è stato escluso dalla knowledge base.',
       logModelRequestContext: 'Registra il contesto della richiesta al modello',
       logModelRequestContextDesc:
         'Stampa nella console sviluppatore il payload finale realmente inviato al modello per ogni turno Agent.',
@@ -1278,6 +1288,18 @@ export const it: TranslationKeys = {
       nextTurnContext: 'Contesto utilizzato: ~{{tokens}} token',
       nextTurnContextCached:
         'Contesto utilizzato: ~{{tokens}} token ({{cached}} in cache)',
+    },
+    llmDebug: {
+      title: 'Dati debug LLM',
+      open: 'Apri dati debug LLM',
+      openFailed: 'Impossibile aprire i dati di debug',
+      copy: 'Copia',
+      copied: 'Copiato',
+      copyFailed: 'Impossibile copiare i dati di debug',
+      save: 'Salva',
+      savedShort: 'Salvato',
+      saved: 'Dati debug LLM salvati in {{path}}',
+      saveFailed: 'Impossibile salvare i dati di debug',
     },
     sendMessage: 'Invia messaggio',
     newChat: 'Nuova chat',

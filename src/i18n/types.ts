@@ -980,6 +980,12 @@ export type TranslationKeys = {
       resetAgentsDesc?: string
       resetAgentsConfirm?: string
       resetAgentsSuccess?: string
+      captureRawRequestDebug?: string
+      captureRawRequestDebugDesc?: string
+      captureRawRequestDebugExcludeLogsTitle?: string
+      captureRawRequestDebugExcludeLogsMessage?: string
+      captureRawRequestDebugExcludeLogsCta?: string
+      captureRawRequestDebugExcludeLogsSuccess?: string
       logModelRequestContext?: string
       logModelRequestContextDesc?: string
       yoloBaseDir?: string
@@ -1124,6 +1130,18 @@ export type TranslationKeys = {
       callsTitle?: string
       nextTurnContext?: string
       nextTurnContextCached?: string
+    }
+    llmDebug?: {
+      title?: string
+      open?: string
+      openFailed?: string
+      copy?: string
+      copied?: string
+      copyFailed?: string
+      save?: string
+      savedShort?: string
+      saved?: string
+      saveFailed?: string
     }
     sendMessage: string
     newChat: string
