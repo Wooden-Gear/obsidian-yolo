@@ -41,7 +41,7 @@ const BUILTIN_SKILLS: BuiltinLiteSkill[] = [
     id: 'snippet-creator',
     name: 'Snippet Creator',
     description:
-      'Guide for creating YOLO chat snippets (slash-command shortcuts) stored in YOLO/snippets.md. Use when users want to add, edit, or organize prompt snippets that can be triggered from the chat input\'s "/" menu.',
+      "Guide for editing `YOLO/snippets.md`, the user's library of chat snippets (short prompts the user inserts via the chat input's `/` menu, e.g. `/translate`, `/review`). Use when the user asks to add, edit, rename, list, or delete a 快捷指令 / chat snippet, or describes a recurring prompt they want as a slash shortcut.",
     mode: 'lazy',
     path: 'builtin://skills/snippet-creator.md',
     content: YOLO_SNIPPET_CREATOR_TEMPLATE,
