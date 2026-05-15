@@ -1000,6 +1000,32 @@ export const zh: TranslationKeys = {
       name: '名称',
       actions: '操作',
     },
+    editor: {
+      snippets: {
+        sectionTitle: '快捷指令',
+        sectionDesc:
+          '在聊天输入框中输入 / 后选中即可插入预设的 prompt 片段。片段存储在 YOLO/snippets.md。',
+        cardName: '快捷指令库',
+        cardDescCount: '{count} 条快捷指令',
+        cardDescMissing: '暂无 snippets.md 文件',
+        manageBtn: '管理快捷指令',
+        initBtn: '初始化快捷指令',
+        modalTitle: '管理快捷指令',
+        modalCallout:
+          '快捷指令存储在 YOLO/snippets.md。通过聊天输入框 / 触发后选中即插入正文。',
+        openFileBtn: '打开 snippets.md',
+        createFileBtn: '创建 snippets.md',
+        empty: '还没有快捷指令',
+        jumpBtn: '跳转编辑',
+        deleteBtn: '删除',
+        deleteTitle: '删除快捷指令',
+        deleteMessage: '确认删除快捷指令 "{trigger}"？此操作不可恢复。',
+        deleteConfirm: '删除',
+        deleteSuccess: '已删除快捷指令 "{trigger}"',
+        deleteError: '删除失败: {error}',
+        openError: '打开 snippets.md 失败: {error}',
+      },
+    },
     continuation: {
       title: 'Sparkle 模式',
       aiSubsectionTitle: '超级续写',

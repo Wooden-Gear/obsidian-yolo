@@ -17,19 +17,19 @@ export const getSnippetsPathAwareTemplate = (
  * Provides two ready-to-use examples plus a short format reminder.
  */
 export const DEFAULT_SNIPPETS_TEMPLATE = `<!--
-YOLO 快捷指令：用 \`## trigger\` 分隔，每条是一段会被插入到聊天输入框的短 prompt。
-正文内不要再用 \`##\` / \`###\` 等标题，会被当成新的 snippet。
+YOLO snippets: split by \`## trigger\`. Each block is a short prompt that gets inserted into the chat input.
+Do not use \`##\` / \`###\` inside the body — they would be treated as new snippets.
 -->
 
 ## translate
-> 翻译选中文本到中文
+> Translate the selection into English
 
-请把下面的内容翻译成中文，保持原有语气：
+Please translate the following content into English while preserving the original tone:
 
 ## review
-> 代码评审
+> Code review
 
-请帮我评审下面这段代码，关注：边界条件、错误处理、命名与可读性。
+Please review the code below, focusing on: edge cases, error handling, naming and readability.
 `
 
 export const YOLO_SNIPPET_CREATOR_TEMPLATE = `---

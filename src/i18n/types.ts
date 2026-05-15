@@ -839,6 +839,30 @@ export type TranslationKeys = {
       name: string
       actions: string
     }
+    editor: {
+      snippets: {
+        sectionTitle: string
+        sectionDesc: string
+        cardName: string
+        cardDescCount: string
+        cardDescMissing: string
+        manageBtn: string
+        initBtn: string
+        modalTitle: string
+        modalCallout: string
+        openFileBtn: string
+        createFileBtn: string
+        empty: string
+        jumpBtn: string
+        deleteBtn: string
+        deleteTitle: string
+        deleteMessage: string
+        deleteConfirm: string
+        deleteSuccess: string
+        deleteError: string
+        openError: string
+      }
+    }
     continuation: {
       title: string
       aiSubsectionTitle: string

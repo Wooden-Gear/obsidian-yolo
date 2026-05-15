@@ -12,7 +12,7 @@ import {
   type ParagraphNode,
   SerializedEditorState,
 } from 'lexical'
-import { Notice, TFile, TFolder, normalizePath } from 'obsidian'
+import { Notice } from 'obsidian'
 import {
   type CSSProperties,
   type FocusEvent,
@@ -32,7 +32,7 @@ import { useSettings } from '../../../contexts/settings-context'
 import { getYoloSnippetsPath } from '../../../core/paths/yoloPaths'
 import { listLiteSkillEntries } from '../../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../../core/skills/skillPolicy'
-import { DEFAULT_SNIPPETS_TEMPLATE } from '../../../core/snippets/templates'
+import { openSnippetsFileInVault } from '../../../core/snippets/snippetsFile'
 import { ChatSelectedSkill } from '../../../types/chat'
 import { ChatModel } from '../../../types/chat-model.types'
 import {
@@ -277,38 +277,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       void (async () => {
         const snippetsPath = getYoloSnippetsPath(settings)
         try {
-          const existing = app.vault.getAbstractFileByPath(snippetsPath)
-          let targetFile: TFile
-          if (existing instanceof TFile) {
-            targetFile = existing
-          } else if (existing) {
-            new Notice(`Path exists and is not a file: ${snippetsPath}`)
-            return
-          } else {
-            const lastSlash = snippetsPath.lastIndexOf('/')
-            if (lastSlash > 0) {
-              const dirPath = normalizePath(snippetsPath.slice(0, lastSlash))
-              const segments = dirPath.split('/').filter((s) => s.length > 0)
-              let currentPath = ''
-              for (const segment of segments) {
-                currentPath =
-                  currentPath.length > 0 ? `${currentPath}/${segment}` : segment
-                const node = app.vault.getAbstractFileByPath(currentPath)
-                if (!node) {
-                  await app.vault.createFolder(currentPath)
-                } else if (!(node instanceof TFolder)) {
-                  new Notice(`Path exists and is not a folder: ${currentPath}`)
-                  return
-                }
-              }
-            }
-            targetFile = await app.vault.create(
-              snippetsPath,
-              DEFAULT_SNIPPETS_TEMPLATE,
-            )
-          }
-          const leaf = app.workspace.getLeaf(false)
-          await leaf.openFile(targetFile)
+          await openSnippetsFileInVault(app, settings)
         } catch (error) {
           const message =
             error instanceof Error ? error.message : String(error)

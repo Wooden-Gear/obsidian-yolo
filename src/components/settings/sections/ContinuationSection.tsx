@@ -17,11 +17,13 @@ import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { SelectionChatActionsSettings } from '../SelectionChatActionsSettings'
 import { SmartSpaceQuickActionsSettings } from '../SmartSpaceQuickActionsSettings'
 
+import { SnippetsSection } from './SnippetsSection'
+
 type ContinuationSectionProps = {
   app: App
 }
 
-export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
+export function ContinuationSection({ app }: ContinuationSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
   const [showAdvancedTabSettings, setShowAdvancedTabSettings] = useState(false)
@@ -203,6 +205,8 @@ export function ContinuationSection({ app: _app }: ContinuationSectionProps) {
 
   return (
     <>
+      <SnippetsSection app={app} />
+
       <div className="yolo-settings-section">
         <section className="yolo-settings-block">
           <div className="yolo-settings-block-head">

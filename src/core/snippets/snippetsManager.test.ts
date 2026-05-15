@@ -1,4 +1,4 @@
-import { parseSnippets } from './snippetsManager'
+import { parseSnippets, removeSnippetBlock } from './snippetsManager'
 
 describe('parseSnippets', () => {
   it('parses a single snippet without description', () => {
@@ -168,5 +168,215 @@ body`
     const entries = parseSnippets(content)
     expect(entries).toHaveLength(1)
     expect(entries[0].trigger).toBe('spaced trigger')
+  })
+})
+
+describe('removeSnippetBlock', () => {
+  it('removes the first snippet', () => {
+    const content = `## a
+
+body a
+
+## b
+
+body b
+`
+    expect(removeSnippetBlock(content, 'a')).toBe(`## b
+
+body b
+`)
+  })
+
+  it('removes the last snippet', () => {
+    const content = `## a
+
+body a
+
+## b
+
+body b
+`
+    expect(removeSnippetBlock(content, 'b')).toBe(`## a
+
+body a
+`)
+  })
+
+  it('removes a middle snippet preserving neighbors', () => {
+    const content = `## a
+
+body a
+
+## b
+
+body b
+
+## c
+
+body c
+`
+    expect(removeSnippetBlock(content, 'b')).toBe(`## a
+
+body a
+
+## c
+
+body c
+`)
+  })
+
+  it('removes only the first occurrence when triggers duplicate', () => {
+    const content = `## same
+
+first
+
+## same
+
+second
+`
+    expect(removeSnippetBlock(content, 'same')).toBe(`## same
+
+second
+`)
+  })
+
+  it('returns input unchanged when trigger is not found', () => {
+    const content = `## a
+
+body a
+`
+    expect(removeSnippetBlock(content, 'missing')).toBe(content)
+  })
+
+  it('preserves leading HTML comment block byte-for-byte', () => {
+    const content = `<!--
+top notes
+-->
+
+## a
+
+body a
+
+## b
+
+body b
+`
+    expect(removeSnippetBlock(content, 'a')).toBe(`<!--
+top notes
+-->
+
+## b
+
+body b
+`)
+  })
+
+  it('preserves leading YAML frontmatter byte-for-byte', () => {
+    const content = `---
+title: Snippets
+---
+## a
+
+body a
+
+## b
+
+body b
+`
+    expect(removeSnippetBlock(content, 'b')).toBe(`---
+title: Snippets
+---
+## a
+
+body a
+`)
+  })
+
+  it('leaves a single trailing newline when removing the only snippet', () => {
+    const content = `## a
+
+body a
+`
+    expect(removeSnippetBlock(content, 'a')).toBe('')
+  })
+
+  it('does not swallow the blank line preceding the next heading', () => {
+    const content = `## a
+
+body a
+
+## b
+
+body b
+`
+    // After removing `a`, the blank line that sat between `a` and `## b`
+    // would collapse with the EOF padding into 3+ blanks; the function
+    // should collapse runs of 3+ down to 2 but not eat the structural
+    // blank before `## b`.
+    const out = removeSnippetBlock(content, 'a')
+    expect(out.startsWith('## b\n')).toBe(true)
+  })
+
+  it('does not treat ## inside frontmatter as a snippet boundary', () => {
+    const content = `---
+description: |
+  ## not a snippet
+  this is yaml block scalar content
+---
+## real
+
+real body
+`
+    // Removing the non-existent "not a snippet" must leave the file intact.
+    expect(removeSnippetBlock(content, 'not a snippet')).toBe(content)
+
+    // Removing the real snippet must keep the frontmatter intact.
+    expect(removeSnippetBlock(content, 'real')).toBe(`---
+description: |
+  ## not a snippet
+  this is yaml block scalar content
+---
+`)
+  })
+
+  it('preserves blank-line runs outside the deleted block', () => {
+    // 4 blank lines between b and c sit outside the removed block; they must
+    // not be globally collapsed.
+    const content = `## a
+
+body a
+
+## b
+
+body b
+
+
+
+
+## c
+
+body c
+`
+    const out = removeSnippetBlock(content, 'a')
+    // The b→c gap had 4 blanks. It should still have 4 blanks after removing a.
+    expect(out).toContain('body b\n\n\n\n\n## c')
+  })
+
+  it('collapses runs of 3+ blank lines down to 2', () => {
+    const content = `## a
+
+body a
+
+
+
+## b
+
+body b
+`
+    // Removing `a` leaves the 3 blank lines that were between bodies plus
+    // any blanks already there. Result should have at most 2 consecutive
+    // blank lines.
+    const out = removeSnippetBlock(content, 'a')
+    expect(out).not.toMatch(/\n\n\n/)
   })
 })
