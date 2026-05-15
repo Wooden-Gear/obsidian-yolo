@@ -32,7 +32,6 @@ import {
 import { $createSkillNode } from './SkillNode'
 
 const SUGGESTION_LIST_LENGTH_LIMIT = 20
-const PER_CATEGORY_LIMIT = 8
 const COMPACT_COMMAND_ID = 'compact-context'
 const CREATE_SNIPPETS_FILE_COMMAND_ID = 'create-snippets-file'
 
@@ -373,43 +372,88 @@ export default function SkillSlashPlugin({
 
     // root scope
     if (normalizedQuery) {
-      // Cap each category so a long skill list cannot starve the other
-      // categories in cross-category search.
-      const skillOptions = filterSkills(normalizedQuery)
-        .slice(0, PER_CATEGORY_LIMIT)
-        .map(
-          (skill) =>
-            new SkillTypeaheadOption({
-              kind: 'skill',
-              skill,
-              isSelected: selectedSkillIdSet.has(skill.id),
-            }),
+      // Cross-category search: rank candidates by match strength rather than
+      // by category order. A snippet whose trigger starts with the query must
+      // outrank a skill whose only match is in its description.
+      const q = normalizedQuery
+      const scoreText = (text: string): number => {
+        const t = text.toLowerCase()
+        if (t === q) return 100
+        if (t.startsWith(q)) return 80
+        if (t.includes(q)) return 60
+        return 0
+      }
+
+      type RankedOption = {
+        option: SkillTypeaheadOption
+        score: number
+        categoryRank: number // tiebreaker: skill < snippet < command
+        order: number // tiebreaker: preserve within-category insertion order
+      }
+      const ranked: RankedOption[] = []
+      let orderCounter = 0
+
+      skills.forEach((skill) => {
+        const score = Math.max(
+          scoreText(skill.name),
+          skill.id.toLowerCase().includes(q) ? 30 : 0,
+          skill.description.toLowerCase().includes(q) ? 10 : 0,
+          skill.path.toLowerCase().includes(q) ? 5 : 0,
         )
-      const snippetOptions = filterSnippets(normalizedQuery)
-        .slice(0, PER_CATEGORY_LIMIT)
-        .map(
-          (snippet) =>
-            new SkillTypeaheadOption({
-              kind: 'snippet',
-              snippet,
-            }),
+        if (score === 0) return
+        ranked.push({
+          option: new SkillTypeaheadOption({
+            kind: 'skill',
+            skill,
+            isSelected: selectedSkillIdSet.has(skill.id),
+          }),
+          score,
+          categoryRank: 0,
+          order: orderCounter++,
+        })
+      })
+
+      snippets.forEach((snippet) => {
+        const score = Math.max(
+          scoreText(snippet.trigger),
+          (snippet.description ?? '').toLowerCase().includes(q) ? 10 : 0,
         )
-      const commandMatches =
-        compactCommand.name.toLowerCase().includes(normalizedQuery) ||
-        compactCommand.id.toLowerCase().includes(normalizedQuery) ||
-        compactCommand.description.toLowerCase().includes(normalizedQuery)
-      const commandOptions = commandMatches
-        ? [
-            new SkillTypeaheadOption({
-              kind: 'command',
-              command: compactCommand,
-            }),
-          ]
-        : []
-      return [...skillOptions, ...snippetOptions, ...commandOptions].slice(
-        0,
-        SUGGESTION_LIST_LENGTH_LIMIT,
+        if (score === 0) return
+        ranked.push({
+          option: new SkillTypeaheadOption({ kind: 'snippet', snippet }),
+          score,
+          categoryRank: 1,
+          order: orderCounter++,
+        })
+      })
+
+      const commandScore = Math.max(
+        scoreText(compactCommand.name),
+        compactCommand.id.toLowerCase().includes(q) ? 30 : 0,
+        compactCommand.description.toLowerCase().includes(q) ? 10 : 0,
       )
+      if (commandScore > 0) {
+        ranked.push({
+          option: new SkillTypeaheadOption({
+            kind: 'command',
+            command: compactCommand,
+          }),
+          score: commandScore,
+          categoryRank: 2,
+          order: orderCounter++,
+        })
+      }
+
+      ranked.sort((a, b) => {
+        if (a.score !== b.score) return b.score - a.score
+        if (a.categoryRank !== b.categoryRank)
+          return a.categoryRank - b.categoryRank
+        return a.order - b.order
+      })
+
+      return ranked
+        .slice(0, SUGGESTION_LIST_LENGTH_LIMIT)
+        .map((entry) => entry.option)
     }
 
     // root scope, empty query: show three entries
@@ -441,7 +485,8 @@ export default function SkillSlashPlugin({
     selectedSkillIdSet,
     skillEntryLabel,
     snippetEntryLabel,
-    snippets.length,
+    skills,
+    snippets,
   ])
 
   const onSelectOption = useCallback(
