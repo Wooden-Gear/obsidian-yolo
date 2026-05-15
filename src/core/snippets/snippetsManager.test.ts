@@ -156,9 +156,7 @@ body
     const entries = parseSnippets(content)
     expect(entries).toHaveLength(1)
     expect(entries[0].description).toBeUndefined()
-    expect(entries[0].content).toBe(
-      '> 这是用户想保留在正文里的引用\n正文继续',
-    )
+    expect(entries[0].content).toBe('> 这是用户想保留在正文里的引用\n正文继续')
   })
 
   it('treats heading with trailing spaces correctly', () => {

@@ -279,8 +279,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         try {
           await openSnippetsFileInVault(app, settings)
         } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error)
+          const message = error instanceof Error ? error.message : String(error)
           new Notice(`Failed to open ${snippetsPath}: ${message}`)
         }
       })()

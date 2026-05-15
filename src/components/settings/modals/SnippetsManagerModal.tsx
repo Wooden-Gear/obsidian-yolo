@@ -80,8 +80,10 @@ function SnippetsManagerModalContent({
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         new Notice(
-          t('settings.editor.snippets.openError', 'Failed to open snippets.md: {error}')
-            .replace('{error}', message),
+          t(
+            'settings.editor.snippets.openError',
+            'Failed to open snippets.md: {error}',
+          ).replace('{error}', message),
         )
       }
     })()
@@ -185,10 +187,10 @@ function SnippetsManagerModalContent({
             {t('settings.editor.snippets.sectionTitle', 'Snippets')}
           </div>
           <div className="yolo-agent-tools-panel-count">
-            {t('settings.editor.snippets.cardDescCount', '{count} snippets').replace(
-              '{count}',
-              String(entries.length),
-            )}
+            {t(
+              'settings.editor.snippets.cardDescCount',
+              '{count} snippets',
+            ).replace('{count}', String(entries.length))}
           </div>
         </div>
 

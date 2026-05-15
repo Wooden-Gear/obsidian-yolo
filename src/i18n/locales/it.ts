@@ -1040,7 +1040,7 @@ export const it: TranslationKeys = {
       snippets: {
         sectionTitle: 'Snippet',
         sectionDesc:
-          'Digita / nell\'input della chat e scegli uno snippet per inserire un prompt predefinito. Gli snippet sono in YOLO/snippets.md.',
+          "Digita / nell'input della chat e scegli uno snippet per inserire un prompt predefinito. Gli snippet sono in YOLO/snippets.md.",
         cardName: 'Libreria snippet',
         cardDescCount: '{count} snippet',
         cardDescMissing: 'Nessun file snippets.md',
@@ -1048,7 +1048,7 @@ export const it: TranslationKeys = {
         initBtn: 'Inizializza snippet',
         modalTitle: 'Gestisci snippet',
         modalCallout:
-          'Gli snippet sono in YOLO/snippets.md. Attiva l\'input della chat con / e selezionane uno per inserire il corpo.',
+          "Gli snippet sono in YOLO/snippets.md. Attiva l'input della chat con / e selezionane uno per inserire il corpo.",
         openFileBtn: 'Apri snippets.md',
         createFileBtn: 'Crea snippets.md',
         empty: 'Nessuno snippet',
