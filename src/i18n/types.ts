@@ -1167,6 +1167,11 @@ export type TranslationKeys = {
         description?: string
       }
     }
+    slashMenu?: {
+      entrySkill?: string
+      entrySnippet?: string
+      createSnippetsFile?: string
+    }
     emptyState?: {
       chatTitle?: string
       chatDescription?: string

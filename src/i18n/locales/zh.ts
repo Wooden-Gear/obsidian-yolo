@@ -1217,7 +1217,8 @@ export const zh: TranslationKeys = {
     inlineInfo: {
       callsTitle: '本轮 {{count}} 次调用',
       nextTurnContext: '已占用上下文：~{{tokens}} tokens',
-      nextTurnContextCached: '已占用上下文：~{{tokens}} tokens ({{cached}} cached)',
+      nextTurnContextCached:
+        '已占用上下文：~{{tokens}} tokens ({{cached}} cached)',
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',
@@ -1287,6 +1288,11 @@ export const zh: TranslationKeys = {
         label: '压缩上下文',
         description: '手动压缩较早对话历史，并在新的上下文窗口中继续当前任务。',
       },
+    },
+    slashMenu: {
+      entrySkill: '技能',
+      entrySnippet: '快捷指令',
+      createSnippetsFile: '点击创建 snippets.md',
     },
     emptyState: {
       chatTitle: '先想清楚，再落笔',

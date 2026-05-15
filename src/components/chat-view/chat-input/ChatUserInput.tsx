@@ -12,7 +12,7 @@ import {
   type ParagraphNode,
   SerializedEditorState,
 } from 'lexical'
-import { Notice } from 'obsidian'
+import { Notice, TFile, TFolder, normalizePath } from 'obsidian'
 import {
   type CSSProperties,
   type FocusEvent,
@@ -29,8 +29,10 @@ import {
 import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { getYoloSnippetsPath } from '../../../core/paths/yoloPaths'
 import { listLiteSkillEntries } from '../../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../../core/skills/skillPolicy'
+import { DEFAULT_SNIPPETS_TEMPLATE } from '../../../core/snippets/templates'
 import { ChatSelectedSkill } from '../../../types/chat'
 import { ChatModel } from '../../../types/chat-model.types'
 import {
@@ -52,6 +54,7 @@ import {
 import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
+import { useSnippetEntries } from '../hooks/useSnippetEntries'
 
 import ChatSkillBadge from './ChatSkillBadge'
 import { FileUploadButton } from './FileUploadButton'
@@ -267,6 +270,52 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         }),
       )
     }, [app, currentAssistantId, settings])
+
+    const availableSnippets = useSnippetEntries()
+
+    const handleCreateSnippetsFile = useCallback(() => {
+      void (async () => {
+        const snippetsPath = getYoloSnippetsPath(settings)
+        try {
+          const existing = app.vault.getAbstractFileByPath(snippetsPath)
+          let targetFile: TFile
+          if (existing instanceof TFile) {
+            targetFile = existing
+          } else if (existing) {
+            new Notice(`Path exists and is not a file: ${snippetsPath}`)
+            return
+          } else {
+            const lastSlash = snippetsPath.lastIndexOf('/')
+            if (lastSlash > 0) {
+              const dirPath = normalizePath(snippetsPath.slice(0, lastSlash))
+              const segments = dirPath.split('/').filter((s) => s.length > 0)
+              let currentPath = ''
+              for (const segment of segments) {
+                currentPath =
+                  currentPath.length > 0 ? `${currentPath}/${segment}` : segment
+                const node = app.vault.getAbstractFileByPath(currentPath)
+                if (!node) {
+                  await app.vault.createFolder(currentPath)
+                } else if (!(node instanceof TFolder)) {
+                  new Notice(`Path exists and is not a folder: ${currentPath}`)
+                  return
+                }
+              }
+            }
+            targetFile = await app.vault.create(
+              snippetsPath,
+              DEFAULT_SNIPPETS_TEMPLATE,
+            )
+          }
+          const leaf = app.workspace.getLeaf(false)
+          await leaf.openFile(targetFile)
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error)
+          new Notice(`Failed to open ${snippetsPath}: ${message}`)
+        }
+      })()
+    }, [app, settings])
 
     const resolvedReasoningLevel = useMemo(() => {
       if (reasoningLevel) return reasoningLevel
@@ -1381,6 +1430,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               )}
               onSelectSkill={handleSelectSkill}
               onRunSlashCommand={onRunSlashCommand}
+              snippets={availableSnippets}
+              onCreateSnippetsFile={handleCreateSnippetsFile}
               autoFocus={autoFocus}
               plugins={{
                 onEnter: {

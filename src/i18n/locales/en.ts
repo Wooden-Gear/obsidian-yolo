@@ -1374,6 +1374,11 @@ export const en: TranslationKeys = {
           'Manually compress earlier conversation history and continue the current task in a fresh context window.',
       },
     },
+    slashMenu: {
+      entrySkill: 'Skills',
+      entrySnippet: 'Snippets',
+      createSnippetsFile: 'Click to create snippets.md',
+    },
     emptyState: {
       chatTitle: 'Think first, then write',
       chatDescription:

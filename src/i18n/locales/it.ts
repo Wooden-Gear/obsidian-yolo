@@ -1325,6 +1325,11 @@ export const it: TranslationKeys = {
           'Comprimi manualmente la cronologia precedente e continua il task corrente in una nuova finestra di contesto.',
       },
     },
+    slashMenu: {
+      entrySkill: 'Abilità',
+      entrySnippet: 'Snippet',
+      createSnippetsFile: 'Clicca per creare snippets.md',
+    },
     emptyState: {
       chatTitle: 'Pensa prima, poi scrivi',
       chatDescription:
