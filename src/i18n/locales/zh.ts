@@ -1164,12 +1164,12 @@ export const zh: TranslationKeys = {
       resetAgentsConfirm:
         '确定要重置 Agent 配置吗？此操作将删除自定义 Agent 并重置当前选择。',
       resetAgentsSuccess: 'Agent 配置已重置为默认',
-      captureRawRequestDebug: '捕获原始请求调试数据',
+      captureRawRequestDebug: '启用 LLM 请求调试',
       captureRawRequestDebugDesc:
-        '在 Obsidian 关闭前，将 LLM、MCP 和网络搜索请求 trace 原文保留在内存中。API 密钥会被脱敏，但对话、工具和响应内容仍可能可见。开启后，当前会话的回答会显示 debug 按钮。',
+        '开启后，每条模型消息的信息栏和更多操作菜单中会出现 Debug 按钮，可查看或导出该轮 LLM、工具调用与网络搜索的原始请求和响应。捕获仅保留在当前会话内存中，重启 Obsidian 后清空。导出内容已脱敏 API 密钥，但仍包含对话原文。',
       captureRawRequestDebugExcludeLogsTitle: '将调试日志排除出知识库？',
       captureRawRequestDebugExcludeLogsMessage:
-        '调试 trace 笔记可能包含原始对话、工具和响应内容。是否将 {{path}} 加入知识库排除列表，避免保存的调试日志被索引？',
+        '调试日志可能含原始对话与工具内容。是否将 {{path}} 加入知识库排除列表，避免被 RAG 索引？',
       captureRawRequestDebugExcludeLogsCta: '排除日志',
       captureRawRequestDebugExcludeLogsSuccess: '已将 {{path}} 排除出知识库。',
       logModelRequestContext: '记录模型请求上下文',

@@ -1217,13 +1217,13 @@ export const it: TranslationKeys = {
         'Sei sicuro di voler ripristinare la configurazione degli agent? Questa azione rimuoverà gli agent personalizzati e reimposterà la selezione corrente.',
       resetAgentsSuccess:
         'La configurazione degli agent è stata ripristinata ai valori predefiniti.',
-      captureRawRequestDebug: 'Acquisisci dati debug richieste raw',
+      captureRawRequestDebug: 'Abilita debug richieste LLM',
       captureRawRequestDebugDesc:
-        'Mantiene in memoria fino alla chiusura di Obsidian le trace raw di richieste LLM, MCP e ricerca web. Le chiavi API vengono redatte, ma contenuti di conversazioni, strumenti e risposte possono restare visibili. Abilita il pulsante debug sulle risposte della sessione corrente.',
+        "Quando attivo, ogni risposta del modello mostra un pulsante Debug (nella barra info e nel menu Altre azioni) che consente di consultare o esportare le richieste e risposte raw di LLM, chiamate strumento e ricerche web di quel turno. I dati catturati restano in memoria solo per la sessione corrente di Obsidian e vengono cancellati al riavvio. Le chiavi API sono offuscate nell'export, ma il contenuto originale della conversazione è incluso.",
       captureRawRequestDebugExcludeLogsTitle:
         'Escludere i log di debug dalla knowledge base?',
       captureRawRequestDebugExcludeLogsMessage:
-        'Le note trace di debug possono contenere contenuti raw di conversazioni, strumenti e risposte. Aggiungere {{path}} alla lista di esclusione della knowledge base per evitare che i log di debug salvati vengano indicizzati?',
+        'I log di debug possono contenere il contenuto raw della conversazione e degli strumenti. Aggiungere {{path}} alla lista di esclusione della knowledge base per evitare che vengano indicizzati dal RAG?',
       captureRawRequestDebugExcludeLogsCta: 'Escludi log',
       captureRawRequestDebugExcludeLogsSuccess:
         '{{path}} è stato escluso dalla knowledge base.',

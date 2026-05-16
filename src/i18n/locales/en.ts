@@ -1262,13 +1262,13 @@ export const en: TranslationKeys = {
       resetAgentsConfirm:
         'Are you sure you want to reset agent configuration? This will remove custom agents and reset the current selection.',
       resetAgentsSuccess: 'Agent configuration has been reset to defaults',
-      captureRawRequestDebug: 'Capture raw request debug data',
+      captureRawRequestDebug: 'Enable LLM request debugging',
       captureRawRequestDebugDesc:
-        'Keep raw LLM, MCP, and web search request traces in memory until Obsidian closes. API secrets are redacted, but conversation, tool, and response contents may remain visible. Enables the debug button on current-session responses.',
+        'When enabled, each AI response shows a Debug button (in the info bar and the more-actions menu) that lets you view or export the raw LLM, tool-call, and web-search requests and responses for that turn. Captured data is kept in memory for the current Obsidian session only and is cleared on restart. API keys are redacted in the export, but the original conversation content is included.',
       captureRawRequestDebugExcludeLogsTitle:
         'Exclude debug logs from knowledge base?',
       captureRawRequestDebugExcludeLogsMessage:
-        'Debug trace notes can contain raw conversation, tool, and response contents. Add {{path}} to the knowledge base exclude list so saved debug logs are not indexed?',
+        'Debug logs may contain raw conversation and tool contents. Add {{path}} to the knowledge base exclude list so they are not indexed by RAG?',
       captureRawRequestDebugExcludeLogsCta: 'Exclude logs',
       captureRawRequestDebugExcludeLogsSuccess:
         '{{path}} has been excluded from the knowledge base.',
