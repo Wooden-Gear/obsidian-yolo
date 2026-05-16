@@ -34,8 +34,8 @@ import { materializeTextEditPlan } from '../../core/edits/textEditEngine'
 import { parseTextEditPlan } from '../../core/edits/textEditPlan'
 import { readEditReviewSnapshot } from '../../database/json/chat/editReviewSnapshotStore'
 import type { ChatLeafPlacement } from '../../features/chat/chatLeafSessionManager'
-import { pdfSelectionHighlightController } from '../../features/editor/selection-highlight/pdfSelectionHighlightController'
 import { selectionHighlightController } from '../../features/editor/selection-highlight/selectionHighlightController'
+import { useChatHighlightSession } from '../../features/editor/selection-highlight/useChatHighlightSession'
 import { useChatHistory } from '../../hooks/useChatHistory'
 import { useChatManager } from '../../hooks/useJsonManagers'
 import type { ApplyViewState } from '../../types/apply-view.types'
@@ -1061,54 +1061,28 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     chatMessagesStateRef.current = chatMessages
   }, [chatMessages])
 
-  // Reconcile visual highlights with the current mention list.
-  // The mention list is bound to whatever input currently has focus: either
-  // the main input box, or a historical user message being edited in-place.
-  // Once a message is sent, its mentionables move into chatMessages but the
-  // input loses focus on that mention, so the highlight should clear.
-  // Scanning every historical user message would keep highlights alive forever
-  // after submit, which is the bug we are guarding against here.
-  useEffect(() => {
-    const activeIds = new Set<string>()
-    const collectFrom = (mentionables: Mentionable[]) => {
-      for (const m of mentionables) {
-        if (
-          m.type === 'block' &&
-          (m.source === 'selection-sync' ||
-            m.source === 'selection-pinned' ||
-            m.source === 'selection') &&
-          m.highlightId
-        ) {
-          activeIds.add(m.highlightId)
-        }
-      }
-    }
-    collectFrom(inputMessage.mentionables)
-    if (focusedMessageId && focusedMessageId !== inputMessage.id) {
-      const focusedHistorical = chatMessages.find(
-        (message) => message.role === 'user' && message.id === focusedMessageId,
-      )
-      if (focusedHistorical?.role === 'user') {
-        collectFrom(focusedHistorical.mentionables)
-      }
-    }
-    selectionHighlightController.reconcileActiveIds(activeIds)
-    pdfSelectionHighlightController.reconcileActiveIds(activeIds)
-  }, [
-    inputMessage.mentionables,
-    inputMessage.id,
-    chatMessages,
-    focusedMessageId,
-  ])
+  // Selection-highlight lifecycle.
+  //
+  // The hook owns the "sticky" cycle: highlights for selection-style mentions
+  // survive sending the user message and stay visible while the user keeps
+  // working in the chat panel.  They drop only when the user (a) interacts
+  // with any real editor leaf outside the chat container, or (b) switches /
+  // closes the conversation.  See useChatHighlightSession for the full
+  // contract.
+  const focusedHistoricalMentionables = useMemo<Mentionable[] | null>(() => {
+    if (!focusedMessageId || focusedMessageId === inputMessage.id) return null
+    const focused = chatMessages.find(
+      (message) => message.role === 'user' && message.id === focusedMessageId,
+    )
+    return focused?.role === 'user' ? focused.mentionables : null
+  }, [chatMessages, focusedMessageId, inputMessage.id])
 
-  // Clear chat-owned highlights when the chat view unmounts (tab closed).
-  // Lives in its own effect so it only fires on unmount, not on every mention change.
-  useEffect(() => {
-    return () => {
-      selectionHighlightController.reconcileActiveIds(new Set())
-      pdfSelectionHighlightController.reconcileActiveIds(new Set())
-    }
-  }, [])
+  useChatHighlightSession({
+    conversationId: currentConversationId,
+    containerRef,
+    inputMentionables: inputMessage.mentionables,
+    focusedHistoricalMentionables,
+  })
 
   const compactionDividerAnchorMessageIds = useMemo(
     () => effectiveCompactionState.map((entry) => entry.anchorMessageId),
