@@ -1099,6 +1099,7 @@ ${quotes
     const projectInstructionsSection = await getProjectInstructionsSection(
       this.app,
       currentAssistant?.enableProjectInstructions === true,
+      currentAssistant?.workspaceScope,
     )
 
     const sections = [

@@ -1117,8 +1117,15 @@ describe('RequestContextBuilder project instructions injection', () => {
         }),
         getAbstractFileByPath: jest.fn((path: string) => {
           if (!rootFiles.has(path)) return null
-          return Object.assign(new TFile(), { path })
+          const file = Object.assign(new TFile(), { path })
+          ;(
+            file as unknown as { parent: InstanceType<typeof TFolder> }
+          ).parent = Object.assign(new TFolder(), { path: '', parent: null })
+          return file
         }),
+        getRoot: jest.fn(() =>
+          Object.assign(new TFolder(), { path: '', parent: null }),
+        ),
         getFileByPath: jest.fn(() => null),
         getFolderByPath: jest.fn(() => null),
         getMarkdownFiles: jest.fn(() => []),
@@ -1172,8 +1179,8 @@ describe('RequestContextBuilder project instructions injection', () => {
       ]),
     )
     const content = await buildSystemContent(app, baseSettings)
-    expect(content).not.toContain('## AGENTS.md')
-    expect(content).not.toContain('## CLAUDE.md')
+    expect(content).not.toContain('## Project instructions: AGENTS.md')
+    expect(content).not.toContain('## Project instructions: CLAUDE.md')
   })
 
   it('injects AGENTS.md and CLAUDE.md when current assistant enables it explicitly', async () => {
@@ -1196,13 +1203,13 @@ describe('RequestContextBuilder project instructions injection', () => {
       ],
     } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
-    expect(content).toContain('## AGENTS.md')
+    expect(content).toContain('## Project instructions: AGENTS.md')
     expect(content).toContain('rule from agents')
-    expect(content).toContain('## CLAUDE.md')
+    expect(content).toContain('## Project instructions: CLAUDE.md')
     expect(content).toContain('rule from claude')
     // Project instructions should appear after the base behavior section,
     // not as the first thing in the system message.
-    const projectIdx = content.indexOf('project instructions at the vault root')
+    const projectIdx = content.indexOf('project instructions in the vault')
     expect(projectIdx).toBeGreaterThan(0)
   })
 
@@ -1221,7 +1228,7 @@ describe('RequestContextBuilder project instructions injection', () => {
       ],
     } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
-    expect(content).not.toContain('## CLAUDE.md')
+    expect(content).not.toContain('## Project instructions: CLAUDE.md')
     expect(content).not.toContain('rule from claude')
   })
 
@@ -1240,7 +1247,7 @@ describe('RequestContextBuilder project instructions injection', () => {
       ],
     } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
-    expect(content).not.toContain('## CLAUDE.md')
+    expect(content).not.toContain('## Project instructions: CLAUDE.md')
     expect(content).not.toContain('rule from claude')
   })
 
@@ -1252,15 +1259,15 @@ describe('RequestContextBuilder project instructions injection', () => {
       assistants: [{ id: 'a-1', name: 'Default', systemPrompt: '' }],
     } as unknown as YoloSettings
     const content = await buildSystemContent(app, settings)
-    expect(content).not.toContain('## CLAUDE.md')
+    expect(content).not.toContain('## Project instructions: CLAUDE.md')
   })
 
   it('omits project instructions section when neither file exists', async () => {
     const app = makeApp(new Map())
     const content = await buildSystemContent(app, baseSettings)
-    expect(content).not.toContain('## AGENTS.md')
-    expect(content).not.toContain('## CLAUDE.md')
-    expect(content).not.toContain('project instructions at the vault root')
+    expect(content).not.toContain('## Project instructions: AGENTS.md')
+    expect(content).not.toContain('## Project instructions: CLAUDE.md')
+    expect(content).not.toContain('project instructions in the vault')
   })
 })
 
