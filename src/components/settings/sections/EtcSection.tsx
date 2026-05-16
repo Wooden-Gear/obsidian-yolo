@@ -475,25 +475,6 @@ export function EtcSection({ app, plugin, className }: EtcSectionProps) {
           </ObsidianSetting>
 
           <ObsidianSetting
-            name={t('settings.etc.logModelRequestContext')}
-            desc={t('settings.etc.logModelRequestContextDesc')}
-            className="yolo-settings-card"
-          >
-            <ObsidianToggle
-              value={settings.debug?.logModelRequestContext ?? false}
-              onChange={(value) => {
-                void setSettings({
-                  ...settings,
-                  debug: {
-                    ...settings.debug,
-                    logModelRequestContext: value,
-                  },
-                })
-              }}
-            />
-          </ObsidianSetting>
-
-          <ObsidianSetting
             name={t('settings.etc.clearChatHistory')}
             nameExtra={<StorageBadge value={storageUsage.chatHistoryBytes} />}
             desc={t('settings.etc.clearChatHistoryDesc')}

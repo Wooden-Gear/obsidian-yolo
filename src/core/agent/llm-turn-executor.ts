@@ -6,7 +6,6 @@ import {
   ChatMessage,
 } from '../../types/chat'
 import { ChatModel } from '../../types/chat-model.types'
-import { RequestMessage, RequestTool } from '../../types/llm/request'
 import { LLMProvider } from '../../types/provider.types'
 import {
   ReasoningLevel,
@@ -15,8 +14,6 @@ import {
 import { ToolCallRequest } from '../../types/tool-call.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
-import { estimateJsonTokens } from '../../utils/llm/contextTokenEstimate'
-import { formatTokenCount } from '../../utils/llm/formatTokenCount'
 import { executeSingleTurn } from '../ai/single-turn'
 import { BaseLLMProvider } from '../llm/base'
 import {
@@ -127,7 +124,6 @@ export class AgentLlmTurnExecutor {
         contextualInjections: this.input.contextualInjections,
       })
 
-    await this.logModelRequestContext({ requestMessages, tools })
     const responseStart = Date.now()
     const model = this.input.model
     const assistantMessageId = uuidv4()
@@ -322,39 +318,5 @@ export class AgentLlmTurnExecutor {
       return toolName
     }
     return `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${toolName}`
-  }
-
-  private async logModelRequestContext({
-    requestMessages,
-    tools,
-  }: {
-    requestMessages: RequestMessage[]
-    tools: RequestTool[] | undefined
-  }): Promise<void> {
-    if (
-      !this.input.requestContextBuilder.isModelRequestContextLoggingEnabled?.()
-    ) {
-      return
-    }
-
-    const estimatedTokens = await estimateJsonTokens({
-      messages: requestMessages,
-      tools,
-    })
-    const model = this.input.model
-
-    console.debug(
-      `[YOLO][Agent Debug] request context ${formatTokenCount(estimatedTokens)} tokens`,
-    )
-    console.debug('[YOLO][Agent Debug] Summary', {
-      conversationId: this.input.conversationId,
-      modelId: model.id,
-      providerId: model.providerId,
-      messageCount: requestMessages.length,
-      toolCount: tools?.length ?? 0,
-      estimatedTokens,
-    })
-    console.debug('[YOLO][Agent Debug] Request messages', requestMessages)
-    console.debug('[YOLO][Agent Debug] Tools', tools ?? [])
   }
 }

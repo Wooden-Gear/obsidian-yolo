@@ -1272,9 +1272,6 @@ export const en: TranslationKeys = {
       captureRawRequestDebugExcludeLogsCta: 'Exclude logs',
       captureRawRequestDebugExcludeLogsSuccess:
         '{{path}} has been excluded from the knowledge base.',
-      logModelRequestContext: 'Log model request context',
-      logModelRequestContextDesc:
-        'Print the final request payload actually sent to the model for each Agent turn in the developer console.',
       yoloBaseDir: 'YOLO base folder',
       yoloBaseDirDesc:
         'Enter a vault-relative path (without a leading /). Example: use YOLO at vault root, or setting/YOLO under the setting folder. Current skills directory: {path}.',

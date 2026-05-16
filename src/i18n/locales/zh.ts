@@ -1172,9 +1172,6 @@ export const zh: TranslationKeys = {
         '调试日志可能含原始对话与工具内容。是否将 {{path}} 加入知识库排除列表，避免被 RAG 索引？',
       captureRawRequestDebugExcludeLogsCta: '排除日志',
       captureRawRequestDebugExcludeLogsSuccess: '已将 {{path}} 排除出知识库。',
-      logModelRequestContext: '记录模型请求上下文',
-      logModelRequestContextDesc:
-        '在开发者控制台输出每一轮 Agent 实际发送给模型的最终请求载荷。',
       yoloBaseDir: 'YOLO 根目录',
       yoloBaseDirDesc:
         '填写库内相对路径（不要以 / 开头）。例如：放在库根目录填 YOLO；放在 setting 文件夹下填 setting/YOLO。当前技能目录：{path}。',

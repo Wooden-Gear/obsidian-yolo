@@ -344,10 +344,6 @@ export class RequestContextBuilder {
     this.includeSkills = options?.includeSkills ?? true
   }
 
-  public isModelRequestContextLoggingEnabled(): boolean {
-    return this.settings.debug?.logModelRequestContext ?? false
-  }
-
   private getMentionContextMode(): MentionContextMode {
     return this.settings.chatOptions?.mentionContextMode ?? 'light'
   }

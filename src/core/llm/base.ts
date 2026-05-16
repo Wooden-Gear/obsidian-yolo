@@ -11,27 +11,6 @@ import {
 import { LLMProvider } from '../../types/provider.types'
 import { parseCustomParameterValue } from '../../utils/custom-parameters'
 
-/**
- * Whether to log each provider's request body right after customParameters
- * merge. Driven by `settings.debug.logModelRequestContext`; kept module-local
- * instead of threading settings through every provider constructor since this
- * is a debug affordance, not a feature gate.
- *
- * IMPORTANT: this is NOT the absolute final on-wire payload — some providers
- * (notably the OpenAI Responses path and the OpenAI-compatible adapter) do
- * additional shape transforms inside `adapter.buildRequest` (e.g. folding
- * `extra_body.tools` into the top-level `tools`) after this point. For a
- * truly authoritative view, the browser Network tab is still the source of
- * truth. This log is intended to make the customParameters merge step
- * inspectable, which is where the historical "tools silently overwritten"
- * bug lived.
- */
-let logRequestAfterCustomParams = false
-
-export function setLogFinalRequestPayloadEnabled(enabled: boolean): void {
-  logRequestAfterCustomParams = enabled
-}
-
 // TODO: do these really have to be class? why not just function?
 export abstract class BaseLLMProvider<P extends LLMProvider> {
   protected readonly provider: P
@@ -90,18 +69,6 @@ export abstract class BaseLLMProvider<P extends LLMProvider> {
       } else {
         next[key] = parsed
       }
-    }
-
-    if (logRequestAfterCustomParams) {
-      // Fires every call when debug logging is enabled — including when there
-      // are no customParameters — so the log is also a useful checkpoint
-      // showing "what each provider sees just before adapter serialization".
-      // See module-level comment for what this is NOT (the absolute on-wire
-      // payload).
-      console.debug(
-        `[YOLO][LLM Debug] Request after customParameters (${this.provider.id} / ${model.id})`,
-        next,
-      )
     }
 
     return next as T
