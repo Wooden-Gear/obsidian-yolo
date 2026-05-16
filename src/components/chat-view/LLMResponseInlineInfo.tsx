@@ -399,7 +399,9 @@ export default function LLMResponseInlineInfo({
             </div>
           </div>
         </Tooltip.Trigger>
-        <Tooltip.Portal>
+        <Tooltip.Portal
+          container={containerRef.current?.ownerDocument?.body ?? undefined}
+        >
           <Tooltip.Content
             className="yolo-tooltip-content yolo-llm-inline-info-tooltip-content"
             side="top"
