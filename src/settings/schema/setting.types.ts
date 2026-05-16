@@ -332,10 +332,10 @@ export const yoloSettingsSchema = z.object({
 
   debug: z
     .object({
-      logModelRequestContext: z.boolean().optional(),
+      captureRawRequestDebug: z.boolean().optional(),
     })
     .catch({
-      logModelRequestContext: false,
+      captureRawRequestDebug: false,
     }),
 
   // Chat options

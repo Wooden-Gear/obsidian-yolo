@@ -195,7 +195,9 @@ body.theme-dark .yolo-provider-picker {
 body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on,
 body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on:hover,
 body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on:focus,
-body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on:focus-visible,
+body.theme-dark
+  .yolo-provider-picker
+  .yolo-provider-picker__chip--on:focus-visible,
 body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on:active {
   background: var(--pp-accent);
   border-color: var(--pp-accent);
@@ -208,7 +210,9 @@ body.theme-dark .yolo-provider-picker .yolo-provider-picker__chip--on:active {
   color: var(--pp-mute2);
 }
 
-.yolo-provider-picker .yolo-provider-picker__chip--on .yolo-provider-picker__chip-count {
+.yolo-provider-picker
+  .yolo-provider-picker__chip--on
+  .yolo-provider-picker__chip-count {
   color: rgba(255, 255, 255, 0.75);
 }
 

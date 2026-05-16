@@ -1262,9 +1262,16 @@ export const en: TranslationKeys = {
       resetAgentsConfirm:
         'Are you sure you want to reset agent configuration? This will remove custom agents and reset the current selection.',
       resetAgentsSuccess: 'Agent configuration has been reset to defaults',
-      logModelRequestContext: 'Log model request context',
-      logModelRequestContextDesc:
-        'Print the final request payload actually sent to the model for each Agent turn in the developer console.',
+      captureRawRequestDebug: 'Enable LLM request debugging',
+      captureRawRequestDebugDesc:
+        'When enabled, each AI response shows a Debug button (in the info bar and the more-actions menu) that lets you view or export the raw LLM, tool-call, and web-search requests and responses for that turn. Captured data is kept in memory for the current Obsidian session only and is cleared on restart. API keys are redacted in the export, but the original conversation content is included.',
+      captureRawRequestDebugExcludeLogsTitle:
+        'Exclude debug logs from knowledge base?',
+      captureRawRequestDebugExcludeLogsMessage:
+        'Debug logs may contain raw conversation and tool contents. Add {{path}} to the knowledge base exclude list so they are not indexed by RAG?',
+      captureRawRequestDebugExcludeLogsCta: 'Exclude logs',
+      captureRawRequestDebugExcludeLogsSuccess:
+        '{{path}} has been excluded from the knowledge base.',
       yoloBaseDir: 'YOLO base folder',
       yoloBaseDirDesc:
         'Enter a vault-relative path (without a leading /). Example: use YOLO at vault root, or setting/YOLO under the setting folder. Current skills directory: {path}.',
@@ -1327,6 +1334,19 @@ export const en: TranslationKeys = {
       nextTurnContext: 'Context used: ~{{tokens}} tokens',
       nextTurnContextCached:
         'Context used: ~{{tokens}} tokens ({{cached}} cached)',
+    },
+    llmDebug: {
+      title: 'LLM Debug Data',
+      open: 'Open LLM debug data',
+      openFailed: 'Failed to open debug data',
+      copy: 'Copy',
+      copied: 'Copied',
+      copyFailed: 'Failed to copy debug data',
+      save: 'Save',
+      savedShort: 'Saved',
+      saved: 'LLM debug data saved to {{path}}',
+      saveFailed: 'Failed to save debug data',
+      expired: 'Debug data was cleared on restart (current session only)',
     },
     sendMessage: 'Send message',
     newChat: 'New chat',

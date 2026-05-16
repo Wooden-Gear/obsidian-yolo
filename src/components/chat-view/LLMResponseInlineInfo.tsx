@@ -1,11 +1,17 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { ArrowDown, ArrowUp, Clock, Zap } from 'lucide-react'
-import { ReactNode, useLayoutEffect, useRef, useState } from 'react'
+import { ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { AssistantToolMessageGroup } from '../../types/chat'
 import { ResponseUsage } from '../../types/llm/response'
 
+import {
+  LLMDebugIconButton,
+  getLLMDebugTraceIdsForMessages,
+  hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
+} from './LLMDebugButton'
 import { LLMRequestEntry, useLLMResponseInfo } from './useLLMResponseInfo'
 
 const formatTokenCount = (value: number) => {
@@ -327,6 +333,24 @@ export default function LLMResponseInlineInfo({
     return () => observer.disconnect()
   }, [usage, durationMs, totalUsage, requestCount])
 
+  const debugTraceIds = useMemo(
+    () => getLLMDebugTraceIdsForMessages(messages),
+    [messages],
+  )
+  const hasDebugCache = useMemo(
+    () => hasLLMDebugCacheForTraceIds(debugTraceIds),
+    [debugTraceIds],
+  )
+  // After restart the live trace cache is empty but the assistant metadata
+  // still carries `llmDebugTraceId`. We still render the Debug entry in that
+  // case so users see why their previously-available button is no longer
+  // actionable; the button itself renders disabled with an expired tooltip.
+  const hadDebugTrace = useMemo(
+    () => hasLLMDebugMetadataForMessages(messages),
+    [messages],
+  )
+  const showDebugEntry = hasDebugCache || hadDebugTrace
+
   if (!usage && durationMs === null) {
     return null
   }
@@ -392,6 +416,11 @@ export default function LLMResponseInlineInfo({
                         '{{count}} calls this turn',
                       ).replace('{{count}}', String(requestCount))}
                     </span>
+                    <LLMDebugIconButton
+                      messages={messages}
+                      traceIds={debugTraceIds}
+                      className="clickable-icon yolo-llm-inline-info-debug-button"
+                    />
                     <span className="yolo-llm-inline-info-tooltip-title-summary">
                       <span className="yolo-llm-inline-info-breakdown-cell">
                         <ArrowUp className="yolo-llm-inline-info-icon yolo-llm-inline-info-icon--input" />
@@ -423,7 +452,27 @@ export default function LLMResponseInlineInfo({
                   </div>
                 </>
               ) : (
-                renderTooltipBlock(lastInputs)
+                <>
+                  {showDebugEntry && (
+                    <>
+                      <div className="yolo-llm-inline-info-tooltip-title">
+                        <span>
+                          {t(
+                            'chat.inlineInfo.callsTitle',
+                            '{{count}} calls this turn',
+                          ).replace('{{count}}', String(requestCount || 1))}
+                        </span>
+                        <LLMDebugIconButton
+                          messages={messages}
+                          traceIds={debugTraceIds}
+                          className="clickable-icon yolo-llm-inline-info-debug-button"
+                        />
+                      </div>
+                      <div className="yolo-llm-inline-info-tooltip-divider" />
+                    </>
+                  )}
+                  {renderTooltipBlock(lastInputs)}
+                </>
               )}
               {nextTurnTokens !== null && (
                 <>

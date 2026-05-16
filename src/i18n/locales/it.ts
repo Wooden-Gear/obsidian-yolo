@@ -1217,9 +1217,16 @@ export const it: TranslationKeys = {
         'Sei sicuro di voler ripristinare la configurazione degli agent? Questa azione rimuoverà gli agent personalizzati e reimposterà la selezione corrente.',
       resetAgentsSuccess:
         'La configurazione degli agent è stata ripristinata ai valori predefiniti.',
-      logModelRequestContext: 'Registra il contesto della richiesta al modello',
-      logModelRequestContextDesc:
-        'Stampa nella console sviluppatore il payload finale realmente inviato al modello per ogni turno Agent.',
+      captureRawRequestDebug: 'Abilita debug richieste LLM',
+      captureRawRequestDebugDesc:
+        "Quando attivo, ogni risposta del modello mostra un pulsante Debug (nella barra info e nel menu Altre azioni) che consente di consultare o esportare le richieste e risposte raw di LLM, chiamate strumento e ricerche web di quel turno. I dati catturati restano in memoria solo per la sessione corrente di Obsidian e vengono cancellati al riavvio. Le chiavi API sono offuscate nell'export, ma il contenuto originale della conversazione è incluso.",
+      captureRawRequestDebugExcludeLogsTitle:
+        'Escludere i log di debug dalla knowledge base?',
+      captureRawRequestDebugExcludeLogsMessage:
+        'I log di debug possono contenere il contenuto raw della conversazione e degli strumenti. Aggiungere {{path}} alla lista di esclusione della knowledge base per evitare che vengano indicizzati dal RAG?',
+      captureRawRequestDebugExcludeLogsCta: 'Escludi log',
+      captureRawRequestDebugExcludeLogsSuccess:
+        '{{path}} è stato escluso dalla knowledge base.',
       yoloBaseDir: 'Cartella base YOLO',
       yoloBaseDirDesc:
         'Inserisci un percorso relativo al vault (senza / iniziale). Esempio: YOLO nella radice del vault, oppure setting/YOLO nella cartella setting. Directory skill attuale: {path}.',
@@ -1278,6 +1285,20 @@ export const it: TranslationKeys = {
       nextTurnContext: 'Contesto utilizzato: ~{{tokens}} token',
       nextTurnContextCached:
         'Contesto utilizzato: ~{{tokens}} token ({{cached}} in cache)',
+    },
+    llmDebug: {
+      title: 'Dati debug LLM',
+      open: 'Apri dati debug LLM',
+      openFailed: 'Impossibile aprire i dati di debug',
+      copy: 'Copia',
+      copied: 'Copiato',
+      copyFailed: 'Impossibile copiare i dati di debug',
+      save: 'Salva',
+      savedShort: 'Salvato',
+      saved: 'Dati debug LLM salvati in {{path}}',
+      saveFailed: 'Impossibile salvare i dati di debug',
+      expired:
+        'I dati di debug sono stati cancellati al riavvio (solo sessione corrente)',
     },
     sendMessage: 'Invia messaggio',
     newChat: 'Nuova chat',

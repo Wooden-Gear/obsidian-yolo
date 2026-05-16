@@ -19,6 +19,12 @@ import {
   ChatAssistantMessage,
 } from '../../types/chat'
 
+import {
+  LLMDebugIconButton,
+  getLLMDebugTraceIdsForMessages,
+  hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
+} from './LLMDebugButton'
 import { getToolMessageContent } from './ToolMessage'
 
 function ActionIconButton({
@@ -258,7 +264,23 @@ export default function AssistantToolMessageGroupActions({
   const isBranchDisabled = isDisabled || !onBranch
   const isEditDisabled = isDisabled || !onEdit || isEditing
   const isDeleteDisabled = isDisabled || !onDelete
-  const hasMoreActions = showBranch || showEdit || showDelete
+  const debugTraceIds = useMemo(
+    () => getLLMDebugTraceIdsForMessages(messages),
+    [messages],
+  )
+  const hasDebugCache = useMemo(
+    () => hasLLMDebugCacheForTraceIds(debugTraceIds),
+    [debugTraceIds],
+  )
+  // Surface the Debug entry even when the live cache is gone (e.g. after
+  // Obsidian restart) so the user understands data was captured but expired,
+  // rather than the entry silently disappearing from the more-actions menu.
+  const hadDebugTrace = useMemo(
+    () => hasLLMDebugMetadataForMessages(messages),
+    [messages],
+  )
+  const showDebugEntry = hasDebugCache || hadDebugTrace
+  const hasMoreActions = showBranch || showEdit || showDelete || showDebugEntry
 
   useEffect(() => {
     if (!isMoreOpen) {
@@ -323,6 +345,15 @@ export default function AssistantToolMessageGroupActions({
             aria-hidden={isMoreOpen ? undefined : 'true'}
           >
             <div className="yolo-assistant-message-inline-actions-inner">
+              {showDebugEntry && (
+                <LLMDebugIconButton
+                  messages={messages}
+                  traceIds={debugTraceIds}
+                  className="clickable-icon yolo-assistant-message-action-btn"
+                  tabIndex={isMoreOpen ? undefined : -1}
+                  onOpen={() => setIsMoreOpen(false)}
+                />
+              )}
               {showBranch && (
                 <ActionIconButton
                   label={branchLabel}

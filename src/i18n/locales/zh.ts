@@ -1164,9 +1164,14 @@ export const zh: TranslationKeys = {
       resetAgentsConfirm:
         '确定要重置 Agent 配置吗？此操作将删除自定义 Agent 并重置当前选择。',
       resetAgentsSuccess: 'Agent 配置已重置为默认',
-      logModelRequestContext: '记录模型请求上下文',
-      logModelRequestContextDesc:
-        '在开发者控制台输出每一轮 Agent 实际发送给模型的最终请求载荷。',
+      captureRawRequestDebug: '启用 LLM 请求调试',
+      captureRawRequestDebugDesc:
+        '开启后，每条模型消息的信息栏和更多操作菜单中会出现 Debug 按钮，可查看或导出该轮 LLM、工具调用与网络搜索的原始请求和响应。捕获仅保留在当前会话内存中，重启 Obsidian 后清空。导出内容已脱敏 API 密钥，但仍包含对话原文。',
+      captureRawRequestDebugExcludeLogsTitle: '将调试日志排除出知识库？',
+      captureRawRequestDebugExcludeLogsMessage:
+        '调试日志可能含原始对话与工具内容。是否将 {{path}} 加入知识库排除列表，避免被 RAG 索引？',
+      captureRawRequestDebugExcludeLogsCta: '排除日志',
+      captureRawRequestDebugExcludeLogsSuccess: '已将 {{path}} 排除出知识库。',
       yoloBaseDir: 'YOLO 根目录',
       yoloBaseDirDesc:
         '填写库内相对路径（不要以 / 开头）。例如：放在库根目录填 YOLO；放在 setting 文件夹下填 setting/YOLO。当前技能目录：{path}。',
@@ -1245,6 +1250,19 @@ export const zh: TranslationKeys = {
       nextTurnContext: '已占用上下文：~{{tokens}} tokens',
       nextTurnContextCached:
         '已占用上下文：~{{tokens}} tokens ({{cached}} cached)',
+    },
+    llmDebug: {
+      title: 'LLM 调试数据',
+      open: '打开 LLM 调试数据',
+      openFailed: '打开调试数据失败',
+      copy: '复制',
+      copied: '已复制',
+      copyFailed: '复制调试数据失败',
+      save: '保存',
+      savedShort: '已保存',
+      saved: 'LLM 调试数据已保存到 {{path}}',
+      saveFailed: '保存调试数据失败',
+      expired: '调试数据已随重启清空（仅当前会话有效）',
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',
