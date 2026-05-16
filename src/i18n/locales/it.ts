@@ -1300,6 +1300,8 @@ export const it: TranslationKeys = {
       savedShort: 'Salvato',
       saved: 'Dati debug LLM salvati in {{path}}',
       saveFailed: 'Impossibile salvare i dati di debug',
+      expired:
+        'I dati di debug sono stati cancellati al riavvio (solo sessione corrente)',
     },
     sendMessage: 'Invia messaggio',
     newChat: 'Nuova chat',

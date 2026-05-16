@@ -10,6 +10,7 @@ import {
   LLMDebugIconButton,
   getLLMDebugTraceIdsForMessages,
   hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
 } from './LLMDebugButton'
 import { LLMRequestEntry, useLLMResponseInfo } from './useLLMResponseInfo'
 
@@ -340,6 +341,15 @@ export default function LLMResponseInlineInfo({
     () => hasLLMDebugCacheForTraceIds(debugTraceIds),
     [debugTraceIds],
   )
+  // After restart the live trace cache is empty but the assistant metadata
+  // still carries `llmDebugTraceId`. We still render the Debug entry in that
+  // case so users see why their previously-available button is no longer
+  // actionable; the button itself renders disabled with an expired tooltip.
+  const hadDebugTrace = useMemo(
+    () => hasLLMDebugMetadataForMessages(messages),
+    [messages],
+  )
+  const showDebugEntry = hasDebugCache || hadDebugTrace
 
   if (!usage && durationMs === null) {
     return null
@@ -443,7 +453,7 @@ export default function LLMResponseInlineInfo({
                 </>
               ) : (
                 <>
-                  {hasDebugCache && (
+                  {showDebugEntry && (
                     <>
                       <div className="yolo-llm-inline-info-tooltip-title">
                         <span>

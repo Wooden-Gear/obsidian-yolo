@@ -23,6 +23,7 @@ import {
   LLMDebugIconButton,
   getLLMDebugTraceIdsForMessages,
   hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
 } from './LLMDebugButton'
 import { getToolMessageContent } from './ToolMessage'
 
@@ -271,7 +272,15 @@ export default function AssistantToolMessageGroupActions({
     () => hasLLMDebugCacheForTraceIds(debugTraceIds),
     [debugTraceIds],
   )
-  const hasMoreActions = showBranch || showEdit || showDelete || hasDebugCache
+  // Surface the Debug entry even when the live cache is gone (e.g. after
+  // Obsidian restart) so the user understands data was captured but expired,
+  // rather than the entry silently disappearing from the more-actions menu.
+  const hadDebugTrace = useMemo(
+    () => hasLLMDebugMetadataForMessages(messages),
+    [messages],
+  )
+  const showDebugEntry = hasDebugCache || hadDebugTrace
+  const hasMoreActions = showBranch || showEdit || showDelete || showDebugEntry
 
   useEffect(() => {
     if (!isMoreOpen) {
@@ -336,7 +345,7 @@ export default function AssistantToolMessageGroupActions({
             aria-hidden={isMoreOpen ? undefined : 'true'}
           >
             <div className="yolo-assistant-message-inline-actions-inner">
-              {hasDebugCache && (
+              {showDebugEntry && (
                 <LLMDebugIconButton
                   messages={messages}
                   traceIds={debugTraceIds}

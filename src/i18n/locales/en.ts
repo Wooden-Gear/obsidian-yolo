@@ -1349,6 +1349,7 @@ export const en: TranslationKeys = {
       savedShort: 'Saved',
       saved: 'LLM debug data saved to {{path}}',
       saveFailed: 'Failed to save debug data',
+      expired: 'Debug data was cleared on restart (current session only)',
     },
     sendMessage: 'Send message',
     newChat: 'New chat',

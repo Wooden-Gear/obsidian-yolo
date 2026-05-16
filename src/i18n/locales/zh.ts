@@ -1265,6 +1265,7 @@ export const zh: TranslationKeys = {
       savedShort: '已保存',
       saved: 'LLM 调试数据已保存到 {{path}}',
       saveFailed: '保存调试数据失败',
+      expired: '调试数据已随重启清空（仅当前会话有效）',
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',

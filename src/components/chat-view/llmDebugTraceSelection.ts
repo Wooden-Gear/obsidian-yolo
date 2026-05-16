@@ -104,3 +104,21 @@ export function hasLLMDebugCacheForMessages(
 export function hasLLMDebugCacheForTraceIds(traceIds: string[]): boolean {
   return getLLMDebugTraces(traceIds).length > 0
 }
+
+/**
+ * True when an assistant message in the group was originally captured with a
+ * debug trace (its metadata still carries `llmDebugTraceId`). Traces live in
+ * memory only, so after an Obsidian restart this returns true while
+ * `hasLLMDebugCacheForMessages` returns false — that gap is what surfaces the
+ * "data expired on restart" tooltip on the Debug button.
+ */
+export function hasLLMDebugMetadataForMessages(
+  messages: AssistantToolMessageGroup,
+): boolean {
+  return messages.some(
+    (message) =>
+      message.role === 'assistant' &&
+      typeof message.metadata?.llmDebugTraceId === 'string' &&
+      message.metadata.llmDebugTraceId.length > 0,
+  )
+}

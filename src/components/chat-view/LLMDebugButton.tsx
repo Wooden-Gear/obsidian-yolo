@@ -18,12 +18,14 @@ import { ReactModal } from '../common/ReactModal'
 import {
   getLLMDebugTraceIdsForMessages,
   hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
 } from './llmDebugTraceSelection'
 
 export {
   getLLMDebugTraceIdsForMessages,
   hasLLMDebugCacheForMessages,
   hasLLMDebugCacheForTraceIds,
+  hasLLMDebugMetadataForMessages,
 } from './llmDebugTraceSelection'
 
 const DEBUG_FOLDER = 'YOLO/logs'
@@ -219,9 +221,38 @@ export function LLMDebugIconButton({
     () => hasLLMDebugCacheForTraceIds(resolvedTraceIds),
     [resolvedTraceIds],
   )
+  // Even when the cache is empty, the assistant message metadata still carries
+  // an `llmDebugTraceId` from when the request ran. Surface a disabled button
+  // in that state so users understand the data existed but was cleared on
+  // restart, instead of the button silently vanishing.
+  const hadDebugTrace = useMemo(
+    () => hasLLMDebugMetadataForMessages(messages),
+    [messages],
+  )
+
+  if (!hasDebugCache && !hadDebugTrace) {
+    return null
+  }
 
   if (!hasDebugCache) {
-    return null
+    const expiredLabel = t(
+      'chat.llmDebug.expired',
+      'Debug data was cleared on restart (current session only)',
+    )
+    // Intentionally omit the `title` attribute here: Obsidian renders its own
+    // tooltip from `aria-label`, and adding `title` causes the native browser
+    // tooltip to stack on top of it (more visible on disabled buttons).
+    return (
+      <button
+        type="button"
+        className={className}
+        aria-label={expiredLabel}
+        tabIndex={tabIndex}
+        disabled
+      >
+        {children ?? <Info size={12} />}
+      </button>
+    )
   }
 
   const label = t('chat.llmDebug.open', 'Open LLM debug data')

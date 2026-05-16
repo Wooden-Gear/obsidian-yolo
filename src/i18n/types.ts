@@ -1142,6 +1142,7 @@ export type TranslationKeys = {
       savedShort?: string
       saved?: string
       saveFailed?: string
+      expired?: string
     }
     sendMessage: string
     newChat: string
