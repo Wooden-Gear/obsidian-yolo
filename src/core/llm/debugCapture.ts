@@ -107,6 +107,14 @@ const SENSITIVE_JSON_KEY_PATTERN =
 const SENSITIVE_URL_PARAM_PATTERN =
   /^(key|api_key|apikey|access_token|refresh_token|id_token|token|signature|sig)$/i
 
+// Form-urlencoded body params, used by OAuth token / refresh endpoints. Stricter
+// than SENSITIVE_JSON_KEY_PATTERN: includes OAuth-specific keys like `code`
+// and `client_secret` that we don't want to mass-redact across all JSON bodies.
+const SENSITIVE_FORM_PARAM_PATTERN =
+  /^(key|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|id[_-]?token|token|client[_-]?secret|client[_-]?assertion|code|code[_-]?verifier|password|authorization|secret|signature|sig|assertion)$/i
+
+const FORM_URLENCODED_BODY_PATTERN = /^[A-Za-z0-9_\-.~+%&=]+$/
+
 const DATA_URL_BASE64_PATTERN =
   /(data:[^,\s"']+;base64,)([A-Za-z0-9+/_=-]{16,})/gi
 const BASE64_PAYLOAD_PATTERN = /^[A-Za-z0-9+/_=-]+$/
@@ -368,19 +376,6 @@ function findActiveTraceIdByKind(
   return candidates[0] ?? null
 }
 
-function findActiveConversationTraceId(): string | null {
-  const candidates = getActiveTraceIdsNewestFirst().filter((traceId) => {
-    const requestKind = traces.get(traceId)?.summary.requestKind
-    return requestKind === 'streaming' || requestKind === 'non-streaming'
-  })
-
-  if (candidates.length !== 1) {
-    return null
-  }
-
-  return candidates[0] ?? null
-}
-
 function isAbortSignal(value: unknown): value is AbortSignal {
   return (
     Boolean(value) &&
@@ -453,10 +448,13 @@ function resolveLLMDebugTraceIdForRequest(
     return findActiveTraceIdByKind('title-generation')
   }
 
+  // Embedding requests are only attributed to an explicit embedding-kind trace
+  // bound by signal or run context. We deliberately do not fall back to the
+  // active conversation trace: background RAG / index maintenance embeddings
+  // may overlap with a chat turn and would otherwise leak unrelated vault text
+  // into the user's exported debug log.
   if (isEmbeddingDebugRequest(request)) {
-    return (
-      findActiveTraceIdByKind('embedding') ?? findActiveConversationTraceId()
-    )
+    return findActiveTraceIdByKind('embedding')
   }
 
   return null
@@ -545,6 +543,31 @@ export function omitBase64DebugData(value: unknown): unknown {
   return result
 }
 
+function redactFormUrlencodedBody(body: string): string | null {
+  if (!body.includes('=')) {
+    return null
+  }
+  if (!FORM_URLENCODED_BODY_PATTERN.test(body)) {
+    return null
+  }
+  try {
+    const params = new URLSearchParams(body)
+    let touched = false
+    const redacted = new URLSearchParams()
+    for (const [key, value] of params.entries()) {
+      if (SENSITIVE_FORM_PARAM_PATTERN.test(key)) {
+        redacted.append(key, maskSecret(value))
+        touched = true
+      } else {
+        redacted.append(key, value)
+      }
+    }
+    return touched ? redacted.toString() : body
+  } catch {
+    return null
+  }
+}
+
 function prepareBodyForStorage(body: string | undefined): string | undefined {
   if (body === undefined) {
     return undefined
@@ -557,6 +580,10 @@ function prepareBodyForStorage(body: string | undefined): string | undefined {
     )
     return truncateDebugText(compacted ?? '')
   } catch {
+    const formRedacted = redactFormUrlencodedBody(body)
+    if (formRedacted !== null) {
+      return truncateDebugText(omitBase64InString(formRedacted))
+    }
     return truncateDebugText(omitBase64InString(body))
   }
 }

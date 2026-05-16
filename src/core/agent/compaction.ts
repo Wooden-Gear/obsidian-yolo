@@ -417,11 +417,13 @@ export const createConversationCompactionSummary = async ({
   model,
   messages,
   retainLatestToolBoundary,
+  debugTraceId,
 }: {
   providerClient: BaseLLMProvider<LLMProvider>
   model: ChatModel
   messages: ChatMessage[]
   retainLatestToolBoundary?: boolean
+  debugTraceId?: string
 }): Promise<string> => {
   const source = getCompactionSummarySourceMessages(messages, {
     retainLatestToolBoundary,
@@ -449,6 +451,7 @@ export const createConversationCompactionSummary = async ({
     },
     stream: false,
     purpose: 'auxiliary',
+    debugTraceId,
   })
 
   const summary = response.content.trim()

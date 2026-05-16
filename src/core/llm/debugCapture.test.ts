@@ -141,4 +141,40 @@ describe('debugCapture', () => {
     expect(omitted).toMatch(/\[OMITTED long JSON string: \d+ chars\]/)
     expect(omitted).not.toContain('Truncated long JSON string')
   })
+
+  it('redacts sensitive params in form-urlencoded request bodies', async () => {
+    setLLMDebugCaptureEnabled(true)
+    const fetch = createLLMDebugFetch(
+      jest.fn(async () => new Response('{}')),
+      'browser',
+    )
+    const trace = createLLMDebugTrace({ requestKind: 'non-streaming' })
+
+    await runWithLLMDebugTrace(trace.id, async () => {
+      await fetch('https://oauth.example.test/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: 'client-12345',
+          client_secret: 'super-secret-value-xyz',
+          refresh_token: 'r3fr3sh-t0k3n-abcdefgh',
+          code: 'auth-code-9876543210',
+        }),
+      })
+    })
+    await flushLLMDebugTraceReads([trace.id])
+
+    const body = getLLMDebugTrace(trace.id)?.exchanges[0]?.request.body ?? ''
+    // Non-sensitive params remain readable.
+    expect(body).toContain('grant_type=refresh_token')
+    expect(body).toContain('client_id=client-12345')
+    // Sensitive secrets are masked and original values do not survive.
+    expect(body).not.toContain('super-secret-value-xyz')
+    expect(body).not.toContain('r3fr3sh-t0k3n-abcdefgh')
+    expect(body).not.toContain('auth-code-9876543210')
+    expect(body).toMatch(/client_secret=[^&]*REDACTED/)
+    expect(body).toMatch(/refresh_token=[^&]*REDACTED/)
+    expect(body).toMatch(/(^|&)code=[^&]*REDACTED/)
+  })
 })

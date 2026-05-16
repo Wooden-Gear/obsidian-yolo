@@ -252,6 +252,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                       providerClient: input.compactionProviderClient,
                       model: input.compactionModel,
                       messages: conversationMessages,
+                      debugTraceId: currentDebugTraceId,
                     })
                     const nextCompaction = buildCompactedConversationState({
                       messages: conversationMessages,

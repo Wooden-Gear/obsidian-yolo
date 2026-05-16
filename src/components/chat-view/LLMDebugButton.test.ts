@@ -213,31 +213,32 @@ describe('getLLMDebugTraceIdsForMessages', () => {
       await runWithLLMDebugTrace(titleTrace.id, async () => {
         // Simulates an SDK transport path that receives the title signal from
         // executeSingleTurn but does not forward it into the underlying fetch.
-        await Promise.all([
-          fetch('https://example.test/v1/title', {
-            method: 'POST',
-            body: JSON.stringify({
-              model: 'gpt-title',
-              messages: [
-                {
-                  role: 'system',
-                  content:
-                    'You are a title generator. Generate a concise conversation title.',
-                },
-                { role: 'user', content: 'User first message:\nHello' },
-              ],
-            }),
+        // The title-generation heuristic should still attribute it correctly.
+        await fetch('https://example.test/v1/title', {
+          method: 'POST',
+          body: JSON.stringify({
+            model: 'gpt-title',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are a title generator. Generate a concise conversation title.',
+              },
+              { role: 'user', content: 'User first message:\nHello' },
+            ],
           }),
-          // Simulates unrelated background embedding work that also lacks an
-          // explicit debug trace while the main and title traces overlap.
-          fetch('https://example.test/v1/embeddings', {
-            method: 'POST',
-            body: JSON.stringify({
-              model: 'text-embedding-test',
-              input: `LLM training ${'x'.repeat(220)}architecture`,
-            }),
+        })
+        // Unrelated background embedding work without an explicit debug trace.
+        // We intentionally do NOT capture this into the main/title trace —
+        // attributing background RAG / index embeddings to the user's chat
+        // turn would leak unrelated vault content into the exported log.
+        await fetch('https://example.test/v1/embeddings', {
+          method: 'POST',
+          body: JSON.stringify({
+            model: 'text-embedding-test',
+            input: `LLM training ${'x'.repeat(220)}architecture`,
           }),
-        ])
+        })
       })
       await fetch('https://example.test/v1/chat/completions', {
         method: 'POST',
@@ -264,12 +265,13 @@ describe('getLLMDebugTraceIdsForMessages', () => {
     const traceIds = getLLMDebugTraceIdsForMessages([assistantMessage])
     expect(traceIds).toContain(titleTrace.id)
     expect(getLLMDebugTrace(titleTrace.id)?.exchanges).toHaveLength(1)
-    expect(getLLMDebugTrace(mainTrace.id)?.exchanges).toHaveLength(2)
+    // Only the main chat completion is captured. The background embedding
+    // is dropped because no embedding-kind trace is bound to it.
+    expect(getLLMDebugTrace(mainTrace.id)?.exchanges).toHaveLength(1)
 
     const markdown = buildLLMDebugMarkdown(getLLMDebugTraces(traceIds))
     expect(markdown).toContain('Title generation request')
     expect(markdown).toContain('Dropped Signal Title')
-    expect(markdown).toContain('Embedding request')
-    expect(markdown).toContain('[OMITTED embedding input string: 45 chars]')
+    expect(markdown).not.toContain('Embedding request')
   })
 })

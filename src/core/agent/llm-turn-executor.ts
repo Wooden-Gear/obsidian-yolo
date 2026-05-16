@@ -22,6 +22,7 @@ import { BaseLLMProvider } from '../llm/base'
 import {
   createLLMDebugTrace,
   isLLMDebugCaptureEnabled,
+  registerLLMDebugTraceForTurn,
   updateLLMDebugTrace,
 } from '../llm/debugCapture'
 import { getLocalFileToolServerName } from '../mcp/localFileTools'
@@ -140,6 +141,13 @@ export class AgentLlmTurnExecutor {
               : 'streaming',
         })
       : null
+    if (debugTrace && this.input.sourceUserMessageId) {
+      registerLLMDebugTraceForTurn({
+        conversationId: this.input.conversationId,
+        sourceUserMessageId: this.input.sourceUserMessageId,
+        traceId: debugTrace.id,
+      })
+    }
     const assistantMessage: ChatAssistantMessage = {
       role: 'assistant',
       id: assistantMessageId,
