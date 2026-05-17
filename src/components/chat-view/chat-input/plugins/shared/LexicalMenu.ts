@@ -830,28 +830,35 @@ export function useMenuAnchorRef(
     rootElement.setAttribute('aria-controls', 'typeahead-menu')
   }, [editor, resolution, className, parent])
 
-  useEffect(() => {
+  const cleanupMenu = useCallback(() => {
     const rootElement = editor.getRootElement()
+    if (rootElement !== null) {
+      rootElement.removeAttribute('aria-controls')
+    }
+
+    const containerDiv = anchorElementRef.current
+    if (containerDiv?.isConnected) {
+      clearDynamicStyleClass(containerDiv)
+      containerDiv.remove()
+    }
+    if (containerDiv?.firstChild instanceof HTMLElement) {
+      clearDynamicStyleClass(containerDiv.firstChild)
+    }
+    // 重置位置缓存:containerDiv 已被 remove,下次打开必须重新写样式。
+    lastWrittenPositionRef.current = null
+  }, [editor])
+
+  useLayoutEffect(() => {
     if (resolution !== null) {
       positionMenu()
-      return () => {
-        if (rootElement !== null) {
-          rootElement.removeAttribute('aria-controls')
-        }
-
-        const containerDiv = anchorElementRef.current
-        if (containerDiv?.isConnected) {
-          clearDynamicStyleClass(containerDiv)
-          containerDiv.remove()
-        }
-        if (containerDiv?.firstChild instanceof HTMLElement) {
-          clearDynamicStyleClass(containerDiv.firstChild)
-        }
-        // 重置位置缓存:containerDiv 已被 remove,下次打开必须重新写样式。
-        lastWrittenPositionRef.current = null
-      }
+    } else {
+      cleanupMenu()
     }
-  }, [editor, positionMenu, resolution])
+  }, [cleanupMenu, positionMenu, resolution])
+
+  useEffect(() => {
+    return cleanupMenu
+  }, [cleanupMenu])
 
   const onVisibilityChange = useCallback(
     (isInView: boolean) => {
