@@ -2079,6 +2079,13 @@ export default class YoloPlugin extends Plugin {
     this.clearTabCompletionTimer()
     this.cancelTabCompletionRequest()
     this.clearInlineSuggestion()
+
+    // Release the pdfjs worker Blob URL we may have created during this
+    // session. Outstanding workers already spawned keep running; this only
+    // prevents future fetches and lets the GC collect the source string.
+    void import('./utils/pdf/pdfjsLoader').then(({ disposePdfjsWorker }) =>
+      disposePdfjsWorker(),
+    )
   }
 
   async loadSettings() {

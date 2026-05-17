@@ -1,3 +1,5 @@
+import { loadPdfjs } from './pdfjsLoader'
+
 type PdfTextItem = {
   str: string
   transform: number[]
@@ -78,9 +80,9 @@ export type LoadedPdfPages = {
 }
 
 /**
- * Lazy-loads pdfjs-dist and extracts plain text page-by-page. Preloads the
- * official worker entry so PDF.js uses its in-thread fake worker (no separate
- * `pdf.worker.mjs` on disk required for single-file `main.js` releases).
+ * Lazy-loads pdfjs-dist (with its worker configured as a Blob URL — see
+ * pdfjsLoader for why we route through it) and extracts plain text
+ * page-by-page.
  */
 export async function loadPdfPages(
   data: Uint8Array,
@@ -88,8 +90,7 @@ export async function loadPdfPages(
 ): Promise<LoadedPdfPages> {
   const { maxPages, maybeYield, signal } = options
 
-  await import('pdfjs-dist/build/pdf.worker.mjs')
-  const pdfjs = await import('pdfjs-dist')
+  const pdfjs = await loadPdfjs()
 
   const loadingTask = pdfjs.getDocument({
     data,
@@ -138,8 +139,7 @@ export async function getPdfPageCount(
     await maybeYield()
   }
 
-  await import('pdfjs-dist/build/pdf.worker.mjs')
-  const pdfjs = await import('pdfjs-dist')
+  const pdfjs = await loadPdfjs()
 
   const loadingTask = pdfjs.getDocument({
     data,

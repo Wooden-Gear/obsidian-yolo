@@ -25,13 +25,13 @@ jest.mock('../../database/json/chat/pdfTextCacheStore', () => {
 // Pdfjs is mocked per-test (success vs throw). Default: succeed with 2 pages.
 let pdfjsMode: 'ok' | 'throw-load' | 'throw-text' = 'ok'
 
-jest.mock('pdfjs-dist/build/pdf.worker.mjs', () => {
-  const g = globalThis as typeof globalThis & {
-    pdfjsWorker?: { WorkerMessageHandler: unknown }
-  }
-  g.pdfjsWorker = { WorkerMessageHandler: class {} }
-  return {}
-})
+// The build-time inlined worker source isn't available in Jest — supply an
+// empty string so pdfjsLoader's Blob URL construction is a no-op.
+jest.mock(
+  'virtual:pdfjs-worker-script',
+  () => ({ __esModule: true, default: '' }),
+  { virtual: true },
+)
 
 jest.mock('pdfjs-dist', () => ({
   GlobalWorkerOptions: { workerSrc: '' as string },
