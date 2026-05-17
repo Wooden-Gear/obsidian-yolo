@@ -132,6 +132,7 @@ type MentionEntryOptionType =
   | 'mode'
   | 'model'
 type MentionChatMode = 'chat' | 'agent'
+type MentionMenuTransitionDirection = 'none' | 'forward' | 'back'
 
 type MentionTypeaheadOptionPayload =
   | {
@@ -452,6 +453,10 @@ export default function NewMentionsPlugin({
 
   const [queryString, setQueryString] = useState<string | null>(null)
   const [menuScope, setMenuScope] = useState<MentionMenuScope>('root')
+  const [menuContentTransition, setMenuContentTransition] = useState<{
+    direction: MentionMenuTransitionDirection
+    nonce: number
+  }>({ direction: 'none', nonce: 0 })
   // Hover/方向键预览 子面板相关状态（只在 menuScope === 'root' 且非搜索/direct-search 下生效）。
   // - hoveredEntry: 鼠标当前 hover 的一级 entry，由 ~100ms open timer 写入。
   // - focusSide: 键盘焦点所在面板（'main' = 默认主面板，'sub' = 已 → 进入子面板）。
@@ -509,6 +514,16 @@ export default function NewMentionsPlugin({
     setSubHighlightedIndex(0)
     setMainSelectedIndex(null)
   }, [clearHoverTimers])
+
+  const animateMenuContent = useCallback(
+    (direction: MentionMenuTransitionDirection) => {
+      setMenuContentTransition((prev) => ({
+        direction,
+        nonce: prev.nonce + 1,
+      }))
+    },
+    [],
+  )
 
   useEffect(() => {
     if (queryString === null) {
@@ -895,6 +910,7 @@ export default function NewMentionsPlugin({
           nodeToReplace.replace(triggerNode)
           triggerNode.selectEnd()
         }
+        animateMenuContent('back')
         setMenuScope('root')
         return
       }
@@ -957,6 +973,7 @@ export default function NewMentionsPlugin({
           nodeToReplace.replace(triggerNode)
           triggerNode.selectEnd()
         }
+        animateMenuContent('forward')
         setMenuScope(nextScope)
         // drill-down 后子面板的语义被主面板顶掉，必须清空 hover 预览状态。
         resetSubPreviewState()
@@ -1013,6 +1030,7 @@ export default function NewMentionsPlugin({
       closeMenu()
     },
     [
+      animateMenuContent,
       app,
       mentionDisplayMode,
       mentionableUnitLabel,
@@ -1450,7 +1468,23 @@ export default function NewMentionsPlugin({
               ref={mainPanelRef}
               className="yolo-popover-surface yolo-popover-surface--smart-space yolo-smart-space-mention-dropdown"
             >
-              <div className="yolo-smart-space-mention-list" role="listbox">
+              <div
+                key={`main:${menuContentTransition.nonce}`}
+                className="yolo-smart-space-mention-list"
+                role="listbox"
+                data-transition={
+                  menuContentTransition.direction === 'none'
+                    ? undefined
+                    : menuContentTransition.direction
+                }
+                onAnimationEnd={() =>
+                  setMenuContentTransition((prev) =>
+                    prev.direction === 'none'
+                      ? prev
+                      : { ...prev, direction: 'none' },
+                  )
+                }
+              >
                 {options.map((option, i: number) => {
                   const entryType =
                     option.payload.kind === 'entry'
@@ -1520,6 +1554,7 @@ export default function NewMentionsPlugin({
             </div>
             {showSubpanel && (
               <div
+                key={`sub:${previewEntryEffective}:${subSide}`}
                 ref={subPanelRef}
                 className="yolo-popover-surface yolo-popover-surface--smart-space yolo-smart-space-mention-dropdown yolo-smart-space-mention-subpanel"
                 data-side={subSide}
