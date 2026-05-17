@@ -1067,6 +1067,7 @@ export default function NewMentionsPlugin({
   // flip 测量：每次子面板出现/主面板尺寸变化/视口尺寸变化时重新计算。
   // 所需宽度与 popover.css 中 .yolo-smart-space-mention-subpanel 的实际规则保持一致：
   //   width: min(480px, calc(100vw - 24px))
+  // 先限制在 LexicalMenu 写入的 Chat 容器边界内；侧边栏 Chat 不跨 pane 展开。
   // 两侧都不够则 hidden，由组件兜底回退到 drill-down。
   useLayoutEffect(() => {
     if (!previewEntryEffective || subOptions.length === 0) return
@@ -1083,22 +1084,39 @@ export default function NewMentionsPlugin({
       const value = Number.parseFloat(match[1])
       return Number.isFinite(value) && value > 0 ? value : 480
     }
+    const parseOptionalPx = (raw: string): number | null => {
+      const trimmed = raw.trim()
+      const match = /^(-?\d+(?:\.\d+)?)px$/.exec(trimmed)
+      if (!match) return null
+      const value = Number.parseFloat(match[1])
+      return Number.isFinite(value) ? value : null
+    }
     const measure = () => {
       const mainRect = main.getBoundingClientRect()
       const viewportWidth = win.innerWidth
       const gap = 6
+      const style = win.getComputedStyle(main)
       // 与 CSS min(var(--yolo-chat-typeahead-max-width, 480px), 100vw - 24px) 同步。
       const maxWidthPx = parseMaxWidthPx(
-        win
-          .getComputedStyle(main)
-          .getPropertyValue('--yolo-chat-typeahead-max-width'),
+        style.getPropertyValue('--yolo-chat-typeahead-max-width'),
       )
       const requiredWidth = Math.min(
         maxWidthPx,
         Math.max(0, viewportWidth - 24),
       )
-      const spaceRight = viewportWidth - mainRect.right - gap
-      const spaceLeft = mainRect.left - gap
+      const boundaryLeft =
+        parseOptionalPx(
+          style.getPropertyValue('--yolo-typeahead-boundary-left'),
+        ) ??
+        0
+      const boundaryRight =
+        parseOptionalPx(
+          style.getPropertyValue('--yolo-typeahead-boundary-right'),
+        ) ?? viewportWidth
+      const effectiveLeft = Math.max(0, boundaryLeft)
+      const effectiveRight = Math.min(viewportWidth, boundaryRight)
+      const spaceRight = effectiveRight - mainRect.right - gap
+      const spaceLeft = mainRect.left - effectiveLeft - gap
       if (spaceRight >= requiredWidth) {
         setSubSide('right')
       } else if (spaceLeft >= requiredWidth) {

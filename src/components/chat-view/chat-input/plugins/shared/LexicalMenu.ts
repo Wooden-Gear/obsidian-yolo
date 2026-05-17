@@ -697,6 +697,9 @@ export function useMenuAnchorRef(
         }
 
         const rect = containerEl.getBoundingClientRect()
+        const boundaryRect =
+          rootElement.closest('.yolo-chat-container')?.getBoundingClientRect() ??
+          rect
         const cs = getComputedStyle(containerEl)
 
         // Calculate focus ring thickness from box-shadow
@@ -760,6 +763,12 @@ export function useMenuAnchorRef(
               boxSizing: 'border-box',
               overflow: 'visible',
               '--yolo-typeahead-available-height': `${available}px`,
+              '--yolo-typeahead-boundary-left': `${Math.round(
+                boundaryRect.left,
+              )}px`,
+              '--yolo-typeahead-boundary-right': `${Math.round(
+                boundaryRect.right,
+              )}px`,
             })
           } else {
             updateDynamicStyleClass(menuEle, 'yolo-typeahead-pop', {

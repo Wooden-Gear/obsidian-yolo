@@ -11397,6 +11397,8 @@ button.yolo-llm-debug-modal-button:focus-visible {
  * 注意：子面板必须保持为 popover 的直接子节点。这里的 100% intentionally 指向
  * LexicalMenu 已定位好的 popover/root 宽度；不要把子面板移进主面板 DOM 内部，
  * 否则 placement='top' 的向上展开锚点和 hover safe-area 都会偏离原行为。
+ * 是否允许侧向展开由 MentionPlugin 读取 LexicalMenu 写入的 Chat 容器边界决定；
+ * 侧边栏 Chat pane 内放不下时隐藏子面板，点击一级菜单走 drill-down。
  * 空间不够时由组件切到 data-side="left" 翻到主面板左侧；
  * 两侧都不够时组件不渲染（drill-down 兜底）。 */
 
@@ -11409,8 +11411,7 @@ button.yolo-llm-debug-modal-button:focus-visible {
   position: absolute;
   width: min(var(--yolo-chat-typeahead-max-width, 480px), calc(100vw - 24px));
   max-width: var(--yolo-chat-typeahead-max-width, 480px);
-  max-height: min(320px, var(--yolo-typeahead-available-height, 320px));
-  overflow-y: auto;
+  overflow: visible;
   pointer-events: auto;
 }
 
