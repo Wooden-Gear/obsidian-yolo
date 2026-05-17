@@ -311,6 +311,25 @@ const toToolCall = (
   },
 })
 
+type ResponseReasoningOutputItem = Extract<
+  ResponseOutputItem,
+  { type: 'reasoning' }
+>
+
+type ReasoningItemWithOptionalSummary = Omit<
+  ResponseReasoningOutputItem,
+  'summary'
+> & {
+  summary?: ResponseReasoningOutputItem['summary'] | null
+}
+
+const getReasoningSummaryTexts = (
+  item: ResponseReasoningOutputItem,
+): string[] => {
+  const summary = (item as ReasoningItemWithOptionalSummary).summary
+  return summary?.map((s) => s.text) ?? []
+}
+
 const getFinishReason = (
   response: Response,
   sawToolCall: boolean,
@@ -408,7 +427,7 @@ export class ChatGPTOAuthResponsesAdapter {
         (item): item is Extract<ResponseOutputItem, { type: 'reasoning' }> =>
           item.type === 'reasoning',
       )
-      .flatMap((item) => item.summary.map((summary) => summary.text))
+      .flatMap(getReasoningSummaryTexts)
       .join('\n')
     const contentParts = messages.flatMap((message) => message.content)
     const text = contentParts
@@ -548,9 +567,7 @@ export class ChatGPTOAuthResponsesAdapter {
       }
       case 'response.output_item.done': {
         if (event.item.type === 'reasoning') {
-          const reasoning = event.item.summary
-            .map((summary) => summary.text)
-            .join('\n')
+          const reasoning = getReasoningSummaryTexts(event.item).join('\n')
           if (reasoning) {
             yield this.createChunk(event.item.id, { reasoning })
           }
