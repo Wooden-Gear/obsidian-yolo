@@ -17,6 +17,8 @@ import {
   COMMAND_PRIORITY_LOW,
   CommandListenerPriority,
   KEY_ARROW_DOWN_COMMAND,
+  KEY_ARROW_LEFT_COMMAND,
+  KEY_ARROW_RIGHT_COMMAND,
   KEY_ARROW_UP_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
@@ -75,6 +77,20 @@ export class MenuOption {
   setRefElement(element: HTMLElement | null) {
     this.ref = { current: element }
   }
+}
+
+/**
+ * 共享层（LexicalMenu/LexicalTypeaheadMenuPlugin）原本只暴露默认键盘行为；
+ * MentionPlugin 需要在 ↑/↓/←/→/Enter 之前注入自己的逻辑（hover 预览子面板的
+ * 跨面板焦点切换），又不能动 SkillSlashPlugin 的现有体验。这里以可选 prop 的
+ * 形式给出唯一扩展点：handler 返回 true 即"已处理"，跳过默认逻辑；返回 false
+ * 走原默认。SkillSlash 不传 = 完全等价旧行为。 */
+export type CustomKeyHandlers = {
+  onArrowUp?: (event: KeyboardEvent) => boolean
+  onArrowDown?: (event: KeyboardEvent) => boolean
+  onArrowLeft?: (event: KeyboardEvent) => boolean
+  onArrowRight?: (event: KeyboardEvent) => boolean
+  onEnter?: (event: KeyboardEvent | null) => boolean
 }
 
 export type MenuRenderFn<TOption extends MenuOption> = (
@@ -287,6 +303,7 @@ export function LexicalMenu<TOption extends MenuOption>({
   shouldSplitNodeWithQuery = false,
   commandPriority = COMMAND_PRIORITY_LOW,
   getDefaultHighlightedIndex,
+  customKeyHandlers,
 }: {
   close: () => void
   editor: LexicalEditor
@@ -303,8 +320,18 @@ export function LexicalMenu<TOption extends MenuOption>({
   ) => void
   commandPriority?: CommandListenerPriority
   getDefaultHighlightedIndex?: (options: TOption[]) => number
+  customKeyHandlers?: CustomKeyHandlers
 }): ReactJSX.Element | null {
   const [selectedIndex, setHighlightedIndex] = useState<null | number>(null)
+
+  // 把最新的 customKeyHandlers 放进 ref，避免每次 props 变化都重新注册 lexical
+  // command（注册成本不大但会改变命令优先级排序，徒增不确定性）。
+  const customKeyHandlersRef = useRef<CustomKeyHandlers | undefined>(
+    customKeyHandlers,
+  )
+  useEffect(() => {
+    customKeyHandlersRef.current = customKeyHandlers
+  }, [customKeyHandlers])
 
   const matchingString = resolution.match?.matchingString
 
@@ -408,6 +435,14 @@ export function LexicalMenu<TOption extends MenuOption>({
         KEY_ARROW_DOWN_COMMAND,
         (payload) => {
           const event = payload
+          const customHandler = customKeyHandlersRef.current?.onArrowDown
+          if (customHandler && customHandler(event)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+            return true
+          }
+          // IME 合成期放行 Lexical 默认行为，避免抢占中文候选词导航。
+          if (event?.isComposing) return false
           if (options?.length && selectedIndex !== null) {
             const newSelectedIndex =
               selectedIndex !== options.length - 1 ? selectedIndex + 1 : 0
@@ -433,6 +468,14 @@ export function LexicalMenu<TOption extends MenuOption>({
         KEY_ARROW_UP_COMMAND,
         (payload) => {
           const event = payload
+          const customHandler = customKeyHandlersRef.current?.onArrowUp
+          if (customHandler && customHandler(event)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+            return true
+          }
+          // IME 合成期放行 Lexical 默认行为，避免抢占中文候选词导航。
+          if (event?.isComposing) return false
           if (options?.length && selectedIndex !== null) {
             const newSelectedIndex =
               selectedIndex !== 0 ? selectedIndex - 1 : options.length - 1
@@ -445,6 +488,35 @@ export function LexicalMenu<TOption extends MenuOption>({
             event.stopImmediatePropagation()
           }
           return true
+        },
+        commandPriority,
+      ),
+      editor.registerCommand<KeyboardEvent>(
+        KEY_ARROW_LEFT_COMMAND,
+        (payload) => {
+          const event = payload
+          const customHandler = customKeyHandlersRef.current?.onArrowLeft
+          if (customHandler && customHandler(event)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+            return true
+          }
+          // 没有自定义 handler 处理 → 走 Lexical 默认（光标移动），不拦截。
+          return false
+        },
+        commandPriority,
+      ),
+      editor.registerCommand<KeyboardEvent>(
+        KEY_ARROW_RIGHT_COMMAND,
+        (payload) => {
+          const event = payload
+          const customHandler = customKeyHandlersRef.current?.onArrowRight
+          if (customHandler && customHandler(event)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+            return true
+          }
+          return false
         },
         commandPriority,
       ),
@@ -489,6 +561,16 @@ export function LexicalMenu<TOption extends MenuOption>({
       editor.registerCommand(
         KEY_ENTER_COMMAND,
         (event: KeyboardEvent | null) => {
+          const customHandler = customKeyHandlersRef.current?.onEnter
+          if (customHandler && customHandler(event)) {
+            if (event !== null) {
+              event.preventDefault()
+              event.stopImmediatePropagation()
+            }
+            return true
+          }
+          // IME 合成期放行 Lexical 默认行为，避免抢占中文候选词确认。
+          if (event?.isComposing) return false
           if (
             options === null ||
             selectedIndex === null ||

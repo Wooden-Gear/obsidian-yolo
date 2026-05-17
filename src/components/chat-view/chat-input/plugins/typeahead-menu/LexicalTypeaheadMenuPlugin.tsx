@@ -24,6 +24,7 @@ import { startTransition, useCallback, useEffect, useState } from 'react'
 import type { JSX as ReactJSX } from 'react/jsx-runtime'
 
 import {
+  CustomKeyHandlers,
   LexicalMenu,
   MenuOption,
   MenuRenderFn,
@@ -185,6 +186,8 @@ export type TypeaheadMenuPluginProps<TOption extends MenuOption> = {
   commandPriority?: CommandListenerPriority
   parent?: HTMLElement
   getDefaultHighlightedIndex?: (options: TOption[]) => number
+  /** 可选扩展点：在共享层默认键盘行为前注入自定义逻辑（详见 `LexicalMenu.ts`）。 */
+  customKeyHandlers?: CustomKeyHandlers
 }
 
 export function LexicalTypeaheadMenuPlugin<TOption extends MenuOption>({
@@ -199,6 +202,7 @@ export function LexicalTypeaheadMenuPlugin<TOption extends MenuOption>({
   commandPriority = COMMAND_PRIORITY_LOW,
   parent,
   getDefaultHighlightedIndex,
+  customKeyHandlers,
 }: TypeaheadMenuPluginProps<TOption>): ReactJSX.Element | null {
   const [editor] = useLexicalComposerContext()
   const [resolution, setResolution] = useState<MenuResolution | null>(null)
@@ -296,6 +300,7 @@ export function LexicalTypeaheadMenuPlugin<TOption extends MenuOption>({
       onSelectOption={onSelectOption}
       commandPriority={commandPriority}
       getDefaultHighlightedIndex={getDefaultHighlightedIndex}
+      customKeyHandlers={customKeyHandlers}
     />
   )
 }
