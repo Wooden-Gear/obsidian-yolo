@@ -161,9 +161,11 @@ export class AnthropicProvider extends BaseLLMProvider<LLMProvider> {
       const payloadBase: MessageCreateParamsNonStreaming &
         Record<string, unknown> = {
         model: request.model,
-        messages: request.messages
-          .map((m) => this.parseRequestMessage(m))
-          .filter((m): m is MessageParam => m !== null),
+        messages: AnthropicProvider.mergeAdjacentUserMessages(
+          request.messages
+            .map((m) => this.parseRequestMessage(m))
+            .filter((m): m is MessageParam => m !== null),
+        ),
         system: systemMessage,
         tools: request.tools?.map((t) => AnthropicProvider.parseRequestTool(t)),
         tool_choice: request.tool_choice
@@ -286,9 +288,11 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
       const payloadBase: MessageCreateParamsStreaming &
         Record<string, unknown> = {
         model: request.model,
-        messages: request.messages
-          .map((m) => this.parseRequestMessage(m))
-          .filter((m): m is MessageParam => m !== null),
+        messages: AnthropicProvider.mergeAdjacentUserMessages(
+          request.messages
+            .map((m) => this.parseRequestMessage(m))
+            .filter((m): m is MessageParam => m !== null),
+        ),
         system: systemMessage,
         tools: request.tools?.map((t) => AnthropicProvider.parseRequestTool(t)),
         tool_choice: request.tool_choice
@@ -490,6 +494,35 @@ https://github.com/glowingjade/obsidian-smart-composer/issues/286`,
       model: model,
       usage: usage,
     }
+  }
+
+  // Anthropic 协议要求 role 严格交替（user / assistant）。当 assistant 一次返回
+  // 多个 tool_use 时，下一轮的多条 tool 结果必须打包到同一条 user message 的
+  // content[] 里；否则上游会以
+  // "`tool_use` ids were found without `tool_result` blocks immediately after"
+  // 报 400。这里把映射后相邻的 user 消息合并。
+  protected static mergeAdjacentUserMessages(
+    messages: MessageParam[],
+  ): MessageParam[] {
+    const merged: MessageParam[] = []
+    for (const message of messages) {
+      const prev = merged[merged.length - 1]
+      if (prev && prev.role === 'user' && message.role === 'user') {
+        const prevContent = Array.isArray(prev.content)
+          ? prev.content
+          : [{ type: 'text' as const, text: prev.content }]
+        const nextContent = Array.isArray(message.content)
+          ? message.content
+          : [{ type: 'text' as const, text: message.content }]
+        merged[merged.length - 1] = {
+          role: 'user',
+          content: [...prevContent, ...nextContent],
+        }
+      } else {
+        merged.push(message)
+      }
+    }
+    return merged
   }
 
   protected parseRequestMessage(message: RequestMessage): MessageParam | null {

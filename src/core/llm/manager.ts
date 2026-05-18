@@ -7,6 +7,7 @@ import { AzureOpenAIProvider } from './azureOpenaiProvider'
 import { BaseLLMProvider } from './base'
 import { BedrockProvider } from './bedrockProvider'
 import { ChatGPTOAuthProvider } from './chatgptOAuthProvider'
+import { DeepSeekAnthropicProvider } from './deepseekAnthropicProvider'
 import { DeepSeekStudioProvider } from './deepseekStudioProvider'
 import { LLMModelNotFoundException } from './exception'
 import { GeminiProvider } from './gemini'
@@ -66,6 +67,13 @@ export function getProviderClient({
     case 'anthropic': {
       if (provider.presetType === 'moonshot') {
         return new MoonshotAnthropicProvider(provider as never, {
+          requestPolicy,
+          onAutoPromoteTransportMode: (mode) =>
+            onAutoPromoteTransportMode?.(provider.id, mode),
+        })
+      }
+      if (provider.presetType === 'deepseek') {
+        return new DeepSeekAnthropicProvider(provider as never, {
           requestPolicy,
           onAutoPromoteTransportMode: (mode) =>
             onAutoPromoteTransportMode?.(provider.id, mode),
