@@ -1125,8 +1125,7 @@ export default function NewMentionsPlugin({
       const boundaryLeft =
         parseOptionalPx(
           style.getPropertyValue('--yolo-typeahead-boundary-left'),
-        ) ??
-        0
+        ) ?? 0
       const boundaryRight =
         parseOptionalPx(
           style.getPropertyValue('--yolo-typeahead-boundary-right'),

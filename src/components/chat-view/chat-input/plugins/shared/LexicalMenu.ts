@@ -698,8 +698,9 @@ export function useMenuAnchorRef(
 
         const rect = containerEl.getBoundingClientRect()
         const boundaryRect =
-          rootElement.closest('.yolo-chat-container')?.getBoundingClientRect() ??
-          rect
+          rootElement
+            .closest('.yolo-chat-container')
+            ?.getBoundingClientRect() ?? rect
         const cs = getComputedStyle(containerEl)
 
         // Calculate focus ring thickness from box-shadow
