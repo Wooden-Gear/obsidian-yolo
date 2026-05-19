@@ -4,7 +4,6 @@ import { Assistant } from '../../types/assistant.types'
 import {
   buildAssistantToolPreferencesFromEnabledToolNames,
   getAssistantToolPreferences,
-  getEnabledAssistantToolNames,
 } from './tool-preferences'
 
 export const DEFAULT_ASSISTANT_ID = '__default_agent__'
@@ -75,7 +74,7 @@ const normalizeDefaultAssistant = (
     modelId: assistant.modelId || fallbackModelId,
     enableTools: assistant.enableTools ?? true,
     includeBuiltinTools: assistant.includeBuiltinTools ?? true,
-    enabledToolNames: getEnabledAssistantToolNames(assistant),
+    enabledToolNames: assistant.enabledToolNames ?? [],
     toolPreferences:
       Object.keys(toolPreferences).length > 0
         ? toolPreferences

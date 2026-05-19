@@ -18,6 +18,7 @@ import {
   DEFAULT_ASSISTANT_ID,
   isDefaultAssistantId,
 } from '../../core/agent/default-assistant'
+import { getEnabledAssistantToolNames } from '../../core/agent/tool-preferences'
 import { Assistant } from '../../types/assistant.types'
 import { renderAssistantIcon } from '../../utils/assistant-icon'
 import { YoloPopoverContent } from '../common/popover'
@@ -130,7 +131,7 @@ export function AssistantSelector({
       ? rawModelId.slice(rawModelId.lastIndexOf('/') + 1)
       : rawModelId
     const toolCount = assistant.enableTools
-      ? (assistant.enabledToolNames?.length ?? 0)
+      ? getEnabledAssistantToolNames(assistant).length
       : 0
     return (
       <div className="yolo-assistant-selector-item-meta">

@@ -28,6 +28,7 @@ import {
   getAssistantToolPreferences,
   getDefaultApprovalModeForTool,
   getEnabledAssistantToolNames,
+  getExplicitlyEnabledAssistantToolNames,
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
 import { isLoadToolSchemasToolName } from '../../../core/agent/tool-selection'
@@ -275,21 +276,6 @@ function createNewAgent(defaultModelId: string): Assistant {
   }
 }
 
-const DEFAULT_DISABLED_NEW_AGENT_BUILTIN_TOOL_NAMES = new Set([
-  'context_prune_tool_results',
-  'context_compact',
-])
-
-function isDefaultDisabledNewAgentBuiltinTool(toolName: string): boolean {
-  try {
-    return DEFAULT_DISABLED_NEW_AGENT_BUILTIN_TOOL_NAMES.has(
-      parseToolName(toolName).toolName,
-    )
-  } catch {
-    return DEFAULT_DISABLED_NEW_AGENT_BUILTIN_TOOL_NAMES.has(toolName)
-  }
-}
-
 function toDraftAgent(
   assistant: Assistant,
   fallbackModelId: string,
@@ -298,7 +284,7 @@ function toDraftAgent(
     ...assistant,
     persona: assistant.persona ?? DEFAULT_PERSONA,
     modelId: assistant.modelId ?? fallbackModelId,
-    enabledToolNames: getEnabledAssistantToolNames(assistant),
+    enabledToolNames: getExplicitlyEnabledAssistantToolNames(assistant),
     toolPreferences: getAssistantToolPreferences(assistant),
     enabledSkills: assistant.enabledSkills ?? [],
     skillPreferences: assistant.skillPreferences ?? {},
@@ -317,7 +303,7 @@ function updateDraftToolPreferences(
     ...getAssistantToolPreferences(assistant),
   }
   const nextToolPreferences = updater(current)
-  const nextEnabledToolNames = getEnabledAssistantToolNames({
+  const nextEnabledToolNames = getExplicitlyEnabledAssistantToolNames({
     ...assistant,
     toolPreferences: nextToolPreferences,
   })
@@ -366,7 +352,6 @@ export function AgentsSectionContent({
   const activeTabIndexRef = useRef(activeTabIndex)
   const tabsNavRef = useRef<HTMLDivElement | null>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const initializedNewAgentBuiltinToolsRef = useRef(false)
   const localFsServerName = getLocalFileToolServerName()
 
   const updateTabsGlider = useCallback(() => {
@@ -436,79 +421,6 @@ export function AgentsSectionContent({
     }
   }, [plugin])
 
-  useEffect(() => {
-    if (!isDirectCreateEntry || initializedNewAgentBuiltinToolsRef.current) {
-      return
-    }
-
-    if (!draftAgent || availableTools.length === 0) {
-      return
-    }
-
-    const existingPreferences = getAssistantToolPreferences(draftAgent)
-    const hasCustomToolSelection =
-      (draftAgent.enabledToolNames?.length ?? 0) > 0 ||
-      Object.keys(existingPreferences).length > 0
-    if (
-      hasCustomToolSelection ||
-      !draftAgent.enableTools ||
-      draftAgent.includeBuiltinTools === false
-    ) {
-      initializedNewAgentBuiltinToolsRef.current = true
-      return
-    }
-
-    const builtinToolNames = availableTools
-      .filter((tool) => {
-        try {
-          return parseToolName(tool.name).serverName === localFsServerName
-        } catch {
-          return true
-        }
-      })
-      .map((tool) => tool.name)
-
-    if (builtinToolNames.length === 0) {
-      return
-    }
-
-    initializedNewAgentBuiltinToolsRef.current = true
-    setDraftAgent((prev) => {
-      if (!prev) {
-        return prev
-      }
-
-      const nextToolPreferences = {
-        ...getAssistantToolPreferences(prev),
-      }
-      const nextEnabledToolNames = new Set(getEnabledAssistantToolNames(prev))
-
-      for (const toolName of builtinToolNames) {
-        const existingPreference = nextToolPreferences[toolName]
-        const shouldDefaultDisabled =
-          isDefaultDisabledNewAgentBuiltinTool(toolName) &&
-          existingPreference === undefined
-
-        if (!shouldDefaultDisabled) {
-          nextEnabledToolNames.add(toolName)
-        }
-        nextToolPreferences[toolName] = {
-          ...existingPreference,
-          enabled: existingPreference?.enabled ?? !shouldDefaultDisabled,
-          approvalMode:
-            existingPreference?.approvalMode ??
-            getDefaultApprovalModeForTool(toolName),
-        }
-      }
-
-      return {
-        ...prev,
-        toolPreferences: nextToolPreferences,
-        enabledToolNames: [...nextEnabledToolNames],
-      }
-    })
-  }, [availableTools, draftAgent, isDirectCreateEntry, localFsServerName])
-
   const agentModelOptionGroups = useMemo(() => {
     const providerOrder = settings.providers.map((provider) => provider.id)
     const providerIdsInModels = Array.from(
@@ -575,7 +487,7 @@ export function AgentsSectionContent({
         availableTools,
       ),
       enabledToolNames: normalizeToolSelectionForPersistence(
-        getEnabledAssistantToolNames(draftAgent),
+        getExplicitlyEnabledAssistantToolNames(draftAgent),
         availableTools,
       ),
       updatedAt: Date.now(),
@@ -1391,57 +1303,9 @@ export function AgentsSectionContent({
                 <ObsidianToggle
                   value={Boolean(draftAgent.includeBuiltinTools)}
                   onChange={(value) => {
-                    setDraftAgent((prev) => {
-                      if (!prev) {
-                        return prev
-                      }
-
-                      const nextEnabledToolNames = new Set(
-                        getEnabledAssistantToolNames(prev),
-                      )
-                      const nextToolPreferences = {
-                        ...getAssistantToolPreferences(prev),
-                      }
-
-                      if (value && !prev.includeBuiltinTools) {
-                        availableTools.forEach((tool) => {
-                          let serverName = localFsServerName
-                          try {
-                            serverName = parseToolName(tool.name).serverName
-                          } catch {
-                            serverName = localFsServerName
-                          }
-
-                          if (serverName === localFsServerName) {
-                            const existingPreference =
-                              nextToolPreferences[tool.name]
-                            const shouldDefaultDisabled =
-                              isDefaultDisabledNewAgentBuiltinTool(tool.name) &&
-                              existingPreference === undefined
-
-                            if (!shouldDefaultDisabled) {
-                              nextEnabledToolNames.add(tool.name)
-                            }
-                            nextToolPreferences[tool.name] = {
-                              ...existingPreference,
-                              enabled:
-                                existingPreference?.enabled ??
-                                !shouldDefaultDisabled,
-                              approvalMode:
-                                existingPreference?.approvalMode ??
-                                getDefaultApprovalModeForTool(tool.name),
-                            }
-                          }
-                        })
-                      }
-
-                      return {
-                        ...prev,
-                        includeBuiltinTools: value,
-                        toolPreferences: nextToolPreferences,
-                        enabledToolNames: [...nextEnabledToolNames],
-                      }
-                    })
+                    setDraftAgent((prev) =>
+                      prev ? { ...prev, includeBuiltinTools: value } : prev,
+                    )
                   }}
                 />
               </ObsidianSetting>

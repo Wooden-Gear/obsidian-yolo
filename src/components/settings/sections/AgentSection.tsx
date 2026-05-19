@@ -14,6 +14,7 @@ import {
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
 import { isDefaultAssistantId } from '../../../core/agent/default-assistant'
+import { getEnabledAssistantToolNames } from '../../../core/agent/tool-preferences'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
@@ -534,7 +535,7 @@ export function AgentSection({ app }: AgentSectionProps) {
                 <span className="yolo-agent-meta-item">
                   <Wrench size={12} />
                   {assistant.enableTools
-                    ? `${assistant.enabledToolNames?.length ?? 0} tools`
+                    ? `${getEnabledAssistantToolNames(assistant).length} tools`
                     : '0 tools'}
                 </span>
                 <span className="yolo-agent-meta-item">

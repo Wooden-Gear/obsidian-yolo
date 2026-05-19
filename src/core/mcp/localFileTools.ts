@@ -112,28 +112,30 @@ const getContextPrunableToolCallIds = (
   return acceptedToolCallIds
 }
 
-type LocalFileToolName =
-  | 'fs_list'
-  | 'fs_search'
-  | 'fs_read'
-  | 'context_prune_tool_results'
-  | 'context_compact'
-  | 'fs_edit'
-  | 'fs_create_file'
-  | 'fs_delete_file'
-  | 'fs_create_dir'
-  | 'fs_delete_dir'
-  | 'fs_move'
-  | 'memory_add'
-  | 'memory_update'
-  | 'memory_delete'
-  | 'open_skill'
-  | 'web_search'
-  | 'web_scrape'
-  | 'delegate_external_agent'
-  | 'load_tool_schemas'
-  | 'todo_write'
-  | 'ask_user_question'
+export const LOCAL_FILE_TOOL_SHORT_NAMES = [
+  'fs_list',
+  'fs_search',
+  'fs_read',
+  'context_prune_tool_results',
+  'context_compact',
+  'fs_edit',
+  'fs_create_file',
+  'fs_delete_file',
+  'fs_create_dir',
+  'fs_delete_dir',
+  'fs_move',
+  'memory_add',
+  'memory_update',
+  'memory_delete',
+  'open_skill',
+  'web_search',
+  'web_scrape',
+  'delegate_external_agent',
+  'load_tool_schemas',
+  'todo_write',
+  'ask_user_question',
+] as const
+type LocalFileToolName = (typeof LOCAL_FILE_TOOL_SHORT_NAMES)[number]
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
 type FsSearchMode = 'keyword' | 'rag' | 'hybrid'
 type LegacyFsSearchItem =
