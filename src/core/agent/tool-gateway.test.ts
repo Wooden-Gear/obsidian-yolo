@@ -376,4 +376,225 @@ describe('AgentToolGateway', () => {
     const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
     expect(isToolExecutionAllowedMock).not.toHaveBeenCalled()
   })
+
+  describe('on-demand harness', () => {
+    const realToolSchema = {
+      type: 'object',
+      properties: { value: { type: 'string' } },
+      required: ['value'],
+    } as const
+
+    const mcpManagerWithRealTool = () =>
+      ({
+        isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+        callTool: jest.fn().mockResolvedValue({
+          status: ToolCallResponseStatus.Success,
+          data: { type: 'text' as const, text: 'ok' },
+        }),
+        listAvailableTools: jest.fn().mockResolvedValue([
+          {
+            name: 'server__tool_a',
+            description: 'Tool A',
+            inputSchema: realToolSchema,
+          },
+        ]),
+      }) as unknown as McpManager
+
+    const buildGateway = (mcpManager: McpManager, apiType?: 'gemini') =>
+      new AgentToolGateway(mcpManager, {
+        allowedToolNames: ['server__tool_a', 'yolo_local__tool_search'],
+        toolPreferences: {
+          yolo_local__tool_search: {
+            enabled: true,
+            approvalMode: 'full_access',
+          },
+          server__tool_a: {
+            enabled: true,
+            approvalMode: 'full_access',
+            disclosureMode: 'on_demand',
+          },
+        },
+        apiType,
+      })
+
+    it('rejects on-demand tools whose schemas have not been disclosed yet', async () => {
+      const mcpManager = mcpManagerWithRealTool()
+      const gateway = buildGateway(mcpManager)
+      const toolMessage = gateway.createToolMessage({
+        toolCallRequests: [
+          {
+            id: 'tool-1',
+            name: 'server__tool_a',
+            arguments: createCompleteToolCallArguments({
+              value: { value: 'hello' },
+            }),
+          },
+        ],
+        conversationId: 'conv-1',
+      })
+      const result = await gateway.executeAutoToolCalls({
+        toolMessage,
+        conversationId: 'conv-1',
+        conversationMessages: [],
+      })
+      const response = result.toolCalls[0]?.response
+      expect(response?.status).toBe(ToolCallResponseStatus.Error)
+      if (response?.status === ToolCallResponseStatus.Error) {
+        expect(response.error).toContain('tool_search')
+      }
+    })
+
+    it('rejects on-demand tool calls with arguments that violate the real schema', async () => {
+      const mcpManager = mcpManagerWithRealTool()
+      const gateway = buildGateway(mcpManager)
+      const disclosureMessage = {
+        role: 'tool' as const,
+        id: 'tool-load',
+        toolCalls: [
+          {
+            request: {
+              id: 'call-search',
+              name: 'yolo_local__tool_search',
+              arguments: emptyArgs,
+            },
+            response: {
+              status: ToolCallResponseStatus.Success as const,
+              data: {
+                type: 'text' as const,
+                text: JSON.stringify({
+                  tool: 'tool_search',
+                  loadedToolNames: ['server__tool_a'],
+                  matches: [
+                    {
+                      name: 'server__tool_a',
+                      description: 'Tool A',
+                      parameters: realToolSchema,
+                    },
+                  ],
+                }),
+              },
+            },
+          },
+        ],
+      }
+      const toolMessage = gateway.createToolMessage({
+        toolCallRequests: [
+          {
+            id: 'tool-bad',
+            name: 'server__tool_a',
+            arguments: createCompleteToolCallArguments({
+              value: { value: 42 },
+            }),
+          },
+        ],
+        conversationId: 'conv-1',
+      })
+      const result = await gateway.executeAutoToolCalls({
+        toolMessage,
+        conversationId: 'conv-1',
+        conversationMessages: [disclosureMessage],
+      })
+      const response = result.toolCalls[0]?.response
+      expect(response?.status).toBe(ToolCallResponseStatus.Error)
+      if (response?.status === ToolCallResponseStatus.Error) {
+        expect(response.error).toContain('schema validation')
+      }
+    })
+
+    it('unpacks args_json before dispatch on Gemini', async () => {
+      const mcpManager = mcpManagerWithRealTool()
+      const gateway = buildGateway(mcpManager, 'gemini')
+      const disclosureMessage = {
+        role: 'tool' as const,
+        id: 'tool-load',
+        toolCalls: [
+          {
+            request: {
+              id: 'call-search',
+              name: 'yolo_local__tool_search',
+              arguments: emptyArgs,
+            },
+            response: {
+              status: ToolCallResponseStatus.Success as const,
+              data: {
+                type: 'text' as const,
+                text: JSON.stringify({
+                  tool: 'tool_search',
+                  loadedToolNames: ['server__tool_a'],
+                  matches: [
+                    {
+                      name: 'server__tool_a',
+                      description: 'Tool A',
+                      parameters: realToolSchema,
+                    },
+                  ],
+                }),
+              },
+            },
+          },
+        ],
+      }
+      const toolMessage = gateway.createToolMessage({
+        toolCallRequests: [
+          {
+            id: 'tool-good',
+            name: 'server__tool_a',
+            arguments: createCompleteToolCallArguments({
+              value: { args_json: '{"value": "hello"}' },
+            }),
+          },
+        ],
+        conversationId: 'conv-1',
+      })
+      const result = await gateway.executeAutoToolCalls({
+        toolMessage,
+        conversationId: 'conv-1',
+        conversationMessages: [disclosureMessage],
+      })
+      const response = result.toolCalls[0]?.response
+      expect(response?.status).toBe(ToolCallResponseStatus.Success)
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock for assertion
+      const callMock = mcpManager.callTool as unknown as jest.Mock
+      expect(callMock).toHaveBeenCalledTimes(1)
+      const callArgs = callMock.mock.calls[0]?.[0] as { args: unknown }
+      expect(callArgs.args).toEqual({ value: 'hello' })
+    })
+
+    it('honors schemas persisted in compaction state when no tool_search history remains', async () => {
+      const mcpManager = mcpManagerWithRealTool()
+      const gateway = buildGateway(mcpManager)
+      const compaction = {
+        anchorMessageId: 'anchor-1',
+        summary: 'prior turns compacted',
+        compactedAt: Date.now(),
+        loadedDeferredToolSchemas: [
+          {
+            name: 'server__tool_a',
+            description: 'Tool A',
+            parameters: realToolSchema,
+          },
+        ],
+      }
+      const toolMessage = gateway.createToolMessage({
+        toolCallRequests: [
+          {
+            id: 'tool-good',
+            name: 'server__tool_a',
+            arguments: createCompleteToolCallArguments({
+              value: { value: 'hello' },
+            }),
+          },
+        ],
+        conversationId: 'conv-1',
+      })
+      const result = await gateway.executeAutoToolCalls({
+        toolMessage,
+        conversationId: 'conv-1',
+        conversationMessages: [],
+        conversationCompaction: compaction,
+      })
+      const response = result.toolCalls[0]?.response
+      expect(response?.status).toBe(ToolCallResponseStatus.Success)
+    })
+  })
 })

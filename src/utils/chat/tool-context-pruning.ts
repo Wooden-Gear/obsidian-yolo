@@ -6,6 +6,7 @@ import { ToolCallResponseStatus } from '../../types/tool-call.types'
 
 const CONTEXT_PRUNE_TOOL_NAME = 'context_prune_tool_results'
 const CONTEXT_COMPACT_TOOL_NAME = 'context_compact'
+const TOOL_SEARCH_TOOL_NAME = 'tool_search'
 
 const normalizeToolName = (toolName: string): string => {
   try {
@@ -26,9 +27,14 @@ export const isContextPruneToolName = (toolName: string): boolean => {
 
 export const isContextPrunableToolName = (toolName: string): boolean => {
   const normalized = normalizeToolName(toolName)
+  // `tool_search` results carry the on-demand tool disclosure state for the
+  // rest of the conversation — pruning them would silently drop the schemas
+  // the model relies on to keep calling those tools. Compaction is the
+  // long-term fallback (it copies schemas into `loadedDeferredToolSchemas`).
   return (
     normalized !== CONTEXT_PRUNE_TOOL_NAME &&
-    normalized !== CONTEXT_COMPACT_TOOL_NAME
+    normalized !== CONTEXT_COMPACT_TOOL_NAME &&
+    normalized !== TOOL_SEARCH_TOOL_NAME
   )
 }
 

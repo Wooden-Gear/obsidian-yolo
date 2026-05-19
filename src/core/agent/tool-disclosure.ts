@@ -3,30 +3,62 @@ import type {
   ChatMessage,
 } from '../../types/chat'
 import { getLatestChatConversationCompaction } from '../../types/chat'
-import type { McpTool } from '../../types/mcp.types'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
+
+import { isToolSearchToolName } from './tool-selection'
 
 export const TOOL_SEARCH_RESULT_TOOL = 'tool_search'
 
-export type DeferredToolCatalogItem = {
+export type LoadedDeferredToolSchema = {
   name: string
   description: string
-  approvalMode: 'full_access' | 'require_approval'
-  source: string
+  parameters: unknown
 }
 
-export const buildDeferredToolCatalogItems = (
-  tools: Array<{
-    tool: McpTool
-    approvalMode: 'full_access' | 'require_approval'
-  }>,
-): DeferredToolCatalogItem[] =>
-  tools.map(({ tool, approvalMode }) => ({
-    name: tool.name,
-    description: tool.description ?? '',
-    approvalMode,
-    source: getToolSource(tool.name),
-  }))
+const parseToolSearchResult = (
+  text: string,
+): {
+  loadedToolNames: string[]
+  schemas: LoadedDeferredToolSchema[]
+} | null => {
+  try {
+    const parsed = JSON.parse(text) as {
+      tool?: unknown
+      loadedToolNames?: unknown
+      matches?: unknown
+    }
+    if (parsed.tool !== TOOL_SEARCH_RESULT_TOOL) {
+      return null
+    }
+    const loadedToolNames: string[] = []
+    if (Array.isArray(parsed.loadedToolNames)) {
+      for (const name of parsed.loadedToolNames) {
+        if (typeof name === 'string' && name.trim().length > 0) {
+          loadedToolNames.push(name)
+        }
+      }
+    }
+    const schemas: LoadedDeferredToolSchema[] = []
+    if (Array.isArray(parsed.matches)) {
+      for (const match of parsed.matches) {
+        if (!match || typeof match !== 'object') continue
+        const m = match as Record<string, unknown>
+        const name = typeof m.name === 'string' ? m.name.trim() : ''
+        if (!name) continue
+        const description =
+          typeof m.description === 'string' ? m.description : ''
+        schemas.push({
+          name,
+          description,
+          parameters: m.parameters,
+        })
+      }
+    }
+    return { loadedToolNames, schemas }
+  } catch {
+    return null
+  }
+}
 
 export const extractLoadedDeferredToolNames = ({
   messages,
@@ -40,34 +72,27 @@ export const extractLoadedDeferredToolNames = ({
   for (const name of latestCompaction?.loadedDeferredToolNames ?? []) {
     loaded.add(name)
   }
+  for (const schema of latestCompaction?.loadedDeferredToolSchemas ?? []) {
+    if (typeof schema?.name === 'string' && schema.name.trim().length > 0) {
+      loaded.add(schema.name)
+    }
+  }
 
   for (const message of messages) {
     if (message.role !== 'tool') {
       continue
     }
     for (const toolCall of message.toolCalls) {
+      if (!isToolSearchToolName(toolCall.request.name)) {
+        continue
+      }
       if (toolCall.response.status !== ToolCallResponseStatus.Success) {
         continue
       }
-      const text = toolCall.response.data.text
-      try {
-        const parsed = JSON.parse(text) as {
-          tool?: unknown
-          loadedToolNames?: unknown
-        }
-        if (parsed.tool !== TOOL_SEARCH_RESULT_TOOL) {
-          continue
-        }
-        if (!Array.isArray(parsed.loadedToolNames)) {
-          continue
-        }
-        for (const name of parsed.loadedToolNames) {
-          if (typeof name === 'string' && name.trim().length > 0) {
-            loaded.add(name)
-          }
-        }
-      } catch {
-        // Non-JSON tool results are unrelated to tool disclosure state.
+      const parsed = parseToolSearchResult(toolCall.response.data.text)
+      if (!parsed) continue
+      for (const name of parsed.loadedToolNames) {
+        loaded.add(name)
       }
     }
   }
@@ -75,10 +100,53 @@ export const extractLoadedDeferredToolNames = ({
   return loaded
 }
 
-const getToolSource = (toolName: string): string => {
-  const parts = toolName.split('__')
-  if (parts.length >= 2 && parts[0]) {
-    return parts[0]
+/**
+ * Walk the conversation (and latest compaction registry) to recover full
+ * schemas for every on-demand tool that has been disclosed via `tool_search`.
+ * Used by compaction to persist the registry forward and by the request
+ * builder to re-inject disclosed schemas after compaction discards history.
+ *
+ * Later occurrences win, so a tool re-disclosed mid-conversation reflects its
+ * latest schema. Compaction-registered schemas are seeded first and then
+ * overwritten by any post-compaction disclosure in the live transcript.
+ */
+export const extractLoadedDeferredToolSchemas = ({
+  messages,
+  compaction,
+}: {
+  messages: ChatMessage[]
+  compaction?: ChatConversationCompactionLike | null
+}): LoadedDeferredToolSchema[] => {
+  const byName = new Map<string, LoadedDeferredToolSchema>()
+  const latestCompaction = getLatestChatConversationCompaction(compaction)
+  for (const schema of latestCompaction?.loadedDeferredToolSchemas ?? []) {
+    if (typeof schema?.name === 'string' && schema.name.trim().length > 0) {
+      byName.set(schema.name, {
+        name: schema.name,
+        description: schema.description ?? '',
+        parameters: schema.parameters,
+      })
+    }
   }
-  return 'tool'
+
+  for (const message of messages) {
+    if (message.role !== 'tool') {
+      continue
+    }
+    for (const toolCall of message.toolCalls) {
+      if (!isToolSearchToolName(toolCall.request.name)) {
+        continue
+      }
+      if (toolCall.response.status !== ToolCallResponseStatus.Success) {
+        continue
+      }
+      const parsed = parseToolSearchResult(toolCall.response.data.text)
+      if (!parsed) continue
+      for (const schema of parsed.schemas) {
+        byName.set(schema.name, schema)
+      }
+    }
+  }
+
+  return [...byName.values()]
 }

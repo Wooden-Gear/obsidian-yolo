@@ -1,15 +1,25 @@
+import Ajv, {
+  type Ajv as AjvInstance,
+  type ValidateFunction as AjvValidateFunction,
+} from 'ajv'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
   AssistantToolPreference,
   AssistantWorkspaceScope,
 } from '../../types/assistant.types'
-import { ChatMessage, ChatToolMessage } from '../../types/chat'
+import {
+  ChatConversationCompactionLike,
+  ChatMessage,
+  ChatToolMessage,
+} from '../../types/chat'
 import { McpTool } from '../../types/mcp.types'
+import type { LLMProviderApiType } from '../../types/provider.types'
 import {
   ToolCallRequest,
   ToolCallResponse,
   ToolCallResponseStatus,
+  createCompleteToolCallArguments,
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
@@ -23,11 +33,17 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
-import { TOOL_SEARCH_RESULT_TOOL } from './tool-disclosure'
+import {
+  TOOL_SEARCH_RESULT_TOOL,
+  extractLoadedDeferredToolNames,
+} from './tool-disclosure'
 import {
   getAssistantToolApprovalMode,
+  getAssistantToolDisclosureMode,
   isAssistantToolEnabled,
 } from './tool-preferences'
+import { isToolSearchToolName } from './tool-selection'
+import { GEMINI_STUB_ARGS_JSON_FIELD, isGeminiStubApiType } from './tool-stub'
 import { findPathOutsideScope } from './workspaceScope'
 
 type McpToolCallParams = Parameters<McpManager['callTool']>[0]
@@ -42,6 +58,12 @@ export class AgentToolGateway {
   private readonly workspaceScope?: AssistantWorkspaceScope
   private readonly allowedSkillIds?: Set<string>
   private readonly allowedSkillNames?: Set<string>
+  private readonly apiType?: LLMProviderApiType | null
+  private readonly ajv: AjvInstance
+  private readonly schemaValidatorCache = new Map<
+    string,
+    AjvValidateFunction | null
+  >()
 
   constructor(
     private readonly mcpManager: McpManager,
@@ -52,6 +74,7 @@ export class AgentToolGateway {
       workspaceScope?: AssistantWorkspaceScope
       allowedSkillIds?: string[]
       allowedSkillNames?: string[]
+      apiType?: LLMProviderApiType | null
     },
   ) {
     this.toolsEnabled = options?.toolsEnabled ?? true
@@ -66,6 +89,179 @@ export class AgentToolGateway {
     this.allowedSkillNames = options?.allowedSkillNames
       ? new Set(options.allowedSkillNames.map((name) => name.toLowerCase()))
       : undefined
+    this.apiType = options?.apiType
+    // `strict: false` keeps ajv tolerant of MCP tool schemas that include
+    // vendor-specific keywords or non-canonical types. `allErrors` lists every
+    // violation in the error message so the model has enough signal to retry;
+    // `useDefaults: false` keeps validation side-effect free so we never
+    // rewrite the model's arguments behind its back.
+    this.ajv = new Ajv({ strict: false, allErrors: true, useDefaults: false })
+  }
+
+  private isOnDemandToolName(toolName: string): boolean {
+    if (isToolSearchToolName(toolName)) {
+      return false
+    }
+    return (
+      getAssistantToolDisclosureMode(
+        {
+          toolPreferences: this.toolPreferences,
+          enabledToolNames: this.allowedToolNames
+            ? [...this.allowedToolNames]
+            : undefined,
+        },
+        toolName,
+      ) === 'on_demand'
+    )
+  }
+
+  private async getRealToolSchema(toolName: string): Promise<McpTool | null> {
+    // We don't have model-specific modality context here; built-in tool
+    // modality narrowing only affects display strings, not argument schemas,
+    // so omitting it is safe for harness validation.
+    const tools = await this.mcpManager.listAvailableTools({
+      includeBuiltinTools: true,
+    })
+    return tools.find((tool) => tool.name === toolName) ?? null
+  }
+
+  private getOrCompileValidator(
+    toolName: string,
+    schema: unknown,
+  ): AjvValidateFunction | null {
+    const cacheKey = toolName
+    if (this.schemaValidatorCache.has(cacheKey)) {
+      return this.schemaValidatorCache.get(cacheKey) ?? null
+    }
+    let validator: AjvValidateFunction | null = null
+    try {
+      validator = this.ajv.compile(schema as object)
+    } catch (error) {
+      console.warn(
+        '[YOLO] failed to compile JSON Schema for on-demand tool; skipping ajv validation',
+        toolName,
+        error,
+      )
+      validator = null
+    }
+    this.schemaValidatorCache.set(cacheKey, validator)
+    return validator
+  }
+
+  /**
+   * Harness gate that runs before tool dispatch. Implements two on-demand
+   * invariants that the LLM cannot enforce on its own (the registered tools
+   * are stubs):
+   *
+   *   1. Reject calls to on-demand tools whose schemas have not been disclosed
+   *      via `tool_search` in this conversation yet. Errors point the model to
+   *      `tool_search` so it can self-correct in the next turn.
+   *   2. For Gemini stubs, unpack the `args_json` field back into real
+   *      arguments before dispatch. Then validate the unpacked payload
+   *      against the real JSON Schema via ajv.
+   *
+   * Returns either an updated request (Gemini args_json rewritten) or a
+   * structured error response that the caller substitutes for the would-be
+   * tool call.
+   */
+  private async validateAndNormalizeRequest({
+    request,
+    loadedToolNames,
+  }: {
+    request: ToolCallRequest
+    loadedToolNames: ReadonlySet<string>
+  }): Promise<
+    | { ok: true; request: ToolCallRequest }
+    | { ok: false; response: ToolCallResponse }
+  > {
+    if (!this.isOnDemandToolName(request.name)) {
+      return { ok: true, request }
+    }
+
+    if (!loadedToolNames.has(request.name)) {
+      return {
+        ok: false,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error:
+            `Tool "${request.name}" is registered on demand and its schema has not been disclosed in this conversation yet. ` +
+            `Call yolo_local__tool_search with query "select:${request.name}" (or a keyword query) first; the next assistant turn can then call ${request.name} directly.`,
+        },
+      }
+    }
+
+    let normalizedArgs = getToolCallArgumentsObject(request.arguments) ?? {}
+    let normalizedRequest = request
+
+    if (isGeminiStubApiType(this.apiType)) {
+      const raw = normalizedArgs[GEMINI_STUB_ARGS_JSON_FIELD]
+      if (typeof raw !== 'string') {
+        return {
+          ok: false,
+          response: {
+            status: ToolCallResponseStatus.Error,
+            error: `Tool "${request.name}" is an on-demand tool. On Gemini, its arguments must be passed as a JSON-encoded string in the "${GEMINI_STUB_ARGS_JSON_FIELD}" field; received a non-string value instead.`,
+          },
+        }
+      }
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(raw)
+      } catch (error) {
+        return {
+          ok: false,
+          response: {
+            status: ToolCallResponseStatus.Error,
+            error: `Tool "${request.name}" received an invalid JSON payload in "${GEMINI_STUB_ARGS_JSON_FIELD}": ${error instanceof Error ? error.message : String(error)}.`,
+          },
+        }
+      }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {
+          ok: false,
+          response: {
+            status: ToolCallResponseStatus.Error,
+            error: `Tool "${request.name}" expected an object payload in "${GEMINI_STUB_ARGS_JSON_FIELD}", received ${Array.isArray(parsed) ? 'an array' : typeof parsed}.`,
+          },
+        }
+      }
+      normalizedArgs = parsed as Record<string, unknown>
+      normalizedRequest = {
+        ...request,
+        arguments: createCompleteToolCallArguments({ value: normalizedArgs }),
+      }
+    }
+
+    const realTool = await this.getRealToolSchema(request.name)
+    if (!realTool) {
+      return {
+        ok: false,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error: `Tool "${request.name}" is not available in this workspace.`,
+        },
+      }
+    }
+    const validator = this.getOrCompileValidator(request.name, {
+      ...realTool.inputSchema,
+      properties: realTool.inputSchema.properties ?? {},
+    })
+    if (validator && !validator(normalizedArgs)) {
+      const errorDetail = this.ajv.errorsText(validator.errors, {
+        separator: '; ',
+      })
+      return {
+        ok: false,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error:
+            `Arguments for "${request.name}" failed schema validation: ${errorDetail}. ` +
+            `Re-check the schema returned by yolo_local__tool_search and retry.`,
+        },
+      }
+    }
+
+    return { ok: true, request: normalizedRequest }
   }
 
   private isRequestPathAllowed(request: ToolCallRequest): boolean {
@@ -197,6 +393,7 @@ export class AgentToolGateway {
     toolMessage,
     conversationId,
     conversationMessages,
+    conversationCompaction,
     signal,
     chatModelId,
     debugTraceId,
@@ -204,11 +401,44 @@ export class AgentToolGateway {
     toolMessage: ChatToolMessage
     conversationId: string
     conversationMessages?: ChatMessage[]
+    conversationCompaction?: ChatConversationCompactionLike | null
     signal?: AbortSignal
     chatModelId?: string
     debugTraceId?: string
   }): Promise<ChatToolMessage> {
     const nextToolCalls = [...toolMessage.toolCalls]
+    // Harness pre-pass: on-demand stubs let any call through provider-side
+    // validation, so we must enforce "schema previously disclosed" and (for
+    // Gemini) unpack the `args_json` smuggle field + run real-schema ajv
+    // validation before dispatch. Failures convert the call's status to
+    // Error with guidance pointing back to `tool_search`.
+    const loadedToolNames = extractLoadedDeferredToolNames({
+      messages: conversationMessages ?? [],
+      compaction: conversationCompaction ?? null,
+    })
+    for (let i = 0; i < nextToolCalls.length; i += 1) {
+      const entry = nextToolCalls[i]
+      if (entry.response.status !== ToolCallResponseStatus.Running) {
+        continue
+      }
+      const result = await this.validateAndNormalizeRequest({
+        request: entry.request,
+        loadedToolNames,
+      })
+      if (!result.ok) {
+        nextToolCalls[i] = {
+          ...entry,
+          response: result.response,
+        }
+        continue
+      }
+      if (result.request !== entry.request) {
+        nextToolCalls[i] = {
+          ...entry,
+          request: result.request,
+        }
+      }
+    }
     // `AwaitingUserInput` is intentionally excluded here: it is a paused state
     // (only used by `ask_user_question`) and must not be auto-executed. The
     // gateway resumes it via `AgentService.answerUserQuestion` instead.

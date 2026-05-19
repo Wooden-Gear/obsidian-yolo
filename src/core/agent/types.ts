@@ -4,7 +4,7 @@ import {
   ChatMessage,
 } from '../../types/chat'
 import { ChatModel } from '../../types/chat-model.types'
-import { LLMProvider } from '../../types/provider.types'
+import { LLMProvider, LLMProviderApiType } from '../../types/provider.types'
 import { ReasoningLevel } from '../../types/reasoning'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
@@ -22,6 +22,12 @@ export type AgentRuntimeSubscribe = (snapshot: AgentRuntimeSnapshot) => void
 export type AgentRuntimeRunInput = {
   providerClient: BaseLLMProvider<LLMProvider>
   model: ChatModel
+  /**
+   * API protocol of the active provider. Used by the tool stub builder to
+   * pick a schema that the provider accepts (Gemini's restricted OpenAPI
+   * subset vs. the open `additionalProperties` form used by everyone else).
+   */
+  apiType?: LLMProviderApiType | null
   messages: ChatMessage[]
   requestMessages?: ChatMessage[]
   conversationId: string

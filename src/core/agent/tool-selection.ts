@@ -1,6 +1,7 @@
 import type { AssistantToolPreference } from '../../types/assistant.types'
 import type { RequestTool } from '../../types/llm/request'
 import type { McpTool } from '../../types/mcp.types'
+import type { LLMProviderApiType } from '../../types/provider.types'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
@@ -10,11 +11,8 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
-import {
-  DEFAULT_ASSISTANT_TOOL_APPROVAL_MODE,
-  getAssistantToolApprovalMode,
-  getAssistantToolDisclosureMode,
-} from './tool-preferences'
+import { getAssistantToolDisclosureMode } from './tool-preferences'
+import { buildToolStub } from './tool-stub'
 
 const LOCAL_MEMORY_TOOL_NAMES = new Set([
   'memory_ops',
@@ -148,18 +146,16 @@ export const selectAllowedTools = ({
   allowedSkillIds,
   allowedSkillNames,
   toolPreferences,
-  loadedToolNames,
+  apiType,
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
-  loadedToolNames?: ReadonlySet<string>
+  apiType?: LLMProviderApiType | null
 }): {
   filteredTools: McpTool[]
-  deferredTools: McpTool[]
-  loadedDeferredTools: McpTool[]
   hasTools: boolean
   hasMemoryTools: boolean
   requestTools: RequestTool[] | undefined
@@ -186,43 +182,28 @@ export const selectAllowedTools = ({
       ? [...normalizedAllowedToolNames]
       : undefined,
   }
-  const requestToolDefinitions: McpTool[] = []
-  const deferredTools: McpTool[] = []
-  const loadedDeferredTools: McpTool[] = []
-
-  for (const tool of filteredTools) {
+  // All allowed tools — including on-demand stubs — are registered in the
+  // request's `tools` field for the entire conversation so the prompt-cache
+  // prefix stays frozen. On-demand tools start as stubs (name + short
+  // description + permissive schema) and stay stubs even after their full
+  // schema has been disclosed via tool_search: schemas now ride the messages
+  // stream (tool_result + compaction registry) instead of the tools field.
+  const requestToolDefinitions: McpTool[] = filteredTools.map((tool) => {
     const disclosureMode = isToolSearchToolName(tool.name)
       ? 'always'
       : getAssistantToolDisclosureMode(assistantLike, tool.name)
-    const isLoaded = loadedToolNames?.has(tool.name) ?? false
-    if (disclosureMode === 'on_demand' && !isLoaded) {
-      deferredTools.push(tool)
-      continue
+    if (disclosureMode === 'on_demand') {
+      return buildToolStub(tool, apiType)
     }
-    requestToolDefinitions.push(tool)
-    if (disclosureMode === 'on_demand' && isLoaded) {
-      loadedDeferredTools.push(tool)
-    }
-  }
+    return tool
+  })
 
   return {
     filteredTools,
-    deferredTools,
-    loadedDeferredTools,
     hasTools: filteredTools.length > 0,
     hasMemoryTools: filteredTools.some((tool) =>
       isMemoryToolAvailable(tool.name),
     ),
     requestTools: buildRequestTools(requestToolDefinitions),
   }
-}
-
-export const getToolApprovalModeForCatalog = (
-  toolPreferences: Record<string, AssistantToolPreference> | undefined,
-  toolName: string,
-): 'full_access' | 'require_approval' => {
-  return (
-    getAssistantToolApprovalMode({ toolPreferences }, toolName) ??
-    DEFAULT_ASSISTANT_TOOL_APPROVAL_MODE
-  )
 }

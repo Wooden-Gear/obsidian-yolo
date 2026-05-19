@@ -533,7 +533,7 @@ export function useChatStreamManager({
         retainLatestToolBoundary: false,
       })
 
-      const nextCompaction = buildManualCompactionState({
+      const nextCompaction = await buildManualCompactionState({
         messages,
         summary,
         summaryModelId: resolvedCompactionClient.model.id,
@@ -543,6 +543,9 @@ export function useChatStreamManager({
         return null
       }
 
+      const manualEstimateProvider = settings.providers.find(
+        (provider) => provider.id === effectiveModel.providerId,
+      )
       try {
         nextCompaction.estimatedNextContextTokens =
           await estimateContinuationRequestContextTokens({
@@ -554,6 +557,7 @@ export function useChatStreamManager({
             compaction: nextCompaction,
             enableTools: effectiveEnableTools,
             includeBuiltinTools: effectiveIncludeBuiltinTools,
+            apiType: manualEstimateProvider?.apiType ?? null,
             allowedToolNames: effectiveAllowedToolNames,
             toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
@@ -733,6 +737,7 @@ export function useChatStreamManager({
           compaction: effectiveCompactionForRequest,
           compactionProviderClient: resolvedCompactionClient.providerClient,
           compactionModel: resolvedCompactionClient.model,
+          apiType: currentProvider?.apiType ?? null,
           reasoningLevel,
           allowedToolNames: chatModeRuntime.allowedToolNames,
           toolPreferences: chatModeRuntime.toolPreferences,
@@ -838,6 +843,7 @@ export function useChatStreamManager({
                 requestMessages,
                 providerClient: branchResolvedClient.providerClient,
                 model: branchModel,
+                apiType: branchProvider?.apiType ?? null,
                 conversationId,
                 branchId,
                 sourceUserMessageId: lastMessage.id,

@@ -7,7 +7,7 @@ import {
   ChatMessage,
 } from '../../types/chat'
 import { ChatModel } from '../../types/chat-model.types'
-import { LLMProvider } from '../../types/provider.types'
+import { LLMProvider, LLMProviderApiType } from '../../types/provider.types'
 import {
   ReasoningLevel,
   resolveRequestReasoningLevel,
@@ -27,14 +27,7 @@ import { getLocalFileToolServerName } from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
 
 import { CONTEXT_COMPACT_TOOL_NAME } from './compaction'
-import {
-  buildDeferredToolCatalogItems,
-  extractLoadedDeferredToolNames,
-} from './tool-disclosure'
-import {
-  getToolApprovalModeForCatalog,
-  selectAllowedTools,
-} from './tool-selection'
+import { selectAllowedTools } from './tool-selection'
 
 type AgentLlmTurnExecutorInput = {
   providerClient: BaseLLMProvider<LLMProvider>
@@ -49,6 +42,7 @@ type AgentLlmTurnExecutorInput = {
   compaction?: ChatConversationCompactionLike | null
   enableTools: boolean
   includeBuiltinTools: boolean
+  apiType?: LLMProviderApiType | null
   allowedToolNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
@@ -115,7 +109,6 @@ export class AgentLlmTurnExecutor {
     const {
       hasTools,
       hasMemoryTools,
-      deferredTools,
       requestTools: tools,
     } = selectAllowedTools({
       availableTools,
@@ -123,20 +116,8 @@ export class AgentLlmTurnExecutor {
       allowedSkillIds: this.input.allowedSkillIds,
       allowedSkillNames: this.input.allowedSkillNames,
       toolPreferences: this.input.toolPreferences,
-      loadedToolNames: extractLoadedDeferredToolNames({
-        messages: this.input.messages,
-        compaction: this.input.compaction,
-      }),
+      apiType: this.input.apiType,
     })
-    const deferredCatalogItems = buildDeferredToolCatalogItems(
-      deferredTools.map((tool) => ({
-        tool,
-        approvalMode: getToolApprovalModeForCatalog(
-          this.input.toolPreferences,
-          tool.name,
-        ),
-      })),
-    )
     const requestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({
         messages: this.input.messages,
@@ -145,16 +126,7 @@ export class AgentLlmTurnExecutor {
         model: this.input.model,
         conversationId: this.input.conversationId,
         compaction: this.input.compaction,
-        contextualInjections:
-          deferredCatalogItems.length > 0
-            ? [
-                ...(this.input.contextualInjections ?? []),
-                {
-                  type: 'deferred-tool-catalog',
-                  tools: deferredCatalogItems,
-                },
-              ]
-            : this.input.contextualInjections,
+        contextualInjections: this.input.contextualInjections,
       })
 
     const responseStart = Date.now()

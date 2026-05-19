@@ -447,8 +447,12 @@ export class RequestContextBuilder {
 
     const systemMessage = await this.getSystemMessage(hasTools, hasMemoryTools)
 
+    const compactionDisclosureMessage =
+      this.buildCompactionDisclosureInjection(compaction)
+
     const baseRequestMessages: RequestMessage[] = [
       ...(systemMessage ? [systemMessage] : []),
+      ...(compactionDisclosureMessage ? [compactionDisclosureMessage] : []),
       ...(await this.getChatHistoryMessages({
         messages: compiledMessages,
         snapshotEntries,
@@ -1083,6 +1087,54 @@ ${quotes
       documentParts,
       // Already includes the `## Attached PDFs` header per block; join into one.
       legacyText: legacyBlocks.join(''),
+    }
+  }
+
+  /**
+   * After compaction, the original `tool_search` results are gone. Re-inject
+   * full schemas for on-demand tools that were already disclosed so the model
+   * can keep calling them without redundant `tool_search` round-trips. Schemas
+   * over the per-tool budget are intentionally not persisted by compaction;
+   * the prompt tells the model to fall back to `tool_search` for those.
+   *
+   * Returned as a `user` message so it sticks to the request prefix without
+   * polluting the system prompt. It is built deterministically from the
+   * compaction payload, so this entry remains cache-stable across turns.
+   */
+  private buildCompactionDisclosureInjection(
+    compaction?: ChatConversationCompactionLike | null,
+  ): RequestMessage | null {
+    const latest = getLatestChatConversationCompaction(compaction)
+    const schemas = latest?.loadedDeferredToolSchemas
+    if (!schemas || schemas.length === 0) {
+      return null
+    }
+
+    const entries = schemas
+      .map((schema) => {
+        const description = (schema.description ?? '').trim()
+        let parameters: string
+        try {
+          parameters = JSON.stringify(schema.parameters, null, 2)
+        } catch {
+          parameters = '{}'
+        }
+        return `- ${schema.name}:\n  description: ${description}\n  parameters:\n${parameters
+          .split('\n')
+          .map((line) => `    ${line}`)
+          .join('\n')}`
+      })
+      .join('\n\n')
+
+    return {
+      role: 'user',
+      content: `<previously-loaded-tools>
+The following on-demand tools were already disclosed by yolo_local__tool_search earlier in this conversation. Their stubs remain registered in the tools list. You may call them directly using the schemas below without calling yolo_local__tool_search again.
+
+If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__tool_search to re-disclose it first.
+
+${entries}
+</previously-loaded-tools>`,
     }
   }
 

@@ -4857,6 +4857,13 @@ button.yolo-assistant-selector-footer-btn:hover {
 .yolo-agent-tool-select {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
+}
+
+.yolo-agent-tool-default-hint {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1;
 }
 
 .yolo-agent-tool-select .yolo-simple-select__trigger {

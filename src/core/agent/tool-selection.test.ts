@@ -15,18 +15,14 @@ describe('selectAllowedTools', () => {
       },
     ]
 
-    expect(
-      selectAllowedTools({
-        availableTools,
-      }),
-    ).toEqual({
-      filteredTools: [],
-      deferredTools: [],
-      loadedDeferredTools: [],
-      hasTools: false,
-      hasMemoryTools: false,
-      requestTools: undefined,
+    const result = selectAllowedTools({
+      availableTools,
     })
+
+    expect(result.filteredTools).toEqual([])
+    expect(result.hasTools).toBe(false)
+    expect(result.hasMemoryTools).toBe(false)
+    expect(result.requestTools).toBeUndefined()
   })
 
   it('keeps open_skill when skill allowlist is present', () => {
@@ -47,8 +43,6 @@ describe('selectAllowedTools', () => {
     })
 
     expect(result.filteredTools).toHaveLength(1)
-    expect(result.deferredTools).toEqual([])
-    expect(result.loadedDeferredTools).toEqual([])
     expect(result.hasTools).toBe(true)
     expect(result.hasMemoryTools).toBe(false)
     expect(result.requestTools).toEqual([
@@ -66,12 +60,15 @@ describe('selectAllowedTools', () => {
     ])
   })
 
-  it('keeps old preferences always-loaded by default', () => {
+  it('keeps full schemas for tools left in always mode', () => {
     const availableTools: McpTool[] = [
       {
         name: 'server__tool_a',
         description: 'Tool A',
-        inputSchema: { type: 'object', properties: {} },
+        inputSchema: {
+          type: 'object',
+          properties: { foo: { type: 'string' } },
+        },
       },
     ]
 
@@ -79,17 +76,24 @@ describe('selectAllowedTools', () => {
       availableTools,
       allowedToolNames: ['server__tool_a'],
       toolPreferences: {
-        server__tool_a: { enabled: true, approvalMode: 'full_access' },
+        server__tool_a: {
+          enabled: true,
+          approvalMode: 'full_access',
+          disclosureMode: 'always',
+        },
       },
     })
 
-    expect(result.deferredTools).toEqual([])
     expect(result.requestTools?.map((tool) => tool.function.name)).toEqual([
       'server__tool_a',
     ])
+    expect(result.requestTools?.[0]?.function.parameters).toEqual({
+      type: 'object',
+      properties: { foo: { type: 'string' } },
+    })
   })
 
-  it('defers on-demand tools until they are loaded', () => {
+  it('replaces on-demand tools with a permissive stub schema (non-Gemini)', () => {
     const availableTools: McpTool[] = [
       {
         name: 'yolo_local__tool_search',
@@ -98,8 +102,12 @@ describe('selectAllowedTools', () => {
       },
       {
         name: 'server__tool_a',
-        description: 'Tool A',
-        inputSchema: { type: 'object', properties: {} },
+        description: 'Tool A real schema',
+        inputSchema: {
+          type: 'object',
+          properties: { foo: { type: 'string' } },
+          required: ['foo'],
+        },
       },
     ]
 
@@ -110,17 +118,29 @@ describe('selectAllowedTools', () => {
         yolo_local__tool_search: { enabled: true },
         server__tool_a: { enabled: true, disclosureMode: 'on_demand' },
       },
+      apiType: 'anthropic',
     })
 
-    expect(result.deferredTools.map((tool) => tool.name)).toEqual([
-      'server__tool_a',
-    ])
+    // Tools field stays frozen: both tools are registered every turn so the
+    // prompt-cache prefix never invalidates.
     expect(result.requestTools?.map((tool) => tool.function.name)).toEqual([
       'yolo_local__tool_search',
+      'server__tool_a',
     ])
+    const stub = result.requestTools?.find(
+      (tool) => tool.function.name === 'server__tool_a',
+    )
+    expect(stub?.function.parameters).toEqual({
+      type: 'object',
+      properties: {},
+      additionalProperties: true,
+    })
+    // Stub description must include the on-demand hint so the model knows to
+    // call tool_search first.
+    expect(stub?.function.description).toContain('tool_search')
   })
 
-  it('includes loaded on-demand tools in request schemas', () => {
+  it('uses args_json stub form on Gemini', () => {
     const availableTools: McpTool[] = [
       {
         name: 'server__tool_a',
@@ -135,15 +155,52 @@ describe('selectAllowedTools', () => {
       toolPreferences: {
         server__tool_a: { enabled: true, disclosureMode: 'on_demand' },
       },
-      loadedToolNames: new Set(['server__tool_a']),
+      apiType: 'gemini',
     })
 
-    expect(result.deferredTools).toEqual([])
-    expect(result.loadedDeferredTools.map((tool) => tool.name)).toEqual([
-      'server__tool_a',
-    ])
-    expect(result.requestTools?.map((tool) => tool.function.name)).toEqual([
-      'server__tool_a',
-    ])
+    const stub = result.requestTools?.[0]
+    expect(stub?.function.parameters).toEqual({
+      type: 'object',
+      properties: {
+        args_json: expect.objectContaining({ type: 'string' }),
+      },
+      required: ['args_json'],
+    })
+  })
+
+  it('produces the same tools-field hash before and after a tool_search load', () => {
+    const availableTools: McpTool[] = [
+      {
+        name: 'yolo_local__tool_search',
+        description: 'Search tools',
+        inputSchema: { type: 'object', properties: {} },
+      },
+      {
+        name: 'server__tool_a',
+        description: 'Tool A',
+        inputSchema: {
+          type: 'object',
+          properties: { foo: { type: 'string' } },
+        },
+      },
+    ]
+    const params = {
+      availableTools,
+      allowedToolNames: ['yolo_local__tool_search', 'server__tool_a'],
+      toolPreferences: {
+        yolo_local__tool_search: { enabled: true },
+        server__tool_a: { enabled: true, disclosureMode: 'on_demand' as const },
+      },
+      apiType: 'anthropic' as const,
+    }
+
+    // Selection no longer takes loadedToolNames into account at all — the
+    // tools field is frozen across the whole conversation.
+    const before = selectAllowedTools(params)
+    const after = selectAllowedTools(params)
+
+    expect(JSON.stringify(before.requestTools)).toEqual(
+      JSON.stringify(after.requestTools),
+    )
   })
 })

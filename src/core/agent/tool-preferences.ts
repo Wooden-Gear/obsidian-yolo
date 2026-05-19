@@ -38,6 +38,32 @@ const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   TOOL_SEARCH_LOCAL_TOOL_NAME,
 ])
 
+/**
+ * Default disclosure mode for a tool when the user has not customized it.
+ *
+ * Built-in `yolo_local__*` tools default to `always`: they total ~3.9K tokens
+ * across ~13 tools, stub-izing them saves little and only adds a first-use
+ * latency hit. Third-party MCP server tools default to `on_demand` so large
+ * MCP fleets don't bloat the cached `tools` prefix.
+ *
+ * `yolo_local__tool_search` itself is forced to `always` by `selectAllowedTools`
+ * — without it the model has no way to disclose anything else — and the UI
+ * locks its disclosure dropdown to match.
+ */
+export const getDefaultDisclosureModeForTool = (
+  toolName: string,
+): AssistantToolDisclosureMode => {
+  try {
+    const { serverName } = parseToolName(toolName)
+    if (serverName === getLocalFileToolServerName()) {
+      return 'always'
+    }
+    return 'on_demand'
+  } catch {
+    return DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE
+  }
+}
+
 export const getDefaultApprovalModeForTool = (
   toolName: string,
 ): AssistantToolApprovalMode => {
@@ -71,7 +97,7 @@ export const buildAssistantToolPreferencesFromEnabledToolNames = (
       acc[toolName] = {
         enabled: true,
         approvalMode: getDefaultApprovalModeForTool(toolName),
-        disclosureMode: DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE,
+        disclosureMode: getDefaultDisclosureModeForTool(toolName),
       }
       return acc
     },
@@ -148,6 +174,6 @@ export const getAssistantToolDisclosureMode = (
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.disclosureMode ??
-    DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE
+    getDefaultDisclosureModeForTool(toolName)
   )
 }

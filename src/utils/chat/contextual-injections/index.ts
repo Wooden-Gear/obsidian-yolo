@@ -4,7 +4,6 @@ import {
   type CurrentFilePointerRenderContext,
   renderCurrentFilePointerInjection,
 } from './currentFilePointerContext'
-import { renderDeferredToolCatalogInjection } from './deferredToolCatalogContext'
 import { renderEditorSnapshotInjection } from './editorSnapshotContext'
 import { renderTodoListInjection } from './todoListContext'
 import type { ContextualInjection } from './types'
@@ -14,11 +13,9 @@ export type {
   CurrentFilePointerInjection,
   EditorSnapshotInjection,
   EditorSnapshotSelection,
-  DeferredToolCatalogInjection,
   TodoListInjection,
 } from './types'
 export { renderCurrentFilePointerInjection } from './currentFilePointerContext'
-export { renderDeferredToolCatalogInjection } from './deferredToolCatalogContext'
 export { renderEditorSnapshotInjection } from './editorSnapshotContext'
 export { renderTodoListInjection } from './todoListContext'
 
@@ -35,8 +32,6 @@ export async function renderContextualInjection(
       return renderEditorSnapshotInjection(injection)
     case 'todo-list':
       return renderTodoListInjection(injection)
-    case 'deferred-tool-catalog':
-      return renderDeferredToolCatalogInjection(injection)
   }
 }
 

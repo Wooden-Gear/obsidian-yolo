@@ -27,9 +27,11 @@ import {
   getAssistantToolDisclosureMode,
   getAssistantToolPreferences,
   getDefaultApprovalModeForTool,
+  getDefaultDisclosureModeForTool,
   getEnabledAssistantToolNames,
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
+import { isToolSearchToolName } from '../../../core/agent/tool-selection'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
@@ -162,8 +164,24 @@ function buildToolTokenPayload(tool: McpTool): Record<string, unknown> {
   }
 }
 
-function buildDeferredToolCatalogTokenPayload(tool: McpTool): string {
-  return `- ${tool.name} | ${tool.description ?? ''}`
+/**
+ * Token estimate payload for an on-demand tool stub. Mirrors the stable
+ * stub registration: name + truncated description + permissive schema.
+ * Kept conservative so the estimate is unaffected by which provider is
+ * actually used at request time.
+ */
+function buildDeferredToolStubTokenPayload(tool: McpTool): unknown {
+  const description = (tool.description ?? '').trim()
+  const truncatedDescription =
+    description.length > 200 ? `${description.slice(0, 197)}...` : description
+  return {
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: truncatedDescription,
+      parameters: { type: 'object', properties: {} },
+    },
+  }
 }
 
 function estimateToolDefaultContextTokens(tool: McpTool): Promise<number> {
@@ -954,10 +972,10 @@ export function AgentsSectionContent({
           if (disclosureMode !== 'on_demand') {
             return [tool.name, count] as const
           }
-          const catalogCount = await estimateTextTokens(
-            buildDeferredToolCatalogTokenPayload(tool),
+          const stubCount = await estimateJsonTokens(
+            buildDeferredToolStubTokenPayload(tool),
           )
-          return [tool.name, catalogCount] as const
+          return [tool.name, stubCount] as const
         }),
       ),
     ).then((entries) => {
@@ -1540,6 +1558,29 @@ export function AgentsSectionContent({
                           )
                             ? 'on_demand'
                             : 'always'
+                          // `tool_search` is the entry point that lets the
+                          // model disclose every other on-demand tool. We
+                          // hard-pin its disclosure to `always` and lock the
+                          // dropdown so users cannot accidentally remove it
+                          // from the frozen `tools` prefix.
+                          const disclosureLocked = tool.toggleTargets.some(
+                            (target) => isToolSearchToolName(target),
+                          )
+                          const defaultDisclosureMode =
+                            tool.toggleTargets.every(
+                              (target) =>
+                                getDefaultDisclosureModeForTool(target) ===
+                                getDefaultDisclosureModeForTool(
+                                  tool.toggleTargets[0],
+                                ),
+                            )
+                              ? getDefaultDisclosureModeForTool(
+                                  tool.toggleTargets[0],
+                                )
+                              : null
+                          const isAtDefaultDisclosure =
+                            defaultDisclosureMode !== null &&
+                            disclosureMode === defaultDisclosureMode
 
                           return (
                             <div
@@ -1569,7 +1610,17 @@ export function AgentsSectionContent({
                                         }
                                         align="end"
                                         contentClassName="yolo-agent-tool-select-menu"
+                                        disabled={disclosureLocked}
                                       />
+                                      {!disclosureLocked &&
+                                        isAtDefaultDisclosure && (
+                                          <span className="yolo-agent-tool-default-hint">
+                                            {t(
+                                              'settings.agent.toolDisclosureDefaultHint',
+                                              '(default)',
+                                            )}
+                                          </span>
+                                        )}
                                     </div>
                                     <div className="yolo-agent-tool-select">
                                       <SimpleSelect

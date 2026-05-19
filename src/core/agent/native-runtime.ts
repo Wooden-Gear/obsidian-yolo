@@ -102,6 +102,7 @@ export class NativeAgentRuntime implements AgentRuntime {
       workspaceScope: input.workspaceScope,
       allowedSkillIds: input.allowedSkillIds,
       allowedSkillNames: input.allowedSkillNames,
+      apiType: input.apiType,
     })
     const worker = createAgentLoopWorker()
     const runId = uuidv4()
@@ -151,6 +152,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                   compaction: this.compactionState,
                   enableTools: this.loopConfig.enableTools,
                   includeBuiltinTools: this.loopConfig.includeBuiltinTools,
+                  apiType: input.apiType,
                   allowedToolNames: input.allowedToolNames,
                   toolPreferences: input.toolPreferences,
                   allowedSkillIds: input.allowedSkillIds,
@@ -217,6 +219,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                         ...requestMessages,
                         ...this.messages,
                       ],
+                      conversationCompaction: this.compactionState,
                       signal: abortSignal,
                       chatModelId: input.model.id,
                       debugTraceId: currentDebugTraceId,
@@ -255,11 +258,12 @@ export class NativeAgentRuntime implements AgentRuntime {
                       messages: conversationMessages,
                       debugTraceId: currentDebugTraceId,
                     })
-                    const nextCompaction = buildCompactedConversationState({
-                      messages: conversationMessages,
-                      summary,
-                      summaryModelId: input.compactionModel.id,
-                    })
+                    const nextCompaction =
+                      await buildCompactedConversationState({
+                        messages: conversationMessages,
+                        summary,
+                        summaryModelId: input.compactionModel.id,
+                      })
                     if (nextCompaction) {
                       try {
                         nextCompaction.estimatedNextContextTokens =
@@ -273,6 +277,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                             enableTools: this.loopConfig.enableTools,
                             includeBuiltinTools:
                               this.loopConfig.includeBuiltinTools,
+                            apiType: input.apiType,
                             allowedToolNames: input.allowedToolNames,
                             toolPreferences: input.toolPreferences,
                             allowedSkillIds: input.allowedSkillIds,
@@ -419,6 +424,7 @@ export class NativeAgentRuntime implements AgentRuntime {
       ],
       enableTools: false,
       includeBuiltinTools: false,
+      apiType: input.apiType,
       allowedToolNames: input.allowedToolNames,
       toolPreferences: input.toolPreferences,
       allowedSkillIds: input.allowedSkillIds,

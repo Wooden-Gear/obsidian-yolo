@@ -12,10 +12,15 @@ import type { ChatModel } from '../../types/chat-model.types'
 import type { RequestMessage } from '../../types/llm/request'
 import type { LLMProvider } from '../../types/provider.types'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
+import { estimateJsonTokens } from '../../utils/llm/contextTokenEstimate'
 import { executeSingleTurn } from '../ai/single-turn'
 import type { BaseLLMProvider } from '../llm/base'
 
-import { extractLoadedDeferredToolNames } from './tool-disclosure'
+import {
+  type LoadedDeferredToolSchema,
+  extractLoadedDeferredToolNames,
+  extractLoadedDeferredToolSchemas,
+} from './tool-disclosure'
 
 const COMPACTION_SYSTEM_PROMPT = `You are summarizing a conversation so it can continue in a fresh context window.
 
@@ -36,6 +41,42 @@ Rules:
 - Output plain Markdown only.`
 
 export const CONTEXT_COMPACT_TOOL_NAME = 'context_compact'
+
+/**
+ * Per-schema token ceiling for the compaction registry. Schemas bigger than
+ * this are intentionally dropped — they bloat every post-compaction request,
+ * and the model can always re-disclose them via `tool_search`. The injected
+ * prompt in `requestContextBuilder` tells the model about this fallback.
+ */
+const LOADED_DEFERRED_TOOL_SCHEMA_TOKEN_LIMIT = 2000
+
+const filterPersistableLoadedDeferredToolSchemas = async (
+  schemas: LoadedDeferredToolSchema[],
+): Promise<LoadedDeferredToolSchema[]> => {
+  const survivors: LoadedDeferredToolSchema[] = []
+  for (const schema of schemas) {
+    let tokens: number
+    try {
+      tokens = await estimateJsonTokens(schema)
+    } catch (error) {
+      console.warn(
+        '[YOLO][Compact] failed to estimate schema tokens; dropping',
+        schema.name,
+        error,
+      )
+      continue
+    }
+    if (tokens <= LOADED_DEFERRED_TOOL_SCHEMA_TOKEN_LIMIT) {
+      survivors.push(schema)
+    } else {
+      console.debug(
+        '[YOLO][Compact] dropping oversized on-demand tool schema from compaction registry',
+        { name: schema.name, tokens },
+      )
+    }
+  }
+  return survivors
+}
 
 export type AutoContextCompactionChatOptions = {
   autoContextCompactionEnabled: boolean
@@ -289,7 +330,7 @@ Continue the task from the most useful next step.
   }
 }
 
-export const buildCompactedConversationState = ({
+export const buildCompactedConversationState = async ({
   messages,
   summary,
   summaryModelId,
@@ -297,7 +338,7 @@ export const buildCompactedConversationState = ({
   messages: ChatMessage[]
   summary: string
   summaryModelId?: string
-}): ChatConversationCompaction | null => {
+}): Promise<ChatConversationCompaction | null> => {
   const trigger = findCompactTrigger(messages)
   if (!trigger) {
     return null
@@ -306,6 +347,10 @@ export const buildCompactedConversationState = ({
   const loadedDeferredToolNames = [
     ...extractLoadedDeferredToolNames({ messages }),
   ].sort()
+  const loadedDeferredToolSchemas =
+    await filterPersistableLoadedDeferredToolSchemas(
+      extractLoadedDeferredToolSchemas({ messages }),
+    )
 
   return {
     anchorMessageId: trigger.anchorMessageId,
@@ -315,10 +360,13 @@ export const buildCompactedConversationState = ({
     summaryModelId,
     compactedMessageCount: trigger.retainedStartIndex,
     ...(loadedDeferredToolNames.length > 0 ? { loadedDeferredToolNames } : {}),
+    ...(loadedDeferredToolSchemas.length > 0
+      ? { loadedDeferredToolSchemas }
+      : {}),
   }
 }
 
-export const buildManualCompactionState = ({
+export const buildManualCompactionState = async ({
   messages,
   summary,
   summaryModelId,
@@ -326,7 +374,7 @@ export const buildManualCompactionState = ({
   messages: ChatMessage[]
   summary: string
   summaryModelId?: string
-}): ChatConversationCompaction | null => {
+}): Promise<ChatConversationCompaction | null> => {
   const anchorMessageId = messages.at(-1)?.id
   if (!anchorMessageId) {
     return null
@@ -335,6 +383,10 @@ export const buildManualCompactionState = ({
   const loadedDeferredToolNames = [
     ...extractLoadedDeferredToolNames({ messages }),
   ].sort()
+  const loadedDeferredToolSchemas =
+    await filterPersistableLoadedDeferredToolSchemas(
+      extractLoadedDeferredToolSchemas({ messages }),
+    )
 
   return {
     anchorMessageId,
@@ -343,6 +395,9 @@ export const buildManualCompactionState = ({
     summaryModelId,
     compactedMessageCount: messages.length,
     ...(loadedDeferredToolNames.length > 0 ? { loadedDeferredToolNames } : {}),
+    ...(loadedDeferredToolSchemas.length > 0
+      ? { loadedDeferredToolSchemas }
+      : {}),
   }
 }
 

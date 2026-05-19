@@ -4,19 +4,13 @@ import type {
   ChatMessage,
 } from '../../types/chat'
 import type { ChatModel } from '../../types/chat-model.types'
+import type { LLMProviderApiType } from '../../types/provider.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { estimateJsonTokens } from '../../utils/llm/contextTokenEstimate'
 import { McpManager } from '../mcp/mcpManager'
 
-import {
-  buildDeferredToolCatalogItems,
-  extractLoadedDeferredToolNames,
-} from './tool-disclosure'
-import {
-  getToolApprovalModeForCatalog,
-  selectAllowedTools,
-} from './tool-selection'
+import { selectAllowedTools } from './tool-selection'
 
 export const estimateContinuationRequestContextTokens = async ({
   requestContextBuilder,
@@ -27,6 +21,7 @@ export const estimateContinuationRequestContextTokens = async ({
   compaction,
   enableTools,
   includeBuiltinTools,
+  apiType,
   allowedToolNames,
   toolPreferences,
   allowedSkillIds,
@@ -41,6 +36,7 @@ export const estimateContinuationRequestContextTokens = async ({
   compaction?: ChatConversationCompactionLike | null
   enableTools: boolean
   includeBuiltinTools: boolean
+  apiType?: LLMProviderApiType | null
   allowedToolNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
@@ -55,21 +51,14 @@ export const estimateContinuationRequestContextTokens = async ({
         chatModelModalities: model.modalities,
       })
     : []
-  const { hasTools, hasMemoryTools, deferredTools, requestTools } =
-    selectAllowedTools({
-      availableTools,
-      allowedToolNames,
-      allowedSkillIds,
-      allowedSkillNames,
-      toolPreferences,
-      loadedToolNames: extractLoadedDeferredToolNames({ messages, compaction }),
-    })
-  const deferredCatalogItems = buildDeferredToolCatalogItems(
-    deferredTools.map((tool) => ({
-      tool,
-      approvalMode: getToolApprovalModeForCatalog(toolPreferences, tool.name),
-    })),
-  )
+  const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
+    availableTools,
+    allowedToolNames,
+    allowedSkillIds,
+    allowedSkillNames,
+    toolPreferences,
+    apiType,
+  })
 
   const requestMessages = await requestContextBuilder.generateRequestMessages({
     messages,
@@ -78,13 +67,7 @@ export const estimateContinuationRequestContextTokens = async ({
     model,
     conversationId,
     compaction,
-    contextualInjections:
-      deferredCatalogItems.length > 0
-        ? [
-            ...(contextualInjections ?? []),
-            { type: 'deferred-tool-catalog', tools: deferredCatalogItems },
-          ]
-        : contextualInjections,
+    contextualInjections,
   })
 
   return await estimateJsonTokens({
