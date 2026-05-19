@@ -5,8 +5,8 @@ import {
   AssistantToolPreference,
 } from '../../types/assistant.types'
 import {
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
-  TOOL_SEARCH_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
 } from '../mcp/localFileTools'
 import { parseToolName } from '../mcp/tool-name-utils'
@@ -35,7 +35,7 @@ const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
 ])
 
 const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
-  TOOL_SEARCH_LOCAL_TOOL_NAME,
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
 ])
 
 /**
@@ -46,7 +46,7 @@ const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
  * latency hit. Third-party MCP server tools default to `on_demand` so large
  * MCP fleets don't bloat the cached `tools` prefix.
  *
- * `yolo_local__tool_search` itself is forced to `always` by `selectAllowedTools`
+ * `yolo_local__load_tool_schemas` itself is forced to `always` by `selectAllowedTools`
  * — without it the model has no way to disclose anything else — and the UI
  * locks its disclosure dropdown to match.
  */

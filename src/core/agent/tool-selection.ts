@@ -3,9 +3,9 @@ import type { RequestTool } from '../../types/llm/request'
 import type { McpTool } from '../../types/mcp.types'
 import type { LLMProviderApiType } from '../../types/provider.types'
 import {
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
-  TOOL_SEARCH_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
 } from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
@@ -33,15 +33,15 @@ const isOpenSkillToolName = (toolName: string): boolean => {
   }
 }
 
-export const isToolSearchToolName = (toolName: string): boolean => {
+export const isLoadToolSchemasToolName = (toolName: string): boolean => {
   try {
     const parsed = parseToolName(toolName)
     return (
       parsed.serverName === getLocalFileToolServerName() &&
-      parsed.toolName === TOOL_SEARCH_LOCAL_TOOL_NAME
+      parsed.toolName === LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME
     )
   } catch {
-    return toolName === TOOL_SEARCH_LOCAL_TOOL_NAME
+    return toolName === LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME
   }
 }
 
@@ -186,10 +186,10 @@ export const selectAllowedTools = ({
   // request's `tools` field for the entire conversation so the prompt-cache
   // prefix stays frozen. On-demand tools start as stubs (name + short
   // description + permissive schema) and stay stubs even after their full
-  // schema has been disclosed via tool_search: schemas now ride the messages
+  // schema has been disclosed via load_tool_schemas: schemas now ride the messages
   // stream (tool_result + compaction registry) instead of the tools field.
   const requestToolDefinitions: McpTool[] = filteredTools.map((tool) => {
-    const disclosureMode = isToolSearchToolName(tool.name)
+    const disclosureMode = isLoadToolSchemasToolName(tool.name)
       ? 'always'
       : getAssistantToolDisclosureMode(assistantLike, tool.name)
     if (disclosureMode === 'on_demand') {

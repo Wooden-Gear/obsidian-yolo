@@ -96,7 +96,7 @@ describe('selectAllowedTools', () => {
   it('replaces on-demand tools with a permissive stub schema (non-Gemini)', () => {
     const availableTools: McpTool[] = [
       {
-        name: 'yolo_local__tool_search',
+        name: 'yolo_local__load_tool_schemas',
         description: 'Search tools',
         inputSchema: { type: 'object', properties: {} },
       },
@@ -113,9 +113,9 @@ describe('selectAllowedTools', () => {
 
     const result = selectAllowedTools({
       availableTools,
-      allowedToolNames: ['yolo_local__tool_search', 'server__tool_a'],
+      allowedToolNames: ['yolo_local__load_tool_schemas', 'server__tool_a'],
       toolPreferences: {
-        yolo_local__tool_search: { enabled: true },
+        yolo_local__load_tool_schemas: { enabled: true },
         server__tool_a: { enabled: true, disclosureMode: 'on_demand' },
       },
       apiType: 'anthropic',
@@ -124,7 +124,7 @@ describe('selectAllowedTools', () => {
     // Tools field stays frozen: both tools are registered every turn so the
     // prompt-cache prefix never invalidates.
     expect(result.requestTools?.map((tool) => tool.function.name)).toEqual([
-      'yolo_local__tool_search',
+      'yolo_local__load_tool_schemas',
       'server__tool_a',
     ])
     const stub = result.requestTools?.find(
@@ -136,8 +136,8 @@ describe('selectAllowedTools', () => {
       additionalProperties: true,
     })
     // Stub description must include the on-demand hint so the model knows to
-    // call tool_search first.
-    expect(stub?.function.description).toContain('tool_search')
+    // call load_tool_schemas first.
+    expect(stub?.function.description).toContain('load_tool_schemas')
   })
 
   it('uses args_json stub form on Gemini', () => {
@@ -168,10 +168,10 @@ describe('selectAllowedTools', () => {
     })
   })
 
-  it('produces the same tools-field hash before and after a tool_search load', () => {
+  it('produces the same tools-field hash before and after a load_tool_schemas load', () => {
     const availableTools: McpTool[] = [
       {
-        name: 'yolo_local__tool_search',
+        name: 'yolo_local__load_tool_schemas',
         description: 'Search tools',
         inputSchema: { type: 'object', properties: {} },
       },
@@ -186,9 +186,9 @@ describe('selectAllowedTools', () => {
     ]
     const params = {
       availableTools,
-      allowedToolNames: ['yolo_local__tool_search', 'server__tool_a'],
+      allowedToolNames: ['yolo_local__load_tool_schemas', 'server__tool_a'],
       toolPreferences: {
-        yolo_local__tool_search: { enabled: true },
+        yolo_local__load_tool_schemas: { enabled: true },
         server__tool_a: { enabled: true, disclosureMode: 'on_demand' as const },
       },
       apiType: 'anthropic' as const,

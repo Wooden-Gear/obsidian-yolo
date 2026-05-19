@@ -25,7 +25,7 @@ import {
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 import {
   ASK_USER_QUESTION_TOOL_NAME,
-  TOOL_SEARCH_LOCAL_TOOL_NAME,
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
   isAskUserQuestionToolName,
   validateAskUserQuestionArgs,
@@ -34,7 +34,7 @@ import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
 import {
-  TOOL_SEARCH_RESULT_TOOL,
+  LOAD_TOOL_SCHEMAS_RESULT_TOOL,
   extractLoadedDeferredToolNames,
 } from './tool-disclosure'
 import {
@@ -42,7 +42,7 @@ import {
   getAssistantToolDisclosureMode,
   isAssistantToolEnabled,
 } from './tool-preferences'
-import { isToolSearchToolName } from './tool-selection'
+import { isLoadToolSchemasToolName } from './tool-selection'
 import { GEMINI_STUB_ARGS_JSON_FIELD, isGeminiStubApiType } from './tool-stub'
 import { findPathOutsideScope } from './workspaceScope'
 
@@ -99,7 +99,7 @@ export class AgentToolGateway {
   }
 
   private isOnDemandToolName(toolName: string): boolean {
-    if (isToolSearchToolName(toolName)) {
+    if (isLoadToolSchemasToolName(toolName)) {
       return false
     }
     return (
@@ -154,8 +154,8 @@ export class AgentToolGateway {
    * are stubs):
    *
    *   1. Reject calls to on-demand tools whose schemas have not been disclosed
-   *      via `tool_search` in this conversation yet. Errors point the model to
-   *      `tool_search` so it can self-correct in the next turn.
+   *      via `load_tool_schemas` in this conversation yet. Errors point the
+   *      model to `load_tool_schemas` so it can self-correct in the next turn.
    *   2. For Gemini stubs, unpack the `args_json` field back into real
    *      arguments before dispatch. Then validate the unpacked payload
    *      against the real JSON Schema via ajv.
@@ -185,7 +185,7 @@ export class AgentToolGateway {
           status: ToolCallResponseStatus.Error,
           error:
             `Tool "${request.name}" is registered on demand and its schema has not been disclosed in this conversation yet. ` +
-            `Call yolo_local__tool_search with query "select:${request.name}" (or a keyword query) first; the next assistant turn can then call ${request.name} directly.`,
+            `Call yolo_local__load_tool_schemas with {"names":["${request.name}"]} first; the next assistant turn can then call ${request.name} directly.`,
         },
       }
     }
@@ -256,7 +256,7 @@ export class AgentToolGateway {
           status: ToolCallResponseStatus.Error,
           error:
             `Arguments for "${request.name}" failed schema validation: ${errorDetail}. ` +
-            `Re-check the schema returned by yolo_local__tool_search and retry.`,
+            `Re-check the schema returned by yolo_local__load_tool_schemas and retry.`,
         },
       }
     }
@@ -411,7 +411,7 @@ export class AgentToolGateway {
     // validation, so we must enforce "schema previously disclosed" and (for
     // Gemini) unpack the `args_json` smuggle field + run real-schema ajv
     // validation before dispatch. Failures convert the call's status to
-    // Error with guidance pointing back to `tool_search`.
+    // Error with guidance pointing back to `load_tool_schemas`.
     const loadedToolNames = extractLoadedDeferredToolNames({
       messages: conversationMessages ?? [],
       compaction: conversationCompaction ?? null,
@@ -622,54 +622,77 @@ export class AgentToolGateway {
       },
       responseContentType: 'application/json',
       run: () =>
-        this.isToolSearchRequest(toolParams.name)
-          ? this.callToolSearch(toolParams.args)
+        this.isLoadToolSchemasRequest(toolParams.name)
+          ? this.callLoadToolSchemas(toolParams.args)
           : this.mcpManager.callTool(toolParams),
       getResponseBody: (response) => response,
     })
   }
 
-  private isToolSearchRequest(toolName: string): boolean {
+  private isLoadToolSchemasRequest(toolName: string): boolean {
     try {
       const parsed = parseToolName(toolName)
       return (
         parsed.serverName === getLocalFileToolServerName() &&
-        parsed.toolName === TOOL_SEARCH_LOCAL_TOOL_NAME
+        parsed.toolName === LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME
       )
     } catch {
       return false
     }
   }
 
-  private async callToolSearch(
+  private async callLoadToolSchemas(
     args?: Record<string, unknown>,
   ): Promise<ToolCallResponse> {
-    const query = typeof args?.query === 'string' ? args.query.trim() : ''
-    if (!query) {
+    const rawNames = args?.names
+    if (!Array.isArray(rawNames) || rawNames.length === 0) {
       return {
         status: ToolCallResponseStatus.Error,
-        error: 'query is required.',
+        error: 'names must be a non-empty array of tool names.',
       }
     }
-    const maxResultsRaw = args?.max_results
-    const maxResults =
-      typeof maxResultsRaw === 'number' && Number.isFinite(maxResultsRaw)
-        ? Math.max(1, Math.min(20, Math.floor(maxResultsRaw)))
-        : 5
+    const requestedNames: string[] = []
+    for (const entry of rawNames) {
+      if (typeof entry !== 'string') {
+        return {
+          status: ToolCallResponseStatus.Error,
+          error: 'names must contain only strings.',
+        }
+      }
+      const trimmed = entry.trim()
+      if (trimmed.length === 0) continue
+      if (!requestedNames.includes(trimmed)) {
+        requestedNames.push(trimmed)
+      }
+    }
+    if (requestedNames.length === 0) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: 'names must contain at least one non-empty tool name.',
+      }
+    }
+
     const tools = await this.mcpManager.listAvailableTools({
       includeBuiltinTools: true,
     })
-    const searchableTools = tools.filter((tool) => {
-      if (this.isToolSearchRequest(tool.name)) {
-        return false
+    const byName = new Map<string, McpTool>()
+    for (const tool of tools) {
+      byName.set(tool.name, tool)
+    }
+    const matches: McpTool[] = []
+    const unknown: string[] = []
+    for (const name of requestedNames) {
+      const tool = byName.get(name)
+      if (
+        !tool ||
+        this.isLoadToolSchemasRequest(tool.name) ||
+        !this.isToolAllowed(tool.name)
+      ) {
+        unknown.push(name)
+        continue
       }
-      return this.isToolAllowed(tool.name)
-    })
-    const matches = this.searchToolContracts({
-      query,
-      maxResults,
-      tools: searchableTools,
-    })
+      matches.push(tool)
+    }
 
     return {
       status: ToolCallResponseStatus.Success,
@@ -677,8 +700,7 @@ export class AgentToolGateway {
         type: 'text',
         text: JSON.stringify(
           {
-            tool: TOOL_SEARCH_RESULT_TOOL,
-            query,
+            tool: LOAD_TOOL_SCHEMAS_RESULT_TOOL,
             loadedToolNames: matches.map((tool) => tool.name),
             matches: matches.map((tool) => ({
               name: tool.name,
@@ -688,66 +710,17 @@ export class AgentToolGateway {
                 properties: tool.inputSchema.properties ?? {},
               },
             })),
+            unknownNames: unknown,
             instruction:
               matches.length > 0
-                ? 'These tool schemas will be registered in the next LLM turn. Retry with the loaded tool after this result.'
-                : 'No enabled tools matched this query.',
+                ? 'These tool schemas are now available. Call the loaded tools directly in the next turn.'
+                : 'No enabled tools matched the requested names.',
           },
           null,
           2,
         ),
       },
     }
-  }
-
-  private searchToolContracts({
-    query,
-    maxResults,
-    tools,
-  }: {
-    query: string
-    maxResults: number
-    tools: McpTool[]
-  }): McpTool[] {
-    const selectPrefix = 'select:'
-    const queryLower = query.toLowerCase()
-    if (queryLower.startsWith(selectPrefix)) {
-      const selected = query
-        .slice(selectPrefix.length)
-        .split(',')
-        .map((name) => name.trim())
-        .filter(Boolean)
-      const selectedSet = new Set(selected)
-      const selectedLowerSet = new Set(
-        selected.map((name) => name.toLowerCase()),
-      )
-      return tools.filter(
-        (tool) =>
-          selectedSet.has(tool.name) ||
-          selectedLowerSet.has(tool.name.toLowerCase()),
-      )
-    }
-
-    const terms = queryLower.split(/\s+/).filter(Boolean)
-    if (terms.length === 0) {
-      return []
-    }
-
-    return tools
-      .map((tool) => {
-        const haystack = `${tool.name} ${tool.description ?? ''}`.toLowerCase()
-        const score = terms.reduce(
-          (sum, term) => sum + (haystack.includes(term) ? 1 : 0),
-          0,
-        )
-        return { tool, score }
-      })
-      .filter(({ score }) => score > 0)
-      .sort(
-        (a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name),
-      )
-      .slice(0, maxResults)
-      .map(({ tool }) => tool)
   }
 
   private getFsEditTargetPath(request: ToolCallRequest): string | undefined {

@@ -45,7 +45,7 @@ export const CONTEXT_COMPACT_TOOL_NAME = 'context_compact'
 /**
  * Per-schema token ceiling for the compaction registry. Schemas bigger than
  * this are intentionally dropped — they bloat every post-compaction request,
- * and the model can always re-disclose them via `tool_search`. The injected
+ * and the model can always re-disclose them via `load_tool_schemas`. The injected
  * prompt in `requestContextBuilder` tells the model about this fallback.
  */
 const LOADED_DEFERRED_TOOL_SCHEMA_TOKEN_LIMIT = 2000

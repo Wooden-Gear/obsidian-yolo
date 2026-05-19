@@ -5,9 +5,9 @@ import type {
 import { getLatestChatConversationCompaction } from '../../types/chat'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 
-import { isToolSearchToolName } from './tool-selection'
+import { isLoadToolSchemasToolName } from './tool-selection'
 
-export const TOOL_SEARCH_RESULT_TOOL = 'tool_search'
+export const LOAD_TOOL_SCHEMAS_RESULT_TOOL = 'load_tool_schemas'
 
 export type LoadedDeferredToolSchema = {
   name: string
@@ -27,7 +27,7 @@ const parseToolSearchResult = (
       loadedToolNames?: unknown
       matches?: unknown
     }
-    if (parsed.tool !== TOOL_SEARCH_RESULT_TOOL) {
+    if (parsed.tool !== LOAD_TOOL_SCHEMAS_RESULT_TOOL) {
       return null
     }
     const loadedToolNames: string[] = []
@@ -83,7 +83,7 @@ export const extractLoadedDeferredToolNames = ({
       continue
     }
     for (const toolCall of message.toolCalls) {
-      if (!isToolSearchToolName(toolCall.request.name)) {
+      if (!isLoadToolSchemasToolName(toolCall.request.name)) {
         continue
       }
       if (toolCall.response.status !== ToolCallResponseStatus.Success) {
@@ -102,7 +102,7 @@ export const extractLoadedDeferredToolNames = ({
 
 /**
  * Walk the conversation (and latest compaction registry) to recover full
- * schemas for every on-demand tool that has been disclosed via `tool_search`.
+ * schemas for every on-demand tool that has been disclosed via `load_tool_schemas`.
  * Used by compaction to persist the registry forward and by the request
  * builder to re-inject disclosed schemas after compaction discards history.
  *
@@ -134,7 +134,7 @@ export const extractLoadedDeferredToolSchemas = ({
       continue
     }
     for (const toolCall of message.toolCalls) {
-      if (!isToolSearchToolName(toolCall.request.name)) {
+      if (!isLoadToolSchemasToolName(toolCall.request.name)) {
         continue
       }
       if (toolCall.response.status !== ToolCallResponseStatus.Success) {

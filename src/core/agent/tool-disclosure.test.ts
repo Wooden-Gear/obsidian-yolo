@@ -4,7 +4,7 @@ import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { extractLoadedDeferredToolNames } from './tool-disclosure'
 
 describe('tool disclosure state', () => {
-  it('extracts loaded tool names from tool_search results', () => {
+  it('extracts loaded tool names from load_tool_schemas results', () => {
     const messages: ChatMessage[] = [
       {
         role: 'tool',
@@ -13,14 +13,14 @@ describe('tool disclosure state', () => {
           {
             request: {
               id: 'call-1',
-              name: 'yolo_local__tool_search',
+              name: 'yolo_local__load_tool_schemas',
             },
             response: {
               status: ToolCallResponseStatus.Success,
               data: {
                 type: 'text',
                 text: JSON.stringify({
-                  tool: 'tool_search',
+                  tool: 'load_tool_schemas',
                   loadedToolNames: ['server__tool_a'],
                 }),
               },

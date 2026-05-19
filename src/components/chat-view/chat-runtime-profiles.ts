@@ -1,6 +1,6 @@
 import type { AgentRuntimeLoopConfig } from '../../core/agent/types'
 import {
-  TOOL_SEARCH_LOCAL_TOOL_NAME,
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
 } from '../../core/mcp/localFileTools'
 import { getToolName } from '../../core/mcp/tool-name-utils'
@@ -24,7 +24,7 @@ export const CHAT_BLOCKED_TOOL_NAMES: readonly string[] = [
   getToolName(getLocalFileToolServerName(), 'fs_delete_dir'),
   getToolName(getLocalFileToolServerName(), 'fs_move'),
   getToolName(getLocalFileToolServerName(), 'todo_write'),
-  getToolName(getLocalFileToolServerName(), TOOL_SEARCH_LOCAL_TOOL_NAME),
+  getToolName(getLocalFileToolServerName(), LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME),
 ]
 
 export type ChatModeRuntime = {

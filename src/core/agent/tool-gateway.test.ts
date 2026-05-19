@@ -44,12 +44,12 @@ describe('AgentToolGateway', () => {
     })
   })
 
-  it('loads enabled tool contracts through tool_search', async () => {
+  it('loads enabled tool contracts through load_tool_schemas', async () => {
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(true),
       listAvailableTools: jest.fn().mockResolvedValue([
         {
-          name: 'yolo_local__tool_search',
+          name: 'yolo_local__load_tool_schemas',
           description: 'Search tools',
           inputSchema: { type: 'object', properties: {} },
         },
@@ -70,9 +70,9 @@ describe('AgentToolGateway', () => {
     } as unknown as McpManager
 
     const gateway = new AgentToolGateway(mcpManager, {
-      allowedToolNames: ['yolo_local__tool_search', 'server__tool_a'],
+      allowedToolNames: ['yolo_local__load_tool_schemas', 'server__tool_a'],
       toolPreferences: {
-        yolo_local__tool_search: {
+        yolo_local__load_tool_schemas: {
           enabled: true,
           approvalMode: 'full_access',
         },
@@ -87,9 +87,9 @@ describe('AgentToolGateway', () => {
       toolCallRequests: [
         {
           id: 'tool-1',
-          name: 'yolo_local__tool_search',
+          name: 'yolo_local__load_tool_schemas',
           arguments: createCompleteToolCallArguments({
-            value: { query: 'select:server__tool_a' },
+            value: { names: ['server__tool_a'] },
           }),
         },
       ],
@@ -402,9 +402,9 @@ describe('AgentToolGateway', () => {
 
     const buildGateway = (mcpManager: McpManager, apiType?: 'gemini') =>
       new AgentToolGateway(mcpManager, {
-        allowedToolNames: ['server__tool_a', 'yolo_local__tool_search'],
+        allowedToolNames: ['server__tool_a', 'yolo_local__load_tool_schemas'],
         toolPreferences: {
-          yolo_local__tool_search: {
+          yolo_local__load_tool_schemas: {
             enabled: true,
             approvalMode: 'full_access',
           },
@@ -440,7 +440,7 @@ describe('AgentToolGateway', () => {
       const response = result.toolCalls[0]?.response
       expect(response?.status).toBe(ToolCallResponseStatus.Error)
       if (response?.status === ToolCallResponseStatus.Error) {
-        expect(response.error).toContain('tool_search')
+        expect(response.error).toContain('load_tool_schemas')
       }
     })
 
@@ -454,7 +454,7 @@ describe('AgentToolGateway', () => {
           {
             request: {
               id: 'call-search',
-              name: 'yolo_local__tool_search',
+              name: 'yolo_local__load_tool_schemas',
               arguments: emptyArgs,
             },
             response: {
@@ -462,7 +462,7 @@ describe('AgentToolGateway', () => {
               data: {
                 type: 'text' as const,
                 text: JSON.stringify({
-                  tool: 'tool_search',
+                  tool: 'load_tool_schemas',
                   loadedToolNames: ['server__tool_a'],
                   matches: [
                     {
@@ -511,7 +511,7 @@ describe('AgentToolGateway', () => {
           {
             request: {
               id: 'call-search',
-              name: 'yolo_local__tool_search',
+              name: 'yolo_local__load_tool_schemas',
               arguments: emptyArgs,
             },
             response: {
@@ -519,7 +519,7 @@ describe('AgentToolGateway', () => {
               data: {
                 type: 'text' as const,
                 text: JSON.stringify({
-                  tool: 'tool_search',
+                  tool: 'load_tool_schemas',
                   loadedToolNames: ['server__tool_a'],
                   matches: [
                     {
@@ -560,7 +560,7 @@ describe('AgentToolGateway', () => {
       expect(callArgs.args).toEqual({ value: 'hello' })
     })
 
-    it('honors schemas persisted in compaction state when no tool_search history remains', async () => {
+    it('honors schemas persisted in compaction state when no load_tool_schemas history remains', async () => {
       const mcpManager = mcpManagerWithRealTool()
       const gateway = buildGateway(mcpManager)
       const compaction = {

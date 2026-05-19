@@ -4,17 +4,17 @@ import type { LLMProviderApiType } from '../../types/provider.types'
 /**
  * Maximum length of the stub description registered in the `tools` field.
  * Kept short because every byte counts toward the frozen cache prefix; the
- * full description is delivered later via `yolo_local__tool_search` results.
+ * full description is delivered later via `yolo_local__load_tool_schemas` results.
  */
 const STUB_DESCRIPTION_MAX_CHARS = 200
 
 const STUB_DESCRIPTION_SUFFIX =
-  ' (on-demand: call yolo_local__tool_search to load full schema before use)'
+  ' (on-demand: call yolo_local__load_tool_schemas to load full schema before use)'
 
 const truncateDescription = (description: string | undefined): string => {
   const raw = (description ?? '').trim()
   if (raw.length === 0) {
-    return 'On-demand tool. Call yolo_local__tool_search to load the full schema before invoking.'
+    return 'On-demand tool. Call yolo_local__load_tool_schemas to load the full schema before invoking.'
   }
   if (raw.length <= STUB_DESCRIPTION_MAX_CHARS) {
     return `${raw}${STUB_DESCRIPTION_SUFFIX}`
@@ -36,11 +36,11 @@ const isGeminiApiType = (apiType?: LLMProviderApiType | null): boolean => {
 
 /**
  * Build the stub `inputSchema` that the registered tool exposes to the LLM
- * before its real schema has been disclosed via `tool_search`.
+ * before its real schema has been disclosed via `load_tool_schemas`.
  *
  * Anthropic / OpenAI Responses / OpenAI Chat Completions accept the open
  * `{additionalProperties: true}` form, which lets the model send arbitrary
- * arguments once it has learned the real schema from `tool_search` output.
+ * arguments once it has learned the real schema from `load_tool_schemas` output.
  *
  * Gemini's OpenAPI subset removes `additionalProperties`, so we fall back to a
  * single string field carrying the JSON-encoded real arguments.
@@ -55,7 +55,7 @@ export const buildStubInputSchema = (
         [GEMINI_STUB_ARGS_JSON_FIELD]: {
           type: 'string',
           description:
-            'JSON-encoded object of the real tool arguments. Use this only after yolo_local__tool_search has returned the full schema for this tool; the contents must match that schema.',
+            'JSON-encoded object of the real tool arguments. Use this only after yolo_local__load_tool_schemas has returned the full schema for this tool; the contents must match that schema.',
         },
       },
       required: [GEMINI_STUB_ARGS_JSON_FIELD],

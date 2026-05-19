@@ -131,7 +131,7 @@ type LocalFileToolName =
   | 'web_search'
   | 'web_scrape'
   | 'delegate_external_agent'
-  | 'tool_search'
+  | 'load_tool_schemas'
   | 'todo_write'
   | 'ask_user_question'
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
@@ -396,7 +396,7 @@ export function getLocalFileToolServerName(): string {
   return LOCAL_FILE_TOOL_SERVER
 }
 
-export const TOOL_SEARCH_LOCAL_TOOL_NAME = 'tool_search'
+export const LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME = 'load_tool_schemas'
 
 /**
  * Build the modality enum + description fragment exposed to the current chat
@@ -1122,23 +1122,21 @@ export function getLocalFileTools(options?: {
       },
     },
     {
-      name: TOOL_SEARCH_LOCAL_TOOL_NAME,
-      description: 'Load full schemas for enabled on-demand tools.',
+      name: LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
+      description:
+        'Load full schemas for on-demand tools so they become callable in the next turn. Pass tool names directly — batch multiple when needed.',
       inputSchema: {
         type: 'object',
         properties: {
-          query: {
-            type: 'string',
+          names: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 1,
             description:
-              'Query to find tools. Use "select:<tool_name>" for exact loading, or keywords such as "github issue".',
-          },
-          max_results: {
-            type: 'integer',
-            description:
-              'Maximum matches to return for keyword search. Defaults to 5.',
+              'Exact tool names to load (as shown in the tools list).',
           },
         },
-        required: ['query'],
+        required: ['names'],
       },
     },
     {
@@ -4368,9 +4366,9 @@ export async function callLocalFileTool({
         }
       }
 
-      case TOOL_SEARCH_LOCAL_TOOL_NAME: {
+      case LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME: {
         throw new Error(
-          'tool_search is only available through the Agent runtime.',
+          'load_tool_schemas is only available through the Agent runtime.',
         )
       }
 

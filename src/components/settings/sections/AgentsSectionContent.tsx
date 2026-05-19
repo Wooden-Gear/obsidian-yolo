@@ -30,7 +30,7 @@ import {
   getEnabledAssistantToolNames,
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
-import { isToolSearchToolName } from '../../../core/agent/tool-selection'
+import { isLoadToolSchemasToolName } from '../../../core/agent/tool-selection'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
@@ -1557,13 +1557,13 @@ export function AgentsSectionContent({
                           )
                             ? 'on_demand'
                             : 'always'
-                          // `tool_search` is the entry point that lets the
+                          // `load_tool_schemas` is the entry point that lets the
                           // model disclose every other on-demand tool. We
                           // hard-pin its disclosure to `always` and lock the
                           // dropdown so users cannot accidentally remove it
                           // from the frozen `tools` prefix.
                           const disclosureLocked = tool.toggleTargets.some(
-                            (target) => isToolSearchToolName(target),
+                            (target) => isLoadToolSchemasToolName(target),
                           )
 
                           return (

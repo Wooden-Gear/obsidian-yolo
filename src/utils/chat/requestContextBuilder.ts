@@ -1091,11 +1091,11 @@ ${quotes
   }
 
   /**
-   * After compaction, the original `tool_search` results are gone. Re-inject
+   * After compaction, the original `load_tool_schemas` results are gone. Re-inject
    * full schemas for on-demand tools that were already disclosed so the model
-   * can keep calling them without redundant `tool_search` round-trips. Schemas
+   * can keep calling them without redundant `load_tool_schemas` round-trips. Schemas
    * over the per-tool budget are intentionally not persisted by compaction;
-   * the prompt tells the model to fall back to `tool_search` for those.
+   * the prompt tells the model to fall back to `load_tool_schemas` for those.
    *
    * Returned as a `user` message so it sticks to the request prefix without
    * polluting the system prompt. It is built deterministically from the
@@ -1129,9 +1129,9 @@ ${quotes
     return {
       role: 'user',
       content: `<previously-loaded-tools>
-The following on-demand tools were already disclosed by yolo_local__tool_search earlier in this conversation. Their stubs remain registered in the tools list. You may call them directly using the schemas below without calling yolo_local__tool_search again.
+The following on-demand tools were already disclosed by yolo_local__load_tool_schemas earlier in this conversation. Their stubs remain registered in the tools list. You may call them directly using the schemas below without calling yolo_local__load_tool_schemas again.
 
-If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__tool_search to re-disclose it first.
+If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__load_tool_schemas to re-disclose it first.
 
 ${entries}
 </previously-loaded-tools>`,

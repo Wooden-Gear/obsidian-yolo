@@ -339,7 +339,7 @@ describe('buildManualCompactionState loadedDeferredToolSchemas persistence', () 
           {
             request: {
               id: 'call-search',
-              name: 'yolo_local__tool_search',
+              name: 'yolo_local__load_tool_schemas',
               arguments: emptyArgs,
             },
             response: {
@@ -347,7 +347,7 @@ describe('buildManualCompactionState loadedDeferredToolSchemas persistence', () 
               data: {
                 type: 'text' as const,
                 text: JSON.stringify({
-                  tool: 'tool_search',
+                  tool: 'load_tool_schemas',
                   loadedToolNames: ['server__tool_a'],
                   matches: [
                     {
@@ -404,7 +404,7 @@ describe('buildManualCompactionState loadedDeferredToolSchemas persistence', () 
           {
             request: {
               id: 'call-search',
-              name: 'yolo_local__tool_search',
+              name: 'yolo_local__load_tool_schemas',
               arguments: emptyArgs,
             },
             response: {
@@ -412,7 +412,7 @@ describe('buildManualCompactionState loadedDeferredToolSchemas persistence', () 
               data: {
                 type: 'text' as const,
                 text: JSON.stringify({
-                  tool: 'tool_search',
+                  tool: 'load_tool_schemas',
                   loadedToolNames: ['server__big_tool'],
                   matches: [
                     {
@@ -438,7 +438,7 @@ describe('buildManualCompactionState loadedDeferredToolSchemas persistence', () 
     })
     expect(state?.loadedDeferredToolSchemas ?? []).toEqual([])
     // Loaded names list still tracks the tool by name, since the model is told
-    // to re-disclose it via tool_search.
+    // to re-disclose it via load_tool_schemas.
     expect(state?.loadedDeferredToolNames).toEqual(['server__big_tool'])
   })
 })
