@@ -505,7 +505,7 @@ export const en: TranslationKeys = {
       toolApproval: 'Approval',
       toolApprovalFullAccess: 'Full access',
       toolApprovalRequire: 'Require approval',
-      toolDisclosureAlways: 'Always',
+      toolDisclosureAlways: 'In context',
       toolDisclosureOnDemand: 'On demand',
       editorEnabled: 'Enabled',
       editorDisabled: 'Disabled',

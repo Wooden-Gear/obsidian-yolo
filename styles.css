@@ -4860,12 +4860,6 @@ button.yolo-assistant-selector-footer-btn:hover {
   gap: 4px;
 }
 
-.yolo-agent-tool-default-hint {
-  color: var(--text-faint);
-  font-size: 11px;
-  line-height: 1;
-}
-
 .yolo-agent-tool-select .yolo-simple-select__trigger {
   width: auto;
   min-width: 0;

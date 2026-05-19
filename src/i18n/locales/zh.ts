@@ -459,7 +459,7 @@ export const zh: TranslationKeys = {
       toolApproval: '审批',
       toolApprovalFullAccess: '完全放行',
       toolApprovalRequire: '需要审批',
-      toolDisclosureAlways: '常驻注册',
+      toolDisclosureAlways: '常驻上下文',
       toolDisclosureOnDemand: '按需披露',
       editorEnabled: '已启用',
       editorDisabled: '已禁用',

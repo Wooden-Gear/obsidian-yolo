@@ -27,7 +27,6 @@ import {
   getAssistantToolDisclosureMode,
   getAssistantToolPreferences,
   getDefaultApprovalModeForTool,
-  getDefaultDisclosureModeForTool,
   getEnabledAssistantToolNames,
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
@@ -1141,7 +1140,7 @@ export function AgentsSectionContent({
     () => [
       {
         value: 'always',
-        label: t('settings.agent.toolDisclosureAlways', 'Always'),
+        label: t('settings.agent.toolDisclosureAlways', 'In context'),
       },
       {
         value: 'on_demand',
@@ -1566,21 +1565,6 @@ export function AgentsSectionContent({
                           const disclosureLocked = tool.toggleTargets.some(
                             (target) => isToolSearchToolName(target),
                           )
-                          const defaultDisclosureMode =
-                            tool.toggleTargets.every(
-                              (target) =>
-                                getDefaultDisclosureModeForTool(target) ===
-                                getDefaultDisclosureModeForTool(
-                                  tool.toggleTargets[0],
-                                ),
-                            )
-                              ? getDefaultDisclosureModeForTool(
-                                  tool.toggleTargets[0],
-                                )
-                              : null
-                          const isAtDefaultDisclosure =
-                            defaultDisclosureMode !== null &&
-                            disclosureMode === defaultDisclosureMode
 
                           return (
                             <div
@@ -1612,15 +1596,6 @@ export function AgentsSectionContent({
                                         contentClassName="yolo-agent-tool-select-menu"
                                         disabled={disclosureLocked}
                                       />
-                                      {!disclosureLocked &&
-                                        isAtDefaultDisclosure && (
-                                          <span className="yolo-agent-tool-default-hint">
-                                            {t(
-                                              'settings.agent.toolDisclosureDefaultHint',
-                                              '(default)',
-                                            )}
-                                          </span>
-                                        )}
                                     </div>
                                     <div className="yolo-agent-tool-select">
                                       <SimpleSelect

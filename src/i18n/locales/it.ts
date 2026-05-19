@@ -510,7 +510,7 @@ export const it: TranslationKeys = {
       toolApproval: 'Approvazione',
       toolApprovalFullAccess: 'Accesso completo',
       toolApprovalRequire: 'Richiedi approvazione',
-      toolDisclosureAlways: 'Sempre',
+      toolDisclosureAlways: 'In contesto',
       toolDisclosureOnDemand: 'Su richiesta',
       editorEnabled: 'Abilitato',
       editorDisabled: 'Disabilitato',
