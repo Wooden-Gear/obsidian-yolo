@@ -405,6 +405,9 @@ export const en: TranslationKeys = {
       toolsEnabledCount: '{count} enabled',
       manageTools: 'Manage tools',
       manageSkills: 'Manage skills',
+      enableToolDisclosure: 'Enable on-demand tool loading (Beta)',
+      enableToolDisclosureDesc:
+        'Optional tools start as short descriptions, then load full details when needed, Recommended when you have many MCP tools enabled.',
       expandDescription: 'Expand',
       collapseDescription: 'Collapse',
       viewAllTools: 'View all tools',

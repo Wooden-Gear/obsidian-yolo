@@ -273,7 +273,12 @@ export const getAssistantToolDisclosureMode = (
     | null
     | undefined,
   toolName: string,
+  options?: { enableToolDisclosure?: boolean },
 ): AssistantToolDisclosureMode => {
+  if (options?.enableToolDisclosure === false) {
+    return 'always'
+  }
+
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.disclosureMode ??

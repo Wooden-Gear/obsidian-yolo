@@ -286,6 +286,8 @@ export type TranslationKeys = {
       toolsEnabledCount?: string
       manageTools?: string
       manageSkills?: string
+      enableToolDisclosure?: string
+      enableToolDisclosureDesc?: string
       expandDescription?: string
       collapseDescription?: string
       viewAllTools?: string

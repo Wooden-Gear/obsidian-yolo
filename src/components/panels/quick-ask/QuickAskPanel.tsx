@@ -1101,6 +1101,7 @@ export function QuickAskPanel({
             mcpManager,
             abortSignal: abortController.signal,
             allowedToolNames: chatModeRuntime.allowedToolNames,
+            enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
             allowedSkillNames,

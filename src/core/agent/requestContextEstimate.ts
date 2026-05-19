@@ -23,6 +23,7 @@ export const estimateContinuationRequestContextTokens = async ({
   includeBuiltinTools,
   apiType,
   allowedToolNames,
+  enableToolDisclosure,
   toolPreferences,
   allowedSkillIds,
   allowedSkillNames,
@@ -38,6 +39,7 @@ export const estimateContinuationRequestContextTokens = async ({
   includeBuiltinTools: boolean
   apiType?: LLMProviderApiType | null
   allowedToolNames?: string[]
+  enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
@@ -58,6 +60,7 @@ export const estimateContinuationRequestContextTokens = async ({
     allowedSkillNames,
     toolPreferences,
     apiType,
+    enableToolDisclosure,
   })
 
   const requestMessages = await requestContextBuilder.generateRequestMessages({

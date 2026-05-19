@@ -147,6 +147,7 @@ export const selectAllowedTools = ({
   allowedSkillNames,
   toolPreferences,
   apiType,
+  enableToolDisclosure = true,
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
@@ -154,6 +155,7 @@ export const selectAllowedTools = ({
   allowedSkillNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
   apiType?: LLMProviderApiType | null
+  enableToolDisclosure?: boolean
 }): {
   filteredTools: McpTool[]
   hasTools: boolean
@@ -168,14 +170,18 @@ export const selectAllowedTools = ({
     ? new Set(allowedSkillNames.map((name) => name.toLowerCase()))
     : undefined
 
-  const filteredTools = availableTools.filter((tool) =>
-    isToolAllowed({
+  const filteredTools = availableTools.filter((tool) => {
+    if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
+      return false
+    }
+
+    return isToolAllowed({
       toolName: tool.name,
       allowedToolNames: normalizedAllowedToolNames,
       allowedSkillIds: normalizedAllowedSkillIds,
       allowedSkillNames: normalizedAllowedSkillNames,
-    }),
-  )
+    })
+  })
   const assistantLike = {
     toolPreferences,
     enabledToolNames: normalizedAllowedToolNames
@@ -191,7 +197,9 @@ export const selectAllowedTools = ({
   const requestToolDefinitions: McpTool[] = filteredTools.map((tool) => {
     const disclosureMode = isLoadToolSchemasToolName(tool.name)
       ? 'always'
-      : getAssistantToolDisclosureMode(assistantLike, tool.name)
+      : getAssistantToolDisclosureMode(assistantLike, tool.name, {
+          enableToolDisclosure,
+        })
     if (disclosureMode === 'on_demand') {
       return buildToolStub(tool, apiType)
     }

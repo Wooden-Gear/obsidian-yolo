@@ -55,6 +55,7 @@ export class AgentToolGateway {
   private readonly toolsEnabled: boolean
   private readonly allowedToolNames?: Set<string>
   private readonly toolPreferences?: Record<string, AssistantToolPreference>
+  private readonly enableToolDisclosure: boolean
   private readonly workspaceScope?: AssistantWorkspaceScope
   private readonly allowedSkillIds?: Set<string>
   private readonly allowedSkillNames?: Set<string>
@@ -71,6 +72,7 @@ export class AgentToolGateway {
       toolsEnabled?: boolean
       allowedToolNames?: string[]
       toolPreferences?: Record<string, AssistantToolPreference>
+      enableToolDisclosure?: boolean
       workspaceScope?: AssistantWorkspaceScope
       allowedSkillIds?: string[]
       allowedSkillNames?: string[]
@@ -82,6 +84,7 @@ export class AgentToolGateway {
       ? new Set(options.allowedToolNames)
       : undefined
     this.toolPreferences = options?.toolPreferences
+    this.enableToolDisclosure = options?.enableToolDisclosure ?? true
     this.workspaceScope = options?.workspaceScope
     this.allowedSkillIds = options?.allowedSkillIds
       ? new Set(options.allowedSkillIds.map((id) => id.toLowerCase()))
@@ -99,6 +102,9 @@ export class AgentToolGateway {
   }
 
   private isOnDemandToolName(toolName: string): boolean {
+    if (!this.enableToolDisclosure) {
+      return false
+    }
     if (isLoadToolSchemasToolName(toolName)) {
       return false
     }
@@ -892,6 +898,9 @@ export class AgentToolGateway {
 
   private isToolAllowed(toolName: string): boolean {
     if (!this.toolsEnabled) {
+      return false
+    }
+    if (!this.enableToolDisclosure && isLoadToolSchemasToolName(toolName)) {
       return false
     }
 

@@ -168,6 +168,44 @@ describe('selectAllowedTools', () => {
     })
   })
 
+  it('uses full schemas and hides the schema loader when disclosure is disabled', () => {
+    const availableTools: McpTool[] = [
+      {
+        name: 'yolo_local__load_tool_schemas',
+        description: 'Search tools',
+        inputSchema: { type: 'object', properties: {} },
+      },
+      {
+        name: 'server__tool_a',
+        description: 'Tool A real schema',
+        inputSchema: {
+          type: 'object',
+          properties: { foo: { type: 'string' } },
+          required: ['foo'],
+        },
+      },
+    ]
+
+    const result = selectAllowedTools({
+      availableTools,
+      allowedToolNames: ['yolo_local__load_tool_schemas', 'server__tool_a'],
+      enableToolDisclosure: false,
+      toolPreferences: {
+        yolo_local__load_tool_schemas: { enabled: true },
+        server__tool_a: { enabled: true, disclosureMode: 'on_demand' },
+      },
+    })
+
+    expect(result.requestTools?.map((tool) => tool.function.name)).toEqual([
+      'server__tool_a',
+    ])
+    expect(result.requestTools?.[0]?.function.parameters).toEqual({
+      type: 'object',
+      properties: { foo: { type: 'string' } },
+      required: ['foo'],
+    })
+  })
+
   it('produces the same tools-field hash before and after a load_tool_schemas load', () => {
     const availableTools: McpTool[] = [
       {

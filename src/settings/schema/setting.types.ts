@@ -295,10 +295,12 @@ export const yoloSettingsSchema = z.object({
     .object({
       servers: resilientArraySchema(mcpServerConfigSchema),
       builtinToolOptions: mcpServerToolOptionsSchema.catch({}),
+      enableToolDisclosure: z.boolean().catch(true),
     })
     .catch({
       servers: [],
       builtinToolOptions: {},
+      enableToolDisclosure: true,
     }),
 
   // Web search configuration (built-in agent tool)

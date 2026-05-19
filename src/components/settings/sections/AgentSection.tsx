@@ -16,6 +16,7 @@ import {
 import { isDefaultAssistantId } from '../../../core/agent/default-assistant'
 import { getEnabledAssistantToolNames } from '../../../core/agent/tool-preferences'
 import {
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
   getLocalFileTools,
@@ -27,6 +28,8 @@ import { Assistant } from '../../../types/assistant.types'
 import { McpServerState, McpServerStatus } from '../../../types/mcp.types'
 import { renderAssistantIcon } from '../../../utils/assistant-icon'
 import { ObsidianButton } from '../../common/ObsidianButton'
+import { ObsidianSetting } from '../../common/ObsidianSetting'
+import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 import { AgentSkillsModal } from '../modals/AgentSkillsModal'
 import { AgentToolsModal } from '../modals/AgentToolsModal'
@@ -173,6 +176,16 @@ export function AgentSection({ app }: AgentSectionProps) {
     modal.open()
   }
 
+  const handleToggleToolDisclosure = async (value: boolean) => {
+    await setSettings({
+      ...settings,
+      mcp: {
+        ...settings.mcp,
+        enableToolDisclosure: value,
+      },
+    })
+  }
+
   const mcpTools = useMemo(
     () =>
       mcpServers
@@ -197,6 +210,8 @@ export function AgentSection({ app }: AgentSectionProps) {
     const tools = getLocalFileTools()
       .filter(
         (tool) =>
+          (settings.mcp.enableToolDisclosure ||
+            tool.name !== LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME) &&
           !SPLIT_FS_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_MEMORY_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_WEB_TOOL_NAME_SET.has(tool.name),
@@ -267,7 +282,7 @@ export function AgentSection({ app }: AgentSectionProps) {
     }
 
     return tools
-  }, [settings.mcp.builtinToolOptions, t])
+  }, [settings.mcp.builtinToolOptions, settings.mcp.enableToolDisclosure, t])
 
   const allSkillEntries = useMemo(
     () => listLiteSkillEntries(app, { settings }),
@@ -421,6 +436,22 @@ export function AgentSection({ app }: AgentSectionProps) {
             </div>
           </article>
         </div>
+
+        <ObsidianSetting
+          name={t(
+            'settings.agent.enableToolDisclosure',
+            'On-demand tool disclosure',
+          )}
+          desc={t(
+            'settings.agent.enableToolDisclosureDesc',
+            'Beta: expose large tool schemas only when the model asks for them.',
+          )}
+        >
+          <ObsidianToggle
+            value={settings.mcp.enableToolDisclosure}
+            onChange={(value) => void handleToggleToolDisclosure(value)}
+          />
+        </ObsidianSetting>
       </section>
 
       <section className="yolo-agent-block">

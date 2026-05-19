@@ -559,6 +559,7 @@ export function useChatStreamManager({
             includeBuiltinTools: effectiveIncludeBuiltinTools,
             apiType: manualEstimateProvider?.apiType ?? null,
             allowedToolNames: effectiveAllowedToolNames,
+            enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
             allowedSkillNames,
@@ -740,6 +741,7 @@ export function useChatStreamManager({
           apiType: currentProvider?.apiType ?? null,
           reasoningLevel,
           allowedToolNames: chatModeRuntime.allowedToolNames,
+          enableToolDisclosure: settings.mcp.enableToolDisclosure,
           toolPreferences: chatModeRuntime.toolPreferences,
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),

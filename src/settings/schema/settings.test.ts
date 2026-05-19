@@ -36,6 +36,7 @@ describe('parseYoloSettings', () => {
     })
 
     expect(result.mcp.servers).toEqual([])
+    expect(result.mcp.enableToolDisclosure).toBe(true)
     expect(result.yolo).toEqual({ baseDir: 'YOLO' })
 
     expect(result.chatOptions).toMatchObject({

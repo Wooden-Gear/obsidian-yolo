@@ -33,6 +33,7 @@ import {
 } from '../../../core/agent/tool-preferences'
 import { isLoadToolSchemasToolName } from '../../../core/agent/tool-selection'
 import {
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
   getLocalFileToolServerName,
@@ -326,6 +327,7 @@ export function AgentsSectionContent({
   const { t } = useLanguage()
 
   const assistants = settings.assistants || []
+  const enableToolDisclosure = settings.mcp.enableToolDisclosure
   const isDirectEditEntry = Boolean(initialAssistantId)
   const isDirectCreateEntry = Boolean(initialCreate)
   const isDirectEntry = isDirectEditEntry || isDirectCreateEntry
@@ -666,6 +668,13 @@ export function AgentsSectionContent({
       }
 
       const isBuiltin = serverName === localFsServerName
+      if (
+        isBuiltin &&
+        !enableToolDisclosure &&
+        toolName === LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME
+      ) {
+        return
+      }
       if (isBuiltin && draftAgent?.includeBuiltinTools === false) {
         return
       }
@@ -784,7 +793,13 @@ export function AgentsSectionContent({
         return a.localeCompare(b)
       })
       .map(([key, value]) => ({ key, ...value }))
-  }, [availableTools, draftAgent?.includeBuiltinTools, localFsServerName, t])
+  }, [
+    availableTools,
+    draftAgent?.includeBuiltinTools,
+    enableToolDisclosure,
+    localFsServerName,
+    t,
+  ])
 
   const visibleToolsCount = useMemo(
     () => visibleToolGroups.reduce((sum, group) => sum + group.tools.length, 0),
@@ -853,6 +868,9 @@ export function AgentsSectionContent({
       ) {
         return false
       }
+      if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
+        return false
+      }
       return isAssistantToolEnabled(draftAgent, tool.name)
     })
 
@@ -879,6 +897,7 @@ export function AgentsSectionContent({
           const disclosureMode = getAssistantToolDisclosureMode(
             draftAgent,
             tool.name,
+            { enableToolDisclosure },
           )
           if (disclosureMode !== 'on_demand') {
             return [tool.name, count] as const
@@ -908,6 +927,7 @@ export function AgentsSectionContent({
     draftAgent?.enableTools,
     draftAgent?.includeBuiltinTools,
     localFsServerName,
+    enableToolDisclosure,
   ])
 
   const groupEnabledTokens = useMemo(() => {
@@ -1417,15 +1437,15 @@ export function AgentsSectionContent({
                               getAssistantToolDisclosureMode(
                                 draftAgent,
                                 target,
+                                { enableToolDisclosure },
                               ) === 'on_demand',
                           )
                             ? 'on_demand'
                             : 'always'
                           // `load_tool_schemas` is the entry point that lets the
-                          // model disclose every other on-demand tool. We
-                          // hard-pin its disclosure to `always` and lock the
-                          // dropdown so users cannot accidentally remove it
-                          // from the frozen `tools` prefix.
+                          // model disclose every other on-demand tool. When
+                          // the beta disclosure feature is visible, keep this
+                          // one pinned to the stable tools prefix.
                           const disclosureLocked = tool.toggleTargets.some(
                             (target) => isLoadToolSchemasToolName(target),
                           )
@@ -1446,21 +1466,23 @@ export function AgentsSectionContent({
                               <div className="yolo-agent-tool-controls">
                                 {selected && (
                                   <>
-                                    <div className="yolo-agent-tool-select">
-                                      <SimpleSelect
-                                        value={disclosureMode}
-                                        options={toolDisclosureOptions}
-                                        onChange={(value) =>
-                                          setToolDisclosureMode(
-                                            tool.toggleTargets,
-                                            value as AssistantToolDisclosureMode,
-                                          )
-                                        }
-                                        align="end"
-                                        contentClassName="yolo-agent-tool-select-menu"
-                                        disabled={disclosureLocked}
-                                      />
-                                    </div>
+                                    {enableToolDisclosure && (
+                                      <div className="yolo-agent-tool-select">
+                                        <SimpleSelect
+                                          value={disclosureMode}
+                                          options={toolDisclosureOptions}
+                                          onChange={(value) =>
+                                            setToolDisclosureMode(
+                                              tool.toggleTargets,
+                                              value as AssistantToolDisclosureMode,
+                                            )
+                                          }
+                                          align="end"
+                                          contentClassName="yolo-agent-tool-select-menu"
+                                          disabled={disclosureLocked}
+                                        />
+                                      </div>
+                                    )}
                                     <div className="yolo-agent-tool-select">
                                       <SimpleSelect
                                         value={approvalMode}

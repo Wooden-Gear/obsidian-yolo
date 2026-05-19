@@ -44,6 +44,7 @@ type AgentLlmTurnExecutorInput = {
   includeBuiltinTools: boolean
   apiType?: LLMProviderApiType | null
   allowedToolNames?: string[]
+  enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
@@ -117,6 +118,7 @@ export class AgentLlmTurnExecutor {
       allowedSkillNames: this.input.allowedSkillNames,
       toolPreferences: this.input.toolPreferences,
       apiType: this.input.apiType,
+      enableToolDisclosure: this.input.enableToolDisclosure,
     })
     const requestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({

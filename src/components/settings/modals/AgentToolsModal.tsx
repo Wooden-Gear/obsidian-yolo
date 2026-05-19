@@ -19,6 +19,7 @@ import {
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
 import {
+  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
   getLocalFileTools,
@@ -90,6 +91,8 @@ function AgentToolsModalContent({
     const tools = getLocalFileTools()
       .filter(
         (tool) =>
+          (settings.mcp.enableToolDisclosure ||
+            tool.name !== LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME) &&
           !SPLIT_FS_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_MEMORY_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_WEB_TOOL_NAME_SET.has(tool.name),
@@ -177,7 +180,7 @@ function AgentToolsModalContent({
       ),
       tools: byCategory.get(category) ?? [],
     })).filter((group) => group.tools.length > 0)
-  }, [settings.mcp.builtinToolOptions, t])
+  }, [settings.mcp.builtinToolOptions, settings.mcp.enableToolDisclosure, t])
 
   const handleToggleBuiltinTool = (toolName: string, enabled: boolean) => {
     const targets =
