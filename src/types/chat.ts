@@ -26,6 +26,7 @@ export type ChatConversationCompaction = {
   estimatedNextContextTokens?: number
   compactedMessageCount?: number
   estimatedTokensSaved?: number
+  loadedDeferredToolNames?: string[]
 }
 
 export type ChatConversationCompactionState = ChatConversationCompaction[]

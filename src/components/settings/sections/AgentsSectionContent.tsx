@@ -24,6 +24,7 @@ import {
 } from '../../../core/agent/builtinToolUiMeta'
 import {
   getAssistantToolApprovalMode,
+  getAssistantToolDisclosureMode,
   getAssistantToolPreferences,
   getDefaultApprovalModeForTool,
   getEnabledAssistantToolNames,
@@ -51,6 +52,7 @@ import {
   Assistant,
   AssistantSkillLoadMode,
   AssistantToolApprovalMode,
+  AssistantToolDisclosureMode,
   AssistantToolPreference,
   AssistantWorkspaceScope,
 } from '../../../types/assistant.types'
@@ -158,6 +160,10 @@ function buildToolTokenPayload(tool: McpTool): Record<string, unknown> {
     description: tool.description ?? '',
     inputSchema: tool.inputSchema ?? {},
   }
+}
+
+function buildDeferredToolCatalogTokenPayload(tool: McpTool): string {
+  return `- ${tool.name} | ${tool.description ?? ''}`
 }
 
 function estimateToolDefaultContextTokens(tool: McpTool): Promise<number> {
@@ -625,6 +631,32 @@ export function AgentsSectionContent({
     })
   }
 
+  const setToolDisclosureMode = (
+    toolNames: string[],
+    disclosureMode: AssistantToolDisclosureMode,
+  ) => {
+    setDraftAgent((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      return updateDraftToolPreferences(prev, (current) => {
+        const next = { ...current }
+        for (const toolName of toolNames) {
+          next[toolName] = {
+            ...next[toolName],
+            enabled: next[toolName]?.enabled ?? true,
+            approvalMode:
+              next[toolName]?.approvalMode ??
+              getDefaultApprovalModeForTool(toolName),
+            disclosureMode,
+          }
+        }
+        return next
+      })
+    })
+  }
+
   const setWorkspaceScope = (next: AssistantWorkspaceScope) => {
     setDraftAgent((prev) => {
       if (!prev) return prev
@@ -914,9 +946,19 @@ export function AgentsSectionContent({
 
     void Promise.all(
       eligibleTools.map((tool) =>
-        estimateToolDefaultContextTokens(tool).then(
-          (count) => [tool.name, count] as const,
-        ),
+        estimateToolDefaultContextTokens(tool).then(async (count) => {
+          const disclosureMode = getAssistantToolDisclosureMode(
+            draftAgent,
+            tool.name,
+          )
+          if (disclosureMode !== 'on_demand') {
+            return [tool.name, count] as const
+          }
+          const catalogCount = await estimateTextTokens(
+            buildDeferredToolCatalogTokenPayload(tool),
+          )
+          return [tool.name, catalogCount] as const
+        }),
       ),
     ).then((entries) => {
       if (cancelled) return
@@ -1073,6 +1115,19 @@ export function AgentsSectionContent({
       {
         value: 'full_access',
         label: t('settings.agent.toolApprovalFullAccess', 'Full access'),
+      },
+    ],
+    [t],
+  )
+  const toolDisclosureOptions = useMemo(
+    () => [
+      {
+        value: 'always',
+        label: t('settings.agent.toolDisclosureAlways', 'Always'),
+      },
+      {
+        value: 'on_demand',
+        label: t('settings.agent.toolDisclosureOnDemand', 'On demand'),
       },
     ],
     [t],
@@ -1476,6 +1531,15 @@ export function AgentsSectionContent({
                           )
                             ? 'full_access'
                             : 'require_approval'
+                          const disclosureMode = tool.toggleTargets.every(
+                            (target) =>
+                              getAssistantToolDisclosureMode(
+                                draftAgent,
+                                target,
+                              ) === 'on_demand',
+                          )
+                            ? 'on_demand'
+                            : 'always'
 
                           return (
                             <div
@@ -1492,20 +1556,36 @@ export function AgentsSectionContent({
                               </div>
                               <div className="yolo-agent-tool-controls">
                                 {selected && (
-                                  <div className="yolo-agent-tool-approval">
-                                    <SimpleSelect
-                                      value={approvalMode}
-                                      options={toolApprovalOptions}
-                                      onChange={(value) =>
-                                        setToolApprovalMode(
-                                          tool.toggleTargets,
-                                          value as AssistantToolApprovalMode,
-                                        )
-                                      }
-                                      align="end"
-                                      contentClassName="yolo-agent-tool-approval-menu"
-                                    />
-                                  </div>
+                                  <>
+                                    <div className="yolo-agent-tool-select">
+                                      <SimpleSelect
+                                        value={disclosureMode}
+                                        options={toolDisclosureOptions}
+                                        onChange={(value) =>
+                                          setToolDisclosureMode(
+                                            tool.toggleTargets,
+                                            value as AssistantToolDisclosureMode,
+                                          )
+                                        }
+                                        align="end"
+                                        contentClassName="yolo-agent-tool-select-menu"
+                                      />
+                                    </div>
+                                    <div className="yolo-agent-tool-select">
+                                      <SimpleSelect
+                                        value={approvalMode}
+                                        options={toolApprovalOptions}
+                                        onChange={(value) =>
+                                          setToolApprovalMode(
+                                            tool.toggleTargets,
+                                            value as AssistantToolApprovalMode,
+                                          )
+                                        }
+                                        align="end"
+                                        contentClassName="yolo-agent-tool-select-menu"
+                                      />
+                                    </div>
+                                  </>
                                 )}
                                 <ObsidianToggle
                                   value={Boolean(selected)}

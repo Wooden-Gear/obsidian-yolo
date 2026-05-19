@@ -1,16 +1,20 @@
 import {
   Assistant,
   AssistantToolApprovalMode,
+  AssistantToolDisclosureMode,
   AssistantToolPreference,
 } from '../../types/assistant.types'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
+  TOOL_SEARCH_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
 } from '../mcp/localFileTools'
 import { parseToolName } from '../mcp/tool-name-utils'
 
 export const DEFAULT_ASSISTANT_TOOL_APPROVAL_MODE: AssistantToolApprovalMode =
   'require_approval'
+export const DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE: AssistantToolDisclosureMode =
+  'always'
 
 /**
  * 这些工具永远不允许"始终允许"（always-allow）模式。
@@ -30,6 +34,10 @@ const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'delegate_external_agent',
 ])
 
+const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
+  TOOL_SEARCH_LOCAL_TOOL_NAME,
+])
+
 export const getDefaultApprovalModeForTool = (
   toolName: string,
 ): AssistantToolApprovalMode => {
@@ -37,6 +45,10 @@ export const getDefaultApprovalModeForTool = (
     const { serverName, toolName: parsedToolName } = parseToolName(toolName)
     if (serverName !== getLocalFileToolServerName()) {
       return 'require_approval'
+    }
+
+    if (FULL_ACCESS_LOCAL_TOOLS.has(parsedToolName)) {
+      return 'full_access'
     }
 
     return REQUIRE_APPROVAL_LOCAL_TOOLS.has(parsedToolName)
@@ -59,6 +71,7 @@ export const buildAssistantToolPreferencesFromEnabledToolNames = (
       acc[toolName] = {
         enabled: true,
         approvalMode: getDefaultApprovalModeForTool(toolName),
+        disclosureMode: DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE,
       }
       return acc
     },
@@ -122,5 +135,19 @@ export const getAssistantToolApprovalMode = (
   return (
     toolPreferences[toolName]?.approvalMode ??
     DEFAULT_ASSISTANT_TOOL_APPROVAL_MODE
+  )
+}
+
+export const getAssistantToolDisclosureMode = (
+  assistant:
+    | Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>
+    | null
+    | undefined,
+  toolName: string,
+): AssistantToolDisclosureMode => {
+  const toolPreferences = getAssistantToolPreferences(assistant)
+  return (
+    toolPreferences[toolName]?.disclosureMode ??
+    DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE
   )
 }

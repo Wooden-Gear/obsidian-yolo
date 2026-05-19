@@ -44,6 +44,77 @@ describe('AgentToolGateway', () => {
     })
   })
 
+  it('loads enabled tool contracts through tool_search', async () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      listAvailableTools: jest.fn().mockResolvedValue([
+        {
+          name: 'yolo_local__tool_search',
+          description: 'Search tools',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'server__tool_a',
+          description: 'Tool A',
+          inputSchema: {
+            type: 'object',
+            properties: { value: { type: 'string' } },
+          },
+        },
+        {
+          name: 'server__tool_b',
+          description: 'Tool B',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ]),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__tool_search', 'server__tool_a'],
+      toolPreferences: {
+        yolo_local__tool_search: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+        server__tool_a: {
+          enabled: true,
+          disclosureMode: 'on_demand',
+        },
+      },
+    })
+
+    const toolMessage = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__tool_search',
+          arguments: createCompleteToolCallArguments({
+            value: { query: 'select:server__tool_a' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    const executed = await gateway.executeAutoToolCalls({
+      toolMessage,
+      conversationId: 'conv-1',
+    })
+    const response = executed.toolCalls[0]?.response
+    expect(response?.status).toBe(ToolCallResponseStatus.Success)
+    if (response?.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+    const payload = JSON.parse(response.data.text) as {
+      loadedToolNames: string[]
+      matches: Array<{ name: string }>
+    }
+    expect(payload.loadedToolNames).toEqual(['server__tool_a'])
+    expect(payload.matches.map((match) => match.name)).toEqual([
+      'server__tool_a',
+    ])
+  })
+
   it('keeps tools pending when approval is required', () => {
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(false),

@@ -303,6 +303,8 @@ export type TranslationKeys = {
       builtinContextPruneToolResultsDesc?: string
       builtinContextCompactLabel?: string
       builtinContextCompactDesc?: string
+      builtinToolSearchLabel?: string
+      builtinToolSearchDesc?: string
       builtinFsEditLabel?: string
       builtinFsEditDesc?: string
       fsEditReviewToggle?: string
@@ -370,6 +372,8 @@ export type TranslationKeys = {
       toolApproval?: string
       toolApprovalFullAccess?: string
       toolApprovalRequire?: string
+      toolDisclosureAlways?: string
+      toolDisclosureOnDemand?: string
       editorEnabled?: string
       editorDisabled?: string
       editorModel?: string

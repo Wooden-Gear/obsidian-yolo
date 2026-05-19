@@ -152,6 +152,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                   enableTools: this.loopConfig.enableTools,
                   includeBuiltinTools: this.loopConfig.includeBuiltinTools,
                   allowedToolNames: input.allowedToolNames,
+                  toolPreferences: input.toolPreferences,
                   allowedSkillIds: input.allowedSkillIds,
                   allowedSkillNames: input.allowedSkillNames,
                   abortSignal,
@@ -273,6 +274,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                             includeBuiltinTools:
                               this.loopConfig.includeBuiltinTools,
                             allowedToolNames: input.allowedToolNames,
+                            toolPreferences: input.toolPreferences,
                             allowedSkillIds: input.allowedSkillIds,
                             allowedSkillNames: input.allowedSkillNames,
                             contextualInjections: composeAgentInjections({
@@ -418,6 +420,7 @@ export class NativeAgentRuntime implements AgentRuntime {
       enableTools: false,
       includeBuiltinTools: false,
       allowedToolNames: input.allowedToolNames,
+      toolPreferences: input.toolPreferences,
       allowedSkillIds: input.allowedSkillIds,
       allowedSkillNames: input.allowedSkillNames,
       abortSignal,

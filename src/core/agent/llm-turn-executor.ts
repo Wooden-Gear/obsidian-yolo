@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 
+import type { AssistantToolPreference } from '../../types/assistant.types'
 import {
   ChatAssistantMessage,
   ChatConversationCompactionLike,
@@ -26,7 +27,14 @@ import { getLocalFileToolServerName } from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
 
 import { CONTEXT_COMPACT_TOOL_NAME } from './compaction'
-import { selectAllowedTools } from './tool-selection'
+import {
+  buildDeferredToolCatalogItems,
+  extractLoadedDeferredToolNames,
+} from './tool-disclosure'
+import {
+  getToolApprovalModeForCatalog,
+  selectAllowedTools,
+} from './tool-selection'
 
 type AgentLlmTurnExecutorInput = {
   providerClient: BaseLLMProvider<LLMProvider>
@@ -42,6 +50,7 @@ type AgentLlmTurnExecutorInput = {
   enableTools: boolean
   includeBuiltinTools: boolean
   allowedToolNames?: string[]
+  toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   abortSignal?: AbortSignal
@@ -106,13 +115,28 @@ export class AgentLlmTurnExecutor {
     const {
       hasTools,
       hasMemoryTools,
+      deferredTools,
       requestTools: tools,
     } = selectAllowedTools({
       availableTools,
       allowedToolNames: this.input.allowedToolNames,
       allowedSkillIds: this.input.allowedSkillIds,
       allowedSkillNames: this.input.allowedSkillNames,
+      toolPreferences: this.input.toolPreferences,
+      loadedToolNames: extractLoadedDeferredToolNames({
+        messages: this.input.messages,
+        compaction: this.input.compaction,
+      }),
     })
+    const deferredCatalogItems = buildDeferredToolCatalogItems(
+      deferredTools.map((tool) => ({
+        tool,
+        approvalMode: getToolApprovalModeForCatalog(
+          this.input.toolPreferences,
+          tool.name,
+        ),
+      })),
+    )
     const requestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({
         messages: this.input.messages,
@@ -121,7 +145,16 @@ export class AgentLlmTurnExecutor {
         model: this.input.model,
         conversationId: this.input.conversationId,
         compaction: this.input.compaction,
-        contextualInjections: this.input.contextualInjections,
+        contextualInjections:
+          deferredCatalogItems.length > 0
+            ? [
+                ...(this.input.contextualInjections ?? []),
+                {
+                  type: 'deferred-tool-catalog',
+                  tools: deferredCatalogItems,
+                },
+              ]
+            : this.input.contextualInjections,
       })
 
     const responseStart = Date.now()

@@ -555,6 +555,7 @@ export function useChatStreamManager({
             enableTools: effectiveEnableTools,
             includeBuiltinTools: effectiveIncludeBuiltinTools,
             allowedToolNames: effectiveAllowedToolNames,
+            toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
             allowedSkillNames,
             contextualInjections: buildChatContextualInjections({

@@ -1,6 +1,7 @@
 import type { TFile } from 'obsidian'
 
 import type { TodoItem } from '../../../core/agent/todos-from-messages'
+import type { DeferredToolCatalogItem } from '../../../core/agent/tool-disclosure'
 import type { CurrentFileViewState } from '../../../types/mentionable'
 
 /**
@@ -41,7 +42,13 @@ export type TodoListInjection = {
   todos: ReadonlyArray<TodoItem>
 }
 
+export type DeferredToolCatalogInjection = {
+  type: 'deferred-tool-catalog'
+  tools: ReadonlyArray<DeferredToolCatalogItem>
+}
+
 export type ContextualInjection =
   | CurrentFilePointerInjection
   | EditorSnapshotInjection
   | TodoListInjection
+  | DeferredToolCatalogInjection

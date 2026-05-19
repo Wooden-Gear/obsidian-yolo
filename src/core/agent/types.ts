@@ -49,6 +49,7 @@ export type AgentRuntimeRunInput = {
     {
       enabled?: boolean
       approvalMode?: 'full_access' | 'require_approval'
+      disclosureMode?: 'always' | 'on_demand'
     }
   >
   workspaceScope?: {

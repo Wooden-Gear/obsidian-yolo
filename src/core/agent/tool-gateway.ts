@@ -15,6 +15,7 @@ import {
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 import {
   ASK_USER_QUESTION_TOOL_NAME,
+  TOOL_SEARCH_LOCAL_TOOL_NAME,
   getLocalFileToolServerName,
   isAskUserQuestionToolName,
   validateAskUserQuestionArgs,
@@ -22,6 +23,7 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
+import { TOOL_SEARCH_RESULT_TOOL } from './tool-disclosure'
 import {
   getAssistantToolApprovalMode,
   isAssistantToolEnabled,
@@ -389,9 +391,133 @@ export class AgentToolGateway {
         chatModelId: toolParams.chatModelId,
       },
       responseContentType: 'application/json',
-      run: () => this.mcpManager.callTool(toolParams),
+      run: () =>
+        this.isToolSearchRequest(toolParams.name)
+          ? this.callToolSearch(toolParams.args)
+          : this.mcpManager.callTool(toolParams),
       getResponseBody: (response) => response,
     })
+  }
+
+  private isToolSearchRequest(toolName: string): boolean {
+    try {
+      const parsed = parseToolName(toolName)
+      return (
+        parsed.serverName === getLocalFileToolServerName() &&
+        parsed.toolName === TOOL_SEARCH_LOCAL_TOOL_NAME
+      )
+    } catch {
+      return false
+    }
+  }
+
+  private async callToolSearch(
+    args?: Record<string, unknown>,
+  ): Promise<ToolCallResponse> {
+    const query = typeof args?.query === 'string' ? args.query.trim() : ''
+    if (!query) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: 'query is required.',
+      }
+    }
+    const maxResultsRaw = args?.max_results
+    const maxResults =
+      typeof maxResultsRaw === 'number' && Number.isFinite(maxResultsRaw)
+        ? Math.max(1, Math.min(20, Math.floor(maxResultsRaw)))
+        : 5
+    const tools = await this.mcpManager.listAvailableTools({
+      includeBuiltinTools: true,
+    })
+    const searchableTools = tools.filter((tool) => {
+      if (this.isToolSearchRequest(tool.name)) {
+        return false
+      }
+      return this.isToolAllowed(tool.name)
+    })
+    const matches = this.searchToolContracts({
+      query,
+      maxResults,
+      tools: searchableTools,
+    })
+
+    return {
+      status: ToolCallResponseStatus.Success,
+      data: {
+        type: 'text',
+        text: JSON.stringify(
+          {
+            tool: TOOL_SEARCH_RESULT_TOOL,
+            query,
+            loadedToolNames: matches.map((tool) => tool.name),
+            matches: matches.map((tool) => ({
+              name: tool.name,
+              description: tool.description ?? '',
+              parameters: {
+                ...tool.inputSchema,
+                properties: tool.inputSchema.properties ?? {},
+              },
+            })),
+            instruction:
+              matches.length > 0
+                ? 'These tool schemas will be registered in the next LLM turn. Retry with the loaded tool after this result.'
+                : 'No enabled tools matched this query.',
+          },
+          null,
+          2,
+        ),
+      },
+    }
+  }
+
+  private searchToolContracts({
+    query,
+    maxResults,
+    tools,
+  }: {
+    query: string
+    maxResults: number
+    tools: McpTool[]
+  }): McpTool[] {
+    const selectPrefix = 'select:'
+    const queryLower = query.toLowerCase()
+    if (queryLower.startsWith(selectPrefix)) {
+      const selected = query
+        .slice(selectPrefix.length)
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean)
+      const selectedSet = new Set(selected)
+      const selectedLowerSet = new Set(
+        selected.map((name) => name.toLowerCase()),
+      )
+      return tools.filter(
+        (tool) =>
+          selectedSet.has(tool.name) ||
+          selectedLowerSet.has(tool.name.toLowerCase()),
+      )
+    }
+
+    const terms = queryLower.split(/\s+/).filter(Boolean)
+    if (terms.length === 0) {
+      return []
+    }
+
+    return tools
+      .map((tool) => {
+        const haystack = `${tool.name} ${tool.description ?? ''}`.toLowerCase()
+        const score = terms.reduce(
+          (sum, term) => sum + (haystack.includes(term) ? 1 : 0),
+          0,
+        )
+        return { tool, score }
+      })
+      .filter(({ score }) => score > 0)
+      .sort(
+        (a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name),
+      )
+      .slice(0, maxResults)
+      .map(({ tool }) => tool)
   }
 
   private getFsEditTargetPath(request: ToolCallRequest): string | undefined {

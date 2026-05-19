@@ -131,6 +131,7 @@ type LocalFileToolName =
   | 'web_search'
   | 'web_scrape'
   | 'delegate_external_agent'
+  | 'tool_search'
   | 'todo_write'
   | 'ask_user_question'
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
@@ -394,6 +395,8 @@ const validateVaultPath = (path: string): string => {
 export function getLocalFileToolServerName(): string {
   return LOCAL_FILE_TOOL_SERVER
 }
+
+export const TOOL_SEARCH_LOCAL_TOOL_NAME = 'tool_search'
 
 /**
  * Build the modality enum + description fragment exposed to the current chat
@@ -1116,6 +1119,26 @@ export function getLocalFileTools(options?: {
           },
         },
         required: ['provider', 'sandboxMode', 'prompt'],
+      },
+    },
+    {
+      name: TOOL_SEARCH_LOCAL_TOOL_NAME,
+      description: 'Load full schemas for enabled on-demand tools.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description:
+              'Query to find tools. Use "select:<tool_name>" for exact loading, or keywords such as "github issue".',
+          },
+          max_results: {
+            type: 'integer',
+            description:
+              'Maximum matches to return for keyword search. Defaults to 5.',
+          },
+        },
+        required: ['query'],
       },
     },
     {
@@ -4343,6 +4366,12 @@ export async function callLocalFileTool({
             ? { truncated: result.truncated }
             : undefined,
         }
+      }
+
+      case TOOL_SEARCH_LOCAL_TOOL_NAME: {
+        throw new Error(
+          'tool_search is only available through the Agent runtime.',
+        )
       }
 
       case 'todo_write': {

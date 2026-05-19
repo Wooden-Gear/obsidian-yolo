@@ -426,6 +426,9 @@ export const it: TranslationKeys = {
       builtinContextCompactLabel: 'Compatta contesto',
       builtinContextCompactDesc:
         'Comprimi la cronologia meno recente in un riepilogo',
+      builtinToolSearchLabel: 'Carica strumento',
+      builtinToolSearchDesc:
+        'Carica gli schemi completi degli strumenti su richiesta',
       builtinFsEditLabel: 'Modifica testo',
       builtinFsEditDesc: 'Modifica il testo di un singolo file',
       safetyControls: 'Controlli di sicurezza',
@@ -504,6 +507,11 @@ export const it: TranslationKeys = {
       editorIncludeBuiltinTools: 'Includi strumenti integrati',
       editorIncludeBuiltinToolsDesc:
         'Consenti strumenti file locali del vault per questo agent',
+      toolApproval: 'Approvazione',
+      toolApprovalFullAccess: 'Accesso completo',
+      toolApprovalRequire: 'Richiedi approvazione',
+      toolDisclosureAlways: 'Sempre',
+      toolDisclosureOnDemand: 'Su richiesta',
       editorEnabled: 'Abilitato',
       editorDisabled: 'Disabilitato',
       editorModel: 'Modello',

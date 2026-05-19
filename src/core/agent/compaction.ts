@@ -15,6 +15,8 @@ import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { executeSingleTurn } from '../ai/single-turn'
 import type { BaseLLMProvider } from '../llm/base'
 
+import { extractLoadedDeferredToolNames } from './tool-disclosure'
+
 const COMPACTION_SYSTEM_PROMPT = `You are summarizing a conversation so it can continue in a fresh context window.
 
 Produce a compact but high-signal summary that preserves:
@@ -301,6 +303,10 @@ export const buildCompactedConversationState = ({
     return null
   }
 
+  const loadedDeferredToolNames = [
+    ...extractLoadedDeferredToolNames({ messages }),
+  ].sort()
+
   return {
     anchorMessageId: trigger.anchorMessageId,
     triggerToolCallId: trigger.triggerToolCallId,
@@ -308,6 +314,7 @@ export const buildCompactedConversationState = ({
     compactedAt: Date.now(),
     summaryModelId,
     compactedMessageCount: trigger.retainedStartIndex,
+    ...(loadedDeferredToolNames.length > 0 ? { loadedDeferredToolNames } : {}),
   }
 }
 
@@ -325,12 +332,17 @@ export const buildManualCompactionState = ({
     return null
   }
 
+  const loadedDeferredToolNames = [
+    ...extractLoadedDeferredToolNames({ messages }),
+  ].sort()
+
   return {
     anchorMessageId,
     summary,
     compactedAt: Date.now(),
     summaryModelId,
     compactedMessageCount: messages.length,
+    ...(loadedDeferredToolNames.length > 0 ? { loadedDeferredToolNames } : {}),
   }
 }
 
