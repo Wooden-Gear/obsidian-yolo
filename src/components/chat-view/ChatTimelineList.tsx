@@ -9,6 +9,7 @@ import {
 } from 'react'
 import {
   type FollowOutput,
+  type IndexLocationWithAlign,
   type ListRange,
   Virtuoso,
   type VirtuosoHandle,
@@ -292,6 +293,20 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     )
   }, [cacheScope, isVirtualized, timelineSignature])
 
+  const initialTopMostItemIndex = useMemo<
+    IndexLocationWithAlign | undefined
+  >(() => {
+    if (restoreStateFrom || items.length === 0) {
+      return undefined
+    }
+
+    return {
+      index: 'LAST',
+      align: 'end',
+      behavior: 'auto',
+    }
+  }, [items.length, restoreStateFrom])
+
   const handleMeasuredRowHeight = useCallback(
     (itemId: string, measuredHeight: number) => {
       if (!cacheScope) {
@@ -448,11 +463,12 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   const heightEstimates = useMemo(
     () =>
       items.map((item) => {
+        const estimatedHeight = item.estimatedHeight + (item.spacingBefore ?? 0)
         const cachedHeight = cachedHeightByItemId?.get(item.renderKey)
         if (typeof cachedHeight === 'number') {
-          return cachedHeight
+          return Math.max(cachedHeight, estimatedHeight)
         }
-        return item.estimatedHeight + (item.spacingBefore ?? 0)
+        return estimatedHeight
       }),
     [cachedHeightByItemId, items],
   )
@@ -532,6 +548,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
       className={scrollContainerClassName}
       style={scrollContainerStyle}
       restoreStateFrom={restoreStateFrom}
+      initialTopMostItemIndex={initialTopMostItemIndex}
       scrollerRef={(element) => {
         handleScrollerRef(element instanceof HTMLElement ? element : null)
       }}

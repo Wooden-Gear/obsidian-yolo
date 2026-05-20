@@ -31,15 +31,37 @@ jest.mock('react-virtuoso', () => {
     context?: unknown
     className?: string
     style?: React.CSSProperties
+    heightEstimates?: number[]
+    initialTopMostItemIndex?: unknown
+    restoreStateFrom?: unknown
   }
   return {
     __esModule: true,
     Virtuoso: (props: MockProps) => {
       const Footer = props.components?.Footer
+      const initialTopMostItemIndex =
+        typeof props.initialTopMostItemIndex === 'object' &&
+        props.initialTopMostItemIndex !== null
+          ? (props.initialTopMostItemIndex as {
+              align?: unknown
+              index?: unknown
+            })
+          : null
       return React.createElement(
         'div',
         {
           'data-testid': 'mock-virtuoso',
+          'data-has-restore-state': props.restoreStateFrom ? 'true' : 'false',
+          'data-height-estimates': props.heightEstimates?.join(','),
+          'data-initial-align':
+            initialTopMostItemIndex?.align === undefined
+              ? undefined
+              : String(initialTopMostItemIndex.align),
+          'data-initial-index': initialTopMostItemIndex
+            ? String(initialTopMostItemIndex.index)
+            : props.initialTopMostItemIndex === undefined
+              ? undefined
+              : String(props.initialTopMostItemIndex),
           className: props.className,
           style: props.style,
         },
@@ -63,8 +85,14 @@ jest.mock('react-virtuoso', () => {
 
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { StateSnapshot } from 'react-virtuoso'
 
 import type { ChatTimelineItem } from '../../types/chat-timeline'
+import {
+  buildTimelineSignature,
+  hydrateTimelineHeightCache,
+  setTimelineStateSnapshot,
+} from '../../utils/chat/timeline-virtualization-cache'
 
 import { ChatTimelineList } from './ChatTimelineList'
 
@@ -88,12 +116,14 @@ function makeUserItem(id: string): ChatTimelineItem {
 function renderList(props: {
   items: ChatTimelineItem[]
   bottomSpacerHeight?: number
+  conversationId?: string
   virtualizationThreshold?: number
 }) {
   const ref = { current: null } as React.RefObject<HTMLElement>
   return renderToStaticMarkup(
     <ChatTimelineList
       items={props.items}
+      conversationId={props.conversationId}
       scrollContainerRef={ref}
       virtualizationThreshold={props.virtualizationThreshold}
       bottomSpacerHeight={props.bottomSpacerHeight}
@@ -155,5 +185,81 @@ describe('ChatTimelineList bottomSpacerHeight', () => {
 
     expect(html).toContain('mock-virtuoso')
     expect(html).not.toContain('yolo-chat-timeline-bottom-spacer')
+  })
+})
+
+describe('ChatTimelineList virtualized initial position', () => {
+  it('starts virtualized conversations at the bottom when no state was saved', () => {
+    const items = Array.from({ length: 60 }, (_, i) => makeUserItem(`m-${i}`))
+    const html = renderList({
+      items,
+      virtualizationThreshold: 24,
+    })
+
+    expect(html).toContain('mock-virtuoso')
+    expect(html).toContain('data-initial-index="LAST"')
+    expect(html).toContain('data-initial-align="end"')
+  })
+
+  it('prefers a saved Virtuoso state over bottom initialization', () => {
+    const conversationId = 'chat-timeline-list-test-restore-state'
+    const items = Array.from({ length: 60 }, (_, i) => makeUserItem(`m-${i}`))
+
+    setTimelineStateSnapshot({
+      scope: {
+        conversationId,
+        widthBucket: 0,
+        styleSignature: 'default',
+      },
+      timelineSignature: buildTimelineSignature(items),
+      snapshot: {
+        ranges: [],
+        scrollTop: 240,
+      } satisfies StateSnapshot,
+    })
+
+    const html = renderList({
+      items,
+      conversationId,
+      virtualizationThreshold: 24,
+    })
+
+    expect(html).toContain('mock-virtuoso')
+    expect(html).toContain('data-has-restore-state="true"')
+    expect(html).not.toContain('data-initial-index=')
+  })
+})
+
+describe('ChatTimelineList virtualized height estimates', () => {
+  it('does not let a stale tiny cached height undercut the current item estimate', () => {
+    const conversationId = 'chat-timeline-list-test-stale-height'
+    const items = Array.from({ length: 60 }, (_, i) => makeUserItem(`m-${i}`))
+    items[0] = {
+      ...items[0],
+      estimatedHeight: 500,
+    }
+
+    hydrateTimelineHeightCache([
+      {
+        scope: {
+          conversationId,
+          widthBucket: 0,
+          styleSignature: 'default',
+        },
+        updatedAt: Date.now(),
+        heights: {
+          'm-0': 68,
+        },
+      },
+    ])
+
+    const html = renderList({
+      items,
+      conversationId,
+      virtualizationThreshold: 24,
+    })
+
+    expect(html).toContain('mock-virtuoso')
+    expect(html).toContain('data-height-estimates="500,80')
   })
 })
