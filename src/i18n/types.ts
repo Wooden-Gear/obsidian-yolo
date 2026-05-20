@@ -256,7 +256,9 @@ export type TranslationKeys = {
       importSkillUnsafePath?: string
       importSkillDuplicateInBatch?: string
       importSkillFromUrlPlaceholder?: string
+      importSkillFromUrlFetch?: string
       importSkillFromUrlFetching?: string
+      importSkillImporting?: string
       importSkillFromUrlInvalid?: string
       importSkillFromUrlNotFound?: string
       importSkillFromUrlRateLimit?: string

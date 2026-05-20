@@ -373,7 +373,9 @@ export const en: TranslationKeys = {
       importSkillDuplicateInBatch:
         'Duplicate skill name in this batch: "{name}" (from "{source}"). Only the first occurrence is kept.',
       importSkillFromUrlPlaceholder: 'Paste a GitHub URL (repo / blob / tree)',
+      importSkillFromUrlFetch: 'Fetch',
       importSkillFromUrlFetching: 'Fetching...',
+      importSkillImporting: 'Importing...',
       importSkillFromUrlInvalid:
         'Please enter a valid GitHub URL (repo / blob / tree).',
       importSkillFromUrlNotFound:

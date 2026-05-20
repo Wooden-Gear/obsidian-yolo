@@ -335,7 +335,9 @@ export const zh: TranslationKeys = {
       importSkillDuplicateInBatch:
         '本次导入中存在同名技能：「{name}」（来自「{source}」），仅保留第一个。',
       importSkillFromUrlPlaceholder: '粘贴 GitHub 链接（仓库 / blob / tree）',
+      importSkillFromUrlFetch: '获取',
       importSkillFromUrlFetching: '获取中...',
+      importSkillImporting: '导入中...',
       importSkillFromUrlInvalid:
         '请输入有效的 GitHub 链接（仓库 / blob / tree）。',
       importSkillFromUrlNotFound:

@@ -1014,7 +1014,11 @@ function ImportSkillModalContent({
           <span>
             {isFetchingUrl
               ? t('settings.agent.importSkillFromUrlFetching', 'Fetching...')
-              : t('settings.agent.importSkillConfirm', 'Import')}
+              : isImporting
+                ? t('settings.agent.importSkillImporting', 'Importing...')
+                : trimmedUrl !== ''
+                  ? t('settings.agent.importSkillFromUrlFetch', 'Fetch')
+                  : t('settings.agent.importSkillConfirm', 'Import')}
           </span>
         </button>
       </div>
