@@ -461,6 +461,9 @@ export const it: TranslationKeys = {
         'Recupera il contenuto completo di un singolo URL tramite il provider configurato.',
       builtinWebOpsLabel: 'Set strumenti ricerca web',
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
+      builtinJsEvalLabel: 'Sandbox JavaScript',
+      builtinJsEvalDesc:
+        "Esegue JavaScript generato dall'AI in un iframe sandboxed. Alto rischio; richiede approvazione per impostazione predefinita.",
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
       builtinDelegateExternalAgentDesc:
         'Delega le attività complesse a un agente CLI installato localmente (Codex / Claude Code).',

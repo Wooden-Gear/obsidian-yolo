@@ -62,6 +62,11 @@ import {
   runWebSearch,
 } from '../web-search'
 
+import {
+  JS_SANDBOX_TOOL_NAME,
+  callJsSandboxTool,
+  getJsSandboxTool,
+} from './jsSandboxTool'
 import { parseToolName } from './tool-name-utils'
 
 export { recoverLikelyEscapedBackslashSequences }
@@ -130,6 +135,7 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'open_skill',
   'web_search',
   'web_scrape',
+  JS_SANDBOX_TOOL_NAME,
   'delegate_external_agent',
   'load_tool_schemas',
   'todo_write',
@@ -1044,6 +1050,7 @@ export function getLocalFileTools(options?: {
         required: ['url'],
       },
     },
+    getJsSandboxTool(),
     {
       name: 'delegate_external_agent',
       description:
@@ -4011,6 +4018,10 @@ export async function callLocalFileTool({
             content: result.content,
           }),
         }
+      }
+
+      case JS_SANDBOX_TOOL_NAME: {
+        return callJsSandboxTool({ app, args, signal })
       }
 
       case 'memory_add': {

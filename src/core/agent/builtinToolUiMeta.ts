@@ -122,6 +122,13 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Fetch the full content of a single URL through a configured search provider.',
   },
+  js_eval: {
+    labelKey: 'settings.agent.builtinJsEvalLabel',
+    descKey: 'settings.agent.builtinJsEvalDesc',
+    labelFallback: 'JavaScript Sandbox',
+    descFallback:
+      'Execute AI-generated JavaScript in a sandboxed iframe. High risk: requires manual approval by default.',
+  },
   delegate_external_agent: {
     labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',
     descKey: 'settings.agent.builtinDelegateExternalAgentDesc',
@@ -173,6 +180,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
   open_skill: 'external',
+  js_eval: 'external',
   delegate_external_agent: 'external',
 }
 

@@ -21,6 +21,7 @@ describe('tool-preferences defaults', () => {
       expect(getDefaultEnabledForTool('yolo_local__context_compact')).toBe(
         false,
       )
+      expect(getDefaultEnabledForTool('yolo_local__js_eval')).toBe(false)
     })
 
     it('returns false for third-party MCP tools', () => {
@@ -125,6 +126,7 @@ describe('tool-preferences defaults', () => {
       expect(result).toContain('yolo_local__load_tool_schemas')
       expect(result).not.toContain('yolo_local__context_prune_tool_results')
       expect(result).not.toContain('yolo_local__context_compact')
+      expect(result).not.toContain('yolo_local__js_eval')
     })
 
     it('explicit disable removes a tool from the result', () => {

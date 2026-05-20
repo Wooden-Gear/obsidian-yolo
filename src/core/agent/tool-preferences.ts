@@ -4,6 +4,7 @@ import {
   AssistantToolDisclosureMode,
   AssistantToolPreference,
 } from '../../types/assistant.types'
+import { JS_SANDBOX_TOOL_NAME } from '../mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FILE_TOOL_SHORT_NAMES,
@@ -33,6 +34,7 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
+  JS_SANDBOX_TOOL_NAME,
   'delegate_external_agent',
 ])
 
@@ -46,7 +48,11 @@ const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
  * and runtime read the same policy.
  */
 export const BUILTIN_DEFAULT_DISABLED_TOOL_SHORT_NAMES: ReadonlySet<string> =
-  new Set(['context_prune_tool_results', 'context_compact'])
+  new Set([
+    'context_prune_tool_results',
+    'context_compact',
+    JS_SANDBOX_TOOL_NAME,
+  ])
 
 /**
  * Full set of built-in tool FQNs that default to on. Derived from the local

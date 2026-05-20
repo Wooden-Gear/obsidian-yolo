@@ -98,7 +98,7 @@ export class AgentToolGateway {
     // violation in the error message so the model has enough signal to retry;
     // `useDefaults: false` keeps validation side-effect free so we never
     // rewrite the model's arguments behind its back.
-    this.ajv = new Ajv({ strict: false, allErrors: true, useDefaults: false })
+    this.ajv = new Ajv({ allErrors: true, useDefaults: false })
   }
 
   private isOnDemandToolName(toolName: string): boolean {

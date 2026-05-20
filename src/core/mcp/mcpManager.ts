@@ -26,6 +26,7 @@ import {
 } from '../web-search'
 
 import { InvalidToolNameException, McpNotAvailableException } from './exception'
+import { disposeJsSandbox } from './jsSandboxTool'
 // eslint-disable-next-line import/order -- false positive: sibling group is contiguous; rule miscounts the blank line above this group
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -219,6 +220,7 @@ export class McpManager {
     this.remoteTransportModulePromise = null
     this.subscribers.clear()
     this.activeToolCalls.clear()
+    disposeJsSandbox()
   }
 
   private loadRemoteTransportModule(): Promise<RemoteTransportModule> {

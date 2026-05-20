@@ -413,6 +413,9 @@ export const zh: TranslationKeys = {
       builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文。',
       builtinWebOpsLabel: '联网搜索工具集',
       builtinWebOpsDesc: '网页搜索与正文抓取',
+      builtinJsEvalLabel: 'JavaScript 沙箱',
+      builtinJsEvalDesc:
+        '在隔离 iframe 中执行 AI 生成的 JavaScript。高风险，默认需要审批。',
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
       builtinDelegateExternalAgentDesc:
         '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）。',

@@ -457,6 +457,9 @@ export const en: TranslationKeys = {
         'Fetch the full content of a single URL through a configured search provider.',
       builtinWebOpsLabel: 'Web Search Toolset',
       builtinWebOpsDesc: 'Web search and page scraping',
+      builtinJsEvalLabel: 'JavaScript Sandbox',
+      builtinJsEvalDesc:
+        'Execute AI-generated JavaScript in a sandboxed iframe. High risk; requires approval by default.',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
         'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',
