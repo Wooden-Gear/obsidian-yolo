@@ -5,6 +5,7 @@ import {
   LLMOptions,
   LLMRequestNonStreaming,
   LLMRequestStreaming,
+  RequestTool,
 } from '../../types/llm/request'
 import {
   LLMResponseNonStreaming,
@@ -210,19 +211,17 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
   }
 
   /**
-   * Serialize OpenRouter's hosted web search to the official `plugins` array
-   * (https://openrouter.ai/docs/guides/features/plugins/web-search). Carries
-   * optional `engine` (auto/native/exa/firecrawl/parallel — `auto` is encoded
-   * by omitting the field so OpenRouter picks the default) and `max_results`
-   * (1–25).
+   * Serialize OpenRouter's hosted web search to the official server-tool entry
+   * (https://openrouter.ai/docs/guides/features/server-tools/web-search):
    *
-   * NOTE: we intentionally use the (currently deprecated but stable) plugin
-   * path rather than the newer `tools:[{type:'openrouter:web_search'}]`
-   * server-tool path. The server-tool path requires the upstream model to
-   * recognize a non-`function`-typed tool entry; in practice only OpenAI's
-   * GPT-5 family reliably does so. Plugin mode executes at the OpenRouter
-   * router layer and stitches results into the prompt, so it works uniformly
-   * across Claude / MiniMax / Gemini / etc.
+   *   tools: [{ type: 'openrouter:web_search', parameters: { engine?, max_results? } }]
+   *
+   * OpenRouter intercepts the entry at the router layer, runs the search, and
+   * stitches results into the prompt before forwarding to the upstream model,
+   * so it works uniformly across Claude / Gemini / DeepSeek / etc. — the older
+   * `plugins:[{id:'web'}]` form is deprecated.
+   *
+   * `engine` is omitted when set to `auto` (OpenRouter's default).
    *
    * Other built-in tool families are dropped: forwarding `{type:'web_search'}`
    * or `grok:live_search` to OpenRouter would be rejected (or change the
@@ -238,18 +237,25 @@ export class OpenRouterProvider extends BaseLLMProvider<LLMProvider> {
     if (!orTool || orTool.type !== 'openrouter:web_search') {
       return request
     }
-    const plugin: Record<string, unknown> = { id: 'web' }
+    const parameters: Record<string, unknown> = {}
     if (orTool.engine) {
-      plugin.engine = orTool.engine
+      parameters.engine = orTool.engine
     }
     if (typeof orTool.maxResults === 'number') {
-      plugin.max_results = orTool.maxResults
+      parameters.max_results = orTool.maxResults
     }
+    const entry: Record<string, unknown> = { type: 'openrouter:web_search' }
+    if (Object.keys(parameters).length > 0) {
+      entry.parameters = parameters
+    }
+    // Cast: `entry` is OpenRouter's namespaced server-tool variant
+    // (`type:'openrouter:web_search'`), which sits outside the local
+    // `RequestTool` union (function-only). It's passed through verbatim to the
+    // OpenRouter HTTP body — no other provider sees it because this method is
+    // OpenRouter-specific.
     const next = { ...request } as RequestType & Record<string, unknown>
-    const existingPlugins = Array.isArray(next.plugins)
-      ? (next.plugins as Record<string, unknown>[])
-      : []
-    next.plugins = [...existingPlugins, plugin]
+    const existingTools = Array.isArray(next.tools) ? next.tools : []
+    next.tools = [...existingTools, entry as unknown as RequestTool]
     return next
   }
 

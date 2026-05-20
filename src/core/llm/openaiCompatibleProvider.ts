@@ -363,10 +363,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
    * - `web_search` → `extra_body.tools=[{type:'web_search'}]` (OpenAI Chat
    *   Completions hosted web search, forwarded by Azure / DeepSeek-style
    *   gateways that opt-in).
-   * - `openrouter:web_search` → `plugins=[{id:'web', engine?, max_results?}]`
-   *   per https://openrouter.ai/docs/guides/features/plugins/web-search.
+   * - `openrouter:web_search` → `tools=[{type:'openrouter:web_search', parameters:{engine?, max_results?}}]`
+   *   per https://openrouter.ai/docs/guides/features/server-tools/web-search.
    *   Only emitted when the gateway base URL targets openrouter.ai — other
-   *   openai-compatible gateways would reject the unknown field.
+   *   openai-compatible gateways would reject the unknown tool type.
    * - `grok:live_search` → `extra_body.search_parameters={mode:'auto', return_citations:true}`
    *   per xAI's Live Search extension on chat completions. Only emitted when
    *   the gateway base URL targets api.x.ai.
@@ -404,16 +404,27 @@ export class OpenAICompatibleProvider extends BaseLLMProvider<LLMProvider> {
           tools: [...existing, { type: 'web_search' }],
         }
       } else if (tool.type === 'openrouter:web_search' && isOpenRouterGateway) {
-        // Use OpenRouter's `plugins` path rather than the newer server-tools
-        // path: only GPT-5 reliably recognizes a non-`function`-typed tool
-        // entry, so the plugin path is the one that works uniformly across
-        // Claude / MiniMax / Gemini / etc. See openRouterProvider.ts for the
-        // longer rationale.
-        const plugin: Record<string, unknown> = { id: 'web' }
-        if (tool.engine) plugin.engine = tool.engine
+        // OpenRouter server-tool entry (intercepted at the router layer; works
+        // uniformly across Claude / Gemini / DeepSeek / etc.). The legacy
+        // `plugins:[{id:'web'}]` form is deprecated — see
+        // openRouterProvider.ts for the canonical implementation.
+        const parameters: Record<string, unknown> = {}
+        if (tool.engine) parameters.engine = tool.engine
         if (typeof tool.maxResults === 'number')
-          plugin.max_results = tool.maxResults
-        formattedRequest.plugins = [...(formattedRequest.plugins ?? []), plugin]
+          parameters.max_results = tool.maxResults
+        const entry: Record<string, unknown> = {
+          type: 'openrouter:web_search',
+        }
+        if (Object.keys(parameters).length > 0) {
+          entry.parameters = parameters
+        }
+        const existingTools = Array.isArray(formattedRequest.tools)
+          ? formattedRequest.tools
+          : []
+        formattedRequest.tools = [
+          ...existingTools,
+          entry as unknown as (typeof existingTools)[number],
+        ]
       } else if (tool.type === 'grok:live_search' && isXaiGateway) {
         formattedRequest.extra_body = {
           ...(formattedRequest.extra_body ?? {}),

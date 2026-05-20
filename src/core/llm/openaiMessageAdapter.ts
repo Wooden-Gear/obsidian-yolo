@@ -17,6 +17,7 @@ import {
   RequestMessage,
 } from '../../types/llm/request'
 import {
+  Annotation,
   LLMResponseNonStreaming,
   LLMResponseStreaming,
   ResponseUsage,
@@ -25,6 +26,41 @@ import {
 } from '../../types/llm/response'
 import { getToolCallArgumentsText } from '../../types/tool-call.types'
 import { filterEmptyAssistantMessages } from '../../utils/chat/tool-boundary'
+
+/**
+ * Normalize OpenAI-compatible `annotations` (returned by OpenAI's hosted web
+ * search and OpenRouter's `openrouter:web_search` server tool) into our
+ * internal `Annotation` shape. We only retain `url_citation` entries — that's
+ * the only variant both upstreams emit today and the only one the UI knows
+ * how to render. Unknown variants are dropped silently.
+ */
+const normalizeAnnotations = (raw: unknown): Annotation[] | undefined => {
+  if (!Array.isArray(raw)) return undefined
+  const out: Annotation[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const record = item as Record<string, unknown>
+    if (record.type !== 'url_citation') continue
+    const citation = record.url_citation
+    if (!citation || typeof citation !== 'object') continue
+    const c = citation as Record<string, unknown>
+    if (typeof c.url !== 'string') continue
+    out.push({
+      type: 'url_citation',
+      url_citation: {
+        url: c.url,
+        ...(typeof c.title === 'string' ? { title: c.title } : {}),
+        ...(typeof c.start_index === 'number'
+          ? { start_index: c.start_index }
+          : {}),
+        ...(typeof c.end_index === 'number'
+          ? { end_index: c.end_index }
+          : {}),
+      },
+    })
+  }
+  return out.length > 0 ? out : undefined
+}
 
 /**
  * Normalize raw `usage` from OpenAI-compatible endpoints into our generic
@@ -611,6 +647,9 @@ export class OpenAIMessageAdapter {
             )
           }
 
+          const annotations = normalizeAnnotations(
+            (choice.message as unknown as Record<string, unknown>).annotations,
+          )
           return {
             finish_reason: choice.finish_reason,
             message: {
@@ -618,6 +657,7 @@ export class OpenAIMessageAdapter {
               reasoning: extractReasoningContent(choice.message),
               role: choice.message.role,
               tool_calls: normalizedToolCalls,
+              ...(annotations ? { annotations } : {}),
             },
           }
         })(),
@@ -652,6 +692,9 @@ export class OpenAIMessageAdapter {
             )
           }
 
+          const annotations = normalizeAnnotations(
+            (choice.delta as unknown as Record<string, unknown>).annotations,
+          )
           return {
             finish_reason: choice.finish_reason ?? null,
             delta: {
@@ -659,6 +702,7 @@ export class OpenAIMessageAdapter {
               reasoning: extractReasoningContent(choice.delta),
               role: choice.delta.role,
               tool_calls: normalizedToolCallDeltas,
+              ...(annotations ? { annotations } : {}),
             },
           }
         })(),

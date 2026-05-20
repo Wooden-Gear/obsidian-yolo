@@ -16,8 +16,8 @@ const webSearchToggleSchema = z
   })
   .optional()
 
-// OpenRouter web plugin
-// (https://openrouter.ai/docs/guides/features/plugins/web-search). Five
+// OpenRouter hosted web search
+// (https://openrouter.ai/docs/guides/features/server-tools/web-search). Five
 // engines are supported: `auto` (default — native if available, else Exa),
 // `native` (model provider's built-in search), `exa`, `firecrawl` (BYOK in
 // the OpenRouter dashboard), and `parallel`.
@@ -38,9 +38,10 @@ const openRouterWebSearchToggleSchema = z
 /**
  * Built-in (a.k.a. hosted / server-side) tools provided by the model provider
  * itself — not function-calling tools the agent runs. They share the same
- * `tools` / `plugins` / `extra_body` slot in the request payload depending on
- * the provider, and use provider-specific shapes (e.g. `{type:"web_search"}`
- * for OpenAI, OpenRouter `plugins:[{id:"web"}]`, xAI Grok `search_parameters`).
+ * `tools` / `extra_body` slot in the request payload depending on the
+ * provider, and use provider-specific shapes (e.g. `{type:"web_search"}` for
+ * OpenAI, `{type:"openrouter:web_search"}` for OpenRouter, xAI Grok
+ * `search_parameters`).
  * Configure which provider's built-in tools to enable via `builtinToolProvider`,
  * and per-provider toggles via the matching sub-key.
  *
