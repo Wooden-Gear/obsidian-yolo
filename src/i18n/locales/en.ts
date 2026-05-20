@@ -372,6 +372,16 @@ export const en: TranslationKeys = {
       importSkillUnsafePath: 'Refused unsafe path in "{name}": {path}',
       importSkillDuplicateInBatch:
         'Duplicate skill name in this batch: "{name}" (from "{source}"). Only the first occurrence is kept.',
+      importSkillFromUrlPlaceholder: 'Paste a GitHub URL (repo / blob / tree)',
+      importSkillFromUrlFetching: 'Fetching...',
+      importSkillFromUrlInvalid:
+        'Please enter a valid GitHub URL (repo / blob / tree).',
+      importSkillFromUrlNotFound:
+        'Resource not found on GitHub. Check the URL and that the repository / file exists and is public.',
+      importSkillFromUrlRateLimit:
+        'GitHub API rate limit exceeded. Please try again later.',
+      importSkillFromUrlTooLarge: 'Skill package exceeds size limit: {error}',
+      importSkillFromUrlFetchError: 'Failed to fetch from GitHub: {error}',
       deleteSkillTitle: 'Delete skill',
       deleteSkillMessage:
         'Are you sure you want to delete "{name}"? This cannot be undone.',
