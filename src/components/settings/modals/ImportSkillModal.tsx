@@ -713,15 +713,15 @@ function ImportSkillModalContent({
 
     setIsFetchingUrl(true)
     try {
-      const result = await fetchGitHubSkill(trimmed)
+      const results = await fetchGitHubSkill(trimmed)
       if (!isMountedRef.current) return
       // 把 GitHub 抓取结果适配成 RawCandidate;rootName 对齐 targetName 以通过目录校验
-      const candidate: RawCandidate = {
+      const candidates: RawCandidate[] = results.map((result) => ({
         rootName: result.targetName,
         files: result.files,
         isSingleFile: !result.isDirectory,
-      }
-      addCandidates([candidate])
+      }))
+      addCandidates(candidates)
       setUrlValue('')
     } catch (err) {
       if (!isMountedRef.current) return

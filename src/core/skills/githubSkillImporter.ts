@@ -272,6 +272,31 @@ async function fetchRepoTree(info: GitHubUrlInfo): Promise<GitTreeResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// 并发下载工具
+// ---------------------------------------------------------------------------
+
+const RAW_DOWNLOAD_CONCURRENCY = 8
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let cursor = 0
+  const workerCount = Math.max(1, Math.min(limit, items.length))
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const idx = cursor++
+      if (idx >= items.length) return
+      results[idx] = await fn(items[idx])
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+// ---------------------------------------------------------------------------
 // 公共入口
 // ---------------------------------------------------------------------------
 
@@ -284,9 +309,91 @@ export type GitHubFetchResult = {
   isDirectory: boolean
 }
 
+/**
+ * 从 tree 中根据 SKILL.md 入口构造一个 skill 包(下载所有 blob)。
+ * skillDir = '' 表示 skill 根就是仓库根。
+ */
+async function buildSkillPackage(
+  effectiveInfo: GitHubUrlInfo,
+  tree: GitTreeResponse,
+  skillDir: string,
+  /** 同一棵 tree 里其它 skill 的目录,用于在嵌套时排除子树 */
+  siblingSkillDirs: string[],
+  fallbackRepoName: string,
+): Promise<GitHubFetchResult> {
+  const skillMdPath = skillDir ? `${skillDir}/SKILL.md` : 'SKILL.md'
+  const subtreePrefix = skillDir ? `${skillDir}/` : ''
+
+  const blobs = tree.tree.filter((e) => {
+    if (e.type !== 'blob') return false
+    if (e.mode === '120000') return false
+    // 在 skill 子树内
+    if (skillDir === '') {
+      // 仓库根作为 skill 根:排除属于其它 skill 子树的文件
+      const inOtherSkill = siblingSkillDirs.some(
+        (other) => other !== '' && e.path.startsWith(`${other}/`),
+      )
+      return !inOtherSkill
+    }
+    return e.path === skillMdPath || e.path.startsWith(subtreePrefix)
+  })
+
+  // 提前用 tree 元数据拦截超大文件,省一次下载
+  for (const blob of blobs) {
+    if (typeof blob.size === 'number' && blob.size > MAX_FILE_BYTES) {
+      throw new GitHubLimitExceededError(
+        `file exceeds ${MAX_FILE_BYTES} bytes: ${blob.path}`,
+      )
+    }
+  }
+
+  const downloaded = await mapWithConcurrency(
+    blobs,
+    RAW_DOWNLOAD_CONCURRENCY,
+    async (blob) => ({
+      blob,
+      content: await fetchRawText(buildRawUrl(effectiveInfo, blob.path)),
+    }),
+  )
+
+  const files: FileEntry[] = []
+  let skillMdContent = ''
+  for (const { blob, content } of downloaded) {
+    const relativePath = skillDir
+      ? blob.path.slice(subtreePrefix.length)
+      : blob.path
+    files.push({ relativePath, content })
+    if (blob.path === skillMdPath) skillMdContent = content
+  }
+
+  const fm = parseFrontmatter(skillMdContent)
+  const fmName =
+    typeof fm?.name === 'string' && fm.name.trim().length > 0
+      ? fm.name.trim()
+      : null
+  const dirLastSeg = skillDir ? (skillDir.split('/').pop() ?? skillDir) : ''
+  const fallbackName = dirLastSeg || fallbackRepoName
+  const targetName = fmName ?? fallbackName
+
+  return {
+    files,
+    sourceName: dirLastSeg || fallbackRepoName,
+    targetName,
+    isDirectory: true,
+  }
+}
+
+/**
+ * 抓取 GitHub URL 指向的内容,返回一个或多个 skill 包。
+ *
+ * - blob URL → 单文件 skill(返回 1 个)
+ * - tree/repo URL,路径下直接有 SKILL.md → 单 skill(返回 1 个)
+ * - tree/repo URL,路径下无 SKILL.md 但子树里有 N 个 → N 个 skill
+ * - 找不到任何 SKILL.md → 抛 GitHubNotFoundError
+ */
 export async function fetchGitHubSkill(
   url: string,
-): Promise<GitHubFetchResult> {
+): Promise<GitHubFetchResult[]> {
   const info = parseGitHubUrl(url)
   if (!info) {
     throw new Error('Invalid GitHub URL')
@@ -296,17 +403,18 @@ export async function fetchGitHubSkill(
     const filePath = info.path!
     const content = await fetchRawText(buildRawUrl(info, filePath))
     const fileName = filePath.split('/').pop() ?? filePath
-    return {
-      files: [{ relativePath: fileName, content }],
-      sourceName: fileName,
-      targetName: fileName,
-      isDirectory: false,
-    }
+    return [
+      {
+        files: [{ relativePath: fileName, content }],
+        sourceName: fileName,
+        targetName: fileName,
+        isDirectory: false,
+      },
+    ]
   }
 
   // ---- repo / tree 模式 ----
-  const dirPath = info.path ?? ''
-  const skillMdPath = dirPath ? `${dirPath}/SKILL.md` : 'SKILL.md'
+  const rootPath = info.path ?? ''
 
   // 1. 拿整棵 tree(允许裸仓库 URL 时 main → master fallback)
   let tree: GitTreeResponse
@@ -332,56 +440,58 @@ export async function fetchGitHubSkill(
     )
   }
 
-  // 2. 在 tree 里定位 SKILL.md
-  const skillMdEntry = tree.tree.find(
-    (e) => e.type === 'blob' && e.path === skillMdPath,
+  // 2. 定位所有 SKILL.md
+  //    - 路径下直接有 SKILL.md:就是单 skill,以该路径为根
+  //    - 否则:在该路径子树里找所有 SKILL.md
+  const directSkillMd = rootPath
+    ? `${rootPath}/SKILL.md`
+    : 'SKILL.md'
+  const hasDirectSkillMd = tree.tree.some(
+    (e) => e.type === 'blob' && e.path === directSkillMd,
   )
-  if (!skillMdEntry) {
-    throw new GitHubNotFoundError('SKILL.md not found at the specified path')
-  }
 
-  // 3. 收集 skill 子树下所有 blob(过滤 symlink / submodule)
-  const subtreePrefix = dirPath ? `${dirPath}/` : ''
-  const blobs = tree.tree.filter((e) => {
-    if (e.type !== 'blob') return false // 排除 tree / commit(submodule)
-    if (e.mode === '120000') return false // 排除 symlink
-    if (dirPath === '') return true
-    return e.path === skillMdPath || e.path.startsWith(subtreePrefix)
-  })
-
-  // 4. 串行下载每个 blob 的 raw 内容,组装相对路径
-  const files: FileEntry[] = []
-  let skillMdContent = ''
-  for (const blob of blobs) {
-    // 提前用 tree 元数据里的 size 拦掉超大文件,省一次完整下载
-    if (typeof blob.size === 'number' && blob.size > MAX_FILE_BYTES) {
-      throw new GitHubLimitExceededError(
-        `file exceeds ${MAX_FILE_BYTES} bytes: ${blob.path}`,
-      )
+  let skillDirs: string[]
+  if (hasDirectSkillMd) {
+    skillDirs = [rootPath]
+  } else {
+    const subtreePrefix = rootPath ? `${rootPath}/` : ''
+    const skillMdEntries = tree.tree.filter((e) => {
+      if (e.type !== 'blob') return false
+      if (rootPath !== '' && !e.path.startsWith(subtreePrefix)) return false
+      const segs = e.path.split('/')
+      return segs[segs.length - 1] === 'SKILL.md'
+    })
+    if (skillMdEntries.length === 0) {
+      throw new GitHubNotFoundError('SKILL.md not found at the specified path')
     }
-    const relativePath = dirPath
-      ? blob.path.slice(subtreePrefix.length)
-      : blob.path
-    const content = await fetchRawText(buildRawUrl(effectiveInfo, blob.path))
-    files.push({ relativePath, content })
-    if (blob.path === skillMdPath) skillMdContent = content
+    // 取每个 SKILL.md 的所在目录
+    const dirs = skillMdEntries.map((e) => {
+      const slashIdx = e.path.lastIndexOf('/')
+      return slashIdx === -1 ? '' : e.path.slice(0, slashIdx)
+    })
+    // 排除嵌套:若 A 是 B 的父目录,则丢弃 B(只保留最浅的)
+    dirs.sort((a, b) => a.length - b.length)
+    const accepted: string[] = []
+    for (const dir of dirs) {
+      const isNested = accepted.some((parent) =>
+        parent === '' ? true : dir.startsWith(`${parent}/`),
+      )
+      if (!isNested) accepted.push(dir)
+    }
+    skillDirs = accepted
   }
 
-  // targetName 来自 frontmatter.name,fallback 到 dirPath 末段 / 仓库名
-  const fm = parseFrontmatter(skillMdContent)
-  const fmName =
-    typeof fm?.name === 'string' && fm.name.trim().length > 0
-      ? fm.name.trim()
-      : null
-  const fallbackName = dirPath
-    ? (dirPath.split('/').pop() ?? info.repo)
-    : info.repo
-  const targetName = fmName ?? fallbackName
-
-  return {
-    files,
-    sourceName: dirPath ? (dirPath.split('/').pop() ?? info.repo) : info.repo,
-    targetName,
-    isDirectory: true,
+  // 3. 依次构建每个 skill 包(包内文件并发下载;skill 之间串行,避免并发爆炸)
+  const results: GitHubFetchResult[] = []
+  for (const skillDir of skillDirs) {
+    const pkg = await buildSkillPackage(
+      effectiveInfo,
+      tree,
+      skillDir,
+      skillDirs,
+      info.repo,
+    )
+    results.push(pkg)
   }
+  return results
 }
