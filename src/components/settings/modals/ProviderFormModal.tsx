@@ -162,20 +162,29 @@ function ProviderFormComponent({
         const updatedProviders = [...plugin.settings.providers]
         updatedProviders[providerIndex] = validatedProvider
 
-        const updatedChatModels = providerIdChanged
-          ? plugin.settings.chatModels.map((model) => {
-              if (model.providerId !== provider.id) {
-                return model
-              }
-              const updatedModel = {
-                ...model,
-                ...(providerIdChanged
-                  ? { providerId: validatedProvider.id }
-                  : {}),
-              }
-              return updatedModel
-            })
-          : plugin.settings.chatModels
+        const becameOpenRouter =
+          providerPresetChanged &&
+          validatedProvider.presetType === 'openrouter'
+        const updatedChatModels =
+          providerIdChanged || becameOpenRouter
+            ? plugin.settings.chatModels.map((model) => {
+                if (model.providerId !== provider.id) {
+                  return model
+                }
+                const updatedModel = {
+                  ...model,
+                  ...(providerIdChanged
+                    ? { providerId: validatedProvider.id }
+                    : {}),
+                  ...(becameOpenRouter &&
+                  model.builtinToolProvider !== 'none' &&
+                  model.builtinToolProvider !== 'openrouter'
+                    ? { builtinToolProvider: 'none' as const }
+                    : {}),
+                }
+                return updatedModel
+              })
+            : plugin.settings.chatModels
 
         const updatedEmbeddingModels: typeof plugin.settings.embeddingModels =
           providerIdChanged || providerPresetChanged || providerApiChanged
