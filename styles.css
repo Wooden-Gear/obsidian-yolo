@@ -11385,6 +11385,64 @@ button.yolo-llm-debug-modal-button:focus-visible {
   width: var(--size-4-4);
 }
 
+/*
+ * Inline citation markers — produced by injectAnnotationMarkers as
+ * `[N](sourceUrl?yolo-cite=N)`. The visible `[` and `]` brackets are added
+ * via CSS pseudo-elements so the underlying markdown link can stay clean.
+ * Light horizontal margin keeps the marker from crowding adjacent prose
+ * (which matters for CJK text where there's no inter-word whitespace).
+ *
+ * We also suppress Obsidian's default external-link affordances (icon /
+ * padding) — the `[N]` brackets already signal "reference", so the trailing
+ * icon would dominate such a short marker visually.
+ */
+
+.yolo-markdown-rendered a[href*="yolo-cite="] {
+  margin: 0 0.2em;
+  text-decoration: none;
+  background-image: none;
+  padding-right: 0;
+}
+
+/*
+ * Adjacent markers (`[1][2]`) double-up the margin between them. Drop the
+ * left margin when the previous sibling is another citation marker so the
+ * gap stays equal to the gap against surrounding prose.
+ */
+
+.yolo-markdown-rendered
+  a[href*="yolo-cite="]
+  + a[href*="yolo-cite="] {
+  margin-left: 0;
+}
+
+.yolo-markdown-rendered a[href*="yolo-cite="]::before {
+  content: '[';
+}
+
+.yolo-markdown-rendered a[href*="yolo-cite="]::after {
+  content: ']';
+  /* Cancel any external-link glyph themes attach via ::after. */
+  background: none;
+  mask: none;
+  -webkit-mask: none;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* Some themes ship the icon as a separate child SVG node — hide it. */
+
+.yolo-markdown-rendered a[href*="yolo-cite="] > svg,
+.yolo-markdown-rendered a[href*="yolo-cite="] > .external-link-icon {
+  display: none;
+}
+
+.yolo-markdown-rendered a[href*="yolo-cite="]:hover {
+  text-decoration: underline;
+}
+
 /**
  * ChatUserInput
  */
