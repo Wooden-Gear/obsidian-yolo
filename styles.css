@@ -13496,20 +13496,30 @@ button.yolo-chat-input-model-select {
    背景 / 阴影沿用 --default 变体（见 popover/surface.css）。 */
 
 .yolo-popover-surface.yolo-context-breakdown-popover {
+  /* Keep the surface border for definition; drop only the shadow so the card
+   * sits flush above the input without a floating drop-shadow. */
+  box-shadow: none;
   /* Width tracks the popper anchor element (the input-container, supplied via
    * Popover.Anchor virtualRef in ContextUsagePopover). The Radix var is
    * `--radix-popper-anchor-width` (note: popper, not popover) — popover-level
    * vars only expose trigger width, which here is the tiny ring. */
   width: var(--radix-popper-anchor-width);
-  max-height: 60vh;
-  overflow: auto;
-  padding: 12px 16px 10px;
+  /* Do NOT set `max-height` + `overflow: auto` here. The popover is anchored
+   * to the input container (auto-growing Lexical editor), and Radix Popper
+   * observes both anchor and content via ResizeObserver. A scrollbar that
+   * toggles on/off at the height threshold flips content width, which feeds
+   * back into the anchor-width binding above and causes a runaway
+   * "ResizeObserver loop completed with undelivered notifications" storm
+   * (thousands/sec). Content is small enough (6 rows + bar + header) that no
+   * cap is needed. */
+  overflow: visible;
+  padding: 10px 14px 6px;
 }
 
 .yolo-context-breakdown {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -13611,7 +13621,7 @@ button.yolo-chat-input-model-select {
 .yolo-popover-surface .yolo-context-breakdown__list {
   list-style: none;
   margin: 0;
-  padding: 2px 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -13621,11 +13631,11 @@ button.yolo-chat-input-model-select {
 
 .yolo-popover-surface .yolo-context-breakdown__list-item {
   display: grid;
-  grid-template-columns: 12px 1fr auto;
+  grid-template-columns: 10px 1fr auto;
   align-items: center;
-  gap: 10px;
-  height: 28px;
-  min-height: 28px;
+  gap: 8px;
+  height: 22px;
+  min-height: 22px;
   /* Reset the dropdown-list-item `min-width: 180px` so a narrow input box
    * doesn't force the popover to widen past its anchor. */
   min-width: 0;
