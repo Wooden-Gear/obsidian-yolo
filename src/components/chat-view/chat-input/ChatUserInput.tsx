@@ -1378,13 +1378,34 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 </div>
               )}
             <LexicalContentEditable
-              initialEditorState={(editor) => {
-                if (initialSerializedEditorState) {
-                  editor.setEditorState(
-                    editor.parseEditorState(initialSerializedEditorState),
-                  )
-                }
-              }}
+              // Pass `undefined` (not a no-op function) when there's no draft
+              // to restore: Lexical only auto-creates the initial empty
+              // paragraph in the `undefined` branch. With a function — even
+              // one that does nothing — `root` stays `children: []`, which
+              // violates Lexical's "root must never be empty" invariant and
+              // produces a flood of `setEditorState` errors as soon as
+              // selection / OnChangePlugin / mutations touch the editor.
+              initialEditorState={
+                initialSerializedEditorState
+                  ? (editor) => {
+                      try {
+                        editor.setEditorState(
+                          editor.parseEditorState(
+                            initialSerializedEditorState,
+                          ),
+                        )
+                      } catch (error) {
+                        // Defensive: a malformed serialized state shouldn't
+                        // break the input box. Fall back to Lexical's default
+                        // empty paragraph by leaving the editor untouched.
+                        console.warn(
+                          '[YOLO] Failed to restore chat input editor state',
+                          error,
+                        )
+                      }
+                    }
+                  : undefined
+              }
               editorRef={editorRef}
               contentEditableRef={contentEditableRef}
               onChange={onChange}
