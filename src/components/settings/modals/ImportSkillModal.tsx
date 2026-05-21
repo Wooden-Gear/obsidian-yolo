@@ -1,5 +1,6 @@
+import { Loader2 } from 'lucide-react'
 import { App, Notice, normalizePath } from 'obsidian'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import {
@@ -8,6 +9,13 @@ import {
 } from '../../../contexts/settings-context'
 import { getYoloSkillsDir } from '../../../core/paths/yoloPaths'
 import {
+  GitHubLimitExceededError,
+  GitHubNotFoundError,
+  GitHubRateLimitError,
+  fetchGitHubSkill,
+  parseGitHubUrl,
+} from '../../../core/skills/githubSkillImporter'
+import {
   type FileEntry,
   type ValidationError,
   parseFrontmatter,
@@ -15,7 +23,6 @@ import {
   validateSingleFileSkill,
 } from '../../../core/skills/skillValidation'
 import YoloPlugin from '../../../main'
-import { ObsidianButton } from '../../common/ObsidianButton'
 import { ReactModal } from '../../common/ReactModal'
 import { ConfirmModal } from '../../modals/ConfirmModal'
 
@@ -431,8 +438,18 @@ function ImportSkillModalContent({
   const [skillPackages, setSkillPackages] = useState<SkillPackage[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [urlValue, setUrlValue] = useState('')
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   const buildSkillPackagesFromCandidates = useCallback(
     (
@@ -681,6 +698,68 @@ function ImportSkillModalContent({
     [addCandidates, t],
   )
 
+  const runUrlFetch = useCallback(async () => {
+    const trimmed = urlValue.trim()
+    if (!trimmed || isFetchingUrl) return
+    if (!parseGitHubUrl(trimmed)) {
+      new Notice(
+        t(
+          'settings.agent.importSkillFromUrlInvalid',
+          'Please enter a valid GitHub URL (repo / blob / tree).',
+        ),
+      )
+      return
+    }
+
+    setIsFetchingUrl(true)
+    try {
+      const results = await fetchGitHubSkill(trimmed)
+      if (!isMountedRef.current) return
+      // 把 GitHub 抓取结果适配成 RawCandidate;rootName 对齐 targetName 以通过目录校验
+      const candidates: RawCandidate[] = results.map((result) => ({
+        rootName: result.targetName,
+        files: result.files,
+        isSingleFile: !result.isDirectory,
+      }))
+      addCandidates(candidates)
+      setUrlValue('')
+    } catch (err) {
+      if (!isMountedRef.current) return
+      if (err instanceof GitHubRateLimitError) {
+        new Notice(
+          t(
+            'settings.agent.importSkillFromUrlRateLimit',
+            'GitHub API rate limit exceeded. Please try again later.',
+          ),
+        )
+      } else if (err instanceof GitHubNotFoundError) {
+        new Notice(
+          t(
+            'settings.agent.importSkillFromUrlNotFound',
+            'Resource not found on GitHub. Check the URL and that the repository / file exists and is public.',
+          ),
+        )
+      } else if (err instanceof GitHubLimitExceededError) {
+        new Notice(
+          t(
+            'settings.agent.importSkillFromUrlTooLarge',
+            'Skill package is too large or too deep to import: {error}',
+          ).replace('{error}', err.message),
+        )
+      } else {
+        const message = err instanceof Error ? err.message : String(err)
+        new Notice(
+          t(
+            'settings.agent.importSkillFromUrlFetchError',
+            'Failed to fetch from GitHub: {error}',
+          ).replace('{error}', message),
+        )
+      }
+    } finally {
+      if (isMountedRef.current) setIsFetchingUrl(false)
+    }
+  }, [urlValue, isFetchingUrl, addCandidates, t])
+
   const handleRemovePackage = useCallback((targetName: string) => {
     setSkillPackages((prev) => prev.filter((p) => p.targetName !== targetName))
   }, [])
@@ -778,6 +857,25 @@ function ImportSkillModalContent({
       setIsImporting(false)
     }
   }, [app, skillPackages, skillsDir, t, onImported, onClose])
+
+  // URL 输入框与右下角提交按钮共用一行:
+  // - 输入框有内容 → 点击 / 回车先抓 URL 加入列表(如有冲突弹 ConfirmModal,
+  //   用户解决后再点一次"导入"提交全部)
+  // - 输入框为空且列表非空 → 提交列表
+  const trimmedUrl = urlValue.trim()
+  const urlIsValid = trimmedUrl !== '' && parseGitHubUrl(trimmedUrl) !== null
+  const submitBusy = isFetchingUrl || isImporting
+  const canSubmit =
+    !submitBusy &&
+    (urlIsValid || (trimmedUrl === '' && skillPackages.length > 0))
+
+  const handleSubmit = useCallback(async () => {
+    if (urlValue.trim()) {
+      await runUrlFetch()
+      return
+    }
+    await handleImport()
+  }, [urlValue, runUrlFetch, handleImport])
 
   const totalFileCount = skillPackages.reduce(
     (sum, pkg) => sum + pkg.files.length,
@@ -889,12 +987,40 @@ function ImportSkillModalContent({
       )}
 
       <div className="yolo-import-skill-actions">
-        <ObsidianButton
-          text={t('settings.agent.importSkillConfirm', 'Import')}
-          cta
-          disabled={skillPackages.length === 0 || isImporting}
-          onClick={() => void handleImport()}
+        <input
+          type="text"
+          className="yolo-import-skill-url-input"
+          placeholder={t(
+            'settings.agent.importSkillFromUrlPlaceholder',
+            'Paste a GitHub URL (repo / blob / tree)',
+          )}
+          value={urlValue}
+          onChange={(e) => setUrlValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && canSubmit) {
+              e.preventDefault()
+              void handleSubmit()
+            }
+          }}
+          disabled={submitBusy}
         />
+        <button
+          type="button"
+          className="yolo-import-skill-submit mod-cta"
+          disabled={!canSubmit}
+          onClick={() => void handleSubmit()}
+        >
+          {submitBusy && <Loader2 className="yolo-spinner" size={14} />}
+          <span>
+            {isFetchingUrl
+              ? t('settings.agent.importSkillFromUrlFetching', 'Fetching...')
+              : isImporting
+                ? t('settings.agent.importSkillImporting', 'Importing...')
+                : trimmedUrl !== ''
+                  ? t('settings.agent.importSkillFromUrlFetch', 'Fetch')
+                  : t('settings.agent.importSkillConfirm', 'Import')}
+          </span>
+        </button>
       </div>
     </div>
   )

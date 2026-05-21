@@ -417,10 +417,54 @@
   background: color-mix(in srgb, var(--text-error) 10%, transparent);
 }
 
+/* 操作行:URL 输入框 + 提交按钮共用一行 */
 .yolo-import-skill-actions {
   display: flex;
-  justify-content: flex-end;
   gap: var(--size-4-2);
+  align-items: stretch;
+}
+
+.yolo-import-skill-url-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.yolo-import-skill-url-input:focus {
+  border-color: var(--interactive-accent);
+}
+
+.yolo-import-skill-url-input::placeholder {
+  color: var(--text-faint);
+}
+
+.yolo-import-skill-url-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 提交按钮:沿用 Obsidian mod-cta 主色,只调间距与 spinner 对齐 */
+.yolo-import-skill-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 18px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.yolo-import-skill-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .yolo-agent-tools-empty {
@@ -503,6 +547,28 @@
 .yolo-agent-tool-group-tokens {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
+}
+
+button.yolo-agent-tool-group-disclosure {
+  margin-left: var(--size-2-2);
+  padding: 0;
+  height: auto;
+  line-height: 1.4;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  text-decoration: underline;
+  text-decoration-color: var(--background-modifier-border);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+button.yolo-agent-tool-group-disclosure:hover {
+  color: var(--text-normal);
+  text-decoration-color: currentColor;
+  background: transparent;
 }
 
 .yolo-agent-tool-group-meta {

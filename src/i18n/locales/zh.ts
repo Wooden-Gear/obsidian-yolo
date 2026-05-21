@@ -335,6 +335,17 @@ export const zh: TranslationKeys = {
       importSkillUnsafePath: '已拒绝「{name}」中的不安全路径：{path}',
       importSkillDuplicateInBatch:
         '本次导入中存在同名技能：「{name}」（来自「{source}」），仅保留第一个。',
+      importSkillFromUrlPlaceholder: '粘贴 GitHub 链接（仓库 / blob / tree）',
+      importSkillFromUrlFetch: '获取',
+      importSkillFromUrlFetching: '获取中...',
+      importSkillImporting: '导入中...',
+      importSkillFromUrlInvalid:
+        '请输入有效的 GitHub 链接（仓库 / blob / tree）。',
+      importSkillFromUrlNotFound:
+        '在 GitHub 上未找到对应资源，请检查链接，并确认仓库 / 文件存在且为公开。',
+      importSkillFromUrlRateLimit: 'GitHub API 限流，请稍后再试。',
+      importSkillFromUrlTooLarge: '技能包超过大小限制：{error}',
+      importSkillFromUrlFetchError: '从 GitHub 获取失败：{error}',
       deleteSkillTitle: '删除技能',
       deleteSkillMessage: '确定要删除「{name}」吗？此操作无法撤销。',
       deleteSkillConfirm: '删除',
@@ -888,6 +899,11 @@ export const zh: TranslationKeys = {
       manageEmbeddingDatabase: '管理嵌入数据库',
       manage: '管理',
       rebuildIndex: '重建索引',
+      rebuildFromScratch: '从头重建',
+      rebuildFromScratchConfirm:
+        '将清空当前嵌入模型已有的全部向量并重新索引整个知识库，可能产生大量 embedding 调用。继续？',
+      continueIndex: '继续索引',
+      continueIndexNow: '立即继续',
       // UI additions
       selectedFolders: '已选择的文件夹',
       excludedFolders: '已排除的文件夹',
@@ -1246,6 +1262,14 @@ export const zh: TranslationKeys = {
       yoloBaseDirDesc:
         '填写库内相对路径（不要以 / 开头）。例如：放在库根目录填 YOLO；放在 setting 文件夹下填 setting/YOLO。当前技能目录：{path}。',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: '侧边栏图标点击位置',
+      ribbonClickActionDesc:
+        '选择点击左侧边栏 YOLO 图标时，Chat 视图在哪里打开。若选定位置已有 Chat 视图会直接激活复用，否则新建。',
+      ribbonClickActionSidebar: '右侧边栏',
+      ribbonClickActionTab: '新标签页',
+      ribbonClickActionSplit: '右侧分屏',
+      ribbonClickActionWindow: '独立窗口',
+      ribbonClickActionLast: '上次的位置',
       mentionDisplayMode: '引用内容显示位置',
       mentionDisplayModeDesc:
         '选择 @ 文件引用和 / 技能选择是在输入框内显示，还是在输入框顶部以徽章显示。',
@@ -1315,6 +1339,21 @@ export const zh: TranslationKeys = {
     placeholderMention: '添加引用或模型',
     placeholderSkill: '选择技能或命令',
     contextUsage: '上下文窗口占用',
+    contextBreakdown: {
+      title: '上下文',
+      fullLabel: '已占用 {{percent}}',
+      tokensSuffix: 'Tokens',
+      localEstimateCaption: '本地估算，可能与服务端计费存在偏差',
+      error: '估算失败',
+      bucket: {
+        system: '系统提示',
+        tools: '工具',
+        rules: '规则',
+        skills: '技能',
+        memory: '记忆',
+        conversation: '会话',
+      },
+    },
     inlineInfo: {
       callsTitle: '本轮 {{count}} 次调用',
       nextTurnContext: '已占用上下文：~{{tokens}} tokens',
@@ -1633,6 +1672,8 @@ export const zh: TranslationKeys = {
     rebuildingIndex: '正在重建库索引...',
     rebuildComplete: '重建库索引完成',
     rebuildFailed: '重建库索引失败',
+    continueComplete: '继续索引完成',
+    continueFailed: '继续索引失败',
     openYoloNewChatFailed: '打开 YOLO 聊天窗口失败，请先用命令面板尝试',
     pgliteUnavailable: 'PGlite 运行时不可用，请重试下载资源',
     downloadingPglite:

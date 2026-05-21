@@ -373,6 +373,18 @@ export const en: TranslationKeys = {
       importSkillUnsafePath: 'Refused unsafe path in "{name}": {path}',
       importSkillDuplicateInBatch:
         'Duplicate skill name in this batch: "{name}" (from "{source}"). Only the first occurrence is kept.',
+      importSkillFromUrlPlaceholder: 'Paste a GitHub URL (repo / blob / tree)',
+      importSkillFromUrlFetch: 'Fetch',
+      importSkillFromUrlFetching: 'Fetching...',
+      importSkillImporting: 'Importing...',
+      importSkillFromUrlInvalid:
+        'Please enter a valid GitHub URL (repo / blob / tree).',
+      importSkillFromUrlNotFound:
+        'Resource not found on GitHub. Check the URL and that the repository / file exists and is public.',
+      importSkillFromUrlRateLimit:
+        'GitHub API rate limit exceeded. Please try again later.',
+      importSkillFromUrlTooLarge: 'Skill package exceeds size limit: {error}',
+      importSkillFromUrlFetchError: 'Failed to fetch from GitHub: {error}',
       deleteSkillTitle: 'Delete skill',
       deleteSkillMessage:
         'Are you sure you want to delete "{name}"? This cannot be undone.',
@@ -951,6 +963,11 @@ export const en: TranslationKeys = {
       manageEmbeddingDatabase: 'Manage embedding database',
       manage: 'Manage',
       rebuildIndex: 'Rebuild index',
+      rebuildFromScratch: 'Rebuild from scratch',
+      rebuildFromScratchConfirm:
+        'This will clear all existing vectors for the current embedding model and re-index the entire vault, which may incur many embedding API calls. Continue?',
+      continueIndex: 'Continue indexing',
+      continueIndexNow: 'Continue now',
       // UI additions
       selectedFolders: 'Selected folders',
       excludedFolders: 'Excluded folders',
@@ -1349,6 +1366,14 @@ export const en: TranslationKeys = {
       yoloBaseDirDesc:
         'Enter a vault-relative path (without a leading /). Example: use YOLO at vault root, or setting/YOLO under the setting folder. Current skills directory: {path}.',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: 'Ribbon icon opens chat in',
+      ribbonClickActionDesc:
+        'Where the YOLO ribbon icon opens the Chat view. If a chat already exists in the chosen location it is activated; otherwise a new one is created.',
+      ribbonClickActionSidebar: 'Right sidebar',
+      ribbonClickActionTab: 'New tab',
+      ribbonClickActionSplit: 'Right split',
+      ribbonClickActionWindow: 'New window',
+      ribbonClickActionLast: 'Last used location',
       mentionDisplayMode: 'Mention display position',
       mentionDisplayModeDesc:
         'Choose whether @ file mentions and / skill selections are shown inline in the editor or as badges above the input box.',
@@ -1402,6 +1427,22 @@ export const en: TranslationKeys = {
     placeholderMention: 'add references or models',
     placeholderSkill: 'choose a skill or command',
     contextUsage: 'Context window usage',
+    contextBreakdown: {
+      title: 'Context',
+      fullLabel: '{{percent}} Full',
+      tokensSuffix: 'Tokens',
+      localEstimateCaption:
+        'Local estimate — may differ from server-side billing.',
+      error: 'Estimation failed',
+      bucket: {
+        system: 'System prompt',
+        tools: 'Tools',
+        rules: 'Rules',
+        skills: 'Skills',
+        memory: 'Memory',
+        conversation: 'Conversation',
+      },
+    },
     inlineInfo: {
       callsTitle: '{{count}} calls this turn',
       nextTurnContext: 'Context used: ~{{tokens}} tokens',
@@ -1745,6 +1786,8 @@ export const en: TranslationKeys = {
     rebuildingIndex: 'Rebuilding vault index…',
     rebuildComplete: 'Rebuilding vault index complete.',
     rebuildFailed: 'Rebuilding vault index failed.',
+    continueComplete: 'Resumed index completed.',
+    continueFailed: 'Resumed index failed.',
     openYoloNewChatFailed:
       'Failed to open the YOLO chat window; try the command palette first.',
     pgliteUnavailable:

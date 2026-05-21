@@ -25,6 +25,7 @@ import {
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
+import { ConfirmModal } from '../../modals/ConfirmModal'
 import { IndexProgressRing } from '../IndexProgressRing'
 import { FolderSelectionList } from '../inputs/FolderSelectionList'
 import { EmbeddingDbManageModal } from '../modals/EmbeddingDbManageModal'
@@ -602,7 +603,9 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
           mode,
           scope: { kind: 'all' },
           trigger: 'manual',
-          retryPolicy: mode === 'rebuild' ? 'transient' : 'none',
+          // Both rebuild and sync get transient retry so an interrupted
+          // resume can itself be resumed next launch.
+          retryPolicy: 'transient',
         })
         await plugin.setSettings({
           ...plugin.settings,
@@ -1000,26 +1003,90 @@ export function RAGSection({ app, plugin }: RAGSectionProps) {
                   />
                   {(() => {
                     const status = indexRunSnapshot.status
-                    let label: string
+                    const isInterrupted =
+                      status === 'retry_scheduled' || status === 'failed'
+                    let primaryLabel: string
+                    let primaryMode: 'rebuild' | 'sync'
+                    let primarySuccess: string
+                    let primaryFailure: string
                     if (status === 'retry_scheduled') {
-                      label = t('settings.rag.retryNow', '立即重试')
+                      primaryLabel = t(
+                        'settings.rag.continueIndexNow',
+                        '立即继续',
+                      )
+                      primaryMode = 'sync'
+                      primarySuccess = t(
+                        'notices.continueComplete',
+                        '继续索引完成',
+                      )
+                      primaryFailure = t(
+                        'notices.continueFailed',
+                        '继续索引失败',
+                      )
                     } else if (status === 'failed') {
-                      label = t('common.retry', '重试')
+                      primaryLabel = t('settings.rag.continueIndex', '继续索引')
+                      primaryMode = 'sync'
+                      primarySuccess = t(
+                        'notices.continueComplete',
+                        '继续索引完成',
+                      )
+                      primaryFailure = t(
+                        'notices.continueFailed',
+                        '继续索引失败',
+                      )
                     } else {
-                      label = t('settings.rag.rebuildIndex', '重建索引')
+                      primaryLabel = t('settings.rag.rebuildIndex', '重建索引')
+                      primaryMode = 'rebuild'
+                      primarySuccess = t('notices.rebuildComplete')
+                      primaryFailure = t('notices.rebuildFailed')
                     }
                     return (
-                      <ObsidianButton
-                        text={label}
-                        disabled={isIndexing || !canUseIndexMaintenance}
-                        onClick={() => {
-                          void runIndexJob({
-                            mode: 'rebuild',
-                            successNotice: t('notices.rebuildComplete'),
-                            failureNotice: t('notices.rebuildFailed'),
-                          })
-                        }}
-                      />
+                      <>
+                        <ObsidianButton
+                          text={primaryLabel}
+                          disabled={isIndexing || !canUseIndexMaintenance}
+                          onClick={() => {
+                            void runIndexJob({
+                              mode: primaryMode,
+                              successNotice: primarySuccess,
+                              failureNotice: primaryFailure,
+                            })
+                          }}
+                        />
+                        {isInterrupted && (
+                          <ObsidianButton
+                            text={t(
+                              'settings.rag.rebuildFromScratch',
+                              '从头重建',
+                            )}
+                            disabled={isIndexing || !canUseIndexMaintenance}
+                            onClick={() => {
+                              new ConfirmModal(app, {
+                                title: t(
+                                  'settings.rag.rebuildFromScratch',
+                                  '从头重建',
+                                ),
+                                message: t(
+                                  'settings.rag.rebuildFromScratchConfirm',
+                                  '将清空当前嵌入模型已有的全部向量并重新索引整个知识库，可能产生大量 embedding 调用。继续？',
+                                ),
+                                ctaText: t(
+                                  'settings.rag.rebuildFromScratch',
+                                  '从头重建',
+                                ),
+                                cancelText: t('common.cancel', '取消'),
+                                onConfirm: () => {
+                                  void runIndexJob({
+                                    mode: 'rebuild',
+                                    successNotice: t('notices.rebuildComplete'),
+                                    failureNotice: t('notices.rebuildFailed'),
+                                  })
+                                },
+                              }).open()
+                            }}
+                          />
+                        )}
+                      </>
                     )
                   })()}
                   {isIndexing && (

@@ -81,6 +81,8 @@ export class ChatViewNavigator {
       return
     }
 
+    void this.persistLastChatPlacement(targetLeaf)
+
     if (!existingLeaf) {
       await this.activateChatLeaf(targetLeaf)
       return
@@ -107,6 +109,26 @@ export class ChatViewNavigator {
     }
 
     await this.activateChatLeaf(targetLeaf)
+  }
+
+  private async persistLastChatPlacement(leaf: WorkspaceLeaf): Promise<void> {
+    const placement =
+      this.plugin.getChatLeafSessionManager().getLeafPlacement(leaf) ??
+      this.plugin.getChatLeafSessionManager().inferLeafPlacement(leaf)
+    const current = this.plugin.settings.chatOptions.lastChatPlacement
+    if (current === placement) return
+
+    try {
+      await this.plugin.setSettings({
+        ...this.plugin.settings,
+        chatOptions: {
+          ...this.plugin.settings.chatOptions,
+          lastChatPlacement: placement,
+        },
+      })
+    } catch (error: unknown) {
+      console.error('Failed to persist lastChatPlacement', error)
+    }
   }
 
   async openChatInSidebar(openNewChat = false) {

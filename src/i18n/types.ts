@@ -256,6 +256,15 @@ export type TranslationKeys = {
       importSkillConflictSkip?: string
       importSkillUnsafePath?: string
       importSkillDuplicateInBatch?: string
+      importSkillFromUrlPlaceholder?: string
+      importSkillFromUrlFetch?: string
+      importSkillFromUrlFetching?: string
+      importSkillImporting?: string
+      importSkillFromUrlInvalid?: string
+      importSkillFromUrlNotFound?: string
+      importSkillFromUrlRateLimit?: string
+      importSkillFromUrlTooLarge?: string
+      importSkillFromUrlFetchError?: string
       deleteSkillTitle?: string
       deleteSkillMessage?: string
       deleteSkillConfirm?: string
@@ -740,6 +749,10 @@ export type TranslationKeys = {
       manageEmbeddingDatabase: string
       manage: string
       rebuildIndex: string
+      rebuildFromScratch?: string
+      rebuildFromScratchConfirm?: string
+      continueIndex?: string
+      continueIndexNow?: string
       // UI additions
       selectedFolders?: string
       excludedFolders?: string
@@ -1048,6 +1061,13 @@ export type TranslationKeys = {
       yoloBaseDir?: string
       yoloBaseDirDesc?: string
       yoloBaseDirPlaceholder?: string
+      ribbonClickAction?: string
+      ribbonClickActionDesc?: string
+      ribbonClickActionSidebar?: string
+      ribbonClickActionTab?: string
+      ribbonClickActionSplit?: string
+      ribbonClickActionWindow?: string
+      ribbonClickActionLast?: string
       mentionDisplayMode?: string
       mentionDisplayModeDesc?: string
       mentionDisplayModeInline?: string
@@ -1183,6 +1203,22 @@ export type TranslationKeys = {
     placeholderMention?: string
     placeholderSkill?: string
     contextUsage?: string
+    contextBreakdown?: {
+      title?: string
+      /** "{{percent}} Full" — interpolated client-side */
+      fullLabel?: string
+      tokensSuffix?: string
+      localEstimateCaption?: string
+      error?: string
+      bucket?: {
+        system?: string
+        tools?: string
+        rules?: string
+        skills?: string
+        memory?: string
+        conversation?: string
+      }
+    }
     inlineInfo?: {
       callsTitle?: string
       nextTurnContext?: string
@@ -1480,6 +1516,8 @@ export type TranslationKeys = {
     rebuildingIndex: string
     rebuildComplete: string
     rebuildFailed: string
+    continueComplete?: string
+    continueFailed?: string
     openYoloNewChatFailed: string
     pgliteUnavailable: string
     downloadingPglite: string

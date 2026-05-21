@@ -860,6 +860,11 @@ export const it: TranslationKeys = {
       manageEmbeddingDatabase: 'Gestisci database embedding',
       manage: 'Gestisci',
       rebuildIndex: 'Ricostruisci indice',
+      rebuildFromScratch: 'Ricostruisci da zero',
+      rebuildFromScratchConfirm:
+        "Verranno eliminati tutti i vettori esistenti del modello di embedding corrente e l'intero vault verrà reindicizzato, con possibili numerose chiamate API. Continuare?",
+      continueIndex: 'Continua indicizzazione',
+      continueIndexNow: 'Continua ora',
       selectedFolders: 'Cartelle selezionate',
       excludedFolders: 'Cartelle escluse',
       selectFoldersPlaceholder: 'Seleziona cartelle...',
@@ -1246,6 +1251,14 @@ export const it: TranslationKeys = {
       yoloBaseDirDesc:
         'Inserisci un percorso relativo al vault (senza / iniziale). Esempio: YOLO nella radice del vault, oppure setting/YOLO nella cartella setting. Directory skill attuale: {path}.',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: 'Icona ribbon apre la chat in',
+      ribbonClickActionDesc:
+        'Dove l’icona ribbon di YOLO apre la vista Chat. Se nella posizione scelta esiste già una chat viene attivata; altrimenti ne viene creata una nuova.',
+      ribbonClickActionSidebar: 'Barra laterale destra',
+      ribbonClickActionTab: 'Nuova scheda',
+      ribbonClickActionSplit: 'Split destro',
+      ribbonClickActionWindow: 'Nuova finestra',
+      ribbonClickActionLast: 'Ultima posizione usata',
       mentionDisplayMode: 'Posizione visualizzazione mention',
       mentionDisplayModeDesc:
         "Scegli se mostrare i file selezionati con @ e le skill selezionate con / nel testo dell'input o come badge sopra la casella.",
@@ -1295,6 +1308,22 @@ export const it: TranslationKeys = {
     placeholderMention: 'aggiungere riferimenti o modelli',
     placeholderSkill: 'scegliere una skill o un comando',
     contextUsage: 'Utilizzo finestra di contesto',
+    contextBreakdown: {
+      title: 'Contesto',
+      fullLabel: '{{percent}} pieno',
+      tokensSuffix: 'token',
+      localEstimateCaption:
+        'Stima locale — può differire dal conteggio del server.',
+      error: 'Stima fallita',
+      bucket: {
+        system: 'Prompt di sistema',
+        tools: 'Strumenti',
+        rules: 'Regole',
+        skills: 'Skill',
+        memory: 'Memoria',
+        conversation: 'Conversazione',
+      },
+    },
     inlineInfo: {
       callsTitle: '{{count}} chiamate in questo turno',
       nextTurnContext: 'Contesto utilizzato: ~{{tokens}} token',
@@ -1660,6 +1689,8 @@ export const it: TranslationKeys = {
     rebuildingIndex: 'Ricostruzione indice vault in corso…',
     rebuildComplete: 'Ricostruzione indice vault completata.',
     rebuildFailed: 'Ricostruzione indice vault fallita.',
+    continueComplete: 'Indicizzazione ripresa completata.',
+    continueFailed: 'Indicizzazione ripresa fallita.',
     openYoloNewChatFailed:
       'Impossibile aprire la finestra chat YOLO; prova prima dal palette comandi.',
     pgliteUnavailable:

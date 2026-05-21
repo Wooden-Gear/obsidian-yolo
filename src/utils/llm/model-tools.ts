@@ -10,10 +10,10 @@ import { ChatModel } from '../../types/chat-model.types'
  * - `web_search`: OpenAI-style hosted web search. OpenAI-compatible gateways
  *   forward as `extra_body.tools=[{type:"web_search"}]`; OpenAI Responses maps
  *   to `tools=[{type:"web_search_preview"}]`.
- * - `openrouter:web_search`: OpenRouter's web plugin. Carries optional
+ * - `openrouter:web_search`: OpenRouter's hosted web search. Carries optional
  *   `engine` (auto/native/exa/firecrawl/parallel) and `maxResults` (1–25),
- *   which the OpenRouter provider serializes to
- *   `plugins=[{id:"web", engine?, max_results?}]`.
+ *   which the OpenRouter provider serializes to the server-tool entry
+ *   `tools=[{type:"openrouter:web_search", parameters:{engine?, max_results?}}]`.
  * - `grok:live_search`: xAI Live Search. Serialized as
  *   `extra_body.search_parameters={mode:"auto", return_citations:true}` on the
  *   chat-completions endpoint.

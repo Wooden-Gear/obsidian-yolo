@@ -27,6 +27,13 @@ export class NewTabEmptyStateEnhancer {
     this.plugin.register(() => {
       this.observer?.disconnect()
       this.observer = null
+      // Hot-reload / disable: remove all inserted action elements. Their
+      // click listeners are auto-removed by `plugin.registerDomEvent`, so the
+      // DOM nodes would otherwise survive as dead "buttons" — and the marker
+      // check in `refresh()` would prevent the next enable() from rebinding.
+      document
+        .querySelectorAll(`[${ACTION_MARKER_ATTR}]`)
+        .forEach((el) => el.remove())
     })
   }
 

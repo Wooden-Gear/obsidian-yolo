@@ -637,11 +637,6 @@ export default function AssistantToolMessageGroupItem({
                   generationState={message.metadata?.generationState}
                 />
               )}
-              {message.annotations && (
-                <AssistantMessageAnnotations
-                  annotations={message.annotations}
-                />
-              )}
               {message.id === editingAssistantMessageId ? (
                 <AssistantMessageEditor
                   initialContent={message.content}
@@ -655,6 +650,7 @@ export default function AssistantToolMessageGroupItem({
                   messageId={message.id}
                   conversationId={effectiveConversationId}
                   content={message.content}
+                  annotations={message.annotations}
                   handleApply={onApply}
                   isApplying={isApplying}
                   activeApplyRequestKey={activeApplyRequestKey}
@@ -663,6 +659,11 @@ export default function AssistantToolMessageGroupItem({
                   showToolCallPreview={shouldShowAssistantToolPreview}
                   onQuote={onQuoteAssistantSelection}
                   enableSelectionQuote={showQuoteAction}
+                />
+              )}
+              {message.annotations && (
+                <AssistantMessageAnnotations
+                  annotations={message.annotations}
                 />
               )}
               {message.metadata?.generationState === 'error' &&

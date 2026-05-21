@@ -56,13 +56,13 @@ jest.mock('react-virtuoso', () => {
           'data-initial-align':
             initialTopMostItemIndex?.align === undefined
               ? undefined
-              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- mock data attribute, align is unknown by design
+              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- align is a string enum value in test assertions
                 String(initialTopMostItemIndex.align),
           'data-initial-index': initialTopMostItemIndex
             ? String(initialTopMostItemIndex.index)
             : props.initialTopMostItemIndex === undefined
               ? undefined
-              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- mock data attribute, initialTopMostItemIndex is unknown by design
+              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- primitive index value in test assertions
                 String(props.initialTopMostItemIndex),
           className: props.className,
           style: props.style,

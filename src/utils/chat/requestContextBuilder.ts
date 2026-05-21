@@ -77,9 +77,126 @@ import {
   filterContextPrunedToolCalls,
 } from './tool-context-pruning'
 
+/** Regex matching the `<user_selected_skills>...</user_selected_skills>` block
+ * produced by `buildSelectedSkillsPrompt`. Used by the breakdown estimator to
+ * avoid double-counting selected-skill text in the conversation bucket. */
+const USER_SELECTED_SKILLS_BLOCK_RE =
+  /<user_selected_skills>[\s\S]*?<\/user_selected_skills>\n?/g
+
+const stripUserSelectedSkillsFromString = (text: string): string =>
+  text.replace(USER_SELECTED_SKILLS_BLOCK_RE, '')
+
+/** Stable signature for the `<previously-loaded-tools>` compaction disclosure
+ * message. The disclosure is built by `buildCompactionDisclosureInjection` and
+ * always starts with this exact tag — used by section assembly to attribute it
+ * to the Tools bucket without depending on object identity (which can be
+ * broken by downstream message-transforming passes). */
+const COMPACTION_DISCLOSURE_PREFIX = '<previously-loaded-tools>'
+
+const messageStartsWith = (
+  message: RequestMessage,
+  prefix: string,
+): boolean => {
+  if (typeof message.content === 'string') {
+    return message.content.startsWith(prefix)
+  }
+  if (Array.isArray(message.content) && message.content.length > 0) {
+    const head = message.content[0]
+    if (head.type === 'text') return head.text.startsWith(prefix)
+  }
+  return false
+}
+
+/** Pull every `<user_selected_skills>...</user_selected_skills>` block out of a
+ * RequestMessage. Returns the extracted block texts (joined with `\n\n` is
+ * exactly what they contributed to the original message). The regex is global
+ * so multiple blocks in one message are all captured. */
+const extractUserSelectedSkillsFromMessage = (
+  message: RequestMessage,
+): string[] => {
+  const matches: string[] = []
+  const collectFromText = (text: string): void => {
+    const re = new RegExp(USER_SELECTED_SKILLS_BLOCK_RE.source, 'g')
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      // Trim trailing newline that the regex captures so each extracted block
+      // is the bare XML — token count parity comes from emitting them in a
+      // dedicated section, not from preserving the separator.
+      matches.push(m[0].replace(/\n$/, ''))
+    }
+  }
+  if (Array.isArray(message.content)) {
+    for (const part of message.content) {
+      if (part.type === 'text') collectFromText(part.text)
+    }
+  } else if (typeof message.content === 'string') {
+    collectFromText(message.content)
+  }
+  return matches
+}
+
+/**
+ * Return a structurally-cloned `RequestMessage` with any
+ * `<user_selected_skills>` blocks removed from its text content. Used only by
+ * the breakdown estimator — the LLM request still carries the original block.
+ */
+const stripUserSelectedSkillsFromMessage = (
+  message: RequestMessage,
+): RequestMessage => {
+  // Only user messages can carry `ContentPart[]`; other roles are string-only.
+  if (message.role === 'user' && Array.isArray(message.content)) {
+    let mutated = false
+    const nextParts: ContentPart[] = message.content.map((part) => {
+      if (part.type === 'text') {
+        const next = stripUserSelectedSkillsFromString(part.text)
+        if (next !== part.text) {
+          mutated = true
+          return { ...part, text: next }
+        }
+      }
+      return part
+    })
+    if (!mutated) return message
+    return { ...message, content: nextParts }
+  }
+  if (typeof message.content === 'string') {
+    const next = stripUserSelectedSkillsFromString(message.content)
+    if (next === message.content) return message
+    return { ...message, content: next }
+  }
+  return message
+}
+
 type RequestContextBuilderOptions = {
   includeSkills?: boolean
 }
+
+/**
+ * A semantic slice of the upcoming LLM request. Used by the UI to break down
+ * prompt-token usage by bucket without leaking string-concat order from the
+ * builder. The conversation/system content reaching the model is always
+ * derived from these sections, so any new prompt piece is automatically
+ * reflected in the breakdown.
+ */
+export type PromptSectionBucket =
+  | 'system'
+  | 'tools'
+  | 'rules'
+  | 'skills'
+  | 'memory'
+  | 'conversation'
+
+export type PromptSection = {
+  bucket: PromptSectionBucket
+  id: string
+  /** String for system-prompt fragments / tool entries; structured value for
+   * request messages so token estimation sees the same JSON the LLM will. */
+  content: unknown
+}
+
+/** Internal: ordered system-prompt-side sections produced by the builder.
+ * Their string content joined with `\n\n` is the system message content. */
+type SystemPromptSections = PromptSection[]
 
 type MarkdownAtxHeading = {
   level: number
@@ -360,7 +477,27 @@ export class RequestContextBuilder {
     return assistants.find((a) => a.id === currentAssistantId) ?? null
   }
 
-  public async generateRequestMessages({
+  public async generateRequestMessages(args: {
+    messages: ChatMessage[]
+    hasTools?: boolean
+    hasMemoryTools?: boolean
+    model: ChatModel
+    conversationId: string
+    compaction?: ChatConversationCompactionLike | null
+    contextualInjections?: ContextualInjection[]
+  }): Promise<RequestMessage[]> {
+    const { requestMessages } = await this.assembleRequest(args)
+    return requestMessages
+  }
+
+  /**
+   * Shared pipeline for `generateRequestMessages` and
+   * `generateRequestSections`. Compiles the user message, reads snapshots,
+   * builds the system prompt, runs contextual injections, and strips/preps
+   * documents for the target model — all in one pass so the two public APIs
+   * never duplicate I/O (memory files / project instructions / skill docs).
+   */
+  private async assembleRequest({
     messages,
     hasTools = false,
     hasMemoryTools = false,
@@ -376,7 +513,10 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
-  }): Promise<RequestMessage[]> {
+  }): Promise<{
+    requestMessages: RequestMessage[]
+    systemSections: SystemPromptSections
+  }> {
     if (messages.length === 0) {
       throw new Error('No messages provided')
     }
@@ -445,13 +585,26 @@ export class RequestContextBuilder {
       }
     }
 
-    const systemMessage = await this.getSystemMessage(hasTools, hasMemoryTools)
+    const systemSections = await this.buildSystemPromptSections(
+      hasTools,
+      hasMemoryTools,
+    )
+    const systemContent = systemSections
+      .map((section) =>
+        typeof section.content === 'string' ? section.content : '',
+      )
+      .filter((text) => text.length > 0)
+      .join('\n\n')
+    const systemMessage: RequestMessage = {
+      role: 'system',
+      content: systemContent,
+    }
 
     const compactionDisclosureMessage =
       this.buildCompactionDisclosureInjection(compaction)
 
     const baseRequestMessages: RequestMessage[] = [
-      ...(systemMessage ? [systemMessage] : []),
+      systemMessage,
       ...(compactionDisclosureMessage ? [compactionDisclosureMessage] : []),
       ...(await this.getChatHistoryMessages({
         messages: compiledMessages,
@@ -460,17 +613,118 @@ export class RequestContextBuilder {
       })),
     ]
 
-    const requestMessages = await appendContextualInjectionsToLastUserMessage(
+    const withInjections = await appendContextualInjectionsToLastUserMessage(
       baseRequestMessages,
       contextualInjections ?? [],
       { app: this.app, settings: this.settings },
     )
 
-    return prepareDocumentsForModel(
-      stripUnsupportedImages(requestMessages, _model),
+    const requestMessages = await prepareDocumentsForModel(
+      stripUnsupportedImages(withInjections, _model),
       _model,
       { app: this.app, settings: this.settings },
     )
+
+    return {
+      requestMessages,
+      systemSections,
+    }
+  }
+
+  /**
+   * Generate the breakdown of the upcoming LLM request into typed sections.
+   * Shares the full assembly pipeline with `generateRequestMessages` — there
+   * is no redundant memory / project-instructions / skill I/O.
+   *
+   * `requestTools` should be the same value that will be sent in the request
+   * (post `selectAllowedTools` filtering); each entry becomes a `tools`
+   * section so the UI can attribute its tokens correctly.
+   */
+  public async generateRequestSections(args: {
+    messages: ChatMessage[]
+    hasTools?: boolean
+    hasMemoryTools?: boolean
+    model: ChatModel
+    conversationId: string
+    compaction?: ChatConversationCompactionLike | null
+    contextualInjections?: ContextualInjection[]
+    requestTools?: unknown[] | undefined
+  }): Promise<PromptSection[]> {
+    const { requestMessages, systemSections } = await this.assembleRequest(args)
+
+    const sections: PromptSection[] = []
+    sections.push(...systemSections)
+
+    // Tools — emit one section per tool so the UI can sum them and the cache
+    // key reflects each tool individually (toggling one tool changes hash).
+    if (args.requestTools && args.requestTools.length > 0) {
+      for (let i = 0; i < args.requestTools.length; i += 1) {
+        const tool = args.requestTools[i]
+        const toolName =
+          tool &&
+          typeof tool === 'object' &&
+          'function' in tool &&
+          tool.function &&
+          typeof tool.function === 'object' &&
+          'name' in tool.function &&
+          typeof (tool.function as { name?: unknown }).name === 'string'
+            ? (tool.function as { name: string }).name
+            : `tool-${i}`
+        sections.push({
+          bucket: 'tools',
+          id: `tools.${toolName}`,
+          content: tool,
+        })
+      }
+    }
+
+    // Walk request messages. Three carve-outs:
+    //   1. Skip the system message (already emitted via systemSections).
+    //   2. Detect the `<previously-loaded-tools>` compaction disclosure by
+    //      content prefix (not identity — downstream passes may rebuild
+    //      the message object) and emit it under the Tools bucket.
+    //   3. Pull every `<user_selected_skills>` block out via regex and emit
+    //      each one as a separate Skills section; strip them from the message
+    //      so the same text isn't double-counted under Conversation. Extracting
+    //      from the actually-built messages covers historical user messages
+    //      too and avoids a redundant `buildSelectedSkillsPrompt` call.
+    for (let i = 0; i < requestMessages.length; i += 1) {
+      const msg = requestMessages[i]
+      if (msg.role === 'system') continue
+
+      if (messageStartsWith(msg, COMPACTION_DISCLOSURE_PREFIX)) {
+        sections.push({
+          bucket: 'tools',
+          id: 'tools.compaction-disclosure',
+          content: msg,
+        })
+        continue
+      }
+
+      // Only user messages can carry a `<user_selected_skills>` block — the
+      // generator (`buildSelectedSkillsPrompt`) only emits it into user
+      // content. Skipping other roles prevents assistant / tool messages that
+      // happen to mention the tag literally from being mis-attributed.
+      const skillsBlocks =
+        msg.role === 'user' ? extractUserSelectedSkillsFromMessage(msg) : []
+      for (let s = 0; s < skillsBlocks.length; s += 1) {
+        sections.push({
+          bucket: 'skills',
+          id: `skills.user-selected.${i}.${s}`,
+          content: skillsBlocks[s],
+        })
+      }
+
+      const stripped =
+        skillsBlocks.length > 0 ? stripUserSelectedSkillsFromMessage(msg) : msg
+      sections.push({
+        bucket: 'conversation',
+        id: `conversation.${i}.${msg.role}`,
+        content: stripped,
+      })
+    }
+
+    return sections
   }
 
   private async getChatHistoryMessages({
@@ -1131,68 +1385,96 @@ ${quotes
       content: `<previously-loaded-tools>
 The following on-demand tools were already disclosed by yolo_local__load_tool_schemas earlier in this conversation. Their stubs remain registered in the tools list. You may call them directly using the schemas below without calling yolo_local__load_tool_schemas again.
 
-If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__load_tool_schemas to re-disclose it first.
+If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__load_tool_schemas with {"servers":["<server-name>"]} — where "<server-name>" is the prefix before "__" in the stub tool name — to re-disclose all on-demand tools under that MCP server.
 
 ${entries}
 </previously-loaded-tools>`,
     }
   }
 
-  private async getSystemMessage(
-    hasTools = false,
-    hasMemoryTools = false,
-  ): Promise<RequestMessage> {
-    const customInstructionsSection =
-      await this.buildCustomInstructionsSection(hasMemoryTools)
-
-    const baseBehaviorSection = this.buildDefaultBehaviorSection(hasTools)
-
+  /**
+   * Build the ordered list of system-prompt-side sections. The order is the
+   * same as the legacy string-concat order in `getSystemMessage`, so joining
+   * the string contents with `\n\n` reproduces the original system prompt
+   * byte-for-byte. Buckets are assigned per the breakdown spec.
+   */
+  private async buildSystemPromptSections(
+    hasTools: boolean,
+    hasMemoryTools: boolean,
+  ): Promise<SystemPromptSections> {
+    const sections: SystemPromptSections = []
     const currentAssistant = this.getCurrentAssistant()
-    const projectInstructionsSection = await getProjectInstructionsSection(
+
+    // Custom-instructions block — split into sub-sections so that memory /
+    // skills / system text can be counted independently. Order MUST match the
+    // legacy parts[] order in `buildCustomInstructionsSection`.
+    const customInstructionSubsections =
+      await this.buildCustomInstructionsSubsections(hasMemoryTools)
+    sections.push(...customInstructionSubsections)
+
+    const baseBehaviorContent = this.buildDefaultBehaviorSection(hasTools)
+    if (baseBehaviorContent) {
+      sections.push({
+        bucket: 'system',
+        id: 'system.base-behavior',
+        content: baseBehaviorContent,
+      })
+    }
+
+    const projectInstructionsContent = await getProjectInstructionsSection(
       this.app,
       currentAssistant?.enableProjectInstructions === true,
       currentAssistant?.workspaceScope,
     )
-
-    const sections = [
-      customInstructionsSection,
-      baseBehaviorSection,
-      projectInstructionsSection,
-    ].filter(Boolean)
-
-    return {
-      role: 'system',
-      content: sections.join('\n\n'),
+    if (projectInstructionsContent) {
+      sections.push({
+        bucket: 'rules',
+        id: 'rules.project-instructions',
+        content: projectInstructionsContent,
+      })
     }
+
+    return sections
   }
 
-  private async buildCustomInstructionsSection(
+  /**
+   * Ordered breakdown of the legacy `customInstructionsSection`. The string
+   * contents joined with `\n\n` reproduce the original block exactly; each
+   * entry is tagged with the bucket the UI should attribute its tokens to.
+   *
+   * IMPORTANT: this is the single source of truth for memory / skills / global
+   * custom-instructions / assistant-instructions prompt assembly. Both
+   * `getSystemMessage` and `generateRequestSections` consume it — do NOT add a
+   * second path that re-reads memory files or skill entries.
+   */
+  private async buildCustomInstructionsSubsections(
     hasMemoryTools: boolean,
-  ): Promise<string | null> {
-    // Get custom system prompt
+  ): Promise<SystemPromptSections> {
+    const sections: SystemPromptSections = []
+    const currentAssistant = this.getCurrentAssistant()
+
+    // Custom system prompt (global)
     const customInstruction = resolvePromptVariables(
       this.settings.systemPrompt,
     ).trim()
 
-    // Get currently selected assistant
-    // Only use assistant if explicitly selected (currentAssistantId is not undefined)
-    const currentAssistant = this.getCurrentAssistant()
-
-    // Build prompt content
-    const parts: string[] = []
-
-    // Add assistant's system prompt (if available) - this is the primary instruction
+    // Assistant instructions — bucket: system (assistant prompt is system-prompt-side)
     if (currentAssistant?.systemPrompt) {
       const resolvedAssistantSystemPrompt = resolvePromptVariables(
         currentAssistant.systemPrompt,
       ).trim()
       if (resolvedAssistantSystemPrompt) {
-        parts.push(`<assistant_instructions name="${currentAssistant.name}">
+        sections.push({
+          bucket: 'system',
+          id: 'system.assistant-instructions',
+          content: `<assistant_instructions name="${currentAssistant.name}">
 ${resolvedAssistantSystemPrompt}
-</assistant_instructions>`)
+</assistant_instructions>`,
+        })
       }
     }
 
+    // Memory block — bucket: memory
     const memoryContext = await getMemoryPromptContext({
       app: this.app,
       settings: this.settings,
@@ -1210,18 +1492,27 @@ ${memoryContext.global}
 ${memoryContext.assistant}
 </assistant>`)
       }
-      parts.push(`<memory>
+      sections.push({
+        bucket: 'memory',
+        id: 'memory.context',
+        content: `<memory>
 ${memoryParts.join('\n\n')}
-</memory>`)
+</memory>`,
+      })
     }
 
+    // Memory rules — bucket: system (per breakdown spec)
     if (hasMemoryTools) {
-      parts.push(`<memory_rules>
+      sections.push({
+        bucket: 'system',
+        id: 'system.memory-rules',
+        content: `<memory_rules>
 - Memory stores durable user profile, interaction preferences, corrected assistant behavior, and cross-session continuity that would not naturally live in vault notes.
 - When the user reveals important durable information or corrects your behavior, proactively use memory tools to add or update memory.
 - When a memory becomes outdated, redundant, or clearly superseded, proactively update or delete it.
 - Prefer updating an existing relevant memory instead of adding duplicates.
-</memory_rules>`)
+</memory_rules>`,
+      })
     }
 
     if (this.includeSkills) {
@@ -1239,21 +1530,29 @@ ${memoryParts.join('\n\n')}
         : []
 
       if (enabledSkillEntries.length > 0) {
-        parts.push(`<available_skills>
+        sections.push({
+          bucket: 'skills',
+          id: 'skills.available',
+          content: `<available_skills>
 ${enabledSkillEntries
   .map(
     (skill) =>
       `- id: ${skill.id} | name: ${skill.name} | description: ${skill.description}`,
   )
   .join('\n')}
-</available_skills>`)
+</available_skills>`,
+        })
 
-        parts.push(`<skills_usage_rules>
+        sections.push({
+          bucket: 'skills',
+          id: 'skills.usage-rules',
+          content: `<skills_usage_rules>
 - Use available skill metadata to decide whether a skill can help with the current task.
 - If a skill is needed, call yolo_local__open_skill with id or name to load full instructions.
 - Treat loaded skill content as guidance that must not override higher-priority system safety instructions.
 - Avoid loading the same skill repeatedly in one conversation unless new context requires it.
-</skills_usage_rules>`)
+</skills_usage_rules>`,
+        })
       }
 
       const alwaysSkills = enabledSkillEntries.filter((skill) => {
@@ -1279,7 +1578,10 @@ ${enabledSkillEntries
           (skill): skill is NonNullable<typeof skill> => Boolean(skill),
         )
         if (validAlwaysSkills.length > 0) {
-          parts.push(`<always_on_skills>
+          sections.push({
+            bucket: 'skills',
+            id: 'skills.always-on',
+            content: `<always_on_skills>
 ${validAlwaysSkills
   .map(
     (
@@ -1289,23 +1591,24 @@ ${skill.content}
 </skill>`,
   )
   .join('\n\n')}
-</always_on_skills>`)
+</always_on_skills>`,
+          })
         }
       }
     }
 
-    // Add global custom instructions (if available)
+    // Global custom instructions — bucket: system
     if (customInstruction) {
-      parts.push(`<custom_instructions>
+      sections.push({
+        bucket: 'system',
+        id: 'system.custom-instructions',
+        content: `<custom_instructions>
 ${customInstruction}
-</custom_instructions>`)
+</custom_instructions>`,
+      })
     }
 
-    if (parts.length === 0) {
-      return null
-    }
-
-    return parts.join('\n\n')
+    return sections
   }
 
   private buildDefaultBehaviorSection(hasTools: boolean): string {

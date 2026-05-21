@@ -1708,7 +1708,7 @@ export default class YoloPlugin extends Plugin {
 
     // This creates an icon in the left ribbon.
     this.addRibbonIcon('wand-sparkles', this.t('commands.openChat'), () => {
-      void this.openChatView({ placement: 'sidebar' })
+      void this.openChatView({ placement: this.resolveRibbonPlacement() })
     })
 
     this.setupBackgroundActivityStatusBar()
@@ -2581,6 +2581,15 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     forceNewLeaf?: boolean
   }) {
     await this.getChatViewNavigator().openChatView(options)
+  }
+
+  resolveRibbonPlacement(): ChatLeafPlacement {
+    const action = this.settings.chatOptions.ribbonClickAction ?? 'sidebar'
+    if (action === 'last') {
+      const last = this.settings.chatOptions.lastChatPlacement
+      return last ?? 'sidebar'
+    }
+    return action
   }
 
   async openCurrentOrSidebarNewChat() {

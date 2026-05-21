@@ -589,9 +589,13 @@ export function AgentsSectionContent({
       return updateDraftToolPreferences(prev, (current) => {
         const next = { ...current }
         for (const toolName of toolNames) {
+          // Preserve the tool's effective enabled state. Without this, batch
+          // server-level disclosure changes would flip default-off MCP tools
+          // on, which violates the "enable stays per-tool" decision.
+          const effectiveEnabled = isAssistantToolEnabled(prev, toolName)
           next[toolName] = {
             ...next[toolName],
-            enabled: next[toolName]?.enabled ?? true,
+            enabled: next[toolName]?.enabled ?? effectiveEnabled,
             approvalMode:
               next[toolName]?.approvalMode ??
               getDefaultApprovalModeForTool(toolName),
@@ -690,7 +694,10 @@ export function AgentsSectionContent({
   }
 
   const visibleToolGroups = useMemo(() => {
-    const groups = new Map<string, { title: string; tools: AgentToolView[] }>()
+    const groups = new Map<
+      string,
+      { title: string; tools: AgentToolView[]; isBuiltin: boolean }
+    >()
     const localSplitToolTargets = new Set<string>()
     const localMemorySplitToolTargets = new Set<string>()
     const localWebSplitToolTargets = new Set<string>()
@@ -749,7 +756,7 @@ export function AgentsSectionContent({
       const description = builtinMeta
         ? t(builtinMeta.descKey ?? '', builtinMeta.descFallback)
         : tool.description || t('common.none', 'None')
-      const group = groups.get(key) ?? { title, tools: [] }
+      const group = groups.get(key) ?? { title, tools: [], isBuiltin }
       group.tools.push({
         fullName: tool.name,
         toggleTargets: [tool.name],
@@ -766,7 +773,7 @@ export function AgentsSectionContent({
         BUILTIN_TOOL_CATEGORY_I18N[category].key,
         BUILTIN_TOOL_CATEGORY_I18N[category].fallback,
       )
-      const group = groups.get(key) ?? { title, tools: [] }
+      const group = groups.get(key) ?? { title, tools: [], isBuiltin: true }
       group.tools.push(tool)
       groups.set(key, group)
     }
@@ -1109,20 +1116,6 @@ export function AgentsSectionContent({
     ],
     [t],
   )
-  const toolDisclosureOptions = useMemo(
-    () => [
-      {
-        value: 'always',
-        label: t('settings.agent.toolDisclosureAlways', 'In context'),
-      },
-      {
-        value: 'on_demand',
-        label: t('settings.agent.toolDisclosureOnDemand', 'On demand'),
-      },
-    ],
-    [t],
-  )
-
   return (
     <div
       className={`yolo-settings-section yolo-agent-editor-panel${
@@ -1440,8 +1433,32 @@ export function AgentsSectionContent({
                   const groupToggleTargets = group.tools.flatMap(
                     (tool) => tool.toggleTargets,
                   )
+                  const showServerDisclosure =
+                    !group.isBuiltin &&
+                    enableToolDisclosure &&
+                    group.tools.length > 0
+                  const serverDisclosureMode = showServerDisclosure
+                    ? groupToggleTargets.every(
+                        (target) =>
+                          getAssistantToolDisclosureMode(draftAgent, target, {
+                            enableToolDisclosure,
+                          }) === 'on_demand',
+                      )
+                      ? 'on_demand'
+                      : 'always'
+                    : 'on_demand'
+                  const groupFullyDisabled =
+                    !group.isBuiltin &&
+                    group.tools.length > 0 &&
+                    groupEnabledCount === 0
+                  const groupClassName = [
+                    'yolo-agent-tool-group',
+                    !group.isBuiltin ? 'yolo-agent-tool-group--mcp' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
                   return (
-                    <div key={group.key} className="yolo-agent-tool-group">
+                    <div key={group.key} className={groupClassName}>
                       <div className="yolo-agent-tool-group-title">
                         <span className="yolo-agent-tool-group-title-main">
                           <span>{group.title}</span>
@@ -1457,6 +1474,30 @@ export function AgentsSectionContent({
                                 ),
                               )}
                             </span>
+                          )}
+                          {showServerDisclosure && (
+                            <button
+                              type="button"
+                              className="yolo-agent-tool-group-disclosure"
+                              onClick={() =>
+                                setToolDisclosureMode(
+                                  groupToggleTargets,
+                                  serverDisclosureMode === 'on_demand'
+                                    ? 'always'
+                                    : 'on_demand',
+                                )
+                              }
+                            >
+                              {serverDisclosureMode === 'on_demand'
+                                ? t(
+                                    'settings.agent.toolDisclosureOnDemand',
+                                    'On demand',
+                                  )
+                                : t(
+                                    'settings.agent.toolDisclosureAlways',
+                                    'Always loaded',
+                                  )}
+                            </button>
                           )}
                         </span>
                         <span className="yolo-agent-tool-group-meta">
@@ -1490,113 +1531,91 @@ export function AgentsSectionContent({
                           )}
                         </span>
                       </div>
-                      <div className="yolo-agent-tool-list">
-                        {group.tools.map((tool) => {
-                          const selected = tool.toggleTargets.every((target) =>
-                            isAssistantToolEnabled(draftAgent, target),
-                          )
-                          const approvalMode = tool.toggleTargets.every(
-                            (target) =>
-                              getAssistantToolApprovalMode(draftAgent, target, {
-                                jsSandboxConfig: draftAgent.jsSandboxConfig,
-                              }) === 'full_access',
-                          )
-                            ? 'full_access'
-                            : 'require_approval'
-                          const disclosureMode = tool.toggleTargets.every(
-                            (target) =>
-                              getAssistantToolDisclosureMode(
-                                draftAgent,
-                                target,
-                                { enableToolDisclosure },
-                              ) === 'on_demand',
-                          )
-                            ? 'on_demand'
-                            : 'always'
-                          // `load_tool_schemas` is the entry point that lets the
-                          // model disclose every other on-demand tool. When
-                          // the beta disclosure feature is visible, keep this
-                          // one pinned to the stable tools prefix.
-                          const disclosureLocked = tool.toggleTargets.some(
-                            (target) => isLoadToolSchemasToolName(target),
-                          )
-                          const approvalLocked =
-                            hasSensitiveJsSandboxCapabilities(
-                              draftAgent.jsSandboxConfig,
-                            ) &&
-                            tool.toggleTargets.some(
-                              (target) => target === jsSandboxFullToolName,
+                      {!groupFullyDisabled && (
+                        <div className="yolo-agent-tool-list">
+                          {group.tools.map((tool) => {
+                            const selected = tool.toggleTargets.every(
+                              (target) =>
+                                isAssistantToolEnabled(draftAgent, target),
                             )
+                            const approvalMode = tool.toggleTargets.every(
+                              (target) =>
+                                getAssistantToolApprovalMode(
+                                  draftAgent,
+                                  target,
+                                  {
+                                    jsSandboxConfig: draftAgent.jsSandboxConfig,
+                                  },
+                                ) === 'full_access',
+                            )
+                              ? 'full_access'
+                              : 'require_approval'
+                            // When JS isolated execution has any sensitive
+                            // capability enabled, `getAssistantToolApprovalMode`
+                            // forces require_approval regardless of the saved
+                            // preference. Surface that lock in the UI as a
+                            // read-only badge instead of a stale dropdown.
+                            const approvalLocked =
+                              hasSensitiveJsSandboxCapabilities(
+                                draftAgent.jsSandboxConfig,
+                              ) &&
+                              tool.toggleTargets.some(
+                                (target) => target === jsSandboxFullToolName,
+                              )
 
-                          return (
-                            <div
-                              key={tool.fullName}
-                              className="yolo-agent-tool-row"
-                            >
-                              <div className="yolo-agent-tool-main">
-                                <div className="yolo-agent-tool-name yolo-agent-tool-name--mono">
-                                  {tool.displayName}
+                            return (
+                              <div
+                                key={tool.fullName}
+                                className="yolo-agent-tool-row"
+                              >
+                                <div className="yolo-agent-tool-main">
+                                  <div className="yolo-agent-tool-name yolo-agent-tool-name--mono">
+                                    {tool.displayName}
+                                  </div>
+                                  <div className="yolo-agent-tool-source yolo-agent-tool-source--preview">
+                                    {tool.description}
+                                  </div>
                                 </div>
-                                <div className="yolo-agent-tool-source yolo-agent-tool-source--preview">
-                                  {tool.description}
-                                </div>
-                              </div>
-                              <div className="yolo-agent-tool-controls">
-                                {selected && (
-                                  <>
-                                    {enableToolDisclosure && (
+                                <div className="yolo-agent-tool-controls">
+                                  {selected && (
+                                    <>
                                       <div className="yolo-agent-tool-select">
-                                        <SimpleSelect
-                                          value={disclosureMode}
-                                          options={toolDisclosureOptions}
-                                          onChange={(value) =>
-                                            setToolDisclosureMode(
-                                              tool.toggleTargets,
-                                              value as AssistantToolDisclosureMode,
-                                            )
-                                          }
-                                          align="end"
-                                          contentClassName="yolo-agent-tool-select-menu"
-                                          disabled={disclosureLocked}
-                                        />
+                                        {approvalLocked ? (
+                                          <span className="yolo-agent-tool-forced-approval">
+                                            {t(
+                                              'settings.agent.toolApprovalForced',
+                                              'Approval required',
+                                            )}
+                                          </span>
+                                        ) : (
+                                          <SimpleSelect
+                                            value={approvalMode}
+                                            options={toolApprovalOptions}
+                                            onChange={(value) =>
+                                              setToolApprovalMode(
+                                                tool.toggleTargets,
+                                                value as AssistantToolApprovalMode,
+                                              )
+                                            }
+                                            align="end"
+                                            contentClassName="yolo-agent-tool-select-menu"
+                                          />
+                                        )}
                                       </div>
-                                    )}
-                                    <div className="yolo-agent-tool-select">
-                                      {approvalLocked ? (
-                                        <span className="yolo-agent-tool-forced-approval">
-                                          {t(
-                                            'settings.agent.toolApprovalForced',
-                                            'Approval required',
-                                          )}
-                                        </span>
-                                      ) : (
-                                        <SimpleSelect
-                                          value={approvalMode}
-                                          options={toolApprovalOptions}
-                                          onChange={(value) =>
-                                            setToolApprovalMode(
-                                              tool.toggleTargets,
-                                              value as AssistantToolApprovalMode,
-                                            )
-                                          }
-                                          align="end"
-                                          contentClassName="yolo-agent-tool-select-menu"
-                                        />
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-                                <ObsidianToggle
-                                  value={Boolean(selected)}
-                                  onChange={(value) =>
-                                    toggleTool(tool.toggleTargets, value)
-                                  }
-                                />
+                                    </>
+                                  )}
+                                  <ObsidianToggle
+                                    value={Boolean(selected)}
+                                    onChange={(value) =>
+                                      toggleTool(tool.toggleTargets, value)
+                                    }
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 })}

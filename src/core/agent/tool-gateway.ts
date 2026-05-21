@@ -189,13 +189,22 @@ export class AgentToolGateway {
     }
 
     if (!loadedToolNames.has(request.name)) {
+      let serverName: string | null = null
+      try {
+        serverName = parseToolName(request.name).serverName
+      } catch {
+        serverName = null
+      }
+      const guidance = serverName
+        ? `Call yolo_local__load_tool_schemas with {"servers":["${serverName}"]} first`
+        : `Call yolo_local__load_tool_schemas with the server name (the prefix before "__") first`
       return {
         ok: false,
         response: {
           status: ToolCallResponseStatus.Error,
           error:
             `Tool "${request.name}" is registered on demand and its schema has not been disclosed in this conversation yet. ` +
-            `Call yolo_local__load_tool_schemas with {"names":["${request.name}"]} first; the next assistant turn can then call ${request.name} directly.`,
+            `${guidance}; the next assistant turn can then call ${request.name} directly.`,
         },
       }
     }
@@ -656,54 +665,99 @@ export class AgentToolGateway {
   private async callLoadToolSchemas(
     args?: Record<string, unknown>,
   ): Promise<ToolCallResponse> {
-    const rawNames = args?.names
-    if (!Array.isArray(rawNames) || rawNames.length === 0) {
+    const rawServers = args?.servers
+    if (!Array.isArray(rawServers) || rawServers.length === 0) {
       return {
         status: ToolCallResponseStatus.Error,
-        error: 'names must be a non-empty array of tool names.',
+        error: 'servers must be a non-empty array of MCP server names.',
       }
     }
-    const requestedNames: string[] = []
-    for (const entry of rawNames) {
+    const requestedServers: string[] = []
+    for (const entry of rawServers) {
       if (typeof entry !== 'string') {
         return {
           status: ToolCallResponseStatus.Error,
-          error: 'names must contain only strings.',
+          error: 'servers must contain only strings.',
         }
       }
       const trimmed = entry.trim()
       if (trimmed.length === 0) continue
-      if (!requestedNames.includes(trimmed)) {
-        requestedNames.push(trimmed)
+      if (!requestedServers.includes(trimmed)) {
+        requestedServers.push(trimmed)
       }
     }
-    if (requestedNames.length === 0) {
+    if (requestedServers.length === 0) {
       return {
         status: ToolCallResponseStatus.Error,
-        error: 'names must contain at least one non-empty tool name.',
+        error: 'servers must contain at least one non-empty MCP server name.',
       }
     }
 
     const tools = await this.mcpManager.listAvailableTools({
       includeBuiltinTools: true,
     })
-    const byName = new Map<string, McpTool>()
+    const toolsByServer = new Map<string, McpTool[]>()
     for (const tool of tools) {
-      byName.set(tool.name, tool)
-    }
-    const matches: McpTool[] = []
-    const unknown: string[] = []
-    for (const name of requestedNames) {
-      const tool = byName.get(name)
-      if (
-        !tool ||
-        this.isLoadToolSchemasRequest(tool.name) ||
-        !this.isToolAllowed(tool.name)
-      ) {
-        unknown.push(name)
+      let serverName: string
+      try {
+        serverName = parseToolName(tool.name).serverName
+      } catch {
         continue
       }
-      matches.push(tool)
+      const bucket = toolsByServer.get(serverName) ?? []
+      bucket.push(tool)
+      toolsByServer.set(serverName, bucket)
+    }
+
+    const matches: McpTool[] = []
+    const loadedServers: string[] = []
+    const unknown: string[] = []
+    const emptyServers: string[] = []
+    for (const serverName of requestedServers) {
+      const serverTools = toolsByServer.get(serverName)
+      if (!serverTools || serverTools.length === 0) {
+        unknown.push(serverName)
+        continue
+      }
+      const eligible = serverTools.filter(
+        (tool) =>
+          !this.isLoadToolSchemasRequest(tool.name) &&
+          this.isToolAllowed(tool.name) &&
+          this.isOnDemandToolName(tool.name),
+      )
+      if (eligible.length === 0) {
+        // Server exists but has nothing left to disclose (all tools already
+        // always-loaded or disabled). Report separately from `unknownServers`
+        // so the model knows the name was right and won't retry.
+        emptyServers.push(serverName)
+        continue
+      }
+      loadedServers.push(serverName)
+      for (const tool of eligible) {
+        matches.push(tool)
+      }
+    }
+
+    const instructionParts: string[] = []
+    if (matches.length > 0) {
+      instructionParts.push(
+        'These tool schemas are now available. Call the loaded tools directly in the next turn.',
+      )
+    }
+    if (emptyServers.length > 0) {
+      instructionParts.push(
+        `Servers [${emptyServers.join(', ')}] were recognized but have no on-demand tools to load (all their tools are already in context or disabled).`,
+      )
+    }
+    if (unknown.length > 0) {
+      instructionParts.push(
+        `Servers [${unknown.join(', ')}] are not registered or have no tools available.`,
+      )
+    }
+    if (instructionParts.length === 0) {
+      instructionParts.push(
+        'No on-demand tools matched the requested MCP servers.',
+      )
     }
 
     return {
@@ -713,6 +767,7 @@ export class AgentToolGateway {
         text: JSON.stringify(
           {
             tool: LOAD_TOOL_SCHEMAS_RESULT_TOOL,
+            loadedServers,
             loadedToolNames: matches.map((tool) => tool.name),
             matches: matches.map((tool) => ({
               name: tool.name,
@@ -722,11 +777,9 @@ export class AgentToolGateway {
                 properties: tool.inputSchema.properties ?? {},
               },
             })),
-            unknownNames: unknown,
-            instruction:
-              matches.length > 0
-                ? 'These tool schemas are now available. Call the loaded tools directly in the next turn.'
-                : 'No enabled tools matched the requested names.',
+            emptyServers,
+            unknownServers: unknown,
+            instruction: instructionParts.join(' '),
           },
           null,
           2,

@@ -659,6 +659,16 @@ const getLocalToolSummaryText = ({
     return preview ? truncateText(preview, 80) : undefined
   }
 
+  if (toolName === 'load_tool_schemas') {
+    const servers = asStringArray(argumentsObject?.servers)
+    if (!servers || servers.length === 0) {
+      return undefined
+    }
+    const head = servers.slice(0, 2).join(', ')
+    const rest = servers.length - 2
+    return rest > 0 ? `${head} +${rest}` : head
+  }
+
   if (toolName === 'fs_read') {
     const paths = asStringArray(argumentsObject?.paths)
     if (!paths || paths.length === 0) {

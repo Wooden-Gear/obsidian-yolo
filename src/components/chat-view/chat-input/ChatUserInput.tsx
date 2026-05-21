@@ -54,7 +54,10 @@ import {
 import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
+import ContextUsagePopover from '../ContextUsagePopover'
+import ContextUsageRing from '../ContextUsageRing'
 import { useSnippetEntries } from '../hooks/useSnippetEntries'
+import type { ContextBreakdownInputs } from '../useContextBreakdown'
 
 import ChatSkillBadge from './ChatSkillBadge'
 import { FileUploadButton } from './FileUploadButton'
@@ -123,6 +126,20 @@ export type ChatUserInputProps = {
   onAbort?: () => void
   // 当输入为空、无 mentionable、无 skill 时，发送按钮以淡化态显示，不可点击
   submitDisabled?: boolean
+  // 上下文窗口占用环，传入时显示在发送按钮左侧
+  contextUsage?: {
+    promptTokens: number
+    maxContextTokens: number
+    label: string
+    /** When provided, the ring becomes a popover trigger that opens the
+     * per-bucket context breakdown. Builder is called lazily on open and may
+     * be async; resolution to null surfaces as a non-blocking error inside
+     * the popover (the ring still works for hover hint). */
+    buildBreakdownInputs?: () =>
+      | ContextBreakdownInputs
+      | null
+      | Promise<ContextBreakdownInputs | null>
+  }
 }
 
 const INLINE_MENTIONABLE_TYPES = [
@@ -171,6 +188,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       isGenerating = false,
       onAbort,
       submitDisabled = false,
+      contextUsage,
     },
     ref,
   ) => {
@@ -1360,13 +1378,32 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 </div>
               )}
             <LexicalContentEditable
-              initialEditorState={(editor) => {
-                if (initialSerializedEditorState) {
-                  editor.setEditorState(
-                    editor.parseEditorState(initialSerializedEditorState),
-                  )
-                }
-              }}
+              // Pass `undefined` (not a no-op function) when there's no draft
+              // to restore: Lexical only auto-creates the initial empty
+              // paragraph in the `undefined` branch. With a function — even
+              // one that does nothing — `root` stays `children: []`, which
+              // violates Lexical's "root must never be empty" invariant and
+              // produces a flood of `setEditorState` errors as soon as
+              // selection / OnChangePlugin / mutations touch the editor.
+              initialEditorState={
+                initialSerializedEditorState
+                  ? (editor) => {
+                      try {
+                        editor.setEditorState(
+                          editor.parseEditorState(initialSerializedEditorState),
+                        )
+                      } catch (error) {
+                        // Defensive: a malformed serialized state shouldn't
+                        // break the input box. Fall back to Lexical's default
+                        // empty paragraph by leaving the editor untouched.
+                        console.warn(
+                          '[YOLO] Failed to restore chat input editor state',
+                          error,
+                        )
+                      }
+                    }
+                  : undefined
+              }
               editorRef={editorRef}
               contentEditableRef={contentEditableRef}
               onChange={onChange}
@@ -1438,6 +1475,22 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 )}
               </div>
               <div className="yolo-chat-user-input-controls__right">
+                {contextUsage &&
+                  (contextUsage.buildBreakdownInputs ? (
+                    <ContextUsagePopover
+                      promptTokens={contextUsage.promptTokens}
+                      maxContextTokens={contextUsage.maxContextTokens}
+                      label={contextUsage.label}
+                      anchorRef={containerRef}
+                      buildInputs={contextUsage.buildBreakdownInputs}
+                    />
+                  ) : (
+                    <ContextUsageRing
+                      promptTokens={contextUsage.promptTokens}
+                      maxContextTokens={contextUsage.maxContextTokens}
+                      label={contextUsage.label}
+                    />
+                  ))}
                 <SubmitButton
                   onClick={() => handleSubmit()}
                   isGenerating={isGenerating}

@@ -262,6 +262,15 @@ function AddChatModelModalComponent({
   const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true)
   const [builtinToolProvider, setBuiltinToolProvider] =
     useState<BuiltinToolProvider>('none')
+  useEffect(() => {
+    if (
+      selectedProvider?.presetType === 'openrouter' &&
+      builtinToolProvider !== 'none' &&
+      builtinToolProvider !== 'openrouter'
+    ) {
+      setBuiltinToolProvider('none')
+    }
+  }, [selectedProvider?.presetType, builtinToolProvider])
   const [modalities, setModalities] = useState<ChatModelModality[]>(() =>
     resolveDefaultChatModelModalities(selectedProvider),
   )
@@ -941,13 +950,24 @@ function AddChatModelModalComponent({
       >
         <ObsidianDropdown
           value={builtinToolProvider}
-          options={{
-            none: t('settings.models.builtinToolProviderNone'),
-            gemini: t('settings.models.builtinToolProviderGemini'),
-            gpt: t('settings.models.builtinToolProviderGpt'),
-            openrouter: t('settings.models.builtinToolProviderOpenRouter'),
-            grok: t('settings.models.builtinToolProviderGrok'),
-          }}
+          options={
+            selectedProvider?.presetType === 'openrouter'
+              ? {
+                  none: t('settings.models.builtinToolProviderNone'),
+                  openrouter: t(
+                    'settings.models.builtinToolProviderOpenRouter',
+                  ),
+                }
+              : {
+                  none: t('settings.models.builtinToolProviderNone'),
+                  gemini: t('settings.models.builtinToolProviderGemini'),
+                  gpt: t('settings.models.builtinToolProviderGpt'),
+                  openrouter: t(
+                    'settings.models.builtinToolProviderOpenRouter',
+                  ),
+                  grok: t('settings.models.builtinToolProviderGrok'),
+                }
+          }
           onChange={(value: string) =>
             setBuiltinToolProvider(
               isBuiltinToolProvider(value) ? value : BUILTIN_TOOL_PROVIDERS[0],

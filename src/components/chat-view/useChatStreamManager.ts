@@ -47,6 +47,7 @@ import {
   resolveWorkspaceScopeForRuntimeInput,
 } from './chat-runtime-inputs'
 import { resolveChatModeRuntime } from './chat-runtime-profiles'
+import type { ContextBreakdownInputs } from './useContextBreakdown'
 
 type UseChatStreamManagerParams = {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
@@ -122,6 +123,9 @@ export type UseChatStreamManager = {
     messages: ChatMessage[],
   ) => Promise<ChatConversationCompaction | null>
   currentConversationRunSummary: AgentConversationRunSummary
+  buildContextBreakdownInputs: (
+    messages: ChatMessage[],
+  ) => Promise<ContextBreakdownInputs | null>
   submitChatMutation: UseMutationResult<
     { aborted: boolean },
     Error,
@@ -927,10 +931,116 @@ export function useChatStreamManager({
     },
   })
 
+  /**
+   * Build the input bag for the per-bucket context-breakdown estimator. Mirrors
+   * the resolution done in `compactConversation` / submit so the popover sees
+   * exactly what the next request would send. Returns null if no model can be
+   * resolved or no messages exist (popover surfaces this as an error state).
+   */
+  const buildContextBreakdownInputs = useCallback(
+    async (messages: ChatMessage[]): Promise<ContextBreakdownInputs | null> => {
+      if (messages.length === 0) {
+        return null
+      }
+
+      const effectiveAssistantId =
+        assistantIdOverride ?? settings.currentAssistantId
+      const selectedAssistant = effectiveAssistantId
+        ? (settings.assistants || []).find(
+            (assistant) => assistant.id === effectiveAssistantId,
+          ) || null
+        : null
+      const requestedModelId =
+        modelId || selectedAssistant?.modelId || settings.chatModelId
+
+      let resolvedClient: ReturnType<typeof getChatModelClient>
+      try {
+        resolvedClient = getChatModelClient({
+          settings,
+          modelId: requestedModelId,
+          onAutoPromoteTransportMode: handleAutoPromoteTransportMode,
+        })
+      } catch (error) {
+        if (
+          error instanceof LLMModelNotFoundException &&
+          settings.chatModels.length > 0
+        ) {
+          resolvedClient = getChatModelClient({
+            settings,
+            modelId: settings.chatModels[0].id,
+            onAutoPromoteTransportMode: handleAutoPromoteTransportMode,
+          })
+        } else {
+          return null
+        }
+      }
+
+      const effectiveModel = resolvedClient.model
+      const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
+      const enabledSkillEntries = selectedAssistant
+        ? listLiteSkillEntries(app, { settings }).filter((skill) =>
+            isSkillEnabledForAssistant({
+              assistant: selectedAssistant,
+              skillId: skill.id,
+              disabledSkillIds,
+            }),
+          )
+        : []
+      const chatModeRuntime = resolveChatModeRuntime({
+        mode: chatMode,
+        assistant: selectedAssistant,
+        assistantEnabledToolNames:
+          getEnabledAssistantToolNames(selectedAssistant),
+      })
+      const provider = settings.providers.find(
+        (p) => p.id === effectiveModel.providerId,
+      )
+
+      const mcpManager = await getMcpManager()
+      return {
+        requestContextBuilder,
+        mcpManager,
+        model: effectiveModel,
+        messages,
+        conversationId: currentConversationId ?? '',
+        compaction,
+        enableTools: chatModeRuntime.loopConfig.enableTools,
+        includeBuiltinTools: chatModeRuntime.loopConfig.includeBuiltinTools,
+        apiType: provider?.apiType ?? null,
+        allowedToolNames: chatModeRuntime.allowedToolNames,
+        enableToolDisclosure: settings.mcp.enableToolDisclosure,
+        toolPreferences: chatModeRuntime.toolPreferences,
+        allowedSkillIds: enabledSkillEntries.map((s) => s.id),
+        allowedSkillNames: enabledSkillEntries.map((s) => s.name),
+        contextualInjections: buildChatContextualInjections({
+          includeCurrentFileContent:
+            settings.chatOptions.includeCurrentFileContent,
+          currentFile: currentFileOverride,
+          currentFileViewState,
+        }),
+      }
+    },
+    [
+      app,
+      assistantIdOverride,
+      chatMode,
+      compaction,
+      currentConversationId,
+      currentFileOverride,
+      currentFileViewState,
+      getMcpManager,
+      handleAutoPromoteTransportMode,
+      modelId,
+      requestContextBuilder,
+      settings,
+    ],
+  )
+
   return {
     abortConversationRun,
     currentConversationRunSummary,
     compactConversation,
     submitChatMutation,
+    buildContextBreakdownInputs,
   }
 }

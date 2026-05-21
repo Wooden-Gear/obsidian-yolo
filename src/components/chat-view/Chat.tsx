@@ -109,7 +109,6 @@ import {
   getSourceUserMessageIdForGroup,
 } from './chatRetry'
 import Composer from './Composer'
-import ContextUsageRing from './ContextUsageRing'
 import { useActiveViewState } from './hooks/useActiveViewState'
 import { syncRenderedLatexSelection } from './latex-copy'
 import QueryProgress from './QueryProgress'
@@ -1308,6 +1307,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     compactConversation,
     currentConversationRunSummary,
     submitChatMutation,
+    buildContextBreakdownInputs,
   } = useChatStreamManager({
     setChatMessages,
     setCompactionState,
@@ -4371,13 +4371,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       )}
       {activeView === 'chat' && (
         <div className="yolo-chat-header-right">
-          {headerContextUsage && (
-            <ContextUsageRing
-              promptTokens={headerContextUsage.promptTokens}
-              maxContextTokens={headerContextUsage.maxContextTokens}
-              label={t('chat.contextUsage', '上下文窗口占用')}
-            />
-          )}
           <AssistantSelector
             currentAssistantId={conversationAssistantId}
             triggerClassName={
@@ -5173,6 +5166,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   isGenerating={currentConversationRunSummary.isRunning}
                   onAbort={() => abortConversationRun(currentConversationId)}
                   submitDisabled={isInputEmpty}
+                  contextUsage={
+                    headerContextUsage
+                      ? {
+                          promptTokens: headerContextUsage.promptTokens,
+                          maxContextTokens: headerContextUsage.maxContextTokens,
+                          label: t('chat.contextUsage', '上下文窗口占用'),
+                          buildBreakdownInputs: () =>
+                            buildContextBreakdownInputs(chatMessages),
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </>
