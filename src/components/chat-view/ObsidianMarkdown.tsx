@@ -212,7 +212,15 @@ const ObsidianMarkdown = memo(function ObsidianMarkdown({
     // Without this, math elements can stay collapsed and the row's first
     // measured height (e.g. 68px for a long bubble) gets persisted into the
     // height cache, poisoning future scroll-space estimates.
-    await finishRenderMath()
+    //
+    // Gated on `useTwoPhase`: messages without LaTeX have nothing of ours
+    // queued, so flushing is pointless — and Obsidian's `finishRenderMath`
+    // touches its MathJax bundle without checking whether it's been
+    // lazy-loaded yet, throwing `MathJax is not defined` when called before
+    // any math has rendered (common right after plugin/app startup).
+    if (useTwoPhase) {
+      await finishRenderMath()
+    }
   }, [animateIncrementalText, app, content, chatView])
 
   useEffect(() => {
