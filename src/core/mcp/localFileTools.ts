@@ -4716,7 +4716,10 @@ function buildJsSandboxProxyHandlers(
       maxConcurrent,
       maxResponseKb,
     }
-    handlers.hostFetch = async (url: string, init?: Record<string, unknown>) => {
+    handlers.hostFetch = async (
+      url: string,
+      init?: Record<string, unknown>,
+    ) => {
       assertJsSandboxFetchAllowed(url, fetchMode, fetchDomains)
       const response = await requestUrl({
         url,

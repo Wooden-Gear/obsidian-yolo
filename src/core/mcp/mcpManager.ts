@@ -3,7 +3,10 @@ import { App, FileSystemAdapter, Platform } from 'obsidian'
 
 import { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
-import type { AssistantJsSandboxConfig, AssistantWorkspaceScope } from '../../types/assistant.types'
+import type {
+  AssistantJsSandboxConfig,
+  AssistantWorkspaceScope,
+} from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
 import type { ChatModelModality } from '../../types/chat-model.types'
 import {
@@ -699,8 +702,12 @@ export class McpManager {
         requestArgs,
       })
       if (
-        this.allowedToolsByConversation.get(conversationId)?.has(allowanceKey) ||
-        this.allowedToolsByConversation.get(conversationId)?.has(requestToolName)
+        this.allowedToolsByConversation
+          .get(conversationId)
+          ?.has(allowanceKey) ||
+        this.allowedToolsByConversation
+          .get(conversationId)
+          ?.has(requestToolName)
       ) {
         return true
       }

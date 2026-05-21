@@ -170,9 +170,7 @@ function JsSandboxConfigModalContent({
                 <Info size={14} />
                 <span>{item.title}</span>
               </div>
-              <div className="yolo-js-exec-default-card-desc">
-                {item.desc}
-              </div>
+              <div className="yolo-js-exec-default-card-desc">{item.desc}</div>
             </div>
           ))}
         </div>
@@ -181,7 +179,10 @@ function JsSandboxConfigModalContent({
       <section className="yolo-js-exec-section">
         <ObsidianSetting
           className="yolo-js-exec-setting yolo-js-exec-timeout"
-          name={t('settings.agent.jsSandboxTimeoutMs', 'Execution timeout (ms)')}
+          name={t(
+            'settings.agent.jsSandboxTimeoutMs',
+            'Execution timeout (ms)',
+          )}
           nameExtra={
             <span className="yolo-js-exec-setting-icon" aria-hidden="true">
               <Timer size={14} />
@@ -230,10 +231,7 @@ function JsSandboxConfigModalContent({
             .replace(
               '{min}',
               String(
-                Math.max(
-                  1,
-                  Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024),
-                ),
+                Math.max(1, Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024)),
               ),
             )
             .replace(
@@ -348,7 +346,10 @@ function JsSandboxConfigModalContent({
 
           <CapabilityCard
             icon={<FolderOpen size={17} />}
-            title={t('settings.agent.jsSandboxAllowVaultRead', 'Allow Vault Read')}
+            title={t(
+              'settings.agent.jsSandboxAllowVaultRead',
+              'Allow Vault Read',
+            )}
             description={t(
               'settings.agent.jsSandboxAllowVaultReadDesc',
               'Let scripts read any vault file by path. This capability is not constrained by the agent directory scope. Risk: scripts could pass note contents to external services.',
@@ -404,7 +405,10 @@ function JsSandboxConfigModalContent({
 
           <CapabilityCard
             icon={<Globe2 size={17} />}
-            title={t('settings.agent.jsSandboxAllowFetch', 'Allow Network Fetch')}
+            title={t(
+              'settings.agent.jsSandboxAllowFetch',
+              'Allow Network Fetch',
+            )}
             description={t(
               'settings.agent.jsSandboxAllowFetchDesc',
               'Allow browser network requests, plus a separate $fetch helper for requests that need YOLO to bypass cross-origin limits.',

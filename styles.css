@@ -6651,11 +6651,7 @@ button.yolo-agent-chip--more:hover {
     var(--background-primary)
   );
   border: 1px solid
-    color-mix(
-      in srgb,
-      var(--color-red, var(--text-error)) 30%,
-      transparent
-    );
+    color-mix(in srgb, var(--color-red, var(--text-error)) 30%, transparent);
   font-size: var(--font-ui-smaller);
   line-height: 1.45;
 }

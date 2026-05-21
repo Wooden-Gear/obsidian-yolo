@@ -1,3 +1,4 @@
+import type { AssistantJsSandboxConfig } from '../../types/assistant.types'
 import {
   ChatConversationCompactionLike,
   ChatConversationCompactionState,
@@ -6,7 +7,6 @@ import {
 import { ChatModel } from '../../types/chat-model.types'
 import { LLMProvider, LLMProviderApiType } from '../../types/provider.types'
 import { ReasoningLevel } from '../../types/reasoning'
-import type { AssistantJsSandboxConfig } from '../../types/assistant.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { BaseLLMProvider } from '../llm/base'

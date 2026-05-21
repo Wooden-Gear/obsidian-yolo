@@ -571,8 +571,7 @@ export const zh: TranslationKeys = {
       jsExecDefaultCurrentNoteDesc:
         '原本就会提供给模型的正文、选区、链接和标签等信息。',
       jsExecDefaultEnvironment: '运行环境',
-      jsExecDefaultEnvironmentDesc:
-        '时区、语言、平台、浏览器和 CPU 并发数。',
+      jsExecDefaultEnvironmentDesc: '时区、语言、平台、浏览器和 CPU 并发数。',
       jsExecDefaultJs: 'JavaScript 基础能力',
       jsExecDefaultJsDesc:
         'Math、JSON、Promise、Intl 等标准能力，以及少量辅助工具。',

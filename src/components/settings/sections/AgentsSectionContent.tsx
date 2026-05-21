@@ -1372,10 +1372,7 @@ export function AgentsSectionContent({
               </ObsidianSetting>
               {draftAgent.enableTools &&
                 draftAgent.includeBuiltinTools !== false &&
-                isAssistantToolEnabled(
-                  draftAgent,
-                  jsSandboxFullToolName,
-                ) && (
+                isAssistantToolEnabled(draftAgent, jsSandboxFullToolName) && (
                   <ObsidianSetting
                     name={t(
                       'settings.agent.jsSandboxConfigEntryTitle',

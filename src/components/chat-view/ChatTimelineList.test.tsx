@@ -56,12 +56,14 @@ jest.mock('react-virtuoso', () => {
           'data-initial-align':
             initialTopMostItemIndex?.align === undefined
               ? undefined
-              : String(initialTopMostItemIndex.align),
+              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- mock data attribute, align is unknown by design
+                String(initialTopMostItemIndex.align),
           'data-initial-index': initialTopMostItemIndex
             ? String(initialTopMostItemIndex.index)
             : props.initialTopMostItemIndex === undefined
               ? undefined
-              : String(props.initialTopMostItemIndex),
+              : // eslint-disable-next-line @typescript-eslint/no-base-to-string -- mock data attribute, initialTopMostItemIndex is unknown by design
+                String(props.initialTopMostItemIndex),
           className: props.className,
           style: props.style,
         },

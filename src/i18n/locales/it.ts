@@ -463,7 +463,7 @@ export const it: TranslationKeys = {
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
       builtinJsEvalLabel: 'Esecuzione JavaScript',
       builtinJsEvalDesc:
-        "Esegue JavaScript in un ambiente isolato per gestire compiti su cui gli LLM sono inaffidabili. Può comportare rischi",
+        'Esegue JavaScript in un ambiente isolato per gestire compiti su cui gli LLM sono inaffidabili. Può comportare rischi',
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
       builtinDelegateExternalAgentDesc:
         'Delega le attività complesse a un agente CLI installato localmente (Codex / Claude Code).',

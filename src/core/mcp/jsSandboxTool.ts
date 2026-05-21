@@ -1018,7 +1018,9 @@ postToParent({ type: 'ready' })
 `
 
 const JS_SANDBOX_BASE_DESCRIPTION =
-  'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs such as Blob, Response, Request, OffscreenCanvas, createImageBitmap when available. Injected context: $now, $isoDate, $note, $content, $selection, $vault{name,adapter}, $links, $tags, and $utils (json/text/stats/matrix/date helpers).'
+  'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs (Blob, Response, Request, OffscreenCanvas, createImageBitmap, etc.).' +
+  ' Injected variables: $now (Date object), $isoDate ("YYYY-MM-DD" string), $note ({path:string,basename:string,frontmatter:Record}|null — null in Quick Ask or when no note is open), $content (string|null — full text of the active note), $selection (string|null — user\'s current text selection), $vault ({name:string, adapter:{basePath:string|null}}), $links (string[] — outgoing wiki-link targets from current note), $tags (string[] — tags from current note).' +
+  ' $utils helpers — json: flatten(v), groupBy(items,key), countBy(items,key); text: markdownHeadings(md)->[{level,text,line}], tasks(md)->[{checked,status,text,indent,line}], wikilinks(md)->[{target,alias}]; stats: sum/mean/median/percentile(vals,p)/stdev(vals,sample?); matrix: identity(n)/multiply(a,b)/pow(m,exp); date: addDays(isoDate,days), diffDays(a,b), today().'
 
 /**
  * Build the LLM-facing description, conditionally listing the exact API
@@ -1034,7 +1036,9 @@ export function buildJsSandboxDescription(
     allowDbQuery?: boolean
     allowExternalScripts?: boolean
     fetchMaxResponseKb?: number
+    fetchMaxConcurrent?: number
     vaultReadMaxKb?: number
+    dbQueryMaxLimit?: number
     outputMaxKb?: number
   } | null,
 ): string {
@@ -1059,16 +1063,31 @@ export function buildJsSandboxDescription(
       config.fetchMaxResponseKb > 0
         ? config.fetchMaxResponseKb
         : JS_SANDBOX_FETCH_DEFAULT_MAX_RESPONSE_KB
+    const fetchMaxConcurrent =
+      typeof config?.fetchMaxConcurrent === 'number' &&
+      Number.isFinite(config.fetchMaxConcurrent) &&
+      config.fetchMaxConcurrent > 0
+        ? Math.min(
+            JS_SANDBOX_FETCH_HARD_MAX_CONCURRENT,
+            Math.floor(config.fetchMaxConcurrent),
+          )
+        : JS_SANDBOX_FETCH_DEFAULT_MAX_CONCURRENT
     enabled.push(
-      `Network: fetch/XMLHttpRequest/WebSocket are browser-native and still obey CORS/CSP. For cross-origin reads use await $fetch(url,{method?,headers?,body?,contentType?}) -> Response; it uses Obsidian host networking, buffers the response, and is capped at ${fetchCapKb} KB`,
+      `Network: fetch/XMLHttpRequest/WebSocket are browser-native and still obey CORS/CSP. For cross-origin reads use await $fetch(url,{method?,headers?,body?,contentType?}) -> Response; it uses Obsidian host networking, buffers the response, is capped at ${fetchCapKb} KB, and allows at most ${fetchMaxConcurrent} concurrent $fetch calls per execution (excess calls throw)`,
     )
   } else {
     disabled.push('browser fetch / XHR / WebSocket and $fetch')
   }
 
   if (config?.allowDbQuery) {
+    const dbLimit =
+      typeof config.dbQueryMaxLimit === 'number' &&
+      Number.isFinite(config.dbQueryMaxLimit) &&
+      config.dbQueryMaxLimit > 0
+        ? Math.min(100, Math.floor(config.dbQueryMaxLimit))
+        : 20
     enabled.push(
-      'Text index only: await $db.search(query, limit?), await $db.find(keyword, limit?) -> [{path,excerpt}], await $db.get(path) -> {content,frontmatter}|null. Do not use $db for images/PDF/audio/binary files; use await $vault.readBinary(path) when vault read is enabled. Limits are host-clamped',
+      `Text index only. await $db.search(query, limit?) -> [{path,content,similarity,...}] (semantic/vector search, requires vault index; up to ${dbLimit} results). await $db.find(keyword, limit?) -> [{path,excerpt}] (full-text keyword search; up to ${dbLimit} results). await $db.get(path) -> {content,frontmatter}|null. Do not use $db for images/PDF/audio/binary; use await $vault.readBinary(path) when vault read is enabled`,
     )
   } else {
     disabled.push('$db')
@@ -1105,10 +1124,14 @@ export function getJsSandboxTool(
     allowDbQuery?: boolean
     allowExternalScripts?: boolean
     fetchMaxResponseKb?: number
+    fetchMaxConcurrent?: number
     vaultReadMaxKb?: number
+    dbQueryMaxLimit?: number
+    timeoutMs?: number
     outputMaxKb?: number
   } | null,
 ): McpTool {
+  const effectiveTimeoutCap = clampAgentTimeoutCap(config?.timeoutMs)
   return {
     name: JS_SANDBOX_TOOL_NAME,
     description: buildJsSandboxDescription(config),
@@ -1122,7 +1145,7 @@ export function getJsSandboxTool(
         },
         timeoutMs: {
           type: 'number',
-          description: `Optional per-call timeout in milliseconds (default ${JS_SANDBOX_DEFAULT_TIMEOUT_MS}). Raise for long-running probes; host silently clamps to its own ceiling.`,
+          description: `Optional per-call timeout in milliseconds (default ${JS_SANDBOX_DEFAULT_TIMEOUT_MS}, max ${effectiveTimeoutCap}). Raise for long-running probes; values above the max are silently clamped.`,
         },
       },
       required: ['code'],
@@ -1824,9 +1847,7 @@ function buildSandboxHtml(policy: JsSandboxCspPolicy): string {
   const scriptSrc = policy.allowExternalScripts
     ? "'unsafe-inline' 'unsafe-eval' blob: https: http:"
     : "'unsafe-inline' 'unsafe-eval' blob:"
-  const workerSrc = policy.allowExternalScripts
-    ? 'blob: https: http:'
-    : 'blob:'
+  const workerSrc = policy.allowExternalScripts ? 'blob: https: http:' : 'blob:'
   const connectSrc = allowNetwork ? '* blob: data:' : "'none'"
   const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${scriptSrc}; worker-src ${workerSrc}; child-src ${workerSrc}; connect-src ${connectSrc};">`
   return `<!doctype html><html><head><meta charset="utf-8">${csp}</head><body><script>${script}</script></body></html>`

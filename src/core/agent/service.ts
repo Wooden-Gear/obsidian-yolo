@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import {
   ChatConversationCompactionLike,
   ChatConversationCompactionState,
@@ -14,7 +15,6 @@ import {
   ToolCallResponseStatus,
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
-import type { YoloSettings } from '../../settings/schema/setting.types'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 
 import { DEFAULT_BRANCH_ID } from './branch'
