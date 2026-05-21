@@ -53,9 +53,7 @@ const normalizeAnnotations = (raw: unknown): Annotation[] | undefined => {
         ...(typeof c.start_index === 'number'
           ? { start_index: c.start_index }
           : {}),
-        ...(typeof c.end_index === 'number'
-          ? { end_index: c.end_index }
-          : {}),
+        ...(typeof c.end_index === 'number' ? { end_index: c.end_index } : {}),
       },
     })
   }

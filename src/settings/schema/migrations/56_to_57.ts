@@ -6,7 +6,9 @@ import type { SettingMigration } from '../setting.types'
 export const migrateFrom56To57: SettingMigration['migrate'] = (data) => {
   const newData: Record<string, unknown> = { ...data, version: 57 }
   const mcp =
-    newData.mcp && typeof newData.mcp === 'object' && !Array.isArray(newData.mcp)
+    newData.mcp &&
+    typeof newData.mcp === 'object' &&
+    !Array.isArray(newData.mcp)
       ? { ...(newData.mcp as Record<string, unknown>) }
       : {}
 

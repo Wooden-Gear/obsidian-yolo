@@ -65,9 +65,7 @@ describe('injectAnnotationMarkers', () => {
     const content = 'a'.repeat(40) + 'X.'
     // end_index inside the run
     expect(injectAnnotationMarkers(content, [url(5)])).toBe(
-      'aaaaa[1](https://example.com/?yolo-cite=1)' +
-        'a'.repeat(35) +
-        'X.',
+      'aaaaa[1](https://example.com/?yolo-cite=1)' + 'a'.repeat(35) + 'X.',
     )
   })
 
@@ -118,17 +116,13 @@ describe('injectAnnotationMarkers', () => {
   it('pushes a marker past inline code', () => {
     const content = 'See `x = 1` here'
     const result = injectAnnotationMarkers(content, [url(7)])
-    expect(result).toBe(
-      'See `x = 1`[1](https://example.com/?yolo-cite=1) here',
-    )
+    expect(result).toBe('See `x = 1`[1](https://example.com/?yolo-cite=1) here')
   })
 
   it('pushes a marker past inline math', () => {
     const content = 'See $x^2$ result'
     const result = injectAnnotationMarkers(content, [url(6)])
-    expect(result).toBe(
-      'See $x^2$[1](https://example.com/?yolo-cite=1) result',
-    )
+    expect(result).toBe('See $x^2$[1](https://example.com/?yolo-cite=1) result')
   })
 
   it('pushes a marker past display math', () => {

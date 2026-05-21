@@ -143,7 +143,10 @@ const ObsidianMarkdown = memo(function ObsidianMarkdown({
     const useTwoPhase =
       !animateIncrementalText && LATEX_DELIMITER_PATTERN.test(renderContent)
 
-    const swapInto = (staging: HTMLDivElement, includeLatexAnnotations: boolean) => {
+    const swapInto = (
+      staging: HTMLDivElement,
+      includeLatexAnnotations: boolean,
+    ) => {
       const liveContainer = containerRef.current
       if (!liveContainer) return
       // Atomic swap: scrollHeight transitions oldHeight → newHeight in one frame

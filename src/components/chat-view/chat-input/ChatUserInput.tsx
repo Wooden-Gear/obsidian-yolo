@@ -1390,9 +1390,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                   ? (editor) => {
                       try {
                         editor.setEditorState(
-                          editor.parseEditorState(
-                            initialSerializedEditorState,
-                          ),
+                          editor.parseEditorState(initialSerializedEditorState),
                         )
                       } catch (error) {
                         // Defensive: a malformed serialized state shouldn't

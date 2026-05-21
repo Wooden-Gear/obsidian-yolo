@@ -163,8 +163,7 @@ function ProviderFormComponent({
         updatedProviders[providerIndex] = validatedProvider
 
         const becameOpenRouter =
-          providerPresetChanged &&
-          validatedProvider.presetType === 'openrouter'
+          providerPresetChanged && validatedProvider.presetType === 'openrouter'
         const updatedChatModels =
           providerIdChanged || becameOpenRouter
             ? plugin.settings.chatModels.map((model) => {

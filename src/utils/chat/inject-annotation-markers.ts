@@ -133,8 +133,7 @@ function snapToClauseBoundary(
   return position
 }
 
-const CLAUSE_BREAK_PATTERN =
-  /[\s.,!?;:。，！？；：、“”‘’]/
+const CLAUSE_BREAK_PATTERN = /[\s.,!?;:。，！？；：、“”‘’]/
 
 function isClauseBreak(ch: string): boolean {
   return CLAUSE_BREAK_PATTERN.test(ch)

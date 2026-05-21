@@ -443,9 +443,7 @@ export async function fetchGitHubSkill(
   // 2. 定位所有 SKILL.md
   //    - 路径下直接有 SKILL.md:就是单 skill,以该路径为根
   //    - 否则:在该路径子树里找所有 SKILL.md
-  const directSkillMd = rootPath
-    ? `${rootPath}/SKILL.md`
-    : 'SKILL.md'
+  const directSkillMd = rootPath ? `${rootPath}/SKILL.md` : 'SKILL.md'
   const hasDirectSkillMd = tree.tree.some(
     (e) => e.type === 'blob' && e.path === directSkillMd,
   )

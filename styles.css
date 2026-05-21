@@ -11518,7 +11518,7 @@ button.yolo-llm-debug-modal-button:focus-visible {
  * icon would dominate such a short marker visually.
  */
 
-.yolo-markdown-rendered a[href*="yolo-cite="] {
+.yolo-markdown-rendered a[href*='yolo-cite='] {
   margin: 0 0.2em;
   text-decoration: none;
   background-image: none;
@@ -11531,17 +11531,15 @@ button.yolo-llm-debug-modal-button:focus-visible {
  * gap stays equal to the gap against surrounding prose.
  */
 
-.yolo-markdown-rendered
-  a[href*="yolo-cite="]
-  + a[href*="yolo-cite="] {
+.yolo-markdown-rendered a[href*='yolo-cite='] + a[href*='yolo-cite='] {
   margin-left: 0;
 }
 
-.yolo-markdown-rendered a[href*="yolo-cite="]::before {
+.yolo-markdown-rendered a[href*='yolo-cite=']::before {
   content: '[';
 }
 
-.yolo-markdown-rendered a[href*="yolo-cite="]::after {
+.yolo-markdown-rendered a[href*='yolo-cite=']::after {
   content: ']';
   /* Cancel any external-link glyph themes attach via ::after. */
   background: none;
@@ -11555,12 +11553,12 @@ button.yolo-llm-debug-modal-button:focus-visible {
 
 /* Some themes ship the icon as a separate child SVG node — hide it. */
 
-.yolo-markdown-rendered a[href*="yolo-cite="] > svg,
-.yolo-markdown-rendered a[href*="yolo-cite="] > .external-link-icon {
+.yolo-markdown-rendered a[href*='yolo-cite='] > svg,
+.yolo-markdown-rendered a[href*='yolo-cite='] > .external-link-icon {
   display: none;
 }
 
-.yolo-markdown-rendered a[href*="yolo-cite="]:hover {
+.yolo-markdown-rendered a[href*='yolo-cite=']:hover {
   text-decoration: underline;
 }
 
