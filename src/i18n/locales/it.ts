@@ -1242,6 +1242,14 @@ export const it: TranslationKeys = {
       yoloBaseDirDesc:
         'Inserisci un percorso relativo al vault (senza / iniziale). Esempio: YOLO nella radice del vault, oppure setting/YOLO nella cartella setting. Directory skill attuale: {path}.',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: 'Icona ribbon apre la chat in',
+      ribbonClickActionDesc:
+        'Dove l’icona ribbon di YOLO apre la vista Chat. Se nella posizione scelta esiste già una chat viene attivata; altrimenti ne viene creata una nuova.',
+      ribbonClickActionSidebar: 'Barra laterale destra',
+      ribbonClickActionTab: 'Nuova scheda',
+      ribbonClickActionSplit: 'Split destro',
+      ribbonClickActionWindow: 'Nuova finestra',
+      ribbonClickActionLast: 'Ultima posizione usata',
       mentionDisplayMode: 'Posizione visualizzazione mention',
       mentionDisplayModeDesc:
         "Scegli se mostrare i file selezionati con @ e le skill selezionate con / nel testo dell'input o come badge sopra la casella.",

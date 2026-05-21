@@ -1004,6 +1004,13 @@ export type TranslationKeys = {
       yoloBaseDir?: string
       yoloBaseDirDesc?: string
       yoloBaseDirPlaceholder?: string
+      ribbonClickAction?: string
+      ribbonClickActionDesc?: string
+      ribbonClickActionSidebar?: string
+      ribbonClickActionTab?: string
+      ribbonClickActionSplit?: string
+      ribbonClickActionWindow?: string
+      ribbonClickActionLast?: string
       mentionDisplayMode?: string
       mentionDisplayModeDesc?: string
       mentionDisplayModeInline?: string

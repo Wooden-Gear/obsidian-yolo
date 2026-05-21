@@ -1194,6 +1194,14 @@ export const zh: TranslationKeys = {
       yoloBaseDirDesc:
         '填写库内相对路径（不要以 / 开头）。例如：放在库根目录填 YOLO；放在 setting 文件夹下填 setting/YOLO。当前技能目录：{path}。',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: '侧边栏图标点击位置',
+      ribbonClickActionDesc:
+        '选择点击左侧边栏 YOLO 图标时，Chat 视图在哪里打开。若选定位置已有 Chat 视图会直接激活复用，否则新建。',
+      ribbonClickActionSidebar: '右侧边栏',
+      ribbonClickActionTab: '新标签页',
+      ribbonClickActionSplit: '右侧分屏',
+      ribbonClickActionWindow: '独立窗口',
+      ribbonClickActionLast: '上次的位置',
       mentionDisplayMode: '引用内容显示位置',
       mentionDisplayModeDesc:
         '选择 @ 文件引用和 / 技能选择是在输入框内显示，还是在输入框顶部以徽章显示。',

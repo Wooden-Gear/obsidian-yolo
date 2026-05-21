@@ -1,4 +1,4 @@
-import { App } from 'obsidian'
+import { App, Platform } from 'obsidian'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
@@ -71,6 +71,32 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
     })()
   }
 
+  const handleRibbonClickActionChange = (value: string) => {
+    if (
+      value !== 'sidebar' &&
+      value !== 'tab' &&
+      value !== 'split' &&
+      value !== 'window' &&
+      value !== 'last'
+    ) {
+      return
+    }
+    if (value === 'window' && !Platform.isDesktop) return
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          chatOptions: {
+            ...settings.chatOptions,
+            ribbonClickAction: value,
+          },
+        })
+      } catch (error: unknown) {
+        console.error('Failed to update ribbon click action', error)
+      }
+    })()
+  }
+
   const handlePersistSelectionHighlightChange = (value: boolean) => {
     void (async () => {
       try {
@@ -120,6 +146,36 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
           </div>
 
           <div className="yolo-settings-block-content">
+            <ObsidianSetting
+              name={t('settings.etc.ribbonClickAction', '侧边栏图标点击位置')}
+              desc={t(
+                'settings.etc.ribbonClickActionDesc',
+                '选择点击左侧边栏 YOLO 图标时，Chat 视图在哪里打开。若选定位置已有 Chat 视图会直接激活复用，否则新建。',
+              )}
+              className="yolo-settings-card"
+            >
+              <ObsidianDropdown
+                value={settings.chatOptions.ribbonClickAction ?? 'sidebar'}
+                options={{
+                  sidebar: t(
+                    'settings.etc.ribbonClickActionSidebar',
+                    '右侧边栏',
+                  ),
+                  tab: t('settings.etc.ribbonClickActionTab', '新标签页'),
+                  split: t('settings.etc.ribbonClickActionSplit', '右侧分屏'),
+                  ...(Platform.isDesktop
+                    ? {
+                        window: t(
+                          'settings.etc.ribbonClickActionWindow',
+                          '独立窗口',
+                        ),
+                      }
+                    : {}),
+                  last: t('settings.etc.ribbonClickActionLast', '上次的位置'),
+                }}
+                onChange={handleRibbonClickActionChange}
+              />
+            </ObsidianSetting>
             <ObsidianSetting
               name={t('settings.etc.mentionDisplayMode', '引用内容显示位置')}
               desc={t(
