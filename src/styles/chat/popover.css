@@ -2062,6 +2062,47 @@ button.yolo-chat-input-model-select {
 .yolo-context-breakdown__bar-segment {
   display: block;
   height: 100%;
+  /* Animate the dim/restore reaction to list-item hover (see :has() rules
+   * below). Width is layout, so we don't transition it. */
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+/* Cursor-style cross-highlight: hovering a row in the list dims every bar
+ * segment, then per-bucket selectors restore opacity for the matching one.
+ * Pure CSS via :has() — no React state needed. Bar segments and list items
+ * share the same per-bucket class (.yolo-context-breakdown-swatch--*), so
+ * one matching selector per bucket is enough. */
+.yolo-context-breakdown:has(.yolo-context-breakdown__list-item:hover)
+  .yolo-context-breakdown__bar-segment {
+  opacity: 0.25;
+}
+
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='system']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--system,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='tools']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--tools,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='rules']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--rules,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='skills']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--skills,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='memory']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--memory,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='conversation']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--conversation {
+  opacity: 1;
 }
 
 /* Prefix with `.yolo-popover-surface` so specificity (0,2,0 / 0,2,1) beats the
@@ -2103,9 +2144,25 @@ button.yolo-chat-input-model-select {
   overflow: visible;
 }
 
+.yolo-popover-surface .yolo-context-breakdown__list-item {
+  /* Soft transition for the hover background highlight (Cursor-style). */
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
 .yolo-popover-surface .yolo-context-breakdown__list-item:hover {
-  background: transparent;
-  background-color: transparent;
+  /* Cursor-style row tint — just enough to mark which bucket the bar's
+   * highlighted segment corresponds to. */
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 70%,
+    transparent
+  );
+  background-color: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 70%,
+    transparent
+  );
   cursor: default;
 }
 
