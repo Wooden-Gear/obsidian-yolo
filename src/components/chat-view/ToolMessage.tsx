@@ -652,6 +652,28 @@ const getLocalToolSummaryText = ({
     return url ? truncateText(url, 80) : undefined
   }
 
+  if (toolName === 'load_tool_schemas') {
+    const names = asStringArray(argumentsObject?.names)
+    if (!names || names.length === 0) {
+      return undefined
+    }
+    const localServerName = getLocalFileToolServerName()
+    const displayNames = names.map((fullName) => {
+      try {
+        const { serverName, toolName: innerName } = parseToolName(fullName)
+        if (serverName === localServerName) {
+          return labels.displayNames[innerName] ?? innerName
+        }
+        return innerName
+      } catch {
+        return fullName
+      }
+    })
+    const head = displayNames.slice(0, 2).join(', ')
+    const rest = displayNames.length - 2
+    return rest > 0 ? `${head} +${rest}` : head
+  }
+
   if (toolName === 'fs_read') {
     const paths = asStringArray(argumentsObject?.paths)
     if (!paths || paths.length === 0) {
