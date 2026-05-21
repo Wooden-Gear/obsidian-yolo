@@ -140,7 +140,7 @@ function JsSandboxConfigModalContent({
           <div className="yolo-js-exec-hero-desc">
             {t(
               'settings.agent.jsSandboxModalIntro',
-              'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval on every call.',
+              'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval.',
             )}
           </div>
         </div>
@@ -278,13 +278,16 @@ function JsSandboxConfigModalContent({
             <p>
               {t(
                 'settings.agent.jsSandboxExtWarning',
-                'These capabilities grant scripts privileged host access. Each carries real risk. All are disabled by default.',
+                'These capabilities grant scripts privileged host access. Each carries real risk. Vault read and knowledge base query are not constrained by the agent directory scope. All are disabled by default.',
               )}
             </p>
           </div>
           <span className="yolo-js-exec-risk-pill">
             <TriangleAlert size={13} />
-            {t('settings.agent.jsExecApprovalForced', 'Approval on every call')}
+            {t(
+              'settings.agent.jsExecApprovalForced',
+              'Forced approval when enabled',
+            )}
           </span>
         </div>
 
@@ -297,7 +300,7 @@ function JsSandboxConfigModalContent({
             )}
             description={t(
               'settings.agent.jsSandboxAllowDbQueryDesc',
-              'Let scripts query the knowledge base with semantic search, keyword search and path lookup.',
+              'Let scripts query the knowledge base with semantic search, keyword search and path lookup. This capability is not constrained by the agent directory scope.',
             )}
             enabled={Boolean(config.allowDbQuery)}
             onToggle={(v) =>
@@ -348,7 +351,7 @@ function JsSandboxConfigModalContent({
             title={t('settings.agent.jsSandboxAllowVaultRead', 'Allow Vault Read')}
             description={t(
               'settings.agent.jsSandboxAllowVaultReadDesc',
-              'Let scripts read any vault file by path. Risk: scripts could pass note contents to external services.',
+              'Let scripts read any vault file by path. This capability is not constrained by the agent directory scope. Risk: scripts could pass note contents to external services.',
             )}
             enabled={Boolean(config.allowVaultRead)}
             onToggle={(v) =>

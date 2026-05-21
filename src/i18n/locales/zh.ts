@@ -530,7 +530,7 @@ export const zh: TranslationKeys = {
         '当 prompt_tokens 除以当前聊天模型配置的最大上下文窗口达到该比例时触发（需在模型中填写 max context）。',
       jsSandboxExtTitle: '扩展能力',
       jsSandboxExtWarning:
-        '以下能力授予脚本宿主级别的访问权限，每项均存在真实风险，请仅开启该 Agent 确实需要的能力。所有能力默认关闭。',
+        '以下能力授予脚本宿主级别的访问权限，每项均存在真实风险，请仅开启该 Agent 确实需要的能力。读取库文件和知识库查询不受 Agent 目录限制约束。所有能力默认关闭。',
       jsSandboxExtDefaultCapsTitle: '默认可访问',
       jsSandboxExtDefaultCaps:
         '当前时间与时区、语言环境、平台/浏览器信息、硬件并发数、标准 JavaScript API、当前笔记内容、选区、链接、标签以及辅助工具。文件、网络、整个库或外部脚本访问需在下方开启相应扩展能力。',
@@ -543,12 +543,12 @@ export const zh: TranslationKeys = {
         '开启后，脚本可以请求浏览器允许访问的网络地址；遇到浏览器跨域限制时，也可以使用单独的 YOLO 宿主请求。仅在你信任此 Agent 时继续。是否继续？',
       jsSandboxAllowVaultRead: '允许读取库文件',
       jsSandboxAllowVaultReadDesc:
-        '允许脚本按路径读取任意库文件。风险：脚本可能将笔记内容传递给外部服务。',
+        '允许脚本按路径读取任意库文件。此能力不受 Agent 目录限制约束。风险：脚本可能将笔记内容传递给外部服务。',
       jsSandboxAllowVaultReadConfirm:
         '开启后，AI 生成的脚本可按路径读取 vault 中任意文件，内容将进入 LLM 上下文。请确认您信任此 Agent 生成的脚本后再继续。',
       jsSandboxAllowDbQuery: '允许知识库查询',
       jsSandboxAllowDbQueryDesc:
-        '允许脚本查询向量数据库（语义搜索、关键词搜索、路径查找）。',
+        '允许脚本查询向量数据库（语义搜索、关键词搜索、路径查找）。此能力不受 Agent 目录限制约束。',
       jsSandboxAllowDbQueryConfirm:
         '开启后，AI 生成的脚本可搜索 vault 索引并获取文件内容。是否继续？',
       jsSandboxAllowExternalScripts: '允许加载外部脚本',
@@ -563,7 +563,7 @@ export const zh: TranslationKeys = {
       jsSandboxConfigEntryDesc:
         '设置单次执行超时和扩展能力（网络、读取库文件、知识库查询、外部脚本）。',
       jsSandboxModalIntro:
-        '脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——仅开启该 Agent 真正需要的项。每个开关都会弹出确认；只要任一扩展能力开启，每次调用都强制要求审批。',
+        '脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——仅开启该 Agent 真正需要的项。读取库文件和知识库查询不受 Agent 目录限制约束。每个开关都会弹出确认；只要任一扩展能力开启，就会强制审批。',
       jsExecModalSummaryTitle: '默认低权限运行',
       jsExecDefaultCapsHint:
         '这些信息只来自当前上下文和运行环境，不会打开文件、网络或整库查询权限。',
@@ -576,7 +576,7 @@ export const zh: TranslationKeys = {
       jsExecDefaultJs: 'JavaScript 基础能力',
       jsExecDefaultJsDesc:
         'Math、JSON、Promise、Intl 等标准能力，以及少量辅助工具。',
-      jsExecApprovalForced: '启用后逐次审批',
+      jsExecApprovalForced: '启用后强制审批',
       jsSandboxTimeoutMs: '执行超时（毫秒）',
       jsSandboxTimeoutMsDesc: '单次脚本调用的最大运行时间。范围 {min}–{max}。',
       jsSandboxOutputMaxKb: '工具结果大小上限（KB）',

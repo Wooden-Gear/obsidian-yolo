@@ -577,7 +577,7 @@ export const en: TranslationKeys = {
         "Trigger when prompt_tokens divided by the chat model's max context window reaches this percentage. Requires max context tokens on the model.",
       jsSandboxExtTitle: 'Extension capabilities',
       jsSandboxExtWarning:
-        'These capabilities grant scripts privileged host access. Each carries real risk — only enable what this agent specifically needs. All are disabled by default.',
+        'These capabilities grant scripts privileged host access. Each carries real risk — only enable what this agent specifically needs. Vault read and knowledge base query are not constrained by the agent directory scope. All are disabled by default.',
       jsSandboxExtDefaultCapsTitle: 'Always available',
       jsSandboxExtDefaultCaps:
         'current time & timezone, locale, platform / browser info, hardware concurrency, standard JavaScript APIs, current note content, selection, links, tags, and helper utilities. File, network, vault-wide and external-script access require enabling a capability below.',
@@ -590,12 +590,12 @@ export const en: TranslationKeys = {
         'Enabling network requests lets scripts contact browser-accessible addresses and use a separate YOLO host request helper when browser cross-origin limits block a response. Only enable this for an agent you trust. Continue?',
       jsSandboxAllowVaultRead: 'Allow Vault Read',
       jsSandboxAllowVaultReadDesc:
-        'Let scripts read any vault file by path. Risk: scripts could pass note contents to external services.',
+        'Let scripts read any vault file by path. This capability is not constrained by the agent directory scope. Risk: scripts could pass note contents to external services.',
       jsSandboxAllowVaultReadConfirm:
         "Enabling vault read lets AI-generated scripts read any file in the vault by path. This data passes through the LLM context. Only enable if you trust this agent's scripts. Continue?",
       jsSandboxAllowDbQuery: 'Allow Knowledge Base Query',
       jsSandboxAllowDbQueryDesc:
-        'Let scripts query the vector database (semantic search, keyword search, path lookup).',
+        'Let scripts query the vector database (semantic search, keyword search, path lookup). This capability is not constrained by the agent directory scope.',
       jsSandboxAllowDbQueryConfirm:
         'Enabling knowledge base query lets AI-generated scripts search your vault index and retrieve file contents. Continue?',
       jsSandboxAllowExternalScripts: 'Allow External Scripts',
@@ -610,7 +610,7 @@ export const en: TranslationKeys = {
       jsSandboxConfigEntryDesc:
         'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
       jsSandboxModalIntro:
-        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval on every call.',
+        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval.',
       jsExecModalSummaryTitle: 'Default low access',
       jsExecDefaultCapsHint:
         'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
@@ -623,7 +623,7 @@ export const en: TranslationKeys = {
       jsExecDefaultJs: 'JavaScript basics',
       jsExecDefaultJsDesc:
         'Standard JavaScript APIs such as Math, JSON, Promise and Intl, plus small helper utilities.',
-      jsExecApprovalForced: 'Approval on every call',
+      jsExecApprovalForced: 'Forced approval when enabled',
       jsSandboxTimeoutMs: 'Execution timeout (ms)',
       jsSandboxTimeoutMsDesc:
         'Maximum runtime for a single script call. Range {min}–{max}.',
