@@ -57,6 +57,7 @@ export type TranslationKeys = {
     on?: string
     off?: string
     noResults?: string
+    configure?: string
   }
 
   sidebar?: {
@@ -376,6 +377,7 @@ export type TranslationKeys = {
       toolApproval?: string
       toolApprovalFullAccess?: string
       toolApprovalRequire?: string
+      toolApprovalForced?: string
       toolDisclosureAlways?: string
       toolDisclosureOnDemand?: string
       editorEnabled?: string
@@ -429,6 +431,55 @@ export type TranslationKeys = {
       autoContextCompactionThresholdTokensDesc?: string
       autoContextCompactionThresholdRatioPercent?: string
       autoContextCompactionThresholdRatioPercentDesc?: string
+      jsSandboxExtTitle?: string
+      jsSandboxExtWarning?: string
+      jsSandboxExtDefaultCapsTitle?: string
+      jsSandboxExtDefaultCaps?: string
+      jsSandboxAllowFetch?: string
+      jsSandboxAllowFetchDesc?: string
+      jsSandboxAllowFetchRisk?: string
+      jsSandboxAllowFetchConfirm?: string
+      jsSandboxFetchMode?: string
+      jsSandboxFetchModeDesc?: string
+      jsSandboxFetchModeBlacklist?: string
+      jsSandboxFetchModeWhitelist?: string
+      jsSandboxFetchDomains?: string
+      jsSandboxFetchDomainsDesc?: string
+      jsSandboxAllowVaultRead?: string
+      jsSandboxAllowVaultReadDesc?: string
+      jsSandboxAllowVaultReadConfirm?: string
+      jsSandboxAllowDbQuery?: string
+      jsSandboxAllowDbQueryDesc?: string
+      jsSandboxAllowDbQueryConfirm?: string
+      jsSandboxAllowExternalScripts?: string
+      jsSandboxAllowExternalScriptsDesc?: string
+      jsSandboxAllowExternalScriptsRisk?: string
+      jsSandboxAllowExternalScriptsConfirm?: string
+      jsSandboxConfirmEnableTitle?: string
+      jsSandboxConfigEntryTitle?: string
+      jsSandboxConfigEntryDesc?: string
+      jsSandboxModalIntro?: string
+      jsExecModalSummaryTitle?: string
+      jsExecDefaultCapsHint?: string
+      jsExecDefaultCurrentNote?: string
+      jsExecDefaultCurrentNoteDesc?: string
+      jsExecDefaultEnvironment?: string
+      jsExecDefaultEnvironmentDesc?: string
+      jsExecDefaultJs?: string
+      jsExecDefaultJsDesc?: string
+      jsExecApprovalForced?: string
+      jsSandboxTimeoutMs?: string
+      jsSandboxTimeoutMsDesc?: string
+      jsSandboxOutputMaxKb?: string
+      jsSandboxOutputMaxKbDesc?: string
+      jsSandboxFetchMaxConcurrent?: string
+      jsSandboxFetchMaxConcurrentDesc?: string
+      jsSandboxFetchMaxResponseKb?: string
+      jsSandboxFetchMaxResponseKbDesc?: string
+      jsSandboxVaultReadMaxKb?: string
+      jsSandboxVaultReadMaxKbDesc?: string
+      jsSandboxDbMaxLimit?: string
+      jsSandboxDbMaxLimitDesc?: string
     }
     webSearch?: {
       modalTitle?: string

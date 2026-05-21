@@ -1,5 +1,6 @@
 import { App, FileSystemAdapter, MarkdownView, TFile } from 'obsidian'
 
+import type { AssistantJsSandboxConfig } from '../../types/assistant.types'
 import { McpTool } from '../../types/mcp.types'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { collectWikilinkPaths } from '../../utils/llm/annotate-wikilinks'
@@ -7,14 +8,88 @@ import { collectWikilinkPaths } from '../../utils/llm/annotate-wikilinks'
 export const JS_SANDBOX_TOOL_NAME = 'js_eval'
 
 const SANDBOX_CHANNEL = 'yolo-js-sandbox-v1'
-const DEFAULT_TIMEOUT_MS = 3000
-const MIN_TIMEOUT_MS = 100
-const GLOBAL_TIMEOUT_LIMIT_MS = 10000
+export const JS_SANDBOX_DEFAULT_TIMEOUT_MS = 3000
+export const JS_SANDBOX_MIN_TIMEOUT_MS = 100
+// Absolute hard ceiling — agents may not exceed this even if configured
+// higher. Keeps a single runaway run from monopolizing the main thread
+// indefinitely on slow / mobile devices.
+export const JS_SANDBOX_HARD_MAX_TIMEOUT_MS = 60000
 const READY_TIMEOUT_MS = 3000
-const OUTPUT_MAX_BYTES = 50 * 1024
-const OUTPUT_PREFIX_CHARS = 48 * 1024
+// Default cap on the serialized JSON result returned to the LLM. The host
+// keeps this conservative so a single tool call doesn't accidentally blow
+// the model's context window. The user may raise it per-agent up to the
+// hard ceiling below.
+export const JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES = 50 * 1024
+// Hard ceiling on the tool result size. 2 MiB strikes a balance between
+// "useful for paste-sized payloads" and "won't OOM smaller models if the
+// agent pipes a raw fetch body straight back".
+export const JS_SANDBOX_HARD_MAX_OUTPUT_BYTES = 2 * 1024 * 1024
+export const JS_SANDBOX_MIN_OUTPUT_BYTES = 1024
+
+// Fetch defaults live here (rather than in localFileTools) so the
+// LLM-facing description can quote the same numbers the proxy enforces.
+export const JS_SANDBOX_FETCH_DEFAULT_MAX_CONCURRENT = 3
+// 10 MiB — comfortable for typical scrape / API response bodies without
+// silently blowing past the per-tool output cap.
+export const JS_SANDBOX_FETCH_DEFAULT_MAX_RESPONSE_KB = 10 * 1024
+// 1 GiB hard ceiling. Anything larger would risk freezing the renderer
+// while postMessage shuttles the response back across the iframe boundary.
+export const JS_SANDBOX_FETCH_HARD_MAX_RESPONSE_KB = 1024 * 1024
+export const JS_SANDBOX_FETCH_MIN_RESPONSE_KB = 1
+export const JS_SANDBOX_FETCH_HARD_MAX_CONCURRENT = 32
+export const JS_SANDBOX_FETCH_MIN_CONCURRENT = 1
+
+// Vault read defaults / hard cap. Range mirrors fetch — large vault files
+// can blow through the model context just as easily as oversized HTTP
+// bodies, so the same ceiling applies.
+export const JS_SANDBOX_VAULT_READ_DEFAULT_MAX_KB = 10 * 1024
+export const JS_SANDBOX_VAULT_READ_HARD_MAX_KB = 1024 * 1024
+export const JS_SANDBOX_VAULT_READ_MIN_KB = 1
 
 type JsonRecord = Record<string, unknown>
+
+export type JsSandboxBinaryReadResult = {
+  base64: string
+  mimeType: string
+  byteLength: number
+}
+
+export type JsSandboxFetchResponse = {
+  ok: boolean
+  status: number
+  statusText?: string
+  headers: Record<string, string>
+  body: ArrayBuffer
+  byteLength: number
+}
+
+export type JsSandboxProxyHandlers = {
+  vaultReadText?: (path: string) => Promise<string | null>
+  vaultReadBinary?: (path: string) => Promise<JsSandboxBinaryReadResult | null>
+  vaultReadConfig?: { maxKb: number }
+  hostFetch?: (
+    url: string,
+    init?: Record<string, unknown>,
+  ) => Promise<JsSandboxFetchResponse>
+  fetchConfig?: {
+    fetchMode: 'whitelist' | 'blacklist'
+    fetchDomains: string[]
+    maxConcurrent: number
+    maxResponseKb: number
+  }
+  dbQuery?: (
+    method: 'search' | 'find' | 'get',
+    params: Record<string, unknown>,
+  ) => Promise<unknown>
+  externalScript?: (url: string) => Promise<string>
+}
+
+type JsSandboxCaps = {
+  allowFetch: boolean
+  allowVaultRead: boolean
+  allowDbQuery: boolean
+  allowExternalScripts: boolean
+}
 
 type JsSandboxVariables = {
   $now: string
@@ -34,6 +109,7 @@ type JsSandboxVariables = {
   }
   $links: string[]
   $tags: string[]
+  _caps?: JsSandboxCaps
 }
 
 type JsSandboxRunResult =
@@ -47,10 +123,24 @@ type JsSandboxRunResult =
       stack?: string
     }
 
+type FetchQuota = {
+  maxConcurrent: number
+  maxResponseKb: number
+  activeCount: number
+  totalBytes: number
+}
+
 type PendingRun = {
   resolve: (result: JsSandboxRunResult) => void
   reject: (error: Error) => void
   cleanup: () => void
+  proxyHandlers?: JsSandboxProxyHandlers
+  fetchQuota?: FetchQuota
+}
+
+type JsSandboxCspPolicy = {
+  allowFetch: boolean
+  allowExternalScripts: boolean
 }
 
 type JsSandboxToolCallResult =
@@ -372,7 +462,14 @@ function createSandboxUtils() {
 
 const SANDBOX_UTILS = createSandboxUtils()
 
-function disableAmbientCapabilities() {
+function disableAmbientCapabilities(allowScripts, allowFetch) {
+  // allowScripts is the "full power" switch: once the model can pull in and
+  // execute arbitrary remote code, any extra restriction we keep is theatre.
+  // Skip the lockdown entirely so imported scripts can use standard idioms.
+  if (allowScripts) {
+    return
+  }
+  // Default: full lockdown.
   const blocked = [
     'fetch',
     'XMLHttpRequest',
@@ -382,28 +479,96 @@ function disableAmbientCapabilities() {
     'Worker',
     'SharedWorker',
     'indexedDB',
-    'caches'
+    'caches',
+    'sendBeacon',
   ]
-  for (const key of blocked) {
-    try {
-      Object.defineProperty(globalThis, key, {
-        configurable: false,
-        enumerable: false,
-        writable: false,
-        value: undefined
-      })
-    } catch {
+  // When allowFetch is on, drop every network primitive from the blocked
+  // list so the model can call browser-native fetch / XHR / WebSocket /
+  // EventSource / sendBeacon and get real Response objects. Script-loading
+  // (importScripts / Worker) and storage (indexedDB / caches) stay locked.
+  if (allowFetch) {
+    const networkPrimitives = new Set([
+      'fetch',
+      'XMLHttpRequest',
+      'WebSocket',
+      'EventSource',
+      'sendBeacon',
+    ])
+    for (let i = blocked.length - 1; i >= 0; i -= 1) {
+      if (networkPrimitives.has(blocked[i])) {
+        blocked.splice(i, 1)
+      }
+    }
+  }
+  const targets = [globalThis]
+  // Also lock the prototype chain to prevent bypass via Object.getPrototypeOf(self).fetch.call(self, ...)
+  try {
+    const proto = Object.getPrototypeOf(globalThis)
+    if (proto && proto !== globalThis) targets.push(proto)
+  } catch {
+    // ignore
+  }
+  for (const target of targets) {
+    for (const key of blocked) {
       try {
-        globalThis[key] = undefined
+        Object.defineProperty(target, key, {
+          configurable: false,
+          enumerable: false,
+          writable: false,
+          value: undefined
+        })
       } catch {
-        // ignore best-effort lockdown failures
+        try {
+          target[key] = undefined
+        } catch {
+          // Lockdown failed — notify the host so the run can be aborted
+          self.postMessage({ channel: CHANNEL, type: 'lockdown_failed', key })
+        }
       }
     }
   }
 }
 
+// Proxy infrastructure: allows user code to call back to the host for
+// capabilities that aren't available inside the Worker directly.
+let proxyIdCounter = 0
+let activeRunToken = null
+const proxyPending = new Map()
+
+function proxyCall(cap, payload) {
+  return new Promise((resolve, reject) => {
+    const proxyId = 'p' + (++proxyIdCounter)
+    proxyPending.set(proxyId, { resolve, reject })
+    self.postMessage({
+      channel: CHANNEL,
+      token: activeRunToken,
+      type: 'proxy_req',
+      proxyId,
+      cap,
+      payload
+    })
+  })
+}
+
+self.addEventListener('message', (event) => {
+  const data = event.data
+  if (!data || data.channel !== CHANNEL || data.type !== 'proxy_res') return
+  const pending = proxyPending.get(data.proxyId)
+  if (!pending) return
+  proxyPending.delete(data.proxyId)
+  if (data.error) {
+    pending.reject(new Error(data.error))
+  } else {
+    pending.resolve(data.value)
+  }
+})
+
 function buildScope(rawVars) {
-  return {
+  const caps = rawVars && rawVars._caps ? rawVars._caps : {}
+  const vaultBase = rawVars ? rawVars.$vault ?? null : null
+  const hostFetchAllowed = Boolean(caps.allowFetch || caps.allowExternalScripts)
+
+  const scope = {
     $now: rawVars && typeof rawVars.$now === 'string'
       ? new Date(rawVars.$now)
       : new Date(),
@@ -413,12 +578,182 @@ function buildScope(rawVars) {
     $note: rawVars ? rawVars.$note ?? null : null,
     $content: rawVars ? rawVars.$content ?? null : null,
     $selection: rawVars ? rawVars.$selection ?? null : null,
-    $vault: rawVars ? rawVars.$vault ?? null : null,
+    $vault: vaultBase ? {
+      ...vaultBase,
+      readText: caps.allowVaultRead
+        ? (path) => proxyCall('vault_read_text', { path })
+        : undefined,
+      readBinary: caps.allowVaultRead
+        ? (path) => proxyCall('vault_read_binary', { path })
+        : undefined
+    } : null,
     $links: Array.isArray(rawVars && rawVars.$links) ? rawVars.$links : [],
     $tags: Array.isArray(rawVars && rawVars.$tags) ? rawVars.$tags : [],
     $utils: SANDBOX_UTILS,
-    $db: undefined
+    $db: caps.allowDbQuery ? {
+      search: (query, limit) => proxyCall('db_query', { method: 'search', query, limit }),
+      find: (keyword, limit) => proxyCall('db_query', { method: 'find', keyword, limit }),
+      get: (path) => proxyCall('db_query', { method: 'get', path })
+    } : undefined,
+    $fetch: hostFetchAllowed ? hostFetch : undefined,
+    $loadScript: caps.allowExternalScripts
+      ? (url) => proxyCall('external_script', { url })
+      : undefined
   }
+  // Network fetch: when network or external scripts are allowed, do NOT
+  // shadow the global so user code resolves to browser-native fetch. When
+  // disallowed, inject undefined to override any prototype-chain leak.
+  if (!caps.allowFetch && !caps.allowExternalScripts) {
+    scope.fetch = undefined
+  }
+  return scope
+}
+
+function headersToPlainObject(headers) {
+  if (!headers) {
+    return undefined
+  }
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    const result = {}
+    headers.forEach((value, key) => {
+      result[key] = value
+    })
+    return result
+  }
+  if (Array.isArray(headers)) {
+    const result = {}
+    for (const pair of headers) {
+      if (Array.isArray(pair) && pair.length >= 2) {
+        result[String(pair[0])] = String(pair[1])
+      }
+    }
+    return result
+  }
+  if (typeof headers === 'object') {
+    const result = {}
+    for (const [key, value] of Object.entries(headers)) {
+      if (value !== undefined && value !== null) {
+        result[key] = String(value)
+      }
+    }
+    return result
+  }
+  return undefined
+}
+
+async function bodyToHostFetchBody(body) {
+  if (body === undefined || body === null) {
+    return undefined
+  }
+  if (typeof body === 'string' || body instanceof ArrayBuffer) {
+    return body
+  }
+  if (ArrayBuffer.isView(body)) {
+    return body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)
+  }
+  if (typeof Blob !== 'undefined' && body instanceof Blob) {
+    return await body.arrayBuffer()
+  }
+  if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+    return String(body)
+  }
+  throw new Error('$fetch body must be a string, ArrayBuffer, typed array, Blob, or URLSearchParams.')
+}
+
+async function normalizeHostFetchArgs(input, init) {
+  const isRequest = typeof Request !== 'undefined' && input instanceof Request
+  const url = isRequest
+    ? input.url
+    : input instanceof URL
+      ? input.href
+      : String(input ?? '')
+  const options = init && typeof init === 'object' ? init : {}
+  const method = typeof options.method === 'string'
+    ? options.method
+    : isRequest
+      ? input.method
+      : undefined
+  const headers = headersToPlainObject(
+    options.headers !== undefined
+      ? options.headers
+      : isRequest
+        ? input.headers
+        : undefined
+  )
+  const hasInitBody = Object.prototype.hasOwnProperty.call(options, 'body')
+  const requestBody =
+    !hasInitBody &&
+    isRequest &&
+    input.method !== 'GET' &&
+    input.method !== 'HEAD'
+      ? await input.arrayBuffer()
+      : undefined
+  const rawBody = hasInitBody ? options.body : requestBody
+  const isUrlEncodedBody =
+    typeof URLSearchParams !== 'undefined' && rawBody instanceof URLSearchParams
+  const body = await bodyToHostFetchBody(rawBody)
+  const contentType =
+    typeof options.contentType === 'string'
+      ? options.contentType
+      : isUrlEncodedBody
+        ? 'application/x-www-form-urlencoded;charset=UTF-8'
+        : undefined
+  return {
+    url,
+    init: {
+      ...(method ? { method } : {}),
+      ...(headers ? { headers } : {}),
+      ...(body !== undefined ? { body } : {}),
+      ...(contentType ? { contentType } : {})
+    }
+  }
+}
+
+async function hostFetch(input, init) {
+  const request = await normalizeHostFetchArgs(input, init)
+  const result = await proxyCall('host_fetch', request)
+  return new Response(result.body, {
+    status: result.status,
+    statusText: result.statusText || '',
+    headers: result.headers || {}
+  })
+}
+
+function wrapTrailingExpressionAsReturn(code) {
+  // Body mode is used when expression mode (return await (CODE)) failed with
+  // a SyntaxError — typically because the code has multiple statements.
+  // Without an explicit \`return\`, the final expression value is discarded
+  // and the model sees \`null\`. Try to detect a trailing bare expression and
+  // wrap it in \`return\` so the natural REPL-style behavior works.
+  if (/(^|\n)\s*return\b/.test(code)) {
+    return code
+  }
+  const trimmed = code.replace(/\s+$/, '')
+  if (trimmed.length === 0) {
+    return code
+  }
+  // Walk back through any trailing single-line comments to find the last
+  // statement boundary. We intentionally do NOT try to balance braces or
+  // parse multi-line constructs — if it's complex enough that simple regex
+  // splitting can't find the boundary, fall through and accept that the
+  // user must use explicit \`return\`.
+  const lastSemi = trimmed.lastIndexOf(';')
+  const lastBrace = trimmed.lastIndexOf('}')
+  const boundary = Math.max(lastSemi, lastBrace)
+  const head = boundary >= 0 ? trimmed.slice(0, boundary + 1) : ''
+  const tail = boundary >= 0 ? trimmed.slice(boundary + 1) : trimmed
+  const tailTrimmed = tail.trim()
+  if (tailTrimmed.length === 0) {
+    return code
+  }
+  if (
+    /^(if|else|for|while|do|switch|try|catch|finally|break|continue|throw|return|function|class|var|let|const|import|export)\b/.test(
+      tailTrimmed
+    )
+  ) {
+    return code
+  }
+  return head + ' return (' + tailTrimmed + ');\n'
 }
 
 async function runInScope(code, rawVars) {
@@ -427,18 +762,29 @@ async function runInScope(code, rawVars) {
   const values = names.map((name) => scope[name])
 
   try {
-    const evalFn = new AsyncFunction(
+    const expressionFn = new AsyncFunction(
       ...names,
-      '__code',
-      '"use strict"; return await eval(__code);'
+      '"use strict";\nreturn await (' + code + ');'
     )
-    return await evalFn(...values, code)
+    return await expressionFn(...values)
   } catch (error) {
-    if (!(error instanceof SyntaxError) || !/\breturn\b/.test(code)) {
+    if (!(error instanceof SyntaxError)) {
       throw error
     }
-    const returnFn = new AsyncFunction(...names, '"use strict";\n' + code)
-    return await returnFn(...values)
+    const wrapped = wrapTrailingExpressionAsReturn(code)
+    if (wrapped !== code) {
+      try {
+        const wrappedFn = new AsyncFunction(...names, '"use strict";\n' + wrapped)
+        return await wrappedFn(...values)
+      } catch (innerError) {
+        if (!(innerError instanceof SyntaxError)) {
+          throw innerError
+        }
+        // fall through to plain body mode
+      }
+    }
+    const bodyFn = new AsyncFunction(...names, '"use strict";\n' + code)
+    return await bodyFn(...values)
   }
 }
 
@@ -463,7 +809,45 @@ function errorPayload(error) {
   return { error: String(error) }
 }
 
-disableAmbientCapabilities()
+// Freeze built-in prototypes BEFORE user code runs so prototype pollution
+// (e.g. Object.prototype.toJSON = () => 'fake') cannot corrupt serializeResult
+// or fool the host/LLM with falsified output. Only built-in prototypes are
+// frozen — user-defined classes and own properties remain fully mutable.
+function freezeBuiltinPrototypes() {
+  const protos = [
+    Object.prototype,
+    Array.prototype,
+    Number.prototype,
+    String.prototype,
+    Boolean.prototype,
+    Date.prototype,
+    RegExp.prototype,
+    Error.prototype,
+    Function.prototype,
+    typeof Map !== 'undefined' && Map.prototype,
+    typeof Set !== 'undefined' && Set.prototype,
+    typeof WeakMap !== 'undefined' && WeakMap.prototype,
+    typeof WeakSet !== 'undefined' && WeakSet.prototype,
+    typeof Promise !== 'undefined' && Promise.prototype,
+    typeof Symbol !== 'undefined' && Symbol.prototype,
+    typeof BigInt !== 'undefined' && BigInt.prototype,
+    typeof ArrayBuffer !== 'undefined' && ArrayBuffer.prototype,
+    typeof DataView !== 'undefined' && DataView.prototype,
+    typeof Uint8Array !== 'undefined' && Object.getPrototypeOf(Uint8Array.prototype),
+  ]
+  for (const proto of protos) {
+    if (proto && typeof proto === 'object') {
+      try { Object.freeze(proto) } catch { /* best-effort */ }
+    }
+  }
+}
+
+// Lockdown is deferred to the first run message so we can read _caps from
+// data.vars — once Object.defineProperty(..., { configurable: false }) is
+// applied, we cannot selectively unlock script-loading primitives later.
+// The worker is single-use (terminated after the run completes), so this
+// only fires once per Worker instance.
+let lockdownApplied = false
 
 self.addEventListener('message', async (event) => {
   const data = event.data
@@ -471,7 +855,18 @@ self.addEventListener('message', async (event) => {
     return
   }
 
+  const caps = (data.vars && data.vars._caps) || {}
+  if (!lockdownApplied) {
+    disableAmbientCapabilities(
+      Boolean(caps.allowExternalScripts),
+      Boolean(caps.allowFetch),
+    )
+    freezeBuiltinPrototypes()
+    lockdownApplied = true
+  }
+
   const token = data.token
+  activeRunToken = token
   const post = (payload) => {
     self.postMessage({ ...payload, channel: CHANNEL, token })
   }
@@ -488,6 +883,8 @@ self.addEventListener('message', async (event) => {
         json: JSON.stringify({ error: 'not serializable' })
       })
     }
+  } finally {
+    activeRunToken = null
   }
 })
 `
@@ -552,6 +949,22 @@ function startRun(data) {
     ) {
       return
     }
+    // Proxy request from Worker → forward to parent host, keep worker alive.
+    if (payload.type === 'proxy_req') {
+      postToParent({
+        type: 'proxy_req',
+        reqId: data.reqId,
+        proxyId: payload.proxyId,
+        cap: payload.cap,
+        payload: payload.payload
+      })
+      return
+    }
+    // Lockdown failure notification — forward without terminating the worker.
+    if (payload.type === 'lockdown_failed') {
+      postToParent({ type: 'lockdown_failed', reqId: data.reqId, key: payload.key })
+      return
+    }
     cleanupWorker(data.reqId)
     postToParent({
       type: payload.type,
@@ -587,28 +1000,129 @@ self.addEventListener('message', (event) => {
     startRun(data)
   } else if (data.type === 'cancel') {
     cleanupWorker(data.reqId)
+  } else if (data.type === 'proxy_res') {
+    // Proxy response from host → forward to the correct worker.
+    const entry = workers.get(data.reqId)
+    if (!entry) return
+    entry.worker.postMessage({
+      channel: CHANNEL,
+      type: 'proxy_res',
+      proxyId: data.proxyId,
+      value: data.value,
+      error: data.error
+    })
   }
 })
 
 postToParent({ type: 'ready' })
 `
 
-export function getJsSandboxTool(): McpTool {
+const JS_SANDBOX_BASE_DESCRIPTION =
+  'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs such as Blob, Response, Request, OffscreenCanvas, createImageBitmap when available. Injected context: $now, $isoDate, $note, $content, $selection, $vault{name,adapter}, $links, $tags, and $utils (json/text/stats/matrix/date helpers).'
+
+/**
+ * Build the LLM-facing description, conditionally listing the exact API
+ * surface that's actually enabled for this agent. When no caps are enabled
+ * (the default), we tell the model "no network, no vault read, no $db, no
+ * external scripts" so it doesn't waste tokens trying APIs that don't exist.
+ * When caps ARE enabled, we list each one's precise signature.
+ */
+export function buildJsSandboxDescription(
+  config?: {
+    allowFetch?: boolean
+    allowVaultRead?: boolean
+    allowDbQuery?: boolean
+    allowExternalScripts?: boolean
+    fetchMaxResponseKb?: number
+    vaultReadMaxKb?: number
+    outputMaxKb?: number
+  } | null,
+): string {
+  const enabled: string[] = []
+  const disabled: string[] = []
+
+  if (config?.allowVaultRead) {
+    const vaultCapKb =
+      typeof config.vaultReadMaxKb === 'number' && config.vaultReadMaxKb > 0
+        ? config.vaultReadMaxKb
+        : JS_SANDBOX_VAULT_READ_DEFAULT_MAX_KB
+    enabled.push(
+      `await $vault.readText(path) -> string|null (text above ${vaultCapKb} KB is truncated); await $vault.readBinary(path) -> {base64,mimeType,byteLength}|null (files above ${vaultCapKb} KB are refused)`,
+    )
+  } else {
+    disabled.push('vault file reads')
+  }
+
+  if (config?.allowFetch || config?.allowExternalScripts) {
+    const fetchCapKb =
+      typeof config?.fetchMaxResponseKb === 'number' &&
+      config.fetchMaxResponseKb > 0
+        ? config.fetchMaxResponseKb
+        : JS_SANDBOX_FETCH_DEFAULT_MAX_RESPONSE_KB
+    enabled.push(
+      `Network: fetch/XMLHttpRequest/WebSocket are browser-native and still obey CORS/CSP. For cross-origin reads use await $fetch(url,{method?,headers?,body?,contentType?}) -> Response; it uses Obsidian host networking, buffers the response, and is capped at ${fetchCapKb} KB`,
+    )
+  } else {
+    disabled.push('browser fetch / XHR / WebSocket and $fetch')
+  }
+
+  if (config?.allowDbQuery) {
+    enabled.push(
+      'Text index only: await $db.search(query, limit?), await $db.find(keyword, limit?) -> [{path,excerpt}], await $db.get(path) -> {content,frontmatter}|null. Do not use $db for images/PDF/audio/binary files; use await $vault.readBinary(path) when vault read is enabled. Limits are host-clamped',
+    )
+  } else {
+    disabled.push('$db')
+  }
+
+  if (config?.allowExternalScripts) {
+    enabled.push(
+      'External scripts: importScripts(url1, ...) loads classic remote scripts when the browser and script host allow it; Worker/SharedWorker are unblocked. await $loadScript(url) fetches source text via the host if you want to inspect/eval manually. Network is implicitly enabled',
+    )
+  } else {
+    disabled.push('external scripts, importScripts, nested Worker')
+  }
+
+  const enabledLine =
+    enabled.length > 0
+      ? ` Capabilities enabled for this agent: ${enabled.join('; ')}.`
+      : ''
+  const disabledLine =
+    disabled.length > 0
+      ? ` NOT available (do not call): ${disabled.join(', ')}.`
+      : ''
+
+  const outputCapBytes = resolveJsSandboxOutputMaxBytes(config?.outputMaxKb)
+  const outputCapKb = Math.floor(outputCapBytes / 1024)
+  const returnLine = ` Output is JSON and truncated above ~${outputCapKb} KB; summarize or slice large data before returning.`
+
+  return `${JS_SANDBOX_BASE_DESCRIPTION}${enabledLine}${disabledLine}${returnLine}`
+}
+
+export function getJsSandboxTool(
+  config?: {
+    allowFetch?: boolean
+    allowVaultRead?: boolean
+    allowDbQuery?: boolean
+    allowExternalScripts?: boolean
+    fetchMaxResponseKb?: number
+    vaultReadMaxKb?: number
+    outputMaxKb?: number
+  } | null,
+): McpTool {
   return {
     name: JS_SANDBOX_TOOL_NAME,
-    description:
-      'Execute JavaScript in a sandboxed iframe and return JSON. Browser built-ins are available: Math, Date, JSON, RegExp, Intl, URL, TextEncoder/TextDecoder, crypto.subtle when available, btoa/atob, Promise, Array/Map/Set. YOLO only preloads non-native pure helpers: $utils.json.flatten(v), groupBy(items,key), countBy(items,key); $utils.text.markdownHeadings(md), tasks(md), wikilinks(md); $utils.stats.sum/mean/median/percentile(values,p)/stdev(values,sample); $utils.matrix.identity(size), multiply(a,b,{modulo?}), pow(m,n,{modulo?}); $utils.date.addDays(date,days), diffDays(a,b), today(). key can be a dot path or function. Use browser APIs for base64/hash/regex/sort/unique/simple vector math. Read-only context: $now, $isoDate, $note, $content, $selection, $vault, $links, $tags. Optional timeoutMs is capped globally. No network, vault reads, external scripts, or $db.',
+    description: buildJsSandboxDescription(config),
     inputSchema: {
       type: 'object',
       properties: {
         code: {
           type: 'string',
           description:
-            'JavaScript code to execute. The final expression value, or an explicit return value, is returned as JSON.',
+            'JavaScript code to execute. Single expression → auto-returned as JSON. Multi-statement code MUST use explicit `return <expr>` on the final value, otherwise the tool returns null.',
         },
         timeoutMs: {
           type: 'number',
-          description: `Optional per-call timeout in milliseconds. Defaults to ${DEFAULT_TIMEOUT_MS}; clamped between ${MIN_TIMEOUT_MS} and ${GLOBAL_TIMEOUT_LIMIT_MS}.`,
+          description: `Optional per-call timeout in milliseconds (default ${JS_SANDBOX_DEFAULT_TIMEOUT_MS}). Raise for long-running probes; host silently clamps to its own ceiling.`,
         },
       },
       required: ['code'],
@@ -616,7 +1130,27 @@ export function getJsSandboxTool(): McpTool {
   }
 }
 
-export function formatJsSandboxToolText(json: string): string {
+export function resolveJsSandboxOutputMaxBytes(
+  configuredKb?: number | null,
+): number {
+  if (
+    typeof configuredKb !== 'number' ||
+    !Number.isFinite(configuredKb) ||
+    configuredKb <= 0
+  ) {
+    return JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES
+  }
+  const requested = Math.floor(configuredKb) * 1024
+  return Math.min(
+    JS_SANDBOX_HARD_MAX_OUTPUT_BYTES,
+    Math.max(JS_SANDBOX_MIN_OUTPUT_BYTES, requested),
+  )
+}
+
+export function formatJsSandboxToolText(
+  json: string,
+  options?: { maxBytes?: number },
+): string {
   let formatted = json
   try {
     formatted = JSON.stringify(JSON.parse(json), null, 2)
@@ -624,16 +1158,23 @@ export function formatJsSandboxToolText(json: string): string {
     // The worker should only return JSON, but keep the formatter defensive.
   }
 
-  if (getByteLength(formatted) <= OUTPUT_MAX_BYTES) {
+  const maxBytes =
+    options?.maxBytes && options.maxBytes > 0
+      ? options.maxBytes
+      : JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES
+  if (getByteLength(formatted) <= maxBytes) {
     return formatted
   }
 
+  // Reserve a small slice for the truncation envelope so the JSON wrapper
+  // itself stays within budget.
+  const prefixBytes = Math.max(1024, Math.floor(maxBytes * 0.95))
   return JSON.stringify(
     {
-      warning: `Output exceeded ${OUTPUT_MAX_BYTES} bytes and was truncated.`,
+      warning: `Output exceeded ${maxBytes} bytes and was truncated.`,
       truncated: true,
       originalBytes: getByteLength(formatted),
-      jsonPrefix: formatted.slice(0, OUTPUT_PREFIX_CHARS),
+      jsonPrefix: formatted.slice(0, prefixBytes),
     },
     null,
     2,
@@ -644,10 +1185,14 @@ export async function callJsSandboxTool({
   app,
   args,
   signal,
+  jsSandboxConfig,
+  proxyHandlers,
 }: {
   app: App
   args: Record<string, unknown>
   signal?: AbortSignal
+  jsSandboxConfig?: AssistantJsSandboxConfig
+  proxyHandlers?: JsSandboxProxyHandlers
 }): Promise<JsSandboxToolCallResult> {
   if (signal?.aborted) {
     return { status: ToolCallResponseStatus.Aborted }
@@ -662,14 +1207,22 @@ export async function callJsSandboxTool({
   }
 
   try {
-    const timeoutMs = resolveJsSandboxTimeoutMs(args)
-    const vars = await buildJsSandboxVariables(app)
+    const timeoutMs = resolveJsSandboxTimeoutMs(
+      args,
+      jsSandboxConfig?.timeoutMs,
+    )
+    const vars = await buildJsSandboxVariables(app, jsSandboxConfig)
     const result = await getSharedJsSandboxRunner().run({
       code,
       vars,
       timeoutMs,
       signal,
+      proxyHandlers,
     })
+
+    const outputMaxBytes = resolveJsSandboxOutputMaxBytes(
+      jsSandboxConfig?.outputMaxKb,
+    )
 
     if (!result.ok) {
       return {
@@ -679,13 +1232,14 @@ export async function callJsSandboxTool({
             error: result.error,
             ...(result.stack ? { stack: result.stack } : {}),
           }),
+          { maxBytes: outputMaxBytes },
         ),
       }
     }
 
     return {
       status: ToolCallResponseStatus.Success,
-      text: formatJsSandboxToolText(result.json),
+      text: formatJsSandboxToolText(result.json, { maxBytes: outputMaxBytes }),
     }
   } catch (error) {
     if (signal?.aborted) {
@@ -704,21 +1258,39 @@ export function disposeJsSandbox(): void {
   sharedRunner = null
 }
 
-function resolveJsSandboxTimeoutMs(args: Record<string, unknown>): number {
+function resolveJsSandboxTimeoutMs(
+  args: Record<string, unknown>,
+  agentCapMs?: number,
+): number {
+  const cap = clampAgentTimeoutCap(agentCapMs)
   const value = args.timeoutMs
   if (value === undefined || value === null) {
-    return DEFAULT_TIMEOUT_MS
+    return Math.min(JS_SANDBOX_DEFAULT_TIMEOUT_MS, cap)
   }
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new Error('timeoutMs must be a finite number.')
   }
+  return Math.min(cap, Math.max(JS_SANDBOX_MIN_TIMEOUT_MS, Math.floor(value)))
+}
+
+function clampAgentTimeoutCap(agentCapMs?: number): number {
+  if (
+    typeof agentCapMs !== 'number' ||
+    !Number.isFinite(agentCapMs) ||
+    agentCapMs <= 0
+  ) {
+    return JS_SANDBOX_HARD_MAX_TIMEOUT_MS
+  }
   return Math.min(
-    GLOBAL_TIMEOUT_LIMIT_MS,
-    Math.max(MIN_TIMEOUT_MS, Math.floor(value)),
+    JS_SANDBOX_HARD_MAX_TIMEOUT_MS,
+    Math.max(JS_SANDBOX_MIN_TIMEOUT_MS, Math.floor(agentCapMs)),
   )
 }
 
-async function buildJsSandboxVariables(app: App): Promise<JsSandboxVariables> {
+async function buildJsSandboxVariables(
+  app: App,
+  config?: AssistantJsSandboxConfig,
+): Promise<JsSandboxVariables> {
   const now = new Date()
   const file = app.workspace.getActiveFile()
   const cache = file ? app.metadataCache.getFileCache(file) : null
@@ -731,6 +1303,13 @@ async function buildJsSandboxVariables(app: App): Promise<JsSandboxVariables> {
     file && content
       ? collectWikilinkPaths(app, content, file.path).map((item) => item.link)
       : []
+
+  const _caps: JsSandboxCaps = {
+    allowFetch: config?.allowFetch ?? false,
+    allowVaultRead: config?.allowVaultRead ?? false,
+    allowDbQuery: config?.allowDbQuery ?? false,
+    allowExternalScripts: config?.allowExternalScripts ?? false,
+  }
 
   return deepCloneJson({
     $now: now.toISOString(),
@@ -752,6 +1331,7 @@ async function buildJsSandboxVariables(app: App): Promise<JsSandboxVariables> {
     },
     $links: links,
     $tags: tags,
+    _caps,
   })
 }
 
@@ -766,9 +1346,10 @@ let sharedRunner: JsSandboxRunner | null = null
 
 class JsSandboxRunner {
   private iframe: HTMLIFrameElement | null = null
+  private iframeCspKey: string | null = null
+  private isListening = false
   private readyPromise: Promise<void> | null = null
   private readyResolve: (() => void) | null = null
-  private readyReject: ((error: Error) => void) | null = null
   private pendingRuns = new Map<string, PendingRun>()
   private messageHandler = (event: MessageEvent) => {
     this.handleMessage(event)
@@ -779,24 +1360,28 @@ class JsSandboxRunner {
     vars,
     timeoutMs,
     signal,
+    proxyHandlers,
   }: {
     code: string
     vars: JsSandboxVariables
     timeoutMs: number
     signal?: AbortSignal
+    proxyHandlers?: JsSandboxProxyHandlers
   }): Promise<JsSandboxRunResult> {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
-      throw new Error('JS sandbox is only available in a browser context.')
+      throw new Error(
+        'JS isolated execution is only available in a browser context.',
+      )
     }
     if (signal?.aborted) {
       throw createAbortError()
     }
 
-    await this.ensureReady()
+    await this.ensureReady(getJsSandboxCspPolicy(vars))
 
     const targetWindow = this.iframe?.contentWindow
     if (!targetWindow) {
-      throw new Error('JS sandbox iframe is not available.')
+      throw new Error('JS isolated execution iframe is not available.')
     }
 
     const reqId = createRequestId()
@@ -840,6 +1425,15 @@ class JsSandboxRunner {
         reject(createAbortError())
       }
 
+      const fetchQuota: FetchQuota | undefined = proxyHandlers?.fetchConfig
+        ? {
+            maxConcurrent: proxyHandlers.fetchConfig.maxConcurrent,
+            maxResponseKb: proxyHandlers.fetchConfig.maxResponseKb,
+            activeCount: 0,
+            totalBytes: 0,
+          }
+        : undefined
+
       this.pendingRuns.set(reqId, {
         resolve: (result) => {
           cleanup()
@@ -850,6 +1444,8 @@ class JsSandboxRunner {
           reject(error)
         },
         cleanup,
+        proxyHandlers,
+        fetchQuota,
       })
 
       signal?.addEventListener('abort', onAbort, { once: true })
@@ -877,31 +1473,55 @@ class JsSandboxRunner {
     for (const [reqId, pending] of this.pendingRuns) {
       this.cancelRun(reqId)
       pending.cleanup()
-      pending.reject(new Error('JS sandbox disposed.'))
+      pending.reject(new Error('JS isolated execution disposed.'))
     }
     this.pendingRuns.clear()
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && this.isListening) {
       window.removeEventListener('message', this.messageHandler)
+      this.isListening = false
     }
     this.iframe?.remove()
     this.iframe = null
+    this.iframeCspKey = null
     this.readyPromise = null
     this.readyResolve = null
-    this.readyReject = null
   }
 
-  private ensureReady(): Promise<void> {
-    if (this.readyPromise) {
+  private ensureReady(policy: JsSandboxCspPolicy): Promise<void> {
+    const cspKey = getJsSandboxCspKey(policy)
+    if (this.readyPromise && this.iframeCspKey === cspKey) {
       return this.readyPromise
     }
 
-    window.addEventListener('message', this.messageHandler)
+    if (this.pendingRuns.size > 0) {
+      throw new Error(
+        'Cannot reload JS isolated execution while another run is active.',
+      )
+    }
+
+    this.iframe?.remove()
+    this.iframe = null
+    this.iframeCspKey = null
+    this.readyPromise = null
+    this.readyResolve = null
+
+    if (!this.isListening) {
+      window.addEventListener('message', this.messageHandler)
+      this.isListening = true
+    }
     const iframe = document.createElement('iframe')
+    // Keep this iframe without allow-same-origin: the null/opaque origin is a
+    // deliberate part of the isolation boundary. WebGPU probing showed that
+    // top-level Obsidian and top-level Workers expose navigator.gpu, while this
+    // sandbox and its Worker do not. Adding allow="webgpu" alone did not restore
+    // it; adding allow-same-origin did. Do not trade away the origin boundary
+    // just to expose WebGPU without a separate high-risk mode/design review.
     iframe.setAttribute('sandbox', 'allow-scripts')
     iframe.setAttribute('aria-hidden', 'true')
     iframe.hidden = true
-    iframe.srcdoc = buildSandboxHtml()
+    iframe.srcdoc = buildSandboxHtml(policy)
     this.iframe = iframe
+    this.iframeCspKey = cspKey
 
     this.readyPromise = new Promise<void>((resolve, reject) => {
       let settled = false
@@ -910,9 +1530,8 @@ class JsSandboxRunner {
           return
         }
         settled = true
-        this.readyReject = null
         this.readyResolve = null
-        reject(new Error('Timed out while initializing JS sandbox.'))
+        reject(new Error('Timed out while initializing JS isolated execution.'))
       }, READY_TIMEOUT_MS)
       this.readyResolve = () => {
         if (settled) {
@@ -921,18 +1540,7 @@ class JsSandboxRunner {
         settled = true
         window.clearTimeout(timeoutId)
         this.readyResolve = null
-        this.readyReject = null
         resolve()
-      }
-      this.readyReject = (error) => {
-        if (settled) {
-          return
-        }
-        settled = true
-        window.clearTimeout(timeoutId)
-        this.readyResolve = null
-        this.readyReject = null
-        reject(error)
       }
     })
 
@@ -952,6 +1560,10 @@ class JsSandboxRunner {
           json?: string
           message?: string
           stack?: string
+          proxyId?: string
+          cap?: string
+          payload?: Record<string, unknown>
+          key?: string
         }
       | undefined
     if (!data || data.channel !== SANDBOX_CHANNEL) {
@@ -967,7 +1579,31 @@ class JsSandboxRunner {
       return
     }
     const pending = this.pendingRuns.get(data.reqId)
+
+    // Worker failed to lock down an ambient capability — abort this run immediately
+    // to avoid executing user code in a partially-secured environment.
+    if (data.type === 'lockdown_failed') {
+      if (pending) {
+        this.pendingRuns.delete(data.reqId)
+        pending.resolve({
+          ok: false,
+          error: `Isolated execution lockdown failed for capability "${data.key ?? 'unknown'}". Execution aborted for safety.`,
+        })
+      }
+      return
+    }
     if (!pending) {
+      return
+    }
+
+    if (data.type === 'proxy_req' && data.proxyId && data.cap) {
+      void this.handleProxyRequest(
+        data.reqId,
+        data.proxyId,
+        data.cap,
+        data.payload ?? {},
+        pending,
+      )
       return
     }
 
@@ -983,9 +1619,168 @@ class JsSandboxRunner {
     if (data.type === 'error') {
       pending.resolve({
         ok: false,
-        error: data.message ?? 'Sandbox execution failed.',
+        error: data.message ?? 'Isolated execution failed.',
         stack: data.stack,
       })
+    }
+  }
+
+  private sendProxyResponse(
+    reqId: string,
+    proxyId: string,
+    value: unknown,
+    error?: string,
+  ): void {
+    this.iframe?.contentWindow?.postMessage(
+      {
+        channel: SANDBOX_CHANNEL,
+        type: 'proxy_res',
+        reqId,
+        proxyId,
+        value,
+        error,
+      },
+      '*',
+    )
+  }
+
+  private async handleProxyRequest(
+    reqId: string,
+    proxyId: string,
+    cap: string,
+    payload: Record<string, unknown>,
+    pending: PendingRun,
+  ): Promise<void> {
+    const handlers = pending.proxyHandlers
+    try {
+      if (cap === 'vault_read_text') {
+        if (!handlers?.vaultReadText) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            'vault read is not enabled',
+          )
+          return
+        }
+        const path = typeof payload.path === 'string' ? payload.path : ''
+        const result = await handlers.vaultReadText(path)
+        this.sendProxyResponse(reqId, proxyId, result)
+        return
+      }
+
+      if (cap === 'vault_read_binary') {
+        if (!handlers?.vaultReadBinary) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            'vault read is not enabled',
+          )
+          return
+        }
+        const path = typeof payload.path === 'string' ? payload.path : ''
+        const result = await handlers.vaultReadBinary(path)
+        this.sendProxyResponse(reqId, proxyId, result)
+        return
+      }
+
+      if (cap === 'host_fetch') {
+        if (!handlers?.hostFetch) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            '$fetch is not enabled',
+          )
+          return
+        }
+        const quota = pending.fetchQuota
+        if (quota) {
+          if (quota.activeCount >= quota.maxConcurrent) {
+            this.sendProxyResponse(
+              reqId,
+              proxyId,
+              undefined,
+              '$fetch concurrent limit exceeded',
+            )
+            return
+          }
+          quota.activeCount++
+        }
+        try {
+          const url = typeof payload.url === 'string' ? payload.url : ''
+          const init =
+            payload.init && typeof payload.init === 'object'
+              ? (payload.init as Record<string, unknown>)
+              : undefined
+          const result = await handlers.hostFetch(url, init)
+          if (quota) {
+            quota.totalBytes += result.byteLength
+            if (quota.totalBytes > quota.maxResponseKb * 1024) {
+              this.sendProxyResponse(
+                reqId,
+                proxyId,
+                undefined,
+                '$fetch response size limit exceeded',
+              )
+              return
+            }
+          }
+          this.sendProxyResponse(reqId, proxyId, result)
+        } finally {
+          if (quota) {
+            quota.activeCount--
+          }
+        }
+        return
+      }
+
+      if (cap === 'db_query') {
+        if (!handlers?.dbQuery) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            '$db is not enabled',
+          )
+          return
+        }
+        const method = payload.method as 'search' | 'find' | 'get'
+        const result = await handlers.dbQuery(method, payload)
+        this.sendProxyResponse(reqId, proxyId, result)
+        return
+      }
+
+      if (cap === 'external_script') {
+        if (!handlers?.externalScript) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            'external scripts are not enabled',
+          )
+          return
+        }
+        const url = typeof payload.url === 'string' ? payload.url : ''
+        const scriptText = await handlers.externalScript(url)
+        this.sendProxyResponse(reqId, proxyId, scriptText)
+        return
+      }
+
+      this.sendProxyResponse(
+        reqId,
+        proxyId,
+        undefined,
+        `unknown capability: ${cap}`,
+      )
+    } catch (error) {
+      this.sendProxyResponse(
+        reqId,
+        proxyId,
+        undefined,
+        error instanceof Error ? error.message : String(error),
+      )
     }
   }
 
@@ -1001,9 +1796,40 @@ class JsSandboxRunner {
   }
 }
 
-function buildSandboxHtml(): string {
+function getJsSandboxCspPolicy(vars: JsSandboxVariables): JsSandboxCspPolicy {
+  return {
+    allowFetch: Boolean(vars._caps?.allowFetch),
+    allowExternalScripts: Boolean(vars._caps?.allowExternalScripts),
+  }
+}
+
+function getJsSandboxCspKey(policy: JsSandboxCspPolicy): string {
+  return [
+    policy.allowFetch ? 'fetch' : 'no-fetch',
+    policy.allowExternalScripts ? 'scripts' : 'no-scripts',
+  ].join('|')
+}
+
+function buildSandboxHtml(policy: JsSandboxCspPolicy): string {
   const script = JS_SANDBOX_IFRAME_SCRIPT.replace(/<\/script/gi, '<\\/script')
-  return `<!doctype html><html><head><meta charset="utf-8"></head><body><script>${script}</script></body></html>`
+  // CSP: 'unsafe-eval' is required — this tool's whole purpose is to evaluate
+  // LLM-generated JavaScript via `new AsyncFunction(...)` inside the Worker.
+  // The Worker inherits the iframe's CSP, so without `'unsafe-eval'`
+  // every run errors with "Refused to evaluate a string as JavaScript".
+  //
+  // Rebuild the iframe when an Agent's enabled capabilities need a different
+  // CSP. The default policy stays locked down; network and remote script
+  // sources are opened only for agents that explicitly opted in.
+  const allowNetwork = policy.allowFetch || policy.allowExternalScripts
+  const scriptSrc = policy.allowExternalScripts
+    ? "'unsafe-inline' 'unsafe-eval' blob: https: http:"
+    : "'unsafe-inline' 'unsafe-eval' blob:"
+  const workerSrc = policy.allowExternalScripts
+    ? 'blob: https: http:'
+    : 'blob:'
+  const connectSrc = allowNetwork ? '* blob: data:' : "'none'"
+  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${scriptSrc}; worker-src ${workerSrc}; child-src ${workerSrc}; connect-src ${connectSrc};">`
+  return `<!doctype html><html><head><meta charset="utf-8">${csp}</head><body><script>${script}</script></body></html>`
 }
 
 function createRequestId(): string {

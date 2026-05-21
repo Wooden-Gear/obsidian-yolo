@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
 
-import type { AssistantToolPreference } from '../../types/assistant.types'
+import type {
+  AssistantJsSandboxConfig,
+  AssistantToolPreference,
+} from '../../types/assistant.types'
 import {
   ChatAssistantMessage,
   ChatConversationCompactionLike,
@@ -48,6 +51,7 @@ type AgentLlmTurnExecutorInput = {
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
+  jsSandboxConfig?: AssistantJsSandboxConfig | null
   abortSignal?: AbortSignal
   reasoningLevel?: ReasoningLevel
   requestParams?: {
@@ -119,6 +123,7 @@ export class AgentLlmTurnExecutor {
       toolPreferences: this.input.toolPreferences,
       apiType: this.input.apiType,
       enableToolDisclosure: this.input.enableToolDisclosure,
+      jsSandboxConfig: this.input.jsSandboxConfig,
     })
     const requestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({

@@ -9,3 +9,9 @@ export function resolveWorkspaceScopeForRuntimeInput(
 ): Assistant['workspaceScope'] | undefined {
   return assistant?.workspaceScope
 }
+
+export function resolveJsSandboxConfigForRuntimeInput(
+  assistant: Assistant | null | undefined,
+): Assistant['jsSandboxConfig'] | undefined {
+  return assistant?.jsSandboxConfig
+}

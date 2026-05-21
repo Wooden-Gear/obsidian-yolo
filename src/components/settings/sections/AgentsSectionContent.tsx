@@ -32,6 +32,7 @@ import {
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
 import { isLoadToolSchemasToolName } from '../../../core/agent/tool-selection'
+import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -53,6 +54,7 @@ import { YoloSettings } from '../../../settings/schema/setting.types'
 import {
   AgentPersona,
   Assistant,
+  AssistantJsSandboxConfig,
   AssistantSkillLoadMode,
   AssistantToolApprovalMode,
   AssistantToolDisclosureMode,
@@ -72,6 +74,7 @@ import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { SimpleSelect } from '../../common/SimpleSelect'
 import { openIconPicker } from '../assistants/AssistantIconPicker'
+import { JsSandboxConfigModal } from '../modals/JsSandboxConfigModal'
 
 import {
   normalizeToolPreferencesForPersistence,
@@ -127,6 +130,17 @@ const skillDefaultContextTokenCache = new Map<string, number>()
 // Caches the in-flight or resolved promise so concurrent calls dedupe to a
 // single estimateJsonTokens invocation.
 const toolDefaultContextTokenCache = new Map<string, Promise<number>>()
+
+function hasSensitiveJsSandboxCapabilities(
+  config?: AssistantJsSandboxConfig,
+): boolean {
+  return Boolean(
+    config?.allowFetch ||
+      config?.allowVaultRead ||
+      config?.allowDbQuery ||
+      config?.allowExternalScripts,
+  )
+}
 
 function fnv1aHash(text: string): string {
   let hash = 0x811c9dc5
@@ -355,6 +369,7 @@ export function AgentsSectionContent({
   const tabsNavRef = useRef<HTMLDivElement | null>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   const localFsServerName = getLocalFileToolServerName()
+  const jsSandboxFullToolName = `${localFsServerName}__${JS_SANDBOX_TOOL_NAME}`
 
   const updateTabsGlider = useCallback(() => {
     const nav = tabsNavRef.current
@@ -592,6 +607,32 @@ export function AgentsSectionContent({
     setDraftAgent((prev) => {
       if (!prev) return prev
       return { ...prev, workspaceScope: next }
+    })
+  }
+
+  const setJsSandboxConfig = (config: AssistantJsSandboxConfig) => {
+    setDraftAgent((prev) =>
+      prev ? { ...prev, jsSandboxConfig: config } : prev,
+    )
+
+    if (!draftAgent) {
+      return
+    }
+
+    const existingAssistant = assistants.find(
+      (assistant) => assistant.id === draftAgent.id,
+    )
+    if (!existingAssistant) {
+      return
+    }
+
+    void setSettings({
+      ...settings,
+      assistants: assistants.map((assistant) =>
+        assistant.id === draftAgent.id
+          ? { ...assistant, jsSandboxConfig: config, updatedAt: Date.now() }
+          : assistant,
+      ),
     })
   }
 
@@ -1329,6 +1370,40 @@ export function AgentsSectionContent({
                   }}
                 />
               </ObsidianSetting>
+              {draftAgent.enableTools &&
+                draftAgent.includeBuiltinTools !== false &&
+                isAssistantToolEnabled(
+                  draftAgent,
+                  jsSandboxFullToolName,
+                ) && (
+                  <ObsidianSetting
+                    name={t(
+                      'settings.agent.jsSandboxConfigEntryTitle',
+                      'JavaScript execution configuration',
+                    )}
+                    desc={t(
+                      'settings.agent.jsSandboxConfigEntryDesc',
+                      'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
+                    )}
+                  >
+                    <ObsidianButton
+                      icon="settings"
+                      className="yolo-js-exec-config-button"
+                      tooltip={t('common.configure', 'Configure')}
+                      onClick={() => {
+                        const initial = draftAgent.jsSandboxConfig
+                        new JsSandboxConfigModal(app, {
+                          title: t(
+                            'settings.agent.jsSandboxConfigEntryTitle',
+                            'JavaScript execution configuration',
+                          ),
+                          value: initial,
+                          onChange: (next) => setJsSandboxConfig(next),
+                        }).open()
+                      }}
+                    />
+                  </ObsidianSetting>
+                )}
               <div
                 className={`yolo-agent-tools-panel${
                   draftAgent.enableTools ? '' : ' is-disabled'
@@ -1425,10 +1500,9 @@ export function AgentsSectionContent({
                           )
                           const approvalMode = tool.toggleTargets.every(
                             (target) =>
-                              getAssistantToolApprovalMode(
-                                draftAgent,
-                                target,
-                              ) === 'full_access',
+                              getAssistantToolApprovalMode(draftAgent, target, {
+                                jsSandboxConfig: draftAgent.jsSandboxConfig,
+                              }) === 'full_access',
                           )
                             ? 'full_access'
                             : 'require_approval'
@@ -1449,6 +1523,13 @@ export function AgentsSectionContent({
                           const disclosureLocked = tool.toggleTargets.some(
                             (target) => isLoadToolSchemasToolName(target),
                           )
+                          const approvalLocked =
+                            hasSensitiveJsSandboxCapabilities(
+                              draftAgent.jsSandboxConfig,
+                            ) &&
+                            tool.toggleTargets.some(
+                              (target) => target === jsSandboxFullToolName,
+                            )
 
                           return (
                             <div
@@ -1484,18 +1565,27 @@ export function AgentsSectionContent({
                                       </div>
                                     )}
                                     <div className="yolo-agent-tool-select">
-                                      <SimpleSelect
-                                        value={approvalMode}
-                                        options={toolApprovalOptions}
-                                        onChange={(value) =>
-                                          setToolApprovalMode(
-                                            tool.toggleTargets,
-                                            value as AssistantToolApprovalMode,
-                                          )
-                                        }
-                                        align="end"
-                                        contentClassName="yolo-agent-tool-select-menu"
-                                      />
+                                      {approvalLocked ? (
+                                        <span className="yolo-agent-tool-forced-approval">
+                                          {t(
+                                            'settings.agent.toolApprovalForced',
+                                            'Approval required',
+                                          )}
+                                        </span>
+                                      ) : (
+                                        <SimpleSelect
+                                          value={approvalMode}
+                                          options={toolApprovalOptions}
+                                          onChange={(value) =>
+                                            setToolApprovalMode(
+                                              tool.toggleTargets,
+                                              value as AssistantToolApprovalMode,
+                                            )
+                                          }
+                                          align="end"
+                                          contentClassName="yolo-agent-tool-select-menu"
+                                        />
+                                      )}
                                     </div>
                                   </>
                                 )}

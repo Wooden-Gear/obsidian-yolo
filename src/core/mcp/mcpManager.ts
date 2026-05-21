@@ -3,7 +3,7 @@ import { App, FileSystemAdapter, Platform } from 'obsidian'
 
 import { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
-import type { AssistantWorkspaceScope } from '../../types/assistant.types'
+import type { AssistantJsSandboxConfig, AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
 import type { ChatModelModality } from '../../types/chat-model.types'
 import {
@@ -659,6 +659,7 @@ export class McpManager {
       requestArgs,
     })
     allowedTools.add(allowanceKey)
+    allowedTools.add(requestToolName)
   }
 
   public isToolExecutionAllowed({
@@ -698,7 +699,8 @@ export class McpManager {
         requestArgs,
       })
       if (
-        this.allowedToolsByConversation.get(conversationId)?.has(allowanceKey)
+        this.allowedToolsByConversation.get(conversationId)?.has(allowanceKey) ||
+        this.allowedToolsByConversation.get(conversationId)?.has(requestToolName)
       ) {
         return true
       }
@@ -723,6 +725,7 @@ export class McpManager {
     requireReview = false,
     chatModelId,
     workspaceScope,
+    jsSandboxConfig,
   }: {
     name: string
     args?: Record<string, unknown> | undefined
@@ -734,6 +737,7 @@ export class McpManager {
     requireReview?: boolean
     chatModelId?: string
     workspaceScope?: AssistantWorkspaceScope
+    jsSandboxConfig?: AssistantJsSandboxConfig
   }): Promise<ToolCallResponse> {
     const toolAbortController = new AbortController()
     if (id !== undefined) {
@@ -771,6 +775,7 @@ export class McpManager {
           signal: compositeSignal,
           chatModelId,
           workspaceScope,
+          jsSandboxConfig,
         })
         if (localResult.status === ToolCallResponseStatus.Success) {
           return {

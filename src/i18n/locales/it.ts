@@ -461,9 +461,9 @@ export const it: TranslationKeys = {
         'Recupera il contenuto completo di un singolo URL tramite il provider configurato.',
       builtinWebOpsLabel: 'Set strumenti ricerca web',
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
-      builtinJsEvalLabel: 'Sandbox JavaScript',
+      builtinJsEvalLabel: 'Esecuzione JavaScript',
       builtinJsEvalDesc:
-        "Esegue JavaScript generato dall'AI in un iframe sandboxed. Alto rischio; richiede approvazione per impostazione predefinita.",
+        "Esegue JavaScript in un ambiente isolato per gestire compiti su cui gli LLM sono inaffidabili. Può comportare rischi",
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
       builtinDelegateExternalAgentDesc:
         'Delega le attività complesse a un agente CLI installato localmente (Codex / Claude Code).',
@@ -516,6 +516,7 @@ export const it: TranslationKeys = {
       toolApproval: 'Approvazione',
       toolApprovalFullAccess: 'Accesso completo',
       toolApprovalRequire: 'Richiedi approvazione',
+      toolApprovalForced: 'Approvazione richiesta',
       toolDisclosureAlways: 'In contesto',
       toolDisclosureOnDemand: 'Su richiesta',
       editorEnabled: 'Abilitato',

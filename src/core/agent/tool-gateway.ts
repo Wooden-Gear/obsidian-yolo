@@ -5,6 +5,7 @@ import Ajv, {
 import { v4 as uuidv4 } from 'uuid'
 
 import {
+  AssistantJsSandboxConfig,
   AssistantToolPreference,
   AssistantWorkspaceScope,
 } from '../../types/assistant.types'
@@ -57,6 +58,7 @@ export class AgentToolGateway {
   private readonly toolPreferences?: Record<string, AssistantToolPreference>
   private readonly enableToolDisclosure: boolean
   private readonly workspaceScope?: AssistantWorkspaceScope
+  private readonly jsSandboxConfig?: AssistantJsSandboxConfig
   private readonly allowedSkillIds?: Set<string>
   private readonly allowedSkillNames?: Set<string>
   private readonly apiType?: LLMProviderApiType | null
@@ -74,6 +76,7 @@ export class AgentToolGateway {
       toolPreferences?: Record<string, AssistantToolPreference>
       enableToolDisclosure?: boolean
       workspaceScope?: AssistantWorkspaceScope
+      jsSandboxConfig?: AssistantJsSandboxConfig
       allowedSkillIds?: string[]
       allowedSkillNames?: string[]
       apiType?: LLMProviderApiType | null
@@ -86,6 +89,7 @@ export class AgentToolGateway {
     this.toolPreferences = options?.toolPreferences
     this.enableToolDisclosure = options?.enableToolDisclosure ?? true
     this.workspaceScope = options?.workspaceScope
+    this.jsSandboxConfig = options?.jsSandboxConfig
     this.allowedSkillIds = options?.allowedSkillIds
       ? new Set(options.allowedSkillIds.map((id) => id.toLowerCase()))
       : undefined
@@ -500,6 +504,7 @@ export class AgentToolGateway {
           chatModelId,
           debugTraceId,
           workspaceScope: this.workspaceScope,
+          jsSandboxConfig: this.jsSandboxConfig,
         }).then((response) => ({ entries: [entry], responses: [response] })),
       )
     }
@@ -550,6 +555,7 @@ export class AgentToolGateway {
           chatModelId,
           debugTraceId,
           workspaceScope: this.workspaceScope,
+          jsSandboxConfig: this.jsSandboxConfig,
         }).then((response) => ({
           entries,
           responses: this.splitBatchedFsEditResponse({
@@ -851,6 +857,7 @@ export class AgentToolGateway {
               : undefined,
           },
           request.name,
+          { jsSandboxConfig: this.jsSandboxConfig },
         ) === 'full_access',
     })
   }
@@ -889,6 +896,7 @@ export class AgentToolGateway {
               : undefined,
           },
           toolName,
+          { jsSandboxConfig: this.jsSandboxConfig },
         ) === 'require_approval'
       )
     } catch {

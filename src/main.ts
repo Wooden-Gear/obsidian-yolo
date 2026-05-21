@@ -842,6 +842,7 @@ export default class YoloPlugin extends Plugin {
       const { persistConversationMessages } =
         createAgentConversationPersistence(this.app, () => this.settings)
       this.agentService = new AgentService({
+        getSettings: () => this.settings,
         persistConversationMessages,
       })
       // Start listening for async external agent task-completed events (desktop-only, no-op on mobile)

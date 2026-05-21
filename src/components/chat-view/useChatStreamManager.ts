@@ -42,7 +42,10 @@ import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { ErrorModal } from '../modals/ErrorModal'
 
 import { ChatMode } from './chat-input/ChatModeSelect'
-import { resolveWorkspaceScopeForRuntimeInput } from './chat-runtime-inputs'
+import {
+  resolveJsSandboxConfigForRuntimeInput,
+  resolveWorkspaceScopeForRuntimeInput,
+} from './chat-runtime-inputs'
 import { resolveChatModeRuntime } from './chat-runtime-profiles'
 
 type UseChatStreamManagerParams = {
@@ -563,6 +566,8 @@ export function useChatStreamManager({
             toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
             allowedSkillNames,
+            jsSandboxConfig:
+              resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
             contextualInjections: buildChatContextualInjections({
               includeCurrentFileContent:
                 settings.chatOptions.includeCurrentFileContent,
@@ -733,6 +738,7 @@ export function useChatStreamManager({
         const effectiveCompactionForRequest = compactionOverride ?? compaction
         const baseInput = {
           messages: chatMessages,
+          assistantId: selectedAssistant?.id,
           requestContextBuilder,
           mcpManager,
           compaction: effectiveCompactionForRequest,
@@ -745,6 +751,8 @@ export function useChatStreamManager({
           toolPreferences: chatModeRuntime.toolPreferences,
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),
+          jsSandboxConfig:
+            resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
           allowedSkillIds,
           allowedSkillNames,
           requestParams,

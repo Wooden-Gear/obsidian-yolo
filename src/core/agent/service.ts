@@ -14,6 +14,8 @@ import {
   ToolCallResponseStatus,
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
+import { captureLLMDebugOperation } from '../llm/debugCapture'
 
 import { DEFAULT_BRANCH_ID } from './branch'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
@@ -89,6 +91,7 @@ type AgentRunEntry = {
 }
 
 type AgentServiceOptions = {
+  getSettings?: () => YoloSettings
   persistConversationMessages?: (payload: {
     conversationId: string
     messages: ChatMessage[]
@@ -888,15 +891,39 @@ export class AgentService {
       status: 'running',
     })
 
-    const result = await lastRunInput.mcpManager.callTool({
-      name: toolCall.request.name,
-      args: getToolCallArgumentsObject(toolCall.request.arguments),
-      id: toolCall.request.id,
-      conversationId,
-      conversationMessages: runEntry.state.messages,
-      roundId: toolMessage.id,
-      chatModelId: lastRunInput.model.id,
-      workspaceScope: lastRunInput.workspaceScope,
+    const toolArgs = getToolCallArgumentsObject(toolCall.request.arguments)
+    const debugTraceId = this.findDebugTraceIdForToolCall(
+      runEntry.state.messages,
+      toolCall.request.id,
+    )
+    const result = await captureLLMDebugOperation({
+      traceId: debugTraceId,
+      signal: lastRunInput.abortSignal,
+      transportMode: 'mcp',
+      url: `mcp://${toolCall.request.name}`,
+      method: 'callTool',
+      requestBody: {
+        name: toolCall.request.name,
+        args: toolArgs,
+        id: toolCall.request.id,
+        conversationId,
+        roundId: toolMessage.id,
+        chatModelId: lastRunInput.model.id,
+      },
+      responseContentType: 'application/json',
+      run: () =>
+        lastRunInput.mcpManager.callTool({
+          name: toolCall.request.name,
+          args: toolArgs,
+          id: toolCall.request.id,
+          conversationId,
+          conversationMessages: runEntry.state.messages,
+          roundId: toolMessage.id,
+          chatModelId: lastRunInput.model.id,
+          workspaceScope: lastRunInput.workspaceScope,
+          jsSandboxConfig: this.resolveLatestJsSandboxConfig(lastRunInput),
+        }),
+      getResponseBody: (response) => response,
     })
 
     const nextMessages = this.updateToolCallResponse({
@@ -924,6 +951,7 @@ export class AgentService {
         input: {
           ...lastRunInput,
           messages: nextMessages,
+          jsSandboxConfig: this.resolveLatestJsSandboxConfig(lastRunInput),
         },
       })
     }
@@ -1130,6 +1158,43 @@ export class AgentService {
         status: located.runEntry.runtime ? 'aborted' : undefined,
       }),
     )
+  }
+
+  private resolveLatestJsSandboxConfig(
+    input: AgentRuntimeRunInput,
+  ): AgentRuntimeRunInput['jsSandboxConfig'] {
+    const assistantId = input.assistantId
+    if (!assistantId) {
+      return input.jsSandboxConfig
+    }
+    const latestAssistant = this.options
+      .getSettings?.()
+      ?.assistants?.find((assistant) => assistant.id === assistantId)
+    return latestAssistant?.jsSandboxConfig ?? input.jsSandboxConfig
+  }
+
+  private findDebugTraceIdForToolCall(
+    messages: ChatMessage[],
+    toolCallId: string | undefined,
+  ): string | undefined {
+    if (!toolCallId) {
+      return undefined
+    }
+
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index]
+      if (message.role !== 'assistant') {
+        continue
+      }
+      const matches = message.toolCallRequests?.some(
+        (request) => request.id === toolCallId,
+      )
+      if (matches) {
+        return message.metadata?.llmDebugTraceId
+      }
+    }
+
+    return undefined
   }
 
   async run({

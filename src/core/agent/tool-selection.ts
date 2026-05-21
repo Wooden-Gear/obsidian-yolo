@@ -1,7 +1,14 @@
-import type { AssistantToolPreference } from '../../types/assistant.types'
+import type {
+  AssistantJsSandboxConfig,
+  AssistantToolPreference,
+} from '../../types/assistant.types'
 import type { RequestTool } from '../../types/llm/request'
 import type { McpTool } from '../../types/mcp.types'
 import type { LLMProviderApiType } from '../../types/provider.types'
+import {
+  JS_SANDBOX_TOOL_NAME,
+  buildJsSandboxDescription,
+} from '../mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -148,6 +155,7 @@ export const selectAllowedTools = ({
   toolPreferences,
   apiType,
   enableToolDisclosure = true,
+  jsSandboxConfig,
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
@@ -156,12 +164,21 @@ export const selectAllowedTools = ({
   toolPreferences?: Record<string, AssistantToolPreference>
   apiType?: LLMProviderApiType | null
   enableToolDisclosure?: boolean
+  jsSandboxConfig?: AssistantJsSandboxConfig | null
 }): {
   filteredTools: McpTool[]
   hasTools: boolean
   hasMemoryTools: boolean
   requestTools: RequestTool[] | undefined
 } => {
+  const jsSandboxFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
+  // Rewrite the js_eval tool's description with one that names the exact APIs
+  // enabled for this agent. The generic tool from `listAvailableTools` is
+  // cached and agent-agnostic; this is where we tailor it to the LLM.
+  const rewriteJsSandboxDescription = (tool: McpTool): McpTool =>
+    tool.name === jsSandboxFqn
+      ? { ...tool, description: buildJsSandboxDescription(jsSandboxConfig) }
+      : tool
   const normalizedAllowedToolNames = expandAllowedToolNames(allowedToolNames)
   const normalizedAllowedSkillIds = allowedSkillIds
     ? new Set(allowedSkillIds.map((id) => id.toLowerCase()))
@@ -170,18 +187,20 @@ export const selectAllowedTools = ({
     ? new Set(allowedSkillNames.map((name) => name.toLowerCase()))
     : undefined
 
-  const filteredTools = availableTools.filter((tool) => {
-    if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
-      return false
-    }
+  const filteredTools = availableTools
+    .filter((tool) => {
+      if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
+        return false
+      }
 
-    return isToolAllowed({
-      toolName: tool.name,
-      allowedToolNames: normalizedAllowedToolNames,
-      allowedSkillIds: normalizedAllowedSkillIds,
-      allowedSkillNames: normalizedAllowedSkillNames,
+      return isToolAllowed({
+        toolName: tool.name,
+        allowedToolNames: normalizedAllowedToolNames,
+        allowedSkillIds: normalizedAllowedSkillIds,
+        allowedSkillNames: normalizedAllowedSkillNames,
+      })
     })
-  })
+    .map(rewriteJsSandboxDescription)
   const assistantLike = {
     toolPreferences,
     enabledToolNames: normalizedAllowedToolNames

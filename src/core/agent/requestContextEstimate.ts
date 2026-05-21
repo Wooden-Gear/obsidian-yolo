@@ -1,4 +1,7 @@
-import type { AssistantToolPreference } from '../../types/assistant.types'
+import type {
+  AssistantJsSandboxConfig,
+  AssistantToolPreference,
+} from '../../types/assistant.types'
 import type {
   ChatConversationCompactionLike,
   ChatMessage,
@@ -28,6 +31,7 @@ export const estimateContinuationRequestContextTokens = async ({
   allowedSkillIds,
   allowedSkillNames,
   contextualInjections,
+  jsSandboxConfig,
 }: {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
@@ -43,6 +47,7 @@ export const estimateContinuationRequestContextTokens = async ({
   toolPreferences?: Record<string, AssistantToolPreference>
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
+  jsSandboxConfig?: AssistantJsSandboxConfig | null
   contextualInjections?: ContextualInjection[]
 }): Promise<number> => {
   const availableTools = enableTools
@@ -61,6 +66,7 @@ export const estimateContinuationRequestContextTokens = async ({
     toolPreferences,
     apiType,
     enableToolDisclosure,
+    jsSandboxConfig,
   })
 
   const requestMessages = await requestContextBuilder.generateRequestMessages({

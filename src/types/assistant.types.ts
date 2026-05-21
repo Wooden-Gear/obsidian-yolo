@@ -61,6 +61,37 @@ export type AssistantWorkspaceScope = z.infer<
   typeof assistantWorkspaceScopeSchema
 >
 
+export const assistantJsSandboxConfigSchema = z.object({
+  allowDbQuery: z.boolean().optional(),
+  allowFetch: z.boolean().optional(),
+  fetchMode: z.enum(['whitelist', 'blacklist']).optional(),
+  fetchDomains: z.array(z.string()).optional(),
+  fetchMaxConcurrent: z.number().optional(),
+  fetchMaxResponseKb: z.number().optional(),
+  allowVaultRead: z.boolean().optional(),
+  // Maximum size (in KB) returned by $vault.readText / $vault.readBinary.
+  // Files exceeding this are truncated (text) or refused (binary). Range
+  // mirrors fetchMaxResponseKb.
+  vaultReadMaxKb: z.number().optional(),
+  allowExternalScripts: z.boolean().optional(),
+  // Per-agent execution timeout cap, in milliseconds. The LLM may pass a
+  // smaller timeoutMs in its tool args, but the host clamps the effective
+  // value to this cap. Undefined means use the built-in default.
+  timeoutMs: z.number().optional(),
+  // Maximum rows returned by $db.search / $db.find. The LLM may request a
+  // smaller limit per call but never larger. Undefined falls back to a
+  // built-in default.
+  dbQueryMaxLimit: z.number().optional(),
+  // Maximum size (in KB) of the tool's serialized JSON result returned to
+  // the model. Output above this is truncated with a prefix. Undefined uses
+  // the built-in default. Host enforces a hard ceiling.
+  outputMaxKb: z.number().optional(),
+})
+
+export type AssistantJsSandboxConfig = z.infer<
+  typeof assistantJsSandboxConfigSchema
+>
+
 // Assistant type definition
 export const assistantSchema = z.object({
   id: z.string(),
@@ -81,6 +112,7 @@ export const assistantSchema = z.object({
     .record(z.string(), assistantSkillPreferenceSchema)
     .optional(),
   workspaceScope: assistantWorkspaceScopeSchema.optional(),
+  jsSandboxConfig: assistantJsSandboxConfigSchema.optional(),
   enableProjectInstructions: z.boolean().optional(),
   createdAt: z.number().optional(),
   updatedAt: z.number().optional(),

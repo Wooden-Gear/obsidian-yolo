@@ -54,6 +54,7 @@ export const en: TranslationKeys = {
     on: 'On',
     off: 'Off',
     noResults: 'No matches found',
+    configure: 'Configure',
   },
 
   sidebar: {
@@ -457,9 +458,9 @@ export const en: TranslationKeys = {
         'Fetch the full content of a single URL through a configured search provider.',
       builtinWebOpsLabel: 'Web Search Toolset',
       builtinWebOpsDesc: 'Web search and page scraping',
-      builtinJsEvalLabel: 'JavaScript Sandbox',
+      builtinJsEvalLabel: 'JavaScript Execution',
       builtinJsEvalDesc:
-        'Execute AI-generated JavaScript in a sandboxed iframe. High risk; requires approval by default.',
+        'Run JavaScript in an isolated environment to handle tasks LLMs are unreliable at. May pose risk',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
         'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',
@@ -511,6 +512,7 @@ export const en: TranslationKeys = {
       toolApproval: 'Approval',
       toolApprovalFullAccess: 'Full access',
       toolApprovalRequire: 'Require approval',
+      toolApprovalForced: 'Approval required',
       toolDisclosureAlways: 'In context',
       toolDisclosureOnDemand: 'On demand',
       editorEnabled: 'Enabled',
@@ -563,16 +565,77 @@ export const en: TranslationKeys = {
       autoContextCompactionBlockTitle: 'Context compaction',
       autoContextCompaction: 'Automatic context compaction',
       autoContextCompactionDesc:
-        'When the last assistant reply’s prompt token usage crosses the threshold, compact older history before your next message is sent (not during the reply).',
+        "When the last assistant reply's prompt token usage crosses the threshold, compact older history before your next message is sent (not during the reply).",
       autoContextCompactionThresholdMode: 'Compaction threshold mode',
       autoContextCompactionModeTokens: 'Absolute prompt tokens',
       autoContextCompactionModeRatio: 'Fraction of context window',
       autoContextCompactionThresholdTokens: 'Prompt token threshold',
       autoContextCompactionThresholdTokensDesc:
-        'Trigger when the last reply’s reported prompt_tokens is at least this value.',
+        "Trigger when the last reply's reported prompt_tokens is at least this value.",
       autoContextCompactionThresholdRatioPercent: 'Context window usage (%)',
       autoContextCompactionThresholdRatioPercentDesc:
-        'Trigger when prompt_tokens divided by the chat model’s max context window reaches this percentage. Requires max context tokens on the model.',
+        "Trigger when prompt_tokens divided by the chat model's max context window reaches this percentage. Requires max context tokens on the model.",
+      jsSandboxExtTitle: 'Extension capabilities',
+      jsSandboxExtWarning:
+        'These capabilities grant scripts privileged host access. Each carries real risk — only enable what this agent specifically needs. All are disabled by default.',
+      jsSandboxExtDefaultCapsTitle: 'Always available',
+      jsSandboxExtDefaultCaps:
+        'current time & timezone, locale, platform / browser info, hardware concurrency, standard JavaScript APIs, current note content, selection, links, tags, and helper utilities. File, network, vault-wide and external-script access require enabling a capability below.',
+      jsSandboxAllowFetch: 'Allow Network Fetch',
+      jsSandboxAllowFetchDesc:
+        'Allow browser network requests, plus a separate $fetch helper for requests that need YOLO to bypass cross-origin limits.',
+      jsSandboxAllowFetchRisk:
+        'Risk: scripts can reach any URL the browser can — public APIs, your local network, internal services, and the LLM provider itself. Data in the script (including vault contents you pass in) can be exfiltrated. Only enable for agents you fully trust.',
+      jsSandboxAllowFetchConfirm:
+        'Enabling network requests lets scripts contact browser-accessible addresses and use a separate YOLO host request helper when browser cross-origin limits block a response. Only enable this for an agent you trust. Continue?',
+      jsSandboxAllowVaultRead: 'Allow Vault Read',
+      jsSandboxAllowVaultReadDesc:
+        'Let scripts read any vault file by path. Risk: scripts could pass note contents to external services.',
+      jsSandboxAllowVaultReadConfirm:
+        "Enabling vault read lets AI-generated scripts read any file in the vault by path. This data passes through the LLM context. Only enable if you trust this agent's scripts. Continue?",
+      jsSandboxAllowDbQuery: 'Allow Knowledge Base Query',
+      jsSandboxAllowDbQueryDesc:
+        'Let scripts query the vector database (semantic search, keyword search, path lookup).',
+      jsSandboxAllowDbQueryConfirm:
+        'Enabling knowledge base query lets AI-generated scripts search your vault index and retrieve file contents. Continue?',
+      jsSandboxAllowExternalScripts: 'Allow External Scripts',
+      jsSandboxAllowExternalScriptsDesc:
+        'Allow scripts to load and run remote JavaScript, and open the broader browser capabilities needed by those scripts.',
+      jsSandboxAllowExternalScriptsRisk:
+        'EXTREME RISK: the agent can pull in and execute arbitrary remote JavaScript with the same privileges as your browser tab. This is functionally equivalent to running untrusted code from the internet. Anything in the vault that you pass into a script can be exfiltrated. Only enable for agents and code sources you fully trust.',
+      jsSandboxAllowExternalScriptsConfirm:
+        'Enabling external scripts lets the agent load and run remote JavaScript inside Obsidian. This is powerful and risky: only continue if you fully trust this agent and the code source.',
+      jsSandboxConfirmEnableTitle: 'Enable extension capability',
+      jsSandboxConfigEntryTitle: 'JavaScript Execution Configuration',
+      jsSandboxConfigEntryDesc:
+        'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
+      jsSandboxModalIntro:
+        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval on every call.',
+      jsExecModalSummaryTitle: 'Default low access',
+      jsExecDefaultCapsHint:
+        'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
+      jsExecDefaultCurrentNote: 'Current note',
+      jsExecDefaultCurrentNoteDesc:
+        'Text, selection, links and tags from the note already in context.',
+      jsExecDefaultEnvironment: 'Environment',
+      jsExecDefaultEnvironmentDesc:
+        'Time zone, locale, platform, browser, and CPU concurrency.',
+      jsExecDefaultJs: 'JavaScript basics',
+      jsExecDefaultJsDesc:
+        'Standard JavaScript APIs such as Math, JSON, Promise and Intl, plus small helper utilities.',
+      jsExecApprovalForced: 'Approval on every call',
+      jsSandboxTimeoutMs: 'Execution timeout (ms)',
+      jsSandboxTimeoutMsDesc:
+        'Maximum runtime for a single script call. Range {min}–{max}.',
+      jsSandboxOutputMaxKb: 'Max tool result size (KB)',
+      jsSandboxOutputMaxKbDesc:
+        'Upper bound on the JSON result returned to the model. Larger output is truncated to a prefix. Oversized responses consume model context tokens and can exceed the context window, driving up cost. Range {min}–{max} KB.',
+      jsSandboxVaultReadMaxKb: 'Max read size (KB)',
+      jsSandboxVaultReadMaxKbDesc:
+        'Per-call read limit. Larger text is shortened with a notice; larger binary files are refused. Range {min}–{max} KB.',
+      jsSandboxDbMaxLimit: 'Max rows per query',
+      jsSandboxDbMaxLimitDesc:
+        'Upper bound on knowledge base results returned per query. Range 1–100.',
     },
     webSearch: {
       modalTitle: 'Web search settings',
@@ -827,7 +890,7 @@ export const en: TranslationKeys = {
         'Allow the model to fetch links mentioned in the conversation as context.',
       openRouterWebSearchEngine: 'Search engine',
       openRouterWebSearchEngineDesc:
-        'Auto lets OpenRouter pick (default). Native uses the model provider’s built-in search. Exa / Firecrawl / Parallel force the corresponding engine. Firecrawl requires your own API key configured in the OpenRouter dashboard.',
+        "Auto lets OpenRouter pick (default). Native uses the model provider's built-in search. Exa / Firecrawl / Parallel force the corresponding engine. Firecrawl requires your own API key configured in the OpenRouter dashboard.",
       openRouterWebSearchEngineAuto: 'Auto (default)',
       openRouterWebSearchEngineNative: 'Native',
       openRouterWebSearchEngineExa: 'Exa',
@@ -1368,7 +1431,7 @@ export const en: TranslationKeys = {
       blockedApproval:
         'Approve or reject the pending tool call before sending a new message.',
       blockedAwaitingInput:
-        'Answer the agent’s question in the chat before sending a new message.',
+        "Answer the agent's question in the chat before sending a new message.",
       abortedRestoredOne: 'Queued message restored to the input box',
       abortedRestoredMany:
         'Restored the latest queued message to the input box ({{count}} dropped)',

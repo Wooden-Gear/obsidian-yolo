@@ -6,6 +6,7 @@ import {
 import { ChatModel } from '../../types/chat-model.types'
 import { LLMProvider, LLMProviderApiType } from '../../types/provider.types'
 import { ReasoningLevel } from '../../types/reasoning'
+import type { AssistantJsSandboxConfig } from '../../types/assistant.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { BaseLLMProvider } from '../llm/base'
@@ -31,6 +32,7 @@ export type AgentRuntimeRunInput = {
   messages: ChatMessage[]
   requestMessages?: ChatMessage[]
   conversationId: string
+  assistantId?: string
   branchId?: string
   sourceUserMessageId?: string
   branchLabel?: string
@@ -64,6 +66,7 @@ export type AgentRuntimeRunInput = {
     include: string[]
     exclude: string[]
   }
+  jsSandboxConfig?: AssistantJsSandboxConfig
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]

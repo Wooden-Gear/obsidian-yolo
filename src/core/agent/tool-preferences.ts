@@ -1,5 +1,6 @@
 import {
   Assistant,
+  AssistantJsSandboxConfig,
   AssistantToolApprovalMode,
   AssistantToolDisclosureMode,
   AssistantToolPreference,
@@ -30,13 +31,31 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 /**
  * local tool 中需要 require_approval 的工具名集合。
  * delegate_external_agent 是高风险工具（执行外部 CLI），必须在此列表中。
+ *
+ * JS 隔离执行默认 full_access：未开启任何扩展能力时只能读已注入的 $content / $note
+ * 等快照、无网络、无 $db、无外部脚本，与其他只读工具风险相当。一旦在 Agent 配置中
+ * 打开 allowFetch / allowVaultRead / allowDbQuery / allowExternalScripts，
+ * `getAssistantToolApprovalMode` 会强制升级为 require_approval（见下方实现）。
  */
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
-  JS_SANDBOX_TOOL_NAME,
   'delegate_external_agent',
 ])
+
+const JS_SANDBOX_TOOL_FQN = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
+
+const hasAnyJsSandboxCapEnabled = (
+  config: AssistantJsSandboxConfig | null | undefined,
+): boolean => {
+  if (!config) return false
+  return Boolean(
+    config.allowFetch ||
+      config.allowVaultRead ||
+      config.allowDbQuery ||
+      config.allowExternalScripts,
+  )
+}
 
 const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -265,7 +284,20 @@ export const getAssistantToolApprovalMode = (
     | null
     | undefined,
   toolName: string,
+  options?: { jsSandboxConfig?: AssistantJsSandboxConfig | null },
 ): AssistantToolApprovalMode => {
+  // Hard override: when JS isolated execution has any extension capability enabled, force
+  // approval regardless of user preference. The default-on capabilities (current
+  // note snapshot, $utils, time/locale/GPU info) keep the same risk surface as
+  // other read-only tools, but turning on fetch / vault read / $db / external
+  // scripts crosses into territory that requires explicit consent every run.
+  if (
+    toolName === JS_SANDBOX_TOOL_FQN &&
+    hasAnyJsSandboxCapEnabled(options?.jsSandboxConfig)
+  ) {
+    return 'require_approval'
+  }
+
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.approvalMode ??
