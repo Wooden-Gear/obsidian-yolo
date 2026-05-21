@@ -609,7 +609,11 @@ export class VectorManager {
     // to the ceiling so user-configured low values aren't auto-scaled up.
     const MIN_BATCH_SIZE = Math.min(10, MAX_BATCH_SIZE)
     let currentBatchSize = MAX_BATCH_SIZE
-    const INCREMENTAL_SAVE_THRESHOLD = 1500
+    // Lowered from 1500 to 500 so an interrupted run loses at most ~500
+    // already-paid-for embeddings of in-memory data on the next save cycle.
+    // The save itself is async + throttled inside requestSave(), so a tighter
+    // threshold is not expected to add meaningful write amplification.
+    const INCREMENTAL_SAVE_THRESHOLD = 500
     let chunksSinceLastSave = 0
 
     const embedOne = async (

@@ -696,6 +696,10 @@ export type TranslationKeys = {
       manageEmbeddingDatabase: string
       manage: string
       rebuildIndex: string
+      rebuildFromScratch?: string
+      rebuildFromScratchConfirm?: string
+      continueIndex?: string
+      continueIndexNow?: string
       // UI additions
       selectedFolders?: string
       excludedFolders?: string
@@ -1436,6 +1440,8 @@ export type TranslationKeys = {
     rebuildingIndex: string
     rebuildComplete: string
     rebuildFailed: string
+    continueComplete?: string
+    continueFailed?: string
     openYoloNewChatFailed: string
     pgliteUnavailable: string
     downloadingPglite: string

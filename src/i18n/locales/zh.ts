@@ -836,6 +836,11 @@ export const zh: TranslationKeys = {
       manageEmbeddingDatabase: '管理嵌入数据库',
       manage: '管理',
       rebuildIndex: '重建索引',
+      rebuildFromScratch: '从头重建',
+      rebuildFromScratchConfirm:
+        '将清空当前嵌入模型已有的全部向量并重新索引整个知识库，可能产生大量 embedding 调用。继续？',
+      continueIndex: '继续索引',
+      continueIndexNow: '立即继续',
       // UI additions
       selectedFolders: '已选择的文件夹',
       excludedFolders: '已排除的文件夹',
@@ -1581,6 +1586,8 @@ export const zh: TranslationKeys = {
     rebuildingIndex: '正在重建库索引...',
     rebuildComplete: '重建库索引完成',
     rebuildFailed: '重建库索引失败',
+    continueComplete: '继续索引完成',
+    continueFailed: '继续索引失败',
     openYoloNewChatFailed: '打开 YOLO 聊天窗口失败，请先用命令面板尝试',
     pgliteUnavailable: 'PGlite 运行时不可用，请重试下载资源',
     downloadingPglite:
