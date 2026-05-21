@@ -7009,10 +7009,6 @@ button.yolo-agent-chip--more:hover {
   color: var(--yolo-context-usage-ring-color);
 }
 
-.yolo-chat-header-right > .yolo-context-usage-ring {
-  margin-right: var(--size-2-1);
-}
-
 .yolo-context-usage-ring[data-tone='warning'] {
   --yolo-context-usage-ring-color: var(--text-warning);
 }
@@ -8948,6 +8944,10 @@ button.yolo-agent-chip--more:hover {
 
 .yolo-chat-user-input-controls__right {
   /* 圆形发送按钮自身宽度由内容决定，无需在父级预留 flex-basis */
+  display: flex;
+  align-items: center;
+  /* 让占用环到发送按钮的距离 = 发送按钮到输入框右边内边距 */
+  gap: calc(var(--size-2-3) + 1px);
 }
 
 .yolo-chat-user-input-controls .yolo-chat-user-input-submit-button {

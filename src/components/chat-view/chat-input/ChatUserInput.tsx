@@ -72,6 +72,8 @@ import {
   SkillNode,
 } from './plugins/mention/SkillNode'
 import type { SlashCommand } from './plugins/mention/SkillSlashPlugin'
+import ContextUsageRing from '../ContextUsageRing'
+
 import { NodeMutations } from './plugins/on-mutation/OnMutationPlugin'
 import { ReasoningSelect, supportsReasoning } from './ReasoningSelect'
 import { SubmitButton } from './SubmitButton'
@@ -123,6 +125,12 @@ export type ChatUserInputProps = {
   onAbort?: () => void
   // 当输入为空、无 mentionable、无 skill 时，发送按钮以淡化态显示，不可点击
   submitDisabled?: boolean
+  // 上下文窗口占用环，传入时显示在发送按钮左侧
+  contextUsage?: {
+    promptTokens: number
+    maxContextTokens: number
+    label: string
+  }
 }
 
 const INLINE_MENTIONABLE_TYPES = [
@@ -171,6 +179,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       isGenerating = false,
       onAbort,
       submitDisabled = false,
+      contextUsage,
     },
     ref,
   ) => {
@@ -1438,6 +1447,13 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 )}
               </div>
               <div className="yolo-chat-user-input-controls__right">
+                {contextUsage && (
+                  <ContextUsageRing
+                    promptTokens={contextUsage.promptTokens}
+                    maxContextTokens={contextUsage.maxContextTokens}
+                    label={contextUsage.label}
+                  />
+                )}
                 <SubmitButton
                   onClick={() => handleSubmit()}
                   isGenerating={isGenerating}

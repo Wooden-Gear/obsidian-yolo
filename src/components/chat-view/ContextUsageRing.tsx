@@ -2,7 +2,9 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 
 import { formatTokenCount } from '../../utils/llm/formatTokenCount'
 
-const RING_RADIUS = 8
+// viewBox 20x20 内放半径 9 的圆 + stroke-width 2，让描边外缘正好贴边，
+// 避免环容器视觉上比实际圆大出 1px 留白
+const RING_RADIUS = 9
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 const clampRatio = (value: number) => {
