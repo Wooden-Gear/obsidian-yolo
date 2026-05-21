@@ -1911,3 +1911,51 @@ button.yolo-llm-debug-modal-button:focus-visible {
 .yolo-markdown-rendered a[href*="yolo-cite="]:hover {
   text-decoration: underline;
 }
+
+/*
+ * Wide content inside chat-panel markdown — tables, code blocks — must not
+ * push the chat panel itself wider than the viewport. Scoped to
+ * `.yolo-chat-messages` so Apply view / settings markdown (which renders
+ * inside their own width-constrained surfaces) keeps its native sizing.
+ *
+ * Two parts are required:
+ *
+ * 1. Reset `min-width: auto` along the flex chain from `.yolo-chat-messages`
+ *    down to `.yolo-markdown-rendered`. Without this, every flex ancestor
+ *    grows to fit a wide table's intrinsic width, so width constraints on
+ *    `.yolo-markdown-rendered` and below never bite. The `> *` selectors
+ *    target the anonymous wrapper `<div>` that `AssistantMessageContent`
+ *    puts around each markdown block.
+ * 2. Constrain wide elements themselves: tables wrap their cells to fit the
+ *    panel (no horizontal scroll); `<pre>` keeps internal horizontal scroll
+ *    because wrapping code is visually worse than scrolling it.
+ */
+.yolo-chat-timeline-row,
+.yolo-chat-messages-assistant,
+.yolo-chat-messages-user,
+.yolo-chat-messages-assistant > *,
+.yolo-chat-messages-user > *,
+.yolo-chat-messages .yolo-markdown-rendered {
+  min-width: 0;
+}
+
+/* Tables: fill the panel and wrap content instead of horizontally scrolling.
+ * `.table-wrapper` is what newer Obsidian wraps `<table>` in; the `table`
+ * selector is a fallback for older versions that render `<table>` directly.
+ * `display: block` is deliberately NOT applied to `table` so column-width
+ * calculation stays native. */
+.yolo-chat-messages .yolo-markdown-rendered :is(.table-wrapper, table) {
+  max-width: 100%;
+  width: 100%;
+}
+/* Long unbreakable tokens (snake_case identifiers, URLs) would otherwise
+ * push cells beyond their container — `overflow-wrap: anywhere` lets the
+ * browser break inside such tokens as a last resort. */
+.yolo-chat-messages .yolo-markdown-rendered :is(th, td) {
+  overflow-wrap: anywhere;
+}
+
+.yolo-chat-messages .yolo-markdown-rendered pre {
+  max-width: 100%;
+  overflow-x: auto;
+}

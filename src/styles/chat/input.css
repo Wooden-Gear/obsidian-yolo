@@ -1091,6 +1091,12 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* `clip` (not `hidden`): prevents any descendant — wide markdown tables,
+   * long pre blocks, etc. — from forcing a panel-wide horizontal scrollbar,
+   * without making this element an implicit scroll container (which would
+   * affect sticky positioning and ResizeObserver behavior). Wide content
+   * still gets its own internal scroll via `.yolo-markdown-rendered`. */
+  overflow-x: clip;
   user-select: text;
   display: flex;
   flex-direction: column;
