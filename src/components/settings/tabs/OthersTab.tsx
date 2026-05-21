@@ -1,4 +1,4 @@
-import { App } from 'obsidian'
+import { App, Platform } from 'obsidian'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
@@ -81,6 +81,7 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
     ) {
       return
     }
+    if (value === 'window' && !Platform.isDesktop) return
     void (async () => {
       try {
         await setSettings({
@@ -162,7 +163,14 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
                   ),
                   tab: t('settings.etc.ribbonClickActionTab', '新标签页'),
                   split: t('settings.etc.ribbonClickActionSplit', '右侧分屏'),
-                  window: t('settings.etc.ribbonClickActionWindow', '独立窗口'),
+                  ...(Platform.isDesktop
+                    ? {
+                        window: t(
+                          'settings.etc.ribbonClickActionWindow',
+                          '独立窗口',
+                        ),
+                      }
+                    : {}),
                   last: t('settings.etc.ribbonClickActionLast', '上次的位置'),
                 }}
                 onChange={handleRibbonClickActionChange}
