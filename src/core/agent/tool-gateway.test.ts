@@ -89,7 +89,7 @@ describe('AgentToolGateway', () => {
           id: 'tool-1',
           name: 'yolo_local__load_tool_schemas',
           arguments: createCompleteToolCallArguments({
-            value: { names: ['server__tool_a'] },
+            value: { servers: ['server'] },
           }),
         },
       ],

@@ -1075,20 +1075,6 @@ export function AgentsSectionContent({
     ],
     [t],
   )
-  const toolDisclosureOptions = useMemo(
-    () => [
-      {
-        value: 'always',
-        label: t('settings.agent.toolDisclosureAlways', 'In context'),
-      },
-      {
-        value: 'on_demand',
-        label: t('settings.agent.toolDisclosureOnDemand', 'On demand'),
-      },
-    ],
-    [t],
-  )
-
   return (
     <div
       className={`yolo-settings-section yolo-agent-editor-panel${
@@ -1489,24 +1475,6 @@ export function AgentsSectionContent({
                             )
                               ? 'full_access'
                               : 'require_approval'
-                            const disclosureMode = tool.toggleTargets.every(
-                              (target) =>
-                                getAssistantToolDisclosureMode(
-                                  draftAgent,
-                                  target,
-                                  { enableToolDisclosure },
-                                ) === 'on_demand',
-                            )
-                              ? 'on_demand'
-                              : 'always'
-                            // `load_tool_schemas` is the entry point that lets
-                            // the model disclose every other on-demand tool.
-                            // Keep it pinned to the stable tools prefix.
-                            const disclosureLocked = tool.toggleTargets.some(
-                              (target) => isLoadToolSchemasToolName(target),
-                            )
-                            const showRowDisclosure =
-                              group.isBuiltin && enableToolDisclosure
 
                             return (
                               <div
@@ -1524,23 +1492,6 @@ export function AgentsSectionContent({
                                 <div className="yolo-agent-tool-controls">
                                   {selected && (
                                     <>
-                                      {showRowDisclosure && (
-                                        <div className="yolo-agent-tool-select">
-                                          <SimpleSelect
-                                            value={disclosureMode}
-                                            options={toolDisclosureOptions}
-                                            onChange={(value) =>
-                                              setToolDisclosureMode(
-                                                tool.toggleTargets,
-                                                value as AssistantToolDisclosureMode,
-                                              )
-                                            }
-                                            align="end"
-                                            contentClassName="yolo-agent-tool-select-menu"
-                                            disabled={disclosureLocked}
-                                          />
-                                        </div>
-                                      )}
                                       <div className="yolo-agent-tool-select">
                                         <SimpleSelect
                                           value={approvalMode}

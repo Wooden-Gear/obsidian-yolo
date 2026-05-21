@@ -1131,7 +1131,7 @@ ${quotes
       content: `<previously-loaded-tools>
 The following on-demand tools were already disclosed by yolo_local__load_tool_schemas earlier in this conversation. Their stubs remain registered in the tools list. You may call them directly using the schemas below without calling yolo_local__load_tool_schemas again.
 
-If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__load_tool_schemas to re-disclose it first.
+If you need an on-demand tool that is NOT listed here (for example because its schema was too large to persist across compaction), call yolo_local__load_tool_schemas with {"servers":["<server-name>"]} — where "<server-name>" is the prefix before "__" in the stub tool name — to re-disclose all on-demand tools under that MCP server.
 
 ${entries}
 </previously-loaded-tools>`,

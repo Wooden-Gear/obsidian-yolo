@@ -279,6 +279,18 @@ export const getAssistantToolDisclosureMode = (
     return 'always'
   }
 
+  // Built-in tools are part of the agent's core capabilities (~3.9K tokens
+  // total) and are always loaded. Disclosure is an MCP-only concept now;
+  // any stale `on_demand` value in toolPreferences for a built-in is ignored.
+  try {
+    const { serverName } = parseToolName(toolName)
+    if (serverName === getLocalFileToolServerName()) {
+      return 'always'
+    }
+  } catch {
+    // Fall through to default handling below.
+  }
+
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.disclosureMode ??

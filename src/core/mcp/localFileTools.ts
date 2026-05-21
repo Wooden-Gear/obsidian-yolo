@@ -1126,19 +1126,19 @@ export function getLocalFileTools(options?: {
     {
       name: LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
       description:
-        'Load full schemas for on-demand tools so they become callable in the next turn. Pass tool names directly — batch multiple when needed.',
+        'Load full schemas for all on-demand tools belonging to the given MCP servers, making them callable in the next turn. Pass MCP server names (the prefix before "__" in any stub tool name) — batch multiple servers when needed.',
       inputSchema: {
         type: 'object',
         properties: {
-          names: {
+          servers: {
             type: 'array',
             items: { type: 'string' },
             minItems: 1,
             description:
-              'Exact tool names to load (as shown in the tools list).',
+              'MCP server names whose on-demand tools should be loaded (e.g. "context7", "deepwiki").',
           },
         },
-        required: ['names'],
+        required: ['servers'],
       },
     },
     {
