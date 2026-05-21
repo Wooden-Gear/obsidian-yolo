@@ -62,8 +62,33 @@
   height: 18px;
   flex-shrink: 0;
   color: var(--yolo-context-usage-ring-color);
+  /* Reset button defaults so the ring blends into the input toolbar. */
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
+.yolo-context-usage-ring:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.yolo-context-usage-ring:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 65%, transparent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.yolo-context-usage-ring[data-state='open'] {
+  /* slight highlight when popover is open */
+  filter: brightness(1.1);
+}
 
 .yolo-context-usage-ring[data-tone='warning'] {
   --yolo-context-usage-ring-color: var(--text-warning);

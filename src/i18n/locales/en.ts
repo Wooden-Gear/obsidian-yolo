@@ -1348,6 +1348,22 @@ export const en: TranslationKeys = {
     placeholderMention: 'add references or models',
     placeholderSkill: 'choose a skill or command',
     contextUsage: 'Context window usage',
+    contextBreakdown: {
+      title: 'Context',
+      fullLabel: '{{percent}} Full',
+      tokensSuffix: 'Tokens',
+      localEstimateCaption:
+        'Local estimate — may differ from server-side billing.',
+      error: 'Estimation failed',
+      bucket: {
+        system: 'System prompt',
+        tools: 'Tools',
+        rules: 'Rules',
+        skills: 'Skills',
+        memory: 'Memory',
+        conversation: 'Conversation',
+      },
+    },
     inlineInfo: {
       callsTitle: '{{count}} calls this turn',
       nextTurnContext: 'Context used: ~{{tokens}} tokens',

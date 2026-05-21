@@ -1291,6 +1291,22 @@ export const it: TranslationKeys = {
     placeholderMention: 'aggiungere riferimenti o modelli',
     placeholderSkill: 'scegliere una skill o un comando',
     contextUsage: 'Utilizzo finestra di contesto',
+    contextBreakdown: {
+      title: 'Contesto',
+      fullLabel: '{{percent}} pieno',
+      tokensSuffix: 'token',
+      localEstimateCaption:
+        'Stima locale — può differire dal conteggio del server.',
+      error: 'Stima fallita',
+      bucket: {
+        system: 'Prompt di sistema',
+        tools: 'Strumenti',
+        rules: 'Regole',
+        skills: 'Skill',
+        memory: 'Memoria',
+        conversation: 'Conversazione',
+      },
+    },
     inlineInfo: {
       callsTitle: '{{count}} chiamate in questo turno',
       nextTurnContext: 'Contesto utilizzato: ~{{tokens}} token',

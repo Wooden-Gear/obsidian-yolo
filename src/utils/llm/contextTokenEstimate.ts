@@ -63,7 +63,17 @@ const estimatePdfTokens = (pageCount: unknown): number => {
   return ESTIMATED_PDF_TOKENS_FALLBACK
 }
 
-const normalizeJsonValue = (
+/**
+ * Walk `value`, replacing base64 image/PDF data URLs with placeholders and
+ * sorting object keys alphabetically. The returned `value` is structurally
+ * canonical — same logical content produces byte-identical JSON regardless of
+ * source key order, and oversize base64 blobs are reduced to short markers.
+ *
+ * Exported so the context-breakdown cache can reuse the same normalization
+ * when hashing sections (avoids both key-order false-misses and pathological
+ * stringify cost on PDF/image-heavy conversations).
+ */
+export const normalizeJsonValue = (
   value: unknown,
 ): { value: unknown; imageCount: number; pdfTokenEstimate: number } => {
   let imageCount = 0

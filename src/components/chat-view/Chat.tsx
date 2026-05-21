@@ -1285,6 +1285,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     compactConversation,
     currentConversationRunSummary,
     submitChatMutation,
+    buildContextBreakdownInputs,
   } = useChatStreamManager({
     setChatMessages,
     setCompactionState,
@@ -5130,6 +5131,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                           promptTokens: headerContextUsage.promptTokens,
                           maxContextTokens: headerContextUsage.maxContextTokens,
                           label: t('chat.contextUsage', '上下文窗口占用'),
+                          buildBreakdownInputs: () =>
+                            buildContextBreakdownInputs(chatMessages),
                         }
                       : undefined
                   }

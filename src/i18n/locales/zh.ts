@@ -1263,6 +1263,21 @@ export const zh: TranslationKeys = {
     placeholderMention: '添加引用或模型',
     placeholderSkill: '选择技能或命令',
     contextUsage: '上下文窗口占用',
+    contextBreakdown: {
+      title: '上下文',
+      fullLabel: '已占用 {{percent}}',
+      tokensSuffix: 'Tokens',
+      localEstimateCaption: '本地估算，可能与服务端计费存在偏差',
+      error: '估算失败',
+      bucket: {
+        system: '系统提示',
+        tools: '工具',
+        rules: '规则',
+        skills: '技能',
+        memory: '记忆',
+        conversation: '会话',
+      },
+    },
     inlineInfo: {
       callsTitle: '本轮 {{count}} 次调用',
       nextTurnContext: '已占用上下文：~{{tokens}} tokens',

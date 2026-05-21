@@ -7007,6 +7007,32 @@ button.yolo-agent-chip--more:hover {
   height: 18px;
   flex-shrink: 0;
   color: var(--yolo-context-usage-ring-color);
+  /* Reset button defaults so the ring blends into the input toolbar. */
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.yolo-context-usage-ring:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.yolo-context-usage-ring:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 65%, transparent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.yolo-context-usage-ring[data-state='open'] {
+  /* slight highlight when popover is open */
+  filter: brightness(1.1);
 }
 
 .yolo-context-usage-ring[data-tone='warning'] {
@@ -13463,6 +13489,248 @@ button.yolo-chat-input-model-select {
 
 .yolo-popover-surface.yolo-popover-view-toggle-mode {
   width: var(--radix-dropdown-menu-trigger-width);
+}
+
+/* 上下文占用分解 popover ——purpose 类，仅承担尺寸 / 内容布局。
+   宽度跟随 anchor（即 .yolo-chat-user-input-container）；
+   背景 / 阴影沿用 --default 变体（见 popover/surface.css）。 */
+
+.yolo-popover-surface.yolo-context-breakdown-popover {
+  /* Width tracks the popper anchor element (the input-container, supplied via
+   * Popover.Anchor virtualRef in ContextUsagePopover). The Radix var is
+   * `--radix-popper-anchor-width` (note: popper, not popover) — popover-level
+   * vars only expose trigger width, which here is the tiny ring. */
+  width: var(--radix-popper-anchor-width);
+  max-height: 60vh;
+  overflow: auto;
+  padding: 12px 16px 10px;
+}
+
+.yolo-context-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.yolo-context-breakdown__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.yolo-context-breakdown__title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.yolo-context-breakdown__title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  flex-shrink: 0;
+}
+
+/* Estimation disclaimer — sits on the title row, right-aligned, muted. Pulled
+ * up from a dedicated footer to avoid trailing whitespace below the list. */
+
+.yolo-context-breakdown__caption {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  opacity: 0.85;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yolo-context-breakdown__summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.yolo-context-breakdown__percent {
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+}
+
+.yolo-context-breakdown__totals {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.yolo-context-breakdown__totals-suffix {
+  font-family: var(--font-interface);
+  color: var(--text-muted);
+}
+
+.yolo-context-breakdown__bar {
+  display: flex;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-border) 60%,
+    transparent
+  );
+  gap: 1px;
+}
+
+.yolo-context-breakdown__bar--skeleton {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-border) 78%,
+    transparent
+  );
+  animation: yolo-context-breakdown-pulse 1.4s ease-in-out infinite;
+}
+
+.yolo-context-breakdown__bar-segment {
+  display: block;
+  height: 100%;
+}
+
+/* Prefix with `.yolo-popover-surface` so specificity (0,2,0 / 0,2,1) beats the
+ * generic interactive-list rules earlier in this file (.yolo-popover-surface
+ * ul / .yolo-popover-surface ul li, specificity 0,1,1 / 0,1,2 — classes
+ * outweigh element selectors). Without this, the breakdown list inherits
+ * cursor: pointer, hover background, scrollbar, border-radius and per-item
+ * background from the dropdown-flavoured popover rules. */
+
+.yolo-popover-surface .yolo-context-breakdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.yolo-popover-surface .yolo-context-breakdown__list-item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  height: 28px;
+  min-height: 28px;
+  /* Reset the dropdown-list-item `min-width: 180px` so a narrow input box
+   * doesn't force the popover to widen past its anchor. */
+  min-width: 0;
+  padding: 0 2px;
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-normal);
+  background: transparent;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: default;
+  overflow: visible;
+}
+
+.yolo-popover-surface .yolo-context-breakdown__list-item:hover {
+  background: transparent;
+  background-color: transparent;
+  cursor: default;
+}
+
+.yolo-context-breakdown__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.yolo-context-breakdown__list-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-normal);
+}
+
+.yolo-context-breakdown__list-tokens {
+  font-family: var(--font-monospace);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+  text-align: right;
+}
+
+.yolo-context-breakdown__list-skeleton {
+  display: inline-block;
+  width: 36px;
+  height: 10px;
+  border-radius: var(--radius-s);
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-border) 80%,
+    transparent
+  );
+  animation: yolo-context-breakdown-pulse 1.4s ease-in-out infinite;
+}
+
+.yolo-context-breakdown__error {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-error);
+  padding: 4px 2px;
+}
+
+/* Bucket colors — follow Obsidian theme variables so light/dark Just Work. */
+
+.yolo-context-breakdown-swatch--system {
+  background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+}
+
+.yolo-context-breakdown-swatch--tools {
+  background: var(--color-purple);
+}
+
+.yolo-context-breakdown-swatch--rules {
+  background: var(--color-green);
+}
+
+.yolo-context-breakdown-swatch--skills {
+  background: var(--color-orange);
+}
+
+.yolo-context-breakdown-swatch--memory {
+  background: var(--color-yellow);
+}
+
+.yolo-context-breakdown-swatch--conversation {
+  background: var(--color-accent-2, var(--interactive-accent));
+}
+
+@keyframes yolo-context-breakdown-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yolo-context-breakdown__bar--skeleton,
+  .yolo-context-breakdown__list-skeleton {
+    animation: none !important;
+  }
 }
 
 /* 外部 Agent 工具卡：终端样式

@@ -54,7 +54,10 @@ import {
 import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
+import ContextUsagePopover from '../ContextUsagePopover'
+import ContextUsageRing from '../ContextUsageRing'
 import { useSnippetEntries } from '../hooks/useSnippetEntries'
+import type { ContextBreakdownInputs } from '../useContextBreakdown'
 
 import ChatSkillBadge from './ChatSkillBadge'
 import { FileUploadButton } from './FileUploadButton'
@@ -72,8 +75,6 @@ import {
   SkillNode,
 } from './plugins/mention/SkillNode'
 import type { SlashCommand } from './plugins/mention/SkillSlashPlugin'
-import ContextUsageRing from '../ContextUsageRing'
-
 import { NodeMutations } from './plugins/on-mutation/OnMutationPlugin'
 import { ReasoningSelect, supportsReasoning } from './ReasoningSelect'
 import { SubmitButton } from './SubmitButton'
@@ -130,6 +131,14 @@ export type ChatUserInputProps = {
     promptTokens: number
     maxContextTokens: number
     label: string
+    /** When provided, the ring becomes a popover trigger that opens the
+     * per-bucket context breakdown. Builder is called lazily on open and may
+     * be async; resolution to null surfaces as a non-blocking error inside
+     * the popover (the ring still works for hover hint). */
+    buildBreakdownInputs?: () =>
+      | ContextBreakdownInputs
+      | null
+      | Promise<ContextBreakdownInputs | null>
   }
 }
 
@@ -1447,13 +1456,22 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 )}
               </div>
               <div className="yolo-chat-user-input-controls__right">
-                {contextUsage && (
-                  <ContextUsageRing
-                    promptTokens={contextUsage.promptTokens}
-                    maxContextTokens={contextUsage.maxContextTokens}
-                    label={contextUsage.label}
-                  />
-                )}
+                {contextUsage &&
+                  (contextUsage.buildBreakdownInputs ? (
+                    <ContextUsagePopover
+                      promptTokens={contextUsage.promptTokens}
+                      maxContextTokens={contextUsage.maxContextTokens}
+                      label={contextUsage.label}
+                      anchorRef={containerRef}
+                      buildInputs={contextUsage.buildBreakdownInputs}
+                    />
+                  ) : (
+                    <ContextUsageRing
+                      promptTokens={contextUsage.promptTokens}
+                      maxContextTokens={contextUsage.maxContextTokens}
+                      label={contextUsage.label}
+                    />
+                  ))}
                 <SubmitButton
                   onClick={() => handleSubmit()}
                   isGenerating={isGenerating}
