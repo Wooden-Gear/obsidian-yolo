@@ -32,7 +32,10 @@ import {
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
 import { isLoadToolSchemasToolName } from '../../../core/agent/tool-selection'
-import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
+import {
+  JS_SANDBOX_TOOL_NAME,
+  buildJsSandboxDescription,
+} from '../../../core/mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -940,22 +943,38 @@ export function AgentsSectionContent({
     )
 
     void Promise.all(
-      eligibleTools.map((tool) =>
-        estimateToolDefaultContextTokens(tool).then(async (count) => {
-          const disclosureMode = getAssistantToolDisclosureMode(
-            draftAgent,
-            tool.name,
-            { enableToolDisclosure },
-          )
-          if (disclosureMode !== 'on_demand') {
-            return [tool.name, count] as const
-          }
-          const stubCount = await estimateJsonTokens(
-            buildDeferredToolStubTokenPayload(tool),
-          )
-          return [tool.name, stubCount] as const
-        }),
-      ),
+      eligibleTools.map((tool) => {
+        // js_eval's description is rewritten per-agent based on which
+        // extension capabilities are enabled (mirrors selectAllowedTools at
+        // request time). Estimate against that agent-specific description so
+        // the token count tracks capability toggles instead of the static
+        // default the cached tool list carries.
+        const effectiveTool =
+          tool.name === jsSandboxFullToolName
+            ? {
+                ...tool,
+                description: buildJsSandboxDescription(
+                  draftAgent.jsSandboxConfig,
+                ),
+              }
+            : tool
+        return estimateToolDefaultContextTokens(effectiveTool).then(
+          async (count) => {
+            const disclosureMode = getAssistantToolDisclosureMode(
+              draftAgent,
+              tool.name,
+              { enableToolDisclosure },
+            )
+            if (disclosureMode !== 'on_demand') {
+              return [tool.name, count] as const
+            }
+            const stubCount = await estimateJsonTokens(
+              buildDeferredToolStubTokenPayload(effectiveTool),
+            )
+            return [tool.name, stubCount] as const
+          },
+        )
+      }),
     ).then((entries) => {
       if (cancelled) return
       const perTool = new Map(entries)
@@ -974,6 +993,7 @@ export function AgentsSectionContent({
     draftAgent,
     draftAgent?.enableTools,
     draftAgent?.includeBuiltinTools,
+    jsSandboxFullToolName,
     localFsServerName,
     enableToolDisclosure,
   ])

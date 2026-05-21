@@ -790,7 +790,14 @@ async function runInScope(code, rawVars) {
 
 function serializeResult(value) {
   if (typeof value === 'undefined') {
-    return 'null'
+    // Most common cause: multi-statement code without an explicit return.
+    // Wrapping the silent undefined with a hint saves the model from
+    // staring at a bare null and guessing whether the run failed,
+    // returned nothing intentionally, or just forgot the return statement.
+    return JSON.stringify({
+      result: null,
+      hint: 'Script returned undefined. Multi-statement code needs an explicit "return <expr>" on the final value. Single-expression code is auto-returned.'
+    })
   }
   const json = JSON.stringify(value)
   if (typeof json !== 'string') {
@@ -1019,6 +1026,7 @@ postToParent({ type: 'ready' })
 
 const JS_SANDBOX_BASE_DESCRIPTION =
   'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs (Blob, Response, Request, OffscreenCanvas, createImageBitmap, etc.). crypto.subtle is undefined.' +
+  ' Errors: every await can reject — do NOT swallow with `?? null` or empty `catch { return null }`. Let exceptions propagate so the host returns `{ error, stack }`. `$vault.readText/readBinary` return `null` only when the file truly does not exist; folder paths and read failures throw. `$db.search/find` return `[]` for no matches; throw when the vault has no index.' +
   ' Injected variables: $now (Date object), $isoDate ("YYYY-MM-DD" string), $note ({path:string,basename:string,frontmatter:Record}|null — null in Quick Ask or when no note is open), $content (string|null — full text of the active note), $selection (string|null — user\'s current text selection), $vault ({name:string, adapter:{basePath:string|null}}), $links (string[] — outgoing wiki-link targets from current note), $tags (string[] — tags from current note).' +
   ' $utils helpers — json: flatten(v), groupBy(items,key), countBy(items,key); text: markdownHeadings(md)->[{level,text,line}], tasks(md)->[{checked,status,text,indent,line}], wikilinks(md)->[{target,alias}]; stats: sum/mean/median/percentile(vals,p)/stdev(vals,sample?); matrix: identity(n)/multiply(a,b)/pow(m,exp); date: addDays(isoDate,days), diffDays(a,b), today().'
 

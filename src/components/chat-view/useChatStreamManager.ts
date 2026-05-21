@@ -1012,6 +1012,11 @@ export function useChatStreamManager({
         toolPreferences: chatModeRuntime.toolPreferences,
         allowedSkillIds: enabledSkillEntries.map((s) => s.id),
         allowedSkillNames: enabledSkillEntries.map((s) => s.name),
+        // js_eval's description is rewritten per-agent based on which
+        // extension caps are on. Without this, the popover under-reports
+        // tools-bucket tokens when an agent has caps enabled.
+        jsSandboxConfig:
+          resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
         contextualInjections: buildChatContextualInjections({
           includeCurrentFileContent:
             settings.chatOptions.includeCurrentFileContent,

@@ -4626,8 +4626,15 @@ function buildJsSandboxProxyHandlers(
     handlers.vaultReadText = async (path: string) => {
       const normalized = normalizePath(path)
       const file = app.vault.getAbstractFileByPath(normalized)
-      if (!(file instanceof TFile)) {
+      // Contract: return null ONLY when the file truly does not exist
+      // (a legitimate "missing" signal the model can branch on). Folder
+      // paths and read failures throw with a reason so the script doesn't
+      // collapse two distinct cases into the same null.
+      if (file === null) {
         return null
+      }
+      if (!(file instanceof TFile)) {
+        throw new Error(`vault.readText: "${path}" is a folder, not a file`)
       }
       try {
         const vault = app.vault as {
@@ -4644,42 +4651,46 @@ function buildJsSandboxProxyHandlers(
           )
         }
         return text
-      } catch {
-        return null
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(`vault.readText: ${reason}`)
       }
     }
 
     handlers.vaultReadBinary = async (path: string) => {
       const normalized = normalizePath(path)
       const file = app.vault.getAbstractFileByPath(normalized)
-      if (!(file instanceof TFile)) {
+      // Same contract as readText: null only for "file does not exist".
+      if (file === null) {
         return null
       }
-      try {
-        const buffer = await app.vault.readBinary(file)
-        const bytes = new Uint8Array(buffer)
-        if (bytes.length > vaultReadMaxBytes) {
-          // Binary truncation would yield an invalid file; refuse instead so
-          // the model gets a clear signal rather than corrupted base64.
-          throw new Error(
-            `vault.readBinary refused: file is ${bytes.length} bytes, vaultReadMaxKb cap is ${vaultReadMaxKb} KB`,
-          )
-        }
-        // Convert in 32KB chunks to avoid `String.fromCharCode(...arr)` blowing the call-stack on large files.
-        let binary = ''
-        const chunkSize = 0x8000
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
-          binary += String.fromCharCode.apply(null, Array.from(chunk))
-        }
-        const base64 = btoa(binary)
-        return {
-          base64,
-          mimeType: guessMimeTypeFromExtension(file.extension),
-          byteLength: bytes.length,
-        }
-      } catch {
-        return null
+      if (!(file instanceof TFile)) {
+        throw new Error(`vault.readBinary: "${path}" is a folder, not a file`)
+      }
+      const buffer = await app.vault.readBinary(file).catch((error) => {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(`vault.readBinary: ${reason}`)
+      })
+      const bytes = new Uint8Array(buffer)
+      if (bytes.length > vaultReadMaxBytes) {
+        // Binary truncation would yield an invalid file; refuse instead so
+        // the model gets a clear signal rather than corrupted base64.
+        throw new Error(
+          `vault.readBinary refused: file is ${bytes.length} bytes, vaultReadMaxKb cap is ${vaultReadMaxKb} KB`,
+        )
+      }
+      // Convert in 32KB chunks to avoid `String.fromCharCode(...arr)` blowing the call-stack on large files.
+      let binary = ''
+      const chunkSize = 0x8000
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
+        binary += String.fromCharCode.apply(null, Array.from(chunk))
+      }
+      const base64 = btoa(binary)
+      return {
+        base64,
+        mimeType: guessMimeTypeFromExtension(file.extension),
+        byteLength: bytes.length,
       }
     }
   }
