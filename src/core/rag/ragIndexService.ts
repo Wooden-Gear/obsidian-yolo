@@ -172,6 +172,10 @@ export class RagIndexService {
             this.snapshot = {
               ...this.snapshot,
               status: shouldRecover ? 'retry_scheduled' : 'failed',
+              // Interrupted runs always resume as 'sync' so the reconcile loop
+              // skips chunks already in the DB instead of truncating. Users who
+              // truly want a fresh rebuild trigger it explicitly from the UI.
+              mode: shouldRecover ? 'sync' : this.snapshot.mode,
               retryAt: shouldRecover
                 ? Date.now() + INTERRUPTED_RETRY_DELAY_MS
                 : undefined,

@@ -609,6 +609,13 @@ export class VectorManager {
     // to the ceiling so user-configured low values aren't auto-scaled up.
     const MIN_BATCH_SIZE = Math.min(10, MAX_BATCH_SIZE)
     let currentBatchSize = MAX_BATCH_SIZE
+    // Full DB snapshot checkpoint interval (chunks). requestSave() triggers
+    // a full pgClient.dumpDataDir + writeBinary, whose cost scales with total
+    // DB size — not with the 1500-chunk delta — so lowering this knob has
+    // O(DB size) write amplification and is not a sound way to bound the
+    // "embeddings already paid for but not yet persisted" loss. If that loss
+    // ever needs a real bound, do it with an incremental segment log, not by
+    // shortening this interval.
     const INCREMENTAL_SAVE_THRESHOLD = 1500
     let chunksSinceLastSave = 0
 

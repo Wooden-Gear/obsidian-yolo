@@ -856,6 +856,11 @@ export const it: TranslationKeys = {
       manageEmbeddingDatabase: 'Gestisci database embedding',
       manage: 'Gestisci',
       rebuildIndex: 'Ricostruisci indice',
+      rebuildFromScratch: 'Ricostruisci da zero',
+      rebuildFromScratchConfirm:
+        "Verranno eliminati tutti i vettori esistenti del modello di embedding corrente e l'intero vault verrà reindicizzato, con possibili numerose chiamate API. Continuare?",
+      continueIndex: 'Continua indicizzazione',
+      continueIndexNow: 'Continua ora',
       selectedFolders: 'Cartelle selezionate',
       excludedFolders: 'Cartelle escluse',
       selectFoldersPlaceholder: 'Seleziona cartelle...',
@@ -1680,6 +1685,8 @@ export const it: TranslationKeys = {
     rebuildingIndex: 'Ricostruzione indice vault in corso…',
     rebuildComplete: 'Ricostruzione indice vault completata.',
     rebuildFailed: 'Ricostruzione indice vault fallita.',
+    continueComplete: 'Indicizzazione ripresa completata.',
+    continueFailed: 'Indicizzazione ripresa fallita.',
     openYoloNewChatFailed:
       'Impossibile aprire la finestra chat YOLO; prova prima dal palette comandi.',
     pgliteUnavailable:

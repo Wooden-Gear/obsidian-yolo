@@ -897,6 +897,11 @@ export const en: TranslationKeys = {
       manageEmbeddingDatabase: 'Manage embedding database',
       manage: 'Manage',
       rebuildIndex: 'Rebuild index',
+      rebuildFromScratch: 'Rebuild from scratch',
+      rebuildFromScratchConfirm:
+        'This will clear all existing vectors for the current embedding model and re-index the entire vault, which may incur many embedding API calls. Continue?',
+      continueIndex: 'Continue indexing',
+      continueIndexNow: 'Continue now',
       // UI additions
       selectedFolders: 'Selected folders',
       excludedFolders: 'Excluded folders',
@@ -1715,6 +1720,8 @@ export const en: TranslationKeys = {
     rebuildingIndex: 'Rebuilding vault index…',
     rebuildComplete: 'Rebuilding vault index complete.',
     rebuildFailed: 'Rebuilding vault index failed.',
+    continueComplete: 'Resumed index completed.',
+    continueFailed: 'Resumed index failed.',
     openYoloNewChatFailed:
       'Failed to open the YOLO chat window; try the command palette first.',
     pgliteUnavailable:
