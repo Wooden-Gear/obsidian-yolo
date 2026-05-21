@@ -1018,7 +1018,7 @@ postToParent({ type: 'ready' })
 `
 
 const JS_SANDBOX_BASE_DESCRIPTION =
-  'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs (Blob, Response, Request, OffscreenCanvas, createImageBitmap, etc.).' +
+  'Execute JavaScript in an isolated classic Worker and return JSON. Each call uses a fresh Worker; re-import/recreate state inside the same call. Single expressions are auto-returned; multi-statement code needs an explicit return. All YOLO host APIs are async and MUST be awaited: $vault.*, $db.*, $fetch, $loadScript. No DOM/document/Image; use Worker APIs (Blob, Response, Request, OffscreenCanvas, createImageBitmap, etc.). crypto.subtle is undefined.' +
   ' Injected variables: $now (Date object), $isoDate ("YYYY-MM-DD" string), $note ({path:string,basename:string,frontmatter:Record}|null — null in Quick Ask or when no note is open), $content (string|null — full text of the active note), $selection (string|null — user\'s current text selection), $vault ({name:string, adapter:{basePath:string|null}}), $links (string[] — outgoing wiki-link targets from current note), $tags (string[] — tags from current note).' +
   ' $utils helpers — json: flatten(v), groupBy(items,key), countBy(items,key); text: markdownHeadings(md)->[{level,text,line}], tasks(md)->[{checked,status,text,indent,line}], wikilinks(md)->[{target,alias}]; stats: sum/mean/median/percentile(vals,p)/stdev(vals,sample?); matrix: identity(n)/multiply(a,b)/pow(m,exp); date: addDays(isoDate,days), diffDays(a,b), today().'
 
@@ -1051,7 +1051,7 @@ export function buildJsSandboxDescription(
         ? config.vaultReadMaxKb
         : JS_SANDBOX_VAULT_READ_DEFAULT_MAX_KB
     enabled.push(
-      `await $vault.readText(path) -> string|null (text above ${vaultCapKb} KB is truncated); await $vault.readBinary(path) -> {base64,mimeType,byteLength}|null (files above ${vaultCapKb} KB are refused)`,
+      `await $vault.readText(path) -> string|null (text above ${vaultCapKb} KB is truncated); await $vault.readBinary(path) -> {base64,mimeType,byteLength}|null (files above ${vaultCapKb} KB are refused; for Blob: \`new Blob([Uint8Array.from(atob(base64), c=>c.charCodeAt(0))], {type:mimeType})\`)`,
     )
   } else {
     disabled.push('vault file reads')
@@ -1087,7 +1087,7 @@ export function buildJsSandboxDescription(
         ? Math.min(100, Math.floor(config.dbQueryMaxLimit))
         : 20
     enabled.push(
-      `Text index only. await $db.search(query, limit?) -> [{path,content,similarity,...}] (semantic/vector search, requires vault index; up to ${dbLimit} results). await $db.find(keyword, limit?) -> [{path,excerpt}] (full-text keyword search; up to ${dbLimit} results). await $db.get(path) -> {content,frontmatter}|null. Do not use $db for images/PDF/audio/binary; use await $vault.readBinary(path) when vault read is enabled`,
+      `Text index only. await $db.search(query, limit?) -> [{path,content,similarity,...}] (semantic/vector search; \`content\` is the matched chunk excerpt, not the full file; requires vault index; up to ${dbLimit} results). await $db.find(keyword, limit?) -> [{path,excerpt}] (full-text keyword search; up to ${dbLimit} results). await $db.get(path) -> {content,frontmatter}|null. Do not use $db for images/PDF/audio/binary; use await $vault.readBinary(path) when vault read is enabled`,
     )
   } else {
     disabled.push('$db')
@@ -1095,7 +1095,7 @@ export function buildJsSandboxDescription(
 
   if (config?.allowExternalScripts) {
     enabled.push(
-      'External scripts: importScripts(url1, ...) loads classic remote scripts when the browser and script host allow it; Worker/SharedWorker are unblocked. await $loadScript(url) fetches source text via the host if you want to inspect/eval manually. Network is implicitly enabled',
+      'External scripts: `importScripts(url, ...)` loads AND executes remote classic scripts into the worker — synchronous (no await), registers globals (e.g. `Tesseract`, `tf`). `$loadScript(url)` only FETCHES source text; use it for inspection or patching, NOT to load libraries. Worker/SharedWorker unblocked. Network implicitly enabled',
     )
   } else {
     disabled.push('external scripts, importScripts, nested Worker')
@@ -1110,11 +1110,20 @@ export function buildJsSandboxDescription(
       ? ` NOT available (do not call): ${disabled.join(', ')}.`
       : ''
 
+  // When both $vault and $db are on, the model needs picker logic — otherwise
+  // it tends to default to $db (lossy excerpts) even for tasks that demand
+  // exact bytes (path-keyed reads, line-aligned diffs, missing-file checks,
+  // exhaustive scans over a known date/path set).
+  const vaultVsDbLine =
+    config?.allowVaultRead && config?.allowDbQuery
+      ? ' $vault vs $db: use $vault.readText(path) for exact bytes at known paths (raw text, missing-file checks, exhaustive scans); use $db.find/$db.search to discover files by keyword/similarity. Compose: $db locates, $vault reads.'
+      : ''
+
   const outputCapBytes = resolveJsSandboxOutputMaxBytes(config?.outputMaxKb)
   const outputCapKb = Math.floor(outputCapBytes / 1024)
-  const returnLine = ` Output is JSON and truncated above ~${outputCapKb} KB; summarize or slice large data before returning.`
+  const returnLine = ` Output is JSON and truncated above ~${outputCapKb} KB; return aggregates + small samples, not raw collected data.`
 
-  return `${JS_SANDBOX_BASE_DESCRIPTION}${enabledLine}${disabledLine}${returnLine}`
+  return `${JS_SANDBOX_BASE_DESCRIPTION}${enabledLine}${disabledLine}${vaultVsDbLine}${returnLine}`
 }
 
 export function getJsSandboxTool(

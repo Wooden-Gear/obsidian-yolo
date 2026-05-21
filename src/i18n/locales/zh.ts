@@ -574,7 +574,7 @@ export const zh: TranslationKeys = {
       jsSandboxConfigEntryDesc:
         '设置单次执行超时和扩展能力（网络、读取库文件、知识库查询、外部脚本）。',
       jsSandboxModalIntro:
-        '脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——仅开启该 Agent 真正需要的项。读取库文件和知识库查询不受 Agent 目录限制约束。每个开关都会弹出确认；只要任一扩展能力开启，就会强制审批。',
+        '脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——仅开启该 Agent 真正需要的项。读取库文件和知识库查询不受 Agent 目录限制约束。每个开关都会弹出确认；只要任一扩展能力开启，就会强制审批。复杂任务需要较好的模型。',
       jsExecModalSummaryTitle: '默认低权限运行',
       jsExecDefaultCapsHint:
         '这些信息只来自当前上下文和运行环境，不会打开文件、网络或整库查询权限。',

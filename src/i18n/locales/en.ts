@@ -622,7 +622,7 @@ export const en: TranslationKeys = {
       jsSandboxConfigEntryDesc:
         'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
       jsSandboxModalIntro:
-        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval.',
+        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval. Complex tasks need a capable model.',
       jsExecModalSummaryTitle: 'Default low access',
       jsExecDefaultCapsHint:
         'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
