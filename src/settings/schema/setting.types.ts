@@ -376,6 +376,15 @@ export const yoloSettingsSchema = z.object({
       imageCompressionQuality: z.number().min(1).max(100).optional(),
       // Fetch external (http/https) image URLs referenced in Markdown
       externalImageFetchEnabled: z.boolean().optional(),
+      // Where the ribbon icon should open the Chat view
+      ribbonClickAction: z
+        .enum(['sidebar', 'tab', 'split', 'window', 'last'])
+        .optional(),
+      // Last placement actually used to open a chat leaf; only consulted when
+      // `ribbonClickAction === 'last'`
+      lastChatPlacement: z
+        .enum(['sidebar', 'tab', 'split', 'window'])
+        .optional(),
     })
     .catch({
       includeCurrentFileContent: true,
@@ -398,6 +407,8 @@ export const yoloSettingsSchema = z.object({
       imageCompressionEnabled: true,
       imageCompressionQuality: 85,
       externalImageFetchEnabled: false,
+      ribbonClickAction: 'sidebar',
+      lastChatPlacement: undefined,
     }),
 
   notificationOptions: notificationOptionsSchema,

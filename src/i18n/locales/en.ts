@@ -1295,6 +1295,14 @@ export const en: TranslationKeys = {
       yoloBaseDirDesc:
         'Enter a vault-relative path (without a leading /). Example: use YOLO at vault root, or setting/YOLO under the setting folder. Current skills directory: {path}.',
       yoloBaseDirPlaceholder: 'YOLO',
+      ribbonClickAction: 'Ribbon icon opens chat in',
+      ribbonClickActionDesc:
+        'Where the YOLO ribbon icon opens the Chat view. If a chat already exists in the chosen location it is activated; otherwise a new one is created.',
+      ribbonClickActionSidebar: 'Right sidebar',
+      ribbonClickActionTab: 'New tab',
+      ribbonClickActionSplit: 'Right split',
+      ribbonClickActionWindow: 'New window',
+      ribbonClickActionLast: 'Last used location',
       mentionDisplayMode: 'Mention display position',
       mentionDisplayModeDesc:
         'Choose whether @ file mentions and / skill selections are shown inline in the editor or as badges above the input box.',
