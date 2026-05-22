@@ -147,6 +147,33 @@ export const buildRequestTools = (
   }))
 }
 
+/**
+ * Rewrite tool descriptions that vary per-agent. Currently only `js_eval`,
+ * whose description names the exact extension capabilities enabled for the
+ * agent (network / vault read / $db / external scripts).
+ *
+ * The tool list from `listAvailableTools` is cached and agent-agnostic — this
+ * is the single bridge that tailors it to one agent. Every consumer that
+ * surfaces a tool description to the model OR estimates its token cost must
+ * route through here, otherwise the shown/estimated description drifts from
+ * what the request actually sends. When a second dynamic tool appears, give
+ * each tool a self-declared resolver instead of growing `if` branches here.
+ */
+export function applyDynamicToolDescriptions(
+  tools: McpTool[],
+  ctx: { jsSandboxConfig?: AssistantJsSandboxConfig | null },
+): McpTool[] {
+  const jsSandboxFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
+  return tools.map((tool) =>
+    tool.name === jsSandboxFqn
+      ? {
+          ...tool,
+          description: buildJsSandboxDescription(ctx.jsSandboxConfig),
+        }
+      : tool,
+  )
+}
+
 export const selectAllowedTools = ({
   availableTools,
   allowedToolNames,
@@ -171,14 +198,6 @@ export const selectAllowedTools = ({
   hasMemoryTools: boolean
   requestTools: RequestTool[] | undefined
 } => {
-  const jsSandboxFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
-  // Rewrite the js_eval tool's description with one that names the exact APIs
-  // enabled for this agent. The generic tool from `listAvailableTools` is
-  // cached and agent-agnostic; this is where we tailor it to the LLM.
-  const rewriteJsSandboxDescription = (tool: McpTool): McpTool =>
-    tool.name === jsSandboxFqn
-      ? { ...tool, description: buildJsSandboxDescription(jsSandboxConfig) }
-      : tool
   const normalizedAllowedToolNames = expandAllowedToolNames(allowedToolNames)
   const normalizedAllowedSkillIds = allowedSkillIds
     ? new Set(allowedSkillIds.map((id) => id.toLowerCase()))
@@ -187,8 +206,8 @@ export const selectAllowedTools = ({
     ? new Set(allowedSkillNames.map((name) => name.toLowerCase()))
     : undefined
 
-  const filteredTools = availableTools
-    .filter((tool) => {
+  const filteredTools = applyDynamicToolDescriptions(
+    availableTools.filter((tool) => {
       if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
         return false
       }
@@ -199,8 +218,9 @@ export const selectAllowedTools = ({
         allowedSkillIds: normalizedAllowedSkillIds,
         allowedSkillNames: normalizedAllowedSkillNames,
       })
-    })
-    .map(rewriteJsSandboxDescription)
+    }),
+    { jsSandboxConfig },
+  )
   const assistantLike = {
     toolPreferences,
     enabledToolNames: normalizedAllowedToolNames

@@ -298,14 +298,6 @@ export class AgentToolGateway {
     }
   }
 
-  async listTools({
-    includeBuiltinTools,
-  }: {
-    includeBuiltinTools: boolean
-  }): Promise<McpTool[]> {
-    return this.mcpManager.listAvailableTools({ includeBuiltinTools })
-  }
-
   createToolMessage({
     toolCallRequests,
     conversationId,
