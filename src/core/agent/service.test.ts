@@ -316,6 +316,77 @@ describe('AgentService abort handling', () => {
     runtime.resolveRun()
     await runPromise
   })
+
+  it('aborting a single tool call keeps the run alive (issue #338)', async () => {
+    const service = new AgentService()
+    const mcpAbortToolCall = jest.fn()
+
+    const runPromise = service.run({
+      conversationId: 'conversation-parallel',
+      loopConfig: {
+        enableTools: true,
+        maxAutoIterations: 100,
+        includeBuiltinTools: true,
+      },
+      input: {
+        conversationId: 'conversation-parallel',
+        messages: [createStreamingMessages()[0]],
+        mcpManager: { abortToolCall: mcpAbortToolCall },
+      } as never,
+    })
+
+    const runtime = runtimeInstances[0]
+    runtime.emitSnapshot([
+      createStreamingMessages()[0],
+      {
+        role: 'assistant',
+        id: 'assistant-1',
+        content: '',
+        metadata: { generationState: 'streaming' },
+      },
+      {
+        role: 'tool',
+        id: 'tool-1',
+        toolCalls: [
+          {
+            request: { id: 'tool-call-1', name: 'local:fs_read' },
+            response: { status: ToolCallResponseStatus.Running },
+          },
+          {
+            request: { id: 'tool-call-2', name: 'local:fs_read' },
+            response: { status: ToolCallResponseStatus.Running },
+          },
+        ],
+      },
+    ])
+
+    expect(
+      service.abortToolCall({
+        conversationId: 'conversation-parallel',
+        toolCallId: 'tool-call-1',
+      }),
+    ).toBe(true)
+
+    expect(mcpAbortToolCall).toHaveBeenCalledWith('tool-call-1')
+    expect(runtime.abort).not.toHaveBeenCalled()
+
+    const state = service.getState('conversation-parallel')
+    expect(state.status).toBe('running')
+
+    const toolMessage = state.messages.find(
+      (message) => message.role === 'tool',
+    )
+    expect(toolMessage).toMatchObject({
+      role: 'tool',
+      toolCalls: [
+        { response: { status: ToolCallResponseStatus.Aborted } },
+        { response: { status: ToolCallResponseStatus.Running } },
+      ],
+    })
+
+    runtime.resolveRun()
+    await runPromise
+  })
 })
 
 const makeUserMessage = (id: string, text: string): ChatUserMessage => ({

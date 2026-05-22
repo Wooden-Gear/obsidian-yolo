@@ -1066,7 +1066,7 @@ ${message.annotations
           toolMessages.push({
             role: 'tool',
             tool_call: toolCall.request,
-            content: `Tool call ${toolCall.request.id} is aborted`,
+            content: `Tool call ${toolCall.request.id} was cancelled by the user.`,
           })
           break
         case ToolCallResponseStatus.Rejected:

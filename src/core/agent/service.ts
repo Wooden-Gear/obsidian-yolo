@@ -1127,7 +1127,6 @@ export class AgentService {
         conversationId,
         toolCallId,
         response: { status: ToolCallResponseStatus.Aborted },
-        status: located.runEntry.runtime ? 'aborted' : undefined,
       }),
     )
   }
