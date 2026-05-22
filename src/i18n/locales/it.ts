@@ -415,7 +415,7 @@ export const it: TranslationKeys = {
       manageSkills: 'Gestisci competenze',
       enableToolDisclosure: 'Abilita caricamento strumenti su richiesta (Beta)',
       enableToolDisclosureDesc:
-        'Gli strumenti opzionali partono con descrizioni brevi, poi caricano i dettagli completi quando servono, Consigliato quando sono abilitati molti strumenti MCP.',
+        'Gli strumenti opzionali partono con descrizioni brevi, poi caricano i dettagli completi quando servono. Consigliato quando sono abilitati molti strumenti MCP. Nota: questo meccanismo dipende dalle capacità di tool-use del modello — alcuni modelli potrebbero non riconoscere in modo affidabile gli strumenti caricati in questo modo.',
       descriptionColumn: 'Descrizione',
       builtinFsListLabel: 'Leggi vault',
       builtinFsListDesc: 'Elenca la struttura delle directory del vault',

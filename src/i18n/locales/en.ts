@@ -419,7 +419,7 @@ export const en: TranslationKeys = {
       manageSkills: 'Manage skills',
       enableToolDisclosure: 'Enable on-demand tool loading (Beta)',
       enableToolDisclosureDesc:
-        'Optional tools start as short descriptions, then load full details when needed, Recommended when you have many MCP tools enabled.',
+        'Optional tools start as short descriptions, then load full details when needed. Recommended when you have many MCP tools enabled. Note: this mechanism relies on the model\'s own tool-use capability — some models may not reliably recognize tools loaded this way.',
       expandDescription: 'Expand',
       collapseDescription: 'Collapse',
       viewAllTools: 'View all tools',
