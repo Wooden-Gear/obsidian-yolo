@@ -1,9 +1,8 @@
 /**
- * Read the rendered contents of the user's active webview (Phase 1).
+ * Read the rendered contents of the user's active webview.
  *
- * Used by the `browser_read_page` tool when called with
- * `pageId: '$active_webview'`. Always reads from the same source as the
- * passive `<browser_context>` injection so the model sees a consistent view.
+ * Used by the `browser_read_page` tool after it resolves a required
+ * `<page_id>` from the passive `<browser_context>` injection.
  *
  * Implementation notes:
  *   - We run an extraction script inside the webview via `executeJavaScript`.
@@ -443,7 +442,7 @@ const buildRedactions = (
 
 /**
  * Read the active webview's rendered page contents. Always reads via
- * `executeJavaScript` against a Phase-1-supported leaf (caller is
+ * `executeJavaScript` against a supported webview leaf (caller is
  * responsible for resolving the handle first via
  * `findActiveWebviewHandle`).
  *

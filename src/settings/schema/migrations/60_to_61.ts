@@ -4,14 +4,16 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
- * v60→v61: introduce the `browser` settings group for Phase 1 browser
- * integration (passive `<browser_context>` injection + `browser_read_page`
- * tool against the user's active webview).
+ * v60→v61: introduce the `browser` settings group for browser integration
+ * (passive `<browser_context>` injection + `browser_read_page` tool against
+ * the user's active webview).
  *
  * Defaults:
  *   - injectActivePageContext: false (opening/browsing pages should not opt
  *     users into automatic webview probing)
  *   - injectSelectionMaxChars: 2000
+ *   - retainLastViewedPage: false (switching focus to a non-webview leaf
+ *     should NOT silently keep injecting the previously viewed webpage)
  */
 export const migrateFrom60To61: SettingMigration['migrate'] = (data) => {
   const next: Record<string, unknown> = { ...data, version: 61 }
@@ -25,6 +27,9 @@ export const migrateFrom60To61: SettingMigration['migrate'] = (data) => {
     browser.injectSelectionMaxChars < 0
   ) {
     browser.injectSelectionMaxChars = 2000
+  }
+  if (typeof browser.retainLastViewedPage !== 'boolean') {
+    browser.retainLastViewedPage = false
   }
   next.browser = browser
   return next

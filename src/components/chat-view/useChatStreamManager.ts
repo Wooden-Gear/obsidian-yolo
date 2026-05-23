@@ -158,6 +158,7 @@ const buildChatContextualInjections = ({
   currentFileViewState,
   injectActivePageContext,
   injectSelectionMaxChars,
+  recentlyFocusedWebviewLeaf,
 }: {
   app: import('obsidian').App
   includeCurrentFileContent: boolean
@@ -165,6 +166,7 @@ const buildChatContextualInjections = ({
   currentFileViewState?: import('../../types/mentionable').CurrentFileViewState
   injectActivePageContext: boolean
   injectSelectionMaxChars: number
+  recentlyFocusedWebviewLeaf: import('obsidian').WorkspaceLeaf | null
 }): ContextualInjection[] => {
   const injections: ContextualInjection[] = []
   if (includeCurrentFileContent && currentFile) {
@@ -179,6 +181,7 @@ const buildChatContextualInjections = ({
       type: 'browser-context',
       app,
       maxSelectionChars: injectSelectionMaxChars,
+      recentlyFocusedWebviewLeaf,
     })
   }
   return injections
@@ -591,6 +594,9 @@ export function useChatStreamManager({
               currentFileViewState,
               injectActivePageContext: settings.browser.injectActivePageContext,
               injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
+              recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
+                ? plugin.getRecentlyFocusedWebviewLeaf()
+                : null,
             }),
           })
       } catch (error) {
@@ -779,6 +785,9 @@ export function useChatStreamManager({
             currentFileViewState,
             injectActivePageContext: settings.browser.injectActivePageContext,
             injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
+            recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
+              ? plugin.getRecentlyFocusedWebviewLeaf()
+              : null,
           }),
           geminiTools: {
             useWebSearch: conversationOverrides?.useWebSearch ?? false,
@@ -1034,6 +1043,9 @@ export function useChatStreamManager({
           currentFileViewState,
           injectActivePageContext: settings.browser.injectActivePageContext,
           injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
+          recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
+            ? plugin.getRecentlyFocusedWebviewLeaf()
+            : null,
         }),
       }
     },

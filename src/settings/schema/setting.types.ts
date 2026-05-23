@@ -554,7 +554,7 @@ export const yoloSettingsSchema = z.object({
       primaryRequestTimeoutMs: DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
     }),
 
-  // Browser integration (Phase 1)
+  // Browser integration
   browser: z
     .object({
       // Auto-inject <browser_context> (URL + title + selection) when active leaf
@@ -564,10 +564,16 @@ export const yoloSettingsSchema = z.object({
       injectActivePageContext: z.boolean().catch(false),
       // Max chars of selected text to inject. 0 disables selection injection.
       injectSelectionMaxChars: z.number().int().min(0).max(20000).catch(2000),
+      // When the user's most-recent leaf is NOT a webview (e.g. they switched
+      // to a log tab or another note), still inject the webview they were
+      // last viewing (tracked via `BrowserFocusTracker`). Default off so
+      // switching away cleanly drops the page context.
+      retainLastViewedPage: z.boolean().catch(false),
     })
     .catch({
       injectActivePageContext: false,
       injectSelectionMaxChars: 2000,
+      retainLastViewedPage: false,
     }),
 
   // Assistant list

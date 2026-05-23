@@ -39,6 +39,7 @@ import {
   BackgroundActivityAction,
   BackgroundActivityRegistry,
 } from './core/background/backgroundActivityRegistry'
+import { BrowserFocusTracker } from './core/browser/browserFocusTracker'
 import { setLLMDebugCaptureEnabled } from './core/llm/debugCapture'
 import { clearRequestTransportMemory } from './core/llm/requestTransport'
 import { McpCoordinator } from './core/mcp/mcpCoordinator'
@@ -165,6 +166,7 @@ export default class YoloPlugin extends Plugin {
   private ragCoordinator: RagCoordinator | null = null
   private ragIndexService: RagIndexService | null = null
   private mcpCoordinator: McpCoordinator | null = null
+  private browserFocusTracker = new BrowserFocusTracker()
   private writeAssistController: WriteAssistController | null = null
   // Model list cache for provider model fetching
   private modelListCache: Map<string, { models: string[]; timestamp: number }> =
@@ -712,6 +714,15 @@ export default class YoloPlugin extends Plugin {
       })
     }
     return this.mcpCoordinator
+  }
+
+  /**
+   * Returns the most-recently focused supported webview leaf if still alive,
+   * else null. Used by chat injections and the `browser_read_page` tool when
+   * the user enables `browser.retainLastViewedPage`.
+   */
+  getRecentlyFocusedWebviewLeaf(): import('obsidian').WorkspaceLeaf | null {
+    return this.browserFocusTracker.getLastViewedWebviewLeaf(this.app)
   }
 
   private createSmartSpaceTriggerExtension(): Extension {
@@ -1989,6 +2000,7 @@ export default class YoloPlugin extends Plugin {
           if (leaf?.view instanceof ChatView) {
             this.getChatLeafSessionManager().touchLeafActive(leaf)
           }
+          this.browserFocusTracker.noteActiveLeaf(leaf ?? null)
           const view = this.app.workspace.getActiveViewOfType(MarkdownView)
           const editor = view?.editor
           if (editor) {

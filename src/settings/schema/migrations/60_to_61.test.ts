@@ -8,6 +8,7 @@ describe('migrateFrom60To61', () => {
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
     expect(browser.injectSelectionMaxChars).toBe(2000)
+    expect(browser.retainLastViewedPage).toBe(false)
   })
 
   it('preserves existing browser values', () => {
@@ -16,12 +17,14 @@ describe('migrateFrom60To61', () => {
       browser: {
         injectActivePageContext: false,
         injectSelectionMaxChars: 500,
+        retainLastViewedPage: true,
       },
     })
 
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
     expect(browser.injectSelectionMaxChars).toBe(500)
+    expect(browser.retainLastViewedPage).toBe(true)
   })
 
   it('repairs bogus injectSelectionMaxChars values', () => {
@@ -63,5 +66,16 @@ describe('migrateFrom60To61', () => {
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
     expect(browser.injectSelectionMaxChars).toBe(2000)
+    expect(browser.retainLastViewedPage).toBe(false)
+  })
+
+  it('repairs non-boolean retainLastViewedPage', () => {
+    const result = migrateFrom60To61({
+      version: 60,
+      browser: { retainLastViewedPage: 'remember' },
+    })
+
+    const browser = result.browser as Record<string, unknown>
+    expect(browser.retainLastViewedPage).toBe(false)
   })
 })

@@ -1,15 +1,29 @@
-import type { App } from 'obsidian'
+import type { App, WorkspaceLeaf } from 'obsidian'
 
 import {
   type ActiveWebviewHandle,
   type WebviewLike,
   findActiveWebviewHandle,
+  findWebviewHandleByPageId,
   readActiveWebviewSnapshot,
 } from './activeWebviewProbe'
 
 // Minimal element stub providing only the API findActiveWebviewHandle relies on.
 type ContainerEl = {
   querySelector: (selector: string) => unknown
+}
+
+const buildLeaf = (viewType: string, webview: Partial<WebviewLike> | null) => {
+  const containerEl: ContainerEl = {
+    querySelector: (selector: string) =>
+      selector === 'webview' ? webview : null,
+  }
+  return {
+    view: {
+      getViewType: () => viewType,
+      containerEl,
+    },
+  }
 }
 
 const buildFakeApp = (
@@ -21,23 +35,16 @@ const buildFakeApp = (
       workspace: {
         rootSplit: {},
         getMostRecentLeaf: () => null,
+        iterateAllLeaves: () => undefined,
       },
     } as unknown as App
   }
-  const containerEl: ContainerEl = {
-    querySelector: (selector: string) =>
-      selector === 'webview' ? webview : null,
-  }
-  const leaf = {
-    view: {
-      getViewType: () => viewType,
-      containerEl,
-    },
-  }
+  const leaf = buildLeaf(viewType, webview)
   return {
     workspace: {
       rootSplit: {},
       getMostRecentLeaf: () => leaf,
+      iterateAllLeaves: () => undefined,
     },
   } as unknown as App
 }
@@ -77,8 +84,10 @@ describe('findActiveWebviewHandle', () => {
       buildFakeApp('webviewer', stubWebview()),
     )
     expect(handle).not.toBeNull()
+    expect(handle?.pageId).toMatch(/^page_[a-z0-9]{8}_[a-z0-9]{8}$/)
     expect(handle?.source).toBe('core_webviewer')
     expect(handle?.viewType).toBe('webviewer')
+    expect(handle?.userFocused).toBe(true)
   })
 
   it('maps viewType=url-webview → source=url_webview_opener', () => {
@@ -86,8 +95,95 @@ describe('findActiveWebviewHandle', () => {
       buildFakeApp('url-webview', stubWebview()),
     )
     expect(handle).not.toBeNull()
+    expect(handle?.pageId).toMatch(/^page_[a-z0-9]{8}_[a-z0-9]{8}$/)
     expect(handle?.source).toBe('url_webview_opener')
     expect(handle?.viewType).toBe('url-webview')
+  })
+
+  it('does NOT fall back to another open webview by default when the most recent leaf is not supported', () => {
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => buildLeaf('markdown', null),
+      },
+    } as unknown as App
+    expect(findActiveWebviewHandle(app)).toBeNull()
+  })
+
+  it('falls back to the externally tracked last-viewed webview leaf when provided', () => {
+    const lastViewed = buildLeaf(
+      'url-webview',
+      stubWebview(),
+    ) as unknown as WorkspaceLeaf
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => buildLeaf('markdown', null),
+      },
+    } as unknown as App
+    const handle = findActiveWebviewHandle(app, {
+      recentlyFocusedWebviewLeaf: lastViewed,
+    })
+    expect(handle?.leaf).toBe(lastViewed)
+    expect(handle?.source).toBe('url_webview_opener')
+    expect(handle?.userFocused).toBe(false)
+  })
+
+  it('ignores recentlyFocusedWebviewLeaf when the most-recent leaf is itself a supported webview', () => {
+    const focused = buildLeaf('webviewer', stubWebview())
+    const otherWebview = buildLeaf(
+      'url-webview',
+      stubWebview(),
+    ) as unknown as WorkspaceLeaf
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => focused,
+      },
+    } as unknown as App
+    const handle = findActiveWebviewHandle(app, {
+      recentlyFocusedWebviewLeaf: otherWebview,
+    })
+    expect(handle?.leaf).toBe(focused)
+    expect(handle?.userFocused).toBe(true)
+  })
+
+  it('finds a specific open webview by opaque page id, not URL', () => {
+    const first = buildLeaf(
+      'webviewer',
+      stubWebview({
+        getURL: () => 'https://example.com/same',
+        getTitle: () => 'First',
+      }),
+    )
+    const second = buildLeaf(
+      'webviewer',
+      stubWebview({
+        getURL: () => 'https://example.com/same',
+        getTitle: () => 'Second',
+      }),
+    )
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => first,
+        iterateAllLeaves: (callback: (leaf: unknown) => void) => {
+          callback(first)
+          callback(second)
+        },
+      },
+    } as unknown as App
+    const secondHandle = findActiveWebviewHandle({
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => second,
+      },
+    } as unknown as App)
+
+    expect(secondHandle).not.toBeNull()
+    const found = findWebviewHandleByPageId(app, secondHandle?.pageId ?? '')
+    expect(found?.leaf).toBe(second)
+    expect(found?.webview.getTitle()).toBe('Second')
   })
 })
 
@@ -130,11 +226,13 @@ describe('readActiveWebviewSnapshot', () => {
       maxSelectionChars: 2000,
     })
     expect(snapshot).toEqual({
+      pageId: handle.pageId,
       source: 'core_webviewer',
       viewType: 'webviewer',
       url: 'https://example.com/article',
       title: 'Example Article',
       loading: false,
+      userFocused: true,
       meta: undefined,
       selection: undefined,
       selectionTruncated: undefined,
@@ -185,11 +283,13 @@ describe('readActiveWebviewSnapshot', () => {
       maxSelectionChars: 2000,
     })
     expect(snapshot).toEqual({
+      pageId: handle.pageId,
       source: 'core_webviewer',
       viewType: 'webviewer',
       url: 'https://example.com/article',
       title: 'Loading Article',
       loading: true,
+      userFocused: true,
     })
     expect(exec).not.toHaveBeenCalled()
   })

@@ -467,9 +467,9 @@ export const en: TranslationKeys = {
       builtinWebScrapeLabel: 'Web Scrape',
       builtinWebScrapeDesc:
         'Fetch the full content of a single URL through a configured search provider.',
-      builtinBrowserReadPageLabel: 'Read Active Web Page',
+      builtinBrowserReadPageLabel: 'Read Open Webview',
       builtinBrowserReadPageDesc:
-        'Read the contents of the web page currently open in Obsidian. Useful for pages that require sign-in or only show content after loading.',
+        'Read rendered contents from a web page already open in Obsidian.',
       builtinWebOpsLabel: 'Web Search Toolset',
       builtinWebOpsDesc: 'Web search and page scraping',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
@@ -1040,6 +1040,9 @@ export const en: TranslationKeys = {
       selectionMaxTitle: 'Selected text limit',
       selectionMaxDesc:
         'Maximum selected text to include from the page. Set to 0 to never include selected text.',
+      retainLastViewedTitle: 'Keep recent page context',
+      retainLastViewedDesc:
+        'When the current tab is not a web page, still include brief context from the most recent open page.',
       fullPageToolHint:
         'To let the assistant read the full page content, enable the page reading tool for the agent.',
     },

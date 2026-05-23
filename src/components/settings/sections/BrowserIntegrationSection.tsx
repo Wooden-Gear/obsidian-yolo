@@ -61,6 +61,28 @@ export function BrowserIntegrationSection() {
     [settings, setSettings],
   )
 
+  const handleRetainToggle = useCallback(
+    (value: boolean) => {
+      void (async () => {
+        try {
+          await setSettings({
+            ...settings,
+            browser: {
+              ...settings.browser,
+              retainLastViewedPage: value,
+            },
+          })
+        } catch (error) {
+          console.error(
+            'Failed to update browser retainLastViewedPage toggle',
+            error,
+          )
+        }
+      })()
+    },
+    [settings, setSettings],
+  )
+
   return (
     <div className="yolo-agent-sub-card">
       <div className="yolo-agent-sub-card-head">
@@ -94,6 +116,24 @@ export function BrowserIntegrationSection() {
           disabled={!settings.browser.injectActivePageContext}
         />
       </ObsidianSetting>
+
+      {settings.browser.injectActivePageContext && (
+        <ObsidianSetting
+          name={t(
+            'settings.browser.retainLastViewedTitle',
+            'Keep recent page context',
+          )}
+          desc={t(
+            'settings.browser.retainLastViewedDesc',
+            'When the current tab is not a web page, still include brief context from the most recent open page.',
+          )}
+        >
+          <ObsidianToggle
+            value={settings.browser.retainLastViewedPage}
+            onChange={handleRetainToggle}
+          />
+        </ObsidianSetting>
+      )}
 
       <div className="yolo-settings-desc">
         {t(

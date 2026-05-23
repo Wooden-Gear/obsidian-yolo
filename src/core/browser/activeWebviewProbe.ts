@@ -1,7 +1,7 @@
 /**
- * Detect & read from the user's active webview leaf (Phase 1).
+ * Detect & read from the user's active webview leaf.
  *
- * Phase 1 only supports an explicit viewType allowlist:
+ * Only explicit viewTypes are supported:
  *   - 'webviewer'   (Obsidian 1.8+ core Web Viewer)
  *   - 'url-webview' (.url WebView Opener — Kieirra/obsidian-url-extension)
  *
@@ -14,15 +14,40 @@
 
 import type { App, WorkspaceLeaf } from 'obsidian'
 
-export const PHASE1_SUPPORTED_VIEW_TYPES = ['webviewer', 'url-webview'] as const
+export const SUPPORTED_WEBVIEW_VIEW_TYPES = [
+  'webviewer',
+  'url-webview',
+] as const
 
-export type SupportedViewType = (typeof PHASE1_SUPPORTED_VIEW_TYPES)[number]
+export type SupportedViewType = (typeof SUPPORTED_WEBVIEW_VIEW_TYPES)[number]
 
 export type BrowserContextSource = 'core_webviewer' | 'url_webview_opener'
 
 const VIEW_TYPE_TO_SOURCE: Record<SupportedViewType, BrowserContextSource> = {
   webviewer: 'core_webviewer',
   'url-webview': 'url_webview_opener',
+}
+
+export const BROWSER_PAGE_ID_PATTERN = /^page_[a-z0-9]{8}_[a-z0-9]{8}$/
+
+const leafPageIds = new WeakMap<WorkspaceLeaf, string>()
+const usedPageIds = new Set<string>()
+
+const randomPageIdToken = (): string =>
+  Math.random().toString(36).slice(2).padEnd(8, '0').slice(0, 8)
+
+const pageIdSession = randomPageIdToken()
+
+const getLeafPageId = (leaf: WorkspaceLeaf): string => {
+  const existing = leafPageIds.get(leaf)
+  if (existing) return existing
+  let pageId = ''
+  do {
+    pageId = `page_${pageIdSession}_${randomPageIdToken()}`
+  } while (usedPageIds.has(pageId))
+  usedPageIds.add(pageId)
+  leafPageIds.set(leaf, pageId)
+  return pageId
 }
 
 /**
@@ -38,36 +63,28 @@ export type WebviewLike = {
 }
 
 export type ActiveWebviewHandle = {
+  pageId: string
   leaf: WorkspaceLeaf
   webview: WebviewLike
   viewType: SupportedViewType
   source: BrowserContextSource
+  /**
+   * True when the handle came from the workspace's most-recent leaf (the user
+   * was last interacting with this webview). False when it came from the
+   * `recentlyFocusedWebviewLeaf` scan — i.e. the user's current focus is on
+   * something else (note, log tab, canvas) and this webview is only still
+   * open in the background.
+   */
+  userFocused: boolean
 }
 
 const isSupportedViewType = (viewType: string): viewType is SupportedViewType =>
-  (PHASE1_SUPPORTED_VIEW_TYPES as readonly string[]).includes(viewType)
+  (SUPPORTED_WEBVIEW_VIEW_TYPES as readonly string[]).includes(viewType)
 
-/**
- * Synchronously find the user's active webview leaf if it belongs to a
- * Phase 1 supported source. Returns null when:
- *   - There is no most-recent leaf
- *   - The leaf's viewType is not in the allowlist
- *   - The leaf's container does not contain a <webview> element
- *   - The webview element is missing the expected sync methods
- *
- * Uses `getMostRecentLeaf(rootSplit)` rather than the deprecated
- * `workspace.activeLeaf`. Webviews are normally opened in the root split
- * (main editor area) by core Web Viewer and `.url WebView Opener`, so this
- * picks up the page the user was just interacting with even if they refocused
- * the chat sidebar to send a message.
- */
-export function findActiveWebviewHandle(app: App): ActiveWebviewHandle | null {
-  const workspace = app.workspace
-  const leaf =
-    workspace.getMostRecentLeaf(workspace.rootSplit) ??
-    workspace.getMostRecentLeaf()
-  if (!leaf) return null
-
+const handleFromLeaf = (
+  leaf: WorkspaceLeaf,
+  userFocused: boolean,
+): ActiveWebviewHandle | null => {
   const view = leaf.view
   const viewType =
     typeof view.getViewType === 'function' ? view.getViewType() : ''
@@ -89,19 +106,105 @@ export function findActiveWebviewHandle(app: App): ActiveWebviewHandle | null {
   }
 
   return {
+    pageId: getLeafPageId(leaf),
     leaf,
     webview: candidate as WebviewLike,
     viewType,
     source: VIEW_TYPE_TO_SOURCE[viewType],
+    userFocused,
   }
 }
 
+export type FindActiveWebviewOptions = {
+  /**
+   * Fallback leaf, tracked externally via `BrowserFocusTracker`. When the
+   * user's current focus is not itself a webview, this leaf is used so the
+   * model can still see the page they were last viewing. Pass null to
+   * disable the fallback entirely.
+   *
+   * Caller is responsible for ensuring the leaf is still alive; the probe
+   * additionally rejects it if `view`/`containerEl`/`<webview>` checks fail.
+   */
+  recentlyFocusedWebviewLeaf?: WorkspaceLeaf | null
+}
+
+/**
+ * Synchronously find the user's active webview leaf if it belongs to a
+ * supported source. Returns null when:
+ *   - There is no most-recent leaf
+ *   - The leaf's viewType is not in the allowlist
+ *   - The leaf's container does not contain a <webview> element
+ *   - The webview element is missing the expected sync methods
+ *
+ * Uses `getMostRecentLeaf(rootSplit)` rather than the deprecated
+ * `workspace.activeLeaf`. Webviews are normally opened in the root split
+ * (main editor area) by core Web Viewer and `.url WebView Opener`, so this
+ * picks up the page the user was just interacting with even if they refocused
+ * the chat sidebar to send a message.
+ */
+export function findActiveWebviewHandle(
+  app: App,
+  options: FindActiveWebviewOptions = {},
+): ActiveWebviewHandle | null {
+  const workspace = app.workspace
+  const leaf =
+    workspace.getMostRecentLeaf(workspace.rootSplit) ??
+    workspace.getMostRecentLeaf()
+  if (leaf) {
+    const handle = handleFromLeaf(leaf, true)
+    if (handle) return handle
+  }
+
+  const recent = options.recentlyFocusedWebviewLeaf
+  if (recent) {
+    const fallback = handleFromLeaf(recent, false)
+    if (fallback) return fallback
+  }
+
+  return null
+}
+
+/**
+ * Locate an open webview leaf by its opaque page id from `<browser_context>`.
+ * This disambiguates multiple open pages with the same URL.
+ * Page ids use format `page_<8 lowercase base36 chars>_<8 lowercase base36
+ * chars>`. Both tokens are random-looking: the first is per plugin process,
+ * the second is per leaf. They are stable only while the plugin process and
+ * target leaf remain alive.
+ *
+ * Intentionally searches all open supported webviews, not just the current or
+ * most-recent page: when the model has a prior `<page_id>`, the user may ask
+ * it to read that still-open page explicitly.
+ */
+export function findWebviewHandleByPageId(
+  app: App,
+  pageId: string,
+): ActiveWebviewHandle | null {
+  if (!pageId) return null
+  const workspace = app.workspace
+  if (typeof workspace.iterateAllLeaves !== 'function') return null
+  let match: ActiveWebviewHandle | null = null
+  workspace.iterateAllLeaves((leaf) => {
+    if (match) return
+    const handle = handleFromLeaf(leaf, false)
+    if (handle?.pageId === pageId) match = handle
+  })
+  return match
+}
+
 export type ActiveWebviewSnapshot = {
+  pageId: string
   source: BrowserContextSource
   viewType: SupportedViewType
   url: string
   title: string
   loading: boolean
+  /**
+   * Whether the user's most-recent leaf IS this webview. False when the
+   * webview was located via `recentlyFocusedWebviewLeaf` — i.e. the user's
+   * current focus is on a note/log/canvas and this page is a background tab.
+   */
+  userFocused: boolean
   meta?: {
     visibleTextChars: number
     renderedHtmlChars: number
@@ -278,11 +381,13 @@ export async function readActiveWebviewSnapshot(
   const loading = isWebviewLoading(handle.webview)
   if (loading) {
     return {
+      pageId: handle.pageId,
       source: handle.source,
       viewType: handle.viewType,
       url,
       title,
       loading,
+      userFocused: handle.userFocused,
     }
   }
 
@@ -298,11 +403,13 @@ export async function readActiveWebviewSnapshot(
     ),
   ])
   return {
+    pageId: handle.pageId,
     source: handle.source,
     viewType: handle.viewType,
     url,
     title,
     loading,
+    userFocused: handle.userFocused,
     meta,
     selection: selection?.value,
     selectionTruncated: selection?.truncated,

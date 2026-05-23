@@ -6,6 +6,7 @@ import {
 } from './activeWebviewReader'
 
 const buildHandle = (webview: Partial<WebviewLike>): ActiveWebviewHandle => ({
+  pageId: 'page_abcdefgh_1234abcd',
   leaf: {} as ActiveWebviewHandle['leaf'],
   webview: {
     getURL: () => 'https://example.com/article',
@@ -15,6 +16,7 @@ const buildHandle = (webview: Partial<WebviewLike>): ActiveWebviewHandle => ({
   } as WebviewLike,
   viewType: 'webviewer',
   source: 'core_webviewer',
+  userFocused: true,
 })
 
 describe('readActiveWebviewPage', () => {

@@ -459,9 +459,9 @@ export const it: TranslationKeys = {
       builtinWebScrapeLabel: 'Scrape web',
       builtinWebScrapeDesc:
         'Recupera il contenuto completo di un singolo URL tramite il provider configurato.',
-      builtinBrowserReadPageLabel: 'Leggi pagina web attiva',
+      builtinBrowserReadPageLabel: 'Leggi webview aperta',
       builtinBrowserReadPageDesc:
-        'Legge il contenuto della pagina web attualmente aperta in Obsidian. Utile per pagine che richiedono accesso o mostrano contenuto solo dopo il caricamento.',
+        'Legge contenuti renderizzati da una pagina web gia aperta in Obsidian.',
       builtinWebOpsLabel: 'Set strumenti ricerca web',
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
@@ -991,6 +991,9 @@ export const it: TranslationKeys = {
       selectionMaxTitle: 'Limite testo selezionato',
       selectionMaxDesc:
         'Quantita massima di testo selezionato da includere dalla pagina. Imposta 0 per non includerlo mai.',
+      retainLastViewedTitle: 'Mantieni il contesto della pagina recente',
+      retainLastViewedDesc:
+        'Quando la scheda corrente non è una pagina web, includi comunque un breve contesto dalla pagina aperta più recente.',
       fullPageToolHint:
         "Per consentire all'assistente di leggere l'intera pagina, abilita lo strumento di lettura pagina per l'agente.",
     },

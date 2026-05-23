@@ -801,6 +801,8 @@ export type TranslationKeys = {
       injectActiveDesc?: string
       selectionMaxTitle?: string
       selectionMaxDesc?: string
+      retainLastViewedTitle?: string
+      retainLastViewedDesc?: string
       fullPageToolHint?: string
     }
     mcp: {

@@ -125,9 +125,9 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
   browser_read_page: {
     labelKey: 'settings.agent.builtinBrowserReadPageLabel',
     descKey: 'settings.agent.builtinBrowserReadPageDesc',
-    labelFallback: 'Read Active Webview',
+    labelFallback: 'Read Open Webview',
     descFallback:
-      'Read the rendered contents of the page the user is currently browsing in Obsidian. Useful for signed-in pages and pages that show content after loading.',
+      'Read rendered contents from a web page already open in Obsidian.',
   },
   delegate_external_agent: {
     labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',

@@ -1,5 +1,5 @@
 /**
- * Render the passive `<browser_context>` injection (Phase 1).
+ * Render the passive `<browser_context>` injection.
  *
  * Mirrors how `<ide_selection>` / `<editor-snapshot>` work for vault notes:
  * when the user's active leaf is a supported webview (core Web Viewer or
@@ -25,7 +25,9 @@ const escapeXml = (raw: string): string =>
 export async function renderBrowserContextInjection(
   injection: BrowserContextInjection,
 ): Promise<RequestMessage | null> {
-  const handle = findActiveWebviewHandle(injection.app)
+  const handle = findActiveWebviewHandle(injection.app, {
+    recentlyFocusedWebviewLeaf: injection.recentlyFocusedWebviewLeaf,
+  })
   if (!handle) return null
 
   const snapshot = await readActiveWebviewSnapshot(handle, {
@@ -34,10 +36,19 @@ export async function renderBrowserContextInjection(
   if (!snapshot) return null
 
   const lines: string[] = ['<browser_context>', '  <active_page>']
+  lines.push(`    <page_id>${escapeXml(snapshot.pageId)}</page_id>`)
   lines.push(`    <url>${escapeXml(snapshot.url)}</url>`)
   lines.push(`    <title>${escapeXml(snapshot.title)}</title>`)
   lines.push(`    <source>${snapshot.source}</source>`)
   lines.push(`    <loading>${snapshot.loading ? 'true' : 'false'}</loading>`)
+  lines.push(
+    `    <user_focused>${snapshot.userFocused ? 'true' : 'false'}</user_focused>`,
+  )
+  if (!snapshot.userFocused) {
+    lines.push(
+      '    <note>Current focus is not a web page. This is the last open web page; read it only if requested. To read it, call browser_read_page with pageId set to page_id above. This tool cannot read notes.</note>',
+    )
+  }
   if (snapshot.meta) {
     lines.push(
       `    <visible_text_chars>${snapshot.meta.visibleTextChars}</visible_text_chars>`,
