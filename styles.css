@@ -10954,7 +10954,18 @@ button.yolo-llm-debug-modal-button:focus-visible {
   background: var(--background-modifier-hover);
 }
 
-/* 视图切换标签页样式 - 手风琴展开效果 */
+/* 视图切换标签页样式 - 手风琴展开效果
+   ─────────────────────────────────────────────────────────────────
+   Sizing model: the toggle declares an ideal width (200px), but the
+   two-button (non-`--single`) form uses flex so that when the host
+   shrinks the toggle, the expanded button absorbs the squeeze and the
+   collapsed slot keeps its full size — collapsed has no slack to give.
+   The indicator is absolutely positioned and derives its `left/width`
+   from the toggle's actual padding-box width via `calc(100% - …)`,
+   so it stays glued to the active button regardless of how narrow the
+   toggle becomes. The container query at the bottom of this block folds
+   the expanded button to icon-only when the toggle itself is too narrow
+   to show a label (roughly < 130px), independent of any outer container. */
 
 .yolo-view-toggle {
   display: inline-flex;
@@ -10962,22 +10973,48 @@ button.yolo-llm-debug-modal-button:focus-visible {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  padding: 4px;
+  padding: var(--yolo-padding);
   overflow: hidden;
   isolation: isolate;
   transition: all 0.2s ease;
   width: 200px;
+  /* Pin box-sizing so `100cqi` and flex content area agree unambiguously
+     (border included in width, padding outside content area). */
+  box-sizing: border-box;
   box-shadow:
     0 1px 3px
       color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+  /* Establish a query container so the toggle can adapt to its own
+     rendered width (used by the @container rule at the bottom) AND so
+     descendants can read its content inline-size via `100cqi`. */
+  container-type: inline-size;
+  container-name: yolo-view-toggle;
 
   --yolo-total-width: 200px;
-  --yolo-padding-inline: 8px;
+  --yolo-padding: 4px;
+  --yolo-padding-inline: calc(var(--yolo-padding) * 2);
   --yolo-collapsed-width: 50px;
+  /* Ideal expanded width based on the declared total. Used by the
+     `--single` workspace roller (its toggle width is locked by min-width
+     so the live formula isn't appropriate there). Don't use this for the
+     dual-button form — use `--yolo-live-expanded-width` instead, which
+     reflects the toggle's actual rendered content width. */
   --yolo-expanded-width: calc(
     var(--yolo-total-width) - var(--yolo-padding-inline) -
       var(--yolo-collapsed-width)
+  );
+  /* Single source of truth for the expanded slot. `100cqi` is the toggle's
+     content inline-size (= content-box width), which is the SAME number
+     flex uses to lay out the buttons. By computing the expanded slot from
+     `100cqi - collapsed` and feeding it to BOTH the expanded button's
+     flex-basis AND the indicator's width, the two are guaranteed to stay
+     in lockstep — no `100% vs content-box` discrepancy, no border math.
+     The `max(collapsed, …)` floor keeps the slot non-negative when the
+     toggle is squeezed below `2 * collapsed`. */
+  --yolo-live-expanded-width: max(
+    var(--yolo-collapsed-width),
+    calc(100cqi - var(--yolo-collapsed-width))
   );
 }
 
@@ -11000,8 +11037,9 @@ button.yolo-llm-debug-modal-button:focus-visible {
   line-height: 1.4;
   box-shadow: none !important;
   outline: none;
-  width: var(--yolo-collapsed-width);
-  flex-shrink: 0;
+  /* Fixed slot width via flex-basis so the collapsed button never shrinks
+     (it has nothing to give — it's already icon-only). */
+  flex: 0 0 var(--yolo-collapsed-width);
   overflow: hidden;
   display: inline-flex;
   align-items: center;
@@ -11009,10 +11047,35 @@ button.yolo-llm-debug-modal-button:focus-visible {
   gap: 0;
 }
 
-.yolo-view-toggle-button--expanded {
-  width: var(--yolo-expanded-width);
+/* The expanded slot. Basis derives from `--yolo-live-expanded-width`,
+   which is the SAME expression the indicator uses for its width — so
+   button and indicator always agree on what "expanded slot width" means.
+   `flex: 0 1 X` means: no grow (basis already encodes the full slot),
+   shrink: 1 (safety against any rounding overflow), basis: X. Scoped to
+   the dual-button form; the `--single` roller is sized below. */
+
+.yolo-view-toggle:not(.yolo-view-toggle--single)
+  .yolo-view-toggle-button--expanded {
+  flex: 0 1 var(--yolo-live-expanded-width);
+  min-width: var(--yolo-collapsed-width);
   justify-content: center;
   gap: 6px;
+}
+
+/* Unblock flex-shrink along the nested-flex chain inside the chat
+   RollerSelect. Without this, each nested flex container defaults to
+   `min-width: auto` (= its content's min-content), which means the
+   chevron + icon + their inner gaps form an implicit floor on the chat
+   button's width. The chat button can't actually shrink to its declared
+   `min-width: var(--yolo-collapsed-width)` and ends up wider than the
+   indicator computes — the literal cause of the visual misalignment we
+   were chasing. `min-width: 0` lets the box honour its outer constraint. */
+
+.yolo-view-toggle .yolo-view-toggle-button,
+.yolo-view-toggle .yolo-roller-select-window,
+.yolo-view-toggle .yolo-roller-select-track,
+.yolo-view-toggle .yolo-roller-select-item {
+  min-width: 0;
 }
 
 .yolo-view-toggle-button-label {
@@ -11065,44 +11128,72 @@ button.yolo-llm-debug-modal-button:focus-visible {
   cursor: not-allowed;
 }
 
+/* Indicator positioning is driven by `left + width`. The width for the
+   expanded state reads `--yolo-live-expanded-width` — the SAME expression
+   the expanded button's flex-basis reads. Because both consume the same
+   length, the indicator can never drift from the active button regardless
+   of how the toggle is flex-shrunk. `left` offsets are also expressed in
+   terms of `--yolo-padding` / `--yolo-collapsed-width` / live width, so
+   everything is anchored to the same set of source-of-truth lengths. */
+
 .yolo-view-toggle-indicator {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
+  top: var(--yolo-padding);
+  bottom: var(--yolo-padding);
+  left: var(--yolo-padding);
+  width: var(--yolo-collapsed-width);
   background: transparent;
   border: 2px solid var(--h1-color, var(--interactive-accent));
   border-radius: 4px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
 
+/* a-v=chat (default — covers a-exp=false / hovering composer):
+   sit on the chat slot at the left, collapsed width. */
+
 .yolo-view-toggle-indicator[data-active-view='chat'] {
+  left: var(--yolo-padding);
   width: var(--yolo-collapsed-width);
-  transform: translateX(0);
 }
 
+/* a-v=composer (default — covers a-exp=true with no chat-hover):
+   sit on the composer slot, offset by one collapsed slot, collapsed width.
+   The "active + expanded" override below grows the width. */
+
 .yolo-view-toggle-indicator[data-active-view='composer'] {
+  left: calc(var(--yolo-padding) + var(--yolo-collapsed-width));
   width: var(--yolo-collapsed-width);
-  transform: translateX(var(--yolo-collapsed-width));
 }
+
+/* a-v=chat, e-v=chat, a-exp=true: chat is active and expanded — indicator
+   takes the full expanded slot at the left. */
 
 .yolo-view-toggle[data-expanded-view='chat'][data-active-expanded='true']
   .yolo-view-toggle-indicator[data-active-view='chat'] {
-  width: var(--yolo-expanded-width);
-  transform: translateX(0);
+  left: var(--yolo-padding);
+  width: var(--yolo-live-expanded-width);
 }
+
+/* a-v=composer, e-v=composer, a-exp=true: composer is active and expanded
+   — indicator sits at offset = chat-collapsed-slot, spans expanded width. */
 
 .yolo-view-toggle[data-expanded-view='composer'][data-active-expanded='true']
   .yolo-view-toggle-indicator[data-active-view='composer'] {
-  width: var(--yolo-expanded-width);
-  transform: translateX(var(--yolo-collapsed-width));
+  left: calc(var(--yolo-padding) + var(--yolo-collapsed-width));
+  width: var(--yolo-live-expanded-width);
 }
+
+/* a-v=composer, e-v=chat, a-exp=false: active is composer but chat is
+   hovered → chat occupies the expanded slot, composer is pushed to the
+   right edge. */
 
 .yolo-view-toggle[data-expanded-view='chat'][data-active-expanded='false']
   .yolo-view-toggle-indicator[data-active-view='composer'] {
+  left: calc(var(--yolo-padding) + var(--yolo-live-expanded-width));
   width: var(--yolo-collapsed-width);
-  transform: translateX(var(--yolo-expanded-width));
 }
 
 .yolo-chat-header .yolo-view-toggle {
@@ -11132,7 +11223,10 @@ button.yolo-llm-debug-modal-button:focus-visible {
 }
 
 .yolo-view-toggle--single .yolo-view-toggle-button--roller {
-  width: var(--yolo-expanded-width);
+  /* Override the base `flex: 0 0 collapsed`. Single mode has only one
+     button and locks the toggle width via `min-width`, so we want the
+     roller to occupy the full expanded slot (and not flex-grow beyond). */
+  flex: 0 0 var(--yolo-expanded-width);
   justify-content: center;
   gap: 6px;
 }
@@ -11151,6 +11245,41 @@ button.yolo-llm-debug-modal-button:focus-visible {
 .yolo-view-toggle-indicator--single {
   width: calc(100% - 8px) !important;
   transform: translateX(0) !important;
+}
+
+/* Compact form: when the toggle itself is too narrow to host a readable
+   label, fold the expanded button into icon-only mode. Triggered by the
+   toggle's own size — independent of any outer container — because the
+   right policy here is "when I personally don't have room, drop the
+   label," not "when the sidebar shrinks by some external threshold."
+   Workspace `--single` is locked wider by min-width and never triggers. */
+
+@container yolo-view-toggle (max-width: 130px) {
+  .yolo-view-toggle-button--expanded {
+    gap: 0;
+  }
+
+  .yolo-view-toggle-button--expanded .yolo-view-toggle-button-label {
+    opacity: 0;
+    max-width: 0;
+  }
+
+  /* The chat slot's RollerSelect renders a chevron caret next to the
+     label when the button is `--expanded`. We need to overpower that
+     rule's specificity (0,3,0) so the caret really disappears in compact
+     mode — otherwise the icon-only form still has a hanging chevron. */
+  .yolo-view-toggle-button--roller.yolo-view-toggle-button--expanded
+    .yolo-roller-select-caret {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+
+  /* Roller item inner layout has its own gap; collapse it for the same
+     reason. */
+  .yolo-roller-select-item {
+    gap: 0;
+  }
 }
 
 /* Roller behavior on top of original accordion style */
@@ -11298,6 +11427,14 @@ button.yolo-llm-debug-modal-button:focus-visible {
   color: var(--h1-color, var(--interactive-accent));
 }
 
+/* Mobile / very narrow viewport: shrink the toggle's declared baseline.
+   The indicator and expanded-button widths derive from the new variables
+   automatically (live `calc(100% - …)` for the indicator, flex-basis for
+   the button), so we only adjust the source-of-truth values here. The
+   old transform/width overrides this rule used to carry were removed
+   when indicator positioning switched to `left + width` — keeping them
+   would re-introduce transforms that no longer fit the model. */
+
 @media (max-width: 400px) {
   .yolo-view-toggle {
     width: 160px;
@@ -11307,16 +11444,6 @@ button.yolo-llm-debug-modal-button:focus-visible {
   .yolo-view-toggle-button {
     padding: 6px 2px;
     font-size: var(--font-ui-smallest);
-  }
-  .yolo-view-toggle-button--expanded {
-    width: var(--yolo-expanded-width);
-  }
-  .yolo-view-toggle-indicator[data-active-view='chat'] {
-    width: var(--yolo-collapsed-width);
-  }
-  .yolo-view-toggle-indicator[data-active-view='composer'] {
-    width: var(--yolo-collapsed-width);
-    transform: translateX(var(--yolo-collapsed-width));
   }
 }
 
