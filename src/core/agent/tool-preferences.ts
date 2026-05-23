@@ -29,11 +29,13 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 /**
  * local tool 中需要 require_approval 的工具名集合。
  * delegate_external_agent 是高风险工具（执行外部 CLI），必须在此列表中。
+ * browser_read_page 默认要求审批：可能读取用户登录态网页（隐私敏感）。
  */
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   'delegate_external_agent',
+  'browser_read_page',
 ])
 
 const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([

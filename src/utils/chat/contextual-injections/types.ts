@@ -1,6 +1,7 @@
 import type { TFile } from 'obsidian'
 
 import type { TodoItem } from '../../../core/agent/todos-from-messages'
+import type { ActiveWebviewHandle } from '../../../core/browser/activeWebviewProbe'
 import type { CurrentFileViewState } from '../../../types/mentionable'
 
 /**
@@ -41,7 +42,22 @@ export type TodoListInjection = {
   todos: ReadonlyArray<TodoItem>
 }
 
+/**
+ * Browser context injection (Phase 1). Emitted when the user's active leaf
+ * is a supported `<webview>` host (core Web Viewer or .url WebView Opener).
+ *
+ * The handle is captured synchronously at build time; the renderer reads
+ * URL/title/selection from it asynchronously so the leaf state when the user
+ * pressed Send is faithfully preserved.
+ */
+export type BrowserContextInjection = {
+  type: 'browser-context'
+  handle: ActiveWebviewHandle
+  maxSelectionChars: number
+}
+
 export type ContextualInjection =
   | CurrentFilePointerInjection
   | EditorSnapshotInjection
   | TodoListInjection
+  | BrowserContextInjection

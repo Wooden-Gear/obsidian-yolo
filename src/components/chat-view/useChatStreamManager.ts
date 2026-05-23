@@ -1,5 +1,5 @@
 import { UseMutationResult, useMutation } from '@tanstack/react-query'
-import { TFile } from 'obsidian'
+import { Platform, TFile } from 'obsidian'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useApp } from '../../contexts/app-context'
@@ -17,6 +17,7 @@ import type {
   AgentConversationState,
 } from '../../core/agent/service'
 import { getEnabledAssistantToolNames } from '../../core/agent/tool-preferences'
+import { findActiveWebviewHandle } from '../../core/browser/activeWebviewProbe'
 import {
   LLMAPIKeyInvalidException,
   LLMAPIKeyNotSetException,
@@ -143,29 +144,48 @@ const isRunSummaryActive = (summary: AgentConversationRunSummary): boolean => {
 }
 
 /**
- * Sidebar Chat focus sync → current-file-pointer injection.
- * Returns an empty array when the user has disabled focus sync or no file
- * is active.
+ * Sidebar Chat injections:
+ *   - current-file-pointer when focus sync is enabled and a vault file is active
+ *   - browser-context when the active leaf is a supported <webview> host
+ *     (core Web Viewer or .url WebView Opener) and the user enabled it
+ *
+ * Mobile short-circuits the browser-context branch — <webview> does not exist
+ * on Obsidian's mobile WebView host.
  */
 const buildChatContextualInjections = ({
+  app,
   includeCurrentFileContent,
   currentFile,
   currentFileViewState,
+  injectActivePageContext,
+  injectSelectionMaxChars,
 }: {
+  app: import('obsidian').App
   includeCurrentFileContent: boolean
   currentFile: TFile | null | undefined
   currentFileViewState?: import('../../types/mentionable').CurrentFileViewState
+  injectActivePageContext: boolean
+  injectSelectionMaxChars: number
 }): ContextualInjection[] => {
-  if (!includeCurrentFileContent || !currentFile) {
-    return []
-  }
-  return [
-    {
+  const injections: ContextualInjection[] = []
+  if (includeCurrentFileContent && currentFile) {
+    injections.push({
       type: 'current-file-pointer',
       file: currentFile,
       viewState: currentFileViewState,
-    },
-  ]
+    })
+  }
+  if (injectActivePageContext && !Platform.isMobile) {
+    const handle = findActiveWebviewHandle(app)
+    if (handle) {
+      injections.push({
+        type: 'browser-context',
+        handle,
+        maxSelectionChars: injectSelectionMaxChars,
+      })
+    }
+  }
+  return injections
 }
 
 const annotateBranchMessages = (
@@ -568,10 +588,13 @@ export function useChatStreamManager({
             allowedSkillIds,
             allowedSkillNames,
             contextualInjections: buildChatContextualInjections({
+              app,
               includeCurrentFileContent:
                 settings.chatOptions.includeCurrentFileContent,
               currentFile: currentFileOverride,
               currentFileViewState,
+              injectActivePageContext: settings.browser.injectActivePageContext,
+              injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
             }),
           })
       } catch (error) {
@@ -753,10 +776,13 @@ export function useChatStreamManager({
           allowedSkillNames,
           requestParams,
           contextualInjections: buildChatContextualInjections({
+            app,
             includeCurrentFileContent:
               settings.chatOptions.includeCurrentFileContent,
             currentFile: currentFileOverride,
             currentFileViewState,
+            injectActivePageContext: settings.browser.injectActivePageContext,
+            injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
           }),
           geminiTools: {
             useWebSearch: conversationOverrides?.useWebSearch ?? false,
@@ -1005,10 +1031,13 @@ export function useChatStreamManager({
         allowedSkillIds: enabledSkillEntries.map((s) => s.id),
         allowedSkillNames: enabledSkillEntries.map((s) => s.name),
         contextualInjections: buildChatContextualInjections({
+          app,
           includeCurrentFileContent:
             settings.chatOptions.includeCurrentFileContent,
           currentFile: currentFileOverride,
           currentFileViewState,
+          injectActivePageContext: settings.browser.injectActivePageContext,
+          injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
         }),
       }
     },

@@ -122,6 +122,13 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Fetch the full content of a single URL through a configured search provider.',
   },
+  browser_read_page: {
+    labelKey: 'settings.agent.builtinBrowserReadPageLabel',
+    descKey: 'settings.agent.builtinBrowserReadPageDesc',
+    labelFallback: 'Read Active Webview',
+    descFallback:
+      'Read the rendered contents of the page the user is currently browsing in Obsidian. Useful for signed-in pages and pages that show content after loading.',
+  },
   delegate_external_agent: {
     labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',
     descKey: 'settings.agent.builtinDelegateExternalAgentDesc',
@@ -172,6 +179,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   ask_user_question: 'context',
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
+  browser_read_page: 'external',
   open_skill: 'external',
   delegate_external_agent: 'external',
 }

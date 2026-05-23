@@ -290,6 +290,47 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.slice(0, maxLength - 1)}...`
 }
 
+const BROWSER_READ_PAGE_DISPLAY_MAX_CHARS = 12000
+const LARGE_OUTPUT_RISK_LOCAL_TOOLS = new Set(['browser_read_page'])
+
+const isLargeOutputRiskToolRequest = (request: ToolRequestLike): boolean => {
+  try {
+    const { serverName, toolName } = parseToolName(request.name)
+    return (
+      serverName === getLocalFileToolServerName() &&
+      LARGE_OUTPUT_RISK_LOCAL_TOOLS.has(toolName)
+    )
+  } catch {
+    return false
+  }
+}
+
+const getToolResultDisplayText = ({
+  request,
+  response,
+}: {
+  request: ToolRequestLike
+  response: ToolCallResponse
+}): string => {
+  if (response.status !== ToolCallResponseStatus.Success) {
+    return ''
+  }
+
+  const text = response.data.text
+  if (
+    !isLargeOutputRiskToolRequest(request) ||
+    text.length <= BROWSER_READ_PAGE_DISPLAY_MAX_CHARS
+  ) {
+    return text
+  }
+
+  const hiddenChars = text.length - BROWSER_READ_PAGE_DISPLAY_MAX_CHARS
+  return `${text.slice(
+    0,
+    BROWSER_READ_PAGE_DISPLAY_MAX_CHARS,
+  )}\n\n[Display shortened by ${hiddenChars} characters. The assistant received the full tool result.]`
+}
+
 const parseToolArguments = (
   rawArguments?: ToolCallRequest['arguments'],
 ): Record<string, unknown> | null => {
@@ -1015,6 +1056,13 @@ function ToolCallItem({
       getToolCallArgumentsText(request.arguments) ?? toolLabels.noParameters
     )
   }, [request.arguments, toolLabels.noParameters])
+  const resultDisplayText = useMemo(
+    () =>
+      response.status === ToolCallResponseStatus.Success
+        ? getToolResultDisplayText({ request, response })
+        : '',
+    [request, response],
+  )
   // 是否禁用"始终允许"按钮（某些高危工具每次必须人审）
   const isAlwaysAllowDisabled = useMemo(() => {
     try {
@@ -1179,7 +1227,7 @@ function ToolCallItem({
               {response.status === ToolCallResponseStatus.Success && (
                 <div className="yolo-toolcall-content-section">
                   <div>{toolLabels.result}:</div>
-                  <ObsidianCodeBlock content={response.data.text} />
+                  <ObsidianCodeBlock content={resultDisplayText} />
                 </div>
               )}
               {response.status === ToolCallResponseStatus.Error && (

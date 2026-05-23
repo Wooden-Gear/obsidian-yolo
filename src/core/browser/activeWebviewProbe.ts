@@ -1,0 +1,279 @@
+/**
+ * Detect & read from the user's active webview leaf (Phase 1).
+ *
+ * Phase 1 only supports an explicit viewType allowlist:
+ *   - 'webviewer'   (Obsidian 1.8+ core Web Viewer)
+ *   - 'url-webview' (.url WebView Opener — Kieirra/obsidian-url-extension)
+ *
+ * Other viewTypes that happen to host a <webview> element (Surfing, etc.)
+ * are intentionally ignored to avoid pulling content from unverified plugins.
+ *
+ * This module is desktop-only. Callers must short-circuit on Platform.isMobile
+ * before invoking probe functions — there is no <webview> element on mobile.
+ */
+
+import type { App, WorkspaceLeaf } from 'obsidian'
+
+export const PHASE1_SUPPORTED_VIEW_TYPES = ['webviewer', 'url-webview'] as const
+
+export type SupportedViewType = (typeof PHASE1_SUPPORTED_VIEW_TYPES)[number]
+
+export type BrowserContextSource = 'core_webviewer' | 'url_webview_opener'
+
+const VIEW_TYPE_TO_SOURCE: Record<SupportedViewType, BrowserContextSource> = {
+  webviewer: 'core_webviewer',
+  'url-webview': 'url_webview_opener',
+}
+
+/**
+ * Structural type for the parts of the Electron `<webview>` API we depend on.
+ * Avoids pulling in @types/electron and keeps the probe testable.
+ */
+export type WebviewLike = {
+  getURL: () => string
+  getTitle: () => string
+  executeJavaScript: (code: string, userGesture?: boolean) => Promise<unknown>
+}
+
+export type ActiveWebviewHandle = {
+  leaf: WorkspaceLeaf
+  webview: WebviewLike
+  viewType: SupportedViewType
+  source: BrowserContextSource
+}
+
+const isSupportedViewType = (viewType: string): viewType is SupportedViewType =>
+  (PHASE1_SUPPORTED_VIEW_TYPES as readonly string[]).includes(viewType)
+
+/**
+ * Synchronously find the user's active webview leaf if it belongs to a
+ * Phase 1 supported source. Returns null when:
+ *   - There is no most-recent leaf
+ *   - The leaf's viewType is not in the allowlist
+ *   - The leaf's container does not contain a <webview> element
+ *   - The webview element is missing the expected sync methods
+ *
+ * Uses `getMostRecentLeaf(rootSplit)` rather than the deprecated
+ * `workspace.activeLeaf`. Webviews are normally opened in the root split
+ * (main editor area) by core Web Viewer and `.url WebView Opener`, so this
+ * picks up the page the user was just interacting with even if they refocused
+ * the chat sidebar to send a message.
+ */
+export function findActiveWebviewHandle(app: App): ActiveWebviewHandle | null {
+  const workspace = app.workspace
+  const leaf =
+    workspace.getMostRecentLeaf(workspace.rootSplit) ??
+    workspace.getMostRecentLeaf()
+  if (!leaf) return null
+
+  const view = leaf.view
+  const viewType =
+    typeof view.getViewType === 'function' ? view.getViewType() : ''
+  if (!isSupportedViewType(viewType)) return null
+
+  const containerEl = view.containerEl
+  if (!containerEl) return null
+
+  const element = containerEl.querySelector('webview')
+  if (!element) return null
+
+  const candidate = element as unknown as Partial<WebviewLike>
+  if (
+    typeof candidate.getURL !== 'function' ||
+    typeof candidate.getTitle !== 'function' ||
+    typeof candidate.executeJavaScript !== 'function'
+  ) {
+    return null
+  }
+
+  return {
+    leaf,
+    webview: candidate as WebviewLike,
+    viewType,
+    source: VIEW_TYPE_TO_SOURCE[viewType],
+  }
+}
+
+export type ActiveWebviewSnapshot = {
+  source: BrowserContextSource
+  viewType: SupportedViewType
+  url: string
+  title: string
+  meta?: {
+    visibleTextChars: number
+    renderedHtmlChars: number
+    selectionChars: number
+    scrollY: number
+    viewportHeight: number
+    documentHeight: number
+  }
+  selection?: string
+  selectionTruncated?: boolean
+}
+
+const DEFAULT_SELECTION_TIMEOUT_MS = 200
+const DEFAULT_META_TIMEOUT_MS = 200
+const TRUNCATION_SUFFIX = '...(truncated)'
+
+const truncateSelection = (
+  selection: string,
+  maxChars: number,
+): { value: string; truncated: boolean } => {
+  if (maxChars <= 0) return { value: '', truncated: false }
+  if (selection.length <= maxChars) {
+    return { value: selection, truncated: false }
+  }
+  // Keep room for the suffix so the model sees the truncation marker.
+  const head = Math.max(0, maxChars - TRUNCATION_SUFFIX.length)
+  return {
+    value: `${selection.slice(0, head)}${TRUNCATION_SUFFIX}`,
+    truncated: true,
+  }
+}
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      reject(new Error(`Timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+    promise.then(
+      (value) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      },
+    )
+  })
+}
+
+const readSelectionFromWebview = async (
+  webview: WebviewLike,
+  maxSelectionChars: number,
+  timeoutMs: number,
+): Promise<{ value: string; truncated: boolean } | null> => {
+  if (maxSelectionChars <= 0) return null
+  try {
+    const raw = await withTimeout(
+      webview.executeJavaScript(
+        'String(window.getSelection ? window.getSelection().toString() : "")',
+      ),
+      timeoutMs,
+    )
+    if (typeof raw !== 'string') return null
+    const trimmed = raw.trim()
+    if (trimmed.length === 0) return null
+    return truncateSelection(trimmed, maxSelectionChars)
+  } catch {
+    // Timeout / cross-origin / page closed — skip selection silently.
+    return null
+  }
+}
+
+const PAGE_META_SCRIPT = `(() => {
+  const doc = document;
+  const body = doc.body;
+  const root = doc.documentElement;
+  const text = (body ? body.textContent : root ? root.textContent : '') || '';
+  const html = (root ? root.outerHTML : body ? body.outerHTML : '') || '';
+  const selection = window.getSelection ? String(window.getSelection().toString() || '') : '';
+  const viewportHeight = window.innerHeight || (root ? root.clientHeight : 0) || 0;
+  const documentHeight = Math.max(
+    body ? body.scrollHeight : 0,
+    body ? body.offsetHeight : 0,
+    root ? root.clientHeight : 0,
+    root ? root.scrollHeight : 0,
+    root ? root.offsetHeight : 0
+  );
+  return {
+    visibleTextChars: text.trim().length,
+    renderedHtmlChars: html.length,
+    selectionChars: selection.trim().length,
+    scrollY: Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0)),
+    viewportHeight: Math.max(0, Math.round(viewportHeight)),
+    documentHeight: Math.max(0, Math.round(documentHeight)),
+  };
+})()`
+
+const isPageMeta = (
+  value: unknown,
+): value is NonNullable<ActiveWebviewSnapshot['meta']> => {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return (
+    typeof v.visibleTextChars === 'number' &&
+    typeof v.renderedHtmlChars === 'number' &&
+    typeof v.selectionChars === 'number' &&
+    typeof v.scrollY === 'number' &&
+    typeof v.viewportHeight === 'number' &&
+    typeof v.documentHeight === 'number'
+  )
+}
+
+const readPageMetaFromWebview = async (
+  webview: WebviewLike,
+  timeoutMs: number,
+): Promise<ActiveWebviewSnapshot['meta'] | undefined> => {
+  try {
+    const raw = await withTimeout(
+      webview.executeJavaScript(PAGE_META_SCRIPT),
+      timeoutMs,
+    )
+    return isPageMeta(raw) ? raw : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Read URL/title/(optional)selection from the active webview. The caller is
+ * responsible for first calling `findActiveWebviewHandle` and passing in the
+ * resulting handle.
+ *
+ * URL/title come from sync Electron `<webview>` APIs; selection is read via
+ * `executeJavaScript` and bounded by `selectionTimeoutMs` (default 200ms).
+ *
+ * Returns null when the page hasn't finished loading (URL empty) — that's the
+ * convention used by `<webview>` before navigation completes.
+ */
+export async function readActiveWebviewSnapshot(
+  handle: ActiveWebviewHandle,
+  options: {
+    maxSelectionChars: number
+    selectionTimeoutMs?: number
+    metaTimeoutMs?: number
+  },
+): Promise<ActiveWebviewSnapshot | null> {
+  const url = handle.webview.getURL()
+  if (!url || url === 'about:blank') return null
+  const title = handle.webview.getTitle()
+  const [selection, meta] = await Promise.all([
+    readSelectionFromWebview(
+      handle.webview,
+      options.maxSelectionChars,
+      options.selectionTimeoutMs ?? DEFAULT_SELECTION_TIMEOUT_MS,
+    ),
+    readPageMetaFromWebview(
+      handle.webview,
+      options.metaTimeoutMs ?? DEFAULT_META_TIMEOUT_MS,
+    ),
+  ])
+  return {
+    source: handle.source,
+    viewType: handle.viewType,
+    url,
+    title,
+    meta,
+    selection: selection?.value,
+    selectionTruncated: selection?.truncated,
+  }
+}

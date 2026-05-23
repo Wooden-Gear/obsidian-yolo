@@ -338,6 +338,8 @@ export type TranslationKeys = {
       builtinWebSearchDesc?: string
       builtinWebScrapeLabel?: string
       builtinWebScrapeDesc?: string
+      builtinBrowserReadPageLabel?: string
+      builtinBrowserReadPageDesc?: string
       builtinWebOpsLabel?: string
       builtinWebOpsDesc?: string
       builtinDelegateExternalAgentLabel?: string
@@ -792,6 +794,14 @@ export type TranslationKeys = {
       retryNow?: string
       waitingRetry?: string
       cancelIndex?: string
+    }
+    browser?: {
+      title?: string
+      injectActiveTitle?: string
+      injectActiveDesc?: string
+      selectionMaxTitle?: string
+      selectionMaxDesc?: string
+      fullPageToolHint?: string
     }
     mcp: {
       title: string

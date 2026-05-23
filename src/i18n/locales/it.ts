@@ -459,6 +459,9 @@ export const it: TranslationKeys = {
       builtinWebScrapeLabel: 'Scrape web',
       builtinWebScrapeDesc:
         'Recupera il contenuto completo di un singolo URL tramite il provider configurato.',
+      builtinBrowserReadPageLabel: 'Leggi pagina web attiva',
+      builtinBrowserReadPageDesc:
+        'Legge il contenuto della pagina web attualmente aperta in Obsidian. Utile per pagine che richiedono accesso o mostrano contenuto solo dopo il caricamento.',
       builtinWebOpsLabel: 'Set strumenti ricerca web',
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
@@ -979,6 +982,17 @@ export const it: TranslationKeys = {
       retryNow: 'Riprova ora',
       waitingRetry: 'In attesa di un nuovo tentativo...',
       cancelIndex: 'Annulla',
+    },
+    browser: {
+      title: 'Integrazione web',
+      injectActiveTitle: 'Contesto della pagina attiva',
+      injectActiveDesc:
+        "Quando invii un messaggio, include brevi informazioni sulla pagina web corrente, ad esempio indirizzo, titolo, lunghezza della pagina, posizione di scorrimento e l'eventuale testo selezionato nella pagina.",
+      selectionMaxTitle: 'Limite testo selezionato',
+      selectionMaxDesc:
+        'Quantita massima di testo selezionato da includere dalla pagina. Imposta 0 per non includerlo mai.',
+      fullPageToolHint:
+        "Per consentire all'assistente di leggere l'intera pagina, abilita lo strumento di lettura pagina per l'agente.",
     },
     mcp: {
       title: 'Strumenti personalizzati (MCP)',

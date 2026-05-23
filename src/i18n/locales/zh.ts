@@ -422,6 +422,9 @@ export const zh: TranslationKeys = {
         '通过配置的搜索服务进行网页搜索，返回带摘要的结果列表。',
       builtinWebScrapeLabel: '抓取网页',
       builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文。',
+      builtinBrowserReadPageLabel: '读取当前网页',
+      builtinBrowserReadPageDesc:
+        '读取你当前正在 Obsidian 中浏览的网页内容。适合需要登录后才能看到、或页面加载完成后才出现的内容。',
       builtinWebOpsLabel: '联网搜索工具集',
       builtinWebOpsDesc: '网页搜索与正文抓取',
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
@@ -951,6 +954,17 @@ export const zh: TranslationKeys = {
       retryNow: '立即重试',
       waitingRetry: '等待重试中...',
       cancelIndex: '取消',
+    },
+    browser: {
+      title: '网页集成',
+      injectActiveTitle: '当前页上下文',
+      injectActiveDesc:
+        '发送消息时，附带当前网页的简要信息，例如网址、标题、页面长度、滚动位置，以及页面里的选中文字。',
+      selectionMaxTitle: '选中文本上限',
+      selectionMaxDesc:
+        '最多附带多少页面选中文字。设为 0 表示永不附带选中文字。',
+      fullPageToolHint:
+        '如果希望助手读取完整网页内容，请在 Agent 工具设置中启用网页读取工具。',
     },
     mcp: {
       title: '自定义工具 (MCP)',

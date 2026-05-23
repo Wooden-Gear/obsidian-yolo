@@ -823,16 +823,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   // Per-conversation model id (do NOT write back to global settings)
   const conversationModelIdRef = useRef<Map<string, string>>(new Map())
-  const [conversationModelId, setConversationModelId] = useState<string>(
-    () => {
-      const initialAssistantId =
-        settings.currentAssistantId ?? DEFAULT_ASSISTANT_ID
-      const initialAssistant = settings.assistants.find(
-        (assistant) => assistant.id === initialAssistantId,
-      )
-      return initialAssistant?.modelId ?? settings.chatModelId
-    },
-  )
+  const [conversationModelId, setConversationModelId] = useState<string>(() => {
+    const initialAssistantId =
+      settings.currentAssistantId ?? DEFAULT_ASSISTANT_ID
+    const initialAssistant = settings.assistants.find(
+      (assistant) => assistant.id === initialAssistantId,
+    )
+    return initialAssistant?.modelId ?? settings.chatModelId
+  })
 
   const currentConversationModel = useMemo(() => {
     return (

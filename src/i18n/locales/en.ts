@@ -419,7 +419,7 @@ export const en: TranslationKeys = {
       manageSkills: 'Manage skills',
       enableToolDisclosure: 'Enable on-demand tool loading (Beta)',
       enableToolDisclosureDesc:
-        'Optional tools start as short descriptions, then load full details when needed. Recommended when you have many MCP tools enabled. Note: this mechanism relies on the model\'s own tool-use capability — some models may not reliably recognize tools loaded this way.',
+        "Optional tools start as short descriptions, then load full details when needed. Recommended when you have many MCP tools enabled. Note: this mechanism relies on the model's own tool-use capability — some models may not reliably recognize tools loaded this way.",
       expandDescription: 'Expand',
       collapseDescription: 'Collapse',
       viewAllTools: 'View all tools',
@@ -467,6 +467,9 @@ export const en: TranslationKeys = {
       builtinWebScrapeLabel: 'Web Scrape',
       builtinWebScrapeDesc:
         'Fetch the full content of a single URL through a configured search provider.',
+      builtinBrowserReadPageLabel: 'Read Active Web Page',
+      builtinBrowserReadPageDesc:
+        'Read the contents of the web page currently open in Obsidian. Useful for pages that require sign-in or only show content after loading.',
       builtinWebOpsLabel: 'Web Search Toolset',
       builtinWebOpsDesc: 'Web search and page scraping',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
@@ -1028,6 +1031,17 @@ export const en: TranslationKeys = {
       retryNow: 'Retry now',
       waitingRetry: 'Waiting to retry...',
       cancelIndex: 'Cancel',
+    },
+    browser: {
+      title: 'Web integration',
+      injectActiveTitle: 'Active page context',
+      injectActiveDesc:
+        'When you send a message, include brief information about the current web page, such as its address, title, page length, scroll position, and any text selected on the page.',
+      selectionMaxTitle: 'Selected text limit',
+      selectionMaxDesc:
+        'Maximum selected text to include from the page. Set to 0 to never include selected text.',
+      fullPageToolHint:
+        'To let the assistant read the full page content, enable the page reading tool for the agent.',
     },
     mcp: {
       title: 'Custom tools (MCP)',
