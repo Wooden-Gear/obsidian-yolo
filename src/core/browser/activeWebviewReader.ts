@@ -22,6 +22,7 @@ import type {
   BrowserContextSource,
   SupportedViewType,
 } from './activeWebviewProbe'
+import { isWebviewLoading } from './activeWebviewProbe'
 
 export type BrowserReadScope = 'viewport' | 'document' | 'selection'
 export type BrowserReadFormat =
@@ -45,6 +46,7 @@ export type BrowserReadResult = {
   title: string
   scope: BrowserReadScope
   format: BrowserReadFormat
+  loading: boolean
   capturedAt: number
   text?: string
   headings?: BrowserReadHeading[]
@@ -56,6 +58,7 @@ export type BrowserReadResult = {
     nextStartChar?: number
   }
   truncated?: { totalChars: number; returnedChars: number }
+  partial?: { reason: 'page_loading'; message: string }
   redactions: BrowserReadRedaction[]
 }
 
@@ -78,6 +81,7 @@ export class BrowserReadFailure extends Error {
 export const DEFAULT_BROWSER_READ_MAX_CHARS = 20000
 export const MAX_BROWSER_READ_MAX_CHARS = 500000
 const DEFAULT_EXTRACTION_TIMEOUT_MS = 5000
+const LOADING_EXTRACTION_TIMEOUT_MS = 750
 
 type RawExtractionResult = {
   url: string
@@ -193,6 +197,12 @@ const EXTRACTION_SCRIPT = `((scope) => {
   });
 
   const textOf = (el) => (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
+  const directTextOf = (el) => Array.from(el.childNodes || [])
+    .filter((node) => node && node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent || '')
+    .join(' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
   const keyRoot = scope === 'document'
     ? (doc.body || doc.documentElement || cloned)
     : cloned;
@@ -283,6 +293,40 @@ const EXTRACTION_SCRIPT = `((scope) => {
       return;
     }
     pushLine(text);
+  });
+
+  const fallbackSelector = [
+    'article',
+    'section',
+    'main',
+    'div',
+    'span',
+    'a',
+    'button',
+    'label',
+    '[role="article"]',
+    '[role="main"]',
+    '[role="paragraph"]',
+    '[role="listitem"]',
+    '[role="cell"]',
+  ].join(',');
+  keyRoot.querySelectorAll(fallbackSelector).forEach((el) => {
+    if (!isVisibleForKeyInfo(el)) return;
+    if (el.closest && el.closest(formulaSelector)) return;
+    if (el.matches && el.matches(blockSelector)) return;
+    const directText = directTextOf(el);
+    const hasMeaningfulDirectText = directText.length >= 12;
+    const hasBlockChildren = el.querySelector && el.querySelector(blockSelector);
+    const hasFallbackChildren =
+      el.querySelector &&
+      el.querySelector('article,section,main,div,span,[role="paragraph"],[role="listitem"],[role="cell"]');
+    if (hasMeaningfulDirectText) {
+      pushLine(directText);
+      return;
+    }
+    if (hasBlockChildren || hasFallbackChildren) return;
+    const text = textOf(el);
+    if (text.length >= 12) pushLine(text);
   });
 
   return {
@@ -417,14 +461,46 @@ export async function readActiveWebviewPage(
     executionTimeoutMs?: number
   },
 ): Promise<BrowserReadResult | null> {
+  const loading = isWebviewLoading(handle.webview)
   let raw: unknown
   try {
     raw = await withTimeout(
       handle.webview.executeJavaScript(buildScript(options.scope)),
-      options.executionTimeoutMs ?? DEFAULT_EXTRACTION_TIMEOUT_MS,
+      options.executionTimeoutMs ??
+        (loading
+          ? LOADING_EXTRACTION_TIMEOUT_MS
+          : DEFAULT_EXTRACTION_TIMEOUT_MS),
       options.signal,
     )
   } catch (error) {
+    if (
+      loading &&
+      error instanceof BrowserReadFailure &&
+      error.code === 'extraction_timeout'
+    ) {
+      const url = handle.webview.getURL()
+      const title = handle.webview.getTitle()
+      if (!url || url === 'about:blank') return null
+      return {
+        source: handle.source,
+        sourceViewType: handle.viewType,
+        url,
+        title,
+        scope: options.scope,
+        format: options.format,
+        loading,
+        capturedAt: Date.now(),
+        text: '',
+        headings: [],
+        links: [],
+        partial: {
+          reason: 'page_loading',
+          message:
+            'The page is still loading, and rendered content was not available quickly enough. Try again after the page finishes loading.',
+        },
+        redactions: [],
+      }
+    }
     if (error instanceof BrowserReadFailure) throw error
     throw new BrowserReadFailure(
       'extraction_failed',
@@ -464,6 +540,7 @@ export async function readActiveWebviewPage(
     title: raw.title,
     scope: options.scope,
     format: options.format,
+    loading,
     capturedAt: Date.now(),
     redactions: buildRedactions(raw.counts),
   }

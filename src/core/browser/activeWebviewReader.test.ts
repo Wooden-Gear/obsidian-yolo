@@ -39,6 +39,7 @@ describe('readActiveWebviewPage', () => {
     })
     expect(result?.title).toBe('Partial')
     expect(result?.text).toBe('<p>Partial body</p>')
+    expect(result?.loading).toBe(false)
   })
 
   it('returns null for an empty about:blank page', async () => {
@@ -266,6 +267,31 @@ describe('readActiveWebviewPage', () => {
         executionTimeoutMs: 20,
       }),
     ).rejects.toMatchObject({ code: 'extraction_timeout' })
+  })
+
+  it('returns partial success instead of timing out while the page is loading', async () => {
+    const handle = buildHandle({
+      getURL: () => 'https://example.com/loading',
+      getTitle: () => 'Loading',
+      isLoading: () => true,
+      executeJavaScript: () => new Promise(() => undefined),
+    })
+    const result = await readActiveWebviewPage(handle, {
+      scope: 'document',
+      format: 'key_visible_info',
+      maxChars: 1000,
+      executionTimeoutMs: 20,
+    })
+    expect(result).toMatchObject({
+      url: 'https://example.com/loading',
+      title: 'Loading',
+      loading: true,
+      text: '',
+      headings: [],
+      links: [],
+      partial: { reason: 'page_loading' },
+      redactions: [],
+    })
   })
 
   it('rejects malformed extraction payloads', async () => {

@@ -559,12 +559,14 @@ export const yoloSettingsSchema = z.object({
     .object({
       // Auto-inject <browser_context> (URL + title + selection) when active leaf
       // hosts a supported <webview> (core Web Viewer or .url WebView Opener).
-      injectActivePageContext: z.boolean().catch(true),
+      // Defaults off so simply opening/browsing pages never opts users into
+      // background webview probing.
+      injectActivePageContext: z.boolean().catch(false),
       // Max chars of selected text to inject. 0 disables selection injection.
       injectSelectionMaxChars: z.number().int().min(0).max(20000).catch(2000),
     })
     .catch({
-      injectActivePageContext: true,
+      injectActivePageContext: false,
       injectSelectionMaxChars: 2000,
     }),
 

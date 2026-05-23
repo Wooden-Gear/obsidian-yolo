@@ -4,14 +4,17 @@
  * Mirrors how `<ide_selection>` / `<editor-snapshot>` work for vault notes:
  * when the user's active leaf is a supported webview (core Web Viewer or
  * .url WebView Opener) and they send a chat message, the model is told the
- * page's URL/title and (when present) the user's selection — without the
- * model having to call any browser_* tool.
+ * page's URL/title/loading state and (when present) the user's selection —
+ * without the model having to call any browser_* tool.
  *
  * Body is constructed at render time so the URL/title/selection reflect the
  * webview's state at request build time, not at chat-input submit time.
  */
 
-import { readActiveWebviewSnapshot } from '../../../core/browser/activeWebviewProbe'
+import {
+  findActiveWebviewHandle,
+  readActiveWebviewSnapshot,
+} from '../../../core/browser/activeWebviewProbe'
 import type { RequestMessage } from '../../../types/llm/request'
 
 import type { BrowserContextInjection } from './types'
@@ -22,7 +25,10 @@ const escapeXml = (raw: string): string =>
 export async function renderBrowserContextInjection(
   injection: BrowserContextInjection,
 ): Promise<RequestMessage | null> {
-  const snapshot = await readActiveWebviewSnapshot(injection.handle, {
+  const handle = findActiveWebviewHandle(injection.app)
+  if (!handle) return null
+
+  const snapshot = await readActiveWebviewSnapshot(handle, {
     maxSelectionChars: injection.maxSelectionChars,
   })
   if (!snapshot) return null
@@ -31,6 +37,7 @@ export async function renderBrowserContextInjection(
   lines.push(`    <url>${escapeXml(snapshot.url)}</url>`)
   lines.push(`    <title>${escapeXml(snapshot.title)}</title>`)
   lines.push(`    <source>${snapshot.source}</source>`)
+  lines.push(`    <loading>${snapshot.loading ? 'true' : 'false'}</loading>`)
   if (snapshot.meta) {
     lines.push(
       `    <visible_text_chars>${snapshot.meta.visibleTextChars}</visible_text_chars>`,

@@ -33,6 +33,8 @@ export type WebviewLike = {
   getURL: () => string
   getTitle: () => string
   executeJavaScript: (code: string, userGesture?: boolean) => Promise<unknown>
+  isLoading?: () => boolean
+  isLoadingMainFrame?: () => boolean
 }
 
 export type ActiveWebviewHandle = {
@@ -99,6 +101,7 @@ export type ActiveWebviewSnapshot = {
   viewType: SupportedViewType
   url: string
   title: string
+  loading: boolean
   meta?: {
     visibleTextChars: number
     renderedHtmlChars: number
@@ -114,6 +117,21 @@ export type ActiveWebviewSnapshot = {
 const DEFAULT_SELECTION_TIMEOUT_MS = 200
 const DEFAULT_META_TIMEOUT_MS = 200
 const TRUNCATION_SUFFIX = '...(truncated)'
+
+export const isWebviewLoading = (webview: WebviewLike): boolean => {
+  let loading = false
+  try {
+    if (typeof webview.isLoadingMainFrame === 'function') {
+      loading = Boolean(webview.isLoadingMainFrame()) || loading
+    }
+    if (typeof webview.isLoading === 'function') {
+      loading = Boolean(webview.isLoading()) || loading
+    }
+  } catch {
+    return false
+  }
+  return loading
+}
 
 const truncateSelection = (
   selection: string,
@@ -235,12 +253,13 @@ const readPageMetaFromWebview = async (
 }
 
 /**
- * Read URL/title/(optional)selection from the active webview. The caller is
+ * Read URL/title/loading/(optional)selection from the active webview. The caller is
  * responsible for first calling `findActiveWebviewHandle` and passing in the
  * resulting handle.
  *
- * URL/title come from sync Electron `<webview>` APIs; selection is read via
- * `executeJavaScript` and bounded by `selectionTimeoutMs` (default 200ms).
+ * URL/title/loading come from sync Electron `<webview>` APIs. Selection and
+ * page metadata are read via `executeJavaScript` only after the webview stops
+ * loading, and are bounded by short timeouts.
  *
  * Returns null when the page hasn't finished loading (URL empty) — that's the
  * convention used by `<webview>` before navigation completes.
@@ -256,6 +275,17 @@ export async function readActiveWebviewSnapshot(
   const url = handle.webview.getURL()
   if (!url || url === 'about:blank') return null
   const title = handle.webview.getTitle()
+  const loading = isWebviewLoading(handle.webview)
+  if (loading) {
+    return {
+      source: handle.source,
+      viewType: handle.viewType,
+      url,
+      title,
+      loading,
+    }
+  }
+
   const [selection, meta] = await Promise.all([
     readSelectionFromWebview(
       handle.webview,
@@ -272,6 +302,7 @@ export async function readActiveWebviewSnapshot(
     viewType: handle.viewType,
     url,
     title,
+    loading,
     meta,
     selection: selection?.value,
     selectionTruncated: selection?.truncated,

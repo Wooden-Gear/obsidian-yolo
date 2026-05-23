@@ -6,7 +6,7 @@ describe('migrateFrom60To61', () => {
 
     expect(result.version).toBe(61)
     const browser = result.browser as Record<string, unknown>
-    expect(browser.injectActivePageContext).toBe(true)
+    expect(browser.injectActivePageContext).toBe(false)
     expect(browser.injectSelectionMaxChars).toBe(2000)
   })
 
@@ -51,7 +51,7 @@ describe('migrateFrom60To61', () => {
     })
 
     const browser = result.browser as Record<string, unknown>
-    expect(browser.injectActivePageContext).toBe(true)
+    expect(browser.injectActivePageContext).toBe(false)
   })
 
   it('replaces a non-object browser field with defaults', () => {
@@ -61,7 +61,7 @@ describe('migrateFrom60To61', () => {
     })
 
     const browser = result.browser as Record<string, unknown>
-    expect(browser.injectActivePageContext).toBe(true)
+    expect(browser.injectActivePageContext).toBe(false)
     expect(browser.injectSelectionMaxChars).toBe(2000)
   })
 })

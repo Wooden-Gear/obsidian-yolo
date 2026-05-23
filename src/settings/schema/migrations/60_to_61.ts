@@ -8,15 +8,16 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * integration (passive `<browser_context>` injection + `browser_read_page`
  * tool against the user's active webview).
  *
- * Defaults match the design doc:
- *   - injectActivePageContext: true (parity with focus-sync defaults)
+ * Defaults:
+ *   - injectActivePageContext: false (opening/browsing pages should not opt
+ *     users into automatic webview probing)
  *   - injectSelectionMaxChars: 2000
  */
 export const migrateFrom60To61: SettingMigration['migrate'] = (data) => {
   const next: Record<string, unknown> = { ...data, version: 61 }
   const browser = isRecord(next.browser) ? { ...next.browser } : {}
   if (typeof browser.injectActivePageContext !== 'boolean') {
-    browser.injectActivePageContext = true
+    browser.injectActivePageContext = false
   }
   if (
     typeof browser.injectSelectionMaxChars !== 'number' ||

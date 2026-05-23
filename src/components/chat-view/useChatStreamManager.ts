@@ -17,7 +17,6 @@ import type {
   AgentConversationState,
 } from '../../core/agent/service'
 import { getEnabledAssistantToolNames } from '../../core/agent/tool-preferences'
-import { findActiveWebviewHandle } from '../../core/browser/activeWebviewProbe'
 import {
   LLMAPIKeyInvalidException,
   LLMAPIKeyNotSetException,
@@ -176,14 +175,11 @@ const buildChatContextualInjections = ({
     })
   }
   if (injectActivePageContext && !Platform.isMobile) {
-    const handle = findActiveWebviewHandle(app)
-    if (handle) {
-      injections.push({
-        type: 'browser-context',
-        handle,
-        maxSelectionChars: injectSelectionMaxChars,
-      })
-    }
+    injections.push({
+      type: 'browser-context',
+      app,
+      maxSelectionChars: injectSelectionMaxChars,
+    })
   }
   return injections
 }

@@ -134,6 +134,7 @@ describe('readActiveWebviewSnapshot', () => {
       viewType: 'webviewer',
       url: 'https://example.com/article',
       title: 'Example Article',
+      loading: false,
       meta: undefined,
       selection: undefined,
       selectionTruncated: undefined,
@@ -170,6 +171,42 @@ describe('readActiveWebviewSnapshot', () => {
       documentHeight: 5000,
     })
     expect(snapshot?.selection).toBe('selected')
+  })
+
+  it('reports loading state and skips page scripts while loading', async () => {
+    const exec = jest.fn(() => Promise.resolve('selected'))
+    const handle = buildHandle({
+      getURL: () => 'https://example.com/article',
+      getTitle: () => 'Loading Article',
+      isLoading: () => true,
+      executeJavaScript: exec,
+    })
+    const snapshot = await readActiveWebviewSnapshot(handle, {
+      maxSelectionChars: 2000,
+    })
+    expect(snapshot).toEqual({
+      source: 'core_webviewer',
+      viewType: 'webviewer',
+      url: 'https://example.com/article',
+      title: 'Loading Article',
+      loading: true,
+    })
+    expect(exec).not.toHaveBeenCalled()
+  })
+
+  it('treats either webview loading API as loading', async () => {
+    const handle = buildHandle({
+      getURL: () => 'https://example.com/article',
+      getTitle: () => 'Loading Article',
+      isLoadingMainFrame: () => false,
+      isLoading: () => true,
+      executeJavaScript: jest.fn(() => Promise.resolve('selected')),
+    })
+    const snapshot = await readActiveWebviewSnapshot(handle, {
+      maxSelectionChars: 2000,
+    })
+    expect(snapshot?.loading).toBe(true)
+    expect(snapshot?.selection).toBeUndefined()
   })
 
   it('includes trimmed non-empty selection', async () => {
