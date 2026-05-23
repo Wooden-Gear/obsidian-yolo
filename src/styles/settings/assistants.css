@@ -339,6 +339,11 @@
   min-width: 240px;
   max-width: 280px;
   padding: var(--size-2-1);
+  /* Flex column so the list shrinks with the surface's clamped max-height
+     (see resolveYoloPopoverStyle); footer stays at natural height. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* In compact workspace-floating mode, keep palette rich rows but
@@ -349,6 +354,11 @@
 }
 
 .yolo-assistant-selector-content--palette .yolo-assistant-selector-list {
+  /* Let the list flex-shrink within the (potentially viewport-clamped) outer
+     surface; min-height: 0 is what actually unlocks shrinking in flex. The
+     base rule already provides `overflow-y: auto`. */
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 360px;
   padding: var(--size-2-1);
 }
