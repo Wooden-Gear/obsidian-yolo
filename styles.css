@@ -224,12 +224,12 @@
   display: flex;
   align-items: center;
   gap: var(--size-4-1);
+}
 
-  svg {
-    height: var(--icon-l);
-    width: var(--icon-l);
-    stroke-width: var(--icon-stroke);
-  }
+.yolo-settings-actions svg {
+  height: var(--icon-l);
+  width: var(--icon-l);
+  stroke-width: var(--icon-stroke);
 }
 
 .yolo-settings-kv-entry.setting-item .setting-item-info {
@@ -623,10 +623,10 @@
   transition:
     background-color 140ms ease,
     color 180ms ease;
+}
 
-  &:hover {
-    background-color: transparent;
-  }
+.yolo-assistant-message-metadata-toggle:hover {
+  background-color: transparent;
 }
 
 .yolo-assistant-message-metadata-toggle.is-static {
@@ -726,93 +726,94 @@
 
 /* Overrides default .markdown-rendered class styles from Obsidian */
 
-.yolo-markdown-rendered {
-  &.markdown-rendered {
-    --render-scale: 1;
-    font-size: calc(var(--render-scale) * 1rem);
-    line-height: 1.5;
+.yolo-markdown-rendered.markdown-rendered {
+  --render-scale: 1;
+  font-size: calc(var(--render-scale) * 1rem);
+  line-height: 1.5;
+}
 
-    &.yolo-scale-xs {
-      --render-scale: 0.8;
-    }
+.yolo-markdown-rendered.markdown-rendered.yolo-scale-xs {
+  --render-scale: 0.8;
+}
 
-    &.yolo-scale-sm {
-      --render-scale: 0.85;
-    }
+.yolo-markdown-rendered.markdown-rendered.yolo-scale-sm {
+  --render-scale: 0.85;
+}
 
-    &.yolo-scale-base {
-      --render-scale: 1;
-    }
+.yolo-markdown-rendered.markdown-rendered.yolo-scale-base {
+  --render-scale: 1;
+}
 
-    /* override default variables */
-    --p-spacing: calc(var(--render-scale) * 1rem);
-    --heading-spacing: calc(var(--p-spacing) * 1.75);
-    --checkbox-size: calc(var(--render-scale) * 1rem);
-    --checkbox-radius: calc(var(--render-scale) * var(--radius-s));
-    --icon-size: calc(var(--render-scale) * var(--icon-m));
+.yolo-markdown-rendered.markdown-rendered {
+  /* override default variables */
+  --p-spacing: calc(var(--render-scale) * 1rem);
+  --heading-spacing: calc(var(--p-spacing) * 1.75);
+  --checkbox-size: calc(var(--render-scale) * 1rem);
+  --checkbox-radius: calc(var(--render-scale) * var(--radius-s));
+  --icon-size: calc(var(--render-scale) * var(--icon-m));
 
-    /* adjust list indent */
-    --list-indent: 1.5em;
+  /* adjust list indent */
+  --list-indent: 1.5em;
+}
 
-    blockquote {
-      padding-inline-start: calc(var(--render-scale) * 1.5rem);
-    }
+.yolo-markdown-rendered.markdown-rendered blockquote {
+  padding-inline-start: calc(var(--render-scale) * 1.5rem);
+}
 
-    pre {
-      padding: calc(var(--render-scale) * 0.75rem)
-        calc(var(--render-scale) * 1rem);
-    }
+.yolo-markdown-rendered.markdown-rendered pre {
+  padding: calc(var(--render-scale) * 0.75rem) calc(var(--render-scale) * 1rem);
+}
 
-    :not(pre) > code {
-      word-break: break-all;
-    }
+.yolo-markdown-rendered.markdown-rendered :not(pre) > code {
+  word-break: break-all;
+}
 
-    hr {
-      margin: calc(var(--render-scale) * 2rem) 0;
-    }
+.yolo-markdown-rendered.markdown-rendered hr {
+  margin: calc(var(--render-scale) * 2rem) 0;
+}
 
-    th,
-    td {
-      font-size: calc(var(--render-scale) * 1rem);
-      padding: calc(var(--render-scale) * 0.25rem)
-        calc(var(--render-scale) * 0.5rem);
-    }
+.yolo-markdown-rendered.markdown-rendered th,
+.yolo-markdown-rendered.markdown-rendered td {
+  font-size: calc(var(--render-scale) * 1rem);
+  padding: calc(var(--render-scale) * 0.25rem)
+    calc(var(--render-scale) * 0.5rem);
+}
 
-    .callout {
-      padding: calc(var(--render-scale) * 0.75rem)
-        calc(var(--render-scale) * 0.75rem) calc(var(--render-scale) * 0.75rem)
-        calc(var(--render-scale) * 1.5rem);
-    }
+.yolo-markdown-rendered.markdown-rendered .callout {
+  padding: calc(var(--render-scale) * 0.75rem)
+    calc(var(--render-scale) * 0.75rem) calc(var(--render-scale) * 0.75rem)
+    calc(var(--render-scale) * 1.5rem);
+}
 
-    .callout-icon {
-      height: calc(var(--render-scale) * 1rem);
-      width: calc(var(--render-scale) * 1rem);
-    }
+.yolo-markdown-rendered.markdown-rendered .callout-icon {
+  height: calc(var(--render-scale) * 1rem);
+  width: calc(var(--render-scale) * 1rem);
+}
 
-    .math {
-      user-select: text;
-      cursor: text;
+.yolo-markdown-rendered.markdown-rendered .math {
+  user-select: text;
+  cursor: text;
+}
 
-      &::selection,
-      *::selection {
-        background: var(--text-selection);
-      }
+:is(.yolo-markdown-rendered.markdown-rendered .math)::selection,
+:is(.yolo-markdown-rendered.markdown-rendered .math) *::selection {
+  background: var(--text-selection);
+}
 
-      mjx-math.yolo-latex-selected,
-      &.yolo-latex-selected {
-        background: var(--text-selection);
-        border-radius: 0;
-      }
-    }
-  }
+:is(.yolo-markdown-rendered.markdown-rendered .math)
+  mjx-math.yolo-latex-selected,
+.yolo-latex-selected:is(.yolo-markdown-rendered.markdown-rendered .math) {
+  background: var(--text-selection);
+  border-radius: 0;
+}
 
-  /* Show frontmatter which is hidden by default */
-  .frontmatter {
-    display: block !important;
-    background-color: transparent;
-    border-top: 1px solid var(--background-modifier-border);
-    border-bottom: 1px solid var(--background-modifier-border);
-  }
+/* Show frontmatter which is hidden by default */
+
+.yolo-markdown-rendered .frontmatter {
+  display: block !important;
+  background-color: transparent;
+  border-top: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .yolo-stream-fresh-text {
@@ -849,23 +850,17 @@
   color: var(--text-muted);
 }
 
-.yolo-settings-description-preserve-whitespace {
-  .setting-item-description {
-    white-space: pre-wrap;
-  }
+.yolo-settings-description-preserve-whitespace .setting-item-description {
+  white-space: pre-wrap;
 }
 
-.yolo-settings-desc-copyable {
-  .setting-item-description {
-    user-select: text;
-    cursor: text;
-  }
+.yolo-settings-desc-copyable .setting-item-description {
+  user-select: text;
+  cursor: text;
 }
 
-.yolo-obsidian-code-block {
-  pre {
-    margin: 0;
-  }
+.yolo-obsidian-code-block pre {
+  margin: 0;
 }
 
 .yolo-syntax-highlighter {
@@ -1172,10 +1167,10 @@
   background: transparent;
   border: none;
   border-radius: 0;
+}
 
-  .yolo-toolcall-border-top {
-    border-top: none;
-  }
+.yolo-toolcall-container .yolo-toolcall-border-top {
+  border-top: none;
 }
 
 .yolo-toolcall {
@@ -1206,87 +1201,87 @@
   min-height: 24px;
   color: var(--text-muted);
   transition: color 120ms ease;
+}
 
-  &:focus-visible {
-    outline: 2px solid
-      color-mix(in srgb, var(--interactive-accent) 55%, transparent);
-    outline-offset: 1px;
-    box-shadow: none !important;
-    background: transparent !important;
-  }
+.yolo-toolcall-header:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+  outline-offset: 1px;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 
-  &:hover {
-    background-color: transparent;
-    color: var(--text-normal);
-  }
+.yolo-toolcall-header:hover {
+  background-color: transparent;
+  color: var(--text-normal);
+}
 
-  .yolo-toolcall-header-content {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
 
-  .yolo-toolcall-header-icon {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    color: var(--text-faint);
-  }
+.yolo-toolcall-header .yolo-toolcall-header-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+}
 
-  .yolo-toolcall-header-icon--status-inline {
-    color: var(--text-muted);
-  }
+.yolo-toolcall-header .yolo-toolcall-header-icon--status-inline {
+  color: var(--text-muted);
+}
 
-  .yolo-toolcall-header-icon--expand {
-    margin-left: auto;
-    color: var(--text-faint);
-    opacity: 0.9;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-icon--expand {
+  margin-left: auto;
+  color: var(--text-faint);
+  opacity: 0.9;
+}
 
-  .yolo-toolcall-header-tool-name {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    min-width: 0;
-    font-family: var(--font-ui);
-    font-weight: var(--font-normal);
-    font-size: var(--font-ui-smaller);
-    line-height: 1.35;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-tool-name {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-weight: var(--font-normal);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+}
 
-  .yolo-toolcall-header-title,
-  .yolo-toolcall-header-separator {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-title,
+.yolo-toolcall-header .yolo-toolcall-header-separator {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 
-  .yolo-toolcall-header-summary {
-    min-width: 0;
-    flex: 0 1 auto;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-summary {
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  .yolo-toolcall-header-edit-deltas {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    margin-left: 6px;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
+.yolo-toolcall-header .yolo-toolcall-header-edit-deltas {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 
-  .yolo-toolcall-header-edit-added {
-    color: var(--text-success);
-  }
+.yolo-toolcall-header .yolo-toolcall-header-edit-added {
+  color: var(--text-success);
+}
 
-  .yolo-toolcall-header-edit-removed {
-    color: var(--text-error);
-  }
+.yolo-toolcall-header .yolo-toolcall-header-edit-removed {
+  color: var(--text-error);
 }
 
 .yolo-toolcall-content {
@@ -1301,12 +1296,12 @@
   margin-top: 2px;
   border-left: 1px solid
     color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
+}
 
-  .yolo-toolcall-content-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--size-2-3);
-  }
+.yolo-toolcall-content .yolo-toolcall-content-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
 }
 
 .yolo-toolcall-compaction-pending {
@@ -1371,24 +1366,24 @@
   justify-content: end;
   align-items: center;
   padding: var(--size-4-1);
+}
 
-  .yolo-toolcall-footer-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-1);
+.yolo-toolcall-footer .yolo-toolcall-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
 
-    button {
-      background-color: var(--background-primary-alt);
-      border: 1px solid var(--background-modifier-border);
-      box-shadow: none;
+:is(.yolo-toolcall-footer .yolo-toolcall-footer-actions) button {
+  background-color: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: none;
+}
 
-      &:hover {
-        background-color: var(--background-modifier-hover);
-        border: 1px solid var(--background-modifier-border-hover);
-        box-shadow: none;
-      }
-    }
-  }
+:is(:is(.yolo-toolcall-footer .yolo-toolcall-footer-actions) button):hover {
+  background-color: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border-hover);
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1400,16 +1395,16 @@
 .yolo-split-button {
   display: flex;
   align-items: center;
+}
 
-  .yolo-split-button-primary {
-    border-radius: var(--button-radius) 0 0 var(--button-radius) !important;
-  }
+.yolo-split-button .yolo-split-button-primary {
+  border-radius: var(--button-radius) 0 0 var(--button-radius) !important;
+}
 
-  .yolo-split-button-toggle {
-    padding: var(--size-4-1);
-    border-radius: 0 var(--button-radius) var(--button-radius) 0 !important;
-    border-left: none !important;
-  }
+.yolo-split-button .yolo-split-button-toggle {
+  padding: var(--size-4-1);
+  border-radius: 0 var(--button-radius) var(--button-radius) 0 !important;
+  border-left: none !important;
 }
 
 /* Providers and Models Section Styles */
@@ -1541,6 +1536,10 @@
 }
 
 .yolo-provider-section {
+  /* Enable container queries so the header's hide-pill rule reacts to
+     the card's own width, not the viewport. Required because the
+     settings modal can be narrow on desktop even when viewport is wide. */
+  container-type: inline-size;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   background: var(--background-primary);
@@ -1610,6 +1609,7 @@
   all: unset;
   flex: 0 1 auto;
   min-width: 0;
+  max-inline-size: min(320px, 42%);
   display: flex;
   align-items: center;
   gap: var(--size-4-2);
@@ -1713,9 +1713,8 @@
 .yolo-provider-base-url-btn {
   all: unset;
   display: inline-flex;
-  flex: 0 0 auto;
-  min-width: auto;
-  max-width: none;
+  flex: 1 1 0;
+  min-width: 0;
   font-size: 12px;
   line-height: 1.2;
   margin: 0;
@@ -1728,7 +1727,7 @@
 
 .yolo-provider-base-url-text {
   display: block;
-  max-width: 260px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1770,12 +1769,21 @@
 
 .yolo-provider-secondary-trigger {
   all: unset;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   cursor: pointer;
+}
+
+/* Hide the model-count pill when the card itself is narrow (settings
+   modal can be narrow on desktop even when viewport is wide). Same info
+   stays available inside the expanded card body. */
+
+@container (max-width: 520px) {
+  .yolo-provider-header > .yolo-provider-secondary-trigger {
+    display: none;
+  }
 }
 
 .yolo-provider-header > .yolo-provider-secondary-trigger {
@@ -1796,7 +1804,8 @@
 .yolo-provider-actions {
   display: flex;
   gap: var(--size-4-1);
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
 }
 
 .yolo-provider-delete-confirm {
@@ -2705,22 +2714,26 @@ body.theme-dark .yolo-pp-badge--mute {
   border-bottom: var(--border-width) solid var(--background-modifier-border);
   font-weight: var(--font-medium);
   color: var(--text-muted);
+}
 
-  & > div {
-    padding: var(--size-4-1);
-  }
-  & > div:nth-child(1) {
-    text-align: left;
-  }
-  & > div:nth-child(2) {
-    text-align: left;
-  }
-  & > div:nth-child(3) {
-    text-align: center;
-  }
-  & > div:nth-child(4) {
-    text-align: center;
-  }
+.yolo-mcp-servers-header > div {
+  padding: var(--size-4-1);
+}
+
+.yolo-mcp-servers-header > div:nth-child(1) {
+  text-align: left;
+}
+
+.yolo-mcp-servers-header > div:nth-child(2) {
+  text-align: left;
+}
+
+.yolo-mcp-servers-header > div:nth-child(3) {
+  text-align: center;
+}
+
+.yolo-mcp-servers-header > div:nth-child(4) {
+  text-align: center;
 }
 
 .yolo-mcp-servers-empty {
@@ -2741,10 +2754,10 @@ body.theme-dark .yolo-pp-badge--mute {
   gap: var(--size-4-4);
   align-items: center;
   min-height: var(--size-4-10);
+}
 
-  & > div {
-    padding: var(--size-4-1);
-  }
+.yolo-mcp-server-row > div {
+  padding: var(--size-4-1);
 }
 
 .yolo-mcp-server-name {
@@ -2767,12 +2780,12 @@ body.theme-dark .yolo-pp-badge--mute {
   align-items: center;
   justify-content: center;
   gap: var(--size-4-1);
+}
 
-  svg {
-    height: var(--icon-l);
-    width: var(--icon-l);
-    stroke-width: var(--icon-stroke);
-  }
+.yolo-mcp-server-actions svg {
+  height: var(--icon-l);
+  width: var(--icon-l);
+  stroke-width: var(--icon-stroke);
 }
 
 .yolo-server-expanded-info {
@@ -2954,16 +2967,16 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   margin-top: 0;
   color: var(--text-muted);
   background: transparent !important;
+}
 
-  &:hover {
-    color: var(--text-normal);
-    background: transparent !important;
-  }
+.yolo-mcp-parameters-info-icon:hover {
+  color: var(--text-normal);
+  background: transparent !important;
+}
 
-  &:focus-visible {
-    outline: 2px solid var(--interactive-accent);
-    outline-offset: 1px;
-  }
+.yolo-mcp-parameters-info-icon:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
 }
 
 .yolo-mcp-sr-only {
@@ -3035,14 +3048,14 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   font-size: var(--font-ui-small);
   padding: var(--size-4-1) 0;
   white-space: pre-wrap;
+}
 
-  &.yolo-mcp-server-modal-validation--error {
-    color: var(--text-error);
-  }
+.yolo-mcp-server-modal-validation.yolo-mcp-server-modal-validation--error {
+  color: var(--text-error);
+}
 
-  &.yolo-mcp-server-modal-validation--success {
-    color: var(--text-success);
-  }
+.yolo-mcp-server-modal-validation.yolo-mcp-server-modal-validation--success {
+  color: var(--text-success);
 }
 
 .yolo-rag-layout {
@@ -3411,16 +3424,18 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   border-bottom: var(--border-width) solid var(--background-modifier-border);
   font-weight: var(--font-medium);
   color: var(--text-muted);
+}
 
-  & > div {
-    padding: var(--size-4-1);
-  }
-  & > div:nth-child(1) {
-    text-align: left;
-  }
-  & > div:nth-child(2) {
-    text-align: center;
-  }
+.yolo-templates-header > div {
+  padding: var(--size-4-1);
+}
+
+.yolo-templates-header > div:nth-child(1) {
+  text-align: left;
+}
+
+.yolo-templates-header > div:nth-child(2) {
+  text-align: center;
 }
 
 .yolo-templates-empty {
@@ -3441,10 +3456,10 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   gap: var(--size-4-4);
   align-items: center;
   min-height: var(--size-4-10);
+}
 
-  & > div {
-    padding: var(--size-4-1);
-  }
+.yolo-template-row > div {
+  padding: var(--size-4-1);
 }
 
 .yolo-template-name {
@@ -3457,12 +3472,12 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   align-items: center;
   justify-content: center;
   gap: var(--size-4-1);
+}
 
-  svg {
-    height: var(--icon-l);
-    width: var(--icon-l);
-    stroke-width: var(--icon-stroke);
-  }
+.yolo-template-actions svg {
+  height: var(--icon-l);
+  width: var(--icon-l);
+  stroke-width: var(--icon-stroke);
 }
 
 .yolo-continue-response-button-container {
@@ -3738,6 +3753,11 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
   min-width: 240px;
   max-width: 280px;
   padding: var(--size-2-1);
+  /* Flex column so the list shrinks with the surface's clamped max-height
+     (see resolveYoloPopoverStyle); footer stays at natural height. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* In compact workspace-floating mode, keep palette rich rows but
@@ -3749,6 +3769,11 @@ button.yolo-mcp-tool-description-toggle.is-expanded {
 }
 
 .yolo-assistant-selector-content--palette .yolo-assistant-selector-list {
+  /* Let the list flex-shrink within the (potentially viewport-clamped) outer
+     surface; min-height: 0 is what actually unlocks shrinking in flex. The
+     base rule already provides `overflow-y: auto`. */
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 360px;
   padding: var(--size-2-1);
 }
@@ -4572,7 +4597,12 @@ button.yolo-assistant-selector-footer-btn:hover {
   border-radius: 3px;
 }
 
-/* Glider variant for smooth animated indicator */
+/* Glider variant for smooth animated indicator.
+   Geometry source of truth: the active button's actual offset rect,
+   computed in JS (see SettingsTabs.tsx#updateGlider). The glider must
+   NOT derive its top/height from nav padding — that creates two
+   conflicting geometry sources, and any cascade-level override of nav
+   padding (e.g. Obsidian's mobile theme tokens) misaligns the outline. */
 
 .yolo-settings-tabs-nav--glider {
   position: relative;
@@ -4580,9 +4610,10 @@ button.yolo-assistant-selector-footer-btn:hover {
   gap: 0;
   --yolo-tab-count: 6;
   --yolo-tab-index: 0;
-  --yolo-tab-padding: var(--size-2-2);
   --yolo-tab-glider-left: 0px;
+  --yolo-tab-glider-top: 0px;
   --yolo-tab-glider-width: 0px;
+  --yolo-tab-glider-height: 0px;
 }
 
 .yolo-settings-tabs-nav--glider .yolo-settings-tab-button {
@@ -4597,19 +4628,28 @@ button.yolo-assistant-selector-footer-btn:hover {
 
 .yolo-settings-tabs-glider {
   position: absolute;
-  top: var(--yolo-tab-padding);
+  top: 0;
   left: 0;
+  box-sizing: border-box;
   width: var(--yolo-tab-glider-width);
-  height: calc(100% - (var(--yolo-tab-padding) * 2));
+  height: var(--yolo-tab-glider-height);
   background: transparent;
-  border: 2px solid var(--h1-color, var(--interactive-accent));
+  /* Use inset box-shadow instead of border for the outline: avoids a
+     mobile WebView rendering quirk where 2px borders with a fractional
+     pixel container drop the top stroke. inset shadow paints crisply
+     inside the radius regardless of subpixel layout. */
+  border: none;
+  box-shadow: inset 0 0 0 2px var(--h1-color, var(--interactive-accent));
   border-radius: var(--radius-s);
-  box-shadow: 0 2px 10px
-    color-mix(in srgb, var(--interactive-accent) 18%, transparent);
-  transform: translateX(var(--yolo-tab-glider-left));
+  transform: translate3d(
+    var(--yolo-tab-glider-left),
+    var(--yolo-tab-glider-top),
+    0
+  );
   transition:
     transform 0.36s cubic-bezier(0.4, 1.2, 0.4, 1),
-    width 0.36s cubic-bezier(0.4, 1.2, 0.4, 1);
+    width 0.36s cubic-bezier(0.4, 1.2, 0.4, 1),
+    height 0.36s cubic-bezier(0.4, 1.2, 0.4, 1);
   pointer-events: none;
   z-index: 1;
 }
@@ -4647,15 +4687,17 @@ button.yolo-assistant-selector-footer-btn:hover {
   color: var(--text-normal);
   background: transparent !important;
   border: 2px solid var(--h1-color, var(--interactive-accent));
-  box-shadow: 0 2px 10px
-    color-mix(in srgb, var(--interactive-accent) 18%, transparent);
 }
 
 .yolo-settings-tabs-content {
   flex: 1;
   overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding-right: var(--size-4-6);
+  /* `both-edges` reserves a phantom gutter on the left too, so the
+     usable card area stays centered to the container even when the
+     scrollbar is visible. Without this, the right-side gutter shifts
+     the cards left and they no longer align with the centered tabs nav. */
+  scrollbar-gutter: stable both-edges;
+  padding-inline: var(--size-4-6);
   box-sizing: border-box;
   padding-bottom: var(--size-4-4);
   width: 100%;
@@ -4690,6 +4732,10 @@ button.yolo-assistant-selector-footer-btn:hover {
 @media (max-width: 768px) {
   .yolo-settings-tabs-nav {
     padding: var(--size-2-2);
+    /* Breathing room above the nav so the glider's top stroke isn't
+       visually clipped by whatever the parent container does at its
+       top edge on mobile WebView. */
+    margin-top: 14px;
   }
 
   .yolo-settings-tab-button {
@@ -7462,103 +7508,103 @@ button.yolo-agent-chip--more:hover {
 .yolo-chat-header-buttons {
   display: flex;
   gap: var(--size-2-1);
+}
 
-  svg {
-    height: var(--icon-l);
-    width: var(--icon-l);
-    stroke-width: var(--icon-stroke);
-  }
+.yolo-chat-header-buttons svg {
+  height: var(--icon-l);
+  width: var(--icon-l);
+  stroke-width: var(--icon-stroke);
 }
 
 .yolo-markdown {
   line-height: var(--line-height-normal);
   font-size: var(--font-ui-small);
+}
 
-  h1 {
-    font-size: var(--font-ui-large);
-  }
+.yolo-markdown h1 {
+  font-size: var(--font-ui-large);
+}
 
-  h2 {
-    font-size: var(--font-ui-medium);
-  }
+.yolo-markdown h2 {
+  font-size: var(--font-ui-medium);
+}
 
-  h3 {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown h3 {
+  font-size: var(--font-ui-small);
+}
 
-  h4 {
-    font-size: var(--font-ui-smaller);
-  }
+.yolo-markdown h4 {
+  font-size: var(--font-ui-smaller);
+}
 
-  h5 {
-    font-size: var(--font-ui-smallest);
-  }
+.yolo-markdown h5 {
+  font-size: var(--font-ui-smallest);
+}
 
-  h6 {
-    font-size: var(--font-ui-smallest);
-  }
+.yolo-markdown h6 {
+  font-size: var(--font-ui-smallest);
+}
 
-  p {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown p {
+  font-size: var(--font-ui-small);
+}
 
-  ul {
-    font-size: var(--font-ui-small);
-    padding-left: var(--size-4-4);
-  }
+.yolo-markdown ul {
+  font-size: var(--font-ui-small);
+  padding-left: var(--size-4-4);
+}
 
-  ol {
-    font-size: var(--font-ui-small);
-    padding-left: var(--size-4-4);
-  }
+.yolo-markdown ol {
+  font-size: var(--font-ui-small);
+  padding-left: var(--size-4-4);
+}
 
-  li {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown li {
+  font-size: var(--font-ui-small);
+}
 
-  blockquote {
-    font-size: var(--font-ui-small);
-    font-style: var(--blockquote-style);
-    background-color: var(--blockquote-background-color);
-    margin: 0;
-    padding-left: var(--size-4-2);
-    border-left: var(--blockquote-border-thickness) solid
-      var(--blockquote-border-color);
-  }
+.yolo-markdown blockquote {
+  font-size: var(--font-ui-small);
+  font-style: var(--blockquote-style);
+  background-color: var(--blockquote-background-color);
+  margin: 0;
+  padding-left: var(--size-4-2);
+  border-left: var(--blockquote-border-thickness) solid
+    var(--blockquote-border-color);
+}
 
-  code {
-    font-size: var(--font-ui-small);
-    border-radius: var(--code-radius);
-    padding: 0.1em 0.25em;
-    color: var(--code-normal);
-    font-size: var(--code-size);
-    background-color: var(--code-background);
-    vertical-align: baseline;
-  }
+.yolo-markdown code {
+  font-size: var(--font-ui-small);
+  border-radius: var(--code-radius);
+  padding: 0.1em 0.25em;
+  color: var(--code-normal);
+  font-size: var(--code-size);
+  background-color: var(--code-background);
+  vertical-align: baseline;
+}
 
-  table {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown table {
+  font-size: var(--font-ui-small);
+}
 
-  thead {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown thead {
+  font-size: var(--font-ui-small);
+}
 
-  tbody {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown tbody {
+  font-size: var(--font-ui-small);
+}
 
-  tr {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown tr {
+  font-size: var(--font-ui-small);
+}
 
-  td {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown td {
+  font-size: var(--font-ui-small);
+}
 
-  th {
-    font-size: var(--font-ui-small);
-  }
+.yolo-markdown th {
+  font-size: var(--font-ui-small);
 }
 
 .yolo-chat-container {
@@ -8370,29 +8416,30 @@ button.yolo-agent-chip--more:hover {
    * queued bubbles). Must keep its inline `height` regardless of flex
    * pressure — without flex-shrink:0, an over-full message list would
    * collapse the spacer back to 0 and re-introduce the occlusion bug. */
-  > .yolo-chat-timeline-bottom-spacer {
-    flex: 0 0 auto;
-  }
+}
 
-  .yolo-chat-messages-user {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    align-items: flex-end;
-  }
+.yolo-chat-messages > .yolo-chat-timeline-bottom-spacer {
+  flex: 0 0 auto;
+}
 
-  .yolo-chat-messages-assistant {
-    display: flex;
-    flex-direction: column;
-  }
+.yolo-chat-messages .yolo-chat-messages-user {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: flex-end;
+}
 
-  .yolo-assistant-tool-message-group {
-    padding-bottom: var(--size-4-2);
-    display: flex;
-    flex-direction: column;
-    gap: var(--size-4-1);
-  }
+.yolo-chat-messages .yolo-chat-messages-assistant {
+  display: flex;
+  flex-direction: column;
+}
+
+.yolo-chat-messages .yolo-assistant-tool-message-group {
+  padding-bottom: var(--size-4-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
 }
 
 .yolo-chat-timeline-row {
@@ -8458,12 +8505,12 @@ button.yolo-agent-chip--more:hover {
 .yolo-chat-compaction-divider.is-entering {
   animation: yolo-chat-compaction-divider-enter 220ms
     cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 
-  .yolo-chat-compaction-divider__line {
-    transform-origin: center;
-    animation: yolo-chat-compaction-divider-line-enter 220ms
-      cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
+.yolo-chat-compaction-divider.is-entering .yolo-chat-compaction-divider__line {
+  transform-origin: center;
+  animation: yolo-chat-compaction-divider-line-enter 220ms
+    cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .yolo-chat-compaction-divider__title {
@@ -8993,14 +9040,14 @@ button.yolo-agent-chip--more:hover {
   outline: none;
   --yolo-mention-max-width: 240px;
   --yolo-mention-badge-max-width: 180px;
+}
 
-  &:focus-within,
-  &:focus,
-  &:focus-visible,
-  &:active {
-    box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
-    transition: box-shadow 0.15s ease-in-out;
-  }
+.yolo-chat-user-input-container:focus-within,
+.yolo-chat-user-input-container:focus,
+.yolo-chat-user-input-container:focus-visible,
+.yolo-chat-user-input-container:active {
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+  transition: box-shadow 0.15s ease-in-out;
 }
 
 .yolo-chat-user-input-container[data-resizable='true'] .yolo-obsidian-textarea,
@@ -9225,23 +9272,23 @@ button.yolo-agent-chip--more:hover {
   color: color-mix(in srgb, var(--text-muted) 78%, transparent);
   pointer-events: none;
   font-size: var(--font-ui-small);
+}
 
-  .yolo-placeholder-trigger {
-    pointer-events: auto;
-    display: inline-block;
-    min-width: 1.4em;
-    text-align: center;
-    padding: 0 3px;
-    border-radius: 3px;
-    background-color: var(--tag-background);
-    color: var(--tag-color);
-    cursor: pointer;
-    transition: opacity 80ms ease;
+.yolo-chat-user-input-placeholder .yolo-placeholder-trigger {
+  pointer-events: auto;
+  display: inline-block;
+  min-width: 1.4em;
+  text-align: center;
+  padding: 0 3px;
+  border-radius: 3px;
+  background-color: var(--tag-background);
+  color: var(--tag-color);
+  cursor: pointer;
+  transition: opacity 80ms ease;
+}
 
-    &:hover {
-      opacity: 0.75;
-    }
-  }
+:is(.yolo-chat-user-input-placeholder .yolo-placeholder-trigger):hover {
+  opacity: 0.75;
 }
 
 .yolo-chat-user-input-controls {
@@ -9253,37 +9300,38 @@ button.yolo-agent-chip--more:hover {
   /* 用 min-height 而非固定 height：发送圆按钮（24px）比该尺寸大时
    * 行会自然撑高，避免按钮底边伸出行外、与容器底 padding 视觉不对称 */
   min-height: var(--size-4-4);
+}
 
-  .yolo-chat-user-input-controls__left {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-3);
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-  }
+.yolo-chat-user-input-controls .yolo-chat-user-input-controls__left {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
 
-  .yolo-chat-user-input-controls__right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--size-4-2);
-    flex: 0 1 auto;
-    min-width: 0;
-  }
+.yolo-chat-user-input-controls .yolo-chat-user-input-controls__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+  flex: 0 1 auto;
+  min-width: 0;
+}
 
+.yolo-chat-user-input-controls
   .yolo-chat-user-input-controls__model-select-container {
-    flex: 1 1 180px;
-    min-width: 0;
-    overflow: hidden;
-  }
+  flex: 1 1 180px;
+  min-width: 0;
+  overflow: hidden;
+}
 
-  .yolo-chat-user-input-controls__buttons {
-    flex-shrink: 0;
-    display: flex;
-    gap: var(--size-4-2);
-    align-items: center;
-  }
+.yolo-chat-user-input-controls .yolo-chat-user-input-controls__buttons {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--size-4-2);
+  align-items: center;
 }
 
 .yolo-chat-user-input-controls__left .yolo-chat-input-model-select {
@@ -9322,17 +9370,18 @@ button.yolo-agent-chip--more:hover {
   padding: 0 var(--size-2-1);
   cursor: pointer;
   transition: all 0.1s ease-in-out;
+}
 
-  &:hover {
-    color: var(--text-normal);
-  }
+:is(.yolo-chat-user-input-controls .yolo-chat-user-input-submit-button):hover {
+  color: var(--text-normal);
+}
 
+:is(.yolo-chat-user-input-controls .yolo-chat-user-input-submit-button)
   .yolo-chat-user-input-submit-button-icons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-  }
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .yolo-chat-user-input-submit-button-label {
@@ -9352,11 +9401,13 @@ button.yolo-agent-chip--more:hover {
   flex: 0 0 auto;
   justify-content: center;
   color: var(--text-muted);
+}
 
-  &:hover {
-    color: var(--text-normal);
-    background: var(--background-modifier-hover);
-  }
+:is(
+    .yolo-chat-user-input-controls__left .yolo-chat-user-input-upload-button
+  ):hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
 }
 
 .yolo-chat-input-model-select__label {
@@ -9754,19 +9805,19 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   white-space: nowrap;
   max-width: var(--yolo-mention-badge-max-width, 260px);
   cursor: pointer;
+}
 
-  &.yolo-chat-user-input-file-badge-focused {
-    border: 1px solid var(--interactive-accent);
-  }
+.yolo-chat-user-input-file-badge.yolo-chat-user-input-file-badge-focused {
+  border: 1px solid var(--interactive-accent);
+}
 
-  .yolo-excluded-content {
-    text-decoration: line-through;
-    font-style: italic;
-  }
+.yolo-chat-user-input-file-badge .yolo-excluded-content {
+  text-decoration: line-through;
+  font-style: italic;
+}
 
-  svg {
-    flex-shrink: 0;
-  }
+.yolo-chat-user-input-file-badge svg {
+  flex-shrink: 0;
 }
 
 .yolo-chat-user-input-file-badge:hover {
@@ -9873,11 +9924,11 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   padding: 0 var(--size-4-2);
   z-index: 10;
   box-shadow: var(--shadow-s);
+}
 
-  img {
-    max-width: 100%;
-    max-height: 350px;
-  }
+.yolo-chat-user-input-file-content-preview img {
+  max-width: 100%;
+  max-height: 350px;
 }
 
 .yolo-agent-mode-warning-modal {
@@ -10132,20 +10183,20 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   border-top: none !important;
   padding: 0 !important;
   margin-bottom: var(--size-4-3);
+}
 
-  .yolo-item-control {
-    width: 100%;
-  }
+.yolo-settings-textarea .yolo-item-control {
+  width: 100%;
+}
 
-  .setting-item-control {
-    padding-bottom: 0;
-  }
+.yolo-settings-textarea .setting-item-control {
+  padding-bottom: 0;
+}
 
-  textarea {
-    width: 100%;
-    min-height: 100px;
-    resize: none;
-  }
+.yolo-settings-textarea textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: none;
 }
 
 /* prevent setting-item:first-child overwriting padding-top and border-top */
@@ -10162,14 +10213,14 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   border-left: 2px solid var(--interactive-accent);
   background-color: var(--background-secondary);
   border-radius: var(--radius-s);
+}
 
-  .setting-item {
-    border-top: none;
+.yolo-settings-model-container .setting-item {
+  border-top: none;
+}
 
-    &:first-child {
-      margin-top: var(--size-4-2);
-    }
-  }
+:is(.yolo-settings-model-container .setting-item):first-child {
+  margin-top: var(--size-4-2);
 }
 
 .yolo-settings-plain.setting-item {
@@ -10204,53 +10255,53 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   border-radius: var(--radius-m);
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   margin: var(--size-4-4);
+}
 
-  .yolo-dialog-header {
-    margin-bottom: var(--size-4-2);
-    display: grid;
-    gap: var(--size-2-3);
-  }
+.yolo-dialog-content .yolo-dialog-header {
+  margin-bottom: var(--size-4-2);
+  display: grid;
+  gap: var(--size-2-3);
+}
 
-  .yolo-dialog-title {
-    font-size: var(--font-ui-medium);
-    font-weight: var(--font-semibold);
-    line-height: var(--line-height-tight);
-    margin: 0;
-  }
+.yolo-dialog-content .yolo-dialog-title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
 
-  .yolo-dialog-input {
-    display: grid;
-    gap: var(--size-4-1);
+.yolo-dialog-content .yolo-dialog-input {
+  display: grid;
+  gap: var(--size-4-1);
+}
 
-    & label {
-      font-size: var(--font-ui-smaller);
-    }
-  }
+:is(.yolo-dialog-content .yolo-dialog-input) label {
+  font-size: var(--font-ui-smaller);
+}
 
-  .yolo-dialog-description {
-    font-size: var(--font-ui-small);
-    color: var(--text-muted);
-    margin: 0;
-  }
+.yolo-dialog-content .yolo-dialog-description {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  margin: 0;
+}
 
-  .yolo-dialog-footer {
-    margin-top: var(--size-4-2);
-    display: flex;
-    justify-content: flex-end;
-  }
+.yolo-dialog-content .yolo-dialog-footer {
+  margin-top: var(--size-4-2);
+  display: flex;
+  justify-content: flex-end;
+}
 
-  .yolo-dialog-close {
-    position: absolute;
-    right: var(--size-4-4);
-    top: var(--size-4-4);
-    cursor: var(--cursor);
-    opacity: 0.7;
-    transition: opacity 0.2s;
+.yolo-dialog-content .yolo-dialog-close {
+  position: absolute;
+  right: var(--size-4-4);
+  top: var(--size-4-4);
+  cursor: var(--cursor);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
 
-    &:hover {
-      opacity: 1;
-    }
-  }
+:is(.yolo-dialog-content .yolo-dialog-close):hover {
+  opacity: 1;
 }
 
 .yolo-template-menu-item {
@@ -10259,19 +10310,19 @@ button.yolo-chat-user-input-file-badge-delete:focus-visible,
   justify-content: space-between;
   gap: var(--size-4-1);
   width: 100%;
+}
 
-  .yolo-template-menu-item-delete {
-    display: flex;
-    align-items: center;
-    padding: var(--size-4-1);
-    margin: calc(var(--size-4-1) * -1);
-    opacity: 0.7;
-    transition: opacity 0.2s;
+.yolo-template-menu-item .yolo-template-menu-item-delete {
+  display: flex;
+  align-items: center;
+  padding: var(--size-4-1);
+  margin: calc(var(--size-4-1) * -1);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
 
-    &:hover {
-      opacity: 1;
-    }
-  }
+:is(.yolo-template-menu-item .yolo-template-menu-item-delete):hover {
+  opacity: 1;
 }
 
 .yolo-assistant-message-actions {
@@ -11250,7 +11301,18 @@ button.yolo-llm-debug-modal-button:focus-visible {
   background: var(--background-modifier-hover);
 }
 
-/* 视图切换标签页样式 - 手风琴展开效果 */
+/* 视图切换标签页样式 - 手风琴展开效果
+   ─────────────────────────────────────────────────────────────────
+   Sizing model: the toggle declares an ideal width (200px), but the
+   two-button (non-`--single`) form uses flex so that when the host
+   shrinks the toggle, the expanded button absorbs the squeeze and the
+   collapsed slot keeps its full size — collapsed has no slack to give.
+   The indicator is absolutely positioned and derives its `left/width`
+   from the toggle's actual padding-box width via `calc(100% - …)`,
+   so it stays glued to the active button regardless of how narrow the
+   toggle becomes. The container query at the bottom of this block folds
+   the expanded button to icon-only when the toggle itself is too narrow
+   to show a label (roughly < 130px), independent of any outer container. */
 
 .yolo-view-toggle {
   display: inline-flex;
@@ -11258,22 +11320,44 @@ button.yolo-llm-debug-modal-button:focus-visible {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  padding: 4px;
+  padding: var(--yolo-padding);
   overflow: hidden;
   isolation: isolate;
   transition: all 0.2s ease;
   width: 200px;
-  box-shadow:
-    0 1px 3px
-      color-mix(in srgb, var(--background-modifier-box-shadow) 15%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
+  /* Pin box-sizing so `100cqi` and flex content area agree unambiguously
+     (border included in width, padding outside content area). */
+  box-sizing: border-box;
+  /* Establish a query container so the toggle can adapt to its own
+     rendered width (used by the @container rule at the bottom) AND so
+     descendants can read its content inline-size via `100cqi`. */
+  container-type: inline-size;
+  container-name: yolo-view-toggle;
 
   --yolo-total-width: 200px;
-  --yolo-padding-inline: 8px;
+  --yolo-padding: 4px;
+  --yolo-padding-inline: calc(var(--yolo-padding) * 2);
   --yolo-collapsed-width: 50px;
+  /* Ideal expanded width based on the declared total. Used by the
+     `--single` workspace roller (its toggle width is locked by min-width
+     so the live formula isn't appropriate there). Don't use this for the
+     dual-button form — use `--yolo-live-expanded-width` instead, which
+     reflects the toggle's actual rendered content width. */
   --yolo-expanded-width: calc(
     var(--yolo-total-width) - var(--yolo-padding-inline) -
       var(--yolo-collapsed-width)
+  );
+  /* Single source of truth for the expanded slot. `100cqi` is the toggle's
+     content inline-size (= content-box width), which is the SAME number
+     flex uses to lay out the buttons. By computing the expanded slot from
+     `100cqi - collapsed` and feeding it to BOTH the expanded button's
+     flex-basis AND the indicator's width, the two are guaranteed to stay
+     in lockstep — no `100% vs content-box` discrepancy, no border math.
+     The `max(collapsed, …)` floor keeps the slot non-negative when the
+     toggle is squeezed below `2 * collapsed`. */
+  --yolo-live-expanded-width: max(
+    var(--yolo-collapsed-width),
+    calc(100cqi - var(--yolo-collapsed-width))
   );
 }
 
@@ -11296,8 +11380,9 @@ button.yolo-llm-debug-modal-button:focus-visible {
   line-height: 1.4;
   box-shadow: none !important;
   outline: none;
-  width: var(--yolo-collapsed-width);
-  flex-shrink: 0;
+  /* Fixed slot width via flex-basis so the collapsed button never shrinks
+     (it has nothing to give — it's already icon-only). */
+  flex: 0 0 var(--yolo-collapsed-width);
   overflow: hidden;
   display: inline-flex;
   align-items: center;
@@ -11305,10 +11390,35 @@ button.yolo-llm-debug-modal-button:focus-visible {
   gap: 0;
 }
 
-.yolo-view-toggle-button--expanded {
-  width: var(--yolo-expanded-width);
+/* The expanded slot. Basis derives from `--yolo-live-expanded-width`,
+   which is the SAME expression the indicator uses for its width — so
+   button and indicator always agree on what "expanded slot width" means.
+   `flex: 0 1 X` means: no grow (basis already encodes the full slot),
+   shrink: 1 (safety against any rounding overflow), basis: X. Scoped to
+   the dual-button form; the `--single` roller is sized below. */
+
+.yolo-view-toggle:not(.yolo-view-toggle--single)
+  .yolo-view-toggle-button--expanded {
+  flex: 0 1 var(--yolo-live-expanded-width);
+  min-width: var(--yolo-collapsed-width);
   justify-content: center;
   gap: 6px;
+}
+
+/* Unblock flex-shrink along the nested-flex chain inside the chat
+   RollerSelect. Without this, each nested flex container defaults to
+   `min-width: auto` (= its content's min-content), which means the
+   chevron + icon + their inner gaps form an implicit floor on the chat
+   button's width. The chat button can't actually shrink to its declared
+   `min-width: var(--yolo-collapsed-width)` and ends up wider than the
+   indicator computes — the literal cause of the visual misalignment we
+   were chasing. `min-width: 0` lets the box honour its outer constraint. */
+
+.yolo-view-toggle .yolo-view-toggle-button,
+.yolo-view-toggle .yolo-roller-select-window,
+.yolo-view-toggle .yolo-roller-select-track,
+.yolo-view-toggle .yolo-roller-select-item {
+  min-width: 0;
 }
 
 .yolo-view-toggle-button-label {
@@ -11361,44 +11471,72 @@ button.yolo-llm-debug-modal-button:focus-visible {
   cursor: not-allowed;
 }
 
+/* Indicator positioning is driven by `left + width`. The width for the
+   expanded state reads `--yolo-live-expanded-width` — the SAME expression
+   the expanded button's flex-basis reads. Because both consume the same
+   length, the indicator can never drift from the active button regardless
+   of how the toggle is flex-shrunk. `left` offsets are also expressed in
+   terms of `--yolo-padding` / `--yolo-collapsed-width` / live width, so
+   everything is anchored to the same set of source-of-truth lengths. */
+
 .yolo-view-toggle-indicator {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
+  top: var(--yolo-padding);
+  bottom: var(--yolo-padding);
+  left: var(--yolo-padding);
+  width: var(--yolo-collapsed-width);
   background: transparent;
   border: 2px solid var(--h1-color, var(--interactive-accent));
   border-radius: 4px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
 
+/* a-v=chat (default — covers a-exp=false / hovering composer):
+   sit on the chat slot at the left, collapsed width. */
+
 .yolo-view-toggle-indicator[data-active-view='chat'] {
+  left: var(--yolo-padding);
   width: var(--yolo-collapsed-width);
-  transform: translateX(0);
 }
 
+/* a-v=composer (default — covers a-exp=true with no chat-hover):
+   sit on the composer slot, offset by one collapsed slot, collapsed width.
+   The "active + expanded" override below grows the width. */
+
 .yolo-view-toggle-indicator[data-active-view='composer'] {
+  left: calc(var(--yolo-padding) + var(--yolo-collapsed-width));
   width: var(--yolo-collapsed-width);
-  transform: translateX(var(--yolo-collapsed-width));
 }
+
+/* a-v=chat, e-v=chat, a-exp=true: chat is active and expanded — indicator
+   takes the full expanded slot at the left. */
 
 .yolo-view-toggle[data-expanded-view='chat'][data-active-expanded='true']
   .yolo-view-toggle-indicator[data-active-view='chat'] {
-  width: var(--yolo-expanded-width);
-  transform: translateX(0);
+  left: var(--yolo-padding);
+  width: var(--yolo-live-expanded-width);
 }
+
+/* a-v=composer, e-v=composer, a-exp=true: composer is active and expanded
+   — indicator sits at offset = chat-collapsed-slot, spans expanded width. */
 
 .yolo-view-toggle[data-expanded-view='composer'][data-active-expanded='true']
   .yolo-view-toggle-indicator[data-active-view='composer'] {
-  width: var(--yolo-expanded-width);
-  transform: translateX(var(--yolo-collapsed-width));
+  left: calc(var(--yolo-padding) + var(--yolo-collapsed-width));
+  width: var(--yolo-live-expanded-width);
 }
+
+/* a-v=composer, e-v=chat, a-exp=false: active is composer but chat is
+   hovered → chat occupies the expanded slot, composer is pushed to the
+   right edge. */
 
 .yolo-view-toggle[data-expanded-view='chat'][data-active-expanded='false']
   .yolo-view-toggle-indicator[data-active-view='composer'] {
+  left: calc(var(--yolo-padding) + var(--yolo-live-expanded-width));
   width: var(--yolo-collapsed-width);
-  transform: translateX(var(--yolo-expanded-width));
 }
 
 .yolo-chat-header .yolo-view-toggle {
@@ -11428,7 +11566,10 @@ button.yolo-llm-debug-modal-button:focus-visible {
 }
 
 .yolo-view-toggle--single .yolo-view-toggle-button--roller {
-  width: var(--yolo-expanded-width);
+  /* Override the base `flex: 0 0 collapsed`. Single mode has only one
+     button and locks the toggle width via `min-width`, so we want the
+     roller to occupy the full expanded slot (and not flex-grow beyond). */
+  flex: 0 0 var(--yolo-expanded-width);
   justify-content: center;
   gap: 6px;
 }
@@ -11447,6 +11588,41 @@ button.yolo-llm-debug-modal-button:focus-visible {
 .yolo-view-toggle-indicator--single {
   width: calc(100% - 8px) !important;
   transform: translateX(0) !important;
+}
+
+/* Compact form: when the toggle itself is too narrow to host a readable
+   label, fold the expanded button into icon-only mode. Triggered by the
+   toggle's own size — independent of any outer container — because the
+   right policy here is "when I personally don't have room, drop the
+   label," not "when the sidebar shrinks by some external threshold."
+   Workspace `--single` is locked wider by min-width and never triggers. */
+
+@container yolo-view-toggle (max-width: 130px) {
+  .yolo-view-toggle-button--expanded {
+    gap: 0;
+  }
+
+  .yolo-view-toggle-button--expanded .yolo-view-toggle-button-label {
+    opacity: 0;
+    max-width: 0;
+  }
+
+  /* The chat slot's RollerSelect renders a chevron caret next to the
+     label when the button is `--expanded`. We need to overpower that
+     rule's specificity (0,3,0) so the caret really disappears in compact
+     mode — otherwise the icon-only form still has a hanging chevron. */
+  .yolo-view-toggle-button--roller.yolo-view-toggle-button--expanded
+    .yolo-roller-select-caret {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+
+  /* Roller item inner layout has its own gap; collapse it for the same
+     reason. */
+  .yolo-roller-select-item {
+    gap: 0;
+  }
 }
 
 /* Roller behavior on top of original accordion style */
@@ -11594,6 +11770,14 @@ button.yolo-llm-debug-modal-button:focus-visible {
   color: var(--h1-color, var(--interactive-accent));
 }
 
+/* Mobile / very narrow viewport: shrink the toggle's declared baseline.
+   The indicator and expanded-button widths derive from the new variables
+   automatically (live `calc(100% - …)` for the indicator, flex-basis for
+   the button), so we only adjust the source-of-truth values here. The
+   old transform/width overrides this rule used to carry were removed
+   when indicator positioning switched to `left + width` — keeping them
+   would re-introduce transforms that no longer fit the model. */
+
 @media (max-width: 400px) {
   .yolo-view-toggle {
     width: 160px;
@@ -11603,16 +11787,6 @@ button.yolo-llm-debug-modal-button:focus-visible {
   .yolo-view-toggle-button {
     padding: 6px 2px;
     font-size: var(--font-ui-smallest);
-  }
-  .yolo-view-toggle-button--expanded {
-    width: var(--yolo-expanded-width);
-  }
-  .yolo-view-toggle-indicator[data-active-view='chat'] {
-    width: var(--yolo-collapsed-width);
-  }
-  .yolo-view-toggle-indicator[data-active-view='composer'] {
-    width: var(--yolo-collapsed-width);
-    transform: translateX(var(--yolo-collapsed-width));
   }
 }
 
@@ -11678,52 +11852,58 @@ button.yolo-llm-debug-modal-button:focus-visible {
   padding-top: var(--size-4-1);
   padding-bottom: var(--size-4-1);
   user-select: none;
+}
 
-  .yolo-similarity-search-results__trigger {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-1);
-    padding: var(--size-4-1);
-    border-radius: var(--radius-s);
-    cursor: pointer;
-    &:hover {
-      background-color: var(--background-modifier-hover);
-    }
-  }
+.yolo-similarity-search-results .yolo-similarity-search-results__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-4-1);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
 
-  .yolo-similarity-search-item {
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    gap: var(--size-4-2);
-    padding: var(--size-4-1);
-    border-radius: var(--radius-s);
-    cursor: pointer;
+:is(
+    .yolo-similarity-search-results .yolo-similarity-search-results__trigger
+  ):hover {
+  background-color: var(--background-modifier-hover);
+}
 
-    &:hover {
-      background-color: var(--background-modifier-hover);
-    }
+.yolo-similarity-search-results .yolo-similarity-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: var(--size-4-2);
+  padding: var(--size-4-1);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
 
-    .yolo-similarity-search-item__similarity {
-      flex-shrink: 0;
-      font-size: var(--font-smallest);
-      color: var(--text-muted);
-    }
+:is(.yolo-similarity-search-results .yolo-similarity-search-item):hover {
+  background-color: var(--background-modifier-hover);
+}
 
-    .yolo-similarity-search-item__path {
-      flex-shrink: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: var(--font-smallest);
-    }
+:is(.yolo-similarity-search-results .yolo-similarity-search-item)
+  .yolo-similarity-search-item__similarity {
+  flex-shrink: 0;
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+}
 
-    .yolo-similarity-search-item__line-numbers {
-      flex-shrink: 0;
-      margin-left: auto;
-      font-size: var(--font-smallest);
-    }
-  }
+:is(.yolo-similarity-search-results .yolo-similarity-search-item)
+  .yolo-similarity-search-item__path {
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-smallest);
+}
+
+:is(.yolo-similarity-search-results .yolo-similarity-search-item)
+  .yolo-similarity-search-item__line-numbers {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--font-smallest);
 }
 
 .yolo-llm-info-content {
@@ -12750,12 +12930,12 @@ button.yolo-chat-list-dropdown-archive-toggle:focus-visible
   gap: var(--size-4-1);
   margin-left: auto;
   position: relative;
+}
 
-  svg {
-    height: var(--icon-xs);
-    width: var(--icon-xs);
-    stroke-width: var(--icon-stroke);
-  }
+.yolo-chat-list-dropdown-item-actions svg {
+  height: var(--icon-xs);
+  width: var(--icon-xs);
+  stroke-width: var(--icon-stroke);
 }
 
 .yolo-chat-list-inline-actions {
@@ -12903,10 +13083,10 @@ button.yolo-chat-list-dropdown-archive-toggle:focus-visible
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+}
 
-  &:hover {
-    text-decoration: underline;
-  }
+.yolo-code-block-header-filename:hover {
+  text-decoration: underline;
 }
 
 .yolo-code-block-header-button-container {
@@ -12916,19 +13096,21 @@ button.yolo-chat-list-dropdown-archive-toggle:focus-visible
   display: flex;
   gap: 0;
   overflow: hidden;
+}
 
-  .yolo-code-block-header-button {
-    height: 100%;
-    padding: 0 var(--size-4-2);
-    display: flex;
-    gap: var(--size-4-1);
-    font-size: var(--font-small);
-  }
+.yolo-code-block-header-button-container .yolo-code-block-header-button {
+  height: 100%;
+  padding: 0 var(--size-4-2);
+  display: flex;
+  gap: var(--size-4-1);
+  font-size: var(--font-small);
+}
 
-  /* Override clickable-icon color */
+/* Override clickable-icon color */
+
+.yolo-code-block-header-button-container
   .yolo-code-block-header-button.clickable-icon {
-    color: var(--text-color) !important;
-  }
+  color: var(--text-color) !important;
 }
 
 .yolo-code-block-content {
@@ -13326,375 +13508,395 @@ button.yolo-chat-list-dropdown-archive-toggle:focus-visible
     var(--text-faint) 80%,
     var(--text-muted) 20%
   );
+}
 
-  .view-content {
-    padding: 0;
-    flex: 1 1 auto;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .view-content {
+  padding: 0;
+  flex: 1 1 auto;
+}
 
-  .markdown-source-view.mod-cm6 {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .markdown-source-view.mod-cm6 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-  .cm-editor {
-    flex: 1 1 0;
-    min-height: 0;
-    position: relative !important;
-    box-sizing: border-box;
-    display: flex !important;
-    flex-direction: column;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .cm-editor {
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative !important;
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column;
+}
 
-  .cm-scroller {
-    padding: var(--file-margins);
-    display: flex !important;
-    align-items: flex-start !important;
-    line-height: 1.4;
-    height: 100%;
-    overflow-x: auto;
-    position: relative;
-    z-index: 0;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .cm-scroller {
+  padding: var(--file-margins);
+  display: flex !important;
+  align-items: flex-start !important;
+  line-height: 1.4;
+  height: 100%;
+  overflow-x: auto;
+  position: relative;
+  z-index: 0;
+}
 
-  .cm-sizer {
-    box-sizing: border-box;
-    max-width: 100%;
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding-left: 0;
-    padding-right: 0;
-    padding-bottom: 488px;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .cm-sizer {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 488px;
+}
 
-  .yolo-apply-content {
-    width: 100%;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-content {
+  width: 100%;
+}
 
-  .yolo-apply-decision-status {
-    width: min(100%, var(--file-line-width));
-    margin: 0 auto;
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-    line-height: 1.5;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-decision-status {
+  width: min(100%, var(--file-line-width));
+  margin: 0 auto;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+}
 
-  .yolo-apply-decision-status {
-    margin-bottom: var(--size-4-1);
-    font-weight: var(--font-medium);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-decision-status {
+  margin-bottom: var(--size-4-1);
+  font-weight: var(--font-medium);
+}
 
-  .view-header {
-    height: var(--header-height);
-    display: flex;
-    border-bottom: var(--file-header-border);
-    background-color: var(--background-primary);
-    z-index: 1;
-    position: relative;
-    gap: var(--size-4-2);
-    padding: 0 var(--size-4-3);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .view-header {
+  height: var(--header-height);
+  display: flex;
+  border-bottom: var(--file-header-border);
+  background-color: var(--background-primary);
+  z-index: 1;
+  position: relative;
+  gap: var(--size-4-2);
+  padding: 0 var(--size-4-3);
+}
 
-  .view-header-title-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex: 1;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .view-header-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
 
-  .view-actions {
-    button {
-      color: var(--text-normal);
-      font-weight: var(--font-medium);
-      gap: 2px;
-    }
-  }
+:is(:is(#yolo-apply-view, .yolo-apply-view-root) .view-actions) button {
+  color: var(--text-normal);
+  font-weight: var(--font-medium);
+  gap: 2px;
+}
 
-  .yolo-diff-block {
-    display: block;
-    padding: var(--size-4-1) 0;
-    color: var(--yolo-apply-text-color);
-    line-height: var(--line-height-normal);
-    width: 100%;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block {
+  display: block;
+  padding: var(--size-4-1) 0;
+  color: var(--yolo-apply-text-color);
+  line-height: var(--line-height-normal);
+  width: 100%;
+}
 
-  .yolo-diff-block--resolved {
-    animation: yolo-apply-resolve-in 180ms ease;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block--resolved {
+  animation: yolo-apply-resolve-in 180ms ease;
+}
 
-  .yolo-diff-block--resolved .yolo-apply-markdown-preview {
-    animation: yolo-apply-resolve-in 180ms ease;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-diff-block--resolved
+  .yolo-apply-markdown-preview {
+  animation: yolo-apply-resolve-in 180ms ease;
+}
 
-  .yolo-diff-block.added {
-    background-color: rgba(var(--yolo-incoming-color-rgb), 0.12);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block.added {
+  background-color: rgba(var(--yolo-incoming-color-rgb), 0.12);
+}
 
-  .yolo-diff-block.removed {
-    background-color: rgba(var(--yolo-current-color-rgb), 0.12);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block.removed {
+  background-color: rgba(var(--yolo-current-color-rgb), 0.12);
+}
 
-  .yolo-diff-block-container {
-    position: relative;
-    scroll-margin-top: var(--size-4-8);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block-container {
+  position: relative;
+  scroll-margin-top: var(--size-4-8);
+}
 
-  .yolo-diff-block-actions {
-    position: absolute;
-    right: calc(
-      (100% - var(--file-line-width)) / 2 - var(--yolo-apply-actions-offset)
-    );
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-    z-index: 1;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-diff-block-actions {
+  position: absolute;
+  right: calc(
+    (100% - var(--file-line-width)) / 2 - var(--yolo-apply-actions-offset)
+  );
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 1;
+}
 
-  .yolo-apply-paragraph {
-    pointer-events: auto;
-    position: relative;
-    width: 100%;
-    --yolo-apply-side-gap: calc((100% - var(--file-line-width)) / 2);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-paragraph {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  --yolo-apply-side-gap: calc((100% - var(--file-line-width)) / 2);
+}
 
-  .yolo-apply-paragraph.has-changes {
-    padding-right: 0;
-    margin-right: 0;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-paragraph.has-changes {
+  padding-right: 0;
+  margin-right: 0;
+}
 
-  .yolo-apply-paragraph-indicator {
-    position: absolute;
-    right: calc(var(--yolo-apply-side-gap) - var(--yolo-apply-rail-offset));
-    top: 4px;
-    bottom: 4px;
-    width: 2px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--interactive-accent) 28%, transparent);
-    opacity: 0.6;
-    transition:
-      background 0.15s ease,
-      opacity 0.15s ease;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-paragraph-indicator {
+  position: absolute;
+  right: calc(var(--yolo-apply-side-gap) - var(--yolo-apply-rail-offset));
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 28%, transparent);
+  opacity: 0.6;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
 
-  .yolo-apply-paragraph.has-changes:hover .yolo-apply-paragraph-indicator,
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-apply-paragraph.has-changes:hover
+  .yolo-apply-paragraph-indicator,
+:is(#yolo-apply-view, .yolo-apply-view-root)
   .yolo-apply-paragraph.has-changes:focus-within
-    .yolo-apply-paragraph-indicator {
-    background: color-mix(in srgb, var(--interactive-accent) 65%, transparent);
-    opacity: 0.95;
-  }
+  .yolo-apply-paragraph-indicator {
+  background: color-mix(in srgb, var(--interactive-accent) 65%, transparent);
+  opacity: 0.95;
+}
 
-  .yolo-apply-paragraph.has-changes.is-active .yolo-apply-paragraph-indicator {
-    background: color-mix(in srgb, var(--interactive-accent) 65%, transparent);
-    opacity: 0.95;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-apply-paragraph.has-changes.is-active
+  .yolo-apply-paragraph-indicator {
+  background: color-mix(in srgb, var(--interactive-accent) 65%, transparent);
+  opacity: 0.95;
+}
 
-  .yolo-apply-paragraph.is-empty {
-    min-height: 20px;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-paragraph.is-empty {
+  min-height: 20px;
+}
 
-  .yolo-apply-empty-line {
-    height: 12px;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-empty-line {
+  height: 12px;
+}
 
-  .yolo-apply-paragraph:hover .yolo-diff-block-actions,
-  .yolo-apply-paragraph:focus-within .yolo-diff-block-actions {
-    opacity: 1;
-    pointer-events: auto;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-apply-paragraph:hover
+  .yolo-diff-block-actions,
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-apply-paragraph:focus-within
+  .yolo-diff-block-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 
-  .yolo-apply-paragraph.is-active .yolo-diff-block-actions {
-    opacity: 1;
-    pointer-events: auto;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root)
+  .yolo-apply-paragraph.is-active
+  .yolo-diff-block-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 
-  .yolo-apply-action {
-    width: 26px;
-    height: 26px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--text-muted) 40%, transparent);
-    background: color-mix(in srgb, var(--background-primary) 92%, transparent);
-    color: var(--text-normal);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: none;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      border-color 0.15s ease,
-      transform 0.15s ease;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 40%, transparent);
+  background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+  color: var(--text-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
 
-  .yolo-apply-action svg {
-    width: 15px;
-    height: 15px;
-    stroke-width: 2.4;
-    stroke: currentColor;
-    fill: none;
-    opacity: 0.95;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.4;
+  stroke: currentColor;
+  fill: none;
+  opacity: 0.95;
+}
 
-  .yolo-apply-action-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    line-height: 1;
-    font-weight: 600;
-    color: currentColor;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 600;
+  color: currentColor;
+}
 
-  .yolo-apply-action-icon--merge {
-    font-size: 14px;
-    font-weight: 500;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action-icon--merge {
+  font-size: 14px;
+  font-weight: 500;
+}
 
-  .yolo-apply-action:hover {
-    transform: translateY(-1px);
-    color: var(--text-normal);
-    background: color-mix(
-      in srgb,
-      var(--background-primary) 82%,
-      var(--background-secondary) 18%
-    );
-    border-color: color-mix(in srgb, var(--text-muted) 55%, transparent);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action:hover {
+  transform: translateY(-1px);
+  color: var(--text-normal);
+  background: color-mix(
+    in srgb,
+    var(--background-primary) 82%,
+    var(--background-secondary) 18%
+  );
+  border-color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+}
 
-  .yolo-apply-action-accept {
-    color: rgb(var(--yolo-incoming-color-rgb));
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action-accept {
+  color: rgb(var(--yolo-incoming-color-rgb));
+}
 
-  .yolo-apply-action-reject {
-    color: rgb(var(--yolo-current-color-rgb));
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-action-reject {
+  color: rgb(var(--yolo-current-color-rgb));
+}
 
-  .yolo-accept {
-    color: white;
-    background: rgba(var(--yolo-incoming-color-rgb), 0.8);
-    &:hover {
-      background: rgba(var(--yolo-incoming-color-rgb), 1);
-    }
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-accept {
+  color: white;
+  background: rgba(var(--yolo-incoming-color-rgb), 0.8);
+}
 
-  .yolo-exclude {
-    color: white;
-    background: rgba(var(--yolo-current-color-rgb), 0.8);
-    &:hover {
-      background: rgba(var(--yolo-current-color-rgb), 1);
-    }
-  }
+:is(:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-accept):hover {
+  background: rgba(var(--yolo-incoming-color-rgb), 1);
+}
 
-  /* Toolbar styles */
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-exclude {
+  color: white;
+  background: rgba(var(--yolo-current-color-rgb), 0.8);
+}
+
+:is(:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-exclude):hover {
+  background: rgba(var(--yolo-current-color-rgb), 1);
+}
+
+/* Toolbar styles */
+
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--size-4-3);
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Lift the floating toolbar above Obsidian's mobile navbar (back / menu, etc.). */
+
+body.is-mobile
+  :is(#yolo-apply-view, .yolo-apply-view-root)
   .yolo-apply-toolbar {
-    position: absolute;
-    left: 50%;
-    bottom: var(--size-4-3);
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    pointer-events: none;
-    z-index: 3;
-  }
+  bottom: calc(
+    var(--size-4-3) + var(--yolo-apply-toolbar-mobile-offset, 48px) +
+      var(--safe-area-inset-bottom, 0px)
+  );
+}
 
-  .yolo-apply-toolbar-pill {
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-3);
-    padding: var(--size-4-2) var(--size-4-3);
-    border-radius: 999px;
-    max-width: calc(100% - var(--size-4-6));
-    flex-wrap: wrap;
-    justify-content: center;
-    background: color-mix(
-      in srgb,
-      var(--background-secondary) 86%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(12px);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-toolbar-pill {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: 999px;
+  max-width: calc(100% - var(--size-4-6));
+  flex-wrap: wrap;
+  justify-content: center;
+  background: color-mix(in srgb, var(--background-secondary) 86%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+  backdrop-filter: blur(12px);
+}
 
-  .yolo-apply-toolbar-nav,
-  .yolo-apply-toolbar-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-2);
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-toolbar-nav,
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
 
-  .yolo-apply-progress {
-    font-size: var(--font-ui-small);
-    color: var(--text-muted);
-    min-width: 52px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-apply-progress {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 
-  .yolo-toolbar-btn {
-    padding: 6px var(--size-4-3);
-    font-size: var(--font-ui-small);
-    border-radius: 999px;
-    cursor: pointer;
-    border: 1px solid var(--background-modifier-border);
-    background: color-mix(in srgb, var(--background-primary) 88%, transparent);
-    color: var(--text-normal);
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-btn {
+  padding: 6px var(--size-4-3);
+  font-size: var(--font-ui-small);
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+  color: var(--text-normal);
+}
 
-    &:hover {
-      background: color-mix(
-        in srgb,
-        var(--background-modifier-hover) 88%,
-        transparent
-      );
-    }
-  }
+:is(:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-btn):hover {
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 88%,
+    transparent
+  );
+}
 
-  .yolo-toolbar-btn:disabled,
-  .yolo-toolbar-icon-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-btn:disabled,
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
-  .yolo-toolbar-icon-btn {
-    width: 30px;
-    height: 30px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    border: 1px solid var(--background-modifier-border);
-    background: color-mix(in srgb, var(--background-primary) 88%, transparent);
-    color: var(--text-muted);
-    cursor: pointer;
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+}
 
-    &:hover {
-      color: var(--text-normal);
-      background: color-mix(
-        in srgb,
-        var(--background-modifier-hover) 88%,
-        transparent
-      );
-    }
-  }
+:is(:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-icon-btn):hover {
+  color: var(--text-normal);
+  background: color-mix(
+    in srgb,
+    var(--background-modifier-hover) 88%,
+    transparent
+  );
+}
 
-  .yolo-toolbar-icon {
-    font-size: 14px;
-    line-height: 1;
-    font-weight: 600;
-  }
+:is(#yolo-apply-view, .yolo-apply-view-root) .yolo-toolbar-icon {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
 }
 
 :is(#yolo-apply-view, .yolo-apply-view-root)
@@ -13835,24 +14037,24 @@ button.yolo-chat-input-model-select {
   color: var(--text-muted);
   cursor: pointer;
   height: auto;
+}
 
-  &:hover {
-    color: var(--text-normal);
-  }
+button.yolo-chat-input-model-select:hover {
+  color: var(--text-normal);
+}
 
-  .yolo-chat-input-model-select__model-name {
-    flex-shrink: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+button.yolo-chat-input-model-select .yolo-chat-input-model-select__model-name {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  .yolo-chat-input-model-select__icon {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+button.yolo-chat-input-model-select .yolo-chat-input-model-select__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .yolo-query-progress {

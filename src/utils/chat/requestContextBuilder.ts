@@ -1066,7 +1066,7 @@ ${message.annotations
           toolMessages.push({
             role: 'tool',
             tool_call: toolCall.request,
-            content: `Tool call ${toolCall.request.id} is aborted`,
+            content: `Tool call ${toolCall.request.id} was cancelled by the user.`,
           })
           break
         case ToolCallResponseStatus.Rejected:
@@ -1612,11 +1612,8 @@ ${customInstruction}
   }
 
   private buildDefaultBehaviorSection(hasTools: boolean): string {
-    let section = `You are an intelligent assistant.
-
-- Format your responses in Markdown.
-- Always reply in the same language as the user's message.
-- Your replies should be detailed and insightful.`
+    let section = `- Format your responses in Markdown.
+- Always reply in the same language as the user's message.`
 
     if (hasTools) {
       section += `

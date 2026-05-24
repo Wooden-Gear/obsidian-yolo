@@ -323,12 +323,12 @@ export const yoloSettingsSchema = z.object({
     .object({
       servers: resilientArraySchema(mcpServerConfigSchema),
       builtinToolOptions: mcpServerToolOptionsSchema.catch({}),
-      enableToolDisclosure: z.boolean().catch(true),
+      enableToolDisclosure: z.boolean().catch(false),
     })
     .catch({
       servers: [],
       builtinToolOptions: {},
-      enableToolDisclosure: true,
+      enableToolDisclosure: false,
     }),
 
   // JS sandbox (js_eval) configuration. Global because the capability surface

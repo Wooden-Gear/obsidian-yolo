@@ -7,6 +7,7 @@ import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
 import type { ChatModelModality } from '../../types/chat-model.types'
 import {
+  McpClient,
   McpServerConfig,
   McpServerState,
   McpServerStatus,
@@ -65,6 +66,10 @@ const getVaultBasePath = (app: App): string | undefined => {
 export const INVALID_TOOL_ARGUMENTS_JSON_ERROR =
   'Tool arguments must be valid JSON. Please escape quotes/newlines inside string values and retry.'
 
+const MCP_CONNECTION_CLOSED_CODE = -32000
+const RECONNECT_WINDOW_MS = 60_000
+const RECONNECT_MAX_ATTEMPTS = 3
+
 export class McpManager {
   static readonly TOOL_NAME_DELIMITER = '__' // Delimiter for tool name construction (serverName__toolName)
 
@@ -85,6 +90,14 @@ export class McpManager {
   private servers: McpServerState[] = [] // IMPORTANT: Always use this.updateServers() to update this array
   private connectionAborts: Map<string, AbortController> = new Map()
   private activeToolCalls: Map<string, AbortController> = new Map()
+  // Track clients we close on purpose so the onclose-driven self-heal path can
+  // distinguish intentional teardown from server-side connection loss.
+  private intentionalClientCloses: WeakSet<McpClient> = new WeakSet()
+  // Rolling-window reconnect throttle keyed by server name.
+  private reconnectAttempts: Map<
+    string,
+    { count: number; windowStart: number }
+  > = new Map()
   private allowedToolsByConversation: Map<string, Set<string>> = new Map()
   private subscribers = new Set<(servers: McpServerState[]) => void>()
 
@@ -212,7 +225,7 @@ export class McpManager {
     void Promise.all(
       this.servers
         .filter((s) => s.status === McpServerStatus.Connected)
-        .map((s) => s.client.close()),
+        .map((s) => this.closeClient(s.client)),
     )
 
     if (this.unsubscribeFromSettings) {
@@ -224,6 +237,7 @@ export class McpManager {
     this.remoteTransportModulePromise = null
     this.subscribers.clear()
     this.activeToolCalls.clear()
+    this.reconnectAttempts.clear()
     disposeJsSandbox()
   }
 
@@ -272,6 +286,9 @@ export class McpManager {
             config: serverConfig,
           }
         }
+        // Any user-driven change (toggle / parameter edit) resets the
+        // auto-reconnect throttle so a fresh window starts.
+        this.reconnectAttempts.delete(serverConfig.id)
         // Disabled servers don't probe — emit Disconnected directly so the UI
         // doesn't briefly flash Connecting before settling.
         if (!serverConfig.enabled) {
@@ -288,6 +305,15 @@ export class McpManager {
         }
       },
     )
+
+    // Servers removed from settings entirely should also drop their throttle
+    // state so a future re-add starts clean.
+    const nextNames = new Set(updatedServers.map((s) => s.name))
+    for (const name of Array.from(this.reconnectAttempts.keys())) {
+      if (!nextNames.has(name)) {
+        this.reconnectAttempts.delete(name)
+      }
+    }
 
     // Cancel in-flight attempts for servers that won't probe in this round —
     // either removed from settings entirely, or kept but no longer Connecting
@@ -324,7 +350,7 @@ export class McpManager {
             // A newer settings update (or cleanup) has invalidated this attempt.
             // If we managed to connect anyway, close the orphan client.
             if (server.status === McpServerStatus.Connected) {
-              void server.client.close()
+              void this.closeClient(server.client)
             }
             return
           }
@@ -373,7 +399,9 @@ export class McpManager {
 
     // Disconnect clients in the background
     if (clientsToDisconnect.length > 0) {
-      void Promise.all(clientsToDisconnect.map((client) => client.close()))
+      void Promise.all(
+        clientsToDisconnect.map((client) => this.closeClient(client)),
+      )
     }
 
     this.servers = nextServers
@@ -414,11 +442,18 @@ export class McpManager {
     const { Client } = await import('@modelcontextprotocol/sdk/client/index.js')
     const client = new Client({ name, version: '1.0.0' })
 
+    // Self-heal hook: fires when the underlying transport closes for any
+    // reason (including our own close() calls). The intentional-closes
+    // WeakSet inside the handler short-circuits planned teardowns.
+    client.onclose = () => {
+      this.handleUnexpectedServerClose(name, client)
+    }
+
     // The SDK only forwards `signal` to the initialize request, not to
     // `transport.start()`. Bind an abort listener that force-closes the client
     // so SSE/WS handshakes and stdio spawns are torn down promptly.
     const abortListener = () => {
-      void client.close().catch(() => {
+      void this.closeClient(client).catch(() => {
         /* best-effort teardown */
       })
     }
@@ -487,7 +522,7 @@ export class McpManager {
       // The connect step succeeded, so the transport is live. The Error state
       // we return below has no `client` field, which means updateServers()'s
       // diff cannot reach it — close it here to avoid leaking the transport.
-      void client.close().catch(() => {
+      void this.closeClient(client).catch(() => {
         /* best-effort teardown */
       })
       const remoteTransport = await this.loadRemoteTransportModule()
@@ -768,6 +803,11 @@ export class McpManager {
       signal.addEventListener('abort', () => toolAbortController.abort())
     }
 
+    // Hoisted so the catch branch can route ConnectionClosed errors back to
+    // the right server for self-healing.
+    let remoteServerName: string | undefined
+    let remoteClient: McpClient | undefined
+
     try {
       const { serverName, toolName } = parseToolName(name)
       const parsedArgs: Record<string, unknown> | undefined = args
@@ -833,6 +873,8 @@ export class McpManager {
         throw new Error(`MCP server ${serverName} is not connected`)
       }
       const { client } = server
+      remoteServerName = serverName
+      remoteClient = client
 
       const result = (await client.callTool(
         {
@@ -867,10 +909,30 @@ export class McpManager {
         },
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
+      // Prefer signal state over error inspection: SDK packages signal-driven
+      // cancellation as McpError(-32001 RequestTimeout), which wouldn't match
+      // a name-based `AbortError` check.
+      if (compositeSignal.aborted) {
         return {
           status: ToolCallResponseStatus.Aborted,
         }
+      }
+
+      // Self-heal fallback: if the SDK reported the transport is closed,
+      // schedule a reconnect for that server. We still return Error for this
+      // call — MCP tools may have side effects, so we don't transparently
+      // replay the request.
+      // JSON-RPC error code -32000 is broadly reserved for "server error" and
+      // can be returned by well-behaved servers, so we additionally require
+      // that the client's transport is actually gone (SDK clears it in
+      // `_onclose`) before treating this as a connection loss.
+      if (
+        this.getMcpErrorCode(error) === MCP_CONNECTION_CLOSED_CODE &&
+        remoteServerName &&
+        remoteClient &&
+        remoteClient.transport === undefined
+      ) {
+        this.handleUnexpectedServerClose(remoteServerName, remoteClient)
       }
 
       // Handle other errors
@@ -894,5 +956,158 @@ export class McpManager {
       return true
     }
     return false
+  }
+
+  // Mark a client as intentionally closed before calling close(), so the
+  // onclose-driven self-heal path skips reconnect for our own teardown.
+  private closeClient(client: McpClient): Promise<void> {
+    this.intentionalClientCloses.add(client)
+    return client.close()
+  }
+
+  // Extract a numeric JSON-RPC / MCP error code without importing SDK runtime
+  // enums, so this stays robust across SDK versions.
+  private getMcpErrorCode(error: unknown): number | undefined {
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof (error as { code: unknown }).code === 'number'
+    ) {
+      return (error as { code: number }).code
+    }
+    return undefined
+  }
+
+  // Called when an MCP client unexpectedly disconnects (e.g. stdio server
+  // crashed or closed its end). Idempotent and guards against stale clients,
+  // races with settings changes, and unbounded reconnect loops.
+  private handleUnexpectedServerClose(name: string, client: McpClient): void {
+    if (this.intentionalClientCloses.has(client)) {
+      return
+    }
+    // Treat this client as drained from now on — guards against double-firing
+    // and against the same client being targeted by the callTool fallback.
+    this.intentionalClientCloses.add(client)
+
+    const current = this.servers.find((s) => s.name === name)
+    if (
+      !current ||
+      current.status !== McpServerStatus.Connected ||
+      current.client !== client ||
+      !current.config.enabled
+    ) {
+      return
+    }
+
+    const now = Date.now()
+    const record = this.reconnectAttempts.get(name)
+    if (record && now - record.windowStart < RECONNECT_WINDOW_MS) {
+      if (record.count >= RECONNECT_MAX_ATTEMPTS) {
+        console.warn(
+          `[YOLO] MCP server "${name}" disconnected ${record.count} times within ${Math.round((now - record.windowStart) / 1000)}s — giving up on auto-reconnect.`,
+        )
+        this.updateServers((prev) =>
+          prev.map((s) =>
+            s.name === name
+              ? {
+                  name,
+                  config: current.config,
+                  status: McpServerStatus.Error,
+                  error: new Error(
+                    `MCP server "${name}" disconnected repeatedly. Disable and re-enable it in settings to retry.`,
+                  ),
+                }
+              : s,
+          ),
+        )
+        return
+      }
+      record.count += 1
+    } else {
+      this.reconnectAttempts.set(name, { count: 1, windowStart: now })
+    }
+
+    // Supersede any in-flight connection attempt for this server.
+    this.connectionAborts.get(name)?.abort()
+    const controller = new AbortController()
+    this.connectionAborts.set(name, controller)
+
+    this.updateServers((prev) =>
+      prev.map((s) =>
+        s.name === name
+          ? {
+              name,
+              config: current.config,
+              status: McpServerStatus.Connecting,
+            }
+          : s,
+      ),
+    )
+
+    void (async () => {
+      try {
+        const reconnected = await this.connectServer(
+          current.config,
+          controller.signal,
+        )
+
+        if (controller.signal.aborted) {
+          if (reconnected.status === McpServerStatus.Connected) {
+            void this.closeClient(reconnected.client).catch(() => {
+              /* best-effort teardown of orphan client */
+            })
+          }
+          return
+        }
+
+        if (this.connectionAborts.get(name) === controller) {
+          this.connectionAborts.delete(name)
+        }
+
+        // Settings may have toggled this server off mid-reconnect.
+        const latest = this.servers.find((s) => s.name === name)
+        if (!latest || !latest.config.enabled) {
+          if (reconnected.status === McpServerStatus.Connected) {
+            void this.closeClient(reconnected.client).catch(() => {
+              /* best-effort teardown of orphan client */
+            })
+          }
+          return
+        }
+
+        this.updateServers((prev) =>
+          prev.map((s) => (s.name === name ? reconnected : s)),
+        )
+      } catch (error) {
+        // `connectServer` normally swallows transport errors into an Error
+        // state, but dynamic imports / diagnostics construction can still
+        // throw. Without this catch the promise becomes an unhandled
+        // rejection and the server stays stuck in Connecting.
+        console.error(
+          `[YOLO] MCP server "${name}" auto-reconnect crashed:`,
+          error,
+        )
+        if (this.connectionAborts.get(name) === controller) {
+          this.connectionAborts.delete(name)
+        }
+        if (controller.signal.aborted) {
+          return
+        }
+        this.updateServers((prev) =>
+          prev.map((s) =>
+            s.name === name
+              ? {
+                  name,
+                  config: current.config,
+                  status: McpServerStatus.Error,
+                  error:
+                    error instanceof Error ? error : new Error(String(error)),
+                }
+              : s,
+          ),
+        )
+      }
+    })()
   }
 }
