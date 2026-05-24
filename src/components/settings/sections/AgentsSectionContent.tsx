@@ -35,6 +35,10 @@ import {
   applyDynamicToolDescriptions,
   isLoadToolSchemasToolName,
 } from '../../../core/agent/tool-selection'
+import {
+  getJsSandboxSettings,
+  hasAnyJsSandboxCapEnabled,
+} from '../../../core/mcp/jsSandboxSettings'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -57,7 +61,6 @@ import { YoloSettings } from '../../../settings/schema/setting.types'
 import {
   AgentPersona,
   Assistant,
-  AssistantJsSandboxConfig,
   AssistantSkillLoadMode,
   AssistantToolApprovalMode,
   AssistantToolDisclosureMode,
@@ -77,7 +80,6 @@ import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { SimpleSelect } from '../../common/SimpleSelect'
 import { openIconPicker } from '../assistants/AssistantIconPicker'
-import { JsSandboxConfigModal } from '../modals/JsSandboxConfigModal'
 
 import {
   normalizeToolPreferencesForPersistence,
@@ -133,17 +135,6 @@ const skillDefaultContextTokenCache = new Map<string, number>()
 // Caches the in-flight or resolved promise so concurrent calls dedupe to a
 // single estimateJsonTokens invocation.
 const toolDefaultContextTokenCache = new Map<string, Promise<number>>()
-
-function hasSensitiveJsSandboxCapabilities(
-  config?: AssistantJsSandboxConfig,
-): boolean {
-  return Boolean(
-    config?.allowFetch ||
-      config?.allowVaultRead ||
-      config?.allowDbQuery ||
-      config?.allowExternalScripts,
-  )
-}
 
 function fnv1aHash(text: string): string {
   let hash = 0x811c9dc5
@@ -617,32 +608,6 @@ export function AgentsSectionContent({
     })
   }
 
-  const setJsSandboxConfig = (config: AssistantJsSandboxConfig) => {
-    setDraftAgent((prev) =>
-      prev ? { ...prev, jsSandboxConfig: config } : prev,
-    )
-
-    if (!draftAgent) {
-      return
-    }
-
-    const existingAssistant = assistants.find(
-      (assistant) => assistant.id === draftAgent.id,
-    )
-    if (!existingAssistant) {
-      return
-    }
-
-    void setSettings({
-      ...settings,
-      assistants: assistants.map((assistant) =>
-        assistant.id === draftAgent.id
-          ? { ...assistant, jsSandboxConfig: config, updatedAt: Date.now() }
-          : assistant,
-      ),
-    })
-  }
-
   const setSkillEnabled = (skillId: string, enabled: boolean) => {
     if (!draftAgent) {
       return
@@ -947,7 +912,7 @@ export function AgentsSectionContent({
     // tracks capability toggles instead of the static default the cached
     // tool list carries. Same bridge selectAllowedTools uses at request time.
     const resolvedTools = applyDynamicToolDescriptions(eligibleTools, {
-      jsSandboxConfig: draftAgent.jsSandboxConfig,
+      jsSandboxSettings: getJsSandboxSettings(settings),
     })
 
     void Promise.all(
@@ -1374,37 +1339,6 @@ export function AgentsSectionContent({
                   }}
                 />
               </ObsidianSetting>
-              {draftAgent.enableTools &&
-                draftAgent.includeBuiltinTools !== false &&
-                isAssistantToolEnabled(draftAgent, jsSandboxFullToolName) && (
-                  <ObsidianSetting
-                    name={t(
-                      'settings.agent.jsSandboxConfigEntryTitle',
-                      'JavaScript execution configuration',
-                    )}
-                    desc={t(
-                      'settings.agent.jsSandboxConfigEntryDesc',
-                      'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
-                    )}
-                  >
-                    <ObsidianButton
-                      icon="settings"
-                      className="yolo-js-exec-config-button"
-                      tooltip={t('common.configure', 'Configure')}
-                      onClick={() => {
-                        const initial = draftAgent.jsSandboxConfig
-                        new JsSandboxConfigModal(app, {
-                          title: t(
-                            'settings.agent.jsSandboxConfigEntryTitle',
-                            'JavaScript execution configuration',
-                          ),
-                          value: initial,
-                          onChange: (next) => setJsSandboxConfig(next),
-                        }).open()
-                      }}
-                    />
-                  </ObsidianSetting>
-                )}
               <div
                 className={`yolo-agent-tools-panel${
                   draftAgent.enableTools ? '' : ' is-disabled'
@@ -1555,20 +1489,22 @@ export function AgentsSectionContent({
                                   draftAgent,
                                   target,
                                   {
-                                    jsSandboxConfig: draftAgent.jsSandboxConfig,
+                                    jsSandboxSettings:
+                                      getJsSandboxSettings(settings),
                                   },
                                 ) === 'full_access',
                             )
                               ? 'full_access'
                               : 'require_approval'
                             // When JS isolated execution has any sensitive
-                            // capability enabled, `getAssistantToolApprovalMode`
-                            // forces require_approval regardless of the saved
+                            // capability enabled in the global settings,
+                            // `getAssistantToolApprovalMode` forces
+                            // require_approval regardless of the saved
                             // preference. Surface that lock in the UI as a
                             // read-only badge instead of a stale dropdown.
                             const approvalLocked =
-                              hasSensitiveJsSandboxCapabilities(
-                                draftAgent.jsSandboxConfig,
+                              hasAnyJsSandboxCapEnabled(
+                                getJsSandboxSettings(settings),
                               ) &&
                               tool.toggleTargets.some(
                                 (target) => target === jsSandboxFullToolName,

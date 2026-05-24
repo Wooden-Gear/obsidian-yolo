@@ -465,8 +465,6 @@ export type TranslationKeys = {
       jsSandboxAllowExternalScriptsRisk?: string
       jsSandboxAllowExternalScriptsConfirm?: string
       jsSandboxConfirmEnableTitle?: string
-      jsSandboxConfigEntryTitle?: string
-      jsSandboxConfigEntryDesc?: string
       jsSandboxModalIntro?: string
       jsExecModalSummaryTitle?: string
       jsExecDefaultCapsHint?: string
@@ -489,6 +487,9 @@ export type TranslationKeys = {
       jsSandboxVaultReadMaxKbDesc?: string
       jsSandboxDbMaxLimit?: string
       jsSandboxDbMaxLimitDesc?: string
+    }
+    jsSandbox?: {
+      openSettings?: string
     }
     webSearch?: {
       modalTitle?: string

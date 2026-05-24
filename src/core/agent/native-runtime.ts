@@ -101,7 +101,6 @@ export class NativeAgentRuntime implements AgentRuntime {
       enableToolDisclosure: input.enableToolDisclosure,
       toolPreferences: input.toolPreferences,
       workspaceScope: input.workspaceScope,
-      jsSandboxConfig: input.jsSandboxConfig,
       allowedSkillIds: input.allowedSkillIds,
       allowedSkillNames: input.allowedSkillNames,
       apiType: input.apiType,
@@ -160,7 +159,6 @@ export class NativeAgentRuntime implements AgentRuntime {
                   toolPreferences: input.toolPreferences,
                   allowedSkillIds: input.allowedSkillIds,
                   allowedSkillNames: input.allowedSkillNames,
-                  jsSandboxConfig: input.jsSandboxConfig,
                   abortSignal,
                   reasoningLevel: input.reasoningLevel,
                   requestParams: input.requestParams,
@@ -287,7 +285,6 @@ export class NativeAgentRuntime implements AgentRuntime {
                             toolPreferences: input.toolPreferences,
                             allowedSkillIds: input.allowedSkillIds,
                             allowedSkillNames: input.allowedSkillNames,
-                            jsSandboxConfig: input.jsSandboxConfig,
                             contextualInjections: composeAgentInjections({
                               baseInjections: input.contextualInjections,
                               messages: conversationMessages,

@@ -3,10 +3,7 @@ import { App, FileSystemAdapter, Platform } from 'obsidian'
 
 import { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
-import type {
-  AssistantJsSandboxConfig,
-  AssistantWorkspaceScope,
-} from '../../types/assistant.types'
+import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
 import type { ChatModelModality } from '../../types/chat-model.types'
 import {
@@ -29,6 +26,10 @@ import {
 } from '../web-search'
 
 import { InvalidToolNameException, McpNotAvailableException } from './exception'
+import {
+  type JsSandboxSettings,
+  getJsSandboxSettings,
+} from './jsSandboxSettings'
 import { disposeJsSandbox } from './jsSandboxTool'
 // eslint-disable-next-line import/order -- false positive: sibling group is contiguous; rule miscounts the blank line above this group
 import {
@@ -236,6 +237,16 @@ export class McpManager {
 
   public getServers() {
     return this.servers
+  }
+
+  /**
+   * Snapshot of the global JS sandbox configuration. Exposed so the agent
+   * runtime, tool gateway, and context estimators can read the same source
+   * the proxy handler uses at execution time — keeping the LLM-facing
+   * description and actual capability set in lockstep.
+   */
+  public getJsSandboxSettings(): JsSandboxSettings {
+    return getJsSandboxSettings(this.settings)
   }
 
   public subscribeServersChange(callback: (servers: McpServerState[]) => void) {
@@ -732,7 +743,6 @@ export class McpManager {
     requireReview = false,
     chatModelId,
     workspaceScope,
-    jsSandboxConfig,
   }: {
     name: string
     args?: Record<string, unknown> | undefined
@@ -744,7 +754,6 @@ export class McpManager {
     requireReview?: boolean
     chatModelId?: string
     workspaceScope?: AssistantWorkspaceScope
-    jsSandboxConfig?: AssistantJsSandboxConfig
   }): Promise<ToolCallResponse> {
     const toolAbortController = new AbortController()
     if (id !== undefined) {
@@ -782,7 +791,6 @@ export class McpManager {
           signal: compositeSignal,
           chatModelId,
           workspaceScope,
-          jsSandboxConfig,
         })
         if (localResult.status === ToolCallResponseStatus.Success) {
           return {

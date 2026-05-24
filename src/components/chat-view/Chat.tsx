@@ -99,7 +99,6 @@ import ChatUserInput from './chat-input/ChatUserInput'
 import type { ChatUserInputRef } from './chat-input/ChatUserInput'
 import MentionableBadge from './chat-input/MentionableBadge'
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
-import { resolveJsSandboxConfigForRuntimeInput } from './chat-runtime-inputs'
 import { getChatSurfacePreset } from './chat-surface-presets'
 import { ChatConversationPane } from './ChatConversationPane'
 import { ChatListDropdown } from './ChatListDropdown'
@@ -2674,10 +2673,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               workspaceScope:
                 chatMode === 'agent'
                   ? selectedAssistant?.workspaceScope
-                  : undefined,
-              jsSandboxConfig:
-                chatMode === 'agent'
-                  ? resolveJsSandboxConfigForRuntimeInput(selectedAssistant)
                   : undefined,
             }),
           getResponseBody: (response) => response,

@@ -42,10 +42,7 @@ import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { ErrorModal } from '../modals/ErrorModal'
 
 import { ChatMode } from './chat-input/ChatModeSelect'
-import {
-  resolveJsSandboxConfigForRuntimeInput,
-  resolveWorkspaceScopeForRuntimeInput,
-} from './chat-runtime-inputs'
+import { resolveWorkspaceScopeForRuntimeInput } from './chat-runtime-inputs'
 import { resolveChatModeRuntime } from './chat-runtime-profiles'
 import type { ContextBreakdownInputs } from './useContextBreakdown'
 
@@ -570,8 +567,6 @@ export function useChatStreamManager({
             toolPreferences: chatModeRuntime.toolPreferences,
             allowedSkillIds,
             allowedSkillNames,
-            jsSandboxConfig:
-              resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
             contextualInjections: buildChatContextualInjections({
               includeCurrentFileContent:
                 settings.chatOptions.includeCurrentFileContent,
@@ -755,8 +750,6 @@ export function useChatStreamManager({
           toolPreferences: chatModeRuntime.toolPreferences,
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),
-          jsSandboxConfig:
-            resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
           allowedSkillIds,
           allowedSkillNames,
           requestParams,
@@ -1012,11 +1005,6 @@ export function useChatStreamManager({
         toolPreferences: chatModeRuntime.toolPreferences,
         allowedSkillIds: enabledSkillEntries.map((s) => s.id),
         allowedSkillNames: enabledSkillEntries.map((s) => s.name),
-        // js_eval's description is rewritten per-agent based on which
-        // extension caps are on. Without this, the popover under-reports
-        // tools-bucket tokens when an agent has caps enabled.
-        jsSandboxConfig:
-          resolveJsSandboxConfigForRuntimeInput(selectedAssistant),
         contextualInjections: buildChatContextualInjections({
           includeCurrentFileContent:
             settings.chatOptions.includeCurrentFileContent,

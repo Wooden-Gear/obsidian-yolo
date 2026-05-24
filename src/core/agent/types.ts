@@ -1,4 +1,3 @@
-import type { AssistantJsSandboxConfig } from '../../types/assistant.types'
 import {
   ChatConversationCompactionLike,
   ChatConversationCompactionState,
@@ -66,7 +65,6 @@ export type AgentRuntimeRunInput = {
     include: string[]
     exclude: string[]
   }
-  jsSandboxConfig?: AssistantJsSandboxConfig
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]

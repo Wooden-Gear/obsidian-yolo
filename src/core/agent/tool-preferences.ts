@@ -1,10 +1,13 @@
 import {
   Assistant,
-  AssistantJsSandboxConfig,
   AssistantToolApprovalMode,
   AssistantToolDisclosureMode,
   AssistantToolPreference,
 } from '../../types/assistant.types'
+import {
+  type JsSandboxSettings,
+  hasAnyJsSandboxCapEnabled,
+} from '../mcp/jsSandboxSettings'
 import { JS_SANDBOX_TOOL_NAME } from '../mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -44,18 +47,6 @@ const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
 ])
 
 const JS_SANDBOX_TOOL_FQN = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
-
-const hasAnyJsSandboxCapEnabled = (
-  config: AssistantJsSandboxConfig | null | undefined,
-): boolean => {
-  if (!config) return false
-  return Boolean(
-    config.allowFetch ||
-      config.allowVaultRead ||
-      config.allowDbQuery ||
-      config.allowExternalScripts,
-  )
-}
 
 const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -284,16 +275,18 @@ export const getAssistantToolApprovalMode = (
     | null
     | undefined,
   toolName: string,
-  options?: { jsSandboxConfig?: AssistantJsSandboxConfig | null },
+  options?: { jsSandboxSettings?: JsSandboxSettings | null },
 ): AssistantToolApprovalMode => {
-  // Hard override: when JS isolated execution has any extension capability enabled, force
-  // approval regardless of user preference. The default-on capabilities (current
-  // note snapshot, $utils, time/locale/GPU info) keep the same risk surface as
-  // other read-only tools, but turning on fetch / vault read / $db / external
+  // Hard override: when JS isolated execution has any extension capability
+  // enabled in the global settings, force approval regardless of the agent's
+  // saved preference. The default-on capabilities (current note snapshot,
+  // $utils, time/locale/GPU info) keep the same risk surface as other
+  // read-only tools, but turning on fetch / vault read / $db / external
   // scripts crosses into territory that requires explicit consent every run.
   if (
     toolName === JS_SANDBOX_TOOL_FQN &&
-    hasAnyJsSandboxCapEnabled(options?.jsSandboxConfig)
+    options?.jsSandboxSettings &&
+    hasAnyJsSandboxCapEnabled(options.jsSandboxSettings)
   ) {
     return 'require_approval'
   }

@@ -12,10 +12,7 @@ import { saveExternalAgentProgress } from '../../database/json/chat/externalAgen
 import { buildPdfPageImageCacheKey } from '../../database/json/chat/imageCacheStore'
 import type { YoloSettings } from '../../settings/schema/setting.types'
 import type { ApplyViewState } from '../../types/apply-view.types'
-import type {
-  AssistantJsSandboxConfig,
-  AssistantWorkspaceScope,
-} from '../../types/assistant.types'
+import type { AssistantWorkspaceScope } from '../../types/assistant.types'
 import type { ChatMessage } from '../../types/chat'
 import type { ChatModelModality } from '../../types/chat-model.types'
 import type { ContentPart } from '../../types/llm/request'
@@ -72,6 +69,10 @@ import {
   runWebSearch,
 } from '../web-search'
 
+import {
+  type JsSandboxSettings,
+  getJsSandboxSettings,
+} from './jsSandboxSettings'
 import {
   JS_SANDBOX_FETCH_DEFAULT_MAX_CONCURRENT,
   JS_SANDBOX_FETCH_DEFAULT_MAX_RESPONSE_KB,
@@ -2714,7 +2715,6 @@ export async function callLocalFileTool({
   signal,
   chatModelId,
   workspaceScope,
-  jsSandboxConfig,
 }: {
   app: App
   settings?: YoloSettings
@@ -2730,7 +2730,6 @@ export async function callLocalFileTool({
   signal?: AbortSignal
   chatModelId?: string
   workspaceScope?: AssistantWorkspaceScope
-  jsSandboxConfig?: AssistantJsSandboxConfig
 }): Promise<LocalToolCallResult> {
   if (signal?.aborted) {
     return { status: ToolCallResponseStatus.Aborted }
@@ -4043,14 +4042,17 @@ export async function callLocalFileTool({
       }
 
       case JS_SANDBOX_TOOL_NAME: {
-        const proxyHandlers = jsSandboxConfig
-          ? buildJsSandboxProxyHandlers(app, jsSandboxConfig, getRagEngine)
-          : undefined
+        const jsSandboxSettings = getJsSandboxSettings(settings)
+        const proxyHandlers = buildJsSandboxProxyHandlers(
+          app,
+          jsSandboxSettings,
+          getRagEngine,
+        )
         return callJsSandboxTool({
           app,
           args,
           signal,
-          jsSandboxConfig,
+          jsSandboxSettings,
           proxyHandlers,
         })
       }
@@ -4606,7 +4608,7 @@ function assertJsSandboxFetchAllowed(
 
 function buildJsSandboxProxyHandlers(
   app: App,
-  config: AssistantJsSandboxConfig,
+  config: JsSandboxSettings,
   getRagEngine?: () => Promise<RAGEngine>,
 ): JsSandboxProxyHandlers {
   const handlers: JsSandboxProxyHandlers = {}

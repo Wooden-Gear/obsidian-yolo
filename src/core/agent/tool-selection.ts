@@ -1,14 +1,9 @@
-import type {
-  AssistantJsSandboxConfig,
-  AssistantToolPreference,
-} from '../../types/assistant.types'
+import type { AssistantToolPreference } from '../../types/assistant.types'
 import type { RequestTool } from '../../types/llm/request'
 import type { McpTool } from '../../types/mcp.types'
 import type { LLMProviderApiType } from '../../types/provider.types'
-import {
-  JS_SANDBOX_TOOL_NAME,
-  buildJsSandboxDescription,
-} from '../mcp/jsSandboxTool'
+import { type JsSandboxSettings } from '../mcp/jsSandboxSettings'
+import { JS_SANDBOX_TOOL_NAME, getJsSandboxTool } from '../mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -148,30 +143,31 @@ export const buildRequestTools = (
 }
 
 /**
- * Rewrite tool descriptions that vary per-agent. Currently only `js_eval`,
- * whose description names the exact extension capabilities enabled for the
- * agent (network / vault read / $db / external scripts).
+ * Rewrite tools whose schema depends on global settings. Currently only
+ * `js_eval`, whose description and `timeoutMs` input bound both name the
+ * exact `settings.jsSandbox` values in effect (network / vault read / $db /
+ * external scripts + per-call timeout cap).
  *
- * The tool list from `listAvailableTools` is cached and agent-agnostic — this
- * is the single bridge that tailors it to one agent. Every consumer that
- * surfaces a tool description to the model OR estimates its token cost must
- * route through here, otherwise the shown/estimated description drifts from
- * what the request actually sends. When a second dynamic tool appears, give
- * each tool a self-declared resolver instead of growing `if` branches here.
+ * The tool list from `listAvailableTools` is cached and settings-agnostic —
+ * this is the single bridge that rebuilds the live tool spec. Every consumer
+ * that surfaces a tool description/schema to the model OR estimates its
+ * token cost must route through here, otherwise the shown/estimated surface
+ * drifts from what the request actually sends.
  */
 export function applyDynamicToolDescriptions(
   tools: McpTool[],
-  ctx: { jsSandboxConfig?: AssistantJsSandboxConfig | null },
+  ctx: { jsSandboxSettings: JsSandboxSettings },
 ): McpTool[] {
   const jsSandboxFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
-  return tools.map((tool) =>
-    tool.name === jsSandboxFqn
-      ? {
-          ...tool,
-          description: buildJsSandboxDescription(ctx.jsSandboxConfig),
-        }
-      : tool,
-  )
+  return tools.map((tool) => {
+    if (tool.name !== jsSandboxFqn) return tool
+    const live = getJsSandboxTool(ctx.jsSandboxSettings)
+    return {
+      ...tool,
+      description: live.description,
+      inputSchema: live.inputSchema,
+    }
+  })
 }
 
 export const selectAllowedTools = ({
@@ -182,7 +178,7 @@ export const selectAllowedTools = ({
   toolPreferences,
   apiType,
   enableToolDisclosure = true,
-  jsSandboxConfig,
+  jsSandboxSettings = {},
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
@@ -191,7 +187,7 @@ export const selectAllowedTools = ({
   toolPreferences?: Record<string, AssistantToolPreference>
   apiType?: LLMProviderApiType | null
   enableToolDisclosure?: boolean
-  jsSandboxConfig?: AssistantJsSandboxConfig | null
+  jsSandboxSettings?: JsSandboxSettings
 }): {
   filteredTools: McpTool[]
   hasTools: boolean
@@ -219,7 +215,7 @@ export const selectAllowedTools = ({
         allowedSkillNames: normalizedAllowedSkillNames,
       })
     }),
-    { jsSandboxConfig },
+    { jsSandboxSettings },
   )
   const assistantLike = {
     toolPreferences,

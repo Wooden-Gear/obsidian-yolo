@@ -921,7 +921,6 @@ export class AgentService {
           roundId: toolMessage.id,
           chatModelId: lastRunInput.model.id,
           workspaceScope: lastRunInput.workspaceScope,
-          jsSandboxConfig: this.resolveLatestJsSandboxConfig(lastRunInput),
         }),
       getResponseBody: (response) => response,
     })
@@ -951,7 +950,6 @@ export class AgentService {
         input: {
           ...lastRunInput,
           messages: nextMessages,
-          jsSandboxConfig: this.resolveLatestJsSandboxConfig(lastRunInput),
         },
       })
     }
@@ -1158,19 +1156,6 @@ export class AgentService {
         status: located.runEntry.runtime ? 'aborted' : undefined,
       }),
     )
-  }
-
-  private resolveLatestJsSandboxConfig(
-    input: AgentRuntimeRunInput,
-  ): AgentRuntimeRunInput['jsSandboxConfig'] {
-    const assistantId = input.assistantId
-    if (!assistantId) {
-      return input.jsSandboxConfig
-    }
-    const latestAssistant = this.options
-      .getSettings?.()
-      ?.assistants?.find((assistant) => assistant.id === assistantId)
-    return latestAssistant?.jsSandboxConfig ?? input.jsSandboxConfig
   }
 
   private findDebugTraceIdForToolCall(

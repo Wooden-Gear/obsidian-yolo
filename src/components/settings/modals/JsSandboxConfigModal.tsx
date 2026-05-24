@@ -12,6 +12,7 @@ import { App } from 'obsidian'
 import { type ReactNode, useMemo, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
+import type { JsSandboxSettings } from '../../../core/mcp/jsSandboxSettings'
 import {
   JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES,
   JS_SANDBOX_DEFAULT_TIMEOUT_MS,
@@ -23,7 +24,6 @@ import {
   JS_SANDBOX_VAULT_READ_HARD_MAX_KB,
   JS_SANDBOX_VAULT_READ_MIN_KB,
 } from '../../../core/mcp/jsSandboxTool'
-import { AssistantJsSandboxConfig } from '../../../types/assistant.types'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
@@ -32,8 +32,8 @@ import { ConfirmModal } from '../../modals/ConfirmModal'
 
 type JsSandboxConfigModalProps = {
   app: App
-  value?: AssistantJsSandboxConfig
-  onChange: (next: AssistantJsSandboxConfig) => void
+  value?: JsSandboxSettings
+  onChange: (next: JsSandboxSettings) => void
 }
 
 type CapKey =
@@ -47,8 +47,8 @@ export class JsSandboxConfigModal extends ReactModal<JsSandboxConfigModalProps> 
     app: App,
     options: {
       title: string
-      value?: AssistantJsSandboxConfig
-      onChange: (next: AssistantJsSandboxConfig) => void
+      value?: JsSandboxSettings
+      onChange: (next: JsSandboxSettings) => void
     },
   ) {
     super({
@@ -70,9 +70,9 @@ function JsSandboxConfigModalContent({
   onChange,
 }: JsSandboxConfigModalProps & { onClose: () => void }) {
   const { t } = useLanguage()
-  const [config, setConfig] = useState<AssistantJsSandboxConfig>(value ?? {})
+  const [config, setConfig] = useState<JsSandboxSettings>(value ?? {})
 
-  const update = (next: AssistantJsSandboxConfig) => {
+  const update = (next: JsSandboxSettings) => {
     setConfig(next)
     onChange(next)
   }
@@ -140,7 +140,7 @@ function JsSandboxConfigModalContent({
           <div className="yolo-js-exec-hero-desc">
             {t(
               'settings.agent.jsSandboxModalIntro',
-              'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval.',
+              'These settings apply to every agent that has js_eval enabled. Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Once any extension capability is on, every agent using js_eval will require approval per call.',
             )}
           </div>
         </div>

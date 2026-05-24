@@ -570,11 +570,8 @@ export const zh: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         '开启后，Agent 可以在 Obsidian 内加载并运行远程 JavaScript。这个能力很强也很危险；仅在你完全信任此 Agent 和代码来源时继续。是否继续？',
       jsSandboxConfirmEnableTitle: '开启扩展能力',
-      jsSandboxConfigEntryTitle: 'JavaScript 执行配置',
-      jsSandboxConfigEntryDesc:
-        '设置单次执行超时和扩展能力（网络、读取库文件、知识库查询、外部脚本）。',
       jsSandboxModalIntro:
-        '脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——仅开启该 Agent 真正需要的项。读取库文件和知识库查询不受 Agent 目录限制约束。每个开关都会弹出确认；只要任一扩展能力开启，就会强制审批。复杂任务需要较好的模型。',
+        '这些设置对所有启用 js_eval 的 Agent 全局生效。脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——只要任一扩展能力开启，所有使用 js_eval 的 Agent 都将强制审批。复杂任务建议搭配能力较强的模型。',
       jsExecModalSummaryTitle: '默认低权限运行',
       jsExecDefaultCapsHint:
         '这些信息只来自当前上下文和运行环境，不会打开文件、网络或整库查询权限。',
@@ -597,6 +594,9 @@ export const zh: TranslationKeys = {
         '单次读取的返回上限。文本超出会被截断并附带提示；较大的二进制文件会直接拒绝。范围 {min}–{max} KB。',
       jsSandboxDbMaxLimit: '单次查询最大行数',
       jsSandboxDbMaxLimitDesc: '知识库查询单次返回行数的上限。范围 1–100。',
+    },
+    jsSandbox: {
+      openSettings: '配置 JavaScript 执行',
     },
     webSearch: {
       modalTitle: '联网搜索设置',

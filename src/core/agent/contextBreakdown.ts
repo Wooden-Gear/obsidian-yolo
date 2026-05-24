@@ -1,7 +1,4 @@
-import type {
-  AssistantJsSandboxConfig,
-  AssistantToolPreference,
-} from '../../types/assistant.types'
+import type { AssistantToolPreference } from '../../types/assistant.types'
 import type {
   ChatConversationCompactionLike,
   ChatMessage,
@@ -140,7 +137,6 @@ export const estimateContextBreakdown = async ({
   allowedSkillIds,
   allowedSkillNames,
   contextualInjections,
-  jsSandboxConfig,
 }: {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
@@ -157,12 +153,6 @@ export const estimateContextBreakdown = async ({
   allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]
-  // Required to keep the popover's tools-bucket estimate in sync with the
-  // real request: js_eval's description is rewritten per-agent in
-  // selectAllowedTools based on which extension capabilities are on, and
-  // omitting this here makes the popover under-report tokens when an
-  // agent has caps enabled.
-  jsSandboxConfig?: AssistantJsSandboxConfig | null
 }): Promise<ContextBreakdown> => {
   const availableTools = enableTools
     ? await mcpManager.listAvailableTools({
@@ -178,7 +168,7 @@ export const estimateContextBreakdown = async ({
     toolPreferences,
     apiType,
     enableToolDisclosure,
-    jsSandboxConfig,
+    jsSandboxSettings: mcpManager.getJsSandboxSettings(),
   })
 
   const sections = await requestContextBuilder.generateRequestSections({

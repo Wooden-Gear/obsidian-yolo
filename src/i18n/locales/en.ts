@@ -618,11 +618,8 @@ export const en: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         'Enabling external scripts lets the agent load and run remote JavaScript inside Obsidian. This is powerful and risky: only continue if you fully trust this agent and the code source.',
       jsSandboxConfirmEnableTitle: 'Enable extension capability',
-      jsSandboxConfigEntryTitle: 'JavaScript Execution Configuration',
-      jsSandboxConfigEntryDesc:
-        'Set per-run timeout and extension capabilities (network, vault read, knowledge base query, external scripts).',
       jsSandboxModalIntro:
-        'Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Vault read and knowledge base query are not constrained by the agent directory scope. Turn on only what this agent needs. Each capability asks for confirmation, and any enabled capability forces approval. Complex tasks need a capable model.',
+        'These settings apply to every agent that has js_eval enabled. Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Once any extension capability is on, every agent using js_eval will require approval per call. Complex tasks need a capable model.',
       jsExecModalSummaryTitle: 'Default low access',
       jsExecDefaultCapsHint:
         'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
@@ -648,6 +645,9 @@ export const en: TranslationKeys = {
       jsSandboxDbMaxLimit: 'Max rows per query',
       jsSandboxDbMaxLimitDesc:
         'Upper bound on knowledge base results returned per query. Range 1–100.',
+    },
+    jsSandbox: {
+      openSettings: 'Configure JavaScript execution',
     },
     webSearch: {
       modalTitle: 'Web search settings',
