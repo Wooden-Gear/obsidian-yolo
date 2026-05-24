@@ -471,8 +471,7 @@ export const en: TranslationKeys = {
       builtinWebOpsLabel: 'Web Search Toolset',
       builtinWebOpsDesc: 'Web search and page scraping',
       builtinJsEvalLabel: 'JavaScript Execution',
-      builtinJsEvalDesc:
-        'Run JavaScript in an isolated environment to handle tasks LLMs are unreliable at. May pose risk',
+      builtinJsEvalDesc: 'Run JavaScript in an isolated environment.',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
         'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',
@@ -588,11 +587,6 @@ export const en: TranslationKeys = {
       autoContextCompactionThresholdRatioPercentDesc:
         "Trigger when prompt_tokens divided by the chat model's max context window reaches this percentage. Requires max context tokens on the model.",
       jsSandboxExtTitle: 'Extension capabilities',
-      jsSandboxExtWarning:
-        'These capabilities grant scripts privileged host access. Each carries real risk — only enable what this agent specifically needs. Vault read and knowledge base query are not constrained by the agent directory scope. All are disabled by default.',
-      jsSandboxExtDefaultCapsTitle: 'Always available',
-      jsSandboxExtDefaultCaps:
-        'current time & timezone, locale, platform / browser info, hardware concurrency, standard JavaScript APIs, current note content, selection, links, tags, and helper utilities. File, network, vault-wide and external-script access require enabling a capability below.',
       jsSandboxAllowFetch: 'Allow Network Fetch',
       jsSandboxAllowFetchDesc:
         'Allow browser network requests, plus a separate $fetch helper for requests that need YOLO to bypass cross-origin limits.',
@@ -618,20 +612,6 @@ export const en: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         'Enabling external scripts lets the agent load and run remote JavaScript inside Obsidian. This is powerful and risky: only continue if you fully trust this agent and the code source.',
       jsSandboxConfirmEnableTitle: 'Enable extension capability',
-      jsSandboxModalIntro:
-        'These settings apply to every agent that has js_eval enabled. Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Once any extension capability is on, every agent using js_eval will require approval per call. Complex tasks need a capable model.',
-      jsExecModalSummaryTitle: 'Default low access',
-      jsExecDefaultCapsHint:
-        'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
-      jsExecDefaultCurrentNote: 'Current note',
-      jsExecDefaultCurrentNoteDesc:
-        'Text, selection, links and tags from the note already in context.',
-      jsExecDefaultEnvironment: 'Environment',
-      jsExecDefaultEnvironmentDesc:
-        'Time zone, locale, platform, browser, and CPU concurrency.',
-      jsExecDefaultJs: 'JavaScript basics',
-      jsExecDefaultJsDesc:
-        'Standard JavaScript APIs such as Math, JSON, Promise and Intl, plus small helper utilities.',
       jsExecApprovalForced: 'Forced approval when enabled',
       jsSandboxTimeoutMs: 'Execution timeout (ms)',
       jsSandboxTimeoutMsDesc:

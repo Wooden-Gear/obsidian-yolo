@@ -441,9 +441,6 @@ export type TranslationKeys = {
       autoContextCompactionThresholdRatioPercent?: string
       autoContextCompactionThresholdRatioPercentDesc?: string
       jsSandboxExtTitle?: string
-      jsSandboxExtWarning?: string
-      jsSandboxExtDefaultCapsTitle?: string
-      jsSandboxExtDefaultCaps?: string
       jsSandboxAllowFetch?: string
       jsSandboxAllowFetchDesc?: string
       jsSandboxAllowFetchRisk?: string
@@ -465,15 +462,6 @@ export type TranslationKeys = {
       jsSandboxAllowExternalScriptsRisk?: string
       jsSandboxAllowExternalScriptsConfirm?: string
       jsSandboxConfirmEnableTitle?: string
-      jsSandboxModalIntro?: string
-      jsExecModalSummaryTitle?: string
-      jsExecDefaultCapsHint?: string
-      jsExecDefaultCurrentNote?: string
-      jsExecDefaultCurrentNoteDesc?: string
-      jsExecDefaultEnvironment?: string
-      jsExecDefaultEnvironmentDesc?: string
-      jsExecDefaultJs?: string
-      jsExecDefaultJsDesc?: string
       jsExecApprovalForced?: string
       jsSandboxTimeoutMs?: string
       jsSandboxTimeoutMsDesc?: string

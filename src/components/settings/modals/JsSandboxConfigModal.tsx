@@ -3,13 +3,11 @@ import {
   FileCode2,
   FolderOpen,
   Globe2,
-  Info,
-  ShieldCheck,
   Timer,
   TriangleAlert,
 } from 'lucide-react'
 import { App } from 'obsidian'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
 import type { JsSandboxSettings } from '../../../core/mcp/jsSandboxSettings'
@@ -100,185 +98,14 @@ function JsSandboxConfigModalContent({
     }).open()
   }
 
-  const defaultAccessItems = useMemo(
-    () => [
-      {
-        title: t('settings.agent.jsExecDefaultCurrentNote', 'Current note'),
-        desc: t(
-          'settings.agent.jsExecDefaultCurrentNoteDesc',
-          'Text, selection, links and tags from the note already in context.',
-        ),
-      },
-      {
-        title: t('settings.agent.jsExecDefaultEnvironment', 'Environment'),
-        desc: t(
-          'settings.agent.jsExecDefaultEnvironmentDesc',
-          'Time zone, locale, platform, browser, and CPU concurrency.',
-        ),
-      },
-      {
-        title: t('settings.agent.jsExecDefaultJs', 'JavaScript basics'),
-        desc: t(
-          'settings.agent.jsExecDefaultJsDesc',
-          'Standard JavaScript APIs such as Math, JSON, Promise and Intl, plus small helper utilities.',
-        ),
-      },
-    ],
-    [t],
-  )
-
   return (
     <div className="yolo-js-exec-config">
-      <section className="yolo-js-exec-hero">
-        <div className="yolo-js-exec-hero-icon" aria-hidden="true">
-          <ShieldCheck size={20} />
-        </div>
-        <div>
-          <div className="yolo-js-exec-hero-title">
-            {t('settings.agent.jsExecModalSummaryTitle', 'Default low access')}
-          </div>
-          <div className="yolo-js-exec-hero-desc">
-            {t(
-              'settings.agent.jsSandboxModalIntro',
-              'These settings apply to every agent that has js_eval enabled. Scripts run in an isolated iframe with no network or file access by default. The capabilities below grant extra host access. Once any extension capability is on, every agent using js_eval will require approval per call.',
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="yolo-js-exec-section">
-        <div className="yolo-js-exec-section-head">
-          <div>
-            <h3>
-              {t(
-                'settings.agent.jsSandboxExtDefaultCapsTitle',
-                'Always available',
-              )}
-            </h3>
-            <p>
-              {t(
-                'settings.agent.jsExecDefaultCapsHint',
-                'These are limited to the current context and runtime. They do not grant file, network or vault-wide access.',
-              )}
-            </p>
-          </div>
-        </div>
-        <div className="yolo-js-exec-default-grid">
-          {defaultAccessItems.map((item) => (
-            <div className="yolo-js-exec-default-card" key={item.title}>
-              <div className="yolo-js-exec-default-card-title">
-                <Info size={14} />
-                <span>{item.title}</span>
-              </div>
-              <div className="yolo-js-exec-default-card-desc">{item.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="yolo-js-exec-section">
-        <ObsidianSetting
-          className="yolo-js-exec-setting yolo-js-exec-timeout"
-          name={t(
-            'settings.agent.jsSandboxTimeoutMs',
-            'Execution timeout (ms)',
-          )}
-          nameExtra={
-            <span className="yolo-js-exec-setting-icon" aria-hidden="true">
-              <Timer size={14} />
-            </span>
-          }
-          desc={t(
-            'settings.agent.jsSandboxTimeoutMsDesc',
-            'Maximum runtime for a single script call. Range {min}–{max}.',
-          )
-            .replace('{min}', String(JS_SANDBOX_MIN_TIMEOUT_MS))
-            .replace('{max}', String(JS_SANDBOX_HARD_MAX_TIMEOUT_MS))}
-        >
-          <ObsidianTextInput
-            type="number"
-            value={
-              typeof config.timeoutMs === 'number' &&
-              Number.isFinite(config.timeoutMs)
-                ? String(config.timeoutMs)
-                : ''
-            }
-            placeholder={String(JS_SANDBOX_DEFAULT_TIMEOUT_MS)}
-            onChange={(raw) => {
-              const parsed = Number.parseInt(raw, 10)
-              if (!Number.isFinite(parsed) || parsed <= 0) {
-                update({ ...config, timeoutMs: undefined })
-                return
-              }
-              const clamped = Math.min(
-                JS_SANDBOX_HARD_MAX_TIMEOUT_MS,
-                Math.max(JS_SANDBOX_MIN_TIMEOUT_MS, parsed),
-              )
-              update({ ...config, timeoutMs: clamped })
-            }}
-          />
-        </ObsidianSetting>
-        <ObsidianSetting
-          className="yolo-js-exec-setting yolo-js-exec-timeout"
-          name={t(
-            'settings.agent.jsSandboxOutputMaxKb',
-            'Max tool result size (KB)',
-          )}
-          desc={t(
-            'settings.agent.jsSandboxOutputMaxKbDesc',
-            'Upper bound on the JSON result returned to the model. Larger output is truncated to a prefix. Oversized responses consume model context tokens and can exceed the context window, driving up cost. Range {min}–{max} KB.',
-          )
-            .replace(
-              '{min}',
-              String(
-                Math.max(1, Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024)),
-              ),
-            )
-            .replace(
-              '{max}',
-              String(Math.floor(JS_SANDBOX_HARD_MAX_OUTPUT_BYTES / 1024)),
-            )}
-        >
-          <ObsidianTextInput
-            type="number"
-            value={String(config.outputMaxKb ?? '')}
-            placeholder={String(
-              Math.floor(JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES / 1024),
-            )}
-            onChange={(raw) => {
-              const parsed = Number.parseInt(raw, 10)
-              if (!Number.isFinite(parsed) || parsed <= 0) {
-                update({ ...config, outputMaxKb: undefined })
-                return
-              }
-              const hardMaxKb = Math.floor(
-                JS_SANDBOX_HARD_MAX_OUTPUT_BYTES / 1024,
-              )
-              const minKb = Math.max(
-                1,
-                Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024),
-              )
-              update({
-                ...config,
-                outputMaxKb: Math.min(hardMaxKb, Math.max(minKb, parsed)),
-              })
-            }}
-          />
-        </ObsidianSetting>
-      </section>
-
       <section className="yolo-js-exec-section">
         <div className="yolo-js-exec-section-head">
           <div>
             <h3>
               {t('settings.agent.jsSandboxExtTitle', 'Extension capabilities')}
             </h3>
-            <p>
-              {t(
-                'settings.agent.jsSandboxExtWarning',
-                'These capabilities grant scripts privileged host access. Each carries real risk. Vault read and knowledge base query are not constrained by the agent directory scope. All are disabled by default.',
-              )}
-            </p>
           </div>
           <span className="yolo-js-exec-risk-pill">
             <TriangleAlert size={13} />
@@ -457,6 +284,97 @@ function JsSandboxConfigModalContent({
             }
           />
         </div>
+      </section>
+
+      <section className="yolo-js-exec-section">
+        <ObsidianSetting
+          className="yolo-js-exec-setting yolo-js-exec-timeout"
+          name={t(
+            'settings.agent.jsSandboxTimeoutMs',
+            'Execution timeout (ms)',
+          )}
+          nameExtra={
+            <span className="yolo-js-exec-setting-icon" aria-hidden="true">
+              <Timer size={14} />
+            </span>
+          }
+          desc={t(
+            'settings.agent.jsSandboxTimeoutMsDesc',
+            'Maximum runtime for a single script call. Range {min}–{max}.',
+          )
+            .replace('{min}', String(JS_SANDBOX_MIN_TIMEOUT_MS))
+            .replace('{max}', String(JS_SANDBOX_HARD_MAX_TIMEOUT_MS))}
+        >
+          <ObsidianTextInput
+            type="number"
+            value={
+              typeof config.timeoutMs === 'number' &&
+              Number.isFinite(config.timeoutMs)
+                ? String(config.timeoutMs)
+                : ''
+            }
+            placeholder={String(JS_SANDBOX_DEFAULT_TIMEOUT_MS)}
+            onChange={(raw) => {
+              const parsed = Number.parseInt(raw, 10)
+              if (!Number.isFinite(parsed) || parsed <= 0) {
+                update({ ...config, timeoutMs: undefined })
+                return
+              }
+              const clamped = Math.min(
+                JS_SANDBOX_HARD_MAX_TIMEOUT_MS,
+                Math.max(JS_SANDBOX_MIN_TIMEOUT_MS, parsed),
+              )
+              update({ ...config, timeoutMs: clamped })
+            }}
+          />
+        </ObsidianSetting>
+        <ObsidianSetting
+          className="yolo-js-exec-setting yolo-js-exec-timeout"
+          name={t(
+            'settings.agent.jsSandboxOutputMaxKb',
+            'Max tool result size (KB)',
+          )}
+          desc={t(
+            'settings.agent.jsSandboxOutputMaxKbDesc',
+            'Upper bound on the JSON result returned to the model. Larger output is truncated to a prefix. Oversized responses consume model context tokens and can exceed the context window, driving up cost. Range {min}–{max} KB.',
+          )
+            .replace(
+              '{min}',
+              String(
+                Math.max(1, Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024)),
+              ),
+            )
+            .replace(
+              '{max}',
+              String(Math.floor(JS_SANDBOX_HARD_MAX_OUTPUT_BYTES / 1024)),
+            )}
+        >
+          <ObsidianTextInput
+            type="number"
+            value={String(config.outputMaxKb ?? '')}
+            placeholder={String(
+              Math.floor(JS_SANDBOX_DEFAULT_OUTPUT_MAX_BYTES / 1024),
+            )}
+            onChange={(raw) => {
+              const parsed = Number.parseInt(raw, 10)
+              if (!Number.isFinite(parsed) || parsed <= 0) {
+                update({ ...config, outputMaxKb: undefined })
+                return
+              }
+              const hardMaxKb = Math.floor(
+                JS_SANDBOX_HARD_MAX_OUTPUT_BYTES / 1024,
+              )
+              const minKb = Math.max(
+                1,
+                Math.floor(JS_SANDBOX_MIN_OUTPUT_BYTES / 1024),
+              )
+              update({
+                ...config,
+                outputMaxKb: Math.min(hardMaxKb, Math.max(minKb, parsed)),
+              })
+            }}
+          />
+        </ObsidianSetting>
       </section>
     </div>
   )

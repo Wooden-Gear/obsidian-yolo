@@ -126,8 +126,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelKey: 'settings.agent.builtinJsEvalLabel',
     descKey: 'settings.agent.builtinJsEvalDesc',
     labelFallback: 'JavaScript Execution',
-    descFallback:
-      'Run JavaScript in an isolated environment to handle tasks LLMs are unreliable at. May pose risk',
+    descFallback: 'Run JavaScript in an isolated environment.',
   },
   delegate_external_agent: {
     labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',

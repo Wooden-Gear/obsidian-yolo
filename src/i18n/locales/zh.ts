@@ -411,32 +411,30 @@ export const zh: TranslationKeys = {
       builtinMemoryOpsLabel: '记忆工具集',
       builtinMemoryOpsDesc: '新增、更新、删除记忆',
       builtinMemoryAddLabel: '新增记忆',
-      builtinMemoryAddDesc: '向全局或助手记忆新增一条内容，并自动分配编号。',
+      builtinMemoryAddDesc: '向全局或助手记忆新增一条内容，并自动分配编号',
       builtinMemoryUpdateLabel: '更新记忆',
-      builtinMemoryUpdateDesc: '根据编号更新已有记忆内容。',
+      builtinMemoryUpdateDesc: '根据编号更新已有记忆内容',
       builtinMemoryDeleteLabel: '删除记忆',
-      builtinMemoryDeleteDesc: '根据编号删除已有记忆内容。',
+      builtinMemoryDeleteDesc: '根据编号删除已有记忆内容',
       builtinOpenSkillLabel: '加载技能',
       builtinOpenSkillDesc: '加载技能 Markdown',
       builtinWebSearchLabel: '联网搜索',
       builtinWebSearchDesc:
-        '通过配置的搜索服务进行网页搜索，返回带摘要的结果列表。',
+        '通过配置的搜索服务进行网页搜索，返回带摘要的结果列表',
       builtinWebScrapeLabel: '抓取网页',
-      builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文。',
+      builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文',
       builtinWebOpsLabel: '联网搜索工具集',
       builtinWebOpsDesc: '网页搜索与正文抓取',
       builtinJsEvalLabel: 'JavaScript 执行',
-      builtinJsEvalDesc:
-        '在隔离环境中执行 JavaScript 代码，处理 LLM 不擅长的任务。可能存在风险',
+      builtinJsEvalDesc: '在隔离环境中执行 JavaScript 代码',
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
       builtinDelegateExternalAgentDesc:
-        '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）。',
+        '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）',
       builtinTodoWriteLabel: '任务清单',
       builtinTodoWriteDesc:
-        '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）。',
+        '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）',
       builtinAskUserQuestionLabel: '向用户提问',
-      builtinAskUserQuestionDesc:
-        '在缺少必要信息时向用户提问，等待回答后继续。',
+      builtinAskUserQuestionDesc: '在缺少必要信息时向用户提问，等待回答后继续',
       editorDefaultName: '新建 Agent',
       editorIntro: '配置此 Agent 的能力、模型与行为。',
       editorTabProfile: '资料',
@@ -540,11 +538,6 @@ export const zh: TranslationKeys = {
       autoContextCompactionThresholdRatioPercentDesc:
         '当 prompt_tokens 除以当前聊天模型配置的最大上下文窗口达到该比例时触发（需在模型中填写 max context）。',
       jsSandboxExtTitle: '扩展能力',
-      jsSandboxExtWarning:
-        '以下能力授予脚本宿主级别的访问权限，每项均存在真实风险，请仅开启该 Agent 确实需要的能力。读取库文件和知识库查询不受 Agent 目录限制约束。所有能力默认关闭。',
-      jsSandboxExtDefaultCapsTitle: '默认可访问',
-      jsSandboxExtDefaultCaps:
-        '当前时间与时区、语言环境、平台/浏览器信息、硬件并发数、标准 JavaScript API、当前笔记内容、选区、链接、标签以及辅助工具。文件、网络、整个库或外部脚本访问需在下方开启相应扩展能力。',
       jsSandboxAllowFetch: '允许网络请求',
       jsSandboxAllowFetchDesc:
         '允许脚本发起浏览器网络请求；遇到浏览器跨域限制时，可使用单独的 $fetch 宿主请求。',
@@ -570,19 +563,6 @@ export const zh: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         '开启后，Agent 可以在 Obsidian 内加载并运行远程 JavaScript。这个能力很强也很危险；仅在你完全信任此 Agent 和代码来源时继续。是否继续？',
       jsSandboxConfirmEnableTitle: '开启扩展能力',
-      jsSandboxModalIntro:
-        '这些设置对所有启用 js_eval 的 Agent 全局生效。脚本默认在隔离 iframe 中执行，无网络、无文件访问。下方扩展能力会赋予额外的宿主访问权限——只要任一扩展能力开启，所有使用 js_eval 的 Agent 都将强制审批。复杂任务建议搭配能力较强的模型。',
-      jsExecModalSummaryTitle: '默认低权限运行',
-      jsExecDefaultCapsHint:
-        '这些信息只来自当前上下文和运行环境，不会打开文件、网络或整库查询权限。',
-      jsExecDefaultCurrentNote: '当前笔记',
-      jsExecDefaultCurrentNoteDesc:
-        '原本就会提供给模型的正文、选区、链接和标签等信息。',
-      jsExecDefaultEnvironment: '运行环境',
-      jsExecDefaultEnvironmentDesc: '时区、语言、平台、浏览器和 CPU 并发数。',
-      jsExecDefaultJs: 'JavaScript 基础能力',
-      jsExecDefaultJsDesc:
-        'Math、JSON、Promise、Intl 等标准能力，以及少量辅助工具。',
       jsExecApprovalForced: '启用后强制审批',
       jsSandboxTimeoutMs: '执行超时（毫秒）',
       jsSandboxTimeoutMsDesc: '单次脚本调用的最大运行时间。范围 {min}–{max}。',

@@ -1774,51 +1774,6 @@ button.yolo-agent-chip--more:hover {
   gap: var(--size-4-4);
 }
 
-.yolo-js-exec-hero {
-  display: flex;
-  gap: var(--size-4-3);
-  align-items: flex-start;
-  padding: var(--size-4-4);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  background: var(--background-secondary);
-}
-
-.yolo-js-exec-hero-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  color: var(--text-accent);
-  background: color-mix(
-    in srgb,
-    var(--interactive-accent) 13%,
-    var(--background-primary)
-  );
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--interactive-accent) 22%,
-      var(--background-modifier-border)
-    );
-}
-
-.yolo-js-exec-hero-title {
-  font-size: var(--font-ui-medium);
-  font-weight: var(--font-semibold);
-  color: var(--text-normal);
-  margin-bottom: var(--size-2-1);
-}
-
-.yolo-js-exec-hero-desc {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  line-height: 1.55;
-}
-
 .yolo-js-exec-section {
   display: flex;
   flex-direction: column;
@@ -1837,48 +1792,6 @@ button.yolo-agent-chip--more:hover {
   color: var(--text-normal);
   font-size: var(--font-ui-large);
   line-height: 1.3;
-}
-
-.yolo-js-exec-section-head p {
-  margin: var(--size-2-1) 0 0;
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  line-height: 1.5;
-}
-
-.yolo-js-exec-default-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--size-4-2);
-}
-
-.yolo-js-exec-default-card {
-  min-width: 0;
-  padding: var(--size-4-3);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  background: var(--background-primary);
-}
-
-.yolo-js-exec-default-card-title {
-  display: flex;
-  align-items: center;
-  gap: var(--size-2-2);
-  color: var(--text-normal);
-  font-size: var(--font-ui-small);
-  font-weight: var(--font-medium);
-  margin-bottom: var(--size-2-2);
-}
-
-.yolo-js-exec-default-card-title svg {
-  flex: 0 0 auto;
-  color: var(--text-accent);
-}
-
-.yolo-js-exec-default-card-desc {
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
-  line-height: 1.45;
 }
 
 .yolo-js-exec-setting.setting-item,
@@ -2100,10 +2013,6 @@ button.yolo-agent-chip--more:hover {
 @media (max-width: 720px) {
   .yolo-js-exec-modal {
     width: calc(100vw - 16px);
-  }
-
-  .yolo-js-exec-default-grid {
-    grid-template-columns: 1fr;
   }
 
   .yolo-js-exec-section-head {
