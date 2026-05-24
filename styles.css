@@ -4685,8 +4685,12 @@ button.yolo-assistant-selector-footer-btn:hover {
 .yolo-settings-tabs-content {
   flex: 1;
   overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding-right: var(--size-4-6);
+  /* `both-edges` reserves a phantom gutter on the left too, so the
+     usable card area stays centered to the container even when the
+     scrollbar is visible. Without this, the right-side gutter shifts
+     the cards left and they no longer align with the centered tabs nav. */
+  scrollbar-gutter: stable both-edges;
+  padding-inline: var(--size-4-6);
   box-sizing: border-box;
   padding-bottom: var(--size-4-4);
   width: 100%;
