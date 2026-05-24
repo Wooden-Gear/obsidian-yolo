@@ -1028,6 +1028,10 @@ postToParent({ type: 'ready' })
 
 export function getJsSandboxTool(settings?: JsSandboxSettings | null): McpTool {
   const effectiveTimeoutCap = clampAgentTimeoutCap(settings?.timeoutMs)
+  const effectiveTimeoutDefault = Math.min(
+    JS_SANDBOX_DEFAULT_TIMEOUT_MS,
+    effectiveTimeoutCap,
+  )
   return {
     name: JS_SANDBOX_TOOL_NAME,
     description: buildJsSandboxToolDescription(settings ?? {}),
@@ -1036,12 +1040,11 @@ export function getJsSandboxTool(settings?: JsSandboxSettings | null): McpTool {
       properties: {
         code: {
           type: 'string',
-          description:
-            'JavaScript code to execute. Single expression → auto-returned as JSON. Multi-statement code MUST use explicit `return <expr>` on the final value, otherwise the tool returns null.',
+          description: 'JavaScript code to execute.',
         },
         timeoutMs: {
           type: 'number',
-          description: `Optional per-call timeout in milliseconds (default ${JS_SANDBOX_DEFAULT_TIMEOUT_MS}, max ${effectiveTimeoutCap}). Raise for long-running probes; values above the max are silently clamped.`,
+          description: `Optional per-call timeout in milliseconds (default ${effectiveTimeoutDefault}, max ${effectiveTimeoutCap}). Raise for long-running probes; values above the max are silently clamped.`,
         },
       },
       required: ['code'],
