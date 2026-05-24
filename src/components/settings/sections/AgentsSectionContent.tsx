@@ -15,11 +15,13 @@ import { useSettings } from '../../../contexts/settings-context'
 import {
   BUILTIN_TOOL_CATEGORY_I18N,
   BUILTIN_TOOL_CATEGORY_ORDER,
+  type BuiltinToolCategory,
   FILE_OPS_GROUP_TOOL_NAME,
   MEMORY_OPS_GROUP_TOOL_NAME,
   WEB_OPS_GROUP_TOOL_NAME,
   WEB_OPS_SPLIT_ACTION_TOOL_NAMES,
   getBuiltinToolCategory,
+  getBuiltinToolDisplayIndex,
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
 import {
@@ -808,7 +810,22 @@ export function AgentsSectionContent({
         if (rb !== undefined) return 1
         return a.localeCompare(b)
       })
-      .map(([key, value]) => ({ key, ...value }))
+      .map(([key, value]) => {
+        const builtinCategory = key.startsWith('__builtin:')
+          ? (key.slice('__builtin:'.length) as BuiltinToolCategory)
+          : null
+        const tools = builtinCategory
+          ? value.tools.slice().sort((toolA, toolB) => {
+              const idA = parseToolName(toolA.fullName).toolName
+              const idB = parseToolName(toolB.fullName).toolName
+              return (
+                getBuiltinToolDisplayIndex(builtinCategory, idA) -
+                getBuiltinToolDisplayIndex(builtinCategory, idB)
+              )
+            })
+          : value.tools
+        return { key, ...value, tools }
+      })
   }, [
     availableTools,
     draftAgent?.includeBuiltinTools,

@@ -190,6 +190,28 @@ export const getBuiltinToolCategory = (
   return BUILTIN_TOOL_CATEGORY_MAP[toolName] ?? null
 }
 
+// Explicit display order within each category. Tools not listed here fall
+// back to the natural order from tool registration. Used by the agent tools
+// modal so the UI stays stable when registration order changes.
+const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
+  vault: [],
+  context: [],
+  external: [
+    'open_skill',
+    WEB_OPS_GROUP_TOOL_NAME,
+    'js_eval',
+    'delegate_external_agent',
+  ],
+}
+
+export const getBuiltinToolDisplayIndex = (
+  category: BuiltinToolCategory,
+  toolName: string,
+): number => {
+  const idx = BUILTIN_TOOL_DISPLAY_ORDER[category].indexOf(toolName)
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx
+}
+
 export const BUILTIN_TOOL_CATEGORY_I18N: Record<
   BuiltinToolCategory,
   { key: string; fallback: string }

@@ -16,6 +16,7 @@ import {
   WEB_OPS_GROUP_TOOL_NAME,
   WEB_OPS_SPLIT_ACTION_TOOL_NAMES,
   getBuiltinToolCategory,
+  getBuiltinToolDisplayIndex,
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
@@ -180,7 +181,12 @@ function AgentToolsModalContent({
         BUILTIN_TOOL_CATEGORY_I18N[category].key,
         BUILTIN_TOOL_CATEGORY_I18N[category].fallback,
       ),
-      tools: byCategory.get(category) ?? [],
+      tools: (byCategory.get(category) ?? []).slice().sort((a, b) => {
+        return (
+          getBuiltinToolDisplayIndex(category, a.id) -
+          getBuiltinToolDisplayIndex(category, b.id)
+        )
+      }),
     })).filter((group) => group.tools.length > 0)
   }, [settings.mcp.builtinToolOptions, settings.mcp.enableToolDisclosure, t])
 
