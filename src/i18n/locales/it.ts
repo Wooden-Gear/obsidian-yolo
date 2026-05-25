@@ -263,6 +263,9 @@ export const it: TranslationKeys = {
       duplicate: 'Duplica',
       copySuffix: '(copia)',
       dragHandleAria: 'Trascina per riordinare',
+      fixedActionHint: 'Azione predefinita',
+      hideFixedAction: 'Nascondi in Cursor Chat',
+      showFixedAction: 'Mostra in Cursor Chat',
     },
     chatPreferences: {
       title: 'Preferenze chat',

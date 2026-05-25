@@ -232,6 +232,9 @@ export const zh: TranslationKeys = {
       duplicate: '复制',
       copySuffix: '（副本）',
       dragHandleAria: '拖拽排序',
+      fixedActionHint: '内置指令',
+      hideFixedAction: '在 Cursor Chat 中隐藏',
+      showFixedAction: '在 Cursor Chat 中显示',
     },
     chatPreferences: {
       title: '聊天偏好',

@@ -1167,6 +1167,9 @@ export type TranslationKeys = {
       duplicate: string
       copySuffix?: string
       dragHandleAria?: string
+      fixedActionHint?: string
+      hideFixedAction?: string
+      showFixedAction?: string
     }
   }
 
