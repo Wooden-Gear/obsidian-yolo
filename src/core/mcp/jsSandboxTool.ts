@@ -83,7 +83,6 @@ export type JsSandboxProxyHandlers = {
     method: 'search' | 'find' | 'get',
     params: Record<string, unknown>,
   ) => Promise<unknown>
-  externalScript?: (url: string) => Promise<string>
 }
 
 type JsSandboxCaps = {
@@ -467,7 +466,13 @@ const SANDBOX_UTILS = createSandboxUtils()
 function disableAmbientCapabilities(allowScripts, allowFetch) {
   // allowScripts is the "full power" switch: once the model can pull in and
   // execute arbitrary remote code, any extra restriction we keep is theatre.
-  // Skip the lockdown entirely so imported scripts can use standard idioms.
+  // Skip the lockdown entirely — every ambient capability stays unlocked
+  // (fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon,
+  // importScripts, Worker, SharedWorker, indexedDB, caches), because real
+  // libraries depend on them. This pairs with skipping
+  // freezeBuiltinPrototypes() below: external-script mode is the explicit
+  // high-risk compatibility tradeoff, not partial isolation. The host
+  // already forces approval for any agent that enables this flag.
   if (allowScripts) {
     return
   }
@@ -597,10 +602,7 @@ function buildScope(rawVars) {
       find: (keyword, limit) => proxyCall('db_query', { method: 'find', keyword, limit }),
       get: (path) => proxyCall('db_query', { method: 'get', path })
     } : undefined,
-    $fetch: hostFetchAllowed ? hostFetch : undefined,
-    $loadScript: caps.allowExternalScripts
-      ? (url) => proxyCall('external_script', { url })
-      : undefined
+    $fetch: hostFetchAllowed ? hostFetch : undefined
   }
   // Network fetch: when network or external scripts are allowed, do NOT
   // shadow the global so user code resolves to browser-native fetch. When
@@ -822,6 +824,9 @@ function errorPayload(error) {
 // (e.g. Object.prototype.toJSON = () => 'fake') cannot corrupt serializeResult
 // or fool the host/LLM with falsified output. Only built-in prototypes are
 // frozen — user-defined classes and own properties remain fully mutable.
+// External script mode deliberately skips this: many UMD/browser libraries
+// patch prototypes during startup, and enabling that mode is already the
+// explicit high-risk compatibility tradeoff.
 function freezeBuiltinPrototypes() {
   const protos = [
     Object.prototype,
@@ -866,11 +871,25 @@ self.addEventListener('message', async (event) => {
 
   const caps = (data.vars && data.vars._caps) || {}
   if (!lockdownApplied) {
+    const allowExternalScripts = Boolean(caps.allowExternalScripts)
     disableAmbientCapabilities(
-      Boolean(caps.allowExternalScripts),
+      allowExternalScripts,
       Boolean(caps.allowFetch),
     )
-    freezeBuiltinPrototypes()
+    if (!allowExternalScripts) {
+      freezeBuiltinPrototypes()
+    } else {
+      // UMD/browser bundles probe typeof window !== "undefined" to decide
+      // where to attach exports. In a classic Worker, window is absent, so
+      // the probe fails and the bundle silently drops its exports — caller
+      // code then sees a ReferenceError when reaching for e.g. Algebrite.
+      // Aliasing window to self lets the probe succeed without exposing
+      // any new capability (self.fetch / self.document etc. are unchanged).
+      // Libraries that actually touch DOM still fail, but with a precise
+      // TypeError on window.document.* instead of an opaque importScripts
+      // load error.
+      self.window = self
+    }
     lockdownApplied = true
   }
 
@@ -1671,22 +1690,6 @@ class JsSandboxRunner {
         const method = payload.method as 'search' | 'find' | 'get'
         const result = await handlers.dbQuery(method, payload)
         this.sendProxyResponse(reqId, proxyId, result)
-        return
-      }
-
-      if (cap === 'external_script') {
-        if (!handlers?.externalScript) {
-          this.sendProxyResponse(
-            reqId,
-            proxyId,
-            undefined,
-            'external scripts are not enabled',
-          )
-          return
-        }
-        const url = typeof payload.url === 'string' ? payload.url : ''
-        const scriptText = await handlers.externalScript(url)
-        this.sendProxyResponse(reqId, proxyId, scriptText)
         return
       }
 

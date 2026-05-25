@@ -4855,15 +4855,5 @@ function buildJsSandboxProxyHandlers(
     }
   }
 
-  if (config.allowExternalScripts) {
-    handlers.externalScript = async (url: string) => {
-      const response = await requestUrl({ url, throw: false })
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(`failed to fetch script: ${response.status}`)
-      }
-      return response.text
-    }
-  }
-
   return handlers
 }
