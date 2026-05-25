@@ -17996,12 +17996,15 @@ body.yolo-quick-ask-global-interaction * {
 
 .yolo-selection-menu-content {
   background: var(--background-primary);
+  /* border 借一丝 accent 与浮标 (.yolo-selection-indicator) 呼应；shadow ring
+     保持中性灰，避免主题色叠加成"双层高亮" */
   border: 1px solid
-    color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+    color-mix(in srgb, var(--interactive-accent) 18%, transparent);
   border-radius: var(--radius-m);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--interactive-accent) 8%, transparent),
-    0 8px 24px rgba(0, 0, 0, 0.15);
+    0 6px 18px rgba(0, 0, 0, 0.12),
+    0 0 0 1px
+      color-mix(in srgb, var(--background-modifier-border) 35%, transparent);
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -18031,16 +18034,8 @@ body.yolo-quick-ask-global-interaction * {
 .yolo-selection-menu-item:hover,
 .yolo-selection-menu-item:focus,
 .yolo-selection-menu-item:focus-visible {
-  background: color-mix(
-    in srgb,
-    var(--background-modifier-hover) 40%,
-    transparent
-  ) !important;
-  border-color: color-mix(
-    in srgb,
-    var(--interactive-accent) 55%,
-    transparent
-  ) !important;
+  background: var(--background-modifier-hover) !important;
+  border-color: transparent !important;
   outline: none;
 }
 
