@@ -28,7 +28,11 @@ describe('createQuickAskEditorState', () => {
     const editorState = createQuickAskEditorState({
       prompt: '解释',
       mentionables: [selectionMentionable],
-      mentionableUnitLabel: '字符',
+      mentionableUnitLabels: {
+        characters: '字符',
+        words: '词',
+        wordsCharacters: '词/字',
+      },
     })
 
     const paragraph = editorState.root.children[0] as unknown as {

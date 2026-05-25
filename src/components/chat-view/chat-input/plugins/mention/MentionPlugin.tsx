@@ -485,8 +485,12 @@ export default function NewMentionsPlugin({
   // 'right' = 默认右侧；'left' = 空间不够时翻到左侧；'hidden' = 两侧都不够，不渲染。
   const [subSide, setSubSide] = useState<'right' | 'left' | 'hidden'>('right')
   const { t } = useLanguage()
-  const mentionableUnitLabel = useMemo(
-    () => t('common.characters', 'chars'),
+  const mentionableUnitLabels = useMemo(
+    () => ({
+      characters: t('common.characters', 'chars'),
+      words: t('common.words', 'words'),
+      wordsCharacters: t('common.wordsCharacters', 'words/chars'),
+    }),
     [t],
   )
 
@@ -940,7 +944,7 @@ export default function NewMentionsPlugin({
 
           const mentionNode = $createMentionNode(
             getMentionableName(currentFileMentionable, {
-              unitLabel: mentionableUnitLabel,
+              unitLabels: mentionableUnitLabels,
               currentFileLabel: t(
                 'chat.mentionMenu.entryCurrentFile',
                 '当前文件',
@@ -1015,7 +1019,7 @@ export default function NewMentionsPlugin({
 
       const mentionNode = $createMentionNode(
         getMentionableName(selectedOption.payload.mentionable, {
-          unitLabel: mentionableUnitLabel,
+          unitLabels: mentionableUnitLabels,
         }),
         serializeMentionable(selectedOption.payload.mentionable),
       )
@@ -1033,7 +1037,7 @@ export default function NewMentionsPlugin({
       animateMenuContent,
       app,
       mentionDisplayMode,
-      mentionableUnitLabel,
+      mentionableUnitLabels,
       onSelectAssistant,
       onSelectChatMode,
       onSelectMentionable,

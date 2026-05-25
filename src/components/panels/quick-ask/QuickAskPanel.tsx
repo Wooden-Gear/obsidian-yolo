@@ -269,8 +269,12 @@ export function QuickAskPanel({
   const hasDockedRef = useRef(false)
   const enableAutoDock =
     settings.continuationOptions.quickAskAutoDockToTopRight ?? true
-  const mentionableUnitLabel = useMemo(
-    () => t('common.characters', 'chars'),
+  const mentionableUnitLabels = useMemo(
+    () => ({
+      characters: t('common.characters', 'chars'),
+      words: t('common.words', 'words'),
+      wordsCharacters: t('common.wordsCharacters', 'words/chars'),
+    }),
     [t],
   )
   const [mode, setMode] = useState<QuickAskMode>(() =>
@@ -1360,7 +1364,7 @@ export function QuickAskPanel({
       const editorState = createQuickAskEditorState({
         prompt: initialInput ?? '',
         mentionables: initialMentionables ?? [],
-        mentionableUnitLabel,
+        mentionableUnitLabels,
       })
       editor.setEditorState(editor.parseEditorState(editorState))
       // setEditorState 会重置选区并让 contentEditable 失焦，这里把焦点/光标拿回来
@@ -1371,7 +1375,7 @@ export function QuickAskPanel({
     return () => {
       cancelled = true
     }
-  }, [autoSend, initialInput, initialMentionables, mentionableUnitLabel])
+  }, [autoSend, initialInput, initialMentionables, mentionableUnitLabels])
 
   // Submit edit mode - generate a text edit plan and open ApplyView
   const submitEditMode = useCallback(
@@ -1658,7 +1662,7 @@ export function QuickAskPanel({
       const editorState = createQuickAskEditorState({
         prompt,
         mentionables: mentionablesToInsert,
-        mentionableUnitLabel,
+        mentionableUnitLabels,
       })
       editor.setEditorState(editor.parseEditorState(editorState))
       void submitMessage(editorState, mentionablesToInsert)
@@ -1672,7 +1676,7 @@ export function QuickAskPanel({
     autoSend,
     initialMentionables,
     initialPrompt,
-    mentionableUnitLabel,
+    mentionableUnitLabels,
     executionMode,
     submitEditDirect,
     submitEditMode,
