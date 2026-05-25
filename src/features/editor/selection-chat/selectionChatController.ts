@@ -762,6 +762,12 @@ export class SelectionChatController {
     pdfPageContextPromise: Promise<PdfPageContextResult | null>,
     assistantId?: string,
   ): Promise<void> {
+    // undefined = "follow current selection" → use the sidebar's active assistant
+    const resolvedAssistantId =
+      assistantId !== undefined
+        ? assistantId
+        : this.getSettings().currentAssistantId
+
     // rewrite is filtered out at the menu level — this branch is unreachable
     if (mode === 'rewrite') {
       return
@@ -803,7 +809,7 @@ export class SelectionChatController {
       await this.openChatWithSelectionAndPrefill(
         pinned,
         instruction.trim(),
-        assistantId,
+        resolvedAssistantId,
       )
       return
     }
@@ -812,7 +818,7 @@ export class SelectionChatController {
       await this.openChatWithSelectionAndSend(
         buildPinnedBlock(),
         instruction.trim(),
-        assistantId,
+        resolvedAssistantId,
       )
       return
     }
@@ -842,7 +848,7 @@ export class SelectionChatController {
       file: pdfData.file,
       pageNumber: pdfData.pageNumber,
       contextText,
-      initialAssistantId: assistantId,
+      initialAssistantId: resolvedAssistantId,
       initialMentionables: [mentionable],
       initialPrompt: prompt || undefined,
       initialMode: 'chat',
