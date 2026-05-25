@@ -83,6 +83,7 @@ import { getChatSurfacePreset } from '../../chat-view/chat-surface-presets'
 import { SharedConversationSurface } from '../../chat-view/SharedConversationSurface'
 import { useAutoScroll } from '../../chat-view/useAutoScroll'
 import UserMessageItem from '../../chat-view/UserMessageItem'
+import { YoloDropdownContent } from '../../common/popover'
 
 import { AssistantSelectMenu } from './AssistantSelectMenu'
 import { ModeSelect, QuickAskMode } from './ModeSelect'
@@ -2338,37 +2339,36 @@ export function QuickAskPanel({
                 )}
               </button>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Portal
-              container={
-                assistantTriggerRef.current?.ownerDocument?.body ?? undefined
-              }
+            <YoloDropdownContent
+              anchorRef={assistantTriggerRef}
+              variant="smart-space"
+              minWidth={200}
+              maxWidth={300}
+              side="top"
+              align="start"
+              sideOffset={8}
+              collisionPadding={8}
+              avoidCollisions={false}
+              onCloseAutoFocus={(e) => e.preventDefault()}
             >
-              <DropdownMenu.Content
-                side="top"
-                align="start"
-                sideOffset={8}
-                className="yolo-quick-ask-assistant-dropdown"
-                onCloseAutoFocus={(e) => e.preventDefault()}
-              >
-                <AssistantSelectMenu
-                  assistants={assistants}
-                  currentAssistantId={selectedAssistant?.id}
-                  onSelect={(assistant) => {
-                    setSelectedAssistant(assistant)
-                    void setSettings({
-                      ...settings,
-                      quickAskAssistantId: assistant?.id,
-                    })
-                    setIsAssistantMenuOpen(false)
-                    requestAnimationFrame(() => {
-                      contentEditableRef.current?.focus()
-                    })
-                  }}
-                  onClose={() => setIsAssistantMenuOpen(false)}
-                  compact
-                />
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
+              <AssistantSelectMenu
+                assistants={assistants}
+                currentAssistantId={selectedAssistant?.id}
+                onSelect={(assistant) => {
+                  setSelectedAssistant(assistant)
+                  void setSettings({
+                    ...settings,
+                    quickAskAssistantId: assistant?.id,
+                  })
+                  setIsAssistantMenuOpen(false)
+                  requestAnimationFrame(() => {
+                    contentEditableRef.current?.focus()
+                  })
+                }}
+                onClose={() => setIsAssistantMenuOpen(false)}
+                compact
+              />
+            </YoloDropdownContent>
           </DropdownMenu.Root>
 
           <div className="yolo-quick-ask-model-select yolo-smart-space-model-select">
