@@ -17,7 +17,6 @@ import type { CSSProperties } from 'react'
 import { flushSync } from 'react-dom'
 import { v4 as uuidv4 } from 'uuid'
 
-import { DEFAULT_UNTITLED_CONVERSATION_TITLE } from '../../constants'
 import { useApp } from '../../contexts/app-context'
 import { useLanguage } from '../../contexts/language-context'
 import { useMcp } from '../../contexts/mcp-context'
@@ -37,7 +36,10 @@ import { readEditReviewSnapshot } from '../../database/json/chat/editReviewSnaps
 import type { ChatLeafPlacement } from '../../features/chat/chatLeafSessionManager'
 import { selectionHighlightController } from '../../features/editor/selection-highlight/selectionHighlightController'
 import { useChatHighlightSession } from '../../features/editor/selection-highlight/useChatHighlightSession'
-import { useChatHistory } from '../../hooks/useChatHistory'
+import {
+  getConversationDisplayTitle,
+  useChatHistory,
+} from '../../hooks/useChatHistory'
 import { useChatManager } from '../../hooks/useJsonManagers'
 import type { ApplyViewState } from '../../types/apply-view.types'
 import type {
@@ -614,16 +616,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null)
   const [currentConversationId, setCurrentConversationId] =
     useState<string>(uuidv4())
+  const untitledFallback = t('chat.untitledConversation', 'New chat')
   const currentConversationTitle = useMemo(() => {
-    if (!currentConversationId) {
-      return DEFAULT_UNTITLED_CONVERSATION_TITLE
-    }
-
-    return (
-      chatList.find((conversation) => conversation.id === currentConversationId)
-        ?.title ?? DEFAULT_UNTITLED_CONVERSATION_TITLE
-    )
-  }, [chatList, currentConversationId])
+    const rawTitle = currentConversationId
+      ? chatList.find(
+          (conversation) => conversation.id === currentConversationId,
+        )?.title
+      : undefined
+    return getConversationDisplayTitle(rawTitle, untitledFallback)
+  }, [chatList, currentConversationId, untitledFallback])
   const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(
     initialReasoningLevel,
   )
@@ -2412,9 +2413,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         return
       }
 
-      const sourceTitle =
-        chatList.find((chat) => chat.id === currentConversationId)?.title ??
-        t('chat.newChat', 'New chat')
+      const sourceTitle = getConversationDisplayTitle(
+        chatList.find((chat) => chat.id === currentConversationId)?.title,
+        t('chat.untitledConversation', 'New chat'),
+      )
       const branchTitle = `${sourceTitle} (copy)`
 
       const newConversationId = uuidv4()

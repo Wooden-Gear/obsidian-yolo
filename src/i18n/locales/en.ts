@@ -1444,6 +1444,7 @@ export const en: TranslationKeys = {
     },
     sendMessage: 'Send message',
     newChat: 'New chat',
+    untitledConversation: 'New chat',
     continueResponse: 'Continue response',
     stopGeneration: 'Stop generation',
     queueMessage: {

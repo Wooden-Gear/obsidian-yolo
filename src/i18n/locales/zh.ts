@@ -1355,6 +1355,7 @@ export const zh: TranslationKeys = {
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',
+    untitledConversation: '新对话',
     continueResponse: '继续生成',
     stopGeneration: '停止生成',
     queueMessage: {

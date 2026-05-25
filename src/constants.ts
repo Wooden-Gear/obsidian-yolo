@@ -11,7 +11,10 @@ import {
 } from './types/provider.types'
 
 export const CHAT_VIEW_TYPE = 'yolo-chat-view'
-export const DEFAULT_UNTITLED_CONVERSATION_TITLE = '新对话'
+// Empty-string sentinel; display layer localizes via getConversationDisplayTitle.
+export const DEFAULT_UNTITLED_CONVERSATION_TITLE = ''
+// Historical defaults persisted in user data — kept so auto-naming still overwrites them.
+export const LEGACY_UNTITLED_CONVERSATION_TITLES = ['新消息', '新对话'] as const
 
 // Default model ids (with provider prefix)
 export const DEFAULT_CHAT_MODEL_ID = 'openai/gpt-5'

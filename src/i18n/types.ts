@@ -1228,6 +1228,7 @@ export type TranslationKeys = {
     }
     sendMessage: string
     newChat: string
+    untitledConversation?: string
     continueResponse?: string
     stopGeneration?: string
     queueMessage?: {
