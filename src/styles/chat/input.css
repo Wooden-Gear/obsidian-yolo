@@ -1051,6 +1051,12 @@
   gap: var(--size-2-2);
 }
 
+.yolo-checkbox-container.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* 优先参考目录样式优化 */
 .yolo-composer-hint {
   margin-top: var(--size-4-3);

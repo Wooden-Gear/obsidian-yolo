@@ -543,7 +543,7 @@ export const zh: TranslationKeys = {
       jsSandboxExtTitle: '扩展能力',
       jsSandboxAllowFetch: '允许网络请求',
       jsSandboxAllowFetchDesc:
-        '允许脚本发起浏览器网络请求；遇到浏览器跨域限制时，可使用单独的 $fetch 宿主请求。',
+        '允许脚本发起浏览器网络请求；遇到浏览器跨域限制时，可使用单独的 $fetch 宿主请求。开启外部脚本时会自动启用此能力。',
       jsSandboxAllowFetchRisk:
         '风险：脚本可访问浏览器能到达的任何 URL —— 公开 API、你的本地网络、内网服务，乃至 LLM 服务本身。脚本中持有的任何数据（包括你传进来的 vault 内容）都可能被外发。仅在你完全信任此 Agent 时开启。',
       jsSandboxAllowFetchConfirm:

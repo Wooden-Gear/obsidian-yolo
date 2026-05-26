@@ -592,7 +592,7 @@ export const en: TranslationKeys = {
       jsSandboxExtTitle: 'Extension capabilities',
       jsSandboxAllowFetch: 'Allow Network Fetch',
       jsSandboxAllowFetchDesc:
-        'Allow browser network requests, plus a separate $fetch helper for requests that need YOLO to bypass cross-origin limits.',
+        'Allow browser network requests, plus a separate $fetch helper for requests that need YOLO to bypass cross-origin limits. Also enabled automatically when external scripts are enabled.',
       jsSandboxAllowFetchRisk:
         'Risk: scripts can reach any URL the browser can — public APIs, your local network, internal services, and the LLM provider itself. Data in the script (including vault contents you pass in) can be exfiltrated. Only enable for agents you fully trust.',
       jsSandboxAllowFetchConfirm:
