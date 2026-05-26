@@ -15,6 +15,7 @@ import {
 import { ToolCallRequest } from '../../types/tool-call.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
+import { formatErrorMessageWithCauses } from '../../utils/error-message'
 import { executeSingleTurn } from '../ai/single-turn'
 import { BaseLLMProvider } from '../llm/base'
 import {
@@ -241,9 +242,7 @@ export class AgentLlmTurnExecutor {
         (error instanceof Error && error.name === 'AbortError')
       const errorMessage = isAborted
         ? undefined
-        : error instanceof Error
-          ? error.message
-          : String(error ?? 'Unknown error')
+        : formatErrorMessageWithCauses(error)
 
       assistantMessage.metadata = {
         ...assistantMessage.metadata,

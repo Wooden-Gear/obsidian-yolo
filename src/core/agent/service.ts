@@ -15,6 +15,7 @@ import {
   ToolCallResponseStatus,
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
+import { formatErrorMessageWithCauses } from '../../utils/error-message'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 
 import { DEFAULT_BRANCH_ID } from './branch'
@@ -1307,10 +1308,7 @@ export class AgentService {
         ...currentRunEntry.state,
         status: aborted ? 'aborted' : 'error',
         pendingCompactionAnchorMessageId: null,
-        errorMessage:
-          aborted || !(error instanceof Error)
-            ? undefined
-            : (error.message ?? 'Unknown error'),
+        errorMessage: aborted ? undefined : formatErrorMessageWithCauses(error),
       }
       this.recomputeConversationState(conversationId)
       if (!aborted) {
