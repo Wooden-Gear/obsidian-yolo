@@ -8,6 +8,7 @@ import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
+  getLoadToolSchemasTool,
   getLocalFileToolServerName,
 } from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
@@ -202,19 +203,15 @@ export const selectAllowedTools = ({
     ? new Set(allowedSkillNames.map((name) => name.toLowerCase()))
     : undefined
 
-  const filteredTools = applyDynamicToolDescriptions(
-    availableTools.filter((tool) => {
-      if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
-        return false
-      }
-
-      return isToolAllowed({
+  const baseFiltered = applyDynamicToolDescriptions(
+    availableTools.filter((tool) =>
+      isToolAllowed({
         toolName: tool.name,
         allowedToolNames: normalizedAllowedToolNames,
         allowedSkillIds: normalizedAllowedSkillIds,
         allowedSkillNames: normalizedAllowedSkillNames,
-      })
-    }),
+      }),
+    ),
     { jsSandboxSettings },
   )
   const assistantLike = {
@@ -223,6 +220,34 @@ export const selectAllowedTools = ({
       ? [...normalizedAllowedToolNames]
       : undefined,
   }
+
+  // Per-tool disclosure decisions for the filtered (non-loader) tools.
+  // Computed up front so the loader injection can ask "does any surviving
+  // tool actually need on-demand disclosure?" before adding itself.
+  const disclosureModes = new Map<string, 'always' | 'on_demand'>()
+  for (const tool of baseFiltered) {
+    disclosureModes.set(
+      tool.name,
+      getAssistantToolDisclosureMode(assistantLike, tool.name, {
+        enableToolDisclosure,
+      }),
+    )
+  }
+
+  // Inject the protocol-level loader tool only when the on-demand disclosure
+  // mechanism is globally enabled AND at least one surviving tool would be
+  // sent as a stub. Without this guard the loader bloats every request prefix
+  // even for agents that don't need it; with a stub present but no loader,
+  // the model would have no way to reach the real schema (deadlock).
+  const loaderFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME}`
+  const hasOnDemand = [...disclosureModes.values()].some(
+    (mode) => mode === 'on_demand',
+  )
+  const shouldInjectLoader = enableToolDisclosure && hasOnDemand
+  const filteredTools: McpTool[] = shouldInjectLoader
+    ? [getLoadToolSchemasToolFqn(), ...baseFiltered]
+    : baseFiltered
+
   // All allowed tools — including on-demand stubs — are registered in the
   // request's `tools` field for the entire conversation so the prompt-cache
   // prefix stays frozen. On-demand tools start as stubs (name + short
@@ -230,11 +255,10 @@ export const selectAllowedTools = ({
   // schema has been disclosed via load_tool_schemas: schemas now ride the messages
   // stream (tool_result + compaction registry) instead of the tools field.
   const requestToolDefinitions: McpTool[] = filteredTools.map((tool) => {
-    const disclosureMode = isLoadToolSchemasToolName(tool.name)
-      ? 'always'
-      : getAssistantToolDisclosureMode(assistantLike, tool.name, {
-          enableToolDisclosure,
-        })
+    if (tool.name === loaderFqn) {
+      return tool
+    }
+    const disclosureMode = disclosureModes.get(tool.name) ?? 'always'
     if (disclosureMode === 'on_demand') {
       return buildToolStub(tool, apiType)
     }
@@ -248,5 +272,13 @@ export const selectAllowedTools = ({
       isMemoryToolAvailable(tool.name),
     ),
     requestTools: buildRequestTools(requestToolDefinitions),
+  }
+}
+
+function getLoadToolSchemasToolFqn(): McpTool {
+  const tool = getLoadToolSchemasTool()
+  return {
+    ...tool,
+    name: `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${tool.name}`,
   }
 }

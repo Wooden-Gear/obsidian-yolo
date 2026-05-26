@@ -10,10 +10,17 @@ const JS_SANDBOX_FQN = 'yolo_local__js_eval'
 
 describe('tool-preferences defaults', () => {
   describe('getDefaultEnabledForTool', () => {
-    it('returns true for built-in tools not in the deny-list', () => {
+    it('returns true for user-facing built-in tools not in the deny-list', () => {
       expect(getDefaultEnabledForTool('yolo_local__fs_read')).toBe(true)
+      expect(getDefaultEnabledForTool('yolo_local__fs_edit')).toBe(true)
+    })
+
+    it('returns false for the protocol-only schema loader', () => {
+      // load_tool_schemas is no longer user-configurable; it's injected by
+      // the runtime when on-demand disclosure is active. Treat it as never
+      // a default for per-agent preferences.
       expect(getDefaultEnabledForTool('yolo_local__load_tool_schemas')).toBe(
-        true,
+        false,
       )
     })
 
@@ -48,10 +55,13 @@ describe('tool-preferences defaults', () => {
   })
 
   describe('isAssistantToolEnabled', () => {
-    it('falls back to defaults for tools with no explicit preference', () => {
+    it('treats missing entries as disabled (single source of truth)', () => {
+      // toolPreferences is now the only signal — the v60→v61 migration is
+      // responsible for materializing every default-on built-in into the
+      // map, so reads do not silently fill in.
       const assistant = { toolPreferences: {}, enabledToolNames: [] }
       expect(isAssistantToolEnabled(assistant, 'yolo_local__fs_read')).toBe(
-        true,
+        false,
       )
       expect(
         isAssistantToolEnabled(assistant, 'yolo_local__context_compact'),
@@ -61,7 +71,7 @@ describe('tool-preferences defaults', () => {
       )
     })
 
-    it('explicit preferences override defaults', () => {
+    it('explicit preferences are honored', () => {
       expect(
         isAssistantToolEnabled(
           {
@@ -107,69 +117,46 @@ describe('tool-preferences defaults', () => {
       )
     })
 
-    it('handles null / undefined assistant', () => {
-      expect(isAssistantToolEnabled(null, 'yolo_local__fs_read')).toBe(true)
+    it('handles null / undefined assistant as disabled', () => {
+      expect(isAssistantToolEnabled(null, 'yolo_local__fs_read')).toBe(false)
       expect(isAssistantToolEnabled(undefined, 'yolo_local__fs_read')).toBe(
-        true,
-      )
-      expect(isAssistantToolEnabled(null, 'yolo_local__context_compact')).toBe(
         false,
       )
     })
   })
 
   describe('getEnabledAssistantToolNames', () => {
-    it('returns all default-on built-ins for a fresh assistant', () => {
-      const result = getEnabledAssistantToolNames({
-        toolPreferences: {},
-        enabledToolNames: [],
-      })
-      expect(result).toContain('yolo_local__fs_read')
-      expect(result).toContain('yolo_local__fs_edit')
-      expect(result).toContain('yolo_local__load_tool_schemas')
-      expect(result).not.toContain('yolo_local__context_prune_tool_results')
-      expect(result).not.toContain('yolo_local__context_compact')
-      expect(result).not.toContain('yolo_local__js_eval')
-    })
-
-    it('explicit disable removes a tool from the result', () => {
+    it('returns only tools with explicit enabled:true (no fill-in)', () => {
       const result = getEnabledAssistantToolNames({
         toolPreferences: {
+          yolo_local__fs_read: { enabled: true },
           yolo_local__fs_edit: { enabled: false },
         },
         enabledToolNames: [],
       })
-      expect(result).toContain('yolo_local__fs_read')
-      expect(result).not.toContain('yolo_local__fs_edit')
+      expect(result).toEqual(['yolo_local__fs_read'])
     })
 
-    it('explicit enable for a deny-listed tool brings it back', () => {
-      const result = getEnabledAssistantToolNames({
-        toolPreferences: {
-          yolo_local__context_compact: { enabled: true },
-        },
-        enabledToolNames: [],
-      })
-      expect(result).toContain('yolo_local__context_compact')
+    it('returns empty for a fresh assistant with no preferences', () => {
+      // The migration is responsible for seeding entries; reads do not
+      // invent enablement.
+      expect(
+        getEnabledAssistantToolNames({
+          toolPreferences: {},
+          enabledToolNames: [],
+        }),
+      ).toEqual([])
     })
 
-    it('includes explicitly-enabled third-party tools alongside defaults', () => {
+    it('legacy enabledToolNames is promoted via the preferences merge', () => {
       const result = getEnabledAssistantToolNames({
-        toolPreferences: {
-          Gemini__get_all_tabs: { enabled: true },
-          Gemini__close_tab: { enabled: false },
-        },
-        enabledToolNames: [],
+        toolPreferences: {},
+        enabledToolNames: ['Gemini__get_all_tabs'],
       })
       expect(result).toContain('Gemini__get_all_tabs')
-      expect(result).not.toContain('Gemini__close_tab')
-      expect(result).toContain('yolo_local__fs_read')
     })
 
-    it('excludes all built-in tools when includeBuiltinTools is false', () => {
-      // Finding 1: the helper feeds persistence + display badges. Honoring
-      // `includeBuiltinTools` keeps the saved snapshot and "N tools" count in
-      // sync with what the runtime will actually expose.
+    it('excludes built-in tools when includeBuiltinTools is false', () => {
       const result = getEnabledAssistantToolNames({
         toolPreferences: {
           yolo_local__fs_read: { enabled: true },
@@ -179,22 +166,7 @@ describe('tool-preferences defaults', () => {
         includeBuiltinTools: false,
       })
       expect(result).not.toContain('yolo_local__fs_read')
-      expect(result).not.toContain('yolo_local__fs_edit')
       expect(result).toContain('Gemini__get_all_tabs')
-    })
-
-    it('includes built-ins when includeBuiltinTools is true or undefined', () => {
-      const withFlag = getEnabledAssistantToolNames({
-        toolPreferences: {},
-        enabledToolNames: [],
-        includeBuiltinTools: true,
-      })
-      const withoutFlag = getEnabledAssistantToolNames({
-        toolPreferences: {},
-        enabledToolNames: [],
-      })
-      expect(withFlag).toContain('yolo_local__fs_read')
-      expect(withoutFlag).toContain('yolo_local__fs_read')
     })
   })
 

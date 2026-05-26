@@ -16,7 +16,6 @@ import {
 import { isDefaultAssistantId } from '../../../core/agent/default-assistant'
 import { getEnabledAssistantToolNames } from '../../../core/agent/tool-preferences'
 import {
-  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
   getLocalFileTools,
@@ -210,8 +209,6 @@ export function AgentSection({ app }: AgentSectionProps) {
     const tools = getLocalFileTools()
       .filter(
         (tool) =>
-          (settings.mcp.enableToolDisclosure ||
-            tool.name !== LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME) &&
           !SPLIT_FS_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_MEMORY_TOOL_NAME_SET.has(tool.name) &&
           !SPLIT_WEB_TOOL_NAME_SET.has(tool.name),
@@ -282,7 +279,7 @@ export function AgentSection({ app }: AgentSectionProps) {
     }
 
     return tools
-  }, [settings.mcp.builtinToolOptions, settings.mcp.enableToolDisclosure, t])
+  }, [settings.mcp.builtinToolOptions, t])
 
   const allSkillEntries = useMemo(
     () => listLiteSkillEntries(app, { settings }),

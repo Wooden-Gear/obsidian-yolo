@@ -162,6 +162,17 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'todo_write',
   'ask_user_question',
 ] as const
+
+/**
+ * Subset of {@link LOCAL_FILE_TOOL_SHORT_NAMES} that the user actually
+ * configures via the Agent settings panel. `load_tool_schemas` is a protocol
+ * tool — it exists for the on-demand disclosure mechanism, not as a user-
+ * facing capability — so it is excluded here. The runtime still dispatches and
+ * normalizes it through `LOCAL_FILE_TOOL_SHORT_NAMES`; it just isn't part of
+ * the per-agent tool preference surface.
+ */
+export const USER_FACING_LOCAL_TOOL_SHORT_NAMES: readonly string[] =
+  LOCAL_FILE_TOOL_SHORT_NAMES.filter((name) => name !== 'load_tool_schemas')
 type LocalFileToolName = (typeof LOCAL_FILE_TOOL_SHORT_NAMES)[number]
 type FsSearchScope = 'files' | 'dirs' | 'content' | 'all'
 type FsSearchMode = 'keyword' | 'rag' | 'hybrid'
@@ -482,6 +493,33 @@ const buildFsReadModalitySchema = (
   // Text-only model: no override is meaningful. Field is omitted from schema
   // entirely so the model has no decision to make.
   return undefined
+}
+
+/**
+ * Standalone tool definition for `load_tool_schemas`. Used by the runtime to
+ * inject the loader on demand (when `enableToolDisclosure=true` AND the
+ * filtered tool set contains any `on_demand` tool). Not surfaced through
+ * `getLocalFileTools()` to keep it out of the user-facing tool list.
+ */
+export function getLoadToolSchemasTool(): McpTool {
+  return {
+    name: LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
+    description:
+      'Load full schemas for all on-demand tools belonging to the given MCP servers, making them callable in the next turn. Pass MCP server names (the prefix before "__" in any stub tool name) — batch multiple servers when needed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        servers: {
+          type: 'array',
+          items: { type: 'string' },
+          minItems: 1,
+          description:
+            'MCP server names whose on-demand tools should be loaded (e.g. "context7", "deepwiki").',
+        },
+      },
+      required: ['servers'],
+    },
+  }
 }
 
 export function getLocalFileTools(options?: {
@@ -1149,24 +1187,6 @@ export function getLocalFileTools(options?: {
           },
         },
         required: ['provider', 'sandboxMode', 'prompt'],
-      },
-    },
-    {
-      name: LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
-      description:
-        'Load full schemas for all on-demand tools belonging to the given MCP servers, making them callable in the next turn. Pass MCP server names (the prefix before "__" in any stub tool name) — batch multiple servers when needed.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          servers: {
-            type: 'array',
-            items: { type: 'string' },
-            minItems: 1,
-            description:
-              'MCP server names whose on-demand tools should be loaded (e.g. "context7", "deepwiki").',
-          },
-        },
-        required: ['servers'],
       },
     },
     {

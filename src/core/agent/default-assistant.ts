@@ -3,6 +3,7 @@ import { Assistant } from '../../types/assistant.types'
 
 import {
   buildAssistantToolPreferencesFromEnabledToolNames,
+  buildDefaultBuiltinToolPreferences,
   getAssistantToolPreferences,
 } from './tool-preferences'
 
@@ -25,7 +26,7 @@ export const createDefaultAssistant = (fallbackModelId: string): Assistant => ({
   enableTools: true,
   includeBuiltinTools: true,
   enabledToolNames: [],
-  toolPreferences: {},
+  toolPreferences: buildDefaultBuiltinToolPreferences(),
   enabledSkills: [],
   skillPreferences: {},
   createdAt: Date.now(),

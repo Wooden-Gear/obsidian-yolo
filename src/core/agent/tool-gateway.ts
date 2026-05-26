@@ -947,8 +947,11 @@ export class AgentToolGateway {
     if (!this.toolsEnabled) {
       return false
     }
-    if (!this.enableToolDisclosure && isLoadToolSchemasToolName(toolName)) {
-      return false
+    if (isLoadToolSchemasToolName(toolName)) {
+      // Loader is a protocol-only tool injected by `selectAllowedTools` when
+      // disclosure is on. It is never in `toolPreferences` or
+      // `allowedToolNames`, so the user-tool gate below would reject it.
+      return this.enableToolDisclosure
     }
 
     if (this.isOpenSkillToolName(toolName)) {

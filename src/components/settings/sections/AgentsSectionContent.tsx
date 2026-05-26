@@ -27,23 +27,20 @@ import {
 import {
   getAssistantToolApprovalMode,
   getAssistantToolDisclosureMode,
+  buildDefaultBuiltinToolPreferences,
   getAssistantToolPreferences,
   getDefaultApprovalModeForTool,
   getEnabledAssistantToolNames,
   getExplicitlyEnabledAssistantToolNames,
   isAssistantToolEnabled,
 } from '../../../core/agent/tool-preferences'
-import {
-  applyDynamicToolDescriptions,
-  isLoadToolSchemasToolName,
-} from '../../../core/agent/tool-selection'
+import { applyDynamicToolDescriptions } from '../../../core/agent/tool-selection'
 import {
   getJsSandboxSettings,
   hasAnyJsSandboxCapEnabled,
 } from '../../../core/mcp/jsSandboxSettings'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
-  LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
   getLocalFileToolServerName,
@@ -279,7 +276,7 @@ function createNewAgent(defaultModelId: string): Assistant {
     enableTools: true,
     includeBuiltinTools: true,
     enabledToolNames: [],
-    toolPreferences: {},
+    toolPreferences: buildDefaultBuiltinToolPreferences(),
     enabledSkills: [],
     skillPreferences: {},
     createdAt: Date.now(),
@@ -686,13 +683,6 @@ export function AgentsSectionContent({
       }
 
       const isBuiltin = serverName === localFsServerName
-      if (
-        isBuiltin &&
-        !enableToolDisclosure &&
-        toolName === LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME
-      ) {
-        return
-      }
       if (isBuiltin && draftAgent?.includeBuiltinTools === false) {
         return
       }
@@ -829,7 +819,6 @@ export function AgentsSectionContent({
   }, [
     availableTools,
     draftAgent?.includeBuiltinTools,
-    enableToolDisclosure,
     localFsServerName,
     t,
   ])
@@ -899,9 +888,6 @@ export function AgentsSectionContent({
         serverName === localFsServerName &&
         draftAgent.includeBuiltinTools === false
       ) {
-        return false
-      }
-      if (!enableToolDisclosure && isLoadToolSchemasToolName(tool.name)) {
         return false
       }
       return isAssistantToolEnabled(draftAgent, tool.name)
