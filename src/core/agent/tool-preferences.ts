@@ -274,6 +274,119 @@ export const getExplicitlyEnabledAssistantToolNames = (
     .map(([toolName]) => toolName)
 }
 
+/**
+ * Drop every `toolPreferences` / `enabledToolNames` entry whose serverName is
+ * not in `knownServerNames`. Used to keep agent state in sync when an MCP
+ * server is deleted, and by the v61→v62 migration to clean historical orphans
+ * left behind by past deletes that didn't cascade.
+ *
+ * `knownServerNames` must include `yolo_local` and every entry currently in
+ * `settings.mcp.servers`. Anything else is considered an orphan: the FQN
+ * references a server the user can no longer see or configure, so the
+ * preference is dead weight that only bloats data.json and confuses UI counts.
+ */
+export const pruneOrphanedAssistantToolPreferences = <
+  T extends Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>,
+>(
+  assistant: T,
+  knownServerNames: ReadonlySet<string>,
+): T => {
+  const isKnown = (fqn: string): boolean => {
+    try {
+      return knownServerNames.has(parseToolName(fqn).serverName)
+    } catch {
+      return false
+    }
+  }
+
+  const prefs = assistant.toolPreferences
+  let nextPrefs = prefs
+  if (prefs && typeof prefs === 'object') {
+    const filtered: Record<string, AssistantToolPreference> = {}
+    let changed = false
+    for (const [fqn, value] of Object.entries(prefs)) {
+      if (isKnown(fqn)) {
+        filtered[fqn] = value
+      } else {
+        changed = true
+      }
+    }
+    if (changed) nextPrefs = filtered
+  }
+
+  const names = assistant.enabledToolNames
+  let nextNames = names
+  if (Array.isArray(names)) {
+    const filtered = names.filter(isKnown)
+    if (filtered.length !== names.length) nextNames = filtered
+  }
+
+  if (nextPrefs === prefs && nextNames === names) return assistant
+  return { ...assistant, toolPreferences: nextPrefs, enabledToolNames: nextNames }
+}
+
+/**
+ * Rewrite every `toolPreferences` / `enabledToolNames` entry whose serverName
+ * equals `oldServerName` so its FQN uses `newServerName` instead. Used when
+ * the user renames an MCP server in the edit modal — without this, the rename
+ * would orphan all per-tool preferences for that server and the next
+ * `pruneOrphanedAssistantToolPreferences` would silently drop them.
+ */
+export const renameAssistantToolPreferencesServer = <
+  T extends Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>,
+>(
+  assistant: T,
+  oldServerName: string,
+  newServerName: string,
+): T => {
+  if (oldServerName === newServerName) return assistant
+
+  const rewrite = (fqn: string): string => {
+    try {
+      const { serverName, toolName } = parseToolName(fqn)
+      if (serverName !== oldServerName) return fqn
+      return `${newServerName}${McpManager.TOOL_NAME_DELIMITER}${toolName}`
+    } catch {
+      return fqn
+    }
+  }
+
+  const prefs = assistant.toolPreferences
+  let nextPrefs = prefs
+  if (prefs && typeof prefs === 'object') {
+    const rebuilt: Record<string, AssistantToolPreference> = {}
+    let changed = false
+    for (const [fqn, value] of Object.entries(prefs)) {
+      const nextKey = rewrite(fqn)
+      if (nextKey !== fqn) changed = true
+      rebuilt[nextKey] = value
+    }
+    if (changed) nextPrefs = rebuilt
+  }
+
+  const names = assistant.enabledToolNames
+  let nextNames = names
+  if (Array.isArray(names)) {
+    let changed = false
+    const seen = new Set<string>()
+    const rebuilt: string[] = []
+    for (const name of names) {
+      const nextName = rewrite(name)
+      if (nextName !== name) changed = true
+      if (seen.has(nextName)) {
+        changed = true
+        continue
+      }
+      seen.add(nextName)
+      rebuilt.push(nextName)
+    }
+    if (changed) nextNames = rebuilt
+  }
+
+  if (nextPrefs === prefs && nextNames === names) return assistant
+  return { ...assistant, toolPreferences: nextPrefs, enabledToolNames: nextNames }
+}
+
 export const isAssistantToolEnabled = (
   assistant:
     | Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>

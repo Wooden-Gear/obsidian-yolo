@@ -4,6 +4,8 @@ import {
   getEnabledAssistantToolNames,
   getExplicitlyEnabledAssistantToolNames,
   isAssistantToolEnabled,
+  pruneOrphanedAssistantToolPreferences,
+  renameAssistantToolPreferencesServer,
 } from './tool-preferences'
 
 const JS_SANDBOX_FQN = 'yolo_local__js_eval'
@@ -251,6 +253,100 @@ describe('tool-preferences defaults', () => {
       })
       expect(result).toContain('yolo_local__fs_read')
       expect(result).toContain('Gemini__get_all_tabs')
+    })
+  })
+
+  describe('pruneOrphanedAssistantToolPreferences', () => {
+    it('drops keys whose server is not in the known set', () => {
+      const result = pruneOrphanedAssistantToolPreferences(
+        {
+          toolPreferences: {
+            yolo_local__fs_read: { enabled: true, approvalMode: 'full_access' as const },
+            Gemini__click: { enabled: true, approvalMode: 'require_approval' as const },
+            github__list: { enabled: true, approvalMode: 'require_approval' as const },
+          },
+          enabledToolNames: [
+            'yolo_local__fs_read',
+            'Gemini__click',
+            'github__list',
+          ],
+        },
+        new Set(['yolo_local', 'github']),
+      )
+      expect(Object.keys(result.toolPreferences ?? {})).toEqual([
+        'yolo_local__fs_read',
+        'github__list',
+      ])
+      expect(result.enabledToolNames).toEqual([
+        'yolo_local__fs_read',
+        'github__list',
+      ])
+    })
+
+    it('returns the same reference when nothing changes', () => {
+      const input = {
+        toolPreferences: {
+          yolo_local__fs_read: { enabled: true, approvalMode: 'full_access' as const },
+        },
+        enabledToolNames: ['yolo_local__fs_read'],
+      }
+      expect(
+        pruneOrphanedAssistantToolPreferences(input, new Set(['yolo_local'])),
+      ).toBe(input)
+    })
+  })
+
+  describe('renameAssistantToolPreferencesServer', () => {
+    it('rewrites prefixes in both toolPreferences and enabledToolNames', () => {
+      const result = renameAssistantToolPreferencesServer(
+        {
+          toolPreferences: {
+            old__a: { enabled: true, approvalMode: 'full_access' as const },
+            old__b: { enabled: false, approvalMode: 'require_approval' as const },
+            yolo_local__fs_read: {
+              enabled: true,
+              approvalMode: 'full_access',
+            },
+          },
+          enabledToolNames: ['old__a', 'yolo_local__fs_read'],
+        },
+        'old',
+        'new',
+      )
+      expect(result.toolPreferences).toEqual({
+        new__a: { enabled: true, approvalMode: 'full_access' as const },
+        new__b: { enabled: false, approvalMode: 'require_approval' as const },
+        yolo_local__fs_read: { enabled: true, approvalMode: 'full_access' as const },
+      })
+      expect(result.enabledToolNames).toEqual([
+        'new__a',
+        'yolo_local__fs_read',
+      ])
+    })
+
+    it('dedupes enabledToolNames when the rename collides with an existing entry', () => {
+      const result = renameAssistantToolPreferencesServer(
+        {
+          toolPreferences: {
+            old__a: { enabled: true, approvalMode: 'full_access' as const },
+            new__a: { enabled: false, approvalMode: 'full_access' as const },
+          },
+          enabledToolNames: ['old__a', 'new__a'],
+        },
+        'old',
+        'new',
+      )
+      expect(result.enabledToolNames).toEqual(['new__a'])
+    })
+
+    it('returns the same reference when oldName === newName', () => {
+      const input = {
+        toolPreferences: {
+          x__t: { enabled: true, approvalMode: 'full_access' as const },
+        },
+        enabledToolNames: ['x__t'],
+      }
+      expect(renameAssistantToolPreferencesServer(input, 'x', 'x')).toBe(input)
     })
   })
 })
