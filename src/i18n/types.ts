@@ -377,6 +377,8 @@ export type TranslationKeys = {
       editorChooseIcon?: string
       editorSystemPrompt?: string
       editorSystemPromptDesc?: string
+      editorSystemPromptExpand?: string
+      editorSystemPromptCollapse?: string
       editorEnableProjectInstructions?: string
       editorEnableProjectInstructionsDesc?: string
       editorEnableTools?: string

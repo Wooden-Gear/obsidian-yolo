@@ -1,4 +1,4 @@
-import { BookOpen, FolderOpen, User, Wrench } from 'lucide-react'
+import { BookOpen, FolderOpen, Maximize2, User, Wrench, X } from 'lucide-react'
 import { App, TFile } from 'obsidian'
 import {
   useCallback,
@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 import { useLanguage } from '../../../contexts/language-context'
 import { usePlugin } from '../../../contexts/plugin-context'
@@ -356,6 +357,22 @@ export function AgentsSectionContent({
     return toDraftAgent(initialAssistant, settings.chatModelId)
   })
   const [activeTab, setActiveTab] = useState<AgentEditorTab>('profile')
+  const [isSystemPromptExpanded, setIsSystemPromptExpanded] = useState(false)
+  const expandedPromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const systemPromptWrapperRef = useRef<HTMLDivElement | null>(null)
+  const [systemPromptOverlayTarget, setSystemPromptOverlayTarget] =
+    useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!isSystemPromptExpanded) {
+      setSystemPromptOverlayTarget(null)
+      return
+    }
+    const target =
+      systemPromptWrapperRef.current?.closest<HTMLElement>('.modal') ??
+      document.body
+    setSystemPromptOverlayTarget(target)
+  }, [isSystemPromptExpanded])
   const [availableTools, setAvailableTools] = useState<McpTool[]>([])
   const activeTabIndex = AGENT_EDITOR_TABS.findIndex((tab) => tab === activeTab)
   const activeTabIndexRef = useRef(activeTabIndex)
@@ -1270,17 +1287,102 @@ export function AgentsSectionContent({
                 )}
                 className="yolo-settings-textarea-header yolo-settings-desc-copyable"
               />
-              <ObsidianSetting className="yolo-settings-textarea">
-                <ObsidianTextArea
-                  value={draftAgent.systemPrompt}
-                  onChange={(value) =>
-                    setDraftAgent({ ...draftAgent, systemPrompt: value })
-                  }
-                  autoResize
-                  maxAutoResizeHeight={360}
-                  inputClassName="yolo-agent-system-prompt-textarea"
-                />
-              </ObsidianSetting>
+              <div
+                className="yolo-agent-system-prompt-wrapper"
+                ref={systemPromptWrapperRef}
+              >
+                <ObsidianSetting className="yolo-settings-textarea">
+                  <ObsidianTextArea
+                    value={draftAgent.systemPrompt}
+                    onChange={(value) =>
+                      setDraftAgent({ ...draftAgent, systemPrompt: value })
+                    }
+                    autoResize
+                    maxAutoResizeHeight={360}
+                    inputClassName="yolo-agent-system-prompt-textarea"
+                  />
+                </ObsidianSetting>
+                <button
+                  type="button"
+                  className="clickable-icon yolo-agent-system-prompt-expand-btn"
+                  aria-label={t(
+                    'settings.agent.editorSystemPromptExpand',
+                    'Expand editor',
+                  )}
+                  title={t(
+                    'settings.agent.editorSystemPromptExpand',
+                    'Expand editor',
+                  )}
+                  onClick={() => setIsSystemPromptExpanded(true)}
+                >
+                  <Maximize2 size={14} />
+                </button>
+              </div>
+              {isSystemPromptExpanded &&
+                systemPromptOverlayTarget &&
+                createPortal(
+                  <div
+                    className="yolo-agent-system-prompt-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) {
+                        setIsSystemPromptExpanded(false)
+                      }
+                    }}
+                  >
+                    <div className="yolo-agent-system-prompt-overlay-panel">
+                      <div className="yolo-agent-system-prompt-overlay-header">
+                        <div className="yolo-agent-system-prompt-overlay-title">
+                          {t(
+                            'settings.agent.editorSystemPrompt',
+                            'System prompt',
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="clickable-icon yolo-agent-system-prompt-overlay-close"
+                          aria-label={t(
+                            'settings.agent.editorSystemPromptCollapse',
+                            'Close editor',
+                          )}
+                          title={t(
+                            'settings.agent.editorSystemPromptCollapse',
+                            'Close editor',
+                          )}
+                          onClick={() => setIsSystemPromptExpanded(false)}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <div className="yolo-agent-system-prompt-overlay-desc">
+                        {t(
+                          'settings.agent.editorSystemPromptDesc',
+                          'Primary behavior instruction for this agent',
+                        )}
+                      </div>
+                      <textarea
+                        ref={expandedPromptTextareaRef}
+                        className="yolo-agent-system-prompt-overlay-textarea"
+                        value={draftAgent.systemPrompt}
+                        onChange={(e) =>
+                          setDraftAgent({
+                            ...draftAgent,
+                            systemPrompt: e.target.value,
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            e.preventDefault()
+                            setIsSystemPromptExpanded(false)
+                          }
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  </div>,
+                  systemPromptOverlayTarget,
+                )}
               <ObsidianSetting
                 name={t(
                   'settings.agent.editorEnableProjectInstructions',

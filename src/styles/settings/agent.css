@@ -1461,6 +1461,116 @@ button.yolo-agent-chip--more:hover {
   overflow-y: var(--yolo-textarea-auto-overflow-y, auto);
 }
 
+.yolo-agent-system-prompt-wrapper {
+  position: relative;
+}
+
+.yolo-agent-system-prompt-expand-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--text-muted);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.yolo-agent-system-prompt-expand-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  opacity: 1;
+}
+
+.yolo-agent-system-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: var(--background-modifier-cover, rgba(0, 0, 0, 0.45));
+}
+
+.yolo-agent-system-prompt-overlay-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 92vw);
+  height: min(92vh, 1080px);
+  padding: 20px;
+  gap: 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l, 8px);
+  box-shadow: var(--shadow-l, 0 10px 30px rgba(0, 0, 0, 0.25));
+}
+
+.yolo-agent-system-prompt-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.yolo-agent-system-prompt-overlay-title {
+  font-size: var(--font-ui-large);
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+}
+
+.yolo-agent-system-prompt-overlay-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--text-muted);
+  border-radius: var(--radius-s);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.yolo-agent-system-prompt-overlay-close:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.yolo-agent-system-prompt-overlay-desc {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.yolo-agent-system-prompt-overlay-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 12px;
+  font-family: var(--font-text);
+  font-size: var(--font-ui-medium);
+  line-height: 1.6;
+  color: var(--text-normal);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  resize: none;
+  outline: none;
+}
+
+.yolo-agent-system-prompt-overlay-textarea:focus,
+.yolo-agent-system-prompt-overlay-textarea:focus-visible {
+  border-color: var(--background-modifier-border);
+  box-shadow: none;
+  outline: none;
+}
+
 /* ================= Workspace scope editor ================= */
 
 .yolo-agent-workspace {
