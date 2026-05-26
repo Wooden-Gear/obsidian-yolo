@@ -17,7 +17,7 @@ import type { HighlightOwner } from './pdfSelectionHighlightController'
 type HighlightVariant = 'sync' | 'pinned'
 
 /** Visual style independent of the lifecycle variant. */
-type HighlightVisual = 'selection' | 'updated'
+type HighlightVisual = 'selection' | 'pending' | 'updated'
 
 type HighlightEntry = {
   view: EditorView
@@ -46,6 +46,7 @@ type EffectPayload = Array<{
 
 const CLASS_SELECTION = 'yolo-selection-persisted-layer'
 const CLASS_UPDATED = 'yolo-selection-persisted-layer-updated'
+const CLASS_PENDING = 'yolo-selection-persisted-layer-pending'
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CodeMirror state primitives
@@ -135,7 +136,9 @@ export class SelectionHighlightController {
             const className =
               entry.visual === 'updated'
                 ? `${CLASS_SELECTION} ${CLASS_UPDATED}`
-                : CLASS_SELECTION
+                : entry.visual === 'pending'
+                  ? `${CLASS_SELECTION} ${CLASS_PENDING}`
+                  : CLASS_SELECTION
 
             // Walk the range line-by-line so each line emits a text-tight
             // rectangle (single-line forRange == glyph-tight). Empty lines
@@ -256,6 +259,41 @@ export class SelectionHighlightController {
     })
 
     this._dispatchToView(view)
+  }
+
+  /**
+   * Remove every highlight matching `owner`, dispatching once per affected
+   * view. Synchronous teardown that does not depend on owners cleaning up
+   * their own id bookkeeping — useful when a feature surface (e.g. QuickAsk
+   * panel) wants to drop its highlights immediately on a transition, without
+   * waiting for the close-animation/controller-close chain.
+   */
+  clearByOwner(owner: HighlightOwner): void {
+    const affectedViews = new Set<EditorView>()
+    for (const [id, entry] of Array.from(this.entries)) {
+      if (entry.owner === owner) {
+        affectedViews.add(entry.view)
+        this._removeEntry(id, entry)
+      }
+    }
+    for (const view of affectedViews) this._dispatchToView(view)
+  }
+
+  /**
+   * Switch the visual style of every highlight matching `owner` without
+   * touching its range or lifecycle. Used to flip the QuickAsk-owned highlight
+   * into a "pending" shimmer while the LLM is streaming and back to plain
+   * selection when done.
+   */
+  updateVisualByOwner(owner: HighlightOwner, visual: HighlightVisual): void {
+    const affectedViews = new Set<EditorView>()
+    for (const entry of this.entries.values()) {
+      if (entry.owner === owner && entry.visual !== visual) {
+        entry.visual = visual
+        affectedViews.add(entry.view)
+      }
+    }
+    for (const view of affectedViews) this._dispatchToView(view)
   }
 
   clearById(id: string): void {

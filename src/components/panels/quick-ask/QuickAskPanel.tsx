@@ -42,6 +42,7 @@ import type {
   QuickAskSelectionScope,
 } from '../../../features/editor/quick-ask/quickAsk.types'
 import { QUICK_ASK_CURSOR_MARKER } from '../../../features/editor/quick-ask/quickAskController'
+import { selectionHighlightController } from '../../../features/editor/selection-highlight/selectionHighlightController'
 import { useChatHistory } from '../../../hooks/useChatHistory'
 import YoloPlugin from '../../../main'
 import type { ApplyViewState } from '../../../types/apply-view.types'
@@ -249,6 +250,19 @@ export function QuickAskPanel({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  // While the LLM is streaming, flip the QuickAsk-owned selection highlight
+  // into a "pending" shimmer so users get visible feedback that AI is working
+  // on the selected text. The highlight itself is created/cleared by
+  // QuickAskController; we only flip its visual state here.
+  useEffect(() => {
+    selectionHighlightController.updateVisualByOwner(
+      'quickask',
+      isStreaming ? 'pending' : 'selection',
+    )
+    return () => {
+      selectionHighlightController.updateVisualByOwner('quickask', 'selection')
+    }
+  }, [isStreaming])
   const [runStatus, setRunStatus] = useState<QuickAskRunStatus>(null)
   const [isAssistantMenuOpen, setIsAssistantMenuOpen] = useState(false)
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
@@ -1460,7 +1474,14 @@ export function QuickAskPanel({
           console.warn('Some planned edits failed:', errors)
         }
 
-        // Close Quick Ask before opening review to avoid layout jump
+        // Close Quick Ask before opening review to avoid layout jump.
+        // Tear down the QuickAsk-owned selection highlight *synchronously*
+        // here, instead of relying on the controller's local close (which
+        // runs ~200ms later, after the close animation). Otherwise the
+        // pending shimmer keeps painting over the selection through the
+        // review and stays visible after the user rejects the diff, because
+        // ApplyView never touches owner='quickask' entries.
+        selectionHighlightController.clearByOwner('quickask')
         setIsStreaming(false)
         setRunStatus(null)
         closedForReview = true

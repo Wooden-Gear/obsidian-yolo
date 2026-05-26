@@ -249,6 +249,20 @@ export class QuickAskController {
         !this.quickAskWidgetState || this.quickAskWidgetState.view === view
 
       if (isCurrentView) {
+        // Owned-highlight teardown — also runs on panel-initiated close paths
+        // (Escape, submit + auto-close, edit→review). controller.close() does
+        // the same thing for externally-triggered closes; both paths must
+        // clear the highlight, otherwise the selection stays painted (and the
+        // shimmer keeps running) after the panel is gone.
+        this.highlightTakeoverToken += 1
+        if (this.currentHighlightId) {
+          selectionHighlightController.clearById(this.currentHighlightId)
+          this.currentHighlightId = null
+        }
+        if (this.currentPdfHighlightId) {
+          pdfSelectionHighlightController.clearById(this.currentPdfHighlightId)
+          this.currentPdfHighlightId = null
+        }
         this.quickAskWidgetState = null
       }
       view.dispatch({ effects: quickAskWidgetEffect.of(null) })
