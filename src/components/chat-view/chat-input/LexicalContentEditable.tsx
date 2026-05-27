@@ -143,6 +143,21 @@ function SafeSetRootElementPatchPlugin() {
   return null
 }
 
+/**
+ * 把焦点移到聊天输入框。仅在窗口迁移（pop-out / dock back）导致 LexicalComposer
+ * 通过 key 重建后触发：首次挂载（version === 0）必须跳过，否则会抢走其他面板的焦点。
+ */
+function FocusOnWindowMigratePlugin({ version }: { version: number }) {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    if (version === 0) return
+    editor.focus()
+  }, [editor, version])
+
+  return null
+}
+
 export default function LexicalContentEditable({
   editorRef,
   contentEditableRef,
@@ -246,6 +261,7 @@ export default function LexicalContentEditable({
   return (
     <LexicalComposer key={windowVersion} initialConfig={initialConfig}>
       <SafeSetRootElementPatchPlugin />
+      <FocusOnWindowMigratePlugin version={windowVersion} />
       {/*
             There was two approach to make mentionable node copy and pasteable.
             1. use RichTextPlugin and reset text format when paste
