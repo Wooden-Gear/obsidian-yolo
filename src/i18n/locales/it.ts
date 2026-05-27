@@ -690,7 +690,7 @@ export const it: TranslationKeys = {
         'Usa requestUrl di Obsidian per aggirare le restrizioni CORS. Le risposte in streaming verranno bufferizzate.',
       requestTransportMode: 'Modalita trasporto richieste',
       requestTransportModeDesc:
-        'Auto prova prima il fetch del browser, poi il fetch Node desktop e infine passa a requestUrl di Obsidian in caso di errori CORS/rete. In modalita Obsidian lo streaming viene bufferizzato; la modalita Node usa il fetch Node desktop per uno streaming reale.',
+        'Su desktop Auto prova prima il fetch Node, poi il fetch browser in caso di errori CORS/rete; su mobile prova il fetch browser e poi requestUrl di Obsidian. In modalita Obsidian lo streaming viene bufferizzato; la modalita Node usa il fetch Node desktop per uno streaming reale.',
       requestTransportModeAuto: 'Auto (consigliato)',
       requestTransportModeBrowser: 'Solo fetch browser',
       requestTransportModeObsidian: 'Solo requestUrl Obsidian',

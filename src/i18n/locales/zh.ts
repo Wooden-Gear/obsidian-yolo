@@ -713,7 +713,7 @@ export const zh: TranslationKeys = {
         '使用 Obsidian requestUrl 绕过 CORS 限制。流式响应将会被缓冲后再返回。',
       requestTransportMode: '请求传输模式',
       requestTransportModeDesc:
-        '自动模式会先尝试浏览器 fetch，再尝试桌面端 Node fetch，最后在 CORS/网络错误时回退到 Obsidian requestUrl。仅 Obsidian 模式下流式响应会被缓冲；Node 模式使用桌面端 Node fetch 获取真实流式。',
+        '桌面端自动模式先尝试 Node fetch，再在 CORS/网络错误时回退到浏览器 fetch；移动端先尝试浏览器 fetch，再回退到 Obsidian requestUrl。仅 Obsidian 模式下流式响应会被缓冲；Node 模式使用桌面端 Node fetch 获取真实流式。',
       requestTransportModeAuto: '自动（推荐）',
       requestTransportModeBrowser: '仅浏览器 fetch',
       requestTransportModeObsidian: '仅 Obsidian requestUrl',

@@ -769,7 +769,7 @@ export const en: TranslationKeys = {
         'Use Obsidian requestUrl to bypass cross-origin restrictions. Streaming responses are buffered.',
       requestTransportMode: 'Request transport mode',
       requestTransportModeDesc:
-        'Auto tries browser fetch first, then desktop Node fetch, and finally falls back to Obsidian requestUrl on CORS/network errors. Obsidian mode buffers streaming responses, while Node mode uses desktop Node fetch for real streaming.',
+        'Auto on desktop tries Node fetch first, then browser fetch on CORS/network errors; on mobile tries browser fetch then Obsidian requestUrl. Obsidian mode buffers streaming responses; Node mode uses desktop Node fetch for real streaming.',
       requestTransportModeAuto: 'Auto (recommended)',
       requestTransportModeBrowser: 'Browser fetch only',
       requestTransportModeObsidian: 'Obsidian requestUrl only',
