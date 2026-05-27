@@ -1330,8 +1330,7 @@ export const zh: TranslationKeys = {
       fullLabel: '已占用 {{percent}}',
       tokensSuffix: 'Tokens',
       localEstimateCaption: '本地估算，可能与服务端计费存在偏差',
-      unknownMaxHint:
-        '可在模型设置中配置上下文窗口 token，以显示占用比例',
+      unknownMaxHint: '可在模型设置中配置上下文窗口 token，以显示占用比例',
       error: '估算失败',
       bucket: {
         system: '系统提示',
@@ -1410,6 +1409,7 @@ export const zh: TranslationKeys = {
     regenerate: '重新生成',
     reasoning: '推理过程',
     annotations: '注释',
+    vaultSources: '笔记引用（{count}）',
     pdfReferenceNoPreview: '（PDF：点击标题打开对应页）',
     assistantQuote: {
       add: '引用',

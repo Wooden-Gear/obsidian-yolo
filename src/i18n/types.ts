@@ -1280,6 +1280,7 @@ export type TranslationKeys = {
     regenerate: string
     reasoning: string
     annotations: string
+    vaultSources?: string
     assistantQuote?: {
       add?: string
       badge?: string

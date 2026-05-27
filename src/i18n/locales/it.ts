@@ -1313,7 +1313,8 @@ export const it: TranslationKeys = {
     placeholderMention: 'aggiungere riferimenti o modelli',
     placeholderSkill: 'scegliere una skill o un comando',
     contextUsage: 'Utilizzo finestra di contesto',
-    contextUsageUnknownMaxSuffix: ' (limite finestra di contesto non impostato)',
+    contextUsageUnknownMaxSuffix:
+      ' (limite finestra di contesto non impostato)',
     contextBreakdown: {
       title: 'Contesto',
       fullLabel: '{{percent}} pieno',
@@ -1404,6 +1405,7 @@ export const it: TranslationKeys = {
     regenerate: 'Rigenera',
     reasoning: 'Ragionamento',
     annotations: 'Annotazioni',
+    vaultSources: 'Fonti dal vault ({count})',
     pdfReferenceNoPreview: '(PDF: clicca il titolo per aprire la pagina)',
     assistantQuote: {
       add: 'Cita',
