@@ -80,7 +80,10 @@ export function resolveKnownMaxContextTokens(
 
 /** User-configured max, then registry lookup. Undefined when neither is known. */
 export function resolveEffectiveMaxContextTokens(
-  model: Pick<ChatModel, 'maxContextTokens' | 'model' | 'id'> | null | undefined,
+  model:
+    | Pick<ChatModel, 'maxContextTokens' | 'model' | 'id'>
+    | null
+    | undefined,
 ): number | undefined {
   if (!model) {
     return undefined

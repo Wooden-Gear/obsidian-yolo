@@ -27,7 +27,6 @@ import {
   resolveAutoContextCompactionChatOptions,
   shouldTriggerAutoContextCompaction,
 } from '../../core/agent/compaction'
-import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { DEFAULT_ASSISTANT_ID } from '../../core/agent/default-assistant'
 import type { AgentConversationRunSummary } from '../../core/agent/service'
 import { materializeTextEditPlan } from '../../core/edits/textEditEngine'
@@ -89,6 +88,7 @@ import { groupAssistantAndToolMessages } from '../../utils/chat/message-groups'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { buildChatTimelineItems } from '../../utils/chat/timeline'
 import { formatTokenCount } from '../../utils/llm/formatTokenCount'
+import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { readTFileContent } from '../../utils/obsidian'
 import DotLoader from '../common/DotLoader'
 import { AgentModeWarningModal } from '../modals/AgentModeWarningModal'

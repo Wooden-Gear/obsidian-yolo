@@ -1,3 +1,5 @@
+import { Platform } from 'obsidian'
+
 import {
   clearRequestTransportMemoryForTests,
   createRequestTransportMemoryKey,
@@ -6,8 +8,6 @@ import {
   runWithRequestTransportForStream,
   shouldRetryWithObsidianTransport,
 } from './requestTransport'
-
-import { Platform } from 'obsidian'
 
 const collectStream = async <T>(stream: AsyncIterable<T>): Promise<T[]> => {
   const chunks: T[] = []

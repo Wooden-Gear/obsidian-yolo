@@ -111,12 +111,16 @@ const ContextUsageRing = forwardRef<HTMLButtonElement, ContextUsageRingProps>(
           ) : null}
         </svg>
         {!hasMax ? (
-          <span className="yolo-context-usage-ring__unknown-mark" aria-hidden="true">
+          <span
+            className="yolo-context-usage-ring__unknown-mark"
+            aria-hidden="true"
+          >
             ?
           </span>
         ) : null}
         <span className="yolo-context-usage-ring__sr-only">
-          {percentLabel ?? `${formatTokenCount(promptTokens)}${unknownMaxSuffix}`}
+          {percentLabel ??
+            `${formatTokenCount(promptTokens)}${unknownMaxSuffix}`}
         </span>
       </button>
     )
