@@ -1213,6 +1213,7 @@ export type TranslationKeys = {
         skills?: string
         memory?: string
         conversation?: string
+        reasoning?: string
       }
     }
     inlineInfo?: {

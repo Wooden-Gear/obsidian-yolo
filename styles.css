@@ -14341,7 +14341,11 @@ button.yolo-chat-input-model-select .yolo-chat-input-model-select__icon {
 .yolo-context-breakdown:has(
     .yolo-context-breakdown__list-item[data-bucket='conversation']:hover
   )
-  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--conversation {
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--conversation,
+.yolo-context-breakdown:has(
+    .yolo-context-breakdown__list-item[data-bucket='reasoning']:hover
+  )
+  .yolo-context-breakdown__bar-segment.yolo-context-breakdown-swatch--reasoning {
   opacity: 1;
 }
 
@@ -14483,6 +14487,10 @@ button.yolo-chat-input-model-select .yolo-chat-input-model-select__icon {
 
 .yolo-context-breakdown-swatch--conversation {
   background: var(--color-accent-2, var(--interactive-accent));
+}
+
+.yolo-context-breakdown-swatch--reasoning {
+  background: var(--color-cyan, var(--color-blue));
 }
 
 @keyframes yolo-context-breakdown-pulse {

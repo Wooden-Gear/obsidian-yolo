@@ -43,6 +43,7 @@ const BUCKET_ORDER: PromptSectionBucket[] = [
   'rules',
   'skills',
   'memory',
+  'reasoning',
   'conversation',
 ]
 

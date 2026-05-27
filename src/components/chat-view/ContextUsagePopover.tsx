@@ -20,6 +20,7 @@ const BUCKET_ORDER: BucketKey[] = [
   'rules',
   'skills',
   'memory',
+  'reasoning',
   'conversation',
 ]
 
@@ -30,6 +31,7 @@ const BUCKET_CLASS: Record<BucketKey, string> = {
   skills: 'yolo-context-breakdown-swatch--skills',
   memory: 'yolo-context-breakdown-swatch--memory',
   conversation: 'yolo-context-breakdown-swatch--conversation',
+  reasoning: 'yolo-context-breakdown-swatch--reasoning',
 }
 
 // Minimum visual width (as percent of bar) for any non-zero segment, so tiny
@@ -80,6 +82,7 @@ export default function ContextUsagePopover({
         'chat.contextBreakdown.bucket.conversation',
         'Conversation',
       ),
+      reasoning: t('chat.contextBreakdown.bucket.reasoning', 'Reasoning'),
     }),
     [t],
   )

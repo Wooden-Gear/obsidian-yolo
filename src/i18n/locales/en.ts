@@ -1429,6 +1429,7 @@ export const en: TranslationKeys = {
         skills: 'Skills',
         memory: 'Memory',
         conversation: 'Conversation',
+        reasoning: 'Reasoning',
       },
     },
     inlineInfo: {

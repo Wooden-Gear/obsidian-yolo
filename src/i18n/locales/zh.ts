@@ -1339,6 +1339,7 @@ export const zh: TranslationKeys = {
         skills: '技能',
         memory: '记忆',
         conversation: '会话',
+        reasoning: '思考过程',
       },
     },
     inlineInfo: {
