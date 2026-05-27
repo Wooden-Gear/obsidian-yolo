@@ -1313,12 +1313,15 @@ export const it: TranslationKeys = {
     placeholderMention: 'aggiungere riferimenti o modelli',
     placeholderSkill: 'scegliere una skill o un comando',
     contextUsage: 'Utilizzo finestra di contesto',
+    contextUsageUnknownMaxSuffix: ' (limite finestra di contesto non impostato)',
     contextBreakdown: {
       title: 'Contesto',
       fullLabel: '{{percent}} pieno',
       tokensSuffix: 'token',
       localEstimateCaption:
         'Stima locale — può differire dal conteggio del server.',
+      unknownMaxHint:
+        'Imposta i token della finestra di contesto nelle impostazioni del modello per vedere la percentuale di utilizzo.',
       error: 'Stima fallita',
       bucket: {
         system: 'Prompt di sistema',

@@ -1412,12 +1412,15 @@ export const en: TranslationKeys = {
     placeholderMention: 'add references or models',
     placeholderSkill: 'choose a skill or command',
     contextUsage: 'Context window usage',
+    contextUsageUnknownMaxSuffix: ' (context window limit not set)',
     contextBreakdown: {
       title: 'Context',
       fullLabel: '{{percent}} Full',
       tokensSuffix: 'Tokens',
       localEstimateCaption:
         'Local estimate — may differ from server-side billing.',
+      unknownMaxHint:
+        'Set context window tokens in model settings to show usage percentage.',
       error: 'Estimation failed',
       bucket: {
         system: 'System prompt',

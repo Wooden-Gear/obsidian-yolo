@@ -7551,6 +7551,29 @@ button.yolo-agent-chip--more:hover {
     stroke 0.18s ease;
 }
 
+.yolo-context-usage-ring__unknown-mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: var(--font-semibold);
+  color: var(--text-faint);
+  pointer-events: none;
+  user-select: none;
+}
+
+.yolo-context-usage-ring[data-has-max='false']:hover
+  .yolo-context-usage-ring__unknown-mark,
+.yolo-context-usage-ring[data-has-max='false']:focus
+  .yolo-context-usage-ring__unknown-mark,
+.yolo-context-usage-ring[data-has-max='false'][data-state='open']
+  .yolo-context-usage-ring__unknown-mark {
+  color: var(--text-muted);
+}
+
 .yolo-context-usage-ring__sr-only {
   position: absolute;
   width: 1px;
@@ -14425,6 +14448,15 @@ button.yolo-chat-input-model-select .yolo-chat-input-model-select__icon {
   font-size: var(--font-ui-smaller);
   color: var(--text-error);
   padding: 4px 2px;
+}
+
+.yolo-context-breakdown__unknown-max-hint {
+  margin: -4px 0 0;
+  padding: 0 2px;
+  font-size: var(--font-smallest);
+  line-height: 1.35;
+  color: var(--text-muted);
+  opacity: 0.85;
 }
 
 /* Bucket colors — follow Obsidian theme variables so light/dark Just Work. */

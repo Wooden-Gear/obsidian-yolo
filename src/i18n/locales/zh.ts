@@ -1324,11 +1324,14 @@ export const zh: TranslationKeys = {
     placeholderMention: '添加引用或模型',
     placeholderSkill: '选择技能或命令',
     contextUsage: '上下文窗口占用',
+    contextUsageUnknownMaxSuffix: '（未设置上下文窗口上限）',
     contextBreakdown: {
       title: '上下文',
       fullLabel: '已占用 {{percent}}',
       tokensSuffix: 'Tokens',
       localEstimateCaption: '本地估算，可能与服务端计费存在偏差',
+      unknownMaxHint:
+        '可在模型设置中配置上下文窗口 token，以显示占用比例',
       error: '估算失败',
       bucket: {
         system: '系统提示',

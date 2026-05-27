@@ -2216,6 +2216,15 @@ button.yolo-chat-input-model-select {
   padding: 4px 2px;
 }
 
+.yolo-context-breakdown__unknown-max-hint {
+  margin: -4px 0 0;
+  padding: 0 2px;
+  font-size: var(--font-smallest);
+  line-height: 1.35;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
 /* Bucket colors — follow Obsidian theme variables so light/dark Just Work. */
 .yolo-context-breakdown-swatch--system {
   background: color-mix(in srgb, var(--text-muted) 70%, transparent);

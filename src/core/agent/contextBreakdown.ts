@@ -15,6 +15,7 @@ import {
   estimateJsonTokens,
   normalizeJsonValue,
 } from '../../utils/llm/contextTokenEstimate'
+import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { McpManager } from '../mcp/mcpManager'
 
 import { selectAllowedTools } from './tool-selection'
@@ -212,7 +213,7 @@ export const estimateContextBreakdown = async ({
   const result: ContextBreakdown = {
     buckets,
     total,
-    max: model.maxContextTokens ?? null,
+    max: resolveEffectiveMaxContextTokens(model) ?? null,
     computedAt: Date.now(),
   }
   cacheSet(cacheKey, result)

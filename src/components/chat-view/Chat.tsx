@@ -27,6 +27,7 @@ import {
   resolveAutoContextCompactionChatOptions,
   shouldTriggerAutoContextCompaction,
 } from '../../core/agent/compaction'
+import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { DEFAULT_ASSISTANT_ID } from '../../core/agent/default-assistant'
 import type { AgentConversationRunSummary } from '../../core/agent/service'
 import { materializeTextEditPlan } from '../../core/edits/textEditEngine'
@@ -861,12 +862,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     )
   }, [conversationModelId, settings.chatModels])
 
+  const effectiveMaxContextTokens = useMemo(
+    () => resolveEffectiveMaxContextTokens(currentConversationModel),
+    [currentConversationModel],
+  )
+
   const headerContextUsage = useMemo(() => {
     const contextUsage = getLatestAssistantContextUsage({
       messages: chatMessages,
-      maxContextTokens: currentConversationModel?.maxContextTokens,
+      maxContextTokens: effectiveMaxContextTokens,
     })
-    if (!contextUsage || contextUsage.maxContextTokens === null) {
+    if (!contextUsage) {
       return null
     }
 
@@ -874,7 +880,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       promptTokens: contextUsage.promptTokens,
       maxContextTokens: contextUsage.maxContextTokens,
     }
-  }, [chatMessages, currentConversationModel?.maxContextTokens])
+  }, [chatMessages, effectiveMaxContextTokens])
 
   const getReasoningLevelForModelId = useCallback(
     (modelId?: string | null): ReasoningLevel => {
@@ -2840,7 +2846,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         shouldTriggerAutoContextCompaction({
           previousMessages,
           chatOptions: autoCompactionOptions,
-          maxContextTokens: currentConversationModel?.maxContextTokens,
+          maxContextTokens: effectiveMaxContextTokens,
           compactionState: effectiveCompactionState,
           isConversationRunActive:
             currentConversationRunSummary.isRunning ||
@@ -3015,7 +3021,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       settings.chatOptions,
       compactConversation,
       plugin,
-      currentConversationModel?.maxContextTokens,
+      effectiveMaxContextTokens,
       currentConversationRunSummary.isRunning,
       currentConversationRunSummary.isWaitingApproval,
       t,
