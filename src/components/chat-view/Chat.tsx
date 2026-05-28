@@ -495,12 +495,34 @@ export type ChatRef = {
   getCurrentConversationModelId: () => string | undefined
 }
 
+/**
+ * 一份足以让 Chat 在 host DOM 被替换后无缝重建的 React state 快照。
+ * 只接「会被用户实际改动 / 影响 UI 当前态」的字段——不要把整个 Chat state
+ * 都塞进来（消息列表会从 DB 自动恢复，无需快照）。
+ */
+export type ChatRuntimeSnapshot = {
+  currentConversationId: string
+  inputMessage: ChatUserMessage
+  conversationModelId: string
+  conversationAssistantId: string
+  chatMode: ChatMode
+  reasoningLevel: ReasoningLevel
+  conversationOverrides: ConversationOverrideSettings | null
+}
+
 export type ChatProps = {
   selectedBlock?: MentionableBlockData
   activeView?: 'chat' | 'composer'
   onChangeView?: (view: 'chat' | 'composer') => void
   placement?: ChatLeafPlacement
   initialConversationId?: string
+  /**
+   * 仅用于 ChatView 在 host DOM 被替换后重建 React tree 时的 state 接力。
+   * 首次打开 ChatView 不传；只有 pop-out / dock back 触发的 rebuild 才传。
+   */
+  seededRuntimeSnapshot?: ChatRuntimeSnapshot
+  /** 每当影响 ChatRuntimeSnapshot 的 state 变化时上报当前快照。 */
+  onRuntimeSnapshotChange?: (snapshot: ChatRuntimeSnapshot) => void
   onConversationContextChange?: (context: {
     currentConversationId?: string
     currentConversationTitle?: string
@@ -528,8 +550,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     chatList,
   } = useChatHistory()
   const chatManager = useChatManager()
+  const seededRuntimeSnapshot = props.seededRuntimeSnapshot
   const [conversationAssistantId, setConversationAssistantId] =
-    useState<string>(settings.currentAssistantId ?? DEFAULT_ASSISTANT_ID)
+    useState<string>(
+      seededRuntimeSnapshot?.conversationAssistantId ??
+        settings.currentAssistantId ??
+        DEFAULT_ASSISTANT_ID,
+    )
   const conversationAssistantIdRef = useRef<Map<string, string>>(new Map())
   const effectiveSettings = useMemo(
     () => ({
@@ -572,6 +599,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [workspaceWideHeaderHeight, setWorkspaceWideHeaderHeight] = useState(0)
 
   const [inputMessage, setInputMessage] = useState<ChatUserMessage>(() => {
+    if (seededRuntimeSnapshot) {
+      return seededRuntimeSnapshot.inputMessage
+    }
     const newMessage = getNewInputMessage(initialReasoningLevel)
     if (props.selectedBlock) {
       newMessage.mentionables = [
@@ -615,8 +645,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setEnteringCompactionDividerAnchorMessageId,
   ] = useState<string | null>(null)
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null)
-  const [currentConversationId, setCurrentConversationId] =
-    useState<string>(uuidv4())
+  const [currentConversationId, setCurrentConversationId] = useState<string>(
+    () => seededRuntimeSnapshot?.currentConversationId ?? uuidv4(),
+  )
   const untitledFallback = t('chat.untitledConversation', 'New chat')
   const currentConversationTitle = useMemo(() => {
     const rawTitle = currentConversationId
@@ -627,7 +658,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return getConversationDisplayTitle(rawTitle, untitledFallback)
   }, [chatList, currentConversationId, untitledFallback])
   const [reasoningLevel, setReasoningLevel] = useState<ReasoningLevel>(
-    initialReasoningLevel,
+    seededRuntimeSnapshot?.reasoningLevel ?? initialReasoningLevel,
   )
   const conversationReasoningLevelRef = useRef<Map<string, ReasoningLevel>>(
     new Map(),
@@ -830,8 +861,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     Map<string, ConversationOverrideSettings | null>
   >(new Map())
   const [conversationOverrides, setConversationOverrides] =
-    useState<ConversationOverrideSettings | null>(null)
+    useState<ConversationOverrideSettings | null>(
+      seededRuntimeSnapshot?.conversationOverrides ?? null,
+    )
   const [chatMode, setChatMode] = useState<ChatMode>(() => {
+    if (seededRuntimeSnapshot) {
+      return seededRuntimeSnapshot.chatMode
+    }
     const defaultMode = settings.chatOptions.chatMode ?? 'agent'
     return defaultMode
   })
@@ -847,6 +883,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   // Per-conversation model id (do NOT write back to global settings)
   const conversationModelIdRef = useRef<Map<string, string>>(new Map())
   const [conversationModelId, setConversationModelId] = useState<string>(() => {
+    if (seededRuntimeSnapshot) {
+      return seededRuntimeSnapshot.conversationModelId
+    }
     const initialAssistantId =
       settings.currentAssistantId ?? DEFAULT_ASSISTANT_ID
     const initialAssistant = settings.assistants.find(
@@ -2197,6 +2236,31 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     conversationOverrides,
     currentConversationId,
     props.onConversationContextChange,
+  ])
+
+  // 把当前可重建态实时上报给 ChatView，供 host DOM 被替换（pop-out / dock back）
+  // 时无缝重建 React tree。仅副作用：上报快照；不要在这里改 state。
+  const onRuntimeSnapshotChange = props.onRuntimeSnapshotChange
+  useEffect(() => {
+    if (!onRuntimeSnapshotChange) return
+    onRuntimeSnapshotChange({
+      currentConversationId,
+      inputMessage,
+      conversationModelId,
+      conversationAssistantId,
+      chatMode,
+      reasoningLevel,
+      conversationOverrides,
+    })
+  }, [
+    onRuntimeSnapshotChange,
+    currentConversationId,
+    inputMessage,
+    conversationModelId,
+    conversationAssistantId,
+    chatMode,
+    reasoningLevel,
+    conversationOverrides,
   ])
 
   const handleExportChatToVault = useCallback(
