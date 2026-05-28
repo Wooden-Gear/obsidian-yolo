@@ -173,20 +173,12 @@ const isValidFsEditOperation = (value: unknown): boolean => {
       isNonEmptyStringField(value, 'oldText') && isStringField(value, 'newText')
     )
   }
-  if (operationType === 'insert_after') {
-    return (
-      isNonEmptyStringField(value, 'anchor') && isStringField(value, 'content')
-    )
-  }
   if (operationType === 'replace_lines') {
     return (
       isPositiveIntegerField(value, 'startLine') &&
       isPositiveIntegerField(value, 'endLine') &&
       isStringField(value, 'newText')
     )
-  }
-  if (operationType === 'append') {
-    return isStringField(value, 'content')
   }
   return false
 }

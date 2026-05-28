@@ -49,6 +49,7 @@ import {
 import {
   type TextEditOperation,
   type TextEditPlan,
+  buildReplaceMatchErrorHint,
   materializeTextEditPlan,
   recoverLikelyEscapedBackslashSequences,
 } from '../edits/textEditEngine'
@@ -641,7 +642,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_edit',
       description:
-        'Apply one or more text edit operations within a single existing file, atomically against one snapshot. Prefer this tool when modifying content in an existing file. Supports replace, replace_lines, insert_after, and append. To perform multiple edits on the same file, prefer bundling them via the "operations" array in a single fs_edit call rather than emitting multiple parallel fs_edit calls — bundled edits share one review, one write, and are applied against a single snapshot so earlier edits cannot invalidate later ones.',
+        'Apply a single targeted text edit within an existing file. Prefer this tool when modifying content in an existing file. Supports two ways to locate the edit: replace (match exact text) and replace_lines (target a 1-based inclusive line range). To make several edits in the same file, emit multiple fs_edit calls — the system automatically merges edits targeting the same file into one atomic review and write, so earlier edits cannot invalidate later ones.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -649,21 +650,14 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Vault-relative file path.',
           },
-          operations: {
-            type: 'array',
-            description:
-              'Preferred for multiple edits to the same file: an array of text edit operations applied atomically against a single snapshot. Each item uses the same shape as "operation". If multiple replace_lines ops are present their line ranges must not overlap; they are automatically applied in descending order so earlier edits do not shift later line numbers.',
-            minItems: 1,
-            items: { type: 'object' },
-          },
           operation: {
             type: 'object',
             description:
-              'A single text edit operation to apply. Supports replace, replace_lines, insert_after, and append. For multiple edits to the same file, prefer the "operations" array instead.',
+              'A single text edit operation to apply. Use replace to swap exact text, or replace_lines to replace a 1-based inclusive line range.',
             properties: {
               type: {
                 type: 'string',
-                enum: ['replace', 'replace_lines', 'insert_after', 'append'],
+                enum: ['replace', 'replace_lines'],
               },
               oldText: {
                 type: 'string',
@@ -683,24 +677,16 @@ export function getLocalFileTools(options?: {
                 description:
                   'Required for replace_lines. 1-based inclusive end line.',
               },
-              anchor: {
-                type: 'string',
-                description: 'Required for insert_after.',
-              },
-              content: {
-                type: 'string',
-                description: 'Required for insert_after and append.',
-              },
               expectedOccurrences: {
                 type: 'integer',
                 description:
-                  'Optional positive integer match count for replace and insert_after. Defaults to 1.',
+                  'Optional positive integer match count for replace. Defaults to 1.',
               },
             },
             required: ['type'],
           },
         },
-        required: ['path'],
+        required: ['path', 'operation'],
       },
     },
     {
@@ -1921,30 +1907,7 @@ const parseTextEditOperation = (
     }
   }
 
-  if (type === 'insert_after') {
-    const anchor = getTextArg(operation, 'anchor')
-    if (anchor.length === 0) {
-      throw new Error(`operation.anchor must not be empty.`)
-    }
-
-    return {
-      type: 'insert_after',
-      anchor,
-      content: getTextArg(operation, 'content'),
-      expectedOccurrences: asPositiveInteger(operation.expectedOccurrences),
-    }
-  }
-
-  if (type === 'append') {
-    return {
-      type: 'append',
-      content: getTextArg(operation, 'content'),
-    }
-  }
-
-  throw new Error(
-    `operation.type must be one of: replace, replace_lines, insert_after, append.`,
-  )
+  throw new Error(`operation.type must be one of: replace, replace_lines.`)
 }
 
 const coerceOperationObject = (operation: unknown): Record<string, unknown> => {
@@ -3509,6 +3472,19 @@ export async function callLocalFileTool({
         })
 
         if (materialized.errors.length > 0) {
+          const replaceFailure = materialized.failures?.find(
+            (failure) =>
+              failure.operation.type === 'replace' &&
+              failure.kind === 'no_match',
+          )
+          if (replaceFailure && replaceFailure.operation.type === 'replace') {
+            throw new Error(
+              `${path}: ${buildReplaceMatchErrorHint({
+                content,
+                oldText: replaceFailure.operation.oldText,
+              })}`,
+            )
+          }
           throw new Error(`${path}: ${materialized.errors[0]}`)
         }
 

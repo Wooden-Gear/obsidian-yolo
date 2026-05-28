@@ -339,6 +339,109 @@ describe('local fs tool action helpers', () => {
     })
   })
 
+  it('returns a friendly hint when fs_edit replace matches the first line but not the full block', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'note.md',
+      stat: { size: 100 },
+    })
+    const modify = jest.fn()
+    const read = jest
+      .fn()
+      .mockResolvedValue(['alpha', '\tbeta', 'gamma'].join('\n'))
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolName: 'fs_edit',
+      args: {
+        path: 'note.md',
+        operation: {
+          type: 'replace',
+          oldText: ['alpha', '  beta'].join('\n'),
+          newText: 'replaced',
+        },
+      },
+    })
+
+    expect(modify).not.toHaveBeenCalled()
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toContain('first line exists at line 1')
+      expect(result.error).toContain('fs_read')
+      expect(result.error).not.toContain('lineEndingNormalized')
+    }
+  })
+
+  it('returns a friendly hint when fs_edit replace text is not found at all', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'note.md',
+      stat: { size: 100 },
+    })
+    const modify = jest.fn()
+    const read = jest.fn().mockResolvedValue(['alpha', 'beta'].join('\n'))
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolName: 'fs_edit',
+      args: {
+        path: 'note.md',
+        operation: {
+          type: 'replace',
+          oldText: 'totally absent text',
+          newText: 'replaced',
+        },
+      },
+    })
+
+    expect(modify).not.toHaveBeenCalled()
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toContain('Could not find the text to replace')
+      expect(result.error).toContain('fs_read')
+    }
+  })
+
+  it('rejects fs_edit operations using the removed insert_after type', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'note.md',
+      stat: { size: 20 },
+    })
+    const modify = jest.fn()
+    const read = jest.fn().mockResolvedValue('hello world')
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolName: 'fs_edit',
+      args: {
+        path: 'note.md',
+        operation: { type: 'insert_after', anchor: 'hello', content: 'x' },
+      },
+    })
+
+    expect(modify).not.toHaveBeenCalled()
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toContain('must be one of: replace, replace_lines')
+    }
+  })
+
   it('returns edit summary metadata for fs_create_file', async () => {
     const create = jest.fn()
 
@@ -1611,7 +1714,7 @@ describe('local fs tool action helpers', () => {
         toolName: 'fs_edit',
         args: {
           path: 'secret/a.md',
-          operations: [{ type: 'append', text: 'x' }],
+          operation: { type: 'replace', oldText: 'x', newText: 'y' },
         },
         workspaceScope: allowNotes,
       })

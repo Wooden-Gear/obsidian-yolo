@@ -59,12 +59,21 @@ export type AppliedTextEditOperation = {
   }
 }
 
+export type TextEditFailureKind = 'no_match' | 'count_mismatch' | 'other'
+
+export type TextEditFailure = {
+  operationIndex: number
+  operation: TextEditOperation
+  kind: TextEditFailureKind
+}
+
 export type MaterializedTextEditPlan = {
   newContent: string
   appliedCount: number
   totalOperations: number
   errors: string[]
   operationResults: AppliedTextEditOperation[]
+  failures?: TextEditFailure[]
 }
 
 type ReplacementAttempt = {
@@ -87,6 +96,7 @@ type ReplacementAttempt = {
 type ReplacementFailure = {
   ok: false
   error: string
+  kind: TextEditFailureKind
 }
 
 type ReplacementResult = ReplacementAttempt | ReplacementFailure
@@ -586,6 +596,7 @@ const applyReplaceLikeOperation = ({
     return {
       ok: false,
       error: 'oldText must not be empty.',
+      kind: 'other',
     }
   }
 
@@ -631,6 +642,7 @@ const applyReplaceLikeOperation = ({
       return {
         ok: false,
         error: 'matched range could not be resolved.',
+        kind: 'other',
       }
     }
     const nextContent = content.replace(createLooseEditRegex(oldText), () => {
@@ -693,6 +705,7 @@ const applyReplaceLikeOperation = ({
         return {
           ok: false,
           error: 'matched range could not be resolved after escape recovery.',
+          kind: 'other',
         }
       }
       const nextContent = content.replace(recoveredLooseRegex, () => {
@@ -721,6 +734,7 @@ const applyReplaceLikeOperation = ({
         `trimLineEndNormalized=${trimLineEndOccurrences}, ` +
         `recoveredExact=${recoveredExactOccurrences}, ` +
         `recoveredLineEndingAndTrimLineEnd=${recoveredLooseOccurrences}`,
+      kind: exactOccurrences > 0 ? 'count_mismatch' : 'no_match',
     }
   }
 
@@ -761,6 +775,7 @@ const applyReplaceLikeOperation = ({
           `fuzzyTopScore=${fuzzyMatch.candidate.similarity.toFixed(3)}, ` +
           `fuzzySecondScore=${fuzzyMatch.secondBestSimilarity.toFixed(3)}, ` +
           `fuzzyCandidatesAboveThreshold=${fuzzyMatch.aboveThresholdCount}`,
+        kind: exactOccurrences > 0 ? 'count_mismatch' : 'no_match',
       }
     }
   }
@@ -771,6 +786,7 @@ const applyReplaceLikeOperation = ({
       `expectedOccurrences mismatch: expected ${normalizedExpected}, found ${exactOccurrences}. ` +
       `hints: lineEndingNormalized=${lineEndingOccurrences}, ` +
       `trimLineEndNormalized=${trimLineEndOccurrences}`,
+    kind: exactOccurrences > 0 ? 'count_mismatch' : 'no_match',
   }
 }
 
@@ -825,6 +841,50 @@ const reorderOperationsForLineSafety = (
   return { operations: [...lineOpsDesc, ...otherOps] }
 }
 
+export const buildReplaceMatchErrorHint = ({
+  content,
+  oldText,
+}: {
+  content: string
+  oldText: string
+}): string => {
+  const oldLines = oldText.split('\n')
+  const firstLinePattern = oldLines[0]?.trim() ?? ''
+
+  if (firstLinePattern.length > 0) {
+    const contentLines = content.split('\n')
+    const matchedLineIndex = contentLines.findIndex(
+      (line) => line.trim() === firstLinePattern,
+    )
+
+    if (matchedLineIndex !== -1) {
+      const lineNumber = matchedLineIndex + 1
+      const startIndex = Math.max(0, matchedLineIndex - 2)
+      const endIndex = Math.min(
+        contentLines.length - 1,
+        matchedLineIndex + oldLines.length + 2,
+      )
+      const contextDisplay = contentLines
+        .slice(startIndex, endIndex + 1)
+        .slice(0, 5)
+        .map((line) => `  ${line}`)
+        .join('\n')
+      return (
+        `Could not match oldText for replace. Its first line exists at line ${lineNumber}, ` +
+        `but the full text does not match — usually a whitespace or tab-vs-space difference.\n\n` +
+        `Context around line ${lineNumber}:\n${contextDisplay}\n\n` +
+        `TIP: Use fs_read to see the actual content, then retry. No need to explain, just call the tools.`
+      )
+    }
+  }
+
+  return (
+    `Could not find the text to replace. Make sure oldText matches the file exactly, ` +
+    `including all whitespace. ` +
+    `TIP: Use fs_read to view the actual content first, then retry. No need to explain, just call the tools.`
+  )
+}
+
 export const materializeTextEditPlan = ({
   content,
   plan,
@@ -834,6 +894,7 @@ export const materializeTextEditPlan = ({
 }): MaterializedTextEditPlan => {
   let nextContent = content
   const errors: string[] = []
+  const failures: TextEditFailure[] = []
   let appliedCount = 0
   const operationResults: AppliedTextEditOperation[] = []
 
@@ -863,6 +924,11 @@ export const materializeTextEditPlan = ({
 
       if (!result.ok) {
         errors.push(`Operation ${index + 1}: ${result.error}`)
+        failures.push({
+          operationIndex: plan.operations.indexOf(operation),
+          operation,
+          kind: 'other',
+        })
         continue
       }
 
@@ -936,6 +1002,11 @@ export const materializeTextEditPlan = ({
 
     if (!result.ok) {
       errors.push(`Operation ${index + 1}: ${result.error}`)
+      failures.push({
+        operationIndex: plan.operations.indexOf(operation),
+        operation,
+        kind: result.kind,
+      })
       continue
     }
 
@@ -964,5 +1035,6 @@ export const materializeTextEditPlan = ({
     totalOperations: plan.operations.length,
     errors,
     operationResults,
+    failures: failures.length > 0 ? failures : undefined,
   }
 }

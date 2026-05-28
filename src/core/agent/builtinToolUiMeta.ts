@@ -54,7 +54,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descKey: 'settings.agent.builtinFsEditDesc',
     labelFallback: 'Text Editing',
     descFallback:
-      'Apply exactly one text edit operation within a single existing file, including replace, replace_lines, insert_after, and append.',
+      'Apply exactly one text edit operation within a single existing file, using replace or replace_lines.',
   },
   [FILE_OPS_GROUP_TOOL_NAME]: {
     labelKey: 'settings.agent.builtinFsFileOpsLabel',
