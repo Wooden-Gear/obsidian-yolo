@@ -240,11 +240,6 @@ export const zh: TranslationKeys = {
       title: '聊天偏好',
       chatFontScale: '聊天界面缩放',
       chatFontScaleDesc: '调整聊天界面的整体缩放比例（默认 100%）。',
-      historyArchiveEnabled: '启用历史归档分组',
-      historyArchiveEnabledDesc: '将较旧的未置顶会话折叠到归档分组中。',
-      historyArchiveThreshold: '近期会话数量',
-      historyArchiveThresholdDesc:
-        '超过该数量的未置顶会话会进入归档（20-500）。',
     },
     assistants: {
       title: '助手',

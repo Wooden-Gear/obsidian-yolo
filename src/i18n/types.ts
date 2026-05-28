@@ -162,10 +162,6 @@ export type TranslationKeys = {
       title: string
       chatFontScale?: string
       chatFontScaleDesc?: string
-      historyArchiveEnabled?: string
-      historyArchiveEnabledDesc?: string
-      historyArchiveThreshold?: string
-      historyArchiveThresholdDesc?: string
     }
     assistants: {
       title: string

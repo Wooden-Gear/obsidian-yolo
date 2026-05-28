@@ -391,10 +391,6 @@ export const yoloSettingsSchema = z.object({
       reasoningLevelByModelId: z
         .record(z.string(), z.enum(REASONING_LEVELS))
         .optional(),
-      // Collapse older non-pinned conversations into an archive group
-      historyArchiveEnabled: z.boolean().optional(),
-      // Maximum number of recent non-pinned conversations shown before archive
-      historyArchiveThreshold: z.number().int().min(20).max(500).optional(),
       // Auto context compaction before next user send (based on last assistant usage)
       autoContextCompactionEnabled: z.boolean().optional(),
       autoContextCompactionThresholdMode: z
@@ -430,8 +426,6 @@ export const yoloSettingsSchema = z.object({
       chatMode: 'agent',
       agentModeWarningConfirmed: false,
       reasoningLevelByModelId: {},
-      historyArchiveEnabled: true,
-      historyArchiveThreshold: 50,
       autoContextCompactionEnabled: false,
       autoContextCompactionThresholdMode: 'tokens',
       autoContextCompactionThresholdTokens: 24000,

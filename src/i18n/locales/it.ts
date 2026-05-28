@@ -272,12 +272,6 @@ export const it: TranslationKeys = {
       chatFontScale: 'Scala interfaccia chat',
       chatFontScaleDesc:
         "Regola la scala complessiva dell'interfaccia chat (predefinito 100%).",
-      historyArchiveEnabled: 'Abilita raggruppamento archivio cronologia',
-      historyArchiveEnabledDesc:
-        'Mantiene le conversazioni non appuntate meno recenti compresse in una sezione archivio.',
-      historyArchiveThreshold: 'Limite conversazioni recenti',
-      historyArchiveThresholdDesc:
-        'Numero di conversazioni non appuntate recenti da mostrare prima di archiviare le altre (20-500).',
     },
     assistants: {
       title: 'Assistenti',

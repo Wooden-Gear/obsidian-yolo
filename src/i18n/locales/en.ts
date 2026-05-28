@@ -274,12 +274,6 @@ export const en: TranslationKeys = {
       chatFontScale: 'Chat UI scale',
       chatFontScaleDesc:
         'Adjust the overall scale of the chat interface (default 100%).',
-      historyArchiveEnabled: 'Enable history archive grouping',
-      historyArchiveEnabledDesc:
-        'Keep older non-pinned conversations collapsed under an archive section.',
-      historyArchiveThreshold: 'Recent conversation limit',
-      historyArchiveThresholdDesc:
-        'Number of latest non-pinned conversations shown before archiving the rest (20-500).',
     },
     assistants: {
       title: 'Assistants',
