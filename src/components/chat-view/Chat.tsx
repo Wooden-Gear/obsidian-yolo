@@ -1463,7 +1463,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     const syncLatexSelectionInView = () => {
       latexSelectionSyncFrameRef.current = null
 
-      const selection = window.getSelection()
+      const selection = (
+        chatMessagesElement.ownerDocument.defaultView ?? window
+      ).getSelection()
       const selectionRoot =
         selection?.rangeCount && !selection.isCollapsed
           ? selection.getRangeAt(0).commonAncestorContainer
@@ -1495,17 +1497,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       })
     }
 
-    document.addEventListener('selectionchange', scheduleLatexSelectionSync)
-    document.addEventListener('mouseup', scheduleLatexSelectionSync)
-    document.addEventListener('keyup', scheduleLatexSelectionSync)
+    const doc = chatMessagesElement.ownerDocument
+    doc.addEventListener('selectionchange', scheduleLatexSelectionSync)
+    doc.addEventListener('mouseup', scheduleLatexSelectionSync)
+    doc.addEventListener('keyup', scheduleLatexSelectionSync)
 
     return () => {
-      document.removeEventListener(
-        'selectionchange',
-        scheduleLatexSelectionSync,
-      )
-      document.removeEventListener('mouseup', scheduleLatexSelectionSync)
-      document.removeEventListener('keyup', scheduleLatexSelectionSync)
+      doc.removeEventListener('selectionchange', scheduleLatexSelectionSync)
+      doc.removeEventListener('mouseup', scheduleLatexSelectionSync)
+      doc.removeEventListener('keyup', scheduleLatexSelectionSync)
       if (latexSelectionSyncFrameRef.current !== null) {
         cancelAnimationFrame(latexSelectionSyncFrameRef.current)
         latexSelectionSyncFrameRef.current = null
@@ -2062,9 +2062,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       setFocusedMessageId(inputMessage.id)
     }
 
-    document.addEventListener('pointerdown', handlePointerDown, true)
+    const doc = chatMessagesRef.current?.ownerDocument ?? document
+    doc.addEventListener('pointerdown', handlePointerDown, true)
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true)
+      doc.removeEventListener('pointerdown', handlePointerDown, true)
     }
   }, [finalizeHistoricalUserMessageEdit, focusedMessageId, inputMessage.id])
 
