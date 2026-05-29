@@ -1422,11 +1422,14 @@ export type TranslationKeys = {
         open_skill?: string
       }
       writeAction?: {
+        write?: string
+        delete?: string
+        create_dir?: string
+        move?: string
+        // Legacy keys kept for rendering historical conversations.
         create_file?: string
         delete_file?: string
-        create_dir?: string
         delete_dir?: string
-        move?: string
       }
       readMode?: {
         full?: string

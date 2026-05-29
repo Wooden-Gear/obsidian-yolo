@@ -403,7 +403,7 @@ export const zh: TranslationKeys = {
       fsEditReviewToggleDesc:
         '开启后，Agent 的 fs_edit 会先进入 inline/apply 审阅，再写入文件。',
       builtinFsFileOpsLabel: '文件操作集',
-      builtinFsFileOpsDesc: '创建、删除、移动文件与文件夹',
+      builtinFsFileOpsDesc: '写入、删除、移动文件与文件夹',
       builtinMemoryOpsLabel: '记忆工具集',
       builtinMemoryOpsDesc: '新增、更新、删除记忆',
       builtinMemoryAddLabel: '新增记忆',
@@ -1573,11 +1573,14 @@ export const zh: TranslationKeys = {
         open_skill: '加载技能',
       },
       writeAction: {
+        write: '写入文件',
+        delete: '删除',
+        create_dir: '创建文件夹',
+        move: '移动路径',
+        // 旧键，保留用于显示历史会话。
         create_file: '创建文件',
         delete_file: '删除文件',
-        create_dir: '创建文件夹',
         delete_dir: '删除文件夹',
-        move: '移动路径',
       },
       readMode: {
         full: '全文',

@@ -444,7 +444,7 @@ export const en: TranslationKeys = {
       fsEditReviewToggleDesc:
         'When enabled, agent fs_edit changes open inline/apply review before writing the file.',
       builtinFsFileOpsLabel: 'File Operation Toolset',
-      builtinFsFileOpsDesc: 'Create, delete, and move files and folders',
+      builtinFsFileOpsDesc: 'Write, delete, and move files and folders',
       builtinMemoryOpsLabel: 'Memory Toolset',
       builtinMemoryOpsDesc: 'Add, update, and delete memory',
       builtinMemoryAddLabel: 'Add Memory',
@@ -1683,11 +1683,14 @@ export const en: TranslationKeys = {
         open_skill: 'Open skill',
       },
       writeAction: {
+        write: 'Write file',
+        delete: 'Delete',
+        create_dir: 'Create folder',
+        move: 'Move path',
+        // Legacy keys kept for rendering historical conversations.
         create_file: 'Create file',
         delete_file: 'Delete file',
-        create_dir: 'Create folder',
         delete_dir: 'Delete folder',
-        move: 'Move path',
       },
       readMode: {
         full: 'Full',

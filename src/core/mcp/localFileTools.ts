@@ -107,7 +107,6 @@ const DEFAULT_READ_START_LINE = 1
 const DEFAULT_READ_MAX_LINES = 50
 const MAX_READ_MAX_LINES = 2000
 const MAX_READ_LINE_INDEX = 1_000_000
-const MAX_BATCH_WRITE_ITEMS = 50
 const MAX_RAG_SNIPPET_CHARS = 500
 const RAG_FETCH_LIMIT_MAX = 300
 
@@ -117,10 +116,9 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'fs_read',
   'context_compact',
   'fs_edit',
-  'fs_create_file',
-  'fs_delete_file',
+  'fs_write',
+  'fs_delete',
   'fs_create_dir',
-  'fs_delete_dir',
   'fs_move',
   'memory_add',
   'memory_update',
@@ -173,23 +171,20 @@ type FsReadOperation =
       maxLines: number
       modality?: FsReadModality
     }
-type FsFileOpAction =
-  | 'create_file'
-  | 'delete_file'
-  | 'create_dir'
-  | 'delete_dir'
-  | 'move'
+type FsFileOpAction = 'write' | 'delete' | 'create_dir' | 'move'
+
+type LocalToolCallResultMetadata = {
+  editSummary?: ToolEditSummary
+  appliedAt?: number
+  truncated?: { totalBytes: number; omittedBytes: number }
+}
 
 type LocalToolCallResult =
   | {
       status: ToolCallResponseStatus.Success
       text: string
       contentParts?: ContentPart[]
-      metadata?: {
-        editSummary?: ToolEditSummary
-        appliedAt?: number
-        truncated?: { totalBytes: number; omittedBytes: number }
-      }
+      metadata?: LocalToolCallResultMetadata
     }
   | {
       status: ToolCallResponseStatus.Rejected
@@ -215,6 +210,8 @@ type FsResultItem = {
   action: FsFileOpAction
   target: string
   message: string
+  /** For fs_delete: whether the deleted target was a file or a folder. */
+  targetKind?: 'file' | 'folder'
 }
 
 type FsEditReviewResult =
@@ -230,10 +227,9 @@ type FsEditReviewResult =
     }
 
 const LOCAL_FS_SPLIT_ACTION_TOOL_TO_ACTION = {
-  fs_create_file: 'create_file',
-  fs_delete_file: 'delete_file',
+  fs_write: 'write',
+  fs_delete: 'delete',
   fs_create_dir: 'create_dir',
-  fs_delete_dir: 'delete_dir',
   fs_move: 'move',
 } as const
 
@@ -674,9 +670,9 @@ export function getLocalFileTools(options?: {
       },
     },
     {
-      name: 'fs_create_file',
+      name: 'fs_write',
       description:
-        'Create file(s) in the vault. Use path/content for a single file or items[] for batch creation.',
+        'Create a file, or overwrite an existing file with new full content. Missing parent folders are created automatically. Use fs_edit instead when you only need to change part of an existing file.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -688,57 +684,34 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Full file content.',
           },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              properties: {
-                path: {
-                  type: 'string',
-                  description: 'Vault-relative file path.',
-                },
-                content: {
-                  type: 'string',
-                  description: 'Full file content.',
-                },
-              },
-              required: ['path', 'content'],
-            },
-          },        },
+        },
+        required: ['path', 'content'],
       },
     },
     {
-      name: 'fs_delete_file',
+      name: 'fs_delete',
       description:
-        'Delete file(s) in the vault. Use path for a single file or items[] for batch deletion.',
+        'Delete a file or folder in the vault. The target kind is detected automatically. For a non-empty folder set recursive=true. Deleted items go to the trash; folder deletions cannot be undone from the chat (recover them via the system/Obsidian trash).',
       inputSchema: {
         type: 'object',
         properties: {
           path: {
             type: 'string',
-            description: 'Vault-relative file path.',
+            description: 'Vault-relative file or folder path.',
           },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              properties: {
-                path: {
-                  type: 'string',
-                  description: 'Vault-relative file path.',
-                },
-              },
-              required: ['path'],
-            },
-          },        },
+          recursive: {
+            type: 'boolean',
+            description:
+              'Folders only. Default false; when false a non-empty folder cannot be deleted. Ignored for files.',
+          },
+        },
+        required: ['path'],
       },
     },
     {
       name: 'fs_create_dir',
       description:
-        'Create folder(s) in the vault. Use path for a single folder or items[] for batch creation.',
+        'Create an empty folder in the vault. Missing parent folders are created automatically.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -746,63 +719,13 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Vault-relative folder path.',
           },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              properties: {
-                path: {
-                  type: 'string',
-                  description: 'Vault-relative folder path.',
-                },
-              },
-              required: ['path'],
-            },
-          },        },
-      },
-    },
-    {
-      name: 'fs_delete_dir',
-      description:
-        'Delete folder(s) in the vault. Use path for a single folder or items[] for batch deletion.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Vault-relative folder path.',
-          },
-          recursive: {
-            type: 'boolean',
-            description:
-              'Default false; when false non-empty folders cannot be deleted.',
-          },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              properties: {
-                path: {
-                  type: 'string',
-                  description: 'Vault-relative folder path.',
-                },
-                recursive: {
-                  type: 'boolean',
-                  description:
-                    'Default false; when false non-empty folders cannot be deleted.',
-                },
-              },
-              required: ['path'],
-            },
-          },        },
+        },
+        required: ['path'],
       },
     },
     {
       name: 'fs_move',
-      description:
-        'Move or rename file/folder path(s) in the vault. Use oldPath/newPath for a single move or items[] for batch moves.',
+      description: 'Move or rename a file/folder path in the vault.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -814,24 +737,8 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Vault-relative destination path.',
           },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              properties: {
-                oldPath: {
-                  type: 'string',
-                  description: 'Vault-relative source path.',
-                },
-                newPath: {
-                  type: 'string',
-                  description: 'Vault-relative destination path.',
-                },
-              },
-              required: ['oldPath', 'newPath'],
-            },
-          },        },
+        },
+        required: ['oldPath', 'newPath'],
       },
     },
     {
@@ -1291,24 +1198,6 @@ const getRecordArrayArg = (
     }
     return item as Record<string, unknown>
   })
-}
-
-const getFsFileOpItems = ({
-  args,
-  itemFactory,
-}: {
-  args: Record<string, unknown>
-  itemFactory: () => Record<string, unknown>
-}): Record<string, unknown>[] => {
-  if (args.items !== undefined) {
-    const items = getRecordArrayArg(args, 'items')
-    if (items.length === 0) {
-      throw new Error('items must contain at least one entry.')
-    }
-    return items
-  }
-
-  return [itemFactory()]
 }
 
 const assertContentSize = (content: string): void => {
@@ -2301,11 +2190,103 @@ export function parseLocalFsActionFromToolArgs({
   return null
 }
 
+/**
+ * Build an editSummary (+ chat-undo snapshot + review snapshot) for a
+ * file content change (create/overwrite/delete) and accumulate it into a
+ * single-file result. Returns the metadata for the tool response.
+ */
+const buildFileChangeSummary = async ({
+  app,
+  settings,
+  path,
+  beforeContent,
+  afterContent,
+  beforeExists,
+  afterExists,
+  conversationId,
+  roundId,
+  toolCallId,
+  appliedAt,
+}: {
+  app: App
+  settings?: YoloSettings
+  path: string
+  beforeContent: string
+  afterContent: string
+  beforeExists: boolean
+  afterExists: boolean
+  conversationId?: string
+  roundId?: string
+  toolCallId?: string
+  appliedAt: number
+}): Promise<LocalToolCallResultMetadata | undefined> => {
+  let editSummary = createToolEditSummary({
+    path,
+    beforeContent,
+    afterContent,
+    beforeExists,
+    afterExists,
+    reviewRoundId: roundId,
+  })
+
+  if (toolCallId && editSummary) {
+    editUndoSnapshotStore.set({
+      toolCallId,
+      path,
+      beforeContent,
+      afterContent,
+      beforeExists,
+      afterExists,
+      appliedAt,
+    })
+  }
+
+  if (conversationId && roundId && editSummary) {
+    const snapshot = await upsertEditReviewSnapshot({
+      app,
+      conversationId,
+      roundId,
+      filePath: path,
+      beforeContent,
+      afterContent,
+      beforeExists,
+      afterExists,
+      settings,
+    })
+    editSummary = {
+      ...editSummary,
+      files: editSummary.files.map((file) => ({
+        ...file,
+        addedLines: snapshot.addedLines,
+        removedLines: snapshot.removedLines,
+        reviewRoundId: roundId,
+      })),
+      totalAddedLines: snapshot.addedLines,
+      totalRemovedLines: snapshot.removedLines,
+    }
+  }
+
+  if (!editSummary) {
+    return undefined
+  }
+
+  return {
+    editSummary: {
+      files: editSummary.files,
+      totalFiles: editSummary.files.length,
+      totalAddedLines: editSummary.totalAddedLines,
+      totalRemovedLines: editSummary.totalRemovedLines,
+      undoStatus: deriveToolEditUndoStatus(editSummary.files),
+    },
+    appliedAt,
+  }
+}
+
 const executeFsFileOps = async ({
   app,
   settings,
   action,
-  items,
+  item,
   signal,
   tool,
   conversationId,
@@ -2315,293 +2296,246 @@ const executeFsFileOps = async ({
   app: App
   settings?: YoloSettings
   action: FsFileOpAction
-  items: Record<string, unknown>[]
+  item: Record<string, unknown>
   signal?: AbortSignal
   tool: string
   conversationId?: string
   roundId?: string
   toolCallId?: string
 }): Promise<LocalToolCallResult> => {
-  if (items.length === 0) {
-    throw new Error('items cannot be empty.')
-  }
-  if (items.length > MAX_BATCH_WRITE_ITEMS) {
-    throw new Error(
-      `items supports up to ${MAX_BATCH_WRITE_ITEMS} operations per call.`,
-    )
+  if (signal?.aborted) {
+    return { status: ToolCallResponseStatus.Aborted }
   }
 
-  const results: FsResultItem[] = []
-  let summaryFiles: ToolEditSummary['files'] = []
-  let totalAddedLines = 0
-  let totalRemovedLines = 0
   const appliedAt = Date.now()
 
-  for (const item of items) {
-    if (signal?.aborted) {
-      return { status: ToolCallResponseStatus.Aborted }
-    }
+  try {
+    if (action === 'write') {
+      const path = validateVaultPath(getTextArg(item, 'path'))
+      const content = getTextArg(item, 'content')
+      assertContentSize(content)
 
-    try {
-      if (action === 'create_file') {
-        const path = validateVaultPath(getTextArg(item, 'path'))
-        const content = getTextArg(item, 'content')
-        assertContentSize(content)
+      const existing = app.vault.getAbstractFileByPath(path)
 
-        const existing = app.vault.getAbstractFileByPath(path)
-        if (existing) {
-          throw new Error(`Path already exists: ${path}`)
+      if (existing instanceof TFolder) {
+        throw new Error(`Path is a folder, cannot overwrite as a file: ${path}`)
+      }
+
+      let result: FsResultItem
+      let metadata: LocalToolCallResultMetadata | undefined
+
+      if (existing instanceof TFile) {
+        // Overwrite. Guard against pulling an oversized old file into the
+        // diff/undo snapshot: when the existing content exceeds the size
+        // limit we still overwrite, but skip the snapshot/editSummary so we
+        // don't blow up memory with a giant before-content.
+        const overSized = existing.stat.size > MAX_FILE_SIZE_BYTES
+        const beforeContent = overSized ? '' : await app.vault.read(existing)
+        await app.vault.modify(existing, content)
+        if (!overSized) {
+          metadata = await buildFileChangeSummary({
+            app,
+            settings,
+            path,
+            beforeContent,
+            afterContent: content,
+            beforeExists: true,
+            afterExists: true,
+            conversationId,
+            roundId,
+            toolCallId,
+            appliedAt,
+          })
         }
+        result = {
+          ok: true,
+          action,
+          target: path,
+          message: overSized
+            ? 'Overwrote file (existing content too large for undo snapshot).'
+            : 'Overwrote file.',
+        }
+      } else {
         await ensureParentFolderExists(app, path)
-
         await app.vault.create(path, content)
-
-        let editSummary = createToolEditSummary({
+        metadata = await buildFileChangeSummary({
+          app,
+          settings,
           path,
           beforeContent: '',
           afterContent: content,
           beforeExists: false,
           afterExists: true,
-          reviewRoundId: roundId,
+          conversationId,
+          roundId,
+          toolCallId,
+          appliedAt,
         })
-
-        if (toolCallId && editSummary) {
-          editUndoSnapshotStore.set({
-            toolCallId,
-            path,
-            beforeContent: '',
-            afterContent: content,
-            beforeExists: false,
-            afterExists: true,
-            appliedAt,
-          })
-        }
-
-        if (conversationId && roundId && editSummary) {
-          const snapshot = await upsertEditReviewSnapshot({
-            app,
-            conversationId,
-            roundId,
-            filePath: path,
-            beforeContent: '',
-            afterContent: content,
-            beforeExists: false,
-            afterExists: true,
-            settings,
-          })
-          editSummary = {
-            ...editSummary,
-            files: editSummary.files.map((file) => ({
-              ...file,
-              addedLines: snapshot.addedLines,
-              removedLines: snapshot.removedLines,
-              reviewRoundId: roundId,
-            })),
-            totalAddedLines: snapshot.addedLines,
-            totalRemovedLines: snapshot.removedLines,
-          }
-        }
-
-        if (editSummary) {
-          summaryFiles = [...summaryFiles, ...editSummary.files]
-          totalAddedLines += editSummary.totalAddedLines
-          totalRemovedLines += editSummary.totalRemovedLines
-        }
-
-        results.push({
+        result = {
           ok: true,
           action,
           target: path,
           message: 'Created file.',
-        })
-        continue
+        }
       }
 
-      if (action === 'delete_file') {
-        const path = validateVaultPath(getTextArg(item, 'path'))
-        const existing = app.vault.getAbstractFileByPath(path)
-        if (!existing || !(existing instanceof TFile)) {
-          throw new Error(`File not found: ${path}`)
-        }
+      return {
+        status: ToolCallResponseStatus.Success,
+        text: formatJsonResult({ tool, action, results: [result] }),
+        metadata,
+      }
+    }
+
+    if (action === 'delete') {
+      const path = validateVaultPath(getTextArg(item, 'path'))
+      const recursive = getOptionalBooleanArg(item, 'recursive') ?? false
+      const existing = app.vault.getAbstractFileByPath(path)
+      if (!existing) {
+        throw new Error(`Path not found: ${path}`)
+      }
+
+      if (existing instanceof TFile) {
         const content = await app.vault.read(existing)
-
         await app.fileManager.trashFile(existing)
-
-        let editSummary = createToolEditSummary({
+        const metadata = await buildFileChangeSummary({
+          app,
+          settings,
           path,
           beforeContent: content,
           afterContent: '',
           beforeExists: true,
           afterExists: false,
-          reviewRoundId: roundId,
+          conversationId,
+          roundId,
+          toolCallId,
+          appliedAt,
         })
-
-        if (toolCallId && editSummary) {
-          editUndoSnapshotStore.set({
-            toolCallId,
-            path,
-            beforeContent: content,
-            afterContent: '',
-            beforeExists: true,
-            afterExists: false,
-            appliedAt,
-          })
+        return {
+          status: ToolCallResponseStatus.Success,
+          text: formatJsonResult({
+            tool,
+            action,
+            results: [
+              {
+                ok: true,
+                action,
+                target: path,
+                message: 'Deleted file.',
+                targetKind: 'file',
+              } satisfies FsResultItem,
+            ],
+          }),
+          metadata,
         }
-
-        if (conversationId && roundId && editSummary) {
-          const snapshot = await upsertEditReviewSnapshot({
-            app,
-            conversationId,
-            roundId,
-            filePath: path,
-            beforeContent: content,
-            afterContent: '',
-            beforeExists: true,
-            afterExists: false,
-            settings,
-          })
-          editSummary = {
-            ...editSummary,
-            files: editSummary.files.map((file) => ({
-              ...file,
-              addedLines: snapshot.addedLines,
-              removedLines: snapshot.removedLines,
-              reviewRoundId: roundId,
-            })),
-            totalAddedLines: snapshot.addedLines,
-            totalRemovedLines: snapshot.removedLines,
-          }
-        }
-
-        if (editSummary) {
-          summaryFiles = [...summaryFiles, ...editSummary.files]
-          totalAddedLines += editSummary.totalAddedLines
-          totalRemovedLines += editSummary.totalRemovedLines
-        }
-
-        results.push({
-          ok: true,
-          action,
-          target: path,
-          message: 'Deleted file.',
-        })
-        continue
       }
 
-      if (action === 'create_dir') {
-        const path = validateVaultPath(getTextArg(item, 'path'))
-        const existing = app.vault.getAbstractFileByPath(path)
-        if (existing) {
-          throw new Error(`Path already exists: ${path}`)
-        }
-        await ensureParentFolderExists(app, path)
-
-        await app.vault.createFolder(path)
-
-        results.push({
-          ok: true,
-          action,
-          target: path,
-          message: 'Created folder.',
-        })
-        continue
-      }
-
-      if (action === 'delete_dir') {
-        const path = validateVaultPath(getTextArg(item, 'path'))
-        const recursive = getOptionalBooleanArg(item, 'recursive') ?? false
-        const existing = app.vault.getAbstractFileByPath(path)
-        if (!existing || !(existing instanceof TFolder)) {
-          throw new Error(`Folder not found: ${path}`)
-        }
+      if (existing instanceof TFolder) {
         if (!recursive && existing.children.length > 0) {
           throw new Error(
             `Folder is not empty: ${path}. Set recursive=true to delete non-empty folders.`,
           )
         }
-
+        // Folder deletions only move to trash — no editSummary / chat-undo
+        // snapshot. Recovery relies on the system/Obsidian trash.
         await app.fileManager.trashFile(existing)
-
-        results.push({
-          ok: true,
-          action,
-          target: path,
-          message: 'Deleted folder.',
-        })
-        continue
+        return {
+          status: ToolCallResponseStatus.Success,
+          text: formatJsonResult({
+            tool,
+            action,
+            results: [
+              {
+                ok: true,
+                action,
+                target: path,
+                message: 'Deleted folder.',
+                targetKind: 'folder',
+              } satisfies FsResultItem,
+            ],
+          }),
+        }
       }
 
-      if (action === 'move') {
-        const oldPath = validateVaultPath(getTextArg(item, 'oldPath'))
-        const newPath = validateVaultPath(getTextArg(item, 'newPath'))
-
-        if (oldPath === newPath) {
-          throw new Error('oldPath and newPath must be different.')
-        }
-
-        const source = app.vault.getAbstractFileByPath(oldPath)
-        if (!source) {
-          throw new Error(`Source path not found: ${oldPath}`)
-        }
-
-        const targetExists = app.vault.getAbstractFileByPath(newPath)
-        if (targetExists) {
-          throw new Error(`Target path already exists: ${newPath}`)
-        }
-        await ensureParentFolderExists(app, newPath)
-
-        if (
-          source instanceof TFolder &&
-          (newPath === source.path || newPath.startsWith(`${source.path}/`))
-        ) {
-          throw new Error('Cannot move a folder into itself or its subfolder.')
-        }
-
-        await app.fileManager.renameFile(source, newPath)
-
-        results.push({
-          ok: true,
-          action,
-          target: `${oldPath} -> ${newPath}`,
-          message: 'Moved path.',
-        })
-        continue
-      }
-
-      throw new Error(`Unsupported fs action: ${action}`)
-    } catch (error) {
-      results.push({
-        ok: false,
-        action,
-        target:
-          action === 'move'
-            ? `${asOptionalString(item.oldPath)} -> ${asOptionalString(item.newPath)}`
-            : asOptionalString(item.path),
-        message: asErrorMessage(error),
-      })
+      throw new Error(`Unsupported delete target: ${path}`)
     }
-  }
 
-  return {
-    status: ToolCallResponseStatus.Success,
-    text: formatJsonResult({
-      tool,
-      action,
-      results,
-    }),
-    metadata:
-      summaryFiles.length === 0
-        ? undefined
-        : {
-            editSummary: {
-              files: summaryFiles,
-              totalFiles: summaryFiles.length,
-              totalAddedLines,
-              totalRemovedLines,
-              undoStatus: deriveToolEditUndoStatus(summaryFiles),
-            },
-            appliedAt,
-          },
+    if (action === 'create_dir') {
+      const path = validateVaultPath(getTextArg(item, 'path'))
+      const existing = app.vault.getAbstractFileByPath(path)
+      if (existing) {
+        throw new Error(`Path already exists: ${path}`)
+      }
+      await ensureParentFolderExists(app, path)
+      await app.vault.createFolder(path)
+
+      return {
+        status: ToolCallResponseStatus.Success,
+        text: formatJsonResult({
+          tool,
+          action,
+          results: [
+            {
+              ok: true,
+              action,
+              target: path,
+              message: 'Created folder.',
+            } satisfies FsResultItem,
+          ],
+        }),
+      }
+    }
+
+    if (action === 'move') {
+      const oldPath = validateVaultPath(getTextArg(item, 'oldPath'))
+      const newPath = validateVaultPath(getTextArg(item, 'newPath'))
+
+      if (oldPath === newPath) {
+        throw new Error('oldPath and newPath must be different.')
+      }
+
+      const source = app.vault.getAbstractFileByPath(oldPath)
+      if (!source) {
+        throw new Error(`Source path not found: ${oldPath}`)
+      }
+
+      const targetExists = app.vault.getAbstractFileByPath(newPath)
+      if (targetExists) {
+        throw new Error(`Target path already exists: ${newPath}`)
+      }
+      await ensureParentFolderExists(app, newPath)
+
+      if (
+        source instanceof TFolder &&
+        (newPath === source.path || newPath.startsWith(`${source.path}/`))
+      ) {
+        throw new Error('Cannot move a folder into itself or its subfolder.')
+      }
+
+      await app.fileManager.renameFile(source, newPath)
+
+      return {
+        status: ToolCallResponseStatus.Success,
+        text: formatJsonResult({
+          tool,
+          action,
+          results: [
+            {
+              ok: true,
+              action,
+              target: `${oldPath} -> ${newPath}`,
+              message: 'Moved path.',
+            } satisfies FsResultItem,
+          ],
+        }),
+      }
+    }
+
+    throw new Error(`Unsupported fs action: ${action}`)
+  } catch (error) {
+    return {
+      status: ToolCallResponseStatus.Error,
+      error: asErrorMessage(error),
+    }
   }
 }
 
@@ -2643,10 +2577,10 @@ export async function callLocalFileTool({
   }
 
   try {
-    // Final defense: reject any fs_* call whose path args (including batch
-    // items[]) fall outside the agent's workspace scope. The gateway performs
-    // the same check up front for UI Rejected status, but we re-validate here
-    // so manual-approval / direct-call code paths cannot bypass the constraint.
+    // Final defense: reject any fs_* call whose path args fall outside the
+    // agent's workspace scope. The gateway performs the same check up front
+    // for UI Rejected status, but we re-validate here so manual-approval /
+    // direct-call code paths cannot bypass the constraint.
     if (workspaceScope?.enabled) {
       const offendingPath = findPathOutsideScope(toolName, args, workspaceScope)
       if (offendingPath !== null) {
@@ -3540,37 +3474,35 @@ export async function callLocalFileTool({
         }
       }
 
-      case 'fs_create_file': {
+      case 'fs_write': {
         return executeFsFileOps({
           app,
           settings,
-          action: 'create_file',
-          items: getFsFileOpItems({
-            args,
-            itemFactory: () => ({
-              path: getTextArg(args, 'path'),
-              content: getTextArg(args, 'content'),
-            }),
-          }),
+          action: 'write',
+          item: {
+            path: getTextArg(args, 'path'),
+            content: getTextArg(args, 'content'),
+          },
           signal,
-          tool: 'fs_create_file',
+          tool: 'fs_write',
           conversationId,
           roundId,
           toolCallId,
         })
       }
 
-      case 'fs_delete_file': {
+      case 'fs_delete': {
+        const recursive = getOptionalBooleanArg(args, 'recursive')
         return executeFsFileOps({
           app,
           settings,
-          action: 'delete_file',
-          items: getFsFileOpItems({
-            args,
-            itemFactory: () => ({ path: getTextArg(args, 'path') }),
-          }),
+          action: 'delete',
+          item: {
+            path: getTextArg(args, 'path'),
+            ...(recursive === undefined ? {} : { recursive }),
+          },
           signal,
-          tool: 'fs_delete_file',
+          tool: 'fs_delete',
           conversationId,
           roundId,
           toolCallId,
@@ -3581,29 +3513,9 @@ export async function callLocalFileTool({
         return executeFsFileOps({
           app,
           action: 'create_dir',
-          items: getFsFileOpItems({
-            args,
-            itemFactory: () => ({ path: getTextArg(args, 'path') }),
-          }),
+          item: { path: getTextArg(args, 'path') },
           signal,
           tool: 'fs_create_dir',
-        })
-      }
-
-      case 'fs_delete_dir': {
-        const recursive = getOptionalBooleanArg(args, 'recursive')
-        return executeFsFileOps({
-          app,
-          action: 'delete_dir',
-          items: getFsFileOpItems({
-            args,
-            itemFactory: () => ({
-              path: getTextArg(args, 'path'),
-              ...(recursive === undefined ? {} : { recursive }),
-            }),
-          }),
-          signal,
-          tool: 'fs_delete_dir',
         })
       }
 
@@ -3611,13 +3523,10 @@ export async function callLocalFileTool({
         return executeFsFileOps({
           app,
           action: 'move',
-          items: getFsFileOpItems({
-            args,
-            itemFactory: () => ({
-              oldPath: getTextArg(args, 'oldPath'),
-              newPath: getTextArg(args, 'newPath'),
-            }),
-          }),
+          item: {
+            oldPath: getTextArg(args, 'oldPath'),
+            newPath: getTextArg(args, 'newPath'),
+          },
           signal,
           tool: 'fs_move',
         })

@@ -86,16 +86,16 @@ describe('local fs tool action helpers', () => {
   it('parses split file-op tools to fs actions', () => {
     expect(
       parseLocalFsActionFromToolArgs({
-        toolName: 'fs_create_file',
+        toolName: 'fs_write',
         args: { path: 'a.md', content: 'x' },
       }),
-    ).toBe('create_file')
+    ).toBe('write')
     expect(
       parseLocalFsActionFromToolArgs({
-        toolName: 'fs_delete_dir',
+        toolName: 'fs_delete',
         args: { path: 'tmp', recursive: true },
       }),
-    ).toBe('delete_dir')
+    ).toBe('delete')
   })
 
   it('recognizes write tool names with local prefixes', () => {
@@ -459,7 +459,7 @@ describe('local fs tool action helpers', () => {
     }
   })
 
-  it('returns edit summary metadata for fs_create_file', async () => {
+  it('returns edit summary metadata for fs_write (create)', async () => {
     const create = jest.fn()
 
     const result = await callLocalFileTool({
@@ -471,7 +471,7 @@ describe('local fs tool action helpers', () => {
         },
       } as unknown as App,
       toolCallId: 'tool-call-create-1',
-      toolName: 'fs_create_file',
+      toolName: 'fs_write',
       args: {
         path: 'note.md',
         content: ['one', 'two'].join('\n'),
@@ -497,7 +497,7 @@ describe('local fs tool action helpers', () => {
     })
   })
 
-  it('returns edit summary metadata for fs_delete_file', async () => {
+  it('returns edit summary metadata for fs_delete (file)', async () => {
     const file = Object.assign(new TFile(), {
       path: 'note.md',
       stat: { size: 20 },
@@ -516,7 +516,7 @@ describe('local fs tool action helpers', () => {
         },
       } as unknown as App,
       toolCallId: 'tool-call-delete-1',
-      toolName: 'fs_delete_file',
+      toolName: 'fs_delete',
       args: {
         path: 'note.md',
       },
@@ -1481,7 +1481,7 @@ describe('local fs tool action helpers', () => {
           create,
         },
       } as unknown as App,
-      toolName: 'fs_create_file',
+      toolName: 'fs_write',
       args: {
         path: '99-Assets/YOLO/skills/content-organization/SKILL.md',
         content: '# test',
@@ -1505,145 +1505,185 @@ describe('local fs tool action helpers', () => {
     ).toBe('# test')
   })
 
-  it('supports batch create_file calls with items', async () => {
-    const entries = new Map<string, unknown>()
-    const contents = new Map<string, string>()
-    const createFolder = jest.fn().mockImplementation(async (path: string) => {
-      const folder = Object.assign(new TFolder(), {
-        path,
-        children: [],
-      })
-      entries.set(path, folder)
-      return folder
-    })
-    const create = jest
-      .fn()
-      .mockImplementation(async (path: string, content: string) => {
-        const file = Object.assign(new TFile(), {
-          path,
-          stat: { size: content.length },
-        })
-        entries.set(path, file)
-        contents.set(path, content)
-        return file
-      })
-
-    const result = await callLocalFileTool({
-      app: {
-        vault: {
-          getAbstractFileByPath: jest
-            .fn()
-            .mockImplementation((path: string) => entries.get(path) ?? null),
-          createFolder,
-          create,
-        },
-      } as unknown as App,
-      toolName: 'fs_create_file',
-      args: {
-        items: [
-          { path: 'docs/a.md', content: 'A' },
-          { path: 'docs/b.md', content: 'B' },
-        ],
-      },
-    })
-
-    expect(result.status).toBe(ToolCallResponseStatus.Success)
-    expect(create).toHaveBeenNthCalledWith(1, 'docs/a.md', 'A')
-    expect(create).toHaveBeenNthCalledWith(2, 'docs/b.md', 'B')
-    expect(contents.get('docs/a.md')).toBe('A')
-    expect(contents.get('docs/b.md')).toBe('B')
-  })
-
-  it('supports batch move calls with items and reports partial failures', async () => {
-    const entries = new Map<string, TFile | TFolder>()
-    const docsFolder = Object.assign(new TFolder(), {
-      path: 'docs',
-      children: [],
-    })
-    const sourceA = Object.assign(new TFile(), {
+  it('overwrites an existing file via fs_write and snapshots old content', async () => {
+    const existing = Object.assign(new TFile(), {
       path: 'docs/a.md',
-      stat: { size: 1 },
+      stat: { size: 3 },
     })
-    const sourceB = Object.assign(new TFile(), {
-      path: 'docs/b.md',
-      stat: { size: 1 },
-    })
-    entries.set('docs', docsFolder)
-    entries.set('docs/a.md', sourceA)
-    entries.set('docs/b.md', sourceB)
-
-    const renameFile = jest
-      .fn()
-      .mockImplementation(async (file: TFile | TFolder, newPath: string) => {
-        entries.delete(file.path)
-        file.path = newPath
-        entries.set(newPath, file)
-      })
+    const read = jest.fn().mockResolvedValue('old')
+    const modify = jest.fn()
 
     const result = await callLocalFileTool({
       app: {
         vault: {
-          getAbstractFileByPath: jest
-            .fn()
-            .mockImplementation((path: string) => entries.get(path) ?? null),
+          getAbstractFileByPath: jest.fn().mockReturnValue(existing),
+          read,
+          modify,
+          create: jest.fn(),
           createFolder: jest.fn(),
         },
-        fileManager: {
-          renameFile,
-        },
       } as unknown as App,
-      toolName: 'fs_move',
+      toolCallId: 'tool-call-overwrite-1',
+      toolName: 'fs_write',
       args: {
-        items: [
-          { oldPath: 'docs/a.md', newPath: 'docs/a-renamed.md' },
-          { oldPath: 'docs/missing.md', newPath: 'docs/missing-renamed.md' },
-        ],
+        path: 'docs/a.md',
+        content: 'new content',
       },
     })
 
     expect(result.status).toBe(ToolCallResponseStatus.Success)
-    expect(renameFile).toHaveBeenCalledTimes(1)
-    expect(entries.has('docs/a-renamed.md')).toBe(true)
+    expect(modify).toHaveBeenCalledWith(existing, 'new content')
     if (result.status !== ToolCallResponseStatus.Success) {
       throw new Error('expected success')
     }
-    expect(JSON.parse(result.text)).toMatchObject({
-      tool: 'fs_move',
-      action: 'move',
-      results: [
-        {
-          ok: true,
-          target: 'docs/a.md -> docs/a-renamed.md',
-        },
-        {
-          ok: false,
-          target: 'docs/missing.md -> docs/missing-renamed.md',
-          message: 'Source path not found: docs/missing.md',
-        },
-      ],
+    expect(result.metadata?.editSummary).toMatchObject({
+      totalFiles: 1,
+      files: [{ operation: 'edit' }],
+    })
+    expect(
+      editUndoSnapshotStore.get('tool-call-overwrite-1', 'docs/a.md'),
+    ).toMatchObject({
+      beforeExists: true,
+      afterExists: true,
+      beforeContent: 'old',
+      afterContent: 'new content',
     })
   })
 
-  it('keeps fs tool schemas batch-friendly without top-level combinators', () => {
+  it('rejects fs_write when the target path is an existing folder', async () => {
+    const folder = Object.assign(new TFolder(), {
+      path: 'docs',
+      children: [],
+    })
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(folder),
+          modify: jest.fn(),
+          create: jest.fn(),
+          createFolder: jest.fn(),
+        },
+      } as unknown as App,
+      toolName: 'fs_write',
+      args: {
+        path: 'docs',
+        content: 'x',
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toMatch(/folder/i)
+    }
+  })
+
+  it('deletes a folder via fs_delete with recursive and reports targetKind', async () => {
+    const child = Object.assign(new TFile(), {
+      path: 'docs/a.md',
+      stat: { size: 1 },
+    })
+    const folder = Object.assign(new TFolder(), {
+      path: 'docs',
+      children: [child],
+    })
+    const trashFile = jest.fn()
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(folder),
+        },
+        fileManager: { trashFile },
+      } as unknown as App,
+      toolName: 'fs_delete',
+      args: {
+        path: 'docs',
+        recursive: true,
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    expect(trashFile).toHaveBeenCalledWith(folder)
+    if (result.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+    // Folder deletions carry no editSummary / chat-undo snapshot.
+    expect(result.metadata).toBeUndefined()
+    expect(JSON.parse(result.text)).toMatchObject({
+      tool: 'fs_delete',
+      action: 'delete',
+      results: [{ ok: true, target: 'docs', targetKind: 'folder' }],
+    })
+  })
+
+  it('refuses to delete a non-empty folder without recursive', async () => {
+    const child = Object.assign(new TFile(), {
+      path: 'docs/a.md',
+      stat: { size: 1 },
+    })
+    const folder = Object.assign(new TFolder(), {
+      path: 'docs',
+      children: [child],
+    })
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(folder),
+        },
+        fileManager: { trashFile: jest.fn() },
+      } as unknown as App,
+      toolName: 'fs_delete',
+      args: { path: 'docs' },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toMatch(/not empty/i)
+    }
+  })
+
+  it('returns Error when a single fs_move target fails', async () => {
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(null),
+          createFolder: jest.fn(),
+        },
+        fileManager: { renameFile: jest.fn() },
+      } as unknown as App,
+      toolName: 'fs_move',
+      args: {
+        oldPath: 'docs/missing.md',
+        newPath: 'docs/missing-renamed.md',
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toBe('Source path not found: docs/missing.md')
+    }
+  })
+
+  it('keeps fs write tool schemas flat without items or top-level combinators', () => {
     const tools = getLocalFileTools()
     const schemaByName = new Map(
       tools.map((tool) => [tool.name, tool.inputSchema] as const),
     )
 
-    for (const toolName of [
-      'fs_create_file',
-      'fs_delete_file',
-      'fs_create_dir',
-      'fs_delete_dir',
-      'fs_move',
-    ] as const) {
+    const expectedRequired: Record<string, string[]> = {
+      fs_write: ['path', 'content'],
+      fs_delete: ['path'],
+      fs_create_dir: ['path'],
+      fs_move: ['oldPath', 'newPath'],
+    }
+
+    for (const [toolName, required] of Object.entries(expectedRequired)) {
       const schema = schemaByName.get(toolName) as
         | {
-            properties?: {
-              items?: {
-                minItems?: number
-              }
-            }
+            properties?: Record<string, unknown>
+            required?: string[]
             oneOf?: unknown
             anyOf?: unknown
             allOf?: unknown
@@ -1651,31 +1691,11 @@ describe('local fs tool action helpers', () => {
         | undefined
 
       expect(schema).toBeDefined()
-      expect(schema?.properties?.items?.minItems).toBe(1)
+      expect(schema?.properties?.items).toBeUndefined()
+      expect(schema?.required).toEqual(required)
       expect(schema?.oneOf).toBeUndefined()
       expect(schema?.anyOf).toBeUndefined()
       expect(schema?.allOf).toBeUndefined()
-    }
-  })
-
-  it('rejects empty batch items for fs_create_file at runtime', async () => {
-    const result = await callLocalFileTool({
-      app: {
-        vault: {
-          getAbstractFileByPath: jest.fn(),
-          createFolder: jest.fn(),
-          create: jest.fn(),
-        },
-      } as unknown as App,
-      toolName: 'fs_create_file',
-      args: {
-        items: [],
-      },
-    })
-
-    expect(result.status).toBe(ToolCallResponseStatus.Error)
-    if (result.status === ToolCallResponseStatus.Error) {
-      expect(result.error).toContain('items must contain at least one entry')
     }
   })
 
@@ -1763,14 +1783,14 @@ describe('local fs tool action helpers', () => {
       }
     })
 
-    it('rejects fs_delete_file when any batch item is outside scope', async () => {
+    it('rejects fs_delete when path is outside scope', async () => {
       const result = await callLocalFileTool({
         app: {
           vault: { getAbstractFileByPath: jest.fn() },
         } as unknown as App,
-        toolName: 'fs_delete_file',
+        toolName: 'fs_delete',
         args: {
-          items: [{ path: 'Notes/a.md' }, { path: 'secret/b.md' }],
+          path: 'secret/b.md',
         },
         workspaceScope: allowNotes,
       })
@@ -1780,7 +1800,7 @@ describe('local fs tool action helpers', () => {
       }
     })
 
-    it('rejects fs_create_file batch when any item is outside scope', async () => {
+    it('rejects fs_write when path is outside scope', async () => {
       const result = await callLocalFileTool({
         app: {
           vault: {
@@ -1789,19 +1809,17 @@ describe('local fs tool action helpers', () => {
             createFolder: jest.fn(),
           },
         } as unknown as App,
-        toolName: 'fs_create_file',
+        toolName: 'fs_write',
         args: {
-          items: [
-            { path: 'Notes/new.md', content: 'ok' },
-            { path: 'secret/new.md', content: 'leak' },
-          ],
+          path: 'secret/new.md',
+          content: 'leak',
         },
         workspaceScope: allowNotes,
       })
       expect(result.status).toBe(ToolCallResponseStatus.Error)
     })
 
-    it('allows in-scope batch operations when scope is enabled', async () => {
+    it('allows in-scope write operations when scope is enabled', async () => {
       const result = await callLocalFileTool({
         app: {
           vault: {
@@ -1810,12 +1828,10 @@ describe('local fs tool action helpers', () => {
             createFolder: jest.fn(),
           },
         } as unknown as App,
-        toolName: 'fs_create_file',
+        toolName: 'fs_write',
         args: {
-          items: [
-            { path: 'Notes/a.md', content: 'one' },
-            { path: 'Notes/b.md', content: 'two' },
-          ],
+          path: 'Notes/a.md',
+          content: 'one',
         },
         workspaceScope: allowNotes,
       })
@@ -1831,7 +1847,7 @@ describe('local fs tool action helpers', () => {
             createFolder: jest.fn(),
           },
         } as unknown as App,
-        toolName: 'fs_create_file',
+        toolName: 'fs_write',
         args: {
           path: 'secret/a.md',
           content: 'ok',

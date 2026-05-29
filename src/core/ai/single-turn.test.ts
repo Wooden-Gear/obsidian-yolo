@@ -176,12 +176,12 @@ describe('executeSingleTurn', () => {
     expect(result.finishReason).toBe('tool_calls')
   })
 
-  it('accepts streamed batch fs_move arguments without fallback', async () => {
+  it('accepts streamed fs_write arguments without fallback', async () => {
     const provider = new MockProvider()
     provider.streamResponseMock.mockResolvedValue(
       toAsyncIterable([
         {
-          id: 'stream-batch-move',
+          id: 'stream-write',
           model: TEST_MODEL.model,
           object: 'chat.completion.chunk',
           choices: [
@@ -191,12 +191,11 @@ describe('executeSingleTurn', () => {
                 tool_calls: [
                   {
                     index: 0,
-                    id: 'tool-batch-move',
+                    id: 'tool-write',
                     type: 'function',
                     function: {
-                      name: 'yolo_local__fs_move',
-                      arguments:
-                        '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}]}',
+                      name: 'yolo_local__fs_write',
+                      arguments: '{"path":"a.md","content":"hello"}',
                     },
                   },
                 ],
@@ -205,7 +204,7 @@ describe('executeSingleTurn', () => {
           ],
         },
         {
-          id: 'stream-batch-move',
+          id: 'stream-write',
           model: TEST_MODEL.model,
           object: 'chat.completion.chunk',
           choices: [
@@ -228,16 +227,11 @@ describe('executeSingleTurn', () => {
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
     expect(result.toolCalls).toEqual([
       {
-        id: 'tool-batch-move',
-        name: 'yolo_local__fs_move',
+        id: 'tool-write',
+        name: 'yolo_local__fs_write',
         arguments: completeArgs(
-          {
-            items: [
-              { oldPath: 'a.md', newPath: 'b.md' },
-              { oldPath: 'c.md', newPath: 'd.md' },
-            ],
-          },
-          '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}]}',
+          { path: 'a.md', content: 'hello' },
+          '{"path":"a.md","content":"hello"}',
         ),
         metadata: undefined,
       },
@@ -407,8 +401,7 @@ describe('executeSingleTurn', () => {
                     type: 'function',
                     function: {
                       name: 'yolo_local__fs_edit',
-                      arguments:
-                        '{"path":"note.md","newText":"x"}',
+                      arguments: '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
@@ -507,8 +500,7 @@ describe('executeSingleTurn', () => {
                     type: 'function',
                     function: {
                       name: 'yolo_local__fs_edit',
-                      arguments:
-                        '{"path":"note.md","newText":"x"}',
+                      arguments: '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
@@ -758,8 +750,7 @@ describe('executeSingleTurn', () => {
                     type: 'function',
                     function: {
                       name: 'yolo_local__fs_edit',
-                      arguments:
-                        '{"path":"note.md","newText":"x"}',
+                      arguments: '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
