@@ -196,7 +196,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_move',
                       arguments:
-                        '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}],"dryRun":true}',
+                        '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}]}',
                     },
                   },
                 ],
@@ -236,9 +236,8 @@ describe('executeSingleTurn', () => {
               { oldPath: 'a.md', newPath: 'b.md' },
               { oldPath: 'c.md', newPath: 'd.md' },
             ],
-            dryRun: true,
           },
-          '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}],"dryRun":true}',
+          '{"items":[{"oldPath":"a.md","newPath":"b.md"},{"oldPath":"c.md","newPath":"d.md"}]}',
         ),
         metadata: undefined,
       },

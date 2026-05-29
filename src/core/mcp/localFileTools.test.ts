@@ -1610,7 +1610,6 @@ describe('local fs tool action helpers', () => {
     expect(JSON.parse(result.text)).toMatchObject({
       tool: 'fs_move',
       action: 'move',
-      dryRun: false,
       results: [
         {
           ok: true,

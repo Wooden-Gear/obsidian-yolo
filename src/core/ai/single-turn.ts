@@ -205,64 +205,39 @@ const isValidWriteToolArguments = ({
 
   if (normalizedToolName === 'fs_create_file') {
     if (args.items !== undefined) {
-      return (
-        isRecordArrayField(args, 'items', isValidFsCreateFileItem) &&
-        isOptionalBooleanField(args, 'dryRun')
-      )
+      return isRecordArrayField(args, 'items', isValidFsCreateFileItem)
     }
-    return (
-      isStringField(args, 'path') &&
-      isStringField(args, 'content') &&
-      isOptionalBooleanField(args, 'dryRun')
-    )
+    return isStringField(args, 'path') && isStringField(args, 'content')
   }
 
   if (normalizedToolName === 'fs_delete_file') {
     if (args.items !== undefined) {
-      return (
-        isRecordArrayField(args, 'items', isValidFsDeleteFileItem) &&
-        isOptionalBooleanField(args, 'dryRun')
-      )
+      return isRecordArrayField(args, 'items', isValidFsDeleteFileItem)
     }
-    return isStringField(args, 'path') && isOptionalBooleanField(args, 'dryRun')
+    return isStringField(args, 'path')
   }
 
   if (normalizedToolName === 'fs_create_dir') {
     if (args.items !== undefined) {
-      return (
-        isRecordArrayField(args, 'items', isValidFsCreateDirItem) &&
-        isOptionalBooleanField(args, 'dryRun')
-      )
+      return isRecordArrayField(args, 'items', isValidFsCreateDirItem)
     }
-    return isStringField(args, 'path') && isOptionalBooleanField(args, 'dryRun')
+    return isStringField(args, 'path')
   }
 
   if (normalizedToolName === 'fs_delete_dir') {
     if (args.items !== undefined) {
-      return (
-        isRecordArrayField(args, 'items', isValidFsDeleteDirItem) &&
-        isOptionalBooleanField(args, 'dryRun')
-      )
+      return isRecordArrayField(args, 'items', isValidFsDeleteDirItem)
     }
     return (
-      isStringField(args, 'path') &&
-      isOptionalBooleanField(args, 'recursive') &&
-      isOptionalBooleanField(args, 'dryRun')
+      isStringField(args, 'path') && isOptionalBooleanField(args, 'recursive')
     )
   }
 
   if (normalizedToolName === 'fs_move') {
     if (args.items !== undefined) {
-      return (
-        isRecordArrayField(args, 'items', isValidFsMoveItem) &&
-        isOptionalBooleanField(args, 'dryRun')
-      )
+      return isRecordArrayField(args, 'items', isValidFsMoveItem)
     }
-    return (
-      isStringField(args, 'oldPath') &&
-      isStringField(args, 'newPath') &&
-      isOptionalBooleanField(args, 'dryRun')
-    )
+    return isStringField(args, 'oldPath') && isStringField(args, 'newPath')
   }
 
   return true

@@ -200,11 +200,11 @@ YOLO skills operate within Obsidian's environment. The following built-in tools 
 | \`fs_search\` | Find files by keyword or pattern |
 | \`fs_read\` | Read full files or targeted line ranges |
 | \`fs_edit\` | Apply exactly one targeted text edit to an existing file (by exact \`oldText\`, or by \`startLine\`/\`endLine\` range) |
-| \`fs_create_file\` | Create a file with provided content (supports \`dryRun\`) |
-| \`fs_delete_file\` | Delete a file path (supports \`dryRun\`) |
-| \`fs_create_dir\` | Create a directory path (supports \`dryRun\`) |
-| \`fs_delete_dir\` | Delete a directory path (supports \`recursive\` and \`dryRun\`) |
-| \`fs_move\` | Move or rename a file/folder path (supports \`dryRun\`) |
+| \`fs_create_file\` | Create a file with provided content |
+| \`fs_delete_file\` | Delete a file path |
+| \`fs_create_dir\` | Create a directory path |
+| \`fs_delete_dir\` | Delete a directory path (supports \`recursive\`) |
+| \`fs_move\` | Move or rename a file/folder path |
 
 Skills should be designed around these capabilities. There is no script execution environment, no shell access, and no external API calls. All skill workflows must be achievable through file operations and the agent's reasoning.
 
@@ -273,13 +273,10 @@ Body guidelines:
 - Include a concrete example if the expected behavior is non-obvious
 - Keep verification steps explicit
 
-### Step 5: Write to Vault Safely
-
-Always preview before committing:
+### Step 5: Write to Vault
 
 ~~~
-fs_create_file { path: "YOLO/skills/<skill-id>.md", content: "...", dryRun: true } -> preview
-fs_create_file { path: "YOLO/skills/<skill-id>.md", content: "..." } -> commit
+fs_create_file { path: "YOLO/skills/<skill-id>.md", content: "..." }
 ~~~
 
 For updates to existing skills, prefer \`fs_edit\` to make minimal, targeted changes rather than rewriting the entire file.

@@ -705,13 +705,7 @@ export function getLocalFileTools(options?: {
               },
               required: ['path', 'content'],
             },
-          },
-          dryRun: {
-            type: 'boolean',
-            description:
-              'If true, validate and preview result without applying changes.',
-          },
-        },
+          },        },
       },
     },
     {
@@ -738,13 +732,7 @@ export function getLocalFileTools(options?: {
               },
               required: ['path'],
             },
-          },
-          dryRun: {
-            type: 'boolean',
-            description:
-              'If true, validate and preview result without applying changes.',
-          },
-        },
+          },        },
       },
     },
     {
@@ -771,13 +759,7 @@ export function getLocalFileTools(options?: {
               },
               required: ['path'],
             },
-          },
-          dryRun: {
-            type: 'boolean',
-            description:
-              'If true, validate and preview result without applying changes.',
-          },
-        },
+          },        },
       },
     },
     {
@@ -814,13 +796,7 @@ export function getLocalFileTools(options?: {
               },
               required: ['path'],
             },
-          },
-          dryRun: {
-            type: 'boolean',
-            description:
-              'If true, validate and preview result without applying changes.',
-          },
-        },
+          },        },
       },
     },
     {
@@ -855,13 +831,7 @@ export function getLocalFileTools(options?: {
               },
               required: ['oldPath', 'newPath'],
             },
-          },
-          dryRun: {
-            type: 'boolean',
-            description:
-              'If true, validate and preview result without applying changes.',
-          },
-        },
+          },        },
       },
     },
     {
@@ -2336,7 +2306,6 @@ const executeFsFileOps = async ({
   settings,
   action,
   items,
-  dryRun,
   signal,
   tool,
   conversationId,
@@ -2347,7 +2316,6 @@ const executeFsFileOps = async ({
   settings?: YoloSettings
   action: FsFileOpAction
   items: Record<string, unknown>[]
-  dryRun: boolean
   signal?: AbortSignal
   tool: string
   conversationId?: string
@@ -2386,69 +2354,65 @@ const executeFsFileOps = async ({
         }
         await ensureParentFolderExists(app, path)
 
-        if (!dryRun) {
-          await app.vault.create(path, content)
-        }
+        await app.vault.create(path, content)
 
-        if (!dryRun) {
-          let editSummary = createToolEditSummary({
+        let editSummary = createToolEditSummary({
+          path,
+          beforeContent: '',
+          afterContent: content,
+          beforeExists: false,
+          afterExists: true,
+          reviewRoundId: roundId,
+        })
+
+        if (toolCallId && editSummary) {
+          editUndoSnapshotStore.set({
+            toolCallId,
             path,
             beforeContent: '',
             afterContent: content,
             beforeExists: false,
             afterExists: true,
-            reviewRoundId: roundId,
+            appliedAt,
           })
+        }
 
-          if (toolCallId && editSummary) {
-            editUndoSnapshotStore.set({
-              toolCallId,
-              path,
-              beforeContent: '',
-              afterContent: content,
-              beforeExists: false,
-              afterExists: true,
-              appliedAt,
-            })
+        if (conversationId && roundId && editSummary) {
+          const snapshot = await upsertEditReviewSnapshot({
+            app,
+            conversationId,
+            roundId,
+            filePath: path,
+            beforeContent: '',
+            afterContent: content,
+            beforeExists: false,
+            afterExists: true,
+            settings,
+          })
+          editSummary = {
+            ...editSummary,
+            files: editSummary.files.map((file) => ({
+              ...file,
+              addedLines: snapshot.addedLines,
+              removedLines: snapshot.removedLines,
+              reviewRoundId: roundId,
+            })),
+            totalAddedLines: snapshot.addedLines,
+            totalRemovedLines: snapshot.removedLines,
           }
+        }
 
-          if (conversationId && roundId && editSummary) {
-            const snapshot = await upsertEditReviewSnapshot({
-              app,
-              conversationId,
-              roundId,
-              filePath: path,
-              beforeContent: '',
-              afterContent: content,
-              beforeExists: false,
-              afterExists: true,
-              settings,
-            })
-            editSummary = {
-              ...editSummary,
-              files: editSummary.files.map((file) => ({
-                ...file,
-                addedLines: snapshot.addedLines,
-                removedLines: snapshot.removedLines,
-                reviewRoundId: roundId,
-              })),
-              totalAddedLines: snapshot.addedLines,
-              totalRemovedLines: snapshot.removedLines,
-            }
-          }
-
-          if (editSummary) {
-            summaryFiles = [...summaryFiles, ...editSummary.files]
-            totalAddedLines += editSummary.totalAddedLines
-            totalRemovedLines += editSummary.totalRemovedLines
-          }
+        if (editSummary) {
+          summaryFiles = [...summaryFiles, ...editSummary.files]
+          totalAddedLines += editSummary.totalAddedLines
+          totalRemovedLines += editSummary.totalRemovedLines
         }
 
         results.push({
           ok: true,
           action,
           target: path,
-          message: dryRun ? 'Would create file.' : 'Created file.',
+          message: 'Created file.',
         })
         continue
       }
@@ -2461,69 +2425,65 @@ const executeFsFileOps = async ({
         }
         const content = await app.vault.read(existing)
 
-        if (!dryRun) {
-          await app.fileManager.trashFile(existing)
-        }
+        await app.fileManager.trashFile(existing)
 
-        if (!dryRun) {
-          let editSummary = createToolEditSummary({
+        let editSummary = createToolEditSummary({
+          path,
+          beforeContent: content,
+          afterContent: '',
+          beforeExists: true,
+          afterExists: false,
+          reviewRoundId: roundId,
+        })
+
+        if (toolCallId && editSummary) {
+          editUndoSnapshotStore.set({
+            toolCallId,
             path,
             beforeContent: content,
             afterContent: '',
             beforeExists: true,
             afterExists: false,
-            reviewRoundId: roundId,
+            appliedAt,
           })
+        }
 
-          if (toolCallId && editSummary) {
-            editUndoSnapshotStore.set({
-              toolCallId,
-              path,
-              beforeContent: content,
-              afterContent: '',
-              beforeExists: true,
-              afterExists: false,
-              appliedAt,
-            })
+        if (conversationId && roundId && editSummary) {
+          const snapshot = await upsertEditReviewSnapshot({
+            app,
+            conversationId,
+            roundId,
+            filePath: path,
+            beforeContent: content,
+            afterContent: '',
+            beforeExists: true,
+            afterExists: false,
+            settings,
+          })
+          editSummary = {
+            ...editSummary,
+            files: editSummary.files.map((file) => ({
+              ...file,
+              addedLines: snapshot.addedLines,
+              removedLines: snapshot.removedLines,
+              reviewRoundId: roundId,
+            })),
+            totalAddedLines: snapshot.addedLines,
+            totalRemovedLines: snapshot.removedLines,
           }
+        }
 
-          if (conversationId && roundId && editSummary) {
-            const snapshot = await upsertEditReviewSnapshot({
-              app,
-              conversationId,
-              roundId,
-              filePath: path,
-              beforeContent: content,
-              afterContent: '',
-              beforeExists: true,
-              afterExists: false,
-              settings,
-            })
-            editSummary = {
-              ...editSummary,
-              files: editSummary.files.map((file) => ({
-                ...file,
-                addedLines: snapshot.addedLines,
-                removedLines: snapshot.removedLines,
-                reviewRoundId: roundId,
-              })),
-              totalAddedLines: snapshot.addedLines,
-              totalRemovedLines: snapshot.removedLines,
-            }
-          }
-
-          if (editSummary) {
-            summaryFiles = [...summaryFiles, ...editSummary.files]
-            totalAddedLines += editSummary.totalAddedLines
-            totalRemovedLines += editSummary.totalRemovedLines
-          }
+        if (editSummary) {
+          summaryFiles = [...summaryFiles, ...editSummary.files]
+          totalAddedLines += editSummary.totalAddedLines
+          totalRemovedLines += editSummary.totalRemovedLines
         }
 
         results.push({
           ok: true,
           action,
           target: path,
-          message: dryRun ? 'Would delete file.' : 'Deleted file.',
+          message: 'Deleted file.',
         })
         continue
       }
@@ -2536,15 +2496,13 @@ const executeFsFileOps = async ({
         }
         await ensureParentFolderExists(app, path)
 
-        if (!dryRun) {
-          await app.vault.createFolder(path)
-        }
+        await app.vault.createFolder(path)
 
         results.push({
           ok: true,
           action,
           target: path,
-          message: dryRun ? 'Would create folder.' : 'Created folder.',
+          message: 'Created folder.',
         })
         continue
       }
@@ -2562,15 +2520,13 @@ const executeFsFileOps = async ({
           )
         }
 
-        if (!dryRun) {
-          await app.fileManager.trashFile(existing)
-        }
+        await app.fileManager.trashFile(existing)
 
         results.push({
           ok: true,
           action,
           target: path,
-          message: dryRun ? 'Would delete folder.' : 'Deleted folder.',
+          message: 'Deleted folder.',
         })
         continue
       }
@@ -2601,15 +2557,13 @@ const executeFsFileOps = async ({
           throw new Error('Cannot move a folder into itself or its subfolder.')
         }
 
-        if (!dryRun) {
-          await app.fileManager.renameFile(source, newPath)
-        }
+        await app.fileManager.renameFile(source, newPath)
 
         results.push({
           ok: true,
           action,
           target: `${oldPath} -> ${newPath}`,
-          message: dryRun ? 'Would move path.' : 'Moved path.',
+          message: 'Moved path.',
         })
         continue
       }
@@ -2633,11 +2587,10 @@ const executeFsFileOps = async ({
     text: formatJsonResult({
       tool,
       action,
-      dryRun,
       results,
     }),
     metadata:
-      dryRun || summaryFiles.length === 0
+      summaryFiles.length === 0
         ? undefined
         : {
             editSummary: {
@@ -3588,7 +3541,6 @@ export async function callLocalFileTool({
       }
 
       case 'fs_create_file': {
-        const dryRun = getOptionalBooleanArg(args, 'dryRun') ?? false
         return executeFsFileOps({
           app,
           settings,
@@ -3600,7 +3552,6 @@ export async function callLocalFileTool({
               content: getTextArg(args, 'content'),
             }),
           }),
-          dryRun,
           signal,
           tool: 'fs_create_file',
           conversationId,
@@ -3610,7 +3561,6 @@ export async function callLocalFileTool({
       }
 
       case 'fs_delete_file': {
-        const dryRun = getOptionalBooleanArg(args, 'dryRun') ?? false
         return executeFsFileOps({
           app,
           settings,
@@ -3619,7 +3569,6 @@ export async function callLocalFileTool({
             args,
             itemFactory: () => ({ path: getTextArg(args, 'path') }),
           }),
-          dryRun,
           signal,
           tool: 'fs_delete_file',
           conversationId,
@@ -3629,7 +3578,6 @@ export async function callLocalFileTool({
       }
 
       case 'fs_create_dir': {
-        const dryRun = getOptionalBooleanArg(args, 'dryRun') ?? false
         return executeFsFileOps({
           app,
           action: 'create_dir',
@@ -3637,14 +3585,12 @@ export async function callLocalFileTool({
             args,
             itemFactory: () => ({ path: getTextArg(args, 'path') }),
           }),
-          dryRun,
           signal,
           tool: 'fs_create_dir',
         })
       }
 
       case 'fs_delete_dir': {
-        const dryRun = getOptionalBooleanArg(args, 'dryRun') ?? false
         const recursive = getOptionalBooleanArg(args, 'recursive')
         return executeFsFileOps({
           app,
@@ -3656,14 +3602,12 @@ export async function callLocalFileTool({
               ...(recursive === undefined ? {} : { recursive }),
             }),
           }),
-          dryRun,
           signal,
           tool: 'fs_delete_dir',
         })
       }
 
       case 'fs_move': {
-        const dryRun = getOptionalBooleanArg(args, 'dryRun') ?? false
         return executeFsFileOps({
           app,
           action: 'move',
@@ -3674,7 +3618,6 @@ export async function callLocalFileTool({
               newPath: getTextArg(args, 'newPath'),
             }),
           }),
-          dryRun,
           signal,
           tool: 'fs_move',
         })
