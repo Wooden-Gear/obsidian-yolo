@@ -843,19 +843,17 @@ export function getLocalFileTools(options?: {
     {
       name: 'open_skill',
       description:
-        'Load a lite skill from the configured skills directory by id or name and return full markdown content.',
+        'Load a lite skill from the configured skills directory by name and return full markdown content.',
       inputSchema: {
         type: 'object',
         properties: {
-          id: {
-            type: 'string',
-            description: 'Skill id from frontmatter.',
-          },
           name: {
             type: 'string',
-            description: 'Skill name from frontmatter.',
+            description:
+              'Skill name (the kebab-case identifier from frontmatter).',
           },
         },
+        required: ['name'],
       },
     },
     {
@@ -3747,16 +3745,15 @@ export async function callLocalFileTool({
       }
 
       case 'open_skill': {
-        const id = getOptionalTextArg(args, 'id')?.trim()
         const name = getOptionalTextArg(args, 'name')?.trim()
 
-        if (!id && !name) {
-          throw new Error('Either id or name is required.')
+        if (!name) {
+          throw new Error('name is required.')
         }
 
-        const skill = await getLiteSkillDocument({ app, id, name, settings })
+        const skill = await getLiteSkillDocument({ app, name, settings })
         if (!skill) {
-          throw new Error(`Skill not found. id=${id ?? ''} name=${name ?? ''}`)
+          throw new Error(`Skill not found. name=${name}`)
         }
 
         return {

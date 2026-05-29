@@ -13,7 +13,10 @@ export type PromptSnapshotRef = {
 }
 
 export type ChatSelectedSkill = {
-  id: string
+  /**
+   * Canonical skill name (the frontmatter `name`, trim-only, case-sensitive).
+   * Also the identity used to dedupe and to re-resolve the skill on continue.
+   */
   name: string
   description: string
   path: string

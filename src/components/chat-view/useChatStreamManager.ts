@@ -508,17 +508,16 @@ export function useChatStreamManager({
       }
 
       const effectiveModel = resolvedClient.model
-      const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
+      const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
       const enabledSkillEntries = selectedAssistant
         ? listLiteSkillEntries(app, { settings }).filter((skill) =>
             isSkillEnabledForAssistant({
               assistant: selectedAssistant,
-              skillId: skill.id,
-              disabledSkillIds,
+              skillName: skill.name,
+              disabledSkillNames,
             }),
           )
         : []
-      const allowedSkillIds = enabledSkillEntries.map((skill) => skill.id)
       const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
       const chatModeRuntime = resolveChatModeRuntime({
         mode: chatMode,
@@ -566,7 +565,6 @@ export function useChatStreamManager({
             allowedToolNames: effectiveAllowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
-            allowedSkillIds,
             allowedSkillNames,
             contextualInjections: buildChatContextualInjections({
               includeCurrentFileContent:
@@ -702,17 +700,16 @@ export function useChatStreamManager({
         const modelTopP = resolvedClient.model.topP
         const modelMaxTokens = resolvedClient.model.maxOutputTokens
         const effectiveModel = resolvedClient.model
-        const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
+        const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
         const enabledSkillEntries = selectedAssistant
           ? listLiteSkillEntries(app, { settings }).filter((skill) =>
               isSkillEnabledForAssistant({
                 assistant: selectedAssistant,
-                skillId: skill.id,
-                disabledSkillIds,
+                skillName: skill.name,
+                disabledSkillNames,
               }),
             )
           : []
-        const allowedSkillIds = enabledSkillEntries.map((skill) => skill.id)
         const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
 
         const chatModeRuntime = resolveChatModeRuntime({
@@ -751,7 +748,6 @@ export function useChatStreamManager({
           toolPreferences: chatModeRuntime.toolPreferences,
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),
-          allowedSkillIds,
           allowedSkillNames,
           requestParams,
           contextualInjections: buildChatContextualInjections({
@@ -970,13 +966,13 @@ export function useChatStreamManager({
       }
 
       const effectiveModel = resolvedClient.model
-      const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
+      const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
       const enabledSkillEntries = selectedAssistant
         ? listLiteSkillEntries(app, { settings }).filter((skill) =>
             isSkillEnabledForAssistant({
               assistant: selectedAssistant,
-              skillId: skill.id,
-              disabledSkillIds,
+              skillName: skill.name,
+              disabledSkillNames,
             }),
           )
         : []
@@ -1004,7 +1000,6 @@ export function useChatStreamManager({
         allowedToolNames: chatModeRuntime.allowedToolNames,
         enableToolDisclosure: settings.mcp.enableToolDisclosure,
         toolPreferences: chatModeRuntime.toolPreferences,
-        allowedSkillIds: enabledSkillEntries.map((s) => s.id),
         allowedSkillNames: enabledSkillEntries.map((s) => s.name),
         contextualInjections: buildChatContextualInjections({
           includeCurrentFileContent:

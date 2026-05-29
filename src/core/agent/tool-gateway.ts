@@ -58,7 +58,6 @@ export class AgentToolGateway {
   private readonly toolPreferences?: Record<string, AssistantToolPreference>
   private readonly enableToolDisclosure: boolean
   private readonly workspaceScope?: AssistantWorkspaceScope
-  private readonly allowedSkillIds?: Set<string>
   private readonly allowedSkillNames?: Set<string>
   private readonly apiType?: LLMProviderApiType | null
   private readonly runContext?: AgentRunContext
@@ -76,7 +75,6 @@ export class AgentToolGateway {
       toolPreferences?: Record<string, AssistantToolPreference>
       enableToolDisclosure?: boolean
       workspaceScope?: AssistantWorkspaceScope
-      allowedSkillIds?: string[]
       allowedSkillNames?: string[]
       apiType?: LLMProviderApiType | null
       runContext?: AgentRunContext
@@ -89,11 +87,10 @@ export class AgentToolGateway {
     this.toolPreferences = options?.toolPreferences
     this.enableToolDisclosure = options?.enableToolDisclosure ?? true
     this.workspaceScope = options?.workspaceScope
-    this.allowedSkillIds = options?.allowedSkillIds
-      ? new Set(options.allowedSkillIds.map((id) => id.toLowerCase()))
-      : undefined
+    // Canonical skill names: trim only, case-sensitive (A1). Must mirror the
+    // resolver in liteSkills.ts so the permission gate agrees with lookup.
     this.allowedSkillNames = options?.allowedSkillNames
-      ? new Set(options.allowedSkillNames.map((name) => name.toLowerCase()))
+      ? new Set(options.allowedSkillNames.map((name) => name.trim()))
       : undefined
     this.apiType = options?.apiType
     this.runContext = options?.runContext
@@ -956,9 +953,7 @@ export class AgentToolGateway {
     }
 
     if (this.isOpenSkillToolName(toolName)) {
-      const hasAllowedSkills =
-        (this.allowedSkillIds?.size ?? 0) > 0 ||
-        (this.allowedSkillNames?.size ?? 0) > 0
+      const hasAllowedSkills = (this.allowedSkillNames?.size ?? 0) > 0
       if (!hasAllowedSkills) {
         return false
       }
@@ -1002,20 +997,14 @@ export class AgentToolGateway {
         return true
       }
 
-      if (!this.allowedSkillIds && !this.allowedSkillNames) {
+      if (!this.allowedSkillNames) {
         return false
       }
 
       const args = getToolCallArgumentsObject(request.arguments) ?? {}
-      const id = typeof args.id === 'string' ? args.id.trim().toLowerCase() : ''
-      const name =
-        typeof args.name === 'string' ? args.name.trim().toLowerCase() : ''
+      const name = typeof args.name === 'string' ? args.name.trim() : ''
 
-      const allowedById = Boolean(id) && Boolean(this.allowedSkillIds?.has(id))
-      const allowedByName =
-        Boolean(name) && Boolean(this.allowedSkillNames?.has(name))
-
-      return allowedById || allowedByName
+      return Boolean(name) && Boolean(this.allowedSkillNames.has(name))
     } catch {
       return true
     }

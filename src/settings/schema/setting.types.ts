@@ -351,6 +351,9 @@ export const yoloSettingsSchema = z.object({
   // Skills configuration
   skills: z
     .object({
+      // Globally disabled skills, stored by canonical skill *name* (frontmatter
+      // `name`, trim-only, case-sensitive). Field name kept for backwards
+      // compatibility; its elements are skill names, not a separate id.
       disabledSkillIds: z.array(z.string()).catch([]),
     })
     .catch({

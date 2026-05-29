@@ -73,7 +73,7 @@ export type LexicalContentEditableProps = {
   models?: ChatModel[]
   selectedModelIds?: string[]
   skills?: LiteSkillEntry[]
-  selectedSkillIds?: string[]
+  selectedSkillNames?: string[]
   onSelectSkill?: (skill: LiteSkillEntry) => void
   onRunSlashCommand?: (command: SlashCommand) => void
   snippets?: SnippetEntry[]
@@ -172,7 +172,7 @@ export default function LexicalContentEditable({
   models = [],
   selectedModelIds = [],
   skills = [],
-  selectedSkillIds = [],
+  selectedSkillNames = [],
   onSelectSkill,
   onRunSlashCommand,
   snippets = [],
@@ -291,7 +291,7 @@ export default function LexicalContentEditable({
         <SkillSlashPlugin
           skills={skills}
           snippets={snippets}
-          selectedSkillIds={selectedSkillIds}
+          selectedSkillNames={selectedSkillNames}
           mentionDisplayMode={mentionDisplayMode}
           onMenuOpenChange={onMentionMenuToggle}
           menuContainerRef={mentionMenuContainerRef}

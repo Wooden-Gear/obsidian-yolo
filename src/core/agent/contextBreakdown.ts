@@ -136,7 +136,6 @@ export const estimateContextBreakdown = async ({
   allowedToolNames,
   enableToolDisclosure,
   toolPreferences,
-  allowedSkillIds,
   allowedSkillNames,
   contextualInjections,
 }: {
@@ -152,7 +151,6 @@ export const estimateContextBreakdown = async ({
   allowedToolNames?: string[]
   enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
-  allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]
 }): Promise<ContextBreakdown> => {
@@ -165,7 +163,6 @@ export const estimateContextBreakdown = async ({
   const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
     availableTools,
     allowedToolNames,
-    allowedSkillIds,
     allowedSkillNames,
     toolPreferences,
     apiType,

@@ -61,6 +61,7 @@ import {
   RagIndexRunSnapshot,
   RagIndexService,
 } from './core/rag/ragIndexService'
+import { migrateVaultSkillFrontmatter } from './core/skills/liteSkills'
 import {
   type UpdateCheckResult,
   checkForUpdate,
@@ -1661,6 +1662,17 @@ export default class YoloPlugin extends Plugin {
     void pruneImageCache(this.app, 30, this.settings)
     void prunePdfTextCache(this.app, 30, this.settings)
     await this.getRagIndexService().initialize()
+    // One-time, idempotent migration of vault skill files from legacy
+    // `id + name` frontmatter to the converged `name`-only form. Kicked off as
+    // soon as the vault index is ready. Note: Obsidian's metadataCache updates
+    // asynchronously after each modify, so on the very first post-upgrade
+    // startup a skill list/open may briefly observe pre-migration frontmatter
+    // until the cache re-parses — self-healing and one-time. A full
+    // cache-event barrier is intentionally avoided as over-engineering for this
+    // sub-second transient; the migration is idempotent so it always converges.
+    this.app.workspace.onLayoutReady(() => {
+      void migrateVaultSkillFrontmatter(this.app, this.settings)
+    })
     this.app.workspace.onLayoutReady(() => {
       if (!this.settings?.ragOptions?.enabled) return
       const snapshot = this.getRagIndexSnapshot()

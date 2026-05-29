@@ -1085,17 +1085,16 @@ export function QuickAskPanel({
             getEnabledAssistantToolNames(selectedAssistant),
         })
         const effectiveModel = model
-        const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
+        const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
         const enabledSkillEntries = selectedAssistant
           ? listLiteSkillEntries(app, { settings }).filter((skill) =>
               isSkillEnabledForAssistant({
                 assistant: selectedAssistant,
-                skillId: skill.id,
-                disabledSkillIds,
+                skillName: skill.name,
+                disabledSkillNames,
               }),
             )
           : []
-        const allowedSkillIds = enabledSkillEntries.map((skill) => skill.id)
         const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
 
         const agentService = plugin.getAgentService()
@@ -1122,7 +1121,6 @@ export function QuickAskPanel({
             allowedToolNames: chatModeRuntime.allowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
-            allowedSkillIds,
             allowedSkillNames,
             contextualInjections: editorSnapshotInjection
               ? [editorSnapshotInjection]

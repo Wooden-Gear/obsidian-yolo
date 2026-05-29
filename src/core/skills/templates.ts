@@ -16,12 +16,11 @@ Store your skill files here.
 - Supported formats:
   - Legacy: \`YOLO/skills/*.md\` (exclude \`Skills.md\`)
   - Claude-style: \`YOLO/skills/**/SKILL.md\`
-- Required frontmatter: \`name\` (required), \`id\` (optional, defaults to \`name\`), \`description\` (optional)
+- Required frontmatter: \`name\` (required, kebab-case unique identifier), \`description\` (optional); \`mode\` (\`lazy\` | \`always\`, optional)
 `
 
 export const YOLO_OBSIDIAN_OUTPUT_FORMAT_TEMPLATE = `---
-id: obsidian-output-format
-name: Obsidian Output Format
+name: obsidian-output-format
 description: Use <yolo_block> only for markdown file edit plans. Output the compact edit DSL only.
 mode: always
 ---
@@ -66,8 +65,7 @@ Allowed operation types:
 `
 
 export const YOLO_SKILL_CREATOR_TEMPLATE = `---
-id: skill-creator
-name: Skill Creator
+name: skill-creator
 description: Guide for creating effective YOLO skills. Use when users want to create a new skill, update an existing skill, or improve skill quality within their Obsidian vault. Covers skill design principles, anatomy, and the full creation workflow.
 ---
 
@@ -126,16 +124,14 @@ Each skill \`.md\` file consists of two parts:
 
 ### Frontmatter (YAML, required)
 
-Contains \`id\`, \`name\`, and \`description\` fields:
+Contains \`name\` and \`description\` fields:
 
-- \`id\`: Stable kebab-case identifier (e.g., \`meeting-notes\`). Must be unique across the vault.
-- \`name\`: Human-readable title (e.g., \`Meeting Notes\`).
+- \`name\`: Stable kebab-case identifier (e.g., \`meeting-notes\`). Must be unique across the vault. This is both the skill's identity and its label.
 - \`description\`: The primary triggering mechanism. The agent reads this to decide when to activate the skill. Include both what the skill does and specific triggers/contexts for when to use it.
 
 ~~~yaml
 ---
-id: meeting-notes
-name: Meeting Notes
+name: meeting-notes
 description: Create structured meeting notes from raw transcripts or bullet points. Use when users paste meeting content, ask to summarize a meeting, or request action item extraction from conversation logs.
 ---
 ~~~
@@ -173,7 +169,7 @@ The skill exists for the agent to do the job at hand. Every line should earn its
 
 Skills use a two-level loading system to manage context efficiently:
 
-1. Metadata (id + name + description): Always in context (~50-100 words)
+1. Metadata (name + description): Always in context (~50-100 words)
 2. Skill body: Loaded only when the skill triggers
 
 This means the body can be more detailed without constantly consuming context. But keep it focused. Aim for under 300 lines. If a skill grows beyond that, consider whether it is trying to do too much and should be split into multiple skills.
@@ -262,8 +258,7 @@ Analyze each concrete example by considering:
 Write the frontmatter first, then the body.
 
 Frontmatter checklist:
-- \`id\` is kebab-case and unique
-- \`name\` is readable
+- \`name\` is kebab-case, unique, and matches the filename
 - \`description\` clearly states what the skill does and when to trigger it
 
 Body guidelines:
@@ -275,7 +270,7 @@ Body guidelines:
 ### Step 5: Write to Vault
 
 ~~~
-fs_write { path: "YOLO/skills/<skill-id>.md", content: "..." }
+fs_write { path: "YOLO/skills/<skill-name>.md", content: "..." }
 ~~~
 
 For updates to existing skills, prefer \`fs_edit\` to make minimal, targeted changes rather than rewriting the entire file.
@@ -300,9 +295,9 @@ Iteration workflow:
 
 Before finalizing any skill, verify:
 
-- [ ] Frontmatter includes \`id\`, \`name\`, and \`description\`
+- [ ] Frontmatter includes \`name\` and \`description\`
 - [ ] Description states clear trigger conditions (not buried in body)
-- [ ] \`id\` is kebab-case and matches the filename
+- [ ] \`name\` is kebab-case and matches the filename
 - [ ] Workflow is executable with available tools (\`fs_list\`, \`fs_search\`, \`fs_read\`, \`fs_edit\`, \`fs_write\`, \`fs_delete\`, \`fs_create_dir\`, \`fs_move\`)
 - [ ] Instructions are concise and avoid redundant background
 - [ ] Output pattern is defined where consistency matters

@@ -92,7 +92,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelKey: 'settings.agent.builtinOpenSkillLabel',
     descKey: 'settings.agent.builtinOpenSkillDesc',
     labelFallback: 'Open Skill',
-    descFallback: 'Load a skill markdown file by id or name.',
+    descFallback: 'Load a skill markdown file by name.',
   },
   [WEB_OPS_GROUP_TOOL_NAME]: {
     labelKey: 'settings.agent.builtinWebOpsLabel',

@@ -71,7 +71,6 @@ export type AgentRuntimeRunInput = {
     include: string[]
     exclude: string[]
   }
-  allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]
   geminiTools?: {

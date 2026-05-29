@@ -50,7 +50,6 @@ type AgentLlmTurnExecutorInput = {
   allowedToolNames?: string[]
   enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
-  allowedSkillIds?: string[]
   allowedSkillNames?: string[]
   abortSignal?: AbortSignal
   reasoningLevel?: ReasoningLevel
@@ -103,7 +102,6 @@ export class AgentLlmTurnExecutor {
     } = selectAllowedTools({
       availableTools,
       allowedToolNames: this.input.allowedToolNames,
-      allowedSkillIds: this.input.allowedSkillIds,
       allowedSkillNames: this.input.allowedSkillNames,
       toolPreferences: this.input.toolPreferences,
       apiType: this.input.apiType,
