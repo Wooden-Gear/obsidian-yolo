@@ -163,23 +163,27 @@ const isValidFsMoveItem = (value: Record<string, unknown>): boolean => {
   return isStringField(value, 'oldPath') && isStringField(value, 'newPath')
 }
 
-const isValidFsEditOperation = (value: unknown): boolean => {
-  if (!isObjectRecord(value)) {
+const isValidFsEditArgs = (args: Record<string, unknown>): boolean => {
+  if (!isStringField(args, 'newText')) {
     return false
   }
-  const operationType = value.type
-  if (operationType === 'replace') {
+  const hasOldText = args.oldText !== undefined && args.oldText !== null
+  const hasLineRange =
+    (args.startLine !== undefined && args.startLine !== null) ||
+    (args.endLine !== undefined && args.endLine !== null)
+
+  // Exact-text mode: oldText alone.
+  if (hasOldText && !hasLineRange) {
+    return isNonEmptyStringField(args, 'oldText')
+  }
+  // Line-range mode: startLine + endLine alone.
+  if (hasLineRange && !hasOldText) {
     return (
-      isNonEmptyStringField(value, 'oldText') && isStringField(value, 'newText')
+      isPositiveIntegerField(args, 'startLine') &&
+      isPositiveIntegerField(args, 'endLine')
     )
   }
-  if (operationType === 'replace_lines') {
-    return (
-      isPositiveIntegerField(value, 'startLine') &&
-      isPositiveIntegerField(value, 'endLine') &&
-      isStringField(value, 'newText')
-    )
-  }
+  // Both groups or neither group is invalid.
   return false
 }
 
@@ -196,7 +200,7 @@ const isValidWriteToolArguments = ({
     if (!isStringField(args, 'path')) {
       return false
     }
-    return isValidFsEditOperation(args.operation)
+    return isValidFsEditArgs(args)
   }
 
   if (normalizedToolName === 'fs_create_file') {

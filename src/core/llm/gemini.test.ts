@@ -28,11 +28,8 @@ describe('GeminiProvider response parsing', () => {
                 name: 'yolo_local__fs_edit',
                 args: {
                   path: 'note.md',
-                  operation: {
-                    type: 'replace',
-                    oldText: 'hi',
-                    newText: 'hello',
-                  },
+                  oldText: 'hi',
+                  newText: 'hello',
                 },
               },
             ],
@@ -63,7 +60,8 @@ describe('GeminiProvider response parsing', () => {
               name: 'yolo_local__fs_edit',
               args: {
                 path: 'note.md',
-                operation: { type: 'replace', oldText: 'hi', newText: 'hello' },
+                oldText: 'hi',
+                newText: 'hello',
               },
             },
           },

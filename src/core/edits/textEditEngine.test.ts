@@ -198,7 +198,7 @@ describe('materializeTextEditPlan', () => {
     })
 
     expect(result.appliedCount).toBe(0)
-    expect(result.errors[0]).toContain('expectedOccurrences mismatch')
+    expect(result.errors[0]).toContain('must match exactly once')
   })
 
   it('applies fuzzy replacement when a unique paragraph candidate exceeds threshold', () => {

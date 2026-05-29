@@ -409,7 +409,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_edit',
                       arguments:
-                        '{"path":"note.md","operation":{"type":"append"}}',
+                        '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
@@ -447,7 +447,7 @@ describe('executeSingleTurn', () => {
                 function: {
                   name: 'yolo_local__fs_edit',
                   arguments:
-                    '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+                    '{"path":"note.md","oldText":"world","newText":"ok"}',
                 },
               },
             ],
@@ -471,9 +471,10 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'replace', oldText: 'world', newText: 'ok' },
+            oldText: 'world',
+            newText: 'ok',
           },
-          '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+          '{"path":"note.md","oldText":"world","newText":"ok"}',
         ),
         metadata: undefined,
       },
@@ -508,7 +509,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_edit',
                       arguments:
-                        '{"path":"note.md","operation":{"type":"append"}}',
+                        '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
@@ -546,9 +547,9 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'append' },
+            newText: 'x',
           },
-          '{"path":"note.md","operation":{"type":"append"}}',
+          '{"path":"note.md","newText":"x"}',
         ),
         metadata: undefined,
       },
@@ -575,8 +576,7 @@ describe('executeSingleTurn', () => {
                     type: 'function',
                     function: {
                       name: 'yolo_local__fs_edit',
-                      arguments:
-                        '{"type":"append","content":"should be wrapped in operation"}',
+                      arguments: '{"newText":"missing path and locator"}',
                     },
                   },
                 ],
@@ -614,7 +614,7 @@ describe('executeSingleTurn', () => {
                 function: {
                   name: 'yolo_local__fs_edit',
                   arguments:
-                    '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+                    '{"path":"note.md","oldText":"world","newText":"ok"}',
                 },
               },
             ],
@@ -638,9 +638,10 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'replace', oldText: 'world', newText: 'ok' },
+            oldText: 'world',
+            newText: 'ok',
           },
-          '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+          '{"path":"note.md","oldText":"world","newText":"ok"}',
         ),
         metadata: undefined,
       },
@@ -705,7 +706,7 @@ describe('executeSingleTurn', () => {
                 function: {
                   name: 'yolo_local__fs_edit',
                   arguments:
-                    '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+                    '{"path":"note.md","oldText":"world","newText":"ok"}',
                 },
               },
             ],
@@ -729,9 +730,10 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'replace', oldText: 'world', newText: 'ok' },
+            oldText: 'world',
+            newText: 'ok',
           },
-          '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+          '{"path":"note.md","oldText":"world","newText":"ok"}',
         ),
         metadata: undefined,
       },
@@ -758,7 +760,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_edit',
                       arguments:
-                        '{"path":"note.md","operation":{"type":"append"}}',
+                        '{"path":"note.md","newText":"x"}',
                     },
                   },
                 ],
@@ -796,9 +798,9 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'append' },
+            newText: 'x',
           },
-          '{"path":"note.md","operation":{"type":"append"}}',
+          '{"path":"note.md","newText":"x"}',
         ),
         metadata: undefined,
       },
@@ -825,7 +827,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_edit',
                       arguments:
-                        '{"path":"note.md","operation":{"type":"replace","oldText":"","newText":"x"}}',
+                        '{"path":"note.md","oldText":"","newText":"x"}',
                     },
                   },
                 ],
@@ -863,7 +865,7 @@ describe('executeSingleTurn', () => {
                 function: {
                   name: 'yolo_local__fs_edit',
                   arguments:
-                    '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+                    '{"path":"note.md","oldText":"world","newText":"ok"}',
                 },
               },
             ],
@@ -887,9 +889,10 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: { type: 'replace', oldText: 'world', newText: 'ok' },
+            oldText: 'world',
+            newText: 'ok',
           },
-          '{"path":"note.md","operation":{"type":"replace","oldText":"world","newText":"ok"}}',
+          '{"path":"note.md","oldText":"world","newText":"ok"}',
         ),
         metadata: undefined,
       },
@@ -916,7 +919,7 @@ describe('executeSingleTurn', () => {
                     function: {
                       name: 'yolo_local__fs_edit',
                       arguments:
-                        '{"path":"note.md","operation":{"type":"replace_lines","startLine":2,"endLine":4,"newText":"x\\ny"}}',
+                        '{"path":"note.md","startLine":2,"endLine":4,"newText":"x\\ny"}',
                     },
                   },
                 ],
@@ -953,14 +956,11 @@ describe('executeSingleTurn', () => {
         arguments: completeArgs(
           {
             path: 'note.md',
-            operation: {
-              type: 'replace_lines',
-              startLine: 2,
-              endLine: 4,
-              newText: 'x\ny',
-            },
+            startLine: 2,
+            endLine: 4,
+            newText: 'x\ny',
           },
-          '{"path":"note.md","operation":{"type":"replace_lines","startLine":2,"endLine":4,"newText":"x\\ny"}}',
+          '{"path":"note.md","startLine":2,"endLine":4,"newText":"x\\ny"}',
         ),
         metadata: undefined,
       },

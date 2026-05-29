@@ -806,19 +806,14 @@ export class AgentToolGateway {
   ): { mergedOperations: unknown[]; opCounts: number[] } {
     const mergedOperations: unknown[] = []
     const opCounts: number[] = []
+    // Each fs_edit call carries one flat edit; carry its whole args object
+    // through as a single operation element. getFsEditPlan's operations branch
+    // parses each element via parseFlatFsEditArgs.
     for (const entry of entries) {
       const args =
         getToolCallArgumentsObject(entry.toolCall.request.arguments) ?? {}
-      let opsForEntry: unknown[]
-      if (Array.isArray(args.operations)) {
-        opsForEntry = args.operations
-      } else if (args.operation !== undefined) {
-        opsForEntry = [args.operation]
-      } else {
-        opsForEntry = []
-      }
-      opCounts.push(opsForEntry.length)
-      mergedOperations.push(...opsForEntry)
+      opCounts.push(1)
+      mergedOperations.push(args)
     }
     return { mergedOperations, opCounts }
   }

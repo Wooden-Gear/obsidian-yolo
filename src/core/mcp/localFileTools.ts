@@ -642,7 +642,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_edit',
       description:
-        'Apply a single targeted text edit within an existing file. Prefer this tool when modifying content in an existing file. Supports two ways to locate the edit: replace (match exact text) and replace_lines (target a 1-based inclusive line range). To make several edits in the same file, emit multiple fs_edit calls — the system automatically merges edits targeting the same file into one atomic review and write, so earlier edits cannot invalidate later ones.',
+        'Apply a single targeted text edit within an existing file. Prefer this tool when modifying content in an existing file. Two ways to locate the edit, choose exactly one: for an exact-text edit, provide oldText (the text to find, which must match the file exactly once) and newText; for a line-range edit, provide startLine and endLine (1-based inclusive) and newText. Do not provide both oldText and startLine/endLine. To make several edits in the same file, emit multiple fs_edit calls — the system automatically merges edits targeting the same file into one atomic review and write, so earlier edits cannot invalidate later ones.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -650,43 +650,27 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Vault-relative file path.',
           },
-          operation: {
-            type: 'object',
+          oldText: {
+            type: 'string',
             description:
-              'A single text edit operation to apply. Use replace to swap exact text, or replace_lines to replace a 1-based inclusive line range.',
-            properties: {
-              type: {
-                type: 'string',
-                enum: ['replace', 'replace_lines'],
-              },
-              oldText: {
-                type: 'string',
-                description: 'Required for replace.',
-              },
-              newText: {
-                type: 'string',
-                description: 'Required for replace and replace_lines.',
-              },
-              startLine: {
-                type: 'integer',
-                description:
-                  'Required for replace_lines. 1-based inclusive start line.',
-              },
-              endLine: {
-                type: 'integer',
-                description:
-                  'Required for replace_lines. 1-based inclusive end line.',
-              },
-              expectedOccurrences: {
-                type: 'integer',
-                description:
-                  'Optional positive integer match count for replace. Defaults to 1.',
-              },
-            },
-            required: ['type'],
+              'Exact-text mode: the existing text to find and replace. Must match the file exactly once. Do not combine with startLine/endLine.',
+          },
+          newText: {
+            type: 'string',
+            description: 'Replacement text. Required in both modes.',
+          },
+          startLine: {
+            type: 'integer',
+            description:
+              'Line-range mode: 1-based inclusive start line. Provide together with endLine; do not combine with oldText.',
+          },
+          endLine: {
+            type: 'integer',
+            description:
+              'Line-range mode: 1-based inclusive end line. Provide together with startLine; do not combine with oldText.',
           },
         },
-        required: ['path', 'operation'],
+        required: ['path', 'newText'],
       },
     },
     {
@@ -1870,44 +1854,58 @@ const asPositiveInteger = (value: unknown): number | undefined => {
   return value
 }
 
-const parseTextEditOperation = (
-  operation: Record<string, unknown>,
+// Single source of truth for translating the flat model-facing fs_edit
+// arguments into an internal typed TextEditOperation. The edit mode is
+// inferred implicitly from which fields are present:
+//   - oldText present (and no startLine/endLine) -> exact replace
+//   - startLine + endLine present (and no oldText) -> line-range replace
+// Providing both groups, neither group, or malformed fields is rejected.
+const parseFlatFsEditArgs = (
+  args: Record<string, unknown>,
 ): TextEditOperation => {
-  const type = asOptionalString(operation.type).trim().toLowerCase()
+  const hasOldText = args.oldText !== undefined && args.oldText !== null
+  const hasStartLine = args.startLine !== undefined && args.startLine !== null
+  const hasEndLine = args.endLine !== undefined && args.endLine !== null
+  const hasLineRange = hasStartLine || hasEndLine
 
-  if (type === 'replace') {
-    const oldText = getTextArg(operation, 'oldText')
+  if (hasOldText && hasLineRange) {
+    throw new Error(
+      'Provide either oldText (exact replace) or startLine+endLine (line range), not both.',
+    )
+  }
+  if (!hasOldText && !hasLineRange) {
+    throw new Error(
+      'Provide either oldText (exact replace) or startLine+endLine (line range).',
+    )
+  }
+
+  if (hasOldText) {
+    const oldText = getTextArg(args, 'oldText')
     if (oldText.length === 0) {
-      throw new Error(`operation.oldText must not be empty.`)
+      throw new Error('oldText must not be empty.')
     }
-
     return {
       type: 'replace',
       oldText,
-      newText: getTextArg(operation, 'newText'),
-      expectedOccurrences: asPositiveInteger(operation.expectedOccurrences),
+      newText: getTextArg(args, 'newText'),
     }
   }
 
-  if (type === 'replace_lines') {
-    const startLine = asPositiveInteger(operation.startLine)
-    if (!startLine) {
-      throw new Error('operation.startLine must be a positive integer.')
-    }
-    const endLine = asPositiveInteger(operation.endLine)
-    if (!endLine) {
-      throw new Error('operation.endLine must be a positive integer.')
-    }
-
-    return {
-      type: 'replace_lines',
-      startLine,
-      endLine,
-      newText: getTextArg(operation, 'newText'),
-    }
+  const startLine = asPositiveInteger(args.startLine)
+  if (!startLine) {
+    throw new Error('startLine must be a positive integer.')
+  }
+  const endLine = asPositiveInteger(args.endLine)
+  if (!endLine) {
+    throw new Error('endLine must be a positive integer.')
   }
 
-  throw new Error(`operation.type must be one of: replace, replace_lines.`)
+  return {
+    type: 'replace_lines',
+    startLine,
+    endLine,
+    newText: getTextArg(args, 'newText'),
+  }
 }
 
 const coerceOperationObject = (operation: unknown): Record<string, unknown> => {
@@ -1938,21 +1936,21 @@ const coerceOperationObject = (operation: unknown): Record<string, unknown> => {
 }
 
 const getFsEditPlan = (args: Record<string, unknown>): TextEditPlan => {
+  // Gateway-merged path: each element is one entry's flat args object.
   const operationsValue = args.operations
   if (Array.isArray(operationsValue)) {
     if (operationsValue.length === 0) {
       throw new Error('operations array must contain at least one operation.')
     }
     const operations = operationsValue.map((entry) =>
-      parseTextEditOperation(coerceOperationObject(entry)),
+      parseFlatFsEditArgs(coerceOperationObject(entry)),
     )
     return { operations }
   }
 
-  const operation = coerceOperationObject(args.operation)
-
+  // Model-facing path: the flat args themselves describe a single edit.
   return {
-    operations: [parseTextEditOperation(operation)],
+    operations: [parseFlatFsEditArgs(args)],
   }
 }
 
@@ -3577,7 +3575,6 @@ export async function callLocalFileTool({
               type: result.operation.type,
               changed: result.changed,
               actualOccurrences: result.actualOccurrences,
-              expectedOccurrences: result.expectedOccurrences,
               matchMode: result.matchMode,
             })),
             changed: content !== appliedContent,

@@ -129,11 +129,8 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: {
-          type: 'replace',
-          oldText: 'world',
-          newText: 'changed',
-        },
+        oldText: 'world',
+        newText: 'changed',
       },
       requireReview: true,
     })
@@ -180,11 +177,8 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: {
-          type: 'replace',
-          oldText: 'world',
-          newText: 'changed',
-        },
+        oldText: 'world',
+        newText: 'changed',
       },
       requireReview: true,
     })
@@ -194,7 +188,7 @@ describe('local fs tool action helpers', () => {
     expect(result.status).toBe('aborted')
   })
 
-  it('supports fs_edit operations[] array as an atomic batch', async () => {
+  it('supports fs_edit operations[] array of flat args as an atomic batch', async () => {
     const file = Object.assign(new TFile(), {
       path: 'note.md',
       stat: { size: 20 },
@@ -215,7 +209,6 @@ describe('local fs tool action helpers', () => {
         path: 'note.md',
         operations: [
           {
-            type: 'replace',
             oldText: 'world',
             newText: 'changed',
           },
@@ -253,8 +246,8 @@ describe('local fs tool action helpers', () => {
         // Intentionally provided in ASC startLine order to exercise the
         // engine's automatic descending reordering for replace_lines.
         operations: [
-          { type: 'replace_lines', startLine: 1, endLine: 1, newText: 'A' },
-          { type: 'replace_lines', startLine: 3, endLine: 3, newText: 'C' },
+          { startLine: 1, endLine: 1, newText: 'A' },
+          { startLine: 3, endLine: 3, newText: 'C' },
         ],
       },
     })
@@ -286,8 +279,8 @@ describe('local fs tool action helpers', () => {
       args: {
         path: 'note.md',
         operations: [
-          { type: 'replace_lines', startLine: 1, endLine: 2, newText: 'X' },
-          { type: 'replace_lines', startLine: 2, endLine: 3, newText: 'Y' },
+          { startLine: 1, endLine: 2, newText: 'X' },
+          { startLine: 2, endLine: 3, newText: 'Y' },
         ],
       },
     })
@@ -318,12 +311,9 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: {
-          type: 'replace_lines',
-          startLine: 2,
-          endLine: 3,
-          newText: ['dos', 'tres'].join('\n'),
-        },
+        startLine: 2,
+        endLine: 3,
+        newText: ['dos', 'tres'].join('\n'),
       },
     })
 
@@ -360,11 +350,8 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: {
-          type: 'replace',
-          oldText: ['alpha', '  beta'].join('\n'),
-          newText: 'replaced',
-        },
+        oldText: ['alpha', '  beta'].join('\n'),
+        newText: 'replaced',
       },
     })
 
@@ -396,11 +383,8 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: {
-          type: 'replace',
-          oldText: 'totally absent text',
-          newText: 'replaced',
-        },
+        oldText: 'totally absent text',
+        newText: 'replaced',
       },
     })
 
@@ -412,7 +396,7 @@ describe('local fs tool action helpers', () => {
     }
   })
 
-  it('rejects fs_edit operations using the removed insert_after type', async () => {
+  it('rejects fs_edit when no locator is provided', async () => {
     const file = Object.assign(new TFile(), {
       path: 'note.md',
       stat: { size: 20 },
@@ -431,14 +415,47 @@ describe('local fs tool action helpers', () => {
       toolName: 'fs_edit',
       args: {
         path: 'note.md',
-        operation: { type: 'insert_after', anchor: 'hello', content: 'x' },
+        newText: 'x',
       },
     })
 
     expect(modify).not.toHaveBeenCalled()
     expect(result.status).toBe(ToolCallResponseStatus.Error)
     if (result.status === ToolCallResponseStatus.Error) {
-      expect(result.error).toContain('must be one of: replace, replace_lines')
+      expect(result.error).toContain('startLine+endLine')
+    }
+  })
+
+  it('rejects fs_edit when both oldText and a line range are provided', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'note.md',
+      stat: { size: 20 },
+    })
+    const modify = jest.fn()
+    const read = jest.fn().mockResolvedValue('hello world')
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolName: 'fs_edit',
+      args: {
+        path: 'note.md',
+        oldText: 'hello',
+        startLine: 1,
+        endLine: 1,
+        newText: 'x',
+      },
+    })
+
+    expect(modify).not.toHaveBeenCalled()
+    expect(result.status).toBe(ToolCallResponseStatus.Error)
+    if (result.status === ToolCallResponseStatus.Error) {
+      expect(result.error).toContain('not both')
     }
   })
 
@@ -1714,7 +1731,8 @@ describe('local fs tool action helpers', () => {
         toolName: 'fs_edit',
         args: {
           path: 'secret/a.md',
-          operation: { type: 'replace', oldText: 'x', newText: 'y' },
+          oldText: 'x',
+          newText: 'y',
         },
         workspaceScope: allowNotes,
       })
