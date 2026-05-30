@@ -44,8 +44,6 @@ export type AgentRuntimeRunInput = {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
   compaction?: ChatConversationCompactionLike | null
-  compactionProviderClient?: BaseLLMProvider<LLMProvider>
-  compactionModel?: ChatModel
   abortSignal?: AbortSignal
   reasoningLevel?: ReasoningLevel
   requestParams?: {

@@ -1,6 +1,10 @@
 import { DEFAULT_MODEL_REQUEST_TIMEOUT_MS } from '../../settings/schema/setting.types'
 import { ChatModel } from '../../types/chat-model.types'
-import { LLMRequestBase, RequestTool } from '../../types/llm/request'
+import {
+  LLMRequestBase,
+  RequestTool,
+  RequestToolChoice,
+} from '../../types/llm/request'
 import {
   Annotation,
   LLMResponseStreaming,
@@ -61,6 +65,12 @@ type SingleTurnExecutionInput = {
   model: ChatModel
   request: LLMRequestBase
   tools?: RequestTool[]
+  /**
+   * Override the tool-choice policy. When omitted, defaults to `'auto'` if
+   * `tools` are present (else `undefined`). Compaction passes `'none'` to keep
+   * the tools block in the cache-warm prefix while forbidding tool calls.
+   */
+  tool_choice?: RequestToolChoice
   signal?: AbortSignal
   stream?: boolean
   primaryRequestTimeoutMs?: number
@@ -227,6 +237,7 @@ export async function executeSingleTurn({
   model,
   request,
   tools,
+  tool_choice,
   signal,
   stream = true,
   primaryRequestTimeoutMs = DEFAULT_PRIMARY_REQUEST_TIMEOUT_MS,
@@ -236,6 +247,8 @@ export async function executeSingleTurn({
   purpose = 'standard',
   onStreamDelta,
 }: SingleTurnExecutionInput): Promise<SingleTurnExecutionResult> {
+  const resolvedToolChoice: RequestToolChoice | undefined =
+    tool_choice ?? (tools ? 'auto' : undefined)
   const isAuxiliary = purpose === 'auxiliary'
   const effectiveModel = isAuxiliary ? stripProviderFeatures(model) : model
   // Auxiliary calls must never carry Gemini-native hosted tools, regardless of
@@ -261,7 +274,7 @@ export async function executeSingleTurn({
           {
             ...request,
             tools,
-            tool_choice: tools ? 'auto' : undefined,
+            tool_choice: resolvedToolChoice,
             stream: false,
           },
           {
@@ -348,7 +361,7 @@ export async function executeSingleTurn({
         {
           ...request,
           tools,
-          tool_choice: tools ? 'auto' : undefined,
+          tool_choice: resolvedToolChoice,
           stream: true,
         },
         {

@@ -7,6 +7,7 @@ import {
   ChatMessage,
 } from '../../types/chat'
 import { ChatModel } from '../../types/chat-model.types'
+import type { RequestMessage, RequestTool } from '../../types/llm/request'
 import { LLMProvider, LLMProviderApiType } from '../../types/provider.types'
 import {
   ReasoningLevel,
@@ -74,6 +75,20 @@ type AgentLlmTurnExecutorOutput = {
   toolCallRequests: ToolCallRequest[]
   hasAssistantOutput: boolean
   debugTraceId?: string
+  /**
+   * The provider-ready prefix actually sent to the model this turn, plus the
+   * exact tools block. The compaction bypass reuses these byte-for-byte so its
+   * out-of-band summarize request hits the same cache-warm prefix.
+   */
+  requestMessages: RequestMessage[]
+  requestTools: RequestTool[] | undefined
+  /**
+   * The resolved reasoning level actually applied this turn. Replayed by the
+   * compaction bypass so its request carries the same thinking config — without
+   * it, Anthropic's cache key (which includes thinking config) would mismatch
+   * and the cache-warm prefix would not hit.
+   */
+  requestReasoning: ReasoningLevel | undefined
 }
 
 export class AgentLlmTurnExecutor {
@@ -160,8 +175,9 @@ export class AgentLlmTurnExecutor {
     this.input.onAssistantMessage(assistantMessage)
 
     let turnResult: Awaited<ReturnType<typeof executeSingleTurn>>
+    let requestReasoning: ReasoningLevel | undefined
     try {
-      const resolvedReasoning = resolveRequestReasoningLevel(
+      requestReasoning = resolveRequestReasoningLevel(
         this.input.model,
         this.input.reasoningLevel,
       )
@@ -174,8 +190,8 @@ export class AgentLlmTurnExecutor {
           temperature: this.input.requestParams?.temperature,
           top_p: this.input.requestParams?.top_p,
           max_tokens: this.input.requestParams?.max_tokens,
-          ...(resolvedReasoning !== undefined
-            ? { reasoningLevel: resolvedReasoning }
+          ...(requestReasoning !== undefined
+            ? { reasoningLevel: requestReasoning }
             : {}),
         },
         tools,
@@ -302,6 +318,9 @@ export class AgentLlmTurnExecutor {
       toolCallRequests,
       hasAssistantOutput: assistantMessage.content.trim().length > 0,
       debugTraceId: debugTrace?.id,
+      requestMessages,
+      requestTools: tools,
+      requestReasoning,
     }
   }
 

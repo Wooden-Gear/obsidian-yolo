@@ -774,6 +774,34 @@ export class RequestContextBuilder {
     return sections
   }
 
+  /**
+   * Convert a slice of newly-produced turn messages (assistant + tool, e.g.
+   * the `context_compact` call and its result) into provider-ready
+   * `RequestMessage[]`, reusing the exact same parsing + tool-boundary
+   * filtering as the main request pipeline. Synchronous: turn messages never
+   * contain user content that requires snapshot/I-O resolution.
+   *
+   * Used by the compaction bypass to append the in-flight turn onto the
+   * cache-warm prefix without re-running `generateRequestMessages`.
+   */
+  public parseTurnMessagesToRequestMessages(
+    messages: ChatMessage[],
+  ): RequestMessage[] {
+    const requestMessages: RequestMessage[] = []
+    for (const message of messages) {
+      if (message.role === 'assistant') {
+        requestMessages.push(...this.parseAssistantMessage({ message }))
+        continue
+      }
+      if (message.role === 'tool') {
+        requestMessages.push(...this.parseToolMessage({ message }))
+      }
+    }
+    return filterRequestMessagesByToolBoundary(
+      filterEmptyAssistantMessages(requestMessages),
+    )
+  }
+
   private async getChatHistoryMessages({
     messages,
     snapshotEntries,

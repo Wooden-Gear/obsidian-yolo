@@ -8,6 +8,8 @@ import {
   getLatestChatConversationCompaction,
   normalizeChatConversationCompactionState,
 } from '../../types/chat'
+import type { RequestMessage, RequestTool } from '../../types/llm/request'
+import type { ReasoningLevel } from '../../types/reasoning'
 import {
   ToolCallRequest,
   ToolCallResponseStatus,
@@ -18,6 +20,7 @@ import { composeAgentInjections } from './agent-injections'
 import {
   buildCompactedConversationState,
   createConversationCompactionSummary,
+  findCompactInstruction,
   findCompactToolCallId,
   getLastAssistantPromptTokens,
 } from './compaction'
@@ -111,6 +114,13 @@ export class NativeAgentRuntime implements AgentRuntime {
     let pendingToolMessageId: string | null = null
     let pendingToolCallCount = 0
     let currentDebugTraceId: string | undefined
+    // Per-turn cache-warm prefix + tools the executor actually sent, plus the
+    // `this.messages` boundary before this turn's LLM request. The compaction
+    // bypass reuses these to build a byte-identical out-of-band request.
+    let currentTurnRequestMessages: RequestMessage[] = []
+    let currentTurnRequestTools: RequestTool[] | undefined
+    let currentTurnRequestReasoning: ReasoningLevel | undefined
+    let currentTurnMessageBoundary = 0
     let runSettled = false
     let workerTaskQueue = Promise.resolve()
     let abortListener: (() => void) | null = null
@@ -172,10 +182,18 @@ export class NativeAgentRuntime implements AgentRuntime {
                   },
                 })
 
+                // Record the boundary before the LLM request: messages added
+                // after this point (this turn's assistant + tool) are the
+                // compaction `turnMessages`.
+                currentTurnMessageBoundary = this.messages.length
+
                 const turnResult = await llmTurnExecutor.run()
                 pendingToolMessageId = null
                 pendingToolCallCount = turnResult.toolCallRequests.length
                 currentDebugTraceId = turnResult.debugTraceId
+                currentTurnRequestMessages = turnResult.requestMessages
+                currentTurnRequestTools = turnResult.requestTools
+                currentTurnRequestReasoning = turnResult.requestReasoning
 
                 worker.postMessage({
                   type: 'llm_result',
@@ -232,11 +250,7 @@ export class NativeAgentRuntime implements AgentRuntime {
 
                 const compactToolCallId =
                   findCompactToolCallId(completedToolMessage)
-                if (
-                  compactToolCallId &&
-                  input.compactionProviderClient &&
-                  input.compactionModel
-                ) {
+                if (compactToolCallId) {
                   this.pendingCompactionAnchorMessageId =
                     completedToolMessage.id
                   this.notifySubscribers()
@@ -246,24 +260,40 @@ export class NativeAgentRuntime implements AgentRuntime {
                     ...this.messages,
                   ]
 
+                  // This turn's new assistant + tool messages (incl. the
+                  // context_compact call/result), converted with the same
+                  // parsing as the main request pipeline.
+                  const turnMessages =
+                    input.requestContextBuilder.parseTurnMessagesToRequestMessages(
+                      this.messages.slice(currentTurnMessageBoundary),
+                    )
+                  const focusInstruction =
+                    findCompactInstruction(completedToolMessage)
+
                   console.debug('[YOLO][Compact] compact trigger detected', {
                     conversationId: input.conversationId,
                     triggerToolCallId: compactToolCallId,
                     messageCount: conversationMessages.length,
+                    prefixMessageCount: currentTurnRequestMessages.length,
+                    turnMessageCount: turnMessages.length,
                   })
 
                   try {
                     const summary = await createConversationCompactionSummary({
-                      providerClient: input.compactionProviderClient,
-                      model: input.compactionModel,
-                      messages: conversationMessages,
+                      providerClient: input.providerClient,
+                      model: input.model,
+                      requestMessages: currentTurnRequestMessages,
+                      turnMessages,
+                      focusInstruction,
+                      tools: currentTurnRequestTools,
+                      reasoningLevel: currentTurnRequestReasoning,
                       debugTraceId: currentDebugTraceId,
                     })
                     const nextCompaction =
                       await buildCompactedConversationState({
                         messages: conversationMessages,
                         summary,
-                        summaryModelId: input.compactionModel.id,
+                        summaryModelId: input.model.id,
                       })
                     if (nextCompaction) {
                       try {
