@@ -430,7 +430,18 @@ const stringifyUserMessage = (message: ChatUserMessage): string => {
       ? editorStateToPlainText(message.content)
       : ''
 
-  return text.trim().length > 0 ? text.trim() : '[empty user message]'
+  // timeContext 独立存储,不在 promptContent 里 → 摘要 transcript 需显式带上,
+  // 否则被压缩消息的时间上下文会丢失。
+  const timePrefix = message.timeContext
+    ? `<current_time>${message.timeContext}</current_time>\n`
+    : ''
+
+  const trimmed = text.trim()
+  return trimmed.length > 0
+    ? `${timePrefix}${trimmed}`
+    : timePrefix
+      ? `${timePrefix}[empty user message]`
+      : '[empty user message]'
 }
 
 const stringifyAssistantMessage = (message: ChatAssistantMessage): string => {

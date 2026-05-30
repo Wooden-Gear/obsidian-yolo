@@ -169,7 +169,7 @@ export const en: TranslationKeys = {
         'How long to wait before the streaming primary request is treated as timed out. This timeout always applies; if automatic recovery is enabled, a non-streaming fallback is attempted afterward. Default: 60 seconds.',
       globalSystemPrompt: 'Global system prompt',
       globalSystemPromptDesc:
-        'This prompt is added to the beginning of every chat conversation. Supported variables: date {{current_date}}, date + current hour {{current_hour}}, date + current hour and minute {{current_minute}}, weekday {{current_weekday}}.',
+        'This prompt is added to the beginning of every chat conversation.',
       continuationSystemPrompt: 'Default continuation system prompt',
       continuationSystemPromptDesc:
         'Used as the system message when generating continuation text; leave empty to fall back to the built-in default.',
@@ -287,7 +287,7 @@ export const en: TranslationKeys = {
       description: 'Description',
       systemPrompt: 'System prompt',
       systemPromptDesc:
-        'This prompt will be added to the beginning of every chat. Supports {{current_date}}, {{current_hour}}, {{current_minute}}, and {{current_weekday}}.',
+        'This prompt will be added to the beginning of every chat.',
       systemPromptPlaceholder:
         "Enter system prompt to define assistant's behavior and capabilities",
       namePlaceholder: 'Enter assistant name',
@@ -504,8 +504,7 @@ export const en: TranslationKeys = {
       editorIconDesc: 'Pick an icon for this agent',
       editorChooseIcon: 'Choose icon',
       editorSystemPrompt: 'System prompt',
-      editorSystemPromptDesc:
-        'Primary behavior instruction for this agent. Supported variables: date {{current_date}}, date + current hour {{current_hour}}, date + current hour and minute {{current_minute}}, weekday {{current_weekday}}.',
+      editorSystemPromptDesc: 'Primary behavior instruction for this agent.',
       editorSystemPromptExpand: 'Expand editor',
       editorSystemPromptCollapse: 'Close expanded editor',
       editorEnableProjectInstructions: 'Load project instruction files',
@@ -556,6 +555,9 @@ export const en: TranslationKeys = {
       focusSyncTitle: 'Focus sync',
       focusSyncDesc:
         'When enabled, the AI can sense which file you are reading and where you are in it.',
+      timeContextTitle: 'Current time awareness',
+      timeContextDesc:
+        'Lets the model know the current time when each message is sent.',
       imageReadingBlockTitle: 'Image reading',
       imageReadingEnabled: 'Image reading',
       imageReadingEnabledDesc:

@@ -166,7 +166,7 @@ export const it: TranslationKeys = {
         'Quanto attendere prima che la richiesta primaria in streaming venga considerata in timeout. Questo timeout si applica sempre; se il recupero automatico e attivo, dopo il timeout verra tentato un fallback non streaming. Predefinito: 60 secondi.',
       globalSystemPrompt: 'Prompt di sistema globale',
       globalSystemPromptDesc:
-        "Questo prompt viene aggiunto all'inizio di ogni conversazione chat. Variabili supportate: data {{current_date}}, data + ora corrente {{current_hour}}, data + ora e minuti correnti {{current_minute}}, giorno della settimana {{current_weekday}}.",
+        "Questo prompt viene aggiunto all'inizio di ogni conversazione chat.",
       continuationSystemPrompt:
         'Prompt di sistema di continuazione predefinito',
       continuationSystemPromptDesc:
@@ -291,8 +291,7 @@ export const it: TranslationKeys = {
       descriptionDesc: "Breve descrizione dello scopo dell'assistente",
       descriptionPlaceholder: 'Ad esempio, Aiuta con domande di programmazione',
       systemPrompt: 'Prompt di sistema',
-      systemPromptDesc:
-        "Questo prompt viene aggiunto all'inizio di ogni chat. Variabili supportate: data {{current_date}}, data + ora corrente {{current_hour}}, data + ora e minuti correnti {{current_minute}}, giorno della settimana {{current_weekday}}.",
+      systemPromptDesc: "Questo prompt viene aggiunto all'inizio di ogni chat.",
       systemPromptPlaceholder: 'Ad esempio, Sei un esperto programmatore...',
       defaultAssistantName: 'Nuovo assistente',
       actions: 'Azioni',
@@ -498,7 +497,7 @@ export const it: TranslationKeys = {
       editorChooseIcon: 'Scegli icona',
       editorSystemPrompt: 'System prompt',
       editorSystemPromptDesc:
-        'Istruzione comportamentale principale per questo agent. Variabili supportate: data {{current_date}}, data + ora corrente {{current_hour}}, data + ora e minuti correnti {{current_minute}}, giorno della settimana {{current_weekday}}.',
+        'Istruzione comportamentale principale per questo agent.',
       editorSystemPromptExpand: 'Espandi editor',
       editorSystemPromptCollapse: 'Chiudi editor espanso',
       editorEnableProjectInstructions: 'Carica file di istruzioni del progetto',
@@ -535,6 +534,9 @@ export const it: TranslationKeys = {
       focusSyncTitle: 'Sincronizzazione del focus',
       focusSyncDesc:
         "Se abilitato, l'AI percepisce quale file stai leggendo e dove ti trovi.",
+      timeContextTitle: 'Consapevolezza dell ora corrente',
+      timeContextDesc:
+        'Indica al modello l ora corrente all invio di ogni messaggio.',
       imageReadingBlockTitle: 'Lettura immagini',
       imageReadingEnabled: 'Lettura immagini',
       imageReadingEnabledDesc:

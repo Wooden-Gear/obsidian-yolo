@@ -68,7 +68,7 @@ import {
   extractPdfText,
   extractPdfTextFromBase64,
 } from '../pdf/extractPdfText'
-import { resolvePromptVariables } from '../prompt/promptVariables'
+import { prefixTimeContext } from '../prompt/timeContext'
 
 import {
   type ContextualInjection,
@@ -875,14 +875,23 @@ export class RequestContextBuilder {
     message: ChatUserMessage
     snapshotEntries: Record<string, string | ContentPart[]>
   }): Promise<string | ContentPart[]> {
-    if (message.promptContent) {
-      return message.promptContent
+    const withTimeContext = (
+      content: string | ContentPart[],
+    ): string | ContentPart[] =>
+      message.timeContext
+        ? prefixTimeContext(content, message.timeContext)
+        : content
+
+    // 注意:用 != null 而非 truthy 判断,空串 promptContent 也算「已编译」,
+    // 不应误触下方的 fallback 重新计算。
+    if (message.promptContent != null) {
+      return withTimeContext(message.promptContent)
     }
 
     if (message.snapshotRef?.hash) {
       const snapshotContent = snapshotEntries[message.snapshotRef.hash]
       if (snapshotContent) {
-        return snapshotContent
+        return withTimeContext(snapshotContent)
       }
     }
 
@@ -937,17 +946,17 @@ export class RequestContextBuilder {
     )
     const textContent = `${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
     if (imageParts.length === 0 && pdfDocumentParts.length === 0) {
-      return textContent
+      return withTimeContext(textContent)
     }
 
-    return [
+    return withTimeContext([
       ...imageParts,
       ...pdfDocumentParts,
       {
         type: 'text',
         text: textContent,
       },
-    ]
+    ])
   }
 
   private requiresSnapshotRebuild(message: ChatUserMessage): boolean {
@@ -1585,15 +1594,11 @@ ${entries}
     const currentAssistant = this.getCurrentAssistant()
 
     // Custom system prompt (global)
-    const customInstruction = resolvePromptVariables(
-      this.settings.systemPrompt,
-    ).trim()
+    const customInstruction = this.settings.systemPrompt.trim()
 
     // Assistant instructions — bucket: system (assistant prompt is system-prompt-side)
     if (currentAssistant?.systemPrompt) {
-      const resolvedAssistantSystemPrompt = resolvePromptVariables(
-        currentAssistant.systemPrompt,
-      ).trim()
+      const resolvedAssistantSystemPrompt = currentAssistant.systemPrompt.trim()
       if (resolvedAssistantSystemPrompt) {
         sections.push({
           bucket: 'system',

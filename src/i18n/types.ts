@@ -417,6 +417,8 @@ export type TranslationKeys = {
       agentCapabilitiesBlockTitle?: string
       focusSyncTitle?: string
       focusSyncDesc?: string
+      timeContextTitle?: string
+      timeContextDesc?: string
       imageReadingBlockTitle?: string
       imageReadingEnabled?: string
       imageReadingEnabledDesc?: string

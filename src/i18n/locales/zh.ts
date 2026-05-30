@@ -142,8 +142,7 @@ export const zh: TranslationKeys = {
       primaryRequestTimeoutDesc:
         '流式主请求等待多久后判定为超时。无论是否启用自动恢复，此超时都会生效；若已启用自动恢复，超时后会自动改用非流式再尝试一次。默认 60 秒。',
       globalSystemPrompt: '全局系统提示词',
-      globalSystemPromptDesc:
-        '该提示将追加到每次聊天的最前面。支持变量：日期 {{current_date}}、日期+当前小时 {{current_hour}}、日期+当前时分 {{current_minute}}、星期 {{current_weekday}}。',
+      globalSystemPromptDesc: '该提示将追加到每次聊天的最前面。',
       continuationSystemPrompt: '默认续写系统提示词',
       continuationSystemPromptDesc:
         '用于续写功能的系统消息。留空将使用内置默认值。',
@@ -253,8 +252,7 @@ export const zh: TranslationKeys = {
       descriptionDesc: '简要描述此助手的用途',
       descriptionPlaceholder: '输入描述',
       systemPrompt: '系统提示词',
-      systemPromptDesc:
-        '该提示将添加到每次聊天的开头。支持 {{current_date}}、{{current_hour}}、{{current_minute}} 和 {{current_weekday}}。',
+      systemPromptDesc: '该提示将添加到每次聊天的开头。',
       systemPromptPlaceholder: '输入系统提示词，用于定义助手的行为与能力',
       namePlaceholder: '输入助手名称',
       defaultAssistantName: '新建助手',
@@ -459,8 +457,7 @@ export const zh: TranslationKeys = {
       editorIconDesc: '为该 Agent 选择图标',
       editorChooseIcon: '选择图标',
       editorSystemPrompt: 'System prompt',
-      editorSystemPromptDesc:
-        '该 Agent 的主行为指令。支持变量：日期 {{current_date}}、日期+当前小时 {{current_hour}}、日期+当前时分 {{current_minute}}、星期 {{current_weekday}}。',
+      editorSystemPromptDesc: '该 Agent 的主行为指令。',
       editorSystemPromptExpand: '放大编辑',
       editorSystemPromptCollapse: '关闭放大视图',
       editorEnableProjectInstructions: '读取项目指令文件',
@@ -509,6 +506,8 @@ export const zh: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Agent 能力',
       focusSyncTitle: '焦点同步',
       focusSyncDesc: '启用后，AI 可以感知到你正在阅读的内容和位置。',
+      timeContextTitle: '当前时间感知',
+      timeContextDesc: '让模型知道每条消息发送时的当前时间。',
       imageReadingBlockTitle: '图片读取',
       imageReadingEnabled: '图片读取',
       imageReadingEnabledDesc:

@@ -3,7 +3,7 @@ import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 
-export function AgentFocusSyncSection() {
+export function AgentTimeContextSection() {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
 
@@ -12,25 +12,22 @@ export function AgentFocusSyncSection() {
       try {
         await setSettings({
           ...settings,
-          chatOptions: {
-            ...settings.chatOptions,
-            includeCurrentFileContent: value,
-          },
+          timeContextEnabled: value,
         })
       } catch (error) {
-        console.error('Failed to update focus sync setting', error)
+        console.error('Failed to update time context setting', error)
       }
     })()
   }
 
   return (
     <ObsidianSetting
-      name={t('settings.agent.focusSyncTitle')}
-      desc={t('settings.agent.focusSyncDesc')}
+      name={t('settings.agent.timeContextTitle')}
+      desc={t('settings.agent.timeContextDesc')}
       className="yolo-settings-card yolo-agent-capability-card"
     >
       <ObsidianToggle
-        value={settings.chatOptions.includeCurrentFileContent}
+        value={settings.timeContextEnabled}
         onChange={handleChange}
       />
     </ObsidianSetting>

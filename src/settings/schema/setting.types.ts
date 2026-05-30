@@ -302,6 +302,10 @@ export const yoloSettingsSchema = z.object({
   // System Prompt
   systemPrompt: z.string().catch(''),
 
+  // 时间感知:开启后,每条新用户消息发送时固定当前时间并以 <current_time> 前缀注入。
+  // 只影响之后的新消息,历史消息已固定不变。
+  timeContextEnabled: z.boolean().catch(true),
+
   // RAG Options
   ragOptions: ragOptionsSchema.catch({
     enabled: true,

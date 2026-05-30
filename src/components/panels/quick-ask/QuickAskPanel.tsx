@@ -72,6 +72,7 @@ import { groupAssistantAndToolMessages } from '../../../utils/chat/message-group
 import { RequestContextBuilder } from '../../../utils/chat/requestContextBuilder'
 import { buildMessageTimelineItems } from '../../../utils/chat/timeline'
 import { readTFileContent } from '../../../utils/obsidian'
+import { stampUserMessageTimeContext } from '../../../utils/prompt/timeContext'
 import AssistantToolMessageGroupItem from '../../chat-view/AssistantToolMessageGroupItem'
 import type { ChatUserInputRef } from '../../chat-view/chat-input/ChatUserInput'
 import LexicalContentEditable from '../../chat-view/chat-input/LexicalContentEditable'
@@ -1002,13 +1003,17 @@ export function QuickAskPanel({
         }
       })
 
-      const userMessage: ChatUserMessage = {
-        role: 'user',
-        content: editorState,
-        promptContent: null,
-        id: options?.userMessageId ?? uuidv4(),
-        mentionables: mentionablesOverride ?? mentionables,
-      }
+      // 新用户回合进入对话:在此固定当前时间(与侧边栏 Chat 同一机制)。
+      const userMessage: ChatUserMessage = stampUserMessageTimeContext(
+        {
+          role: 'user',
+          content: editorState,
+          promptContent: null,
+          id: options?.userMessageId ?? uuidv4(),
+          mentionables: mentionablesOverride ?? mentionables,
+        },
+        settings,
+      )
 
       // Clear mentionables after creating the message
       setMentionables([])
