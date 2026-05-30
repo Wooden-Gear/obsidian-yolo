@@ -32,6 +32,7 @@ import ImagePastePlugin from './plugins/image/ImagePastePlugin'
 import AutoLinkMentionPlugin from './plugins/mention/AutoLinkMentionPlugin'
 import { MentionNode } from './plugins/mention/MentionNode'
 import MentionPlugin from './plugins/mention/MentionPlugin'
+import MentionSelectionHighlightPlugin from './plugins/mention/MentionSelectionHighlightPlugin'
 import { SkillNode } from './plugins/mention/SkillNode'
 import SkillSlashPlugin, {
   type SlashCommand,
@@ -333,6 +334,7 @@ export default function LexicalContentEditable({
       <EditorRefPlugin editorRef={editorRef} />
       <NoFormatPlugin />
       <AutoLinkMentionPlugin />
+      <MentionSelectionHighlightPlugin />
       <ImagePastePlugin onCreateImageMentionables={onCreateImageMentionables} />
       <ObsidianFileDropPlugin />
       <DragDropPaste onCreateImageMentionables={onCreateImageMentionables} />
