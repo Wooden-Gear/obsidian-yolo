@@ -179,6 +179,8 @@ export const estimateContextBreakdown = async ({
     compaction,
     contextualInjections,
     requestTools,
+    // Token breakdown only: reuse a frozen snapshot if present, never create one.
+    systemPromptSnapshotMode: 'reuse',
   })
 
   const cacheKey = hashSections(sections)

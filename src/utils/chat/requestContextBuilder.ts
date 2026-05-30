@@ -1,5 +1,5 @@
 import type { App, TFile, TFolder } from 'obsidian'
-import { Notice } from 'obsidian'
+import { Notice, normalizePath } from 'obsidian'
 
 import { editorStateToPlainText } from '../../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import type { QueryProgressState } from '../../components/chat-view/QueryProgress'
@@ -7,7 +7,14 @@ import {
   buildCompactionResumeMessage,
   buildCompactionSummaryMessage,
 } from '../../core/agent/compaction'
-import { getMemoryPromptContext } from '../../core/memory/memoryManager'
+import type {
+  SystemPromptSnapshot,
+  SystemPromptSnapshotStore,
+} from '../../core/agent/systemPromptSnapshotStore'
+import {
+  getMemoryPromptContext,
+  resolveMemoryFilePaths,
+} from '../../core/memory/memoryManager'
 import { getProjectInstructionsSection } from '../../core/project-instructions'
 import {
   getLiteSkillDocument,
@@ -47,6 +54,7 @@ import {
   getToolCallArgumentsObject,
 } from '../../types/tool-call.types'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
+import { stableStringify } from '../json/stableStringify'
 import { collectWikilinkPaths } from '../llm/annotate-wikilinks'
 import { isImageTFile, tFileToImageDataUrl } from '../llm/image'
 import {
@@ -164,7 +172,24 @@ const stripUserSelectedSkillsFromMessage = (
 
 type RequestContextBuilderOptions = {
   includeSkills?: boolean
+  /**
+   * Optional per-conversation system-prompt snapshot store. When omitted the
+   * builder degrades to computing the system prompt fresh on every call
+   * (current behavior), which keeps tests and non-injected callers unaffected.
+   */
+  systemPromptSnapshotStore?: SystemPromptSnapshotStore
 }
+
+/**
+ * Snapshot lookup mode, set explicitly by each caller (never inferred from the
+ * method name — `generateRequestMessages` serves both real requests and
+ * compaction estimates):
+ * - `create`: real request path. A miss builds and writes the snapshot; later
+ *   iterations / turns reuse it via fingerprint hit.
+ * - `reuse`: estimate / breakdown path. A hit is reused; a miss is computed
+ *   fresh and NOT written, so estimates never freeze the real-request prompt.
+ */
+export type SystemPromptSnapshotMode = 'create' | 'reuse'
 
 /**
  * A semantic slice of the upcoming LLM request. Used by the UI to break down
@@ -190,9 +215,11 @@ export type PromptSection = {
   content: unknown
 }
 
-/** Internal: ordered system-prompt-side sections produced by the builder.
- * Their string content joined with `\n\n` is the system message content. */
-type SystemPromptSections = PromptSection[]
+/** Ordered system-prompt-side sections produced by the builder.
+ * Their string content joined with `\n\n` is the system message content.
+ * Exported so the per-conversation snapshot store can type its payload
+ * against the same shape without duplicating the definition. */
+export type SystemPromptSections = PromptSection[]
 
 type MarkdownAtxHeading = {
   level: number
@@ -446,6 +473,7 @@ export class RequestContextBuilder {
   private app: App
   private settings: YoloSettings
   private includeSkills: boolean
+  private systemPromptSnapshotStore?: SystemPromptSnapshotStore
 
   constructor(
     app: App,
@@ -455,6 +483,7 @@ export class RequestContextBuilder {
     this.app = app
     this.settings = settings
     this.includeSkills = options?.includeSkills ?? true
+    this.systemPromptSnapshotStore = options?.systemPromptSnapshotStore
   }
 
   private getMentionContextMode(): MentionContextMode {
@@ -481,6 +510,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<RequestMessage[]> {
     const { requestMessages } = await this.assembleRequest(args)
     return requestMessages
@@ -501,6 +531,7 @@ export class RequestContextBuilder {
     conversationId,
     compaction,
     contextualInjections,
+    systemPromptSnapshotMode,
   }: {
     messages: ChatMessage[]
     hasTools?: boolean
@@ -509,6 +540,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<{
     requestMessages: RequestMessage[]
     systemSections: SystemPromptSections
@@ -581,16 +613,13 @@ export class RequestContextBuilder {
       }
     }
 
-    const systemSections = await this.buildSystemPromptSections(
-      hasTools,
-      hasMemoryTools,
-    )
-    const systemContent = systemSections
-      .map((section) =>
-        typeof section.content === 'string' ? section.content : '',
-      )
-      .filter((text) => text.length > 0)
-      .join('\n\n')
+    const { systemSections, systemContent } =
+      await this.resolveSystemPromptSnapshot({
+        conversationId,
+        hasTools,
+        hasMemoryTools,
+        mode: systemPromptSnapshotMode,
+      })
     const systemMessage: RequestMessage = {
       role: 'system',
       content: systemContent,
@@ -645,6 +674,7 @@ export class RequestContextBuilder {
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
     requestTools?: unknown[] | undefined
+    systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<PromptSection[]> {
     const { requestMessages, systemSections } = await this.assembleRequest(args)
 
@@ -1388,6 +1418,109 @@ If you need an on-demand tool that is NOT listed here (for example because its s
 ${entries}
 </previously-loaded-tools>`,
     }
+  }
+
+  /**
+   * Resolve the system prompt for this request, freezing it per conversation
+   * when a snapshot store is injected.
+   *
+   * The system prompt is the head of the provider cache prefix. Memory writes
+   * (and time variables / project instructions) would otherwise change it
+   * mid-conversation and invalidate the whole prefix cache every iteration.
+   * Freezing keeps the bytes stable for the conversation's lifetime; the
+   * snapshot refreshes only when a prompt-relevant config input changes
+   * (see {@link computeSystemPromptFingerprint}) or on a new conversation.
+   *
+   * When no store is injected (tests / non-agent callers) the prompt is
+   * computed fresh on every call, preserving the previous behavior.
+   */
+  private async resolveSystemPromptSnapshot({
+    conversationId,
+    hasTools,
+    hasMemoryTools,
+    mode,
+  }: {
+    conversationId: string
+    hasTools: boolean
+    hasMemoryTools: boolean
+    mode: SystemPromptSnapshotMode
+  }): Promise<SystemPromptSnapshot> {
+    const build = async (): Promise<SystemPromptSnapshot> => {
+      const systemSections = await this.buildSystemPromptSections(
+        hasTools,
+        hasMemoryTools,
+      )
+      const systemContent = systemSections
+        .map((section) =>
+          typeof section.content === 'string' ? section.content : '',
+        )
+        .filter((text) => text.length > 0)
+        .join('\n\n')
+      return { systemSections, systemContent }
+    }
+
+    const store = this.systemPromptSnapshotStore
+    if (!store) {
+      return build()
+    }
+
+    const fingerprint = this.computeSystemPromptFingerprint(
+      hasTools,
+      hasMemoryTools,
+    )
+    return store.getOrCreate(conversationId, fingerprint, build, {
+      reuseOnly: mode === 'reuse',
+    })
+  }
+
+  /**
+   * Stable fingerprint of every *configuration-level* input that legitimately
+   * changes the system prompt text. A change here refreshes the frozen
+   * snapshot; everything NOT listed (memory file content, project-instruction
+   * and skill file content, time variables) is intentionally frozen until the
+   * next conversation. Settings that never reach the system prompt (reasoning
+   * level, chat mode, …) are excluded so they don't evict the snapshot.
+   */
+  private computeSystemPromptFingerprint(
+    hasTools: boolean,
+    hasMemoryTools: boolean,
+  ): string {
+    const assistant = this.getCurrentAssistant()
+    // The exact memory files this request will read. Captures baseDir, the
+    // assistant name, AND the sibling-driven duplicate index — so a same-named
+    // assistant being added/renamed (which changes which file we read) refreshes
+    // the snapshot even though the current assistant's own fields are unchanged.
+    const memoryPaths = resolveMemoryFilePaths({
+      settings: this.settings,
+      assistantId: this.settings.currentAssistantId,
+    })
+    return stableStringify({
+      hasTools,
+      hasMemoryTools,
+      includeSkills: this.includeSkills,
+      systemPrompt: this.settings.systemPrompt ?? '',
+      // Normalize the same way the real path/skill lookups do, so cosmetic-only
+      // edits (trailing slash, whitespace) don't needlessly evict the snapshot.
+      baseDir: normalizePath(this.settings.yolo?.baseDir ?? ''),
+      disabledSkillIds: [...(this.settings.skills?.disabledSkillIds ?? [])]
+        .map((id) => id.trim())
+        .sort(),
+      currentAssistantId: this.settings.currentAssistantId ?? '',
+      memoryPaths,
+      // Only assistant fields that reach the system prompt — not modelId / icon /
+      // updatedAt, which would over-evict on unrelated edits. `enabledSkills` is
+      // legacy and not consulted by skill filtering, so it is intentionally out.
+      assistant: assistant
+        ? {
+            name: assistant.name,
+            systemPrompt: assistant.systemPrompt ?? '',
+            skillPreferences: assistant.skillPreferences ?? null,
+            enableProjectInstructions:
+              assistant.enableProjectInstructions ?? false,
+            workspaceScope: assistant.workspaceScope ?? null,
+          }
+        : null,
+    })
   }
 
   /**

@@ -69,6 +69,8 @@ export const estimateContinuationRequestContextTokens = async ({
     conversationId,
     compaction,
     contextualInjections,
+    // Token estimate only: never create/freeze the snapshot ahead of the real request.
+    systemPromptSnapshotMode: 'reuse',
   })
 
   return await estimateJsonTokens({

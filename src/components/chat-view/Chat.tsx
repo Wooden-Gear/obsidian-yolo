@@ -566,8 +566,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     [conversationAssistantId, settings],
   )
   const requestContextBuilder = useMemo(() => {
-    return new RequestContextBuilder(app, effectiveSettings)
-  }, [app, effectiveSettings])
+    return new RequestContextBuilder(app, effectiveSettings, {
+      systemPromptSnapshotStore: agentService.getSystemPromptSnapshotStore(),
+    })
+  }, [app, effectiveSettings, agentService])
 
   const normalizeReasoningLevel = useCallback(
     (value?: string): ReasoningLevel | null => {

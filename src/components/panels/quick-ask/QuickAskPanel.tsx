@@ -628,9 +628,12 @@ export function QuickAskPanel({
       },
       {
         includeSkills: executionMode === 'agent' || executionMode === 'chat',
+        systemPromptSnapshotStore: plugin
+          .getAgentService()
+          .getSystemPromptSnapshotStore(),
       },
     )
-  }, [app, executionMode, selectedAssistant, settings])
+  }, [app, executionMode, selectedAssistant, settings, plugin])
 
   const editorSnapshotInjection =
     useMemo<EditorSnapshotInjection | null>(() => {
@@ -1742,7 +1745,14 @@ export function QuickAskPanel({
 
   // Clear conversation
   const clearConversation = useCallback(() => {
+    // Abort any in-flight run first: clearing starts a new topic under the same
+    // conversationId, and a still-running loop would otherwise re-create the
+    // snapshot we are about to evict on its next iteration.
+    abortStream()
     setChatMessages([])
+    // New topic under the same conversationId, so drop the frozen system prompt
+    // to re-snapshot against the current memory / config on the next message.
+    plugin.getAgentService().evictSystemPromptSnapshot(conversationId)
     new Notice(t('quickAsk.cleared', 'Conversation cleared'))
     // Re-enable follow mode after clearing.
     forceScrollToBottom()
@@ -1750,7 +1760,7 @@ export function QuickAskPanel({
     setTimeout(() => {
       contentEditableRef.current?.focus()
     }, 0)
-  }, [forceScrollToBottom, t])
+  }, [abortStream, conversationId, plugin, forceScrollToBottom, t])
 
   // Open in sidebar
   const hasMessages = chatMessages.length > 0

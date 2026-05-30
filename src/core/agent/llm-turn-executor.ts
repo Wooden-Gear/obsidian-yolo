@@ -117,6 +117,8 @@ export class AgentLlmTurnExecutor {
         conversationId: this.input.conversationId,
         compaction: this.input.compaction,
         contextualInjections: this.input.contextualInjections,
+        // Real LLM request: freeze (or reuse) the per-conversation system prompt.
+        systemPromptSnapshotMode: 'create',
       })
 
     const responseStart = Date.now()

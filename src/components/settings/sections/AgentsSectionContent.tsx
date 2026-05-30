@@ -69,6 +69,7 @@ import {
   AssistantWorkspaceScope,
 } from '../../../types/assistant.types'
 import { McpTool } from '../../../types/mcp.types'
+import { stableStringify } from '../../../utils/json/stableStringify'
 import {
   estimateJsonTokens,
   estimateTextTokens,
@@ -144,26 +145,6 @@ function fnv1aHash(text: string): string {
     hash = Math.imul(hash, 0x01000193)
   }
   return (hash >>> 0).toString(16).padStart(8, '0')
-}
-
-// Stable JSON serialization with sorted object keys, so cache keys stay
-// consistent across re-renders that recreate equivalent objects.
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value) ?? 'null'
-  }
-  if (Array.isArray(value)) {
-    return '[' + value.map(stableStringify).join(',') + ']'
-  }
-  const record = value as Record<string, unknown>
-  const keys = Object.keys(record).sort()
-  return (
-    '{' +
-    keys
-      .map((key) => JSON.stringify(key) + ':' + stableStringify(record[key]))
-      .join(',') +
-    '}'
-  )
 }
 
 function buildToolTokenPayload(tool: McpTool): Record<string, unknown> {
