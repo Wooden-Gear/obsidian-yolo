@@ -12346,8 +12346,8 @@ button.yolo-llm-debug-modal-button:focus-visible {
 
 .yolo-lexical-content-editable-root .yolo-skill-mention::before {
   content: '';
-  width: 0.9em;
-  height: 0.9em;
+  width: 1.1em;
+  height: 1.1em;
   flex-shrink: 0;
   background-color: currentColor;
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z'/%3E%3Cpath d='M5 3v4'/%3E%3Cpath d='M3 5h4'/%3E%3Cpath d='M19 17v2'/%3E%3Cpath d='M18 18h2'/%3E%3C/svg%3E");
@@ -12392,8 +12392,8 @@ button.yolo-llm-debug-modal-button:focus-visible {
 
 .yolo-lexical-content-editable-root .mention[class*='yolo-mention--']::before {
   content: '';
-  width: 0.9em;
-  height: 0.9em;
+  width: 1.1em;
+  height: 1.1em;
   flex-shrink: 0;
   background-color: currentColor;
   mask-repeat: no-repeat;
@@ -12401,9 +12401,15 @@ button.yolo-llm-debug-modal-button:focus-visible {
   mask-size: contain;
 }
 
-.yolo-lexical-content-editable-root .yolo-mention--file::before,
-.yolo-lexical-content-editable-root .yolo-mention--block::before {
+.yolo-lexical-content-editable-root .yolo-mention--file::before {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3C/svg%3E");
+}
+
+/* block = an excerpt/selection quoted out of a file (TextSelect), distinct
+   from a whole file (FileIcon) and from assistant-quote (Quote). */
+
+.yolo-lexical-content-editable-root .yolo-mention--block::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 3a2 2 0 0 0-2 2'/%3E%3Cpath d='M19 3a2 2 0 0 1 2 2'/%3E%3Cpath d='M21 19a2 2 0 0 1-2 2'/%3E%3Cpath d='M5 21a2 2 0 0 1-2-2'/%3E%3Cpath d='M9 3h1'/%3E%3Cpath d='M9 21h1'/%3E%3Cpath d='M14 3h1'/%3E%3Cpath d='M14 21h1'/%3E%3Cpath d='M3 9v1'/%3E%3Cpath d='M21 9v1'/%3E%3Cpath d='M3 14v1'/%3E%3Cpath d='M21 14v1'/%3E%3Cline x1='7' x2='15' y1='8' y2='8'/%3E%3Cline x1='7' x2='17' y1='12' y2='12'/%3E%3Cline x1='7' x2='13' y1='16' y2='16'/%3E%3C/svg%3E");
 }
 
 .yolo-lexical-content-editable-root .yolo-mention--folder::before {
