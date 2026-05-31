@@ -1762,9 +1762,16 @@ export type TranslationKeys = {
   // Plugin update banner (GitHub release check)
   update: {
     newVersionAvailable: string
+    toastTitle: string
     currentVersion: string
     viewDetails: string
+    goUpdate: string
     dismiss: string
+    collapse: string
+    showFullChangelog: string
+    languageEnglish: string
+    languageChinese: string
+    muteThisVersion: string
     installationIncompleteTitle: string
     installationIncompleteMeta: string
     installationIncompleteNotes: string

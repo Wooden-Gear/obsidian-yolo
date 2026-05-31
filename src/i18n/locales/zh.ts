@@ -1913,9 +1913,16 @@ export const zh: TranslationKeys = {
 
   update: {
     newVersionAvailable: '新版本 {version} 已发布',
+    toastTitle: 'YOLO 有新版本',
     currentVersion: '当前版本',
-    viewDetails: '前往检查更新',
+    viewDetails: '前往更新',
+    goUpdate: '更新',
     dismiss: '关闭',
+    collapse: '收起',
+    showFullChangelog: '展开完整更新日志',
+    languageEnglish: 'EN',
+    languageChinese: '中文',
+    muteThisVersion: '当前版本不提示',
     installationIncompleteTitle: '插件安装不完整',
     installationIncompleteMeta:
       '主程序 {bakedVersion} · manifest {manifestVersion}',

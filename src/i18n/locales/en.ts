@@ -2049,9 +2049,16 @@ export const en: TranslationKeys = {
 
   update: {
     newVersionAvailable: 'New version {version} is available',
+    toastTitle: 'YOLO · New version',
     currentVersion: 'Current',
     viewDetails: 'Check for updates',
+    goUpdate: 'Update',
     dismiss: 'Dismiss',
+    collapse: 'Collapse',
+    showFullChangelog: 'Show full changelog',
+    languageEnglish: 'EN',
+    languageChinese: '中文',
+    muteThisVersion: "Don't notify for this version",
     installationIncompleteTitle: 'Plugin installation incomplete',
     installationIncompleteMeta:
       'main.js {bakedVersion} · manifest {manifestVersion}',

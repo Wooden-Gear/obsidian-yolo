@@ -14,6 +14,7 @@ import {
 
 import { ChatView } from './ChatView'
 import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdateRequiredModal'
+import { mountUpdateToast } from './components/UpdateToast'
 import { CHAT_VIEW_TYPE } from './constants'
 import { BAKED_PLUGIN_VERSION } from './constants/bakedVersion'
 import { createAgentConversationPersistence } from './core/agent/conversationPersistence'
@@ -137,8 +138,8 @@ export default class YoloPlugin extends Plugin {
   private currentSettingsMeta: YoloDataMeta | null = null
   updateCheckResult: UpdateCheckResult | null = null
   private hasCheckedForUpdate = false
-  private updateBannerDismissed = false
   private updateCheckListeners: (() => void)[] = []
+  private updateToastCleanup: (() => void) | null = null
   installationIncompleteDetail: {
     bakedVersion: string
     manifestVersion: string
@@ -1731,6 +1732,10 @@ export default class YoloPlugin extends Plugin {
     })
 
     this.setupBackgroundActivityStatusBar()
+    this.updateToastCleanup = mountUpdateToast(this)
+    // The toast is anchored to the window (not a chat view), so trigger the
+    // check at load time rather than waiting for a chat view to open.
+    this.checkForUpdateOnce()
     this.getAgentNotificationCoordinator().start()
     this.register(() => {
       this.agentNotificationCoordinator?.stop()
@@ -2061,6 +2066,8 @@ export default class YoloPlugin extends Plugin {
   }
 
   onunload() {
+    this.updateToastCleanup?.()
+    this.updateToastCleanup = null
     this.closeSmartSpace()
 
     // Selection chat cleanup
@@ -2572,10 +2579,6 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     }
   }
 
-  isUpdateBannerDismissed(): boolean {
-    return this.updateBannerDismissed
-  }
-
   addUpdateCheckListener(listener: () => void): () => void {
     this.updateCheckListeners.push(listener)
     return () => {
@@ -2591,9 +2594,18 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     }
   }
 
-  dismissUpdateBanner(): void {
-    this.updateBannerDismissed = true
-    this.notifyUpdateCheckListeners()
+  isUpdateVersionMuted(version: string): boolean {
+    return this.settings.mutedUpdateVersion === version
+  }
+
+  async muteUpdateVersion(version: string): Promise<void> {
+    await this.setSettings({ ...this.settings, mutedUpdateVersion: version })
+    // setSettings can no-op (e.g. external settings conflict). Only hide the
+    // toast when the mute actually persisted, so the user can retry otherwise.
+    if (this.isUpdateVersionMuted(version)) {
+      this.updateCheckResult = null
+      this.notifyUpdateCheckListeners()
+    }
   }
 
   checkForUpdateOnce(): void {
@@ -2603,7 +2615,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.hasCheckedForUpdate = true
     void (async () => {
       const fetched = await checkForUpdate(this.manifest.version)
-      if (fetched?.hasUpdate) {
+      if (fetched?.hasUpdate && !this.isUpdateVersionMuted(fetched.latestVersion)) {
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
       }
