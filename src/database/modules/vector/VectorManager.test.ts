@@ -1,9 +1,20 @@
+const errorModalCtor = jest.fn()
 jest.mock('../../../components/modals/ErrorModal', () => ({
   ErrorModal: class {
+    constructor(...args: unknown[]) {
+      errorModalCtor(...args)
+    }
     open() {
       return this
     }
   },
+}))
+
+// Run the embed fn once with no real backoff delays. Faithful for these tests:
+// success returns the value; failure rethrows immediately (the chunk-level
+// retry policy itself is not what these reconcile-level tests exercise).
+jest.mock('exponential-backoff', () => ({
+  backOff: (fn: () => Promise<unknown>) => fn(),
 }))
 
 jest.mock('../../../utils/pdf/extractPdfText', () => ({
@@ -11,6 +22,10 @@ jest.mock('../../../utils/pdf/extractPdfText', () => ({
   PDF_INDEX_MAX_PAGES: 1000,
   extractPdfText: jest.fn(),
 }))
+
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
+
+import { sha256HexPrefix16 } from '../../../utils/common/content-hash'
 
 import { VectorManager } from './VectorManager'
 
@@ -52,6 +67,7 @@ const setupManager = (
       return existingRows.filter((r) => set.has(r.path))
     }),
     deleteVectorsByIds: jest.fn().mockResolvedValue(undefined),
+    deleteVectorsByPaths: jest.fn().mockResolvedValue(undefined),
     bumpMtimeByIds: jest.fn().mockResolvedValue(undefined),
     insertVectors: jest.fn(async (rows: unknown[]) => {
       inserted.rows.push(...rows)
@@ -296,5 +312,225 @@ describe('VectorManager.reconcile', () => {
     })
     expect(repository.deleteVectorsByIds).not.toHaveBeenCalled()
     expect(repository.insertVectors).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a file with a transient embedding failure and throws RagIndexIncompleteError', async () => {
+    const { manager, repository } = setupManager(
+      [{ path: 'a.md', mtime: 100, content: 'hello world' }],
+      [],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('service unavailable'), { status: 503 }),
+        )
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).rejects.toMatchObject({ name: 'RagIndexIncompleteError' })
+
+    expect(repository.deleteVectorsByPaths).toHaveBeenCalledWith('test-model', [
+      'a.md',
+    ])
+    expect(repository.insertVectors).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a file with mixed transient + permanent failures (no silent gap)', async () => {
+    // A file that splits into multiple chunks: one chunk hits a transient
+    // failure, another a permanent one. The whole file must be rolled back so
+    // the transient gap is not frozen by the surviving permanent/success rows.
+    const longContent = `${'A'.repeat(900)}\n\n${'B'.repeat(900)}\n\n${'C'.repeat(900)}`
+    const { manager, repository } = setupManager(
+      [{ path: 'a.md', mtime: 100, content: longContent }],
+      [],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest.fn(async (content: string) => {
+        if (content.includes('A')) {
+          throw Object.assign(new Error('network error'), { status: 503 })
+        }
+        if (content.includes('B')) {
+          throw Object.assign(new Error('bad request'), { status: 400 })
+        }
+        return [0.1, 0.2, 0.3]
+      })
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).rejects.toMatchObject({ name: 'RagIndexIncompleteError' })
+
+    expect(repository.deleteVectorsByPaths).toHaveBeenCalledWith('test-model', [
+      'a.md',
+    ])
+  })
+
+  it('keeps successful chunks and does not throw for permanent-only failures', async () => {
+    const longContent = `${'A'.repeat(900)}\n\n${'B'.repeat(900)}`
+    const { manager, repository, inserted } = setupManager(
+      [{ path: 'a.md', mtime: 100, content: longContent }],
+      [],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest.fn(async (content: string) => {
+        if (content.includes('A')) {
+          throw Object.assign(new Error('bad request'), { status: 400 })
+        }
+        return [0.1, 0.2, 0.3]
+      })
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).resolves.toBeUndefined()
+
+    expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
+    // The successful (B) chunk is kept.
+    expect(repository.insertVectors).toHaveBeenCalled()
+    expect(inserted.rows.length).toBeGreaterThan(0)
+  })
+
+  it('throws a transient RagIndexIncompleteError (not a generic Error) on full outage', async () => {
+    const { manager, repository } = setupManager(
+      [{ path: 'a.md', mtime: 100, content: 'hello world' }],
+      [],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('fetch failed'), { code: 'ENOTFOUND' }),
+        )
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).rejects.toMatchObject({ name: 'RagIndexIncompleteError' })
+
+    expect(repository.deleteVectorsByPaths).toHaveBeenCalledWith('test-model', [
+      'a.md',
+    ])
+  })
+
+  it('does not roll back or throw when a whole batch fails transiently on attempt 1 but succeeds on attempt 2', async () => {
+    // Regression (source fix 1): the inner `while (attempt < 2)` retry must
+    // discard attempt 1's failure records once attempt 2 succeeds. A single
+    // chunk that throws a transient error on its first embed call and succeeds
+    // on the second must end up inserted, with no rollback and no throw.
+    const { manager, repository, inserted } = setupManager(
+      [{ path: 'a.md', mtime: 100, content: 'hello world' }],
+      [],
+    )
+    let calls = 0
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest.fn(async () => {
+        calls += 1
+        if (calls === 1) {
+          // Transient on the first attempt only.
+          throw Object.assign(new Error('service unavailable'), { status: 503 })
+        }
+        return [0.1, 0.2, 0.3]
+      })
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).resolves.toBeUndefined()
+
+    expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
+    expect(repository.insertVectors).toHaveBeenCalledTimes(1)
+    expect(inserted.rows.length).toBe(1)
+  })
+
+  it('throws (no silent success) when an entire batch fails permanently and later batches are left unprocessed', async () => {
+    // Regression (source fix 2): with embeddingConcurrency=1 each chunk is its
+    // own batch. The first batch fails purely permanently (invalid API key),
+    // so the loop breaks (wholeBatchFailed) and the second file's batch is
+    // never attempted. The run MUST throw so it is recorded as failed, and the
+    // partial "the rest is indexed" warning modal MUST be suppressed.
+    const { manager, repository, inserted } = setupManager(
+      [
+        { path: 'a.md', mtime: 100, content: 'first file' },
+        { path: 'b.md', mtime: 100, content: 'second file' },
+      ],
+      [],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('invalid api key'), { status: 400 }),
+        )
+
+    await expect(
+      manager.reconcile(
+        embeddingModel,
+        { ...baseConfig, embeddingConcurrency: 1 },
+        { scope: { kind: 'all' } },
+      ),
+    ).rejects.toThrow(/Embedding halted/)
+
+    // Permanent-only failure → no rollback delete.
+    expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
+    // Nothing was successfully embedded.
+    expect(inserted.rows.length).toBe(0)
+    // The partial "rest is indexed" warning modal must NOT be shown for an
+    // incomplete (wholeBatchFailed) run.
+    const partialWarningTitles = errorModalCtor.mock.calls.filter(
+      (call) => call[1] === 'Some content could not be indexed',
+    )
+    expect(partialWarningTitles).toHaveLength(0)
+  })
+
+  it('deletes ALL rows for a transiently-rolled-back file, including a reused (bumpMtime) row', async () => {
+    // A file that splits into two chunks. Its first chunk matches an existing
+    // DB row (same line range + content hash) at a STALE mtime → planReconcile
+    // reuses it and bumps its mtime in step 7. The second chunk is new and hits
+    // a transient embedding failure → the file is rolled back. The rollback
+    // must call deleteVectorsByPaths so the reused/bumped row is removed too;
+    // otherwise it would survive carrying the fresh mtime and freeze the gap.
+    const content = `${'A'.repeat(900)}\n\n${'B'.repeat(900)}`
+    const splitter = RecursiveCharacterTextSplitter.fromLanguage('markdown', {
+      chunkSize: 1000,
+    })
+    const docs = await splitter.createDocuments([content])
+    expect(docs.length).toBe(2)
+    const firstDoc = docs[0]
+    const firstHash = await sha256HexPrefix16(firstDoc.pageContent)
+
+    // Seed the existing row to match the FIRST desired chunk's identity and
+    // content hash, but with a stale mtime so it is reused via bumpMtime.
+    const { manager, repository } = setupManager(
+      [{ path: 'a.md', mtime: 200, content }],
+      [
+        {
+          id: 42,
+          path: 'a.md',
+          mtime: 100,
+          content_hash: firstHash,
+          metadata: {
+            startLine: firstDoc.metadata.loc.lines.from as number,
+            endLine: firstDoc.metadata.loc.lines.to as number,
+          },
+        },
+      ],
+    )
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest.fn(async (chunkContent: string) => {
+        if (chunkContent.includes('B')) {
+          throw Object.assign(new Error('service unavailable'), { status: 503 })
+        }
+        return [0.1, 0.2, 0.3]
+      })
+
+    await expect(
+      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
+    ).rejects.toMatchObject({ name: 'RagIndexIncompleteError' })
+
+    // Reuse path was exercised (the matching row's mtime was bumped)...
+    expect(repository.bumpMtimeByIds).toHaveBeenCalledWith([
+      { id: 42, mtime: 200 },
+    ])
+    // ...and the whole-path delete swept it up on rollback.
+    expect(repository.deleteVectorsByPaths).toHaveBeenCalledWith('test-model', [
+      'a.md',
+    ])
   })
 })

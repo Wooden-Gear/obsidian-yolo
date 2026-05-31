@@ -63,6 +63,7 @@ export class DatabaseManager {
       }
     } | null,
     pluginDir?: string,
+    translate?: (keyPath: string, fallback?: string) => string,
   ): Promise<DatabaseManager> {
     const dbPath = await ensureVectorDbPath(app, settings)
     const dbManager = new DatabaseManager(app, dbPath, runtimeDir)
@@ -100,6 +101,9 @@ export class DatabaseManager {
 
     managers.vectorManager.setSaveCallback(saveCallback)
     managers.vectorManager.setVacuumCallback(vacuumCallback)
+    if (translate) {
+      managers.vectorManager.setTranslationFn(translate)
+    }
 
     DatabaseManager.managers.set(dbManager, managers)
 

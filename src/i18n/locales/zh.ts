@@ -852,6 +852,9 @@ export const zh: TranslationKeys = {
       desc: '管理知识库索引，当 Agent 使用「搜索」工具并选择混合 & RAG 模式时，会自动调用 RAG 能力。',
       enableRag: '启用知识库索引',
       enableRagDesc: '开启后会为所选范围内的文档建立索引。',
+      partialIndexFailureTitle: '部分内容无法索引',
+      partialIndexFailureBody:
+        '以下文件包含无法嵌入的内容，其余文档已正常索引。这些文件不会被自动重试。',
       embeddingModel: '嵌入模型',
       embeddingModelDesc: '选择你想用于嵌入的模型',
       chunkSize: '分块大小',

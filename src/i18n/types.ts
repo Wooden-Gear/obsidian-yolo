@@ -716,6 +716,8 @@ export type TranslationKeys = {
       desc?: string
       enableRag: string
       enableRagDesc: string
+      partialIndexFailureTitle?: string
+      partialIndexFailureBody?: string
       indexPdf?: string
       indexPdfDesc?: string
       embeddingModel: string

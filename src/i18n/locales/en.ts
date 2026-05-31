@@ -917,6 +917,9 @@ export const en: TranslationKeys = {
       desc: 'Manage knowledge base indexing. RAG is invoked automatically when the Agent uses the Search tool in Hybrid or RAG mode.',
       enableRag: 'Enable knowledge base indexing',
       enableRagDesc: 'Build indexes for documents within the selected scope.',
+      partialIndexFailureTitle: 'Some content could not be indexed',
+      partialIndexFailureBody:
+        'The files below contain content that cannot be embedded. The rest of your vault has been indexed. These files will not be retried automatically.',
       embeddingModel: 'Embedding model',
       embeddingModelDesc: 'Choose the model you want to use for embeddings',
       chunkSize: 'Chunk size',

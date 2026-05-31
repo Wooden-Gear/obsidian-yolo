@@ -11,7 +11,12 @@ import {
   LLMAPIKeyNotSetException,
   LLMBaseUrlNotSetException,
 } from '../../../core/llm/exception'
-import { isTransientRagIndexError } from '../../../core/rag/ragIndexErrors'
+import {
+  RagIndexFailureKind,
+  RagIndexIncompleteError,
+  classifyRagIndexError,
+  isTransientRagIndexError,
+} from '../../../core/rag/ragIndexErrors'
 import {
   type DesiredChunk,
   type ReconcileScope,
@@ -67,11 +72,18 @@ export type ReconcileOptions = {
   onProgress?: (progress: IndexProgress) => void
 }
 
+/** Minimal translation function shape (mirrors `createTranslationFunction`). */
+type TranslateFn = (keyPath: string, fallback?: string) => string
+
 export class VectorManager {
   private app: App
   private repository: VectorRepository
   private saveCallback: (() => Promise<void>) | null = null
   private vacuumCallback: (() => Promise<void>) | null = null
+  // Falls back to the provided English default until a localized function is
+  // injected (every other ErrorModal in this file is English-only; this keeps
+  // the new persistent-warning modal localizable without dead i18n keys).
+  private translate: TranslateFn = (_keyPath, fallback) => fallback ?? _keyPath
 
   private async requestSave() {
     try {
@@ -111,6 +123,10 @@ export class VectorManager {
 
   setVacuumCallback(callback: () => Promise<void>) {
     this.vacuumCallback = callback
+  }
+
+  setTranslationFn(translate: TranslateFn) {
+    this.translate = translate
   }
 
   async performSimilaritySearch(
@@ -571,6 +587,7 @@ export class VectorManager {
       path: string
       metadata: VectorMetaData
       error: string
+      kind: RagIndexFailureKind
     }[] = []
     const fileBoundaries: Array<{ path: string; endChunk: number }> = []
     let cumulative = 0
@@ -692,11 +709,18 @@ export class VectorManager {
           path: chunk.path,
           metadata: chunk.metadata,
           error: error instanceof Error ? error.message : 'Unknown error',
+          // Classify the original error object (status/code/instanceof), not a
+          // stringified message, so transient vs permanent is reliable.
+          kind: classifyRagIndexError(error),
         })
         return null
       }
     }
 
+    // Set when a whole batch fails to embed and we stop early, leaving later
+    // batches unattempted. Such a run is NOT complete and must never be treated
+    // as success (see the post-loop handling below).
+    let wholeBatchFailed = false
     try {
       for (
         let batchStart = 0;
@@ -714,6 +738,11 @@ export class VectorManager {
         let attempt = 0
         while (attempt < 2) {
           attempt += 1
+          // Record where this attempt's failures begin. If the whole attempt
+          // fails and we retry, we discard them (below) so only the FINAL
+          // attempt's failures drive rollback/warning — otherwise a batch that
+          // fails attempt 1 but succeeds attempt 2 would still be rolled back.
+          const failureStart = failedChunks.length
           const results = await Promise.all(batch.map((c) => embedOne(c)))
           validRows = results.filter((r): r is InsertEmbedding => r !== null)
           if (validRows.length > 0) {
@@ -734,6 +763,8 @@ export class VectorManager {
             break
           }
           if (attempt < 2) {
+            // Discard this failed attempt's records before retrying.
+            failedChunks.splice(failureStart)
             currentBatchSize = Math.max(
               MIN_BATCH_SIZE,
               Math.floor(currentBatchSize / 2),
@@ -751,9 +782,14 @@ export class VectorManager {
         }
 
         if (validRows.length === 0 && batch.length > 0) {
-          throw new Error(
-            'All chunks in batch failed to embed. Stopping indexing process.',
-          )
+          // Whole batch failed (e.g. full network outage or invalid API key).
+          // Stop embedding and fall through to the unified failure aggregation
+          // below: if the failures are transient it throws RagIndexIncomplete-
+          // Error (→ retry); if purely permanent/unknown the post-loop guard
+          // throws so the run is recorded as failed rather than silently
+          // succeeding with later batches left unprocessed.
+          wholeBatchFailed = true
+          break
         }
         await this.repository.insertVectors(validRows)
         chunksSinceLastSave += validRows.length
@@ -769,8 +805,100 @@ export class VectorManager {
 
         batchStart += batch.length - currentBatchSize
       }
+
+      // ---- Failure aggregation + classification-based routing ----
+      //
+      // Aggregate per-chunk failures by file. A file is rolled back if it has
+      // ANY transient failure (even mixed transient+permanent): keeping its
+      // successful/reused chunks would stamp the current mtime and let the
+      // transient gap be frozen forever (MAX-mtime skip). Files whose failures
+      // are exclusively permanent/unknown can never index fully, so we keep
+      // their successful chunks (stable mtime, no flapping) and surface a
+      // persistent, actionable warning instead of retrying forever.
+      if (failedChunks.length > 0) {
+        const failuresByPath = new Map<string, RagIndexFailureKind[]>()
+        for (const chunk of failedChunks) {
+          const bucket = failuresByPath.get(chunk.path)
+          if (bucket) bucket.push(chunk.kind)
+          else failuresByPath.set(chunk.path, [chunk.kind])
+        }
+
+        const rollbackPaths: string[] = []
+        const permanentFailedPaths: string[] = []
+        for (const [path, kinds] of failuresByPath) {
+          if (kinds.some((kind) => kind === 'transient')) {
+            rollbackPaths.push(path)
+          } else {
+            permanentFailedPaths.push(path)
+          }
+        }
+
+        if (rollbackPaths.length > 0) {
+          // Delete the file's ENTIRE row set (incl. reused/bumped chunks from
+          // step 7), not just this run's inserts: a surviving reused chunk would
+          // carry the current mtime and let the file be skipped next reconcile.
+          await this.repository.deleteVectorsByPaths(
+            embeddingModel.id,
+            rollbackPaths,
+          )
+        }
+
+        // Persistent "keep + warn" is valid ONLY for a fully-processed run with
+        // no transient retry in flight. On an early stop (wholeBatchFailed) the
+        // run is incomplete and surfaces via the throw below / catch modal, so
+        // suppress the partial warning to avoid a misleading "the rest is
+        // indexed" message.
+        if (
+          permanentFailedPaths.length > 0 &&
+          rollbackPaths.length === 0 &&
+          !wholeBatchFailed
+        ) {
+          const errorDetails = failedChunks
+            .filter(
+              (chunk) =>
+                !failuresByPath
+                  .get(chunk.path)
+                  ?.some((kind) => kind === 'transient'),
+            )
+            .map((chunk) => `File: ${chunk.path}\nError: ${chunk.error}`)
+            .join('\n\n')
+          new ErrorModal(
+            this.app,
+            this.translate(
+              'settings.rag.partialIndexFailureTitle',
+              'Some content could not be indexed',
+            ),
+            this.translate(
+              'settings.rag.partialIndexFailureBody',
+              'The files below contain content that cannot be embedded. The rest of your vault has been indexed. These files will not be retried automatically.',
+            ),
+            `[Error Log]\n\n${errorDetails}`,
+            { showReportBugButton: true },
+          ).open()
+        }
+
+        if (rollbackPaths.length > 0) {
+          throw new RagIndexIncompleteError(rollbackPaths)
+        }
+      }
+
+      // Early stop with no transient failures to retry: the cause is
+      // permanent/unknown (e.g. invalid API key) and later batches were never
+      // attempted. Throw so the run is recorded as failed (no false success,
+      // no retry for a permanent cause); the catch below surfaces the details.
+      if (wholeBatchFailed) {
+        throw new Error(
+          'Embedding halted: an entire batch failed to embed and indexing was stopped before completing all chunks.',
+        )
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error
+      }
+      // RagIndexIncompleteError carries its own (already-rolled-back) state and
+      // is the intended transient signal for the run-level retry path. Don't
+      // show the generic "interrupted" modal for it.
+      if (error instanceof RagIndexIncompleteError) {
         throw error
       }
       if (

@@ -1895,6 +1895,9 @@ export default class YoloPlugin extends Plugin {
     this.registerDomEvent(window, 'blur', () => {
       this.getRagAutoUpdateService().onWindowBlur()
     })
+    this.registerDomEvent(window, 'online', () => {
+      this.getRagAutoUpdateService().onOnline()
+    })
 
     this.addCommand({
       id: 'rebuild-vault-index',
@@ -2665,6 +2668,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             runtime.dir,
             this.settings,
             this.manifest.dir ? normalizePath(this.manifest.dir) : undefined,
+            this.t,
           )
           return this.dbManager
         } catch (error) {
