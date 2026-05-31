@@ -852,9 +852,7 @@ export const zh: TranslationKeys = {
       desc: '管理知识库索引，当 Agent 使用「搜索」工具并选择混合 & RAG 模式时，会自动调用 RAG 能力。',
       enableRag: '启用知识库索引',
       enableRagDesc: '开启后会为所选范围内的文档建立索引。',
-      partialIndexFailureTitle: '部分内容无法索引',
-      partialIndexFailureBody:
-        '以下文件包含无法嵌入的内容，其余文档已正常索引。这些文件不会被自动重试。',
+      partialFailureSummary: '完成 · {{count}} 个文件无法索引',
       embeddingModel: '嵌入模型',
       embeddingModelDesc: '选择你想用于嵌入的模型',
       chunkSize: '分块大小',
@@ -1657,6 +1655,7 @@ export const zh: TranslationKeys = {
     rebuildingIndex: '正在重建库索引...',
     rebuildComplete: '重建库索引完成',
     rebuildFailed: '重建库索引失败',
+    indexedWithSkipped: '索引完成 · {{count}} 个文件无法索引',
     continueComplete: '继续索引完成',
     continueFailed: '继续索引失败',
     openYoloNewChatFailed: '打开 YOLO 聊天窗口失败，请先用命令面板尝试',

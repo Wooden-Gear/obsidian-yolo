@@ -71,7 +71,10 @@ import { PGLiteAbortedException } from './database/exception'
 import { ChatManager } from './database/json/chat/ChatManager'
 import { pruneImageCache } from './database/json/chat/imageCacheStore'
 import { prunePdfTextCache } from './database/json/chat/pdfTextCacheStore'
-import type { VectorManager } from './database/modules/vector/VectorManager'
+import type {
+  ReconcileResult,
+  VectorManager,
+} from './database/modules/vector/VectorManager'
 import { PGliteRuntimeManager } from './database/runtime/PGliteRuntimeManager'
 import { PGLITE_RUNTIME_VERSION } from './database/runtime/pgliteRuntimeMetadata'
 import {
@@ -649,13 +652,17 @@ export default class YoloPlugin extends Plugin {
       this.ragAutoUpdateService = new RagAutoUpdateService({
         getSettings: () => this.settings,
         setSettings: (settings) => this.setSettings(settings),
-        runIndex: (request) =>
-          this.getRagIndexService().runIndex({
+        runIndex: async (request) => {
+          // Background auto-update never surfaces partial failures (product
+          // decision: settings page shows them durably via the snapshot). The
+          // reconcile result is intentionally discarded here.
+          await this.getRagIndexService().runIndex({
             mode: 'sync',
             scope: request,
             trigger: 'auto',
             retryPolicy: 'transient',
-          }),
+          })
+        },
         markRetryScheduled: (input) =>
           this.getRagIndexService().markRetryScheduled({
             mode: 'sync',
@@ -1905,7 +1912,7 @@ export default class YoloPlugin extends Plugin {
       callback: async () => {
         const notice = new Notice(this.t('notices.rebuildingIndex'), 0)
         try {
-          await this.getRagIndexService().runIndex({
+          const result = await this.getRagIndexService().runIndex({
             mode: 'rebuild',
             scope: { kind: 'all' },
             trigger: 'manual',
@@ -1920,7 +1927,15 @@ export default class YoloPlugin extends Plugin {
               )
             },
           })
-          notice.setMessage(this.t('notices.rebuildComplete'))
+          const skipped = result.permanentFailedPaths.length
+          notice.setMessage(
+            skipped > 0
+              ? this.t(
+                  'notices.indexedWithSkipped',
+                  '索引完成，{{count}} 个文件无法索引',
+                ).replace('{{count}}', String(skipped))
+              : this.t('notices.rebuildComplete'),
+          )
         } catch (error) {
           if (error instanceof RagIndexBusyError) {
             notice.setMessage(
@@ -1944,7 +1959,7 @@ export default class YoloPlugin extends Plugin {
       callback: async () => {
         const notice = new Notice(this.t('notices.updatingIndex'), 0)
         try {
-          await this.getRagIndexService().runIndex({
+          const result = await this.getRagIndexService().runIndex({
             mode: 'sync',
             scope: { kind: 'all' },
             trigger: 'manual',
@@ -1959,7 +1974,15 @@ export default class YoloPlugin extends Plugin {
               )
             },
           })
-          notice.setMessage(this.t('notices.indexUpdated'))
+          const skipped = result.permanentFailedPaths.length
+          notice.setMessage(
+            skipped > 0
+              ? this.t(
+                  'notices.indexedWithSkipped',
+                  '索引完成，{{count}} 个文件无法索引',
+                ).replace('{{count}}', String(skipped))
+              : this.t('notices.indexUpdated'),
+          )
         } catch (error) {
           if (error instanceof RagIndexBusyError) {
             notice.setMessage(
@@ -2668,7 +2691,6 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
             runtime.dir,
             this.settings,
             this.manifest.dir ? normalizePath(this.manifest.dir) : undefined,
-            this.t,
           )
           return this.dbManager
         } catch (error) {
@@ -2710,8 +2732,8 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     onProgress?: (
       progress: import('./components/chat-view/QueryProgress').IndexProgress,
     ) => void
-  }): Promise<void> {
-    await this.getRagIndexService().runIndex(options)
+  }): Promise<ReconcileResult> {
+    return await this.getRagIndexService().runIndex(options)
   }
 
   /** Re-issue the previously failed run. Falls back to a full sync reconcile. */

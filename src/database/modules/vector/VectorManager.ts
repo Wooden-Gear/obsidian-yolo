@@ -5,12 +5,6 @@ import { minimatch } from 'minimatch'
 import { App, TFile } from 'obsidian'
 
 import { IndexProgress } from '../../../components/chat-view/QueryProgress'
-import { ErrorModal } from '../../../components/modals/ErrorModal'
-import {
-  LLMAPIKeyInvalidException,
-  LLMAPIKeyNotSetException,
-  LLMBaseUrlNotSetException,
-} from '../../../core/llm/exception'
 import {
   RagIndexFailureKind,
   RagIndexIncompleteError,
@@ -72,37 +66,34 @@ export type ReconcileOptions = {
   onProgress?: (progress: IndexProgress) => void
 }
 
-/** Minimal translation function shape (mirrors `createTranslationFunction`). */
-type TranslateFn = (keyPath: string, fallback?: string) => string
+/**
+ * Structured outcome of a reconcile pass. Hard failures still throw; this only
+ * carries the soft (non-throwing) per-file failures so the UI layer can decide
+ * how to surface them by trigger.
+ *
+ * - `permanentFailedPaths`: files whose embedding failed permanently (e.g. 400
+ *   bad request). Their successful chunks are kept; they are NOT retried
+ *   automatically → need user intervention.
+ * - `chunkifyFailedPaths`: files that failed to chunkify (e.g. transient I/O).
+ *   Excluded from the diff, old index preserved, mtime not advanced → self-heals
+ *   on the next reconcile.
+ */
+export type ReconcileResult = {
+  permanentFailedPaths: string[]
+  chunkifyFailedPaths: string[]
+}
 
 export class VectorManager {
   private app: App
   private repository: VectorRepository
   private saveCallback: (() => Promise<void>) | null = null
   private vacuumCallback: (() => Promise<void>) | null = null
-  // Falls back to the provided English default until a localized function is
-  // injected (every other ErrorModal in this file is English-only; this keeps
-  // the new persistent-warning modal localizable without dead i18n keys).
-  private translate: TranslateFn = (_keyPath, fallback) => fallback ?? _keyPath
 
   private async requestSave() {
-    try {
-      if (this.saveCallback) {
-        await this.saveCallback()
-      } else {
-        throw new Error('No save callback set')
-      }
-    } catch (error) {
-      new ErrorModal(
-        this.app,
-        'Error: save failed',
-        'Failed to save the vector database changes. Please report this issue to the developer.',
-        error instanceof Error ? error.message : 'Unknown error',
-        {
-          showReportBugButton: true,
-        },
-      ).open()
-      throw error instanceof Error ? error : new Error(String(error))
+    if (this.saveCallback) {
+      await this.saveCallback()
+    } else {
+      throw new Error('No save callback set')
     }
   }
 
@@ -123,10 +114,6 @@ export class VectorManager {
 
   setVacuumCallback(callback: () => Promise<void>) {
     this.vacuumCallback = callback
-  }
-
-  setTranslationFn(translate: TranslateFn) {
-    this.translate = translate
   }
 
   async performSimilaritySearch(
@@ -167,7 +154,7 @@ export class VectorManager {
     embeddingModel: EmbeddingModelClient,
     config: ReconcileConfig,
     options: ReconcileOptions,
-  ): Promise<void> {
+  ): Promise<ReconcileResult> {
     const { signal, scope, truncate, onProgress } = options
 
     if (truncate) {
@@ -233,7 +220,7 @@ export class VectorManager {
     if (filesToChunkify.length === 0 && removedPaths.length === 0) {
       // Nothing to do (everything is stable). Persist any truncate effect.
       if (truncate) await this.requestSave()
-      return
+      return { permanentFailedPaths: [], chunkifyFailedPaths: [] }
     }
 
     const textSplitter = RecursiveCharacterTextSplitter.fromLanguage(
@@ -338,19 +325,18 @@ export class VectorManager {
       }
     }
 
+    // Chunkify failures are soft (self-healing): the files are excluded from the
+    // diff (their old index is preserved and mtime not advanced), so the next
+    // reconcile retries them. We log details for diagnostics and report the
+    // paths up to the caller, but never throw or pop a modal here.
+    const chunkifyFailedPaths = failedFiles.map((f) => f.path)
     if (failedFiles.length > 0) {
-      const errorDetails =
-        `Failed to process ${failedFiles.length} file(s):\n\n` +
-        failedFiles
-          .map(({ path, error }) => `File: ${path}\nError: ${error}`)
-          .join('\n\n')
-      new ErrorModal(
-        this.app,
-        'Error: chunk embedding failed',
-        `Some files failed to process. Please report this issue to the developer if it persists.`,
-        `[Error Log]\n\n${errorDetails}`,
-        { showReportBugButton: true },
-      ).open()
+      const errorDetails = failedFiles
+        .map(({ path, error }) => `File: ${path}\nError: ${error}`)
+        .join('\n\n')
+      console.warn(
+        `[YOLO] Failed to chunkify ${failedFiles.length} file(s) (will retry next reconcile):\n\n${errorDetails}`,
+      )
     }
 
     // 6. Read actual rows over the diff scope and plan.
@@ -397,24 +383,30 @@ export class VectorManager {
         updatedFilesCount,
         removedFilesCount,
       })
-      return
+      return { permanentFailedPaths: [], chunkifyFailedPaths }
     }
 
     // 8. Embed in batches with rate-limit aware retry.
-    await this.embedAndInsertBatches(plan.toEmbed, embeddingModel, {
-      signal,
-      maxConcurrency: config.embeddingConcurrency,
-      onProgress: (snapshot) =>
-        onProgress?.({
-          ...snapshot,
-          totalFiles: filesToChunkify.length,
-          completedFiles: completedFilesCount,
-          folderProgress,
-          newFilesCount,
-          updatedFilesCount,
-          removedFilesCount,
-        }),
-    })
+    const { permanentFailedPaths } = await this.embedAndInsertBatches(
+      plan.toEmbed,
+      embeddingModel,
+      {
+        signal,
+        maxConcurrency: config.embeddingConcurrency,
+        onProgress: (snapshot) =>
+          onProgress?.({
+            ...snapshot,
+            totalFiles: filesToChunkify.length,
+            completedFiles: completedFilesCount,
+            folderProgress,
+            newFilesCount,
+            updatedFilesCount,
+            removedFilesCount,
+          }),
+      },
+    )
+
+    return { permanentFailedPaths, chunkifyFailedPaths }
   }
 
   /** Truncate one model's namespace (used by manual "remove index" actions). */
@@ -579,7 +571,7 @@ export class VectorManager {
         waitingForRateLimit?: boolean
       }) => void
     },
-  ): Promise<void> {
+  ): Promise<{ permanentFailedPaths: string[] }> {
     const { signal, onProgress } = options
     const totalChunks = toEmbed.length
     let completedChunks = 0
@@ -721,6 +713,10 @@ export class VectorManager {
     // batches unattempted. Such a run is NOT complete and must never be treated
     // as success (see the post-loop handling below).
     let wholeBatchFailed = false
+    // Soft permanent failures (files whose successful chunks are kept, but which
+    // can never index fully and are not retried). Surfaced to the caller via the
+    // return value — never thrown, never popped as a modal.
+    const softPermanentFailedPaths: string[] = []
     try {
       for (
         let batchStart = 0;
@@ -834,25 +830,34 @@ export class VectorManager {
         }
 
         if (rollbackPaths.length > 0) {
-          // Delete the file's ENTIRE row set (incl. reused/bumped chunks from
-          // step 7), not just this run's inserts: a surviving reused chunk would
-          // carry the current mtime and let the file be skipped next reconcile.
-          await this.repository.deleteVectorsByPaths(
-            embeddingModel.id,
-            rollbackPaths,
-          )
+          // This run is incomplete and will retry (RagIndexIncompleteError
+          // below). Roll back BOTH transient AND permanent-failed files:
+          // - transient: must be re-embedded;
+          // - permanent: leaving its partial success would stamp the current
+          //   mtime and let the file be silently skipped on the retry, freezing
+          //   the gap. Re-evaluate it next run; a permanent-only file is then
+          //   surfaced (below) once a clean run completes.
+          // Delete each file's ENTIRE row set (incl. reused/bumped chunks from
+          // step 7), so no surviving row carries the current mtime.
+          // (rollbackPaths and permanentFailedPaths are disjoint by construction.)
+          await this.repository.deleteVectorsByPaths(embeddingModel.id, [
+            ...rollbackPaths,
+            ...permanentFailedPaths,
+          ])
         }
 
         // Persistent "keep + warn" is valid ONLY for a fully-processed run with
         // no transient retry in flight. On an early stop (wholeBatchFailed) the
-        // run is incomplete and surfaces via the throw below / catch modal, so
-        // suppress the partial warning to avoid a misleading "the rest is
-        // indexed" message.
+        // run is incomplete and surfaces via the throw below; on a transient
+        // retry the permanent files were just rolled back for re-evaluation.
+        // Either way, suppress the partial report here to avoid a misleading
+        // "the rest is indexed" message / a frozen gap.
         if (
           permanentFailedPaths.length > 0 &&
           rollbackPaths.length === 0 &&
           !wholeBatchFailed
         ) {
+          softPermanentFailedPaths.push(...permanentFailedPaths)
           const errorDetails = failedChunks
             .filter(
               (chunk) =>
@@ -862,23 +867,16 @@ export class VectorManager {
             )
             .map((chunk) => `File: ${chunk.path}\nError: ${chunk.error}`)
             .join('\n\n')
-          new ErrorModal(
-            this.app,
-            this.translate(
-              'settings.rag.partialIndexFailureTitle',
-              'Some content could not be indexed',
-            ),
-            this.translate(
-              'settings.rag.partialIndexFailureBody',
-              'The files below contain content that cannot be embedded. The rest of your vault has been indexed. These files will not be retried automatically.',
-            ),
-            `[Error Log]\n\n${errorDetails}`,
-            { showReportBugButton: true },
-          ).open()
+          console.warn(
+            `[YOLO] ${permanentFailedPaths.length} file(s) could not be indexed (kept partial results, will not retry):\n\n${errorDetails}`,
+          )
         }
 
         if (rollbackPaths.length > 0) {
-          throw new RagIndexIncompleteError(rollbackPaths)
+          throw new RagIndexIncompleteError([
+            ...rollbackPaths,
+            ...permanentFailedPaths,
+          ])
         }
       }
 
@@ -891,42 +889,13 @@ export class VectorManager {
           'Embedding halted: an entire batch failed to embed and indexing was stopped before completing all chunks.',
         )
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw error
-      }
-      // RagIndexIncompleteError carries its own (already-rolled-back) state and
-      // is the intended transient signal for the run-level retry path. Don't
-      // show the generic "interrupted" modal for it.
-      if (error instanceof RagIndexIncompleteError) {
-        throw error
-      }
-      if (
-        error instanceof LLMAPIKeyNotSetException ||
-        error instanceof LLMAPIKeyInvalidException ||
-        error instanceof LLMBaseUrlNotSetException
-      ) {
-        new ErrorModal(this.app, 'Error', error.message, undefined, {
-          showSettingsButton: true,
-        }).open()
-      } else {
-        const errorDetails =
-          `Failed to process ${failedChunks.length} chunk(s):\n\n` +
-          failedChunks
-            .map((chunk) => `File: ${chunk.path}\nError: ${chunk.error}`)
-            .join('\n\n')
-        new ErrorModal(
-          this.app,
-          'Error: embedding failed',
-          `The indexing process was interrupted because several files couldn't be processed.
-Please report this issue to the developer if it persists.`,
-          `[Error Log]\n\n${errorDetails}`,
-          { showReportBugButton: true },
-        ).open()
-      }
-      throw error
     } finally {
+      // Always persist whatever made it into the DB, on both the success path
+      // and any throw (AbortError, RagIndexIncompleteError, wholeBatchFailed
+      // halt, etc.) — those errors propagate unchanged to the caller.
       await this.requestSave()
     }
+
+    return { permanentFailedPaths: softPermanentFailedPaths }
   }
 }

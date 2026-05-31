@@ -917,9 +917,7 @@ export const en: TranslationKeys = {
       desc: 'Manage knowledge base indexing. RAG is invoked automatically when the Agent uses the Search tool in Hybrid or RAG mode.',
       enableRag: 'Enable knowledge base indexing',
       enableRagDesc: 'Build indexes for documents within the selected scope.',
-      partialIndexFailureTitle: 'Some content could not be indexed',
-      partialIndexFailureBody:
-        'The files below contain content that cannot be embedded. The rest of your vault has been indexed. These files will not be retried automatically.',
+      partialFailureSummary: 'Done · {{count}} file(s) could not be indexed',
       embeddingModel: 'Embedding model',
       embeddingModelDesc: 'Choose the model you want to use for embeddings',
       chunkSize: 'Chunk size',
@@ -1773,6 +1771,8 @@ export const en: TranslationKeys = {
     rebuildingIndex: 'Rebuilding vault index…',
     rebuildComplete: 'Rebuilding vault index complete.',
     rebuildFailed: 'Rebuilding vault index failed.',
+    indexedWithSkipped:
+      'Index complete · {{count}} file(s) could not be indexed.',
     continueComplete: 'Resumed index completed.',
     continueFailed: 'Resumed index failed.',
     openYoloNewChatFailed:

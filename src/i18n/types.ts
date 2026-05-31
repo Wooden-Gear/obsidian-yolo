@@ -716,8 +716,7 @@ export type TranslationKeys = {
       desc?: string
       enableRag: string
       enableRagDesc: string
-      partialIndexFailureTitle?: string
-      partialIndexFailureBody?: string
+      partialFailureSummary?: string
       indexPdf?: string
       indexPdfDesc?: string
       embeddingModel: string
@@ -1514,6 +1513,8 @@ export type TranslationKeys = {
     rebuildingIndex: string
     rebuildComplete: string
     rebuildFailed: string
+    /** Manual index finished but some files could not be indexed. {{count}} interpolated client-side. */
+    indexedWithSkipped?: string
     continueComplete?: string
     continueFailed?: string
     openYoloNewChatFailed: string

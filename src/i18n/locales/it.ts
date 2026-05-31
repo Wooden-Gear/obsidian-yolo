@@ -835,10 +835,7 @@ export const it: TranslationKeys = {
       enableRag: 'Abilita RAG',
       enableRagDesc:
         "Crea l'indice per i documenti inclusi nell'ambito selezionato.",
-      partialIndexFailureTitle:
-        'Alcuni contenuti non possono essere indicizzati',
-      partialIndexFailureBody:
-        'I file elencati di seguito contengono contenuti che non possono essere incorporati. Il resto del vault è stato indicizzato. Questi file non verranno riprovati automaticamente.',
+      partialFailureSummary: 'Completato · {{count}} file non indicizzabili',
       embeddingModel: 'Modello embedding',
       embeddingModelDesc:
         'Modello usato per generare embeddings per la ricerca semantica.',
@@ -1698,6 +1695,7 @@ export const it: TranslationKeys = {
     rebuildingIndex: 'Ricostruzione indice vault in corso…',
     rebuildComplete: 'Ricostruzione indice vault completata.',
     rebuildFailed: 'Ricostruzione indice vault fallita.',
+    indexedWithSkipped: 'Indice completato · {{count}} file non indicizzabili.',
     continueComplete: 'Indicizzazione ripresa completata.',
     continueFailed: 'Indicizzazione ripresa fallita.',
     openYoloNewChatFailed:

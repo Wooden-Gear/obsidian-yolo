@@ -106,12 +106,47 @@ describe('VectorManager.reconcile', () => {
       [{ path: 'a.md', mtime: 100, content: 'hello world' }],
       [],
     )
-    await manager.reconcile(embeddingModel, baseConfig, {
+    const result = await manager.reconcile(embeddingModel, baseConfig, {
       scope: { kind: 'all' },
     })
+    expect(result).toEqual({
+      permanentFailedPaths: [],
+      chunkifyFailedPaths: [],
+    })
+    expect(errorModalCtor).not.toHaveBeenCalled()
     expect(repository.insertVectors).toHaveBeenCalledTimes(1)
     expect(repository.deleteVectorsByIds).not.toHaveBeenCalled()
     expect(inserted.rows.length).toBeGreaterThan(0)
+  })
+
+  it('returns chunkifyFailedPaths (no throw, no modal) when a file fails to chunkify', async () => {
+    const { manager, repository, app } = setupManager(
+      [
+        { path: 'good.md', mtime: 100, content: 'hello world' },
+        { path: 'bad.md', mtime: 100, content: 'will throw' },
+      ],
+      [],
+    )
+    // Make reading bad.md throw a non-abort error so chunkify fails for it only.
+    app.vault.cachedRead = jest.fn(async (file: { path: string }) => {
+      if (file.path === 'bad.md') {
+        throw new Error('I/O error')
+      }
+      return 'hello world'
+    })
+
+    const result = await manager.reconcile(embeddingModel, baseConfig, {
+      scope: { kind: 'all' },
+    })
+
+    expect(result).toEqual({
+      permanentFailedPaths: [],
+      chunkifyFailedPaths: ['bad.md'],
+    })
+    expect(errorModalCtor).not.toHaveBeenCalled()
+    // bad.md is excluded from the diff → its (absent) rows are not deleted, and
+    // good.md is still embedded.
+    expect(repository.insertVectors).toHaveBeenCalled()
   })
 
   it('skips unchanged files (mtime equal) without re-embedding', async () => {
@@ -379,10 +414,17 @@ describe('VectorManager.reconcile', () => {
         return [0.1, 0.2, 0.3]
       })
 
-    await expect(
-      manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
-    ).resolves.toBeUndefined()
+    const result = await manager.reconcile(embeddingModel, baseConfig, {
+      scope: { kind: 'all' },
+    })
 
+    // Permanent-only failure → returned (not thrown, no modal) so the UI layer
+    // can surface it by trigger.
+    expect(result).toEqual({
+      permanentFailedPaths: ['a.md'],
+      chunkifyFailedPaths: [],
+    })
+    expect(errorModalCtor).not.toHaveBeenCalled()
     expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
     // The successful (B) chunk is kept.
     expect(repository.insertVectors).toHaveBeenCalled()
@@ -432,7 +474,7 @@ describe('VectorManager.reconcile', () => {
 
     await expect(
       manager.reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } }),
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({ permanentFailedPaths: [], chunkifyFailedPaths: [] })
 
     expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
     expect(repository.insertVectors).toHaveBeenCalledTimes(1)
@@ -471,12 +513,70 @@ describe('VectorManager.reconcile', () => {
     expect(repository.deleteVectorsByPaths).not.toHaveBeenCalled()
     // Nothing was successfully embedded.
     expect(inserted.rows.length).toBe(0)
-    // The partial "rest is indexed" warning modal must NOT be shown for an
-    // incomplete (wholeBatchFailed) run.
-    const partialWarningTitles = errorModalCtor.mock.calls.filter(
-      (call) => call[1] === 'Some content could not be indexed',
+    // The data layer must never construct a modal — error surfacing is the UI
+    // layer's job. For an incomplete (wholeBatchFailed) run the throw above is
+    // the only signal; no partial "rest is indexed" report is emitted.
+    expect(errorModalCtor).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a permanent-failed file too when another file in the same run has a transient failure', async () => {
+    // Cross-file regression (source fix 2): in one reconcile pass file A hits a
+    // transient failure (→ rollback + RagIndexIncompleteError retry) while file
+    // B has a PERMANENT failure on one chunk but other chunks succeed. Because
+    // the run is incomplete and will retry, B's partially-successful rows must
+    // be rolled back together with A's — otherwise B's surviving success rows
+    // would stamp the current mtime and let B be silently skipped on the retry,
+    // freezing the permanent gap. Assert deleteVectorsByPaths receives BOTH A
+    // and B, and the thrown error's rolledBackPaths carries both.
+    //
+    // B's content splits into multiple chunks so its permanent failure can
+    // coexist with at least one success (keeping validRows.length > 0 so the
+    // batch is NOT treated as wholeBatchFailed).
+    const bContent = `${'X'.repeat(900)}\n\n${'Y'.repeat(900)}`
+    const { manager, repository } = setupManager(
+      [
+        { path: 'a.md', mtime: 100, content: 'transient file' },
+        { path: 'b.md', mtime: 100, content: bContent },
+      ],
+      [],
     )
-    expect(partialWarningTitles).toHaveLength(0)
+    ;(embeddingModel as unknown as { getEmbedding: jest.Mock }).getEmbedding =
+      jest.fn(async (content: string) => {
+        // File A's single chunk → transient (503).
+        if (content.includes('transient file')) {
+          throw Object.assign(new Error('service unavailable'), { status: 503 })
+        }
+        // File B's first chunk → permanent (400); B's other chunk(s) succeed.
+        if (content.includes('X')) {
+          throw Object.assign(new Error('bad request'), { status: 400 })
+        }
+        return [0.1, 0.2, 0.3]
+      })
+
+    let thrown: unknown
+    await manager
+      .reconcile(embeddingModel, baseConfig, { scope: { kind: 'all' } })
+      .catch((error: unknown) => {
+        thrown = error
+      })
+
+    // Incomplete run → throws RagIndexIncompleteError (transient retry).
+    expect(thrown).toMatchObject({ name: 'RagIndexIncompleteError' })
+
+    // BOTH the transient file (A) and the permanent-but-partially-successful
+    // file (B) are rolled back — no silent gap left on B.
+    expect(repository.deleteVectorsByPaths).toHaveBeenCalledTimes(1)
+    const [model, paths] = repository.deleteVectorsByPaths.mock.calls[0] as [
+      string,
+      string[],
+    ]
+    expect(model).toBe('test-model')
+    expect([...paths].sort()).toEqual(['a.md', 'b.md'])
+
+    // The error's rolledBackPaths also carries both files.
+    expect(
+      [...(thrown as { rolledBackPaths: string[] }).rolledBackPaths].sort(),
+    ).toEqual(['a.md', 'b.md'])
   })
 
   it('deletes ALL rows for a transiently-rolled-back file, including a reused (bumpMtime) row', async () => {
