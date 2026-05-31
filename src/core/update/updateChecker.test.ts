@@ -48,16 +48,21 @@ describe('splitReleaseNotesByLanguage', () => {
   })
 
   it('classifies by CJK ratio regardless of section order', () => {
-    const body = ['## 中文在前的更新说明', '- 一些改动', '---', '## English second'].join(
-      '\n',
-    )
+    const body = [
+      '## 中文在前的更新说明',
+      '- 一些改动',
+      '---',
+      '## English second',
+    ].join('\n')
     const result = splitReleaseNotesByLanguage(body)
     expect(result.zh).toContain('中文在前')
     expect(result.en).toContain('English second')
   })
 
   it('returns only one language when no bilingual split exists', () => {
-    const result = splitReleaseNotesByLanguage('## 1.6.0\n- English only release')
+    const result = splitReleaseNotesByLanguage(
+      '## 1.6.0\n- English only release',
+    )
     expect(result.en).toContain('English only')
     expect(result.zh).toBeNull()
   })

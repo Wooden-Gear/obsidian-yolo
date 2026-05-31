@@ -56,7 +56,9 @@ export function compareVersions(current: string, latest: string): boolean {
  * A language with no matching segment becomes `null`, which tells the UI to
  * hide the language toggle and render the single available language.
  */
-export function splitReleaseNotesByLanguage(body: string): ReleaseNotesByLanguage {
+export function splitReleaseNotesByLanguage(
+  body: string,
+): ReleaseNotesByLanguage {
   const segments = body
     .split(/^\s*---\s*$/m)
     .map((segment) => segment.trim())
@@ -128,7 +130,10 @@ function cleanSubtitle(text: string): string {
     .trim()
 }
 
-function splitEmojiPrefix(text: string): { emoji: string | null; name: string } {
+function splitEmojiPrefix(text: string): {
+  emoji: string | null
+  name: string
+} {
   const match = text.match(/^(\p{Extended_Pictographic})\s*(.*)$/u)
   if (match) {
     return { emoji: match[1], name: match[2].trim() }

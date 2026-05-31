@@ -82,9 +82,9 @@ describe('createConversationCompactionSummary', () => {
     // Tail message is the compaction instruction.
     const tail = call.request.messages.at(-1)
     expect(tail?.role).toBe('user')
-    expect(
-      typeof tail?.content === 'string' && tail.content,
-    ).toContain('COMPACTION MODE')
+    expect(typeof tail?.content === 'string' && tail.content).toContain(
+      'COMPACTION MODE',
+    )
   })
 
   it('appends turn messages between the prefix and the instruction', async () => {
@@ -121,7 +121,8 @@ describe('createConversationCompactionSummary', () => {
       focusInstruction: 'keep the API contract details',
     })
 
-    const tail = mockedExecuteSingleTurn.mock.calls[0][0].request.messages.at(-1)
+    const tail =
+      mockedExecuteSingleTurn.mock.calls[0][0].request.messages.at(-1)
     const content = typeof tail?.content === 'string' ? tail.content : ''
     expect(content).toContain(
       '<focus_instruction>keep the API contract details</focus_instruction>',
@@ -139,7 +140,8 @@ describe('createConversationCompactionSummary', () => {
       requestMessages: prefix,
     })
 
-    const tail = mockedExecuteSingleTurn.mock.calls[0][0].request.messages.at(-1)
+    const tail =
+      mockedExecuteSingleTurn.mock.calls[0][0].request.messages.at(-1)
     const content = typeof tail?.content === 'string' ? tail.content : ''
     expect(content).not.toContain('<focus_instruction>')
   })
@@ -161,7 +163,9 @@ describe('createConversationCompactionSummary', () => {
   it('retries once when the first response is empty, then succeeds', async () => {
     mockedExecuteSingleTurn
       .mockResolvedValueOnce(stubSingleTurnResult('<summary>   </summary>'))
-      .mockResolvedValueOnce(stubSingleTurnResult('<summary>recovered</summary>'))
+      .mockResolvedValueOnce(
+        stubSingleTurnResult('<summary>recovered</summary>'),
+      )
 
     const summary = await createConversationCompactionSummary({
       providerClient: fakeProviderClient,
@@ -223,9 +227,9 @@ describe('createConversationCompactionSummary', () => {
     })
 
     const call = mockedExecuteSingleTurn.mock.calls[0][0]
-    expect(
-      (call.request as { reasoningLevel?: unknown }).reasoningLevel,
-    ).toBe('high')
+    expect((call.request as { reasoningLevel?: unknown }).reasoningLevel).toBe(
+      'high',
+    )
   })
 
   it('omits tool_choice when no tools are provided', async () => {

@@ -510,7 +510,7 @@ export function useChatStreamManager({
         effectiveModel,
         lastUserMessage?.role === 'user'
           ? (normalizeStoredReasoningLevel(lastUserMessage.reasoningLevel) ??
-            undefined)
+              undefined)
           : undefined,
       )
 

@@ -747,9 +747,7 @@ const applyReplaceLikeOperation = ({
   if (fuzzyMatch && fuzzyMatch.aboveThresholdCount === 1) {
     const { candidate } = fuzzyMatch
     const nextContent =
-      content.slice(0, candidate.start) +
-      newText +
-      content.slice(candidate.end)
+      content.slice(0, candidate.start) + newText + content.slice(candidate.end)
     return {
       ok: true,
       nextContent,

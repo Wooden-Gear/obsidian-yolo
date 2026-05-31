@@ -240,8 +240,9 @@ export async function getLiteSkillDocument({
 
   if (record.file) {
     const content = await app.vault.cachedRead(record.file)
-    const metadataFrontmatter =
-      app.metadataCache.getFileCache(record.file)?.frontmatter
+    const metadataFrontmatter = app.metadataCache.getFileCache(
+      record.file,
+    )?.frontmatter
     const parsedFrontmatter = parseFrontmatterFromContent(content)
     const mergedFrontmatter = {
       ...(metadataFrontmatter ?? {}),

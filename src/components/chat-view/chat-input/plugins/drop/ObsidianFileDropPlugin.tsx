@@ -232,7 +232,9 @@ export default function ObsidianFileDropPlugin(): null {
           }
 
           const droppedMentionables: Mentionable[] = [
-            ...resolvedFiles.map((file): Mentionable => ({ type: 'file', file })),
+            ...resolvedFiles.map(
+              (file): Mentionable => ({ type: 'file', file }),
+            ),
             ...resolvedFolders.map(
               (folder): Mentionable => ({ type: 'folder', folder }),
             ),

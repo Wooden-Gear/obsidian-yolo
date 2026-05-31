@@ -547,9 +547,7 @@ export const createConversationCompactionSummary = async ({
       const firstMsg =
         firstError instanceof Error ? firstError.message : String(firstError)
       const secondMsg =
-        secondError instanceof Error
-          ? secondError.message
-          : String(secondError)
+        secondError instanceof Error ? secondError.message : String(secondError)
       throw new Error(
         `[YOLO][Compact] summary generation failed after retry. first: ${firstMsg}; second: ${secondMsg}`,
       )

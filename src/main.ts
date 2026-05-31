@@ -2615,7 +2615,10 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.hasCheckedForUpdate = true
     void (async () => {
       const fetched = await checkForUpdate(this.manifest.version)
-      if (fetched?.hasUpdate && !this.isUpdateVersionMuted(fetched.latestVersion)) {
+      if (
+        fetched?.hasUpdate &&
+        !this.isUpdateVersionMuted(fetched.latestVersion)
+      ) {
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
       }

@@ -92,7 +92,9 @@ describe('rewriteSkillFrontmatterIdToName', () => {
   })
 
   it('returns null when there is no frontmatter at all', () => {
-    expect(rewriteSkillFrontmatterIdToName('# Just a heading\n', 'x')).toBeNull()
+    expect(
+      rewriteSkillFrontmatterIdToName('# Just a heading\n', 'x'),
+    ).toBeNull()
     expect(rewriteSkillFrontmatterIdToName('', 'x')).toBeNull()
   })
 
@@ -148,7 +150,9 @@ describe('rewriteSkillFrontmatterIdToName', () => {
     const first = rewriteSkillFrontmatterIdToName(input, 'my-skill')
     expect(first).not.toBeNull()
     // Migrated content has no id line, so a second pass is a no-op.
-    expect(rewriteSkillFrontmatterIdToName(first as string, 'my-skill')).toBeNull()
+    expect(
+      rewriteSkillFrontmatterIdToName(first as string, 'my-skill'),
+    ).toBeNull()
   })
 })
 

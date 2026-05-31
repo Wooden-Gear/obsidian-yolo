@@ -85,7 +85,10 @@ function UpdateToast() {
     () => parseChangelog(headerNotes).subtitle,
     [headerNotes],
   )
-  const sections = useMemo(() => parseChangelog(bodyNotes).sections, [bodyNotes])
+  const sections = useMemo(
+    () => parseChangelog(bodyNotes).sections,
+    [bodyNotes],
+  )
 
   if (!result?.hasUpdate || !releaseNotes) {
     return null
@@ -186,7 +189,9 @@ function UpdateToast() {
                           {item.ref}
                         </span>
                       ) : null}
-                      {item.title && item.body ? <span>{separator}</span> : null}
+                      {item.title && item.body ? (
+                        <span>{separator}</span>
+                      ) : null}
                       <InlineText text={item.body} />
                     </span>
                   </li>
