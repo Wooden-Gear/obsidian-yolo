@@ -1806,8 +1806,6 @@ export type TranslationKeys = {
     viewDetails: string
     goUpdate: string
     dismiss: string
-    collapse: string
-    showFullChangelog: string
     languageEnglish: string
     languageChinese: string
     muteThisVersion: string

@@ -1959,8 +1959,6 @@ export const zh: TranslationKeys = {
     viewDetails: '前往更新',
     goUpdate: '更新',
     dismiss: '关闭',
-    collapse: '收起',
-    showFullChangelog: '展开完整更新日志',
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: '当前版本不提示',

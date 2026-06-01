@@ -1603,7 +1603,7 @@
   color: var(--text-normal);
 }
 
-/* ── divider + collapsible body ── */
+/* ── divider + body ── */
 .yolo-update-toast-divider {
   height: 1px;
   margin: 12px 0 11px;
@@ -1612,12 +1612,6 @@
 
 .yolo-update-toast-body {
   position: relative;
-  max-height: 84px;
-  overflow: hidden;
-  transition: max-height 0.34s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.yolo-update-toast-body.is-expanded {
   max-height: 340px;
   /* Full-bleed to the card's right edge (cancel the 14px card padding) so the
      thin overlay scrollbar hugs the edge like the model-select menu; the
@@ -1632,24 +1626,10 @@
   scrollbar-color: transparent transparent;
 }
 
-.yolo-update-toast-body.is-expanded:hover,
-.yolo-update-toast-body.is-expanded:focus-within {
+.yolo-update-toast-body:hover,
+.yolo-update-toast-body:focus-within {
   scrollbar-color: color-mix(in srgb, var(--text-muted) 35%, transparent)
     transparent;
-}
-
-.yolo-update-toast-fade {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 46px;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--background-primary)
-  );
 }
 
 .yolo-update-toast-section {
@@ -1752,32 +1732,14 @@
   white-space: nowrap;
 }
 
-/* ── persistent bottom bar: expand/collapse toggle (left) + go-update (right) ── */
+/* ── persistent bottom bar ── */
 .yolo-update-toast-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
   padding: 7px 0 6px;
-}
-
-.yolo-update-toast-expand {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: var(--font-semibold);
-  cursor: var(--cursor);
-}
-
-.yolo-update-toast-expand:hover {
-  color: var(--text-normal);
 }
 
 .yolo-update-toast-cta {
@@ -1799,14 +1761,6 @@
 
 .yolo-update-toast-cta:hover {
   background: var(--interactive-accent-hover) !important;
-}
-
-.yolo-update-toast-expand-chevron {
-  transition: transform 0.25s ease;
-}
-
-.yolo-update-toast-expand-chevron.is-up {
-  transform: rotate(180deg);
 }
 
 /* Installation incomplete — same layout as update banner, red / error emphasis */

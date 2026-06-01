@@ -1919,8 +1919,6 @@ export const it: TranslationKeys = {
     viewDetails: 'Controlla aggiornamenti',
     goUpdate: 'Aggiorna',
     dismiss: 'Chiudi',
-    collapse: 'Comprimi',
-    showFullChangelog: 'Mostra changelog completo',
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: 'Non notificare per questa versione',

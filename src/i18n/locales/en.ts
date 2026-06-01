@@ -2096,8 +2096,6 @@ export const en: TranslationKeys = {
     viewDetails: 'Check for updates',
     goUpdate: 'Update',
     dismiss: 'Dismiss',
-    collapse: 'Collapse',
-    showFullChangelog: 'Show full changelog',
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: "Don't notify for this version",

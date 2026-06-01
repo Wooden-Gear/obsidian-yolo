@@ -1,4 +1,4 @@
-import { ChevronDown, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
@@ -45,16 +45,16 @@ function UpdateToast() {
   const { app } = usePlugin()
   const { result, muteVersion } = useUpdateCheck()
 
-  const [expanded, setExpanded] = useState(false)
   const [exiting, setExiting] = useState(false)
+  const [hiddenForSession, setHiddenForSession] = useState(false)
   const [lang, setLang] = useState<ReleaseLanguage>('en')
 
   // Reset transient view state whenever a different version surfaces.
   const latestVersion = result?.latestVersion ?? null
   useEffect(() => {
     if (result) {
-      setExpanded(false)
       setExiting(false)
+      setHiddenForSession(false)
       setLang(resolveDefaultLanguage(result.releaseNotes, language))
     }
   }, [latestVersion, language, result])
@@ -89,7 +89,7 @@ function UpdateToast() {
     [bodyNotes],
   )
 
-  if (!result?.hasUpdate || !releaseNotes) {
+  if (!result?.hasUpdate || !releaseNotes || hiddenForSession) {
     return null
   }
 
@@ -126,7 +126,7 @@ function UpdateToast() {
 
   return (
     <div
-      className={`yolo-update-toast${expanded ? ' yolo-update-toast--expanded' : ''}${exiting ? ' yolo-update-toast--exiting' : ''}`}
+      className={`yolo-update-toast${exiting ? ' yolo-update-toast--exiting' : ''}`}
     >
       <div className="yolo-update-toast-header">
         <div className="yolo-update-toast-heading">
@@ -155,9 +155,7 @@ function UpdateToast() {
 
       <div className="yolo-update-toast-divider" />
 
-      <div
-        className={`yolo-update-toast-body${expanded ? ' is-expanded' : ''}`}
-      >
+      <div className="yolo-update-toast-body">
         <div className="yolo-update-toast-sections">
           {sections.map((section, si) => (
             <div className="yolo-update-toast-section" key={si}>
@@ -198,26 +196,9 @@ function UpdateToast() {
             </div>
           ))}
         </div>
-        {!expanded ? (
-          <div className="yolo-update-toast-fade" aria-hidden />
-        ) : null}
       </div>
 
       <div className="yolo-update-toast-footer">
-        <button
-          type="button"
-          className="yolo-update-toast-expand"
-          onClick={() => setExpanded((prev) => !prev)}
-        >
-          {expanded
-            ? t('update.collapse', 'Collapse')
-            : t('update.showFullChangelog', 'Show full changelog')}
-          <ChevronDown
-            className={`yolo-update-toast-expand-chevron${expanded ? ' is-up' : ''}`}
-            size={13}
-            strokeWidth={2.2}
-          />
-        </button>
         <button
           type="button"
           className="yolo-update-toast-cta"
@@ -227,9 +208,9 @@ function UpdateToast() {
             app.setting.open()
             // @ts-expect-error: setting property exists in Obsidian's App but is not typed
             app.setting.openTabById('community-plugins')
-            // Routing the user to the update flow is a strong "handled this
-            // version" signal — dismiss it (animate out, then mute), same as ✕.
-            setExiting(true)
+            // Opening Obsidian's update flow is only an attempt to update; it
+            // may fail or require another try, so do not mute this version.
+            setHiddenForSession(true)
           }}
         >
           {t('update.goUpdate', 'Update')}
