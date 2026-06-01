@@ -390,7 +390,8 @@ export const zh: TranslationKeys = {
       builtinFsReadLabel: '读取',
       builtinFsReadDesc: '读取库内文件',
       builtinContextPruneToolResultsLabel: '裁剪工具调用结果',
-      builtinContextPruneToolResultsDesc: '从后续上下文中排除历史工具结果',
+      builtinContextPruneToolResultsDesc:
+        '从后续上下文中排除历史工具结果；注意，该工具可能会破坏上下文缓存，增加请求开销',
       builtinContextCompactLabel: '压缩上下文',
       builtinContextCompactDesc: '将较早对话压缩为摘要',
       builtinToolSearchLabel: '加载工具',

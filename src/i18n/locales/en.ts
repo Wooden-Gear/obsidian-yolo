@@ -433,7 +433,7 @@ export const en: TranslationKeys = {
       builtinFsReadDesc: 'Read vault files',
       builtinContextPruneToolResultsLabel: 'Prune Tool Results',
       builtinContextPruneToolResultsDesc:
-        'Exclude past tool results from future context',
+        'Exclude past tool results from future context. Note: this tool may break the prompt cache and increase request cost.',
       builtinContextCompactLabel: 'Compact Context',
       builtinContextCompactDesc: 'Compress earlier conversation into a summary',
       builtinToolSearchLabel: 'Load Tool',

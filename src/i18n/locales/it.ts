@@ -421,7 +421,7 @@ export const it: TranslationKeys = {
       builtinFsReadDesc: 'Leggi file del vault',
       builtinContextPruneToolResultsLabel: 'Pota risultati strumenti',
       builtinContextPruneToolResultsDesc:
-        'Escludi i risultati storici degli strumenti dal contesto futuro',
+        'Escludi i risultati storici degli strumenti dal contesto futuro. Nota: questo strumento può invalidare la cache del prompt e aumentare il costo delle richieste.',
       builtinContextCompactLabel: 'Compatta contesto',
       builtinContextCompactDesc:
         'Comprimi la cronologia meno recente in un riepilogo',
