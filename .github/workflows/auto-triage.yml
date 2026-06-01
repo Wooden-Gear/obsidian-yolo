@@ -60,7 +60,7 @@ jobs:
       - name: Install Codex and gh
         run: |
           set -euo pipefail
-          npm install -g @openai/codex@0.130.0
+          npm install -g @openai/codex@0.135.0
           if ! command -v gh >/dev/null 2>&1; then
             type -p curl >/dev/null || sudo apt-get update -qq
             type -p curl >/dev/null || sudo apt-get install -y curl
