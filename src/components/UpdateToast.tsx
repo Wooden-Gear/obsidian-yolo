@@ -148,7 +148,6 @@ function UpdateToast() {
           className="yolo-update-toast-icon-button"
           onClick={() => setExiting(true)}
           aria-label={muteLabel}
-          title={muteLabel}
         >
           <X size={14} strokeWidth={1.8} />
         </button>

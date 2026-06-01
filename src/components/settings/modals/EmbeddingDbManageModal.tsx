@@ -152,7 +152,9 @@ function EmbeddingDbManageModalComponent({
             ? `${failure.httpStatus ? `HTTP ${failure.httpStatus} · ` : ''}${failure.message}`
             : ''
         new Notice(
-          detail ? `Failed to rebuild index: ${detail}` : 'Failed to rebuild index',
+          detail
+            ? `Failed to rebuild index: ${detail}`
+            : 'Failed to rebuild index',
         )
       } finally {
         setIndexProgressMap((prev) => {
