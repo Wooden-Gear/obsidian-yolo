@@ -3,12 +3,17 @@ name: Auto Triage
 # Codex replacement for the old Claude routine:
 # - schedule / workflow_dispatch: scan recent activity
 # - owner mention: handle only the mentioned issue or PR
+# - new external issue / PR: handle only that item as untrusted intake
 
 on:
   schedule:
     - cron: '8 5 * * *'
     - cron: '8 17 * * *'
   workflow_dispatch:
+  issues:
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -21,6 +26,8 @@ jobs:
     if: >
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'issues' ||
+      github.event_name == 'pull_request_target' ||
       (
         github.event.sender.login == 'Lapis0x0' &&
         (
@@ -92,21 +99,31 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
           AUTHOR: ${{ github.event.sender.login || '' }}
-          BODY: ${{ github.event.comment.body || github.event.review.body || '' }}
-          URL: ${{ github.event.comment.html_url || github.event.review.html_url || '' }}
+          BODY: ${{ github.event.comment.body || github.event.review.body || github.event.issue.body || github.event.pull_request.body || '' }}
+          URL: ${{ github.event.comment.html_url || github.event.review.html_url || github.event.issue.html_url || github.event.pull_request.html_url || '' }}
         run: |
           set -euo pipefail
           cp .github/prompts/obsidian-yolo-auto-triage.md /tmp/auto-triage-prompt.md
           if [[ "$EVENT_NAME" != "schedule" && "$EVENT_NAME" != "workflow_dispatch" ]]; then
+            TRIGGER_KIND="owner_mention"
+            if [[ "$EVENT_NAME" == "issues" ]]; then
+              TRIGGER_KIND="intake_issue"
+            elif [[ "$EVENT_NAME" == "pull_request_target" ]]; then
+              TRIGGER_KIND="intake_pr"
+            fi
             {
               printf '\n\n<routine-fire-payload>\n'
               jq -n \
+                --arg trigger_kind "$TRIGGER_KIND" \
+                --arg event_name "$EVENT_NAME" \
                 --arg repo "$REPO" \
                 --arg number "$NUMBER" \
                 --arg author "$AUTHOR" \
                 --arg body "$BODY" \
                 --arg url "$URL" \
                 '{
+                  trigger_kind: $trigger_kind,
+                  event_name: $event_name,
                   repo: $repo,
                   number: $number,
                   url: $url,
