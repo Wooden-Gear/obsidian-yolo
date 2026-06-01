@@ -416,6 +416,10 @@ export const yoloSettingsSchema = z.object({
       imageCompressionQuality: z.number().min(1).max(100).optional(),
       // Fetch external (http/https) image URLs referenced in Markdown
       externalImageFetchEnabled: z.boolean().optional(),
+      // Include assistant reasoning in exported chat markdown
+      chatExportIncludeThinking: z.boolean().optional(),
+      // Include tool call blocks in exported chat markdown
+      chatExportIncludeToolCalls: z.boolean().optional(),
       // Where the ribbon icon should open the Chat view
       ribbonClickAction: z
         .enum(['sidebar', 'tab', 'split', 'window', 'last'])
@@ -445,6 +449,8 @@ export const yoloSettingsSchema = z.object({
       imageCompressionEnabled: true,
       imageCompressionQuality: 85,
       externalImageFetchEnabled: false,
+      chatExportIncludeThinking: false,
+      chatExportIncludeToolCalls: false,
       ribbonClickAction: 'sidebar',
       lastChatPlacement: undefined,
     }),

@@ -1403,6 +1403,13 @@ export const en: TranslationKeys = {
       persistSelectionHighlight: 'Keep selection block highlight',
       persistSelectionHighlightDesc:
         'Keep showing the block highlight for selected editor content while interacting with sidebar Chat or Quick Ask.',
+      chatExportSubsectionTitle: 'Chat export',
+      chatExportIncludeThinking: 'Export thinking process',
+      chatExportIncludeThinkingDesc:
+        'Include assistant reasoning blocks in exported chat markdown.',
+      chatExportIncludeToolCalls: 'Export tool calls',
+      chatExportIncludeToolCallsDesc:
+        'Include tool call arguments and results in exported chat markdown.',
       notifications: 'Notifications',
       notificationsDesc:
         'Configure alerts for Agent runs. System notifications automatically degrade when the environment does not support them.',

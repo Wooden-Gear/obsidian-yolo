@@ -1102,6 +1102,11 @@ export type TranslationKeys = {
       chatApplyModeDirectApply?: string
       persistSelectionHighlight?: string
       persistSelectionHighlightDesc?: string
+      chatExportSubsectionTitle?: string
+      chatExportIncludeThinking?: string
+      chatExportIncludeThinkingDesc?: string
+      chatExportIncludeToolCalls?: string
+      chatExportIncludeToolCallsDesc?: string
       notifications?: string
       notificationsDesc?: string
       notificationsEnabled?: string

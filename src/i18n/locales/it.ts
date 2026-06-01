@@ -1303,6 +1303,13 @@ export const it: TranslationKeys = {
       persistSelectionHighlight: 'Mantieni evidenziazione blocco selezione',
       persistSelectionHighlightDesc:
         "Mantiene visibile l'evidenziazione a blocco del contenuto selezionato nell'editor durante l'interazione con la Chat laterale o Quick Ask.",
+      chatExportSubsectionTitle: 'Esportazione chat',
+      chatExportIncludeThinking: 'Esporta processo di ragionamento',
+      chatExportIncludeThinkingDesc:
+        'Includi i blocchi di reasoning dell assistant nel markdown esportato.',
+      chatExportIncludeToolCalls: 'Esporta chiamate strumento',
+      chatExportIncludeToolCallsDesc:
+        'Includi argomenti e risultati delle chiamate strumento nel markdown esportato.',
       notifications: 'Notifiche',
       notificationsDesc:
         "Configura gli avvisi per Agent. Le notifiche di sistema degradano automaticamente se l'ambiente non le supporta.",

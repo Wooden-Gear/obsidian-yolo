@@ -1297,6 +1297,13 @@ export const zh: TranslationKeys = {
       persistSelectionHighlight: '保留选区块高亮',
       persistSelectionHighlightDesc:
         '在侧边栏 Chat 或 Quick Ask 交互时，持续显示编辑器中已选内容的块级高亮。',
+      chatExportSubsectionTitle: '聊天记录导出',
+      chatExportIncludeThinking: '导出思考过程',
+      chatExportIncludeThinkingDesc:
+        '在导出的 Markdown 中包含 assistant 的 reasoning 块。',
+      chatExportIncludeToolCalls: '导出工具调用',
+      chatExportIncludeToolCallsDesc:
+        '在导出的 Markdown 中包含工具调用的参数与结果。',
       notifications: '通知提醒',
       notificationsDesc:
         '配置 Agent 的提醒方式。若当前环境不支持系统通知，会自动降级，不影响主流程。',
