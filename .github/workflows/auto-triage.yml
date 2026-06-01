@@ -6,7 +6,8 @@ name: Auto Triage
 
 on:
   schedule:
-    - cron: '0 17 * * *'
+    - cron: '8 5 * * *'
+    - cron: '8 17 * * *'
   workflow_dispatch:
   issue_comment:
     types: [created]
