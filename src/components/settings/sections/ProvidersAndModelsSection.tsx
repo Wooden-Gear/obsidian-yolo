@@ -560,7 +560,15 @@ function ProviderSectionItem({
       data-provider-id={provider.id}
       {...attributes}
     >
-      <div className="yolo-provider-header">
+      <div
+        className="yolo-provider-header"
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('button')) {
+            return
+          }
+          toggleProvider(provider.id)
+        }}
+      >
         <button
           type="button"
           className="yolo-provider-drag-handle"
