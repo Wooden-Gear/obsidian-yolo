@@ -668,6 +668,14 @@ export type TranslationKeys = {
       // auto-fetched models helper labels
       availableModelsAuto?: string
       searchModels?: string
+      // batch add models
+      modeSingle?: string
+      modeBatch?: string
+      batchSelectAll?: string
+      batchSelected?: string
+      batchAlreadyAdded?: string
+      batchAdd?: string
+      batchHint?: string
       fetchModelsFailed?: string
       embeddingModelsFirst?: string
       // reasoning UI
