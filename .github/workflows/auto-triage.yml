@@ -124,6 +124,5 @@ jobs:
           codex exec \
             --model gpt-5.5 \
             --sandbox danger-full-access \
-            --ask-for-approval never \
             --cd "$GITHUB_WORKSPACE" \
             - < /tmp/auto-triage-prompt.md
