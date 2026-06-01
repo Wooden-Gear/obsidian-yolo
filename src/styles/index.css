@@ -7,6 +7,7 @@
 @import './settings/tabs.css';
 @import './settings/agent.css';
 @import './settings/web-search.css';
+@import './settings/connectivity-test.css';
 
 @import './popover/index.css';
 

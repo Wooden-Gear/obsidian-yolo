@@ -643,6 +643,28 @@ export type TranslationKeys = {
       modelIdPlaceholder: string
       modelName: string
       modelNamePlaceholder: string
+      // model connectivity / health check
+      connectivityTest: {
+        button: string
+        title: string
+        testAll: string
+        retest: string
+        stop: string
+        test: string
+        passed: string
+        statusTesting: string
+        statusOk: string
+        statusFail: string
+        statusTimeout: string
+        statusIdle: string
+        normalCount: string
+        abnormalCount: string
+        notTested: string
+        noResponse: string
+        firstToken: string
+        dims: string
+        noModels: string
+      }
       // auto-fetched models helper labels
       availableModelsAuto?: string
       searchModels?: string
