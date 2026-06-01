@@ -103,6 +103,9 @@ export { recoverLikelyEscapedBackslashSequences }
 
 const LOCAL_FILE_TOOL_SERVER = 'yolo_local'
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
+// fs_edit 读全文做替换的绝对内存防御上限。MAX_FILE_SIZE_BYTES 是"快照阈值"
+// （超过则跳过 undo/review 快照），本常量是"绝对拒绝上限"（超过才真正拒绝编辑）。
+const MAX_EDIT_FILE_SIZE_BYTES = 16 * 1024 * 1024
 const MAX_BATCH_READ_FILES = 20
 const DEFAULT_READ_START_LINE = 1
 const DEFAULT_READ_MAX_LINES = 50
@@ -3464,7 +3467,7 @@ export async function callLocalFileTool({
         if (!file || !(file instanceof TFile)) {
           throw new Error(`File not found: ${path}`)
         }
-        if (file.stat.size > MAX_FILE_SIZE_BYTES) {
+        if (file.stat.size > MAX_EDIT_FILE_SIZE_BYTES) {
           throw new Error(`File too large (${file.stat.size} bytes).`)
         }
 
@@ -3493,7 +3496,11 @@ export async function callLocalFileTool({
 
         const nextContent = materialized.newContent
 
-        assertContentSize(nextContent)
+        if (nextContent.length > MAX_EDIT_FILE_SIZE_BYTES) {
+          throw new Error(
+            `Content too large (${nextContent.length} chars). Max allowed is ${MAX_EDIT_FILE_SIZE_BYTES}.`,
+          )
+        }
         let appliedContent = nextContent
 
         if (requireReview) {
@@ -3525,49 +3532,29 @@ export async function callLocalFileTool({
           await app.vault.modify(file, nextContent)
         }
 
-        let editSummary = createToolEditSummary({
-          path,
-          beforeContent: content,
-          afterContent: appliedContent,
-          reviewRoundId: roundId,
-        })
         const appliedAt = Date.now()
-        if (toolCallId && editSummary) {
-          editUndoSnapshotStore.set({
-            toolCallId,
-            path,
-            beforeContent: content,
-            afterContent: appliedContent,
-            beforeExists: true,
-            afterExists: true,
-            appliedAt,
-          })
-        }
-
-        if (conversationId && roundId && editSummary) {
-          const snapshot = await upsertEditReviewSnapshot({
-            app,
-            conversationId,
-            roundId,
-            filePath: path,
-            beforeContent: content,
-            afterContent: appliedContent,
-            beforeExists: true,
-            afterExists: true,
-            settings,
-          })
-          editSummary = {
-            ...editSummary,
-            files: editSummary.files.map((file) => ({
-              ...file,
-              addedLines: snapshot.addedLines,
-              removedLines: snapshot.removedLines,
-              reviewRoundId: roundId,
-            })),
-            totalAddedLines: snapshot.addedLines,
-            totalRemovedLines: snapshot.removedLines,
-          }
-        }
+        // MAX_FILE_SIZE_BYTES 作为"快照阈值"：当编辑前或编辑后的内容超过阈值时，
+        // 跳过 undo/review 快照与 diff（避免把超大内容读进快照存储），与 fs_write
+        // 覆盖超大文件时的行为对齐。必须同时看 before(content) 与 after(appliedContent)，
+        // 因为小文件也可能被编辑后膨胀到阈值以上。
+        const overSized =
+          content.length > MAX_FILE_SIZE_BYTES ||
+          appliedContent.length > MAX_FILE_SIZE_BYTES
+        const metadata = overSized
+          ? undefined
+          : await buildFileChangeSummary({
+              app,
+              settings,
+              path,
+              beforeContent: content,
+              afterContent: appliedContent,
+              beforeExists: true,
+              afterExists: true,
+              conversationId,
+              roundId,
+              toolCallId,
+              appliedAt,
+            })
 
         return {
           status: ToolCallResponseStatus.Success,
@@ -3583,12 +3570,13 @@ export async function callLocalFileTool({
               matchMode: result.matchMode,
             })),
             changed: content !== appliedContent,
-            message: requireReview ? 'Applied reviewed edit.' : 'Applied edit.',
+            message: overSized
+              ? 'Applied edit (content too large for undo snapshot).'
+              : requireReview
+                ? 'Applied reviewed edit.'
+                : 'Applied edit.',
           }),
-          metadata: {
-            editSummary,
-            appliedAt,
-          },
+          metadata,
         }
       }
 

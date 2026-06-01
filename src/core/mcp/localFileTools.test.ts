@@ -429,6 +429,82 @@ describe('local fs tool action helpers', () => {
     }
   })
 
+  it('edits an oversized existing file without undo/review snapshot metadata', async () => {
+    const over2mb = 2 * 1024 * 1024 + 1
+    const largeContent = `${'x'.repeat(over2mb - 1)}z`
+    const file = Object.assign(new TFile(), {
+      path: 'large.md',
+      stat: { size: over2mb },
+    })
+    const modify = jest.fn()
+    const read = jest.fn().mockResolvedValue(largeContent)
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolCallId: 'tool-call-large-fs-edit',
+      toolName: 'fs_edit',
+      args: {
+        path: 'large.md',
+        oldText: 'z',
+        newText: 'y',
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    expect(modify).toHaveBeenCalledWith(file, `${'x'.repeat(over2mb - 1)}y`)
+    if (result.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+    expect(result.metadata).toBeUndefined()
+    expect(
+      editUndoSnapshotStore.get('tool-call-large-fs-edit', 'large.md'),
+    ).toBeUndefined()
+  })
+
+  it('skips undo/review snapshot when fs_edit inflates content above snapshot threshold', async () => {
+    const over2mb = 2 * 1024 * 1024 + 1
+    const file = Object.assign(new TFile(), {
+      path: 'small.md',
+      stat: { size: 6 },
+    })
+    const modify = jest.fn()
+    const read = jest.fn().mockResolvedValue('small\n')
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getAbstractFileByPath: jest.fn().mockReturnValue(file),
+          read,
+          modify,
+        },
+      } as unknown as App,
+      toolCallId: 'tool-call-inflate-fs-edit',
+      toolName: 'fs_edit',
+      args: {
+        path: 'small.md',
+        startLine: 1,
+        endLine: 1,
+        newText: 'x'.repeat(over2mb),
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    expect(modify).toHaveBeenCalledWith(file, `${'x'.repeat(over2mb)}\n`)
+    if (result.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+    expect(result.metadata).toBeUndefined()
+    expect(
+      editUndoSnapshotStore.get('tool-call-inflate-fs-edit', 'small.md'),
+    ).toBeUndefined()
+  })
+
   it('rejects fs_edit when both oldText and a line range are provided', async () => {
     const file = Object.assign(new TFile(), {
       path: 'note.md',
