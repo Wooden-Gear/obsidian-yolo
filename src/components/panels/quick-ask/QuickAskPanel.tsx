@@ -1095,7 +1095,7 @@ export function QuickAskPanel({
         const effectiveModel = model
         const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
         const enabledSkillEntries = selectedAssistant
-          ? listLiteSkillEntries(app, { settings }).filter((skill) =>
+          ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
               isSkillEnabledForAssistant({
                 assistant: selectedAssistant,
                 skillName: skill.name,

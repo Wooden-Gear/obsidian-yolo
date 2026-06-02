@@ -469,7 +469,7 @@ export function useChatStreamManager({
       const effectiveModel = resolvedClient.model
       const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
       const enabledSkillEntries = selectedAssistant
-        ? listLiteSkillEntries(app, { settings }).filter((skill) =>
+        ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
             isSkillEnabledForAssistant({
               assistant: selectedAssistant,
               skillName: skill.name,
@@ -709,7 +709,7 @@ export function useChatStreamManager({
         const effectiveModel = resolvedClient.model
         const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
         const enabledSkillEntries = selectedAssistant
-          ? listLiteSkillEntries(app, { settings }).filter((skill) =>
+          ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
               isSkillEnabledForAssistant({
                 assistant: selectedAssistant,
                 skillName: skill.name,
@@ -973,7 +973,7 @@ export function useChatStreamManager({
       const effectiveModel = resolvedClient.model
       const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
       const enabledSkillEntries = selectedAssistant
-        ? listLiteSkillEntries(app, { settings }).filter((skill) =>
+        ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
             isSkillEnabledForAssistant({
               assistant: selectedAssistant,
               skillName: skill.name,

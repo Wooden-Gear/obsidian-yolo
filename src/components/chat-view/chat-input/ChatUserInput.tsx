@@ -30,9 +30,9 @@ import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { getYoloSnippetsPath } from '../../../core/paths/yoloPaths'
-import { listLiteSkillEntries } from '../../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../../core/skills/skillPolicy'
 import { openSnippetsFileInVault } from '../../../core/snippets/snippetsFile'
+import { useLiteSkillEntries } from '../../../hooks/useLiteSkillEntries'
 import { ChatSelectedSkill } from '../../../types/chat'
 import { ChatModel } from '../../../types/chat-model.types'
 import {
@@ -270,6 +270,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       [mentionables],
     )
 
+    const allSkillEntries = useLiteSkillEntries(app, { settings })
     const availableSkills = useMemo(() => {
       const assistants = settings.assistants || []
       const currentAssistant = currentAssistantId
@@ -283,7 +284,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       }
 
       const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
-      return listLiteSkillEntries(app, { settings }).filter((skill) =>
+      return allSkillEntries.filter((skill) =>
         isSkillEnabledForAssistant({
           assistant: currentAssistant,
           skillName: skill.name,
@@ -291,7 +292,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           defaultLoadMode: skill.mode,
         }),
       )
-    }, [app, currentAssistantId, settings])
+    }, [allSkillEntries, currentAssistantId, settings])
 
     const availableSnippets = useSnippetEntries()
 

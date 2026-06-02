@@ -52,12 +52,12 @@ import {
   LiteSkillEntry,
   getLiteSkillDocument,
   humanizeSkillName,
-  listLiteSkillEntries,
 } from '../../../core/skills/liteSkills'
 import {
   getDisabledSkillNameSet,
   resolveAssistantSkillPolicy,
 } from '../../../core/skills/skillPolicy'
+import { useLiteSkillEntries } from '../../../hooks/useLiteSkillEntries'
 import { YoloSettings } from '../../../settings/schema/setting.types'
 import {
   AgentPersona,
@@ -969,10 +969,7 @@ export function AgentsSectionContent({
     return result
   }, [draftAgent, estimatedToolContextTokens.perTool, visibleToolGroups])
 
-  const skillEntries = useMemo<LiteSkillEntry[]>(
-    () => listLiteSkillEntries(app, { settings }),
-    [app, settings],
-  )
+  const skillEntries = useLiteSkillEntries(app, { settings })
 
   const disabledSkillIds = useMemo(
     () => settings.skills?.disabledSkillIds ?? [],

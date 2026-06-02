@@ -21,11 +21,9 @@ import {
   getLocalFileTools,
 } from '../../../core/mcp/localFileTools'
 import { McpManager } from '../../../core/mcp/mcpManager'
-import {
-  humanizeSkillName,
-  listLiteSkillEntries,
-} from '../../../core/skills/liteSkills'
+import { humanizeSkillName } from '../../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../../core/skills/skillPolicy'
+import { useLiteSkillEntries } from '../../../hooks/useLiteSkillEntries'
 import { Assistant } from '../../../types/assistant.types'
 import { McpServerState, McpServerStatus } from '../../../types/mcp.types'
 import { renderAssistantIcon } from '../../../utils/assistant-icon'
@@ -285,10 +283,7 @@ export function AgentSection({ app }: AgentSectionProps) {
     return tools
   }, [settings.mcp.builtinToolOptions, t])
 
-  const allSkillEntries = useMemo(
-    () => listLiteSkillEntries(app, { settings }),
-    [app, settings],
-  )
+  const allSkillEntries = useLiteSkillEntries(app, { settings })
   const disabledSkillIds = settings.skills?.disabledSkillIds ?? []
   const disabledSkillSet = useMemo(
     () => new Set(disabledSkillIds),

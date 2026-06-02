@@ -1705,14 +1705,15 @@ ${memoryParts.join('\n\n')}
     if (this.includeSkills) {
       const disabledSkillNames = this.settings.skills?.disabledSkillIds ?? []
       const enabledSkillEntries = currentAssistant
-        ? listLiteSkillEntries(this.app, { settings: this.settings }).filter(
-            (skill) =>
-              isSkillEnabledForAssistant({
-                assistant: currentAssistant,
-                skillName: skill.name,
-                disabledSkillNames,
-                defaultLoadMode: skill.mode,
-              }),
+        ? (
+            await listLiteSkillEntries(this.app, { settings: this.settings })
+          ).filter((skill) =>
+            isSkillEnabledForAssistant({
+              assistant: currentAssistant,
+              skillName: skill.name,
+              disabledSkillNames,
+              defaultLoadMode: skill.mode,
+            }),
           )
         : []
 
