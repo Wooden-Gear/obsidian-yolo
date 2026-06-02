@@ -29,6 +29,7 @@ import {
 import ObsidianFileDropPlugin from './plugins/drop/ObsidianFileDropPlugin'
 import DragDropPaste from './plugins/image/DragDropPastePlugin'
 import ImagePastePlugin from './plugins/image/ImagePastePlugin'
+import PlainTextPastePlugin from './plugins/paste/PlainTextPastePlugin'
 import AutoLinkMentionPlugin from './plugins/mention/AutoLinkMentionPlugin'
 import { MentionNode } from './plugins/mention/MentionNode'
 import MentionPlugin from './plugins/mention/MentionPlugin'
@@ -336,6 +337,7 @@ export default function LexicalContentEditable({
       <AutoLinkMentionPlugin />
       <MentionSelectionHighlightPlugin />
       <ImagePastePlugin onCreateImageMentionables={onCreateImageMentionables} />
+      <PlainTextPastePlugin />
       <ObsidianFileDropPlugin />
       <DragDropPaste onCreateImageMentionables={onCreateImageMentionables} />
       {/* templates feature removed */}
