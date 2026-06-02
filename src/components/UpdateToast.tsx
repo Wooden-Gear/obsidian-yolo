@@ -42,8 +42,9 @@ function InlineText({ text }: { text: string }) {
 
 function UpdateToast() {
   const { language, t } = useLanguage()
-  const { app } = usePlugin()
-  const { result, muteVersion } = useUpdateCheck()
+  const plugin = usePlugin()
+  const { app } = plugin
+  const { result, dismissVersion } = useUpdateCheck()
 
   const [exiting, setExiting] = useState(false)
   const [hiddenForSession, setHiddenForSession] = useState(false)
@@ -59,15 +60,18 @@ function UpdateToast() {
     }
   }, [latestVersion, language, result])
 
-  // Closing plays the exit animation first, then actually mutes (which unmounts
-  // the card). Timer-driven rather than onAnimationEnd so it still fires under
+  // Closing plays the exit animation first, then persists the dismissal state
+  // (which unmounts the card). Timer-driven rather than onAnimationEnd so it still fires under
   // prefers-reduced-motion (where the animation is disabled). Keep in sync with
   // the 160ms exit duration in input.css.
   useEffect(() => {
     if (!exiting || !result) return
-    const id = window.setTimeout(() => muteVersion(result.latestVersion), 160)
+    const id = window.setTimeout(
+      () => dismissVersion(result.latestVersion),
+      160,
+    )
     return () => window.clearTimeout(id)
-  }, [exiting, result, muteVersion])
+  }, [dismissVersion, exiting, result])
 
   const releaseNotes = result?.releaseNotes
   // The header (title + subtitle) tracks the UI's default language; only the
@@ -96,10 +100,9 @@ function UpdateToast() {
   const hasBilingual = Boolean(releaseNotes.en && releaseNotes.zh)
   const separator = lang === 'zh' ? '：' : ': '
 
-  // Closing the toast mutes this version: the user has acknowledged it, so we
-  // don't surface it again until a higher version ships (persisted via
-  // muteVersion). There is no in-session "minimize" state.
-  const muteLabel = t('update.muteThisVersion', "Don't notify for this version")
+  const closeLabel = plugin.isUpdateVersionSoftDismissed(result.latestVersion)
+    ? t('update.muteThisVersion', "Don't notify for this version")
+    : t('update.dismiss', 'Dismiss')
 
   const langToggle = hasBilingual ? (
     <div
@@ -147,7 +150,8 @@ function UpdateToast() {
           type="button"
           className="yolo-update-toast-icon-button"
           onClick={() => setExiting(true)}
-          aria-label={muteLabel}
+          aria-label={closeLabel}
+          title={closeLabel}
         >
           <X size={14} strokeWidth={1.8} />
         </button>

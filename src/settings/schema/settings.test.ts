@@ -22,6 +22,8 @@ describe('parseYoloSettings', () => {
     expect(result.embeddingModelId).toBe('')
 
     expect(result.systemPrompt).toBe('')
+    expect(result.softDismissedUpdateVersion).toBe('')
+    expect(result.mutedUpdateVersion).toBe('')
 
     expect(result.ragOptions).toMatchObject({
       enabled: true,
@@ -159,6 +161,16 @@ describe('parseYoloSettings', () => {
 
     expect(result.version).toBe(SETTINGS_SCHEMA_VERSION)
     expect(result.ragOptions.autoUpdateIntervalHours).toBe(0)
+  })
+
+  it('migrates version 66 settings to include update dismissal state', () => {
+    const result = parseYoloSettings({
+      version: 66,
+    })
+
+    expect(result.version).toBe(SETTINGS_SCHEMA_VERSION)
+    expect(result.softDismissedUpdateVersion).toBe('')
+    expect(result.mutedUpdateVersion).toBe('')
   })
 
   // Regression: previously the entry with an unrecognized presetType was
