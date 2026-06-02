@@ -44,6 +44,8 @@ import {
 } from './tool-preferences'
 import { isLoadToolSchemasToolName } from './tool-selection'
 import { GEMINI_STUB_ARGS_JSON_FIELD, isGeminiStubApiType } from './tool-stub'
+import { isSubagentBlockedToolName } from './subagent/tool-filter'
+import type { SubagentParentContext } from './subagent/parent-context'
 import type { AgentRunContext } from './types'
 import { findPathOutsideScope } from './workspaceScope'
 
@@ -61,6 +63,9 @@ export class AgentToolGateway {
   private readonly allowedSkillNames?: Set<string>
   private readonly apiType?: LLMProviderApiType | null
   private readonly runContext?: AgentRunContext
+  private readonly subagentParentContext?: SubagentParentContext
+  private readonly isSubagentChildRun: boolean
+  private readonly toolApprovalConversationId?: string
   private readonly ajv: AjvInstance
   private readonly schemaValidatorCache = new Map<
     string,
@@ -78,6 +83,9 @@ export class AgentToolGateway {
       allowedSkillNames?: string[]
       apiType?: LLMProviderApiType | null
       runContext?: AgentRunContext
+      subagentParentContext?: SubagentParentContext
+      isSubagentChildRun?: boolean
+      toolApprovalConversationId?: string
     },
   ) {
     this.toolsEnabled = options?.toolsEnabled ?? true
@@ -94,6 +102,9 @@ export class AgentToolGateway {
       : undefined
     this.apiType = options?.apiType
     this.runContext = options?.runContext
+    this.subagentParentContext = options?.subagentParentContext
+    this.isSubagentChildRun = options?.isSubagentChildRun ?? false
+    this.toolApprovalConversationId = options?.toolApprovalConversationId
     // `strict: false` keeps ajv tolerant of MCP tool schemas that include
     // vendor-specific keywords or non-canonical types. `allErrors` lists every
     // violation in the error message so the model has enough signal to retry;
@@ -392,7 +403,19 @@ export class AgentToolGateway {
       return { status: ToolCallResponseStatus.AwaitingUserInput }
     }
 
-    return this.shouldStartToolCallRunning({ request, conversationId })
+    if (this.shouldAutoExecuteTool({ request, conversationId })) {
+      return { status: ToolCallResponseStatus.Running }
+    }
+
+    if (this.isSubagentChildRun) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error:
+          'Subagents cannot pause for interactive tool approval. This tool can run inside a subagent only when the parent agent already has permission to execute it automatically.',
+      }
+    }
+
+    return this.shouldUseFsEditReview(request.name)
       ? { status: ToolCallResponseStatus.Running }
       : { status: ToolCallResponseStatus.PendingApproval }
   }
@@ -503,6 +526,7 @@ export class AgentToolGateway {
           debugTraceId,
           workspaceScope: this.workspaceScope,
           runContext: this.runContext,
+          subagentParentContext: this.subagentParentContext,
         }).then((response) => ({ entries: [entry], responses: [response] })),
       )
     }
@@ -525,6 +549,8 @@ export class AgentToolGateway {
             chatModelId,
             debugTraceId,
             workspaceScope: this.workspaceScope,
+            runContext: this.runContext,
+            subagentParentContext: this.subagentParentContext,
           }).then((response) => ({ entries: [entry], responses: [response] })),
         )
         continue
@@ -554,6 +580,7 @@ export class AgentToolGateway {
           debugTraceId,
           workspaceScope: this.workspaceScope,
           runContext: this.runContext,
+          subagentParentContext: this.subagentParentContext,
         }).then((response) => ({
           entries,
           responses: this.splitBatchedFsEditResponse({
@@ -883,7 +910,7 @@ export class AgentToolGateway {
 
     return this.mcpManager.isToolExecutionAllowed({
       requestToolName: request.name,
-      conversationId,
+      conversationId: this.toolApprovalConversationId ?? conversationId,
       requestArgs: getToolCallArgumentsObject(request.arguments),
       requireAutoExecution:
         getAssistantToolApprovalMode(
@@ -897,26 +924,6 @@ export class AgentToolGateway {
           { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
         ) === 'full_access',
     })
-  }
-
-  private shouldStartToolCallRunning({
-    request,
-    conversationId,
-  }: {
-    request: ToolCallRequest
-    conversationId: string
-  }): boolean {
-    if (!this.isToolAllowed(request.name)) {
-      return false
-    }
-    if (!this.isSkillPermissionAllowed(request)) {
-      return false
-    }
-
-    return (
-      this.shouldAutoExecuteTool({ request, conversationId }) ||
-      this.shouldUseFsEditReview(request.name)
-    )
   }
 
   private shouldUseFsEditReview(toolName: string): boolean {
@@ -943,6 +950,9 @@ export class AgentToolGateway {
 
   private isToolAllowed(toolName: string): boolean {
     if (!this.toolsEnabled) {
+      return false
+    }
+    if (this.isSubagentChildRun && isSubagentBlockedToolName(toolName)) {
       return false
     }
     if (isLoadToolSchemasToolName(toolName)) {

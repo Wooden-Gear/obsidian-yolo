@@ -406,6 +406,192 @@ const buildBaseRunInput = (
     messages,
   }) as unknown as AgentRuntimeRunInput
 
+const waitForRuntimeCount = async (count: number): Promise<void> => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (runtimeInstances.length >= count) {
+      return
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+  throw new Error(`Expected ${count} runtime instances`)
+}
+
+const makeAssistantToolMessages = ({
+  userMessage,
+  responseStatus,
+  toolName = 'server__tool',
+}: {
+  userMessage: ChatUserMessage
+  responseStatus:
+    | ToolCallResponseStatus.PendingApproval
+    | ToolCallResponseStatus.AwaitingUserInput
+  toolName?: string
+}): ChatMessage[] => {
+  const request = {
+    id: 'call-1',
+    name: toolName,
+    arguments: {
+      kind: 'complete' as const,
+      value: {},
+    },
+  }
+  return [
+    userMessage,
+    {
+      role: 'assistant',
+      id: 'assistant-1',
+      content: '',
+      metadata: {
+        generationState: 'completed',
+      },
+      toolCallRequests: [request],
+    },
+    {
+      role: 'tool',
+      id: 'tool-1',
+      toolCalls: [
+        {
+          request,
+          response: {
+            status: responseStatus,
+          },
+        },
+      ],
+    },
+  ]
+}
+
+describe('AgentService continuation input', () => {
+  beforeEach(() => {
+    runtimeInstances.length = 0
+  })
+
+  it('drops stale requestMessages when continuing after approved tool calls', async () => {
+    const service = new AgentService()
+    const userMessage = makeUserMessage('u1', 'dispatch once')
+    const staleRequestMessages = [userMessage]
+    const callTool = jest.fn().mockResolvedValue({
+      status: ToolCallResponseStatus.Success,
+      data: {
+        type: 'text',
+        text: 'accepted',
+      },
+    })
+
+    const runPromise = service.run({
+      conversationId: 'conv-approve-cont',
+      loopConfig: {
+        enableTools: true,
+        maxAutoIterations: 100,
+        includeBuiltinTools: true,
+      },
+      input: {
+        conversationId: 'conv-approve-cont',
+        messages: [userMessage],
+        requestMessages: staleRequestMessages,
+        model: {
+          id: 'model-1',
+        },
+        mcpManager: {
+          callTool,
+        },
+      } as unknown as AgentRuntimeRunInput,
+    })
+    const firstRuntime = runtimeInstances[0]
+    firstRuntime.emitSnapshot(
+      makeAssistantToolMessages({
+        userMessage,
+        responseStatus: ToolCallResponseStatus.PendingApproval,
+      }),
+    )
+
+    const approvePromise = service.approveToolCall({
+      conversationId: 'conv-approve-cont',
+      toolCallId: 'call-1',
+    })
+
+    await waitForRuntimeCount(2)
+    const continuationInput = runtimeInstances[1].getRunInput()
+    expect(continuationInput?.requestMessages).toBeUndefined()
+    expect(continuationInput?.messages).not.toEqual(staleRequestMessages)
+
+    const toolMessage = continuationInput?.messages.find(
+      (message) => message.role === 'tool',
+    )
+    if (!toolMessage || toolMessage.role !== 'tool') {
+      throw new Error('expected continued tool message')
+    }
+    expect(toolMessage.toolCalls[0].response).toMatchObject({
+      status: ToolCallResponseStatus.Success,
+      data: {
+        text: 'accepted',
+      },
+    })
+
+    runtimeInstances[1].resolveRun()
+    expect(await approvePromise).toBe(true)
+    firstRuntime.resolveRun()
+    await runPromise
+  })
+
+  it('drops stale requestMessages when continuing after answered user questions', async () => {
+    const service = new AgentService()
+    const userMessage = makeUserMessage('u1', 'ask then continue')
+    const staleRequestMessages = [userMessage]
+
+    const runPromise = service.run({
+      conversationId: 'conv-answer-cont',
+      loopConfig: {
+        enableTools: true,
+        maxAutoIterations: 100,
+        includeBuiltinTools: true,
+      },
+      input: {
+        conversationId: 'conv-answer-cont',
+        messages: [userMessage],
+        requestMessages: staleRequestMessages,
+      } as unknown as AgentRuntimeRunInput,
+    })
+    const firstRuntime = runtimeInstances[0]
+    firstRuntime.emitSnapshot(
+      makeAssistantToolMessages({
+        userMessage,
+        responseStatus: ToolCallResponseStatus.AwaitingUserInput,
+        toolName: 'yolo_local__ask_user_question',
+      }),
+    )
+
+    const answerPromise = service.answerUserQuestion({
+      conversationId: 'conv-answer-cont',
+      toolCallId: 'call-1',
+      payload: {
+        type: 'user_answers',
+        answers: [],
+      },
+    })
+
+    await waitForRuntimeCount(2)
+    const continuationInput = runtimeInstances[1].getRunInput()
+    expect(continuationInput?.requestMessages).toBeUndefined()
+    expect(continuationInput?.messages).not.toEqual(staleRequestMessages)
+
+    const toolMessage = continuationInput?.messages.find(
+      (message) => message.role === 'tool',
+    )
+    if (!toolMessage || toolMessage.role !== 'tool') {
+      throw new Error('expected continued tool message')
+    }
+    expect(toolMessage.toolCalls[0].response.status).toBe(
+      ToolCallResponseStatus.Success,
+    )
+
+    runtimeInstances[1].resolveRun()
+    expect(await answerPromise).toEqual({ kind: 'continued' })
+    firstRuntime.resolveRun()
+    await runPromise
+  })
+})
+
 describe('AgentService mid-run user message queue', () => {
   beforeEach(() => {
     runtimeInstances.length = 0

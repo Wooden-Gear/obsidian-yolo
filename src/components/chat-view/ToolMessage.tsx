@@ -277,6 +277,15 @@ const isDelegateExternalAgentRequest = (request: ToolRequestLike): boolean => {
   }
 }
 
+const isDelegateSubagentRequest = (request: ToolRequestLike): boolean => {
+  try {
+    const { toolName } = parseToolName(request.name)
+    return toolName === 'delegate_subagent'
+  } catch {
+    return false
+  }
+}
+
 const extractExternalAgentArgs = (
   rawArguments?: ToolCallRequest['arguments'],
 ):
@@ -469,6 +478,13 @@ export const getHeadlineDisplayInfo = ({
     }
   }
 
+  if (toolName === 'delegate_subagent') {
+    return {
+      ...displayInfo,
+      summaryText: getDelegateSubagentSummary({ request, response }),
+    }
+  }
+
   return displayInfo
 }
 
@@ -521,6 +537,49 @@ const getDelegateExternalAgentSummary = ({
   if (!provider) return collapsedMain
   if (!collapsedMain) return provider
   return `${provider} | ${collapsedMain}`
+}
+
+const getDelegateSubagentSummary = ({
+  request,
+  response,
+}: {
+  request: ToolRequestLike
+  response?: ToolCallResponse
+}): string | undefined => {
+  const argsObject = parseToolArguments(request.arguments)
+  const title =
+    typeof argsObject?.description === 'string'
+      ? argsObject.description.trim()
+      : ''
+
+  let mainText = ''
+  if (response?.status === ToolCallResponseStatus.Success) {
+    mainText = response.data.text?.trim() ?? ''
+  } else if (response?.status === ToolCallResponseStatus.Error) {
+    mainText = response.error?.trim() ?? ''
+  } else if (
+    response?.status === ToolCallResponseStatus.Aborted &&
+    response.data
+  ) {
+    mainText = response.data.text?.trim() ?? ''
+  }
+
+  if (!mainText) {
+    const prompt =
+      typeof argsObject?.prompt === 'string' ? argsObject.prompt.trim() : ''
+    mainText = prompt
+  }
+
+  const collapsedMain = mainText
+    ? truncateText(mainText.replace(/\s+/g, ' '), DELEGATE_SUMMARY_MAX_CHARS)
+    : ''
+
+  if (!title && !collapsedMain) {
+    return undefined
+  }
+  if (!title) return collapsedMain
+  if (!collapsedMain) return title
+  return `${title} | ${collapsedMain}`
 }
 
 const getLocalToolSummaryText = ({
@@ -1228,6 +1287,7 @@ function useToolCall(
   }) => Promise<boolean>,
 ) {
   const plugin = usePlugin()
+  const suppressReloadNotice = isDelegateSubagentRequest(request)
   const showReloadNotice = useCallback(() => {
     new Notice(
       '该工具调用来自已结束或已重载的会话，无法继续执行，请重新发起请求。',
@@ -1257,11 +1317,18 @@ function useToolCall(
     })
     if (!approved) {
       const recovered = await tryRecoverToolCall()
-      if (!recovered) {
+      if (!recovered && !suppressReloadNotice) {
         showReloadNotice()
       }
     }
-  }, [conversationId, plugin, request.id, showReloadNotice, tryRecoverToolCall])
+  }, [
+    conversationId,
+    plugin,
+    request.id,
+    showReloadNotice,
+    suppressReloadNotice,
+    tryRecoverToolCall,
+  ])
 
   const handleAllowForConversation = useCallback(async () => {
     const approved = await plugin.getAgentService().approveToolCall({
@@ -1271,11 +1338,18 @@ function useToolCall(
     })
     if (!approved) {
       const recovered = await tryRecoverToolCall(true)
-      if (!recovered) {
+      if (!recovered && !suppressReloadNotice) {
         showReloadNotice()
       }
     }
-  }, [conversationId, plugin, request.id, showReloadNotice, tryRecoverToolCall])
+  }, [
+    conversationId,
+    plugin,
+    request.id,
+    showReloadNotice,
+    suppressReloadNotice,
+    tryRecoverToolCall,
+  ])
 
   const handleReject = useCallback(() => {
     const rejected = plugin.getAgentService().rejectToolCall({

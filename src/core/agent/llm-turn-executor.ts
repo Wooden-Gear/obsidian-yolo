@@ -67,6 +67,7 @@ type AgentLlmTurnExecutorInput = {
     useWebSearch?: boolean
     useUrlContext?: boolean
   }
+  systemPromptOverride?: string
   onAssistantMessage: (message: ChatAssistantMessage) => void
 }
 
@@ -132,6 +133,7 @@ export class AgentLlmTurnExecutor {
         conversationId: this.input.conversationId,
         compaction: this.input.compaction,
         contextualInjections: this.input.contextualInjections,
+        systemPromptOverride: this.input.systemPromptOverride,
         // Real LLM request: freeze (or reuse) the per-conversation system prompt.
         systemPromptSnapshotMode: 'create',
       })

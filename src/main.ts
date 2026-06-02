@@ -857,6 +857,7 @@ export default class YoloPlugin extends Plugin {
       })
       // Start listening for async external agent task-completed events (desktop-only, no-op on mobile)
       this.agentService.startExternalAgentResultListener()
+      this.agentService.startSubagentResultListener()
     }
     return this.agentService
   }
@@ -2110,13 +2111,16 @@ export default class YoloPlugin extends Plugin {
     this.ragAutoUpdateService?.cleanup()
     this.ragAutoUpdateService = null
     this.agentService?.stopExternalAgentResultListener()
+    this.agentService?.stopSubagentResultListener()
     this.agentService?.abortAll()
     this.agentService = null
     // 终止所有活跃的外部 CLI 子进程（desktop-only，mobile 为空操作）
     void import('./core/agent/external-cli/index').then(
       ({ killAllActiveExternalCli }) => killAllActiveExternalCli(),
     )
-    // 终止所有异步派遣任务，标记为 killed_by_shutdown
+    void import('./core/agent/subagent/runner').then(({ abortAllSubagentTasks }) =>
+      abortAllSubagentTasks(),
+    )
     void import('./core/agent/external-cli/async-task-registry').then(
       ({ asyncTaskRegistry }) => asyncTaskRegistry.abortAll(),
     )

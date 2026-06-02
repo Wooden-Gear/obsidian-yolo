@@ -31,6 +31,7 @@ import type {
   ChatAssistantMessage,
   ChatConversationCompactionLike,
   ChatExternalAgentResultMessage,
+  ChatSubagentResultMessage,
   ChatMessage,
   ChatSelectedSkill,
   ChatToolMessage,
@@ -75,6 +76,7 @@ import {
   appendContextualInjectionsToLastUserMessage,
 } from './contextual-injections'
 import { serializeExternalAgentResultToUserMessage } from './externalAgentResultSerializer'
+import { serializeSubagentResultToUserMessage } from './subagentResultSerializer'
 import {
   filterEmptyAssistantMessages,
   filterRequestMessagesByToolBoundary,
@@ -515,6 +517,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    systemPromptOverride?: string
     systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<RequestMessage[]> {
     const { requestMessages } = await this.assembleRequest(args)
@@ -536,6 +539,7 @@ export class RequestContextBuilder {
     conversationId,
     compaction,
     contextualInjections,
+    systemPromptOverride,
     systemPromptSnapshotMode,
   }: {
     messages: ChatMessage[]
@@ -545,6 +549,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    systemPromptOverride?: string
     systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<{
     requestMessages: RequestMessage[]
@@ -618,13 +623,24 @@ export class RequestContextBuilder {
       }
     }
 
-    const { systemSections, systemContent } =
-      await this.resolveSystemPromptSnapshot({
-        conversationId,
-        hasTools,
-        hasMemoryTools,
-        mode: systemPromptSnapshotMode,
-      })
+    const override = systemPromptOverride?.trim()
+    const { systemSections, systemContent } = override
+      ? {
+          systemSections: [
+            {
+              bucket: 'system' as const,
+              id: 'system.subagent-override',
+              content: override,
+            },
+          ],
+          systemContent: override,
+        }
+      : await this.resolveSystemPromptSnapshot({
+          conversationId,
+          hasTools,
+          hasMemoryTools,
+          mode: systemPromptSnapshotMode,
+        })
     const systemMessage: RequestMessage = {
       role: 'system',
       content: systemContent,
@@ -859,6 +875,11 @@ export class RequestContextBuilder {
             continue
           }
 
+          if (message.role === 'subagent_result') {
+            requestMessages.push(this.parseSubagentResultMessage(message))
+            continue
+          }
+
           requestMessages.push(
             ...this.parseToolMessage({ message, prunedToolCallIds }),
           )
@@ -897,6 +918,11 @@ export class RequestContextBuilder {
 
       if (message.role === 'external_agent_result') {
         requestMessages.push(this.parseExternalAgentResultMessage(message))
+        continue
+      }
+
+      if (message.role === 'subagent_result') {
+        requestMessages.push(this.parseSubagentResultMessage(message))
         continue
       }
 
@@ -1128,6 +1154,12 @@ ${message.annotations
     message: ChatExternalAgentResultMessage,
   ): RequestMessage {
     return serializeExternalAgentResultToUserMessage(message)
+  }
+
+  private parseSubagentResultMessage(
+    message: ChatSubagentResultMessage,
+  ): RequestMessage {
+    return serializeSubagentResultToUserMessage(message)
   }
 
   private parseToolMessage({

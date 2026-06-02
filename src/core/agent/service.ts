@@ -6,6 +6,7 @@ import {
   ChatConversationCompactionState,
   ChatExternalAgentResultMessage,
   ChatMessage,
+  ChatSubagentResultMessage,
   ChatUserMessage,
   normalizeChatConversationCompactionState,
 } from '../../types/chat'
@@ -22,6 +23,12 @@ import { DEFAULT_BRANCH_ID } from './branch'
 import { CitationRegistry } from './citationRegistry'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
 import type { ExternalCliEvent } from './external-cli/streamBus'
+import {
+  buildSubagentParentContext,
+  type SubagentParentContext,
+} from './subagent/parent-context'
+import { subagentStreamBus } from './subagent/stream-bus'
+import type { SubagentTaskRecord } from './subagent/types'
 import { NativeAgentRuntime } from './native-runtime'
 import { SystemPromptSnapshotStore } from './systemPromptSnapshotStore'
 import {
@@ -78,11 +85,22 @@ export type AgentConversationRunSummarySubscriber = (
   summaries: Map<string, AgentConversationRunSummary>,
 ) => void
 
+type PendingApprovalRecoveryContext = {
+  lastRunInput: AgentRuntimeRunInput
+  lastLoopConfig: AgentRuntimeLoopConfig
+  lastRunContext: AgentRunContext | null
+}
+
 type ConversationEntry = {
   state: AgentConversationState
   subscribers: Set<AgentConversationStateSubscriber>
   baseMessages: ChatMessage[]
   persistState: boolean
+  /**
+   * Captured when a run finalizes while tool calls still await approval.
+   * Needed because `runEntries` are removed on settle but the UI approves later.
+   */
+  pendingApprovalRecoveryContext?: PendingApprovalRecoveryContext
 }
 
 type AgentRunEntry = {
@@ -117,6 +135,31 @@ export type AgentReplaceConversationMessagesReason =
   | 'mutation'
   | 'hydrate'
   | 'self-heal'
+
+function buildSubagentResultMessage(
+  record: SubagentTaskRecord,
+): ChatSubagentResultMessage {
+  const completedAt = record.completedAt ?? Date.now()
+  const result = record.result
+  return {
+    role: 'subagent_result',
+    id: uuidv4(),
+    taskId: record.taskId,
+    source: record.source,
+    title: record.title,
+    status: result?.status ?? (record.status === 'running' ? 'completed' : record.status),
+    content: result?.content ?? record.error ?? '',
+    durationMs: result?.durationMs ?? completedAt - record.createdAt,
+    toolUseCount: result?.toolUseCount ?? 0,
+    usage: result?.usage,
+    delegateAssistantMessageId:
+      record.source.type === 'llm_tool_call'
+        ? record.source.assistantMessageId
+        : '',
+    delegateToolCallId:
+      record.source.type === 'llm_tool_call' ? record.source.toolCallId : '',
+  }
+}
 
 function buildExternalAgentResultMessage(
   record: AsyncTaskRecord,
@@ -330,6 +373,36 @@ const isTrailingResolvedToolMessage = (
   )
 }
 
+const patchToolCallResponseInMessages = (
+  messages: ChatMessage[],
+  toolCallId: string,
+  response: ToolCallResponse,
+): {
+  toolMessageId: string | null
+  updatedMessages: ChatMessage[]
+  didPatch: boolean
+} => {
+  let toolMessageId: string | null = null
+  let didPatch = false
+  const updatedMessages = messages.map((message) => {
+    if (message.role !== 'tool') {
+      return message
+    }
+    let messageUpdated = false
+    const nextToolCalls = message.toolCalls.map((toolCall) => {
+      if (toolCall.request.id !== toolCallId) {
+        return toolCall
+      }
+      didPatch = true
+      toolMessageId = message.id
+      messageUpdated = true
+      return { ...toolCall, response }
+    })
+    return messageUpdated ? { ...message, toolCalls: nextToolCalls } : message
+  })
+  return { toolMessageId, updatedMessages, didPatch }
+}
+
 const patchAwaitingUserInputInMessages = (
   messages: ChatMessage[],
   toolCallId: string,
@@ -427,7 +500,8 @@ const buildBranchAggregateMessages = ({
       break
     }
     const currentSourceUserMessageId =
-      currentMessage.role === 'external_agent_result'
+      currentMessage.role === 'external_agent_result' ||
+      currentMessage.role === 'subagent_result'
         ? undefined
         : currentMessage.metadata?.sourceUserMessageId
     if (currentSourceUserMessageId !== sourceUserMessageId) {
@@ -554,9 +628,11 @@ export class AgentService {
   private persistTimers = new Map<string, ReturnType<typeof setTimeout>>()
   /** pending external agent results per conversation (queued while streaming) */
   private pendingExternalAgentResults = new Map<string, AsyncTaskRecord[]>()
+  private pendingSubagentResults = new Map<string, SubagentTaskRecord[]>()
   private pendingResultsSubscribers =
     new Set<PendingExternalAgentResultsSubscriber>()
   private unsubscribeTaskCompleted: (() => void) | null = null
+  private unsubscribeSubagentTaskCompleted: (() => void) | null = null
   // Generation token: incremented on each start/stop so a late-resolving lazy
   // import can detect that it was superseded and bail out.
   private listenerStartId = 0
@@ -710,6 +786,19 @@ export class AgentService {
     this.unsubscribeTaskCompleted = null
   }
 
+  startSubagentResultListener(): void {
+    if (this.unsubscribeSubagentTaskCompleted) return
+    this.unsubscribeSubagentTaskCompleted =
+      subagentStreamBus.subscribeTaskCompleted((event) => {
+        this.handleSubagentTaskCompleted(event.record)
+      })
+  }
+
+  stopSubagentResultListener(): void {
+    this.unsubscribeSubagentTaskCompleted?.()
+    this.unsubscribeSubagentTaskCompleted = null
+  }
+
   private handleTaskCompleted(record: AsyncTaskRecord): void {
     const { conversationId } = record
     const isRunning = this.isRunning(conversationId)
@@ -728,11 +817,39 @@ export class AgentService {
     }
   }
 
+  private handleSubagentTaskCompleted(record: SubagentTaskRecord): void {
+    const { conversationId } = record
+    const isRunning = this.isRunning(conversationId)
+    const autoRunPending = this.autoRunScheduled.has(conversationId)
+
+    if (isRunning || autoRunPending) {
+      const queue = this.pendingSubagentResults.get(conversationId) ?? []
+      queue.push(record)
+      this.pendingSubagentResults.set(conversationId, queue)
+    } else {
+      this.autoRunScheduled.add(conversationId)
+      this.appendSubagentResultRecord(conversationId, record)
+      this.notifyPendingResultsSubscribers(conversationId)
+    }
+  }
+
   private appendExternalAgentResultRecord(
     conversationId: string,
     record: AsyncTaskRecord,
   ): void {
     const msg = buildExternalAgentResultMessage(record)
+    const entry = this.getOrCreateConversationEntry(conversationId)
+    const nextMessages = [...entry.state.messages, msg]
+    entry.baseMessages = nextMessages
+    entry.state = { ...entry.state, messages: nextMessages }
+    this.notifyConversationSubscribers(conversationId)
+  }
+
+  private appendSubagentResultRecord(
+    conversationId: string,
+    record: SubagentTaskRecord,
+  ): void {
+    const msg = buildSubagentResultMessage(record)
     const entry = this.getOrCreateConversationEntry(conversationId)
     const nextMessages = [...entry.state.messages, msg]
     entry.baseMessages = nextMessages
@@ -770,9 +887,33 @@ export class AgentService {
     return appended
   }
 
+  drainPendingSubagentResults(
+    conversationId: string,
+  ): ChatSubagentResultMessage[] {
+    const queue = this.pendingSubagentResults.get(conversationId)
+    if (!queue || queue.length === 0) return []
+
+    queue.sort((a, b) => (a.completedAt ?? 0) - (b.completedAt ?? 0))
+    this.pendingSubagentResults.delete(conversationId)
+
+    const appended: ChatSubagentResultMessage[] = []
+    for (const record of queue) {
+      appended.push(buildSubagentResultMessage(record))
+    }
+
+    const entry = this.getOrCreateConversationEntry(conversationId)
+    const nextMessages = [...entry.state.messages, ...appended]
+    entry.baseMessages = nextMessages
+    entry.state = { ...entry.state, messages: nextMessages }
+    this.notifyConversationSubscribers(conversationId)
+
+    return appended
+  }
+
   hasPendingExternalAgentResults(conversationId: string): boolean {
     return (
-      (this.pendingExternalAgentResults.get(conversationId)?.length ?? 0) > 0
+      (this.pendingExternalAgentResults.get(conversationId)?.length ?? 0) > 0 ||
+      (this.pendingSubagentResults.get(conversationId)?.length ?? 0) > 0
     )
   }
 
@@ -891,6 +1032,20 @@ export class AgentService {
     this.notifyConversationSubscribers(conversationId, options?.reason)
   }
 
+  getPendingApprovalSubagentParentContext(
+    conversationId: string,
+  ): SubagentParentContext | undefined {
+    const recovery = this.getOrCreateConversationEntry(conversationId)
+      .pendingApprovalRecoveryContext
+    if (!recovery) {
+      return undefined
+    }
+    return buildSubagentParentContext(
+      recovery.lastRunInput,
+      recovery.lastLoopConfig,
+    )
+  }
+
   async approveToolCall({
     conversationId,
     toolCallId,
@@ -901,18 +1056,29 @@ export class AgentService {
     allowForConversation?: boolean
   }): Promise<boolean> {
     const located = this.findToolCall(conversationId, toolCallId)
-    if (!located?.runEntry.lastRunInput || !located.runEntry.lastLoopConfig) {
+    if (!located) {
       return false
     }
 
-    const { runEntry, toolMessage, toolCall } = located
-    const lastRunInput = runEntry.lastRunInput
-    const lastLoopConfig = runEntry.lastLoopConfig
-    if (
-      !lastRunInput ||
-      !lastLoopConfig ||
-      toolCall.response.status !== ToolCallResponseStatus.PendingApproval
-    ) {
+    const { toolMessage, toolCall } = located
+    if (toolCall.response.status !== ToolCallResponseStatus.PendingApproval) {
+      return false
+    }
+
+    const conversationEntry = this.getOrCreateConversationEntry(conversationId)
+    const recoveryContext = conversationEntry.pendingApprovalRecoveryContext
+    const activeRunInput = located.runEntry?.lastRunInput ?? null
+    const activeLoopConfig = located.runEntry?.lastLoopConfig ?? null
+    const lastRunInput =
+      activeRunInput ?? recoveryContext?.lastRunInput ?? null
+    const lastLoopConfig =
+      activeLoopConfig ?? recoveryContext?.lastLoopConfig ?? null
+    const lastRunContext =
+      located.runEntry?.lastRunContext ??
+      recoveryContext?.lastRunContext ??
+      null
+
+    if (!lastRunInput || !lastLoopConfig) {
       return false
     }
 
@@ -924,16 +1090,22 @@ export class AgentService {
       )
     }
 
-    this.updateToolCallResponse({
+    const messagesBeforeApproval =
+      located.runEntry?.state.messages ?? conversationEntry.state.messages
+
+    const runningMessages = this.updateToolCallResponse({
       conversationId,
       toolCallId,
       response: { status: ToolCallResponseStatus.Running },
       status: 'running',
     })
+    if (!runningMessages) {
+      return false
+    }
 
     const toolArgs = getToolCallArgumentsObject(toolCall.request.arguments)
     const debugTraceId = this.findDebugTraceIdForToolCall(
-      runEntry.state.messages,
+      messagesBeforeApproval,
       toolCall.request.id,
     )
     const result = await captureLLMDebugOperation({
@@ -957,13 +1129,15 @@ export class AgentService {
           args: toolArgs,
           id: toolCall.request.id,
           conversationId,
-          conversationMessages: runEntry.state.messages,
+          conversationMessages: runningMessages,
           roundId: toolMessage.id,
           chatModelId: lastRunInput.model.id,
           workspaceScope: lastRunInput.workspaceScope,
-          // Reuse the same registry the auto-execution path uses so citations
-          // emitted by the approved tool are attached to the assistant message.
-          runContext: runEntry.lastRunContext ?? undefined,
+          runContext: lastRunContext ?? undefined,
+          subagentParentContext: buildSubagentParentContext(
+            lastRunInput,
+            lastLoopConfig,
+          ),
         }),
       getResponseBody: (response) => response,
     })
@@ -977,23 +1151,13 @@ export class AgentService {
       return false
     }
 
-    const latestToolMessage = nextMessages.find(
-      (message) => message.id === toolMessage.id,
-    )
     if (
-      latestToolMessage?.role === 'tool' &&
-      nextMessages.at(-1)?.id === latestToolMessage.id &&
-      latestToolMessage.toolCalls.every((currentToolCall) =>
-        TOOL_CALL_TERMINAL_STATUSES.includes(currentToolCall.response.status),
-      )
+      isTrailingResolvedToolMessage(nextMessages, toolMessage.id)
     ) {
       await this.run({
         conversationId,
         loopConfig: lastLoopConfig,
-        input: {
-          ...lastRunInput,
-          messages: nextMessages,
-        },
+        input: this.buildContinuationInput(lastRunInput, nextMessages),
       })
     }
 
@@ -1055,14 +1219,14 @@ export class AgentService {
       }
 
       const { runEntry } = located
-      if (runEntry.lastRunInput && runEntry.lastLoopConfig) {
+      if (runEntry?.lastRunInput && runEntry.lastLoopConfig) {
         await this.run({
           conversationId,
           loopConfig: runEntry.lastLoopConfig,
-          input: {
-            ...runEntry.lastRunInput,
-            messages: nextMessages,
-          },
+          input: this.buildContinuationInput(
+            runEntry.lastRunInput,
+            nextMessages,
+          ),
         })
         return { kind: 'continued' }
       }
@@ -1190,7 +1354,7 @@ export class AgentService {
     if (!located) {
       return false
     }
-    located.runEntry.lastRunInput?.mcpManager.abortToolCall(toolCallId)
+    located.runEntry?.lastRunInput?.mcpManager.abortToolCall(toolCallId)
     return Boolean(
       this.updateToolCallResponse({
         conversationId,
@@ -1198,6 +1362,17 @@ export class AgentService {
         response: { status: ToolCallResponseStatus.Aborted },
       }),
     )
+  }
+
+  private buildContinuationInput(
+    input: AgentRuntimeRunInput,
+    messages: ChatMessage[],
+  ): AgentRuntimeRunInput {
+    return {
+      ...input,
+      messages,
+      requestMessages: undefined,
+    }
   }
 
   private attachSourcesToLatestAssistant(
@@ -1676,6 +1851,21 @@ export class AgentService {
     const conversationEntry = this.getOrCreateConversationEntry(conversationId)
     if (runEntries.length > 0) {
       conversationEntry.baseMessages = [...conversationEntry.state.messages]
+      const defaultBranchEntry =
+        runEntries.find((entry) => entry.branchId === DEFAULT_BRANCH_ID) ??
+        runEntries[0]
+      if (
+        defaultBranchEntry &&
+        hasPendingApproval(defaultBranchEntry.state.messages) &&
+        defaultBranchEntry.lastRunInput &&
+        defaultBranchEntry.lastLoopConfig
+      ) {
+        conversationEntry.pendingApprovalRecoveryContext = {
+          lastRunInput: defaultBranchEntry.lastRunInput,
+          lastLoopConfig: defaultBranchEntry.lastLoopConfig,
+          lastRunContext: defaultBranchEntry.lastRunContext,
+        }
+      }
       runEntries.forEach((entry) => {
         this.runEntriesByKey.delete(getRunKey(conversationId, entry.branchId))
       })
@@ -1686,9 +1876,11 @@ export class AgentService {
     // (or drained queue) can schedule the next auto-run.
     this.autoRunScheduled.delete(conversationId)
 
-    // Drain pending external agent results after run completes
-    const drained = this.drainPendingExternalAgentResults(conversationId)
-    if (drained.length > 0) {
+    // Drain pending background task results after run completes
+    const drainedExternal =
+      this.drainPendingExternalAgentResults(conversationId)
+    const drainedSubagent = this.drainPendingSubagentResults(conversationId)
+    if (drainedExternal.length > 0 || drainedSubagent.length > 0) {
       this.autoRunScheduled.add(conversationId)
       this.notifyPendingResultsSubscribers(conversationId)
     }
@@ -1808,6 +2000,19 @@ export class AgentService {
     this.persistTimers.set(state.conversationId, timer)
   }
 
+  private syncPendingApprovalRecoveryContext(
+    conversationId: string,
+    messages: ChatMessage[],
+  ): void {
+    if (hasPendingApproval(messages)) {
+      return
+    }
+    const entry = this.conversationEntries.get(conversationId)
+    if (entry) {
+      entry.pendingApprovalRecoveryContext = undefined
+    }
+  }
+
   private updateToolCallResponse({
     conversationId,
     toolCallId,
@@ -1824,49 +2029,48 @@ export class AgentService {
       return null
     }
 
-    let updated = false
-    const nextMessages = located.runEntry.state.messages.map((message) => {
-      if (message.role !== 'tool') {
-        return message
-      }
-
-      const nextToolCalls = message.toolCalls.map((toolCall) => {
-        if (toolCall.request.id !== toolCallId) {
-          return toolCall
-        }
-        updated = true
-        return {
-          ...toolCall,
-          response,
-        }
-      })
-
-      return updated
-        ? {
-            ...message,
-            toolCalls: nextToolCalls,
-          }
-        : message
-    })
-
-    if (!updated) {
+    const sourceMessages =
+      located.runEntry?.state.messages ??
+      this.getOrCreateConversationEntry(conversationId).state.messages
+    const { updatedMessages, didPatch } = patchToolCallResponseInMessages(
+      sourceMessages,
+      toolCallId,
+      response,
+    )
+    if (!didPatch) {
       return null
     }
 
-    located.runEntry.state = {
-      ...located.runEntry.state,
-      messages: nextMessages,
-      status: status ?? located.runEntry.state.status,
+    if (located.runEntry) {
+      located.runEntry.state = {
+        ...located.runEntry.state,
+        messages: updatedMessages,
+        status: status ?? located.runEntry.state.status,
+      }
+    } else {
+      const conversationEntry =
+        this.getOrCreateConversationEntry(conversationId)
+      conversationEntry.baseMessages = updatedMessages
+      conversationEntry.state = {
+        ...conversationEntry.state,
+        messages: updatedMessages,
+        status: status ?? conversationEntry.state.status,
+      }
+      this.syncPendingApprovalRecoveryContext(
+        conversationId,
+        updatedMessages,
+      )
     }
+
     this.recomputeConversationState(conversationId)
-    return nextMessages
+    return updatedMessages
   }
 
   private findToolCall(
     conversationId: string,
     toolCallId: string,
   ): {
-    runEntry: AgentRunEntry
+    runEntry: AgentRunEntry | null
     toolMessage: Extract<ChatMessage, { role: 'tool' }>
     toolCall: {
       request: ToolCallRequest
@@ -1887,6 +2091,27 @@ export class AgentService {
             toolMessage: message,
             toolCall,
           }
+        }
+      }
+    }
+
+    const conversationEntry = this.conversationEntries.get(conversationId)
+    if (!conversationEntry) {
+      return null
+    }
+
+    for (const message of conversationEntry.state.messages) {
+      if (message.role !== 'tool') {
+        continue
+      }
+      const toolCall = message.toolCalls.find(
+        (candidate) => candidate.request.id === toolCallId,
+      )
+      if (toolCall) {
+        return {
+          runEntry: null,
+          toolMessage: message,
+          toolCall,
         }
       }
     }

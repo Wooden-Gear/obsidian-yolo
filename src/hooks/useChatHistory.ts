@@ -794,6 +794,7 @@ const serializeChatMessage = (message: ChatMessage): SerializedChatMessage => {
         metadata: message.metadata,
       }
     case 'external_agent_result':
+    case 'subagent_result':
       return message
   }
 }
@@ -837,6 +838,7 @@ const deserializeChatMessage = (
         metadata: message.metadata,
       }
     case 'external_agent_result':
+    case 'subagent_result':
       return message
   }
 }

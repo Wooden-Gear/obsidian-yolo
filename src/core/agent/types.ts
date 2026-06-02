@@ -90,6 +90,10 @@ export type AgentRuntimeRunInput = {
    * collects fs_search hits across multiple tool calls).
    */
   runContext?: AgentRunContext
+  /** Isolated subagent runs: replace the normal system prompt assembly. */
+  systemPromptOverride?: string
+  /** Conversation whose approval state should be used for tool auto-execution. */
+  toolApprovalConversationId?: string
 }
 
 export type AgentRuntimeLoopConfig = {

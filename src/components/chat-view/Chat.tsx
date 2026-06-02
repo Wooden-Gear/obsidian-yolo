@@ -32,6 +32,8 @@ import type { AgentConversationRunSummary } from '../../core/agent/service'
 import { materializeTextEditPlan } from '../../core/edits/textEditEngine'
 import { parseTextEditPlan } from '../../core/edits/textEditPlan'
 import { captureLLMDebugOperation } from '../../core/llm/debugCapture'
+import { getLocalFileToolServerName } from '../../core/mcp/localFileTools'
+import { parseToolName } from '../../core/mcp/tool-name-utils'
 import { readEditReviewSnapshot } from '../../database/json/chat/editReviewSnapshotStore'
 import type { ChatLeafPlacement } from '../../features/chat/chatLeafSessionManager'
 import { selectionHighlightController } from '../../features/editor/selection-highlight/selectionHighlightController'
@@ -123,6 +125,18 @@ import UserMessageItem from './UserMessageItem'
 import ViewToggle from './ViewToggle'
 
 const WORKSPACE_WIDE_HEADER_MIN_WIDTH = 1200
+
+const isDelegateSubagentToolName = (name: string): boolean => {
+  try {
+    const parsed = parseToolName(name)
+    return (
+      parsed.serverName === getLocalFileToolServerName() &&
+      parsed.toolName === 'delegate_subagent'
+    )
+  } catch {
+    return name === 'delegate_subagent'
+  }
+}
 
 const ensureDirectoryPathExists = async (
   app: ReturnType<typeof useApp>,
@@ -2757,6 +2771,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                 chatMode === 'agent'
                   ? selectedAssistant?.workspaceScope
                   : undefined,
+              subagentParentContext: isDelegateSubagentToolName(request.name)
+                ? plugin
+                    .getAgentService()
+                    .getPendingApprovalSubagentParentContext(conversationId)
+                : undefined,
             }),
           getResponseBody: (response) => response,
         })
@@ -4565,7 +4584,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (current.kind !== 'assistant-group') continue
       if (next.kind !== 'assistant-group') continue
       const nextFirst = next.messages[0]
-      if (nextFirst && nextFirst.role === 'external_agent_result') {
+      if (
+        nextFirst &&
+        (nextFirst.role === 'external_agent_result' ||
+          nextFirst.role === 'subagent_result')
+      ) {
         set.add(current.renderKey)
       }
     }

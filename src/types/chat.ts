@@ -166,16 +166,39 @@ export type ChatExternalAgentResultMessage = {
   }
 }
 
+export type SubagentResultStatus = 'completed' | 'failed' | 'aborted'
+
+export type ChatSubagentResultMessage = {
+  role: 'subagent_result'
+  id: string
+  taskId: string
+  source: TaskSource
+  title: string
+  status: SubagentResultStatus
+  content: string
+  durationMs: number
+  toolUseCount: number
+  usage?: ResponseUsage
+  delegateAssistantMessageId: string
+  delegateToolCallId: string
+  metadata?: {
+    branchId?: string
+    branchConversationId?: string
+  }
+}
+
 export type ChatMessage =
   | ChatUserMessage
   | ChatAssistantMessage
   | ChatToolMessage
   | ChatExternalAgentResultMessage
+  | ChatSubagentResultMessage
 
 export type AssistantToolMessageGroup = (
   | ChatAssistantMessage
   | ChatToolMessage
   | ChatExternalAgentResultMessage
+  | ChatSubagentResultMessage
 )[]
 
 export type SerializedChatUserMessage = {
@@ -234,12 +257,14 @@ export type SerializedChatToolMessage = {
 }
 export type SerializedChatExternalAgentResultMessage =
   ChatExternalAgentResultMessage
+export type SerializedChatSubagentResultMessage = ChatSubagentResultMessage
 
 export type SerializedChatMessage =
   | SerializedChatUserMessage
   | SerializedChatAssistantMessage
   | SerializedChatToolMessage
   | SerializedChatExternalAgentResultMessage
+  | SerializedChatSubagentResultMessage
 
 export type ChatConversation = {
   schemaVersion: number

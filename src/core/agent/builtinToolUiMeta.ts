@@ -135,6 +135,13 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Spawn a local CLI agent (codex exec or claude -p) as a subprocess, stream its output back into the chat, and feed the result to the LLM. Desktop-only. Requires manual approval every time.',
   },
+  delegate_subagent: {
+    labelKey: 'settings.agent.builtinDelegateSubagentLabel',
+    descKey: 'settings.agent.builtinDelegateSubagentDesc',
+    labelFallback: 'Delegate Subagent',
+    descFallback:
+      'Dispatch an isolated temporary sub-agent to complete a self-contained task asynchronously.',
+  },
   todo_write: {
     labelKey: 'settings.agent.builtinTodoWriteLabel',
     descKey: 'settings.agent.builtinTodoWriteDesc',
@@ -181,6 +188,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   open_skill: 'external',
   js_eval: 'external',
   delegate_external_agent: 'external',
+  delegate_subagent: 'external',
 }
 
 export const getBuiltinToolCategory = (
@@ -200,6 +208,7 @@ const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
     WEB_OPS_GROUP_TOOL_NAME,
     'js_eval',
     'delegate_external_agent',
+    'delegate_subagent',
   ],
 }
 

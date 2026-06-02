@@ -42,6 +42,7 @@ import {
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import type { TodoItem } from '../agent/todos-from-messages'
+import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { AgentRunContext } from '../agent/types'
 import {
   findPathOutsideScope,
@@ -168,6 +169,7 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'web_scrape',
   JS_SANDBOX_TOOL_NAME,
   'delegate_external_agent',
+  'delegate_subagent',
   'load_tool_schemas',
   'todo_write',
   'ask_user_question',
@@ -966,6 +968,32 @@ export function getLocalFileTools(options?: {
       },
     },
     getJsSandboxTool(),
+    {
+      name: 'delegate_subagent',
+      description:
+        'Dispatch an isolated temporary sub-agent to work on a self-contained task asynchronously. ' +
+        'The sub-agent does not see the parent conversation; the prompt must include all necessary context. ' +
+        'Returns immediately with a taskId while the child runs in the background. ' +
+        'When complete, a follow-up background message starting with ' +
+        '[subagent_result taskId=...] will arrive for you to summarize or continue. ' +
+        'The child inherits your current model and allowed tools (except recursive delegation and user-interaction tools).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          description: {
+            type: 'string',
+            description:
+              'Short title for this dispatch (shown in the UI and tool summary).',
+          },
+          prompt: {
+            type: 'string',
+            description:
+              'Complete task instructions for the temporary sub-agent.',
+          },
+        },
+        required: ['description', 'prompt'],
+      },
+    },
     {
       name: 'delegate_external_agent',
       description:
@@ -2635,6 +2663,7 @@ export async function callLocalFileTool({
   chatModelId,
   workspaceScope,
   runContext,
+  subagentParentContext,
 }: {
   app: App
   settings?: YoloSettings
@@ -2651,6 +2680,7 @@ export async function callLocalFileTool({
   chatModelId?: string
   workspaceScope?: AssistantWorkspaceScope
   runContext?: AgentRunContext
+  subagentParentContext?: SubagentParentContext
 }): Promise<LocalToolCallResult> {
   if (signal?.aborted) {
     return { status: ToolCallResponseStatus.Aborted }
@@ -4140,6 +4170,50 @@ export async function callLocalFileTool({
             scope: result.scope,
             filePath: result.filePath,
           }),
+        }
+      }
+
+      case 'delegate_subagent': {
+        if (!subagentParentContext) {
+          throw new Error(
+            'delegate_subagent is only available during an active parent agent run.',
+          )
+        }
+        if (!conversationId) {
+          throw new Error('conversationId is required for delegate_subagent.')
+        }
+
+        const description = getTextArg(args, 'description').trim()
+        const taskPrompt = getTextArg(args, 'prompt').trim()
+
+        let assistantMessageId = ''
+        if (conversationMessages) {
+          for (let i = conversationMessages.length - 1; i >= 0; i--) {
+            const m = conversationMessages[i]
+            if (m.role === 'assistant') {
+              assistantMessageId = m.id
+              break
+            }
+          }
+        }
+
+        const { runSubagent } = await import('../agent/subagent/runner')
+        const accepted = await runSubagent({
+          description,
+          prompt: taskPrompt,
+          conversationId,
+          source: {
+            type: 'llm_tool_call',
+            toolCallId: toolCallId ?? '',
+            assistantMessageId,
+          },
+          parent: subagentParentContext,
+          signal,
+        })
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          text: JSON.stringify(accepted),
         }
       }
 

@@ -28,6 +28,7 @@ import { AgentLlmTurnExecutor } from './llm-turn-executor'
 import { createAgentLoopWorker } from './loop-worker'
 import { estimateContinuationRequestContextTokens } from './requestContextEstimate'
 import { AgentRuntime } from './runtime'
+import { buildSubagentParentContext } from './subagent/parent-context'
 import { AgentToolGateway } from './tool-gateway'
 import { shouldProceedToToolPhase } from './tool-phase'
 import {
@@ -107,6 +108,11 @@ export class NativeAgentRuntime implements AgentRuntime {
       allowedSkillNames: input.allowedSkillNames,
       apiType: input.apiType,
       runContext: input.runContext,
+      subagentParentContext: input.systemPromptOverride
+        ? undefined
+        : buildSubagentParentContext(input, this.loopConfig),
+      isSubagentChildRun: Boolean(input.systemPromptOverride),
+      toolApprovalConversationId: input.toolApprovalConversationId,
     })
     const worker = createAgentLoopWorker()
     const runId = uuidv4()
@@ -176,6 +182,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                     messages: [...requestMessages, ...this.messages],
                   }),
                   geminiTools: input.geminiTools,
+                  systemPromptOverride: input.systemPromptOverride,
                   onAssistantMessage: (assistantMessage) => {
                     this.upsertAssistantMessage(assistantMessage)
                     this.notifySubscribers()
@@ -464,6 +471,7 @@ export class NativeAgentRuntime implements AgentRuntime {
       requestParams: input.requestParams,
       contextualInjections: input.contextualInjections,
       geminiTools: input.geminiTools,
+      systemPromptOverride: input.systemPromptOverride,
       onAssistantMessage: (assistantMessage) => {
         this.upsertAssistantMessage(assistantMessage)
         this.notifySubscribers()

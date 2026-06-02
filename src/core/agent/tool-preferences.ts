@@ -61,6 +61,7 @@ export const BUILTIN_DEFAULT_DISABLED_TOOL_SHORT_NAMES: ReadonlySet<string> =
   new Set([
     'context_prune_tool_results',
     'context_compact',
+    'delegate_subagent',
     JS_SANDBOX_TOOL_NAME,
   ])
 

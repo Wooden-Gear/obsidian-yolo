@@ -472,6 +472,9 @@ export const en: TranslationKeys = {
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
         'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',
+      builtinDelegateSubagentLabel: 'Delegate Subagent',
+      builtinDelegateSubagentDesc:
+        'Dispatch an isolated temporary subagent to complete a self-contained task asynchronously.',
       builtinTodoWriteLabel: 'Task List',
       builtinTodoWriteDesc:
         'Let the agent plan and track multi-step task progress autonomously. Agent mode only.',

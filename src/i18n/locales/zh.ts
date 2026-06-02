@@ -427,6 +427,9 @@ export const zh: TranslationKeys = {
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
       builtinDelegateExternalAgentDesc:
         '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）',
+      builtinDelegateSubagentLabel: '派遣子 Agent',
+      builtinDelegateSubagentDesc:
+        '异步派遣一个隔离的临时子 Agent，完成自包含任务',
       builtinTodoWriteLabel: '任务清单',
       builtinTodoWriteDesc:
         '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）',

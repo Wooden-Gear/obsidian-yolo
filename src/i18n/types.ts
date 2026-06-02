@@ -341,6 +341,8 @@ export type TranslationKeys = {
       builtinJsEvalDesc?: string
       builtinDelegateExternalAgentLabel?: string
       builtinDelegateExternalAgentDesc?: string
+      builtinDelegateSubagentLabel?: string
+      builtinDelegateSubagentDesc?: string
       builtinTodoWriteLabel?: string
       builtinTodoWriteDesc?: string
       builtinAskUserQuestionLabel?: string

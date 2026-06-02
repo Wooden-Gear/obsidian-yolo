@@ -36,6 +36,7 @@ import AssistantMessageSources from './AssistantMessageSources'
 import AssistantToolMessageGroupActions from './AssistantToolMessageGroupActions'
 import LLMResponseInlineInfo from './LLMResponseInlineInfo'
 import { buildSynthToolMessageFromResult } from './tool-cards/externalAgentResultAdapter'
+import { buildSynthToolMessageFromSubagentResult } from './tool-cards/subagentResultAdapter'
 import ToolMessage from './ToolMessage'
 
 const getBranchStateLabel = (
@@ -91,7 +92,8 @@ const getBranchTabState = (
 ): 'streaming' | 'waiting-approval' | 'completed' | 'aborted' | 'error' => {
   const latestMessage = messages.at(-1)
   const latestMetadata =
-    latestMessage?.role !== 'external_agent_result'
+    latestMessage?.role !== 'external_agent_result' &&
+    latestMessage?.role !== 'subagent_result'
       ? latestMessage?.metadata
       : undefined
 
@@ -129,7 +131,8 @@ const getMessageGroupRunState = ({
 }): 'streaming' | 'waiting-approval' | 'completed' | 'aborted' | 'error' => {
   const latestMessage = messages.at(-1)
   const latestMetadata =
-    latestMessage?.role !== 'external_agent_result'
+    latestMessage?.role !== 'external_agent_result' &&
+    latestMessage?.role !== 'subagent_result'
       ? latestMessage?.metadata
       : undefined
 
@@ -282,7 +285,8 @@ export default function AssistantToolMessageGroupItem({
         return
       }
       const branchLabel =
-        message.role !== 'external_agent_result'
+        message.role !== 'external_agent_result' &&
+        message.role !== 'subagent_result'
           ? message.metadata?.branchLabel
           : undefined
       const branchConversationId = message.metadata?.branchConversationId
@@ -690,6 +694,16 @@ export default function AssistantToolMessageGroupItem({
                 // 异步派遣结果是终态消息，UI 内部不会触发 update；
                 // 万一调到这里也不持久化（result message 有自己的存储路径）。
               }}
+              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
+            />
+          </div>
+        ) : message.role === 'subagent_result' ? (
+          <div key={message.id}>
+            <ToolMessage
+              message={buildSynthToolMessageFromSubagentResult(message)}
+              conversationId={effectiveConversationId}
+              showRunningFooter={false}
+              onMessageUpdate={() => {}}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
           </div>

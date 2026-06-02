@@ -181,6 +181,75 @@ describe('AgentToolGateway', () => {
     )
   })
 
+  it('uses the parent approval conversation for subagent child runs', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      isSubagentChildRun: true,
+      toolApprovalConversationId: 'parent-conv',
+      allowedToolNames: ['server__tool_a'],
+      toolPreferences: {
+        server__tool_a: {
+          enabled: true,
+          approvalMode: 'require_approval',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        { id: 'tool-1', name: 'server__tool_a', arguments: emptyArgs },
+      ],
+      conversationId: 'subagent-task',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Running,
+    )
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
+    const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
+    expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
+      requestToolName: 'server__tool_a',
+      conversationId: 'parent-conv',
+      requestArgs: {},
+      requireAutoExecution: false,
+    })
+  })
+
+  it('does not leave approval-required subagent child calls pending', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(false),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      isSubagentChildRun: true,
+      allowedToolNames: ['server__tool_a'],
+      toolPreferences: {
+        server__tool_a: {
+          enabled: true,
+          approvalMode: 'require_approval',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        { id: 'tool-1', name: 'server__tool_a', arguments: emptyArgs },
+      ],
+      conversationId: 'subagent-task',
+    })
+
+    const response = message.toolCalls[0]?.response
+    expect(response?.status).toBe(ToolCallResponseStatus.Error)
+    if (response?.status === ToolCallResponseStatus.Error) {
+      expect(response.error).toContain('Subagents cannot pause')
+    }
+  })
+
   it('runs fs_edit immediately when approval mode requires review', async () => {
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(false),
@@ -219,7 +288,7 @@ describe('AgentToolGateway', () => {
 
     // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
     const callToolMock = mcpManager.callTool
-    expect(callToolMock).toHaveBeenCalledWith({
+    expect(callToolMock).toHaveBeenCalledWith(expect.objectContaining({
       name: 'yolo_local__fs_edit',
       args: {},
       id: 'tool-1',
@@ -228,7 +297,36 @@ describe('AgentToolGateway', () => {
       roundId: message.id,
       requireReview: true,
       signal: undefined,
+    }))
+  })
+
+  it('does not open fs_edit review in subagent child runs without automatic permission', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(false),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      isSubagentChildRun: true,
+      allowedToolNames: ['yolo_local__fs_edit'],
+      toolPreferences: {
+        yolo_local__fs_edit: {
+          enabled: true,
+          approvalMode: 'require_approval',
+        },
+      },
     })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        { id: 'tool-1', name: 'yolo_local__fs_edit', arguments: emptyArgs },
+      ],
+      conversationId: 'subagent-task',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Error,
+    )
   })
 
   it('rejects tool calls when tools are disabled', () => {
