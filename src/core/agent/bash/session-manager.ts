@@ -1,4 +1,4 @@
-// Desktop-only bash session manager. Imported lazily by bash/index.ts.
+// Desktop-only terminal command session manager. Imported lazily by bash/index.ts.
 /* eslint-disable import/no-nodejs-modules -- desktop-only module, lazy-loaded behind Platform.isDesktop */
 import { spawn } from 'node:child_process'
 import type {
@@ -496,7 +496,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
         : await getSharedSession(params.cwd)
 
   if (!session) {
-    throw new Error(`Unknown bash session_id: ${params.sessionId}`)
+    throw new Error(`Unknown terminal command session_id: ${params.sessionId}`)
   }
 
   session.lastUsedAt = Date.now()

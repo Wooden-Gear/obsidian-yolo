@@ -27,6 +27,7 @@ import { captureLLMDebugOperation } from '../llm/debugCapture'
 import {
   ASK_USER_QUESTION_TOOL_NAME,
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
+  TERMINAL_COMMAND_TOOL_NAME,
   getLocalFileToolServerName,
   isAskUserQuestionToolName,
   validateAskUserQuestionArgs,
@@ -923,7 +924,7 @@ export class AgentToolGateway {
     )
     const requireAutoExecution =
       approvalMode === 'full_access' ||
-      this.isReadonlyBashToolCall(requestArgs, request.name)
+      this.isReadonlyTerminalCommandToolCall(requestArgs, request.name)
 
     return this.mcpManager.isToolExecutionAllowed({
       requestToolName: request.name,
@@ -933,7 +934,7 @@ export class AgentToolGateway {
     })
   }
 
-  private isReadonlyBashToolCall(
+  private isReadonlyTerminalCommandToolCall(
     args: Record<string, unknown> | undefined,
     toolName: string,
   ): boolean {
@@ -941,7 +942,7 @@ export class AgentToolGateway {
       const parsed = parseToolName(toolName)
       if (
         parsed.serverName !== getLocalFileToolServerName() ||
-        parsed.toolName !== 'bash'
+        parsed.toolName !== TERMINAL_COMMAND_TOOL_NAME
       ) {
         return false
       }

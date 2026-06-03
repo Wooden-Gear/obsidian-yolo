@@ -21,7 +21,7 @@ Guidelines:
 export const SUBAGENT_BLOCKED_TOOL_SHORT_NAMES: readonly string[] = [
   DELEGATE_SUBAGENT_TOOL_SHORT_NAME,
   'delegate_external_agent',
-  'bash',
+  'terminal_command',
   'ask_user_question',
 ]
 

@@ -128,12 +128,11 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelFallback: 'JavaScript Execution',
     descFallback: 'Run JavaScript in an isolated environment.',
   },
-  bash: {
-    labelKey: 'settings.agent.builtinBashLabel',
-    descKey: 'settings.agent.builtinBashDesc',
-    labelFallback: 'Bash',
-    descFallback:
-      'Run local shell commands with session support. Desktop-only. Read-only commands can auto-run; mutating commands require approval.',
+  terminal_command: {
+    labelKey: 'settings.agent.builtinTerminalCommandLabel',
+    descKey: 'settings.agent.builtinTerminalCommandDesc',
+    labelFallback: 'Terminal Commands',
+    descFallback: 'Run commands in the local terminal. Desktop-only.',
   },
   delegate_external_agent: {
     labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',
@@ -194,7 +193,7 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
   open_skill: 'external',
   js_eval: 'external',
-  bash: 'external',
+  terminal_command: 'external',
   delegate_external_agent: 'external',
   delegate_subagent: 'external',
 }
@@ -215,7 +214,7 @@ const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
     'open_skill',
     WEB_OPS_GROUP_TOOL_NAME,
     'js_eval',
-    'bash',
+    'terminal_command',
     'delegate_external_agent',
     'delegate_subagent',
   ],

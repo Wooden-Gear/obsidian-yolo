@@ -424,6 +424,8 @@ export const zh: TranslationKeys = {
       builtinWebOpsDesc: '网页搜索与正文抓取',
       builtinJsEvalLabel: 'JavaScript 执行',
       builtinJsEvalDesc: '在隔离环境中执行 JavaScript 代码',
+      builtinTerminalCommandLabel: '终端命令',
+      builtinTerminalCommandDesc: '在本机终端中运行命令。仅桌面端可用。',
       builtinDelegateExternalAgentLabel: '派遣外部 Agent',
       builtinDelegateExternalAgentDesc:
         '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）',

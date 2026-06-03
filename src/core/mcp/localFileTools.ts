@@ -104,6 +104,7 @@ import { parseToolName } from './tool-name-utils'
 export { recoverLikelyEscapedBackslashSequences }
 
 const LOCAL_FILE_TOOL_SERVER = 'yolo_local'
+export const TERMINAL_COMMAND_TOOL_NAME = 'terminal_command'
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
 // fs_edit 读全文做替换的绝对内存防御上限。MAX_FILE_SIZE_BYTES 是"快照阈值"
 // （超过则跳过 undo/review 快照），本常量是"绝对拒绝上限"（超过才真正拒绝编辑）。
@@ -169,7 +170,7 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'web_search',
   'web_scrape',
   JS_SANDBOX_TOOL_NAME,
-  'bash',
+  TERMINAL_COMMAND_TOOL_NAME,
   'delegate_external_agent',
   'delegate_subagent',
   'load_tool_schemas',
@@ -971,12 +972,11 @@ export function getLocalFileTools(options?: {
     },
     getJsSandboxTool(),
     {
-      name: 'bash',
+      name: TERMINAL_COMMAND_TOOL_NAME,
       description:
-        'Run a shell command on the local desktop machine. Desktop-only. ' +
-        'Use for terminal-style inspection or user-approved local commands. ' +
-        'Read-only commands may run automatically; commands that write files, ' +
-        'modify state, start services, or are unclear require user approval. ' +
+        'Run a command in the local OS shell. Desktop-only. ' +
+        'Uses PowerShell on Windows and a POSIX shell on macOS/Linux. ' +
+        'Use for terminal-style inspection or local commands. ' +
         'Arguments: command starts a command; background=true returns a session_id ' +
         'when the command keeps running; session_id polls or continues an existing ' +
         'session; input sends stdin to that session; kill=true terminates it. ' +
@@ -993,7 +993,7 @@ export function getLocalFileTools(options?: {
           session_id: {
             type: 'integer',
             description:
-              'Existing session id returned by a previous bash call. Use it to poll, send input, or kill.',
+              'Existing session id returned by a previous terminal_command call. Use it to poll, send input, or kill.',
           },
           input: {
             type: 'string',
@@ -4383,7 +4383,7 @@ export async function callLocalFileTool({
         }
       }
 
-      case 'bash': {
+      case TERMINAL_COMMAND_TOOL_NAME: {
         const { runBash } = await import('../agent/bash/index')
 
         let cwd = getOptionalTextArg(args, 'cwd')?.trim() ?? ''

@@ -29,7 +29,7 @@ export const DEFAULT_ASSISTANT_TOOL_DISCLOSURE_MODE: AssistantToolDisclosureMode
  */
 export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
   'delegate_external_agent',
-  'bash',
+  'terminal_command',
 ]
 
 /**
@@ -44,7 +44,7 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
-  'bash',
+  'terminal_command',
   'delegate_external_agent',
 ])
 
@@ -65,7 +65,7 @@ export const BUILTIN_DEFAULT_DISABLED_TOOL_SHORT_NAMES: ReadonlySet<string> =
     'context_compact',
     'delegate_subagent',
     JS_SANDBOX_TOOL_NAME,
-    'bash',
+    'terminal_command',
   ])
 
 /**

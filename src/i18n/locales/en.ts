@@ -469,6 +469,9 @@ export const en: TranslationKeys = {
       builtinWebOpsDesc: 'Web search and page scraping',
       builtinJsEvalLabel: 'JavaScript Execution',
       builtinJsEvalDesc: 'Run JavaScript in an isolated environment.',
+      builtinTerminalCommandLabel: 'Terminal Commands',
+      builtinTerminalCommandDesc:
+        'Run commands in the local terminal. Desktop-only.',
       builtinDelegateExternalAgentLabel: 'Delegate to External Agent',
       builtinDelegateExternalAgentDesc:
         'Delegate complex tasks to a CLI agent installed locally (Codex / Claude Code).',

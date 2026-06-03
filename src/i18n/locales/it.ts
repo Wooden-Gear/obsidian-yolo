@@ -460,6 +460,9 @@ export const it: TranslationKeys = {
       builtinJsEvalLabel: 'Esecuzione JavaScript',
       builtinJsEvalDesc:
         'Esegue JavaScript in un ambiente isolato per gestire compiti su cui gli LLM sono inaffidabili. Può comportare rischi',
+      builtinTerminalCommandLabel: 'Comandi del terminale',
+      builtinTerminalCommandDesc:
+        'Esegue comandi nel terminale locale. Solo desktop.',
       builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
       builtinDelegateExternalAgentDesc:
         'Delega le attività complesse a un agente CLI installato localmente (Codex / Claude Code).',

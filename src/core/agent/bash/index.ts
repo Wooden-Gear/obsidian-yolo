@@ -6,7 +6,7 @@ export type { RunBashParams, RunBashResult } from './session-manager'
 
 export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   if (!Platform.isDesktop) {
-    throw new Error('Bash tool is only available on desktop.')
+    throw new Error('Terminal command tool is only available on desktop.')
   }
   const { runBash: run } = await import('./session-manager')
   return run(params)

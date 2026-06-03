@@ -11,7 +11,7 @@ jest.mock('../external-cli/which', () => ({
 
 import { killAllBashSessions, runBash } from './session-manager'
 
-describe('bash session-manager', () => {
+describe('terminal command session-manager', () => {
   afterEach(() => {
     killAllBashSessions()
   })

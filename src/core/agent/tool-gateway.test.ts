@@ -153,7 +153,7 @@ describe('AgentToolGateway', () => {
     })
   })
 
-  it('auto executes read-only bash commands even when bash requires approval', () => {
+  it('auto executes read-only terminal commands even when terminal_command requires approval', () => {
     const mcpManager = {
       isToolExecutionAllowed: jest
         .fn()
@@ -162,9 +162,9 @@ describe('AgentToolGateway', () => {
     } as unknown as McpManager
 
     const gateway = new AgentToolGateway(mcpManager, {
-      allowedToolNames: ['yolo_local__bash'],
+      allowedToolNames: ['yolo_local__terminal_command'],
       toolPreferences: {
-        yolo_local__bash: {
+        yolo_local__terminal_command: {
           enabled: true,
           approvalMode: 'require_approval',
         },
@@ -175,7 +175,7 @@ describe('AgentToolGateway', () => {
       toolCallRequests: [
         {
           id: 'tool-1',
-          name: 'yolo_local__bash',
+          name: 'yolo_local__terminal_command',
           arguments: createCompleteToolCallArguments({
             value: { command: 'git status --short | head -20' },
           }),
@@ -190,14 +190,14 @@ describe('AgentToolGateway', () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
     const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
     expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
-      requestToolName: 'yolo_local__bash',
+      requestToolName: 'yolo_local__terminal_command',
       conversationId: 'conv-1',
       requestArgs: { command: 'git status --short | head -20' },
       requireAutoExecution: true,
     })
   })
 
-  it('keeps mutating bash commands pending for approval', () => {
+  it('keeps mutating terminal commands pending for approval', () => {
     const mcpManager = {
       isToolExecutionAllowed: jest
         .fn()
@@ -206,9 +206,9 @@ describe('AgentToolGateway', () => {
     } as unknown as McpManager
 
     const gateway = new AgentToolGateway(mcpManager, {
-      allowedToolNames: ['yolo_local__bash'],
+      allowedToolNames: ['yolo_local__terminal_command'],
       toolPreferences: {
-        yolo_local__bash: {
+        yolo_local__terminal_command: {
           enabled: true,
           approvalMode: 'require_approval',
         },
@@ -219,7 +219,7 @@ describe('AgentToolGateway', () => {
       toolCallRequests: [
         {
           id: 'tool-1',
-          name: 'yolo_local__bash',
+          name: 'yolo_local__terminal_command',
           arguments: createCompleteToolCallArguments({
             value: { command: 'echo hello > out.txt' },
           }),
@@ -234,7 +234,7 @@ describe('AgentToolGateway', () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
     const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
     expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
-      requestToolName: 'yolo_local__bash',
+      requestToolName: 'yolo_local__terminal_command',
       conversationId: 'conv-1',
       requestArgs: { command: 'echo hello > out.txt' },
       requireAutoExecution: false,

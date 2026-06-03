@@ -339,6 +339,8 @@ export type TranslationKeys = {
       builtinWebOpsDesc?: string
       builtinJsEvalLabel?: string
       builtinJsEvalDesc?: string
+      builtinTerminalCommandLabel?: string
+      builtinTerminalCommandDesc?: string
       builtinDelegateExternalAgentLabel?: string
       builtinDelegateExternalAgentDesc?: string
       builtinDelegateSubagentLabel?: string
