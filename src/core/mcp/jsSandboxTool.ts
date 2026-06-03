@@ -314,7 +314,22 @@ function matrixMultiply(a, b, options) {
   )
 }
 
-function createSandboxUtils() {
+function createSandboxHtmlUtils() {
+  return {
+    extract(markup, options) {
+      return proxyCall('html_extract', { html: String(markup ?? ''), options })
+    },
+    select(markup, selector, options) {
+      return proxyCall('html_select', {
+        html: String(markup ?? ''),
+        selector,
+        options
+      })
+    }
+  }
+}
+
+function createSandboxUtils(options) {
   const json = {
     flatten(value) {
       return flattenJson(value, '', [])
@@ -458,10 +473,19 @@ function createSandboxUtils() {
     }
   }
 
-  return deepFreeze({ json, text, stats, matrix, date })
+  const utils = { json, text, stats, matrix, date }
+  if (options && options.includeHtml) {
+    // HTML parsing is coupled to network/fetch mode: it is mainly for fetched
+    // web pages, and keeping it conditional avoids advertising extra surface
+    // to agents that cannot retrieve remote HTML in the first place.
+    utils.html = createSandboxHtmlUtils()
+  }
+
+  return deepFreeze(utils)
 }
 
-const SANDBOX_UTILS = createSandboxUtils()
+const SANDBOX_UTILS = createSandboxUtils({ includeHtml: false })
+const SANDBOX_UTILS_WITH_HTML = createSandboxUtils({ includeHtml: true })
 
 function disableAmbientCapabilities(allowScripts, allowFetch) {
   // allowScripts is the "full power" switch: once the model can pull in and
@@ -596,7 +620,7 @@ function buildScope(rawVars) {
     } : null,
     $links: Array.isArray(rawVars && rawVars.$links) ? rawVars.$links : [],
     $tags: Array.isArray(rawVars && rawVars.$tags) ? rawVars.$tags : [],
-    $utils: SANDBOX_UTILS,
+    $utils: hostFetchAllowed ? SANDBOX_UTILS_WITH_HTML : SANDBOX_UTILS,
     $db: caps.allowDbQuery ? {
       search: (query, limit) => proxyCall('db_query', { method: 'search', query, limit }),
       find: (keyword, limit) => proxyCall('db_query', { method: 'find', keyword, limit }),
@@ -937,6 +961,191 @@ function cleanupWorker(reqId) {
   }
 }
 
+function clampInteger(value, fallback, min, max) {
+  const number = typeof value === 'number' && Number.isFinite(value)
+    ? Math.floor(value)
+    : fallback
+  return Math.min(max, Math.max(min, number))
+}
+
+function normalizeWhitespace(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function truncateString(value, maxChars) {
+  const text = String(value || '')
+  return text.length > maxChars ? text.slice(0, maxChars) + '...' : text
+}
+
+function resolveHtmlUrl(value, baseUrl) {
+  const raw = String(value || '').trim()
+  if (!raw) return raw
+  if (typeof baseUrl !== 'string' || baseUrl.trim() === '') return raw
+  try {
+    return new URL(raw, baseUrl).href
+  } catch {
+    return raw
+  }
+}
+
+function getPayloadOptions(payload) {
+  return payload && payload.options && typeof payload.options === 'object'
+    ? payload.options
+    : {}
+}
+
+function parseHtmlDocument(payload) {
+  if (typeof DOMParser !== 'function') {
+    throw new Error('DOMParser is not available in this JavaScript sandbox.')
+  }
+  return new DOMParser().parseFromString(String(payload.html || ''), 'text/html')
+}
+
+function collectElementAttrs(element, baseUrl) {
+  const attrs = Object.create(null)
+  for (const attr of Array.from(element.attributes || [])) {
+    attrs[attr.name] = truncateString(attr.value, 1000)
+  }
+  if (attrs.href) attrs.href = resolveHtmlUrl(attrs.href, baseUrl)
+  if (attrs.src) attrs.src = resolveHtmlUrl(attrs.src, baseUrl)
+  return attrs
+}
+
+function elementToSummary(element, options) {
+  const baseUrl = typeof options.baseUrl === 'string' ? options.baseUrl : ''
+  const textMaxChars = clampInteger(options.textMaxChars, 4000, 200, 20000)
+  const result = {
+    tag: element.tagName.toLowerCase(),
+    text: truncateString(normalizeWhitespace(element.textContent), textMaxChars),
+    attrs: collectElementAttrs(element, baseUrl)
+  }
+  if (options.includeHtml === true) {
+    result.html = truncateString(
+      element.outerHTML || '',
+      clampInteger(options.htmlMaxChars, 8000, 500, 50000)
+    )
+  }
+  return result
+}
+
+function getDocumentBaseUrl(document, options) {
+  if (typeof options.baseUrl === 'string' && options.baseUrl.trim() !== '') {
+    return options.baseUrl
+  }
+  const base = document.querySelector('base[href]')
+  return base ? String(base.getAttribute('href') || '') : ''
+}
+
+function extractPageText(document, maxChars) {
+  const source = document.body || document.documentElement
+  if (!source) return ''
+  const clone = source.cloneNode(true)
+  // Scripts/styles never execute through DOMParser, but removing noisy nodes
+  // gives models the page text they usually wanted from an HTML scrape.
+  clone
+    .querySelectorAll('script,style,noscript,svg,canvas,template')
+    .forEach((node) => node.remove())
+  return truncateString(normalizeWhitespace(clone.textContent), maxChars)
+}
+
+function extractHtmlPage(payload) {
+  const options = getPayloadOptions(payload)
+  const document = parseHtmlDocument(payload)
+  const baseUrl = getDocumentBaseUrl(document, options)
+  const maxItems = clampInteger(options.maxItems, 100, 1, 500)
+  const maxTextChars = clampInteger(options.maxTextChars, 20000, 1000, 100000)
+  const meta = Object.create(null)
+
+  for (const node of Array.from(
+    document.querySelectorAll('meta[name],meta[property]')
+  )) {
+    const key = node.getAttribute('name') || node.getAttribute('property')
+    const content = node.getAttribute('content')
+    if (key && content && meta[key] === undefined) {
+      meta[key] = truncateString(content, 2000)
+    }
+  }
+
+  const headings = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+    .slice(0, maxItems)
+    .map((node) => ({
+      level: Number(node.tagName.slice(1)),
+      text: truncateString(normalizeWhitespace(node.textContent), 1000)
+    }))
+    .filter((item) => item.text)
+
+  const links = Array.from(document.querySelectorAll('a[href]'))
+    .slice(0, maxItems)
+    .map((node) => ({
+      text: truncateString(normalizeWhitespace(node.textContent), 1000),
+      href: resolveHtmlUrl(node.getAttribute('href') || '', baseUrl)
+    }))
+    .filter((item) => item.href)
+
+  const images = Array.from(document.querySelectorAll('img[src]'))
+    .slice(0, maxItems)
+    .map((node) => ({
+      alt: truncateString(node.getAttribute('alt') || '', 1000),
+      src: resolveHtmlUrl(node.getAttribute('src') || '', baseUrl)
+    }))
+    .filter((item) => item.src)
+
+  return {
+    title: normalizeWhitespace(document.querySelector('title')?.textContent),
+    lang: document.documentElement?.getAttribute('lang') || null,
+    text: extractPageText(document, maxTextChars),
+    meta,
+    headings,
+    links,
+    images
+  }
+}
+
+function selectHtmlElements(payload) {
+  const options = getPayloadOptions(payload)
+  const selector = typeof payload.selector === 'string' ? payload.selector : ''
+  if (!selector.trim()) {
+    throw new Error('selector must be a non-empty CSS selector.')
+  }
+  const document = parseHtmlDocument(payload)
+  const baseUrl = getDocumentBaseUrl(document, options)
+  const limit = clampInteger(options.limit, 50, 1, 200)
+  return Array.from(document.querySelectorAll(selector))
+    .slice(0, limit)
+    .map((element) => elementToSummary(element, { ...options, baseUrl }))
+}
+
+function sendWorkerProxyResponse(entry, proxyId, value, error) {
+  entry.worker.postMessage({
+    channel: CHANNEL,
+    type: 'proxy_res',
+    proxyId,
+    value,
+    error
+  })
+}
+
+function handleLocalProxyRequest(entry, payload) {
+  if (payload.cap !== 'html_extract' && payload.cap !== 'html_select') {
+    return false
+  }
+  try {
+    const value =
+      payload.cap === 'html_extract'
+        ? extractHtmlPage(payload.payload || {})
+        : selectHtmlElements(payload.payload || {})
+    sendWorkerProxyResponse(entry, payload.proxyId, value)
+  } catch (error) {
+    sendWorkerProxyResponse(
+      entry,
+      payload.proxyId,
+      undefined,
+      error && error.message ? String(error.message) : String(error)
+    )
+  }
+  return true
+}
+
 function startRun(data) {
   if (typeof Worker !== 'function' || typeof Blob !== 'function') {
     postToParent({
@@ -979,6 +1188,9 @@ function startRun(data) {
     }
     // Proxy request from Worker → forward to parent host, keep worker alive.
     if (payload.type === 'proxy_req') {
+      if (handleLocalProxyRequest(entry, payload)) {
+        return
+      }
       postToParent({
         type: 'proxy_req',
         reqId: data.reqId,
