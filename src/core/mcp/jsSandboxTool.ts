@@ -159,6 +159,7 @@ type JsSandboxToolCallResult =
 
 const JS_SANDBOX_WORKER_SCRIPT = String.raw`
 const CHANNEL = 'yolo-js-sandbox-v1'
+const HTML_PARSE_MAX_INPUT_BYTES = 2 * 1024 * 1024
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
 
 function deepFreeze(value) {
@@ -314,14 +315,33 @@ function matrixMultiply(a, b, options) {
   )
 }
 
+function getStringByteLength(value) {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(value).length
+  }
+  return value.length
+}
+
+function normalizeHtmlInput(markup) {
+  const html = String(markup ?? '')
+  const byteLength = getStringByteLength(html)
+  if (byteLength > HTML_PARSE_MAX_INPUT_BYTES) {
+    throw new Error(
+      '$utils.html input exceeds ' + HTML_PARSE_MAX_INPUT_BYTES +
+      ' bytes. Pass a smaller HTML fragment or narrow the fetched response first.'
+    )
+  }
+  return html
+}
+
 function createSandboxHtmlUtils() {
   return {
     extract(markup, options) {
-      return proxyCall('html_extract', { html: String(markup ?? ''), options })
+      return proxyCall('html_extract', { html: normalizeHtmlInput(markup), options })
     },
     select(markup, selector, options) {
       return proxyCall('html_select', {
-        html: String(markup ?? ''),
+        html: normalizeHtmlInput(markup),
         selector,
         options
       })
@@ -944,6 +964,7 @@ self.addEventListener('message', async (event) => {
 const JS_SANDBOX_IFRAME_SCRIPT = String.raw`
 const CHANNEL = 'yolo-js-sandbox-v1'
 const WORKER_SCRIPT = ${JSON.stringify(JS_SANDBOX_WORKER_SCRIPT)}
+const HTML_PARSE_MAX_INPUT_BYTES = 2 * 1024 * 1024
 const workers = new Map()
 
 function postToParent(payload) {
@@ -974,7 +995,11 @@ function normalizeWhitespace(value) {
 
 function truncateString(value, maxChars) {
   const text = String(value || '')
-  return text.length > maxChars ? text.slice(0, maxChars) + '...' : text
+  const limit = Math.max(0, Math.floor(Number(maxChars) || 0))
+  if (text.length <= limit) return text
+  if (limit === 0) return ''
+  if (limit <= 3) return '.'.repeat(limit)
+  return Array.from(text).slice(0, limit - 3).join('') + '...'
 }
 
 function resolveHtmlUrl(value, baseUrl) {
@@ -988,6 +1013,13 @@ function resolveHtmlUrl(value, baseUrl) {
   }
 }
 
+function getStringByteLength(value) {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(value).length
+  }
+  return value.length
+}
+
 function getPayloadOptions(payload) {
   return payload && payload.options && typeof payload.options === 'object'
     ? payload.options
@@ -998,7 +1030,14 @@ function parseHtmlDocument(payload) {
   if (typeof DOMParser !== 'function') {
     throw new Error('DOMParser is not available in this JavaScript sandbox.')
   }
-  return new DOMParser().parseFromString(String(payload.html || ''), 'text/html')
+  const html = String(payload.html || '')
+  if (getStringByteLength(html) > HTML_PARSE_MAX_INPUT_BYTES) {
+    throw new Error(
+      '$utils.html input exceeds ' + HTML_PARSE_MAX_INPUT_BYTES +
+      ' bytes. Pass a smaller HTML fragment or narrow the fetched response first.'
+    )
+  }
+  return new DOMParser().parseFromString(html, 'text/html')
 }
 
 function collectElementAttrs(element, baseUrl) {
@@ -1029,23 +1068,46 @@ function elementToSummary(element, options) {
 }
 
 function getDocumentBaseUrl(document, options) {
-  if (typeof options.baseUrl === 'string' && options.baseUrl.trim() !== '') {
-    return options.baseUrl
-  }
+  const fallback = typeof options.baseUrl === 'string' ? options.baseUrl.trim() : ''
   const base = document.querySelector('base[href]')
-  return base ? String(base.getAttribute('href') || '') : ''
+  const baseHref = base ? String(base.getAttribute('href') || '').trim() : ''
+  if (!baseHref) return fallback
+  if (fallback) {
+    try {
+      return new URL(baseHref, fallback).href
+    } catch {
+      return fallback
+    }
+  }
+  try {
+    return new URL(baseHref).href
+  } catch {
+    return ''
+  }
 }
 
 function extractPageText(document, maxChars) {
   const source = document.body || document.documentElement
   if (!source) return ''
-  const clone = source.cloneNode(true)
   // Scripts/styles never execute through DOMParser, but removing noisy nodes
-  // gives models the page text they usually wanted from an HTML scrape.
-  clone
+  // gives models the page text they usually wanted from an HTML scrape. The
+  // parsed document is single-use, so mutate it instead of cloning the body.
+  source
     .querySelectorAll('script,style,noscript,svg,canvas,template')
     .forEach((node) => node.remove())
-  return truncateString(normalizeWhitespace(clone.textContent), maxChars)
+  return truncateString(normalizeWhitespace(source.textContent), maxChars)
+}
+
+function collectItems(document, selector, limit, mapElement) {
+  const results = []
+  for (const element of document.querySelectorAll(selector)) {
+    const item = mapElement(element)
+    if (item) {
+      results.push(item)
+      if (results.length >= limit) break
+    }
+  }
+  return results
 }
 
 function extractHtmlPage(payload) {
@@ -1066,29 +1128,40 @@ function extractHtmlPage(payload) {
     }
   }
 
-  const headings = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6'))
-    .slice(0, maxItems)
-    .map((node) => ({
-      level: Number(node.tagName.slice(1)),
-      text: truncateString(normalizeWhitespace(node.textContent), 1000)
-    }))
-    .filter((item) => item.text)
+  const headings = collectItems(
+    document,
+    'h1,h2,h3,h4,h5,h6',
+    maxItems,
+    (node) => {
+      const text = truncateString(normalizeWhitespace(node.textContent), 1000)
+      return text
+        ? {
+            level: Number(node.tagName.slice(1)),
+            text
+          }
+        : null
+    }
+  )
 
-  const links = Array.from(document.querySelectorAll('a[href]'))
-    .slice(0, maxItems)
-    .map((node) => ({
-      text: truncateString(normalizeWhitespace(node.textContent), 1000),
-      href: resolveHtmlUrl(node.getAttribute('href') || '', baseUrl)
-    }))
-    .filter((item) => item.href)
+  const links = collectItems(document, 'a[href]', maxItems, (node) => {
+    const href = resolveHtmlUrl(node.getAttribute('href') || '', baseUrl)
+    return href
+      ? {
+          text: truncateString(normalizeWhitespace(node.textContent), 1000),
+          href
+        }
+      : null
+  })
 
-  const images = Array.from(document.querySelectorAll('img[src]'))
-    .slice(0, maxItems)
-    .map((node) => ({
-      alt: truncateString(node.getAttribute('alt') || '', 1000),
-      src: resolveHtmlUrl(node.getAttribute('src') || '', baseUrl)
-    }))
-    .filter((item) => item.src)
+  const images = collectItems(document, 'img[src]', maxItems, (node) => {
+    const src = resolveHtmlUrl(node.getAttribute('src') || '', baseUrl)
+    return src
+      ? {
+          alt: truncateString(node.getAttribute('alt') || '', 1000),
+          src
+        }
+      : null
+  })
 
   return {
     title: normalizeWhitespace(document.querySelector('title')?.textContent),
@@ -1110,9 +1183,12 @@ function selectHtmlElements(payload) {
   const document = parseHtmlDocument(payload)
   const baseUrl = getDocumentBaseUrl(document, options)
   const limit = clampInteger(options.limit, 50, 1, 200)
-  return Array.from(document.querySelectorAll(selector))
-    .slice(0, limit)
-    .map((element) => elementToSummary(element, { ...options, baseUrl }))
+  const results = []
+  for (const element of document.querySelectorAll(selector)) {
+    results.push(elementToSummary(element, { ...options, baseUrl }))
+    if (results.length >= limit) break
+  }
+  return results
 }
 
 function sendWorkerProxyResponse(entry, proxyId, value, error) {

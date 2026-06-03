@@ -106,7 +106,7 @@ export function buildJsSandboxToolDescription(s: JsSandboxSettings): string {
       `Network: fetch/XMLHttpRequest/WebSocket are browser-native (CORS/CSP apply). For cross-origin reads: \`const data = await (await $fetch(url, {method?,headers?,body?,contentType?})).text()\`. Host-routed, ${fetchCapKb} KB cap, max ${fetchMaxConcurrent} concurrent calls per execution (excess throw)`,
     )
     enabled.push(
-      'HTML parsing: await $utils.html.extract(html,{baseUrl?,maxTextChars?,maxItems?})->{title,text,meta,headings,links,images}; await $utils.html.select(html,cssSelector,{baseUrl?,limit?,includeHtml?})->[{tag,text,attrs,html?}]',
+      'HTML parsing: await $utils.html.extract(html,{baseUrl?,maxTextChars?,maxItems?})->{title,lang,text,meta,headings:[{level,text}],links:[{text,href}],images:[{alt,src}]} (baseUrl resolves relative href/src); await $utils.html.select(html,cssSelector,{baseUrl?,limit?,includeHtml?})->[{tag,text,attrs,html?}]',
     )
   }
 
