@@ -527,6 +527,7 @@ export class AgentToolGateway {
     type RunnableEntry = (typeof runnableEntries)[number]
     const fsEditGroups = new Map<string, RunnableEntry[]>()
     const standalone: RunnableEntry[] = []
+    const terminalCommandLanes = new Map<string, RunnableEntry[]>()
     for (const entry of runnableEntries) {
       const path = this.getFsEditTargetPath(entry.toolCall.request)
       if (path === undefined) {
@@ -549,6 +550,17 @@ export class AgentToolGateway {
     const batchPromises: Promise<BatchOutcome>[] = []
 
     for (const entry of standalone) {
+      const terminalLane = this.getTerminalCommandLane(entry.toolCall.request)
+      if (terminalLane !== undefined) {
+        const laneEntries = terminalCommandLanes.get(terminalLane)
+        if (laneEntries) {
+          laneEntries.push(entry)
+        } else {
+          terminalCommandLanes.set(terminalLane, [entry])
+        }
+        continue
+      }
+
       batchPromises.push(
         this.callToolWithDebug({
           name: entry.toolCall.request.name,
@@ -567,6 +579,20 @@ export class AgentToolGateway {
           runContext: this.runContext,
           subagentParentContext: this.subagentParentContext,
         }).then((response) => ({ entries: [entry], responses: [response] })),
+      )
+    }
+
+    for (const entries of terminalCommandLanes.values()) {
+      batchPromises.push(
+        this.callTerminalCommandLane({
+          entries,
+          conversationId,
+          conversationMessages,
+          roundId: toolMessage.id,
+          signal,
+          chatModelId,
+          debugTraceId,
+        }),
       )
     }
 
@@ -675,6 +701,85 @@ export class AgentToolGateway {
       ...toolMessage,
       toolCalls: nextToolCalls,
     }
+  }
+
+  private getTerminalCommandLane(request: ToolCallRequest): string | undefined {
+    try {
+      const parsed = parseToolName(request.name)
+      if (
+        parsed.serverName !== getLocalFileToolServerName() ||
+        parsed.toolName !== TERMINAL_COMMAND_TOOL_NAME
+      ) {
+        return undefined
+      }
+    } catch {
+      return undefined
+    }
+
+    const args = getToolCallArgumentsObject(request.arguments)
+    const sessionId = args?.session_id
+    if (
+      typeof sessionId === 'number' &&
+      Number.isInteger(sessionId) &&
+      sessionId > 0
+    ) {
+      return `session:${sessionId}`
+    }
+
+    return args?.background === true ? undefined : 'shared'
+  }
+
+  private async callTerminalCommandLane<
+    TEntry extends { toolCall: { request: ToolCallRequest } },
+  >({
+    entries,
+    conversationId,
+    conversationMessages,
+    roundId,
+    signal,
+    chatModelId,
+    debugTraceId,
+  }: {
+    entries: TEntry[]
+    conversationId: string
+    conversationMessages?: ChatMessage[]
+    roundId: string
+    signal?: AbortSignal
+    chatModelId?: string
+    debugTraceId?: string
+  }): Promise<{
+    entries: TEntry[]
+    responses: ToolCallResponse[]
+  }> {
+    const responses: ToolCallResponse[] = []
+    for (const entry of entries) {
+      try {
+        responses.push(
+          await this.callToolWithDebug({
+            name: entry.toolCall.request.name,
+            args: getToolCallArgumentsObject(entry.toolCall.request.arguments),
+            id: entry.toolCall.request.id,
+            conversationId,
+            conversationMessages,
+            roundId,
+            requireReview: false,
+            signal,
+            chatModelId,
+            debugTraceId,
+            workspaceScope: this.workspaceScope,
+            runContext: this.runContext,
+            subagentParentContext: this.subagentParentContext,
+          }),
+        )
+      } catch (error) {
+        responses.push({
+          status: ToolCallResponseStatus.Error,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    return { entries, responses }
   }
 
   private async callToolWithDebug(
