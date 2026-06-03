@@ -639,6 +639,7 @@ export class RequestContextBuilder {
           conversationId,
           hasTools,
           hasMemoryTools,
+          compaction,
           mode: systemPromptSnapshotMode,
         })
     const systemMessage: RequestMessage = {
@@ -1530,11 +1531,13 @@ ${entries}
     conversationId,
     hasTools,
     hasMemoryTools,
+    compaction,
     mode,
   }: {
     conversationId: string
     hasTools: boolean
     hasMemoryTools: boolean
+    compaction?: ChatConversationCompactionLike | null
     mode: SystemPromptSnapshotMode
   }): Promise<SystemPromptSnapshot> {
     const build = async (): Promise<SystemPromptSnapshot> => {
@@ -1559,6 +1562,7 @@ ${entries}
     const fingerprint = this.computeSystemPromptFingerprint(
       hasTools,
       hasMemoryTools,
+      compaction,
     )
     return store.getOrCreate(conversationId, fingerprint, build, {
       reuseOnly: mode === 'reuse',
@@ -1576,8 +1580,10 @@ ${entries}
   private computeSystemPromptFingerprint(
     hasTools: boolean,
     hasMemoryTools: boolean,
+    compaction?: ChatConversationCompactionLike | null,
   ): string {
     const assistant = this.getCurrentAssistant()
+    const latestCompaction = getLatestChatConversationCompaction(compaction)
     // The exact memory files this request will read. Captures baseDir, the
     // assistant name, AND the sibling-driven duplicate index — so a same-named
     // assistant being added/renamed (which changes which file we read) refreshes
@@ -1599,6 +1605,17 @@ ${entries}
         .sort(),
       currentAssistantId: this.settings.currentAssistantId ?? '',
       memoryPaths,
+      // A context compaction restarts the conversation from a compressed
+      // boundary. Refresh the frozen system prompt after that boundary so
+      // memory written before compaction is visible again, without refreshing
+      // on every memory-file write during the same uncompressed context.
+      latestCompaction: latestCompaction
+        ? {
+            anchorMessageId: latestCompaction.anchorMessageId,
+            triggerToolCallId: latestCompaction.triggerToolCallId ?? null,
+            compactedAt: latestCompaction.compactedAt,
+          }
+        : null,
       // Only assistant fields that reach the system prompt — not modelId / icon /
       // updatedAt, which would over-evict on unrelated edits. `enabledSkills` is
       // legacy and not consulted by skill filtering, so it is intentionally out.
