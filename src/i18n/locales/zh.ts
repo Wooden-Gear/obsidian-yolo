@@ -627,6 +627,9 @@ export const zh: TranslationKeys = {
       fieldDepth: '搜索深度',
       fieldSearchUrl: '搜索 URL',
       fieldScrapeUrl: '抓取 URL',
+      fieldUseProviderScrapeApi: '启用 Provider 抓取 API',
+      fieldUseProviderScrapeApiDesc:
+        '开启后，web_scrape 使用该 Provider 的抓取接口；关闭后统一走内置通用抓取（静态 HTML，不消耗 Provider 抓取额度）。',
       fieldBaseUrl: 'Base URL',
       fieldLanguage: '语言',
       fieldEngines: '搜索引擎（逗号分隔）',

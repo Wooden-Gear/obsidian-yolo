@@ -623,6 +623,9 @@ export const it: TranslationKeys = {
       fieldDepth: 'Profondità',
       fieldSearchUrl: 'URL ricerca',
       fieldScrapeUrl: 'URL scrape',
+      fieldUseProviderScrapeApi: 'Usa API scrape del provider',
+      fieldUseProviderScrapeApiDesc:
+        'Se attivo, web_scrape usa l\u2019API extract di questo provider. Se disattivo, web_scrape usa lo scraper generico integrato (HTML statico, senza consumo API aggiuntivo).',
       fieldBaseUrl: 'Base URL',
       fieldLanguage: 'Lingua',
       fieldEngines: 'Motori (separati da virgola)',

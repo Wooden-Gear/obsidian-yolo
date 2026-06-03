@@ -525,6 +525,8 @@ export type TranslationKeys = {
       fieldDepth?: string
       fieldSearchUrl?: string
       fieldScrapeUrl?: string
+      fieldUseProviderScrapeApi?: string
+      fieldUseProviderScrapeApiDesc?: string
       fieldBaseUrl?: string
       fieldLanguage?: string
       fieldEngines?: string
