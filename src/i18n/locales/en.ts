@@ -1775,6 +1775,11 @@ export const en: TranslationKeys = {
         created: 'Planned {count} tasks',
         progress: 'Progress {done}/{total}',
       },
+      terminalCommand: {
+        sessionPoll: 'Session {id} · Poll',
+        sessionKill: 'Session {id} · Kill',
+        sessionInput: 'Session {id} · Input: {preview}',
+      },
     },
     externalAgent: {
       statusRunning: 'Running',

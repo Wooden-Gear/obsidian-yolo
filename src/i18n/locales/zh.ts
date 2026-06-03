@@ -1660,6 +1660,11 @@ export const zh: TranslationKeys = {
         created: '新建 {count} 项任务',
         progress: '进度 {done}/{total}',
       },
+      terminalCommand: {
+        sessionPoll: '会话 {id} · 轮询',
+        sessionKill: '会话 {id} · 终止',
+        sessionInput: '会话 {id} · 输入: {preview}',
+      },
     },
     externalAgent: {
       statusRunning: '执行中',

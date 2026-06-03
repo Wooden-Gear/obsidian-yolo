@@ -1699,6 +1699,11 @@ export const it: TranslationKeys = {
         created: 'Pianificate {count} attivita',
         progress: 'Avanzamento {done}/{total}',
       },
+      terminalCommand: {
+        sessionPoll: 'Sessione {id} · Poll',
+        sessionKill: 'Sessione {id} · Termina',
+        sessionInput: 'Sessione {id} · Input: {preview}',
+      },
     },
     externalAgent: {
       statusRunning: 'In esecuzione',

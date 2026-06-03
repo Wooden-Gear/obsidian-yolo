@@ -1508,6 +1508,11 @@ export type TranslationKeys = {
         created?: string
         progress?: string
       }
+      terminalCommand?: {
+        sessionPoll?: string
+        sessionKill?: string
+        sessionInput?: string
+      }
     }
     // delegate_external_agent tool card
     externalAgent?: {

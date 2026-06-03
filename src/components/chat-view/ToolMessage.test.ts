@@ -41,6 +41,7 @@ describe('ToolMessage headline helpers', () => {
       fs_delete: 'Delete',
       fs_create_dir: 'Create folder',
       fs_move: 'Move path',
+      terminal_command: 'Terminal command',
     },
     writeActionLabels: {
       write: 'Write file',
@@ -69,6 +70,12 @@ describe('ToolMessage headline helpers', () => {
     todoWriteCreated: (count: number) => `Planned ${count} tasks`,
     todoWriteProgress: (done: number, total: number) =>
       `Progress ${done}/${total}`,
+    terminalCommandSessionPoll: (sessionId: number) =>
+      `Session ${sessionId} · Poll`,
+    terminalCommandSessionKill: (sessionId: number) =>
+      `Session ${sessionId} · Kill`,
+    terminalCommandSessionInput: (sessionId: number, inputPreview: string) =>
+      `Session ${sessionId} · Input: ${inputPreview}`,
   }
 
   it('appends edit deltas after the path for successful edit calls', () => {
@@ -342,6 +349,63 @@ describe('ToolMessage headline helpers', () => {
       displayName: 'Move path',
       summaryText: 'docs/old.md -> docs/new.md',
     })
+  })
+
+  it('uses shell command as summary for terminal_command headlines', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              command: 'git status',
+            },
+          }),
+        },
+        labels,
+      }),
+    ).toEqual({
+      displayName: 'Terminal command',
+      summaryText: 'git status',
+    })
+  })
+
+  it('uses session poll/kill/input summaries for terminal_command follow-ups', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: { session_id: 3 },
+          }),
+        },
+        labels,
+      }).summaryText,
+    ).toBe('Session 3 · Poll')
+
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: { session_id: 3, kill: true },
+          }),
+        },
+        labels,
+      }).summaryText,
+    ).toBe('Session 3 · Kill')
+
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: { session_id: 3, input: 'y\n' },
+          }),
+        },
+        labels,
+      }).summaryText,
+    ).toBe('Session 3 · Input: y')
   })
 
   it('uses content (not legacy activeForm) for in_progress todo_write summary', () => {
