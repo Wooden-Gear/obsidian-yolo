@@ -41,8 +41,8 @@ import {
 } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
-import type { TodoItem } from '../agent/todos-from-messages'
 import type { SubagentParentContext } from '../agent/subagent/parent-context'
+import type { TodoItem } from '../agent/todos-from-messages'
 import type { AgentRunContext } from '../agent/types'
 import {
   findPathOutsideScope,
@@ -168,6 +168,7 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'web_search',
   'web_scrape',
   JS_SANDBOX_TOOL_NAME,
+  'bash',
   'delegate_external_agent',
   'delegate_subagent',
   'load_tool_schemas',
@@ -968,6 +969,58 @@ export function getLocalFileTools(options?: {
       },
     },
     getJsSandboxTool(),
+    {
+      name: 'bash',
+      description:
+        'Run a shell command on the local desktop machine. Desktop-only. ' +
+        'Use for terminal-style inspection or user-approved local commands. ' +
+        'Read-only commands may run automatically; commands that write files, ' +
+        'modify state, start services, or are unclear require user approval. ' +
+        'Arguments: command starts a command; background=true returns a session_id ' +
+        'when the command keeps running; session_id polls or continues an existing ' +
+        'session; input sends stdin to that session; kill=true terminates it. ' +
+        'Avoid heredocs and full-screen TUI programs such as vim/top. Long-running ' +
+        'commands should use background=true.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          command: {
+            type: 'string',
+            description:
+              'Shell command to run. Omit when polling, sending input, or killing an existing session.',
+          },
+          session_id: {
+            type: 'integer',
+            description:
+              'Existing session id returned by a previous bash call. Use it to poll, send input, or kill.',
+          },
+          input: {
+            type: 'string',
+            description:
+              'Text to write to the session stdin. Include a trailing newline when submitting interactive input.',
+          },
+          background: {
+            type: 'boolean',
+            description:
+              'Start the command in a dedicated session and return a session_id if it is still running after a short wait.',
+          },
+          cwd: {
+            type: 'string',
+            description:
+              'Absolute working directory for this command. Defaults to the current vault root when available.',
+          },
+          timeout: {
+            type: 'integer',
+            description:
+              'Maximum seconds to wait for foreground output before returning a live session_id. Defaults to 30.',
+          },
+          kill: {
+            type: 'boolean',
+            description: 'Terminate the given session_id.',
+          },
+        },
+      },
+    },
     {
       name: 'delegate_subagent',
       description:
@@ -4214,6 +4267,69 @@ export async function callLocalFileTool({
         return {
           status: ToolCallResponseStatus.Success,
           text: JSON.stringify(accepted),
+        }
+      }
+
+      case 'bash': {
+        const { runBash } = await import('../agent/bash/index')
+
+        let cwd = getOptionalTextArg(args, 'cwd')?.trim() ?? ''
+        if (!cwd) {
+          const adapter = app.vault.adapter
+          if (adapter instanceof FileSystemAdapter) {
+            cwd = adapter.getBasePath()
+          }
+        }
+
+        const result = await runBash({
+          command: getOptionalTextArg(args, 'command'),
+          sessionId: getOptionalBoundedIntegerArg({
+            args,
+            key: 'session_id',
+            min: 1,
+            max: Number.MAX_SAFE_INTEGER,
+          }),
+          input: getOptionalTextArg(args, 'input'),
+          background: getOptionalBooleanArg(args, 'background') ?? false,
+          cwd: cwd || undefined,
+          timeoutSeconds: getOptionalBoundedIntegerArg({
+            args,
+            key: 'timeout',
+            min: 1,
+            max: 600,
+          }),
+          kill: getOptionalBooleanArg(args, 'kill') ?? false,
+          signal,
+        })
+
+        const exitOk =
+          result.exit_code === undefined ||
+          result.exit_code === null ||
+          result.exit_code === 0
+        const text = JSON.stringify(
+          {
+            session_id: result.session_id,
+            state: result.state,
+            exit_code: result.exit_code,
+            stdout: result.stdout || '（无输出）',
+          },
+          null,
+          2,
+        )
+
+        if (!exitOk) {
+          return {
+            status: ToolCallResponseStatus.Error,
+            error: `Exit code ${result.exit_code}. Output:\n${text}`,
+          }
+        }
+
+        return {
+          status: ToolCallResponseStatus.Success,
+          text,
+          metadata: result.truncated
+            ? { truncated: result.truncated }
+            : undefined,
         }
       }
 

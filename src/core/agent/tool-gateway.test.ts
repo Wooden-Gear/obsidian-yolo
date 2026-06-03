@@ -153,6 +153,94 @@ describe('AgentToolGateway', () => {
     })
   })
 
+  it('auto executes read-only bash commands even when bash requires approval', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest
+        .fn()
+        .mockImplementation(({ requireAutoExecution }) => requireAutoExecution),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__bash'],
+      toolPreferences: {
+        yolo_local__bash: {
+          enabled: true,
+          approvalMode: 'require_approval',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__bash',
+          arguments: createCompleteToolCallArguments({
+            value: { command: 'git status --short | head -20' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Running,
+    )
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
+    const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
+    expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
+      requestToolName: 'yolo_local__bash',
+      conversationId: 'conv-1',
+      requestArgs: { command: 'git status --short | head -20' },
+      requireAutoExecution: true,
+    })
+  })
+
+  it('keeps mutating bash commands pending for approval', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest
+        .fn()
+        .mockImplementation(({ requireAutoExecution }) => requireAutoExecution),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__bash'],
+      toolPreferences: {
+        yolo_local__bash: {
+          enabled: true,
+          approvalMode: 'require_approval',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__bash',
+          arguments: createCompleteToolCallArguments({
+            value: { command: 'echo hello > out.txt' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.PendingApproval,
+    )
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
+    const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
+    expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
+      requestToolName: 'yolo_local__bash',
+      conversationId: 'conv-1',
+      requestArgs: { command: 'echo hello > out.txt' },
+      requireAutoExecution: false,
+    })
+  })
+
   it('allows conversation-level approval to bypass per-tool approval', () => {
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(true),
@@ -288,16 +376,18 @@ describe('AgentToolGateway', () => {
 
     // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
     const callToolMock = mcpManager.callTool
-    expect(callToolMock).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'yolo_local__fs_edit',
-      args: {},
-      id: 'tool-1',
-      conversationId: 'conv-1',
-      conversationMessages: undefined,
-      roundId: message.id,
-      requireReview: true,
-      signal: undefined,
-    }))
+    expect(callToolMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'yolo_local__fs_edit',
+        args: {},
+        id: 'tool-1',
+        conversationId: 'conv-1',
+        conversationMessages: undefined,
+        roundId: message.id,
+        requireReview: true,
+        signal: undefined,
+      }),
+    )
   })
 
   it('does not open fs_edit review in subagent child runs without automatic permission', () => {

@@ -2,6 +2,7 @@ import Ajv, {
   type Ajv as AjvInstance,
   type ValidateFunction as AjvValidateFunction,
 } from 'ajv'
+import { Platform } from 'obsidian'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
@@ -33,6 +34,9 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
+import { classifyBashCommandSafety } from './bash/command-classifier'
+import type { SubagentParentContext } from './subagent/parent-context'
+import { isSubagentBlockedToolName } from './subagent/tool-filter'
 import {
   LOAD_TOOL_SCHEMAS_RESULT_TOOL,
   extractLoadedDeferredToolNames,
@@ -44,8 +48,6 @@ import {
 } from './tool-preferences'
 import { isLoadToolSchemasToolName } from './tool-selection'
 import { GEMINI_STUB_ARGS_JSON_FIELD, isGeminiStubApiType } from './tool-stub'
-import { isSubagentBlockedToolName } from './subagent/tool-filter'
-import type { SubagentParentContext } from './subagent/parent-context'
 import type { AgentRunContext } from './types'
 import { findPathOutsideScope } from './workspaceScope'
 
@@ -908,22 +910,56 @@ export class AgentToolGateway {
       return false
     }
 
+    const requestArgs = getToolCallArgumentsObject(request.arguments)
+    const approvalMode = getAssistantToolApprovalMode(
+      {
+        toolPreferences: this.toolPreferences,
+        enabledToolNames: this.allowedToolNames
+          ? [...this.allowedToolNames]
+          : undefined,
+      },
+      request.name,
+      { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
+    )
+    const requireAutoExecution =
+      approvalMode === 'full_access' ||
+      this.isReadonlyBashToolCall(requestArgs, request.name)
+
     return this.mcpManager.isToolExecutionAllowed({
       requestToolName: request.name,
       conversationId: this.toolApprovalConversationId ?? conversationId,
-      requestArgs: getToolCallArgumentsObject(request.arguments),
-      requireAutoExecution:
-        getAssistantToolApprovalMode(
-          {
-            toolPreferences: this.toolPreferences,
-            enabledToolNames: this.allowedToolNames
-              ? [...this.allowedToolNames]
-              : undefined,
-          },
-          request.name,
-          { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
-        ) === 'full_access',
+      requestArgs,
+      requireAutoExecution,
     })
+  }
+
+  private isReadonlyBashToolCall(
+    args: Record<string, unknown> | undefined,
+    toolName: string,
+  ): boolean {
+    try {
+      const parsed = parseToolName(toolName)
+      if (
+        parsed.serverName !== getLocalFileToolServerName() ||
+        parsed.toolName !== 'bash'
+      ) {
+        return false
+      }
+    } catch {
+      return false
+    }
+
+    if (!args || typeof args.command !== 'string') {
+      return false
+    }
+    if (args.input !== undefined || args.kill !== undefined) {
+      return false
+    }
+
+    return classifyBashCommandSafety(
+      args.command,
+      Platform.isWin ? 'powershell' : 'posix',
+    ).readonly
   }
 
   private shouldUseFsEditReview(toolName: string): boolean {

@@ -2118,8 +2118,11 @@ export default class YoloPlugin extends Plugin {
     void import('./core/agent/external-cli/index').then(
       ({ killAllActiveExternalCli }) => killAllActiveExternalCli(),
     )
-    void import('./core/agent/subagent/runner').then(({ abortAllSubagentTasks }) =>
-      abortAllSubagentTasks(),
+    void import('./core/agent/bash/index').then(({ killAllBashSessions }) =>
+      killAllBashSessions(),
+    )
+    void import('./core/agent/subagent/runner').then(
+      ({ abortAllSubagentTasks }) => abortAllSubagentTasks(),
     )
     void import('./core/agent/external-cli/async-task-registry').then(
       ({ asyncTaskRegistry }) => asyncTaskRegistry.abortAll(),
