@@ -130,9 +130,9 @@ export class McpManager {
   }
 
   private isLocalToolEnabled(toolName: string): boolean {
-    // Web search tools share a single `web_ops` group switch, but also need a
-    // configured provider to actually run. Keep this branch ahead of the
-    // direct-disabled early return so readiness is always evaluated.
+    // Web tools share a single `web_ops` group switch. `web_search` needs a
+    // configured provider, while `web_scrape` can fall back to the generic
+    // static-HTML scraper when no provider is configured.
     if (
       toolName === WEB_SEARCH_TOOL_NAME ||
       toolName === WEB_SCRAPE_TOOL_NAME
@@ -143,9 +143,12 @@ export class McpManager {
       const splitToolDisabled =
         this.settings.mcp.builtinToolOptions[toolName]?.disabled ?? false
       if (groupDisabled || splitToolDisabled) return false
-      // web_scrape is always available alongside web_search: providers
-      // without a specialized extract API fall back to a generic scraper.
-      if (!isWebSearchToolReady(this.settings.webSearch)) return false
+      if (
+        toolName === WEB_SEARCH_TOOL_NAME &&
+        !isWebSearchToolReady(this.settings.webSearch)
+      ) {
+        return false
+      }
       return true
     }
     const directDisabled =

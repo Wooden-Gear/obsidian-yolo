@@ -1,5 +1,5 @@
 import type { App, TFile, TFolder } from 'obsidian'
-import { Notice, normalizePath } from 'obsidian'
+import { normalizePath } from 'obsidian'
 
 import { editorStateToPlainText } from '../../components/chat-view/chat-input/utils/editor-state-to-plain-text'
 import type { QueryProgressState } from '../../components/chat-view/QueryProgress'
@@ -27,16 +27,15 @@ import {
   isSkillEnabledForAssistant,
   resolveAssistantSkillPolicy,
 } from '../../core/skills/skillPolicy'
-import { scrapeUrlGeneric } from '../../core/web-search'
 import { readPromptSnapshotEntries } from '../../database/json/chat/promptSnapshotStore'
 import type { YoloSettings } from '../../settings/schema/setting.types'
 import type {
   ChatAssistantMessage,
   ChatConversationCompactionLike,
   ChatExternalAgentResultMessage,
-  ChatSubagentResultMessage,
   ChatMessage,
   ChatSelectedSkill,
+  ChatSubagentResultMessage,
   ChatToolMessage,
   ChatUserMessage,
 } from '../../types/chat'
@@ -50,7 +49,6 @@ import type {
   MentionableFolder,
   MentionableImage,
   MentionablePDF,
-  MentionableUrl,
 } from '../../types/mentionable'
 import type { ToolCallRequest } from '../../types/tool-call.types'
 import {
@@ -1337,27 +1335,6 @@ ${message.annotations
         legacyText: legacyPdfFallbackText,
       } = this.buildPdfAttachments(pdfs)
 
-      const urls = message.mentionables.filter(
-        (m): m is MentionableUrl => m.type === 'url',
-      )
-
-      const urlPrompt =
-        urls.length > 0
-          ? `## Potentially Relevant Websearch Results
-${(
-  await Promise.all(
-    urls.map(
-      async ({ url }) => `\`\`\`
-Website URL: ${url}
-Website Content:
-${await this.getWebsiteContent(url)}
-\`\`\``,
-    ),
-  )
-).join('\n')}
-`
-          : ''
-
       const inlineImageDataUrls = message.mentionables
         .filter((m): m is MentionableImage => m.type === 'image')
         .map(({ data }) => data)
@@ -1402,7 +1379,7 @@ ${await this.getWebsiteContent(url)}
           ...pdfDocumentParts,
           {
             type: 'text',
-            text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${urlPrompt}${selectedSkillsPrompt}\n\n${query}\n\n`,
+            text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
           },
         ],
       }
@@ -2149,17 +2126,5 @@ ${[...folderPathSet].map((path) => `- \`${path}\``).join('\n')}`)
       return `${startLine + index}|${line}`
     })
     return linesWithNumbers.join('\n')
-  }
-
-  private async getWebsiteContent(url: string): Promise<string> {
-    try {
-      const { content } = await scrapeUrlGeneric(url)
-      return content
-    } catch (error) {
-      const status = error instanceof Error ? error.message : String(error)
-      console.warn(`Failed to fetch URL: ${url}`, error)
-      new Notice(`URL fetch failed (${status}): ${url}`, 6000)
-      return `[Failed to fetch content from this URL: ${status}]`
-    }
   }
 }

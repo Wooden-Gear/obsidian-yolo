@@ -1,3 +1,4 @@
+import type { SerializedEditorState } from 'lexical'
 import { TFile, TFolder } from 'obsidian'
 
 jest.mock('../../database/json/chat/promptSnapshotStore', () => ({
@@ -60,6 +61,40 @@ function createUserMessage(
     promptContent: null,
     mentionables,
   }
+}
+
+function createTextEditorState(text: string): SerializedEditorState {
+  return {
+    root: {
+      children: [
+        {
+          children: [
+            {
+              detail: 0,
+              format: 0,
+              mode: 'normal',
+              style: '',
+              text,
+              type: 'text',
+              version: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          type: 'paragraph',
+          version: 1,
+          textFormat: 0,
+          textStyle: '',
+        },
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  } as unknown as SerializedEditorState
 }
 
 function getTextContent(
@@ -151,6 +186,27 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
     },
     skills: {},
   } as unknown as YoloSettings
+
+  it('does not auto-fetch URL mention content into the prompt', async () => {
+    const app = createMockApp({
+      files: [],
+      fileContents: new Map(),
+    })
+    const builder = new RequestContextBuilder(app as never, settings)
+
+    const result = await builder.compileUserMessagePrompt({
+      message: {
+        ...createUserMessage([{ type: 'url', url: 'https://example.com' }]),
+        content: createTextEditorState('Please check https://example.com'),
+      },
+    })
+
+    const textContent = getTextContent(result.promptContent)
+
+    expect(textContent).toContain('Please check https://example.com')
+    expect(textContent).not.toContain('Potentially Relevant Websearch Results')
+    expect(textContent).not.toContain('Website Content:')
+  })
 
   it('builds unified mentioned file context with outlines for files, current file, and folder files', async () => {
     const explicitFile = createMockFile('notes/explicit.md')
