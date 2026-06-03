@@ -57,7 +57,7 @@ import {
 } from '../../utils/chat/timeline-virtualization-cache'
 
 const DEFAULT_OVERSCAN_PX = 1200
-const DEFAULT_VIRTUALIZATION_THRESHOLD = 24
+const DEFAULT_VIRTUALIZATION_THRESHOLD = 36
 const DEFAULT_AT_BOTTOM_THRESHOLD = 24
 const DEFAULT_TIMELINE_KEY = 'timeline'
 
