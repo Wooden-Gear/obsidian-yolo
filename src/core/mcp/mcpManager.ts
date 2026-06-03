@@ -19,6 +19,7 @@ import {
   ToolCallResponseStatus,
 } from '../../types/tool-call.types'
 import { WEB_OPS_GROUP_TOOL_NAME } from '../agent/builtinToolUiMeta'
+import type { PromptSourceWatcher } from '../agent/promptSourceWatcher'
 import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { AgentRunContext } from '../agent/types'
 import type { RAGEngine } from '../rag/ragEngine'
@@ -80,6 +81,7 @@ export class McpManager {
   private readonly app: App
   private readonly openApplyReview: (state: ApplyViewState) => Promise<boolean>
   private readonly getRagEngine?: () => Promise<RAGEngine>
+  private readonly promptSourceWatcher?: PromptSourceWatcher
   private settings: YoloSettings
   private unsubscribeFromSettings: () => void
   private defaultEnv: Record<string, string>
@@ -174,6 +176,7 @@ export class McpManager {
     openApplyReview,
     registerSettingsListener,
     getRagEngine,
+    promptSourceWatcher,
   }: {
     app: App
     settings: YoloSettings
@@ -182,10 +185,12 @@ export class McpManager {
       listener: (settings: YoloSettings) => void,
     ) => () => void
     getRagEngine?: () => Promise<RAGEngine>
+    promptSourceWatcher?: PromptSourceWatcher
   }) {
     this.app = app
     this.openApplyReview = openApplyReview
     this.getRagEngine = getRagEngine
+    this.promptSourceWatcher = promptSourceWatcher
     this.settings = settings
     this.unsubscribeFromSettings = registerSettingsListener((newSettings) => {
       void this.handleSettingsUpdate(newSettings).catch((error) => {
@@ -839,6 +844,7 @@ export class McpManager {
           workspaceScope,
           runContext,
           subagentParentContext,
+          promptSourceWatcher: this.promptSourceWatcher,
         })
         if (localResult.status === ToolCallResponseStatus.Success) {
           return {

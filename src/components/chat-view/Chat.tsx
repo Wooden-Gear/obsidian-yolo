@@ -583,6 +583,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const requestContextBuilder = useMemo(() => {
     return new RequestContextBuilder(app, effectiveSettings, {
       systemPromptSnapshotStore: agentService.getSystemPromptSnapshotStore(),
+      getPromptSourceRevision: () =>
+        agentService.getPromptSourceWatcher().getRevision(),
+      promptSourcePathsCallback: (paths) =>
+        agentService.getPromptSourceWatcher().setWatchedPaths(paths),
     })
   }, [app, effectiveSettings, agentService])
 

@@ -15,7 +15,10 @@ import {
   getMemoryPromptContext,
   resolveMemoryFilePaths,
 } from '../../core/memory/memoryManager'
-import { getProjectInstructionsSection } from '../../core/project-instructions'
+import {
+  getProjectInstructionsSection,
+  resolveProjectInstructionFilePaths,
+} from '../../core/project-instructions'
 import {
   getLiteSkillDocument,
   listLiteSkillEntries,
@@ -185,6 +188,8 @@ type RequestContextBuilderOptions = {
    * (current behavior), which keeps tests and non-injected callers unaffected.
    */
   systemPromptSnapshotStore?: SystemPromptSnapshotStore
+  getPromptSourceRevision?: () => number
+  promptSourcePathsCallback?: (paths: Set<string>) => void
 }
 
 /**
@@ -481,6 +486,8 @@ export class RequestContextBuilder {
   private settings: YoloSettings
   private includeSkills: boolean
   private systemPromptSnapshotStore?: SystemPromptSnapshotStore
+  private getPromptSourceRevision?: () => number
+  private promptSourcePathsCallback?: (paths: Set<string>) => void
 
   constructor(
     app: App,
@@ -491,6 +498,8 @@ export class RequestContextBuilder {
     this.settings = settings
     this.includeSkills = options?.includeSkills ?? true
     this.systemPromptSnapshotStore = options?.systemPromptSnapshotStore
+    this.getPromptSourceRevision = options?.getPromptSourceRevision
+    this.promptSourcePathsCallback = options?.promptSourcePathsCallback
   }
 
   private getMentionContextMode(): MentionContextMode {
@@ -1592,6 +1601,19 @@ ${entries}
       settings: this.settings,
       assistantId: this.settings.currentAssistantId,
     })
+
+    if (this.promptSourcePathsCallback) {
+      const watchedPaths = new Set<string>()
+      if (memoryPaths.global) watchedPaths.add(memoryPaths.global)
+      if (memoryPaths.assistant) watchedPaths.add(memoryPaths.assistant)
+      resolveProjectInstructionFilePaths(
+        this.app,
+        assistant?.enableProjectInstructions === true,
+        assistant?.workspaceScope,
+      ).forEach((p) => watchedPaths.add(p))
+      this.promptSourcePathsCallback(watchedPaths)
+    }
+
     return stableStringify({
       hasTools,
       hasMemoryTools,
@@ -1605,6 +1627,7 @@ ${entries}
         .sort(),
       currentAssistantId: this.settings.currentAssistantId ?? '',
       memoryPaths,
+      promptSourceRevision: this.getPromptSourceRevision?.() ?? 0,
       // A context compaction restarts the conversation from a compressed
       // boundary. Refresh the frozen system prompt after that boundary so
       // memory written before compaction is visible again, without refreshing

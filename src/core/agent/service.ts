@@ -30,6 +30,7 @@ import {
 import { subagentStreamBus } from './subagent/stream-bus'
 import type { SubagentTaskRecord } from './subagent/types'
 import { NativeAgentRuntime } from './native-runtime'
+import { PromptSourceWatcher } from './promptSourceWatcher'
 import { SystemPromptSnapshotStore } from './systemPromptSnapshotStore'
 import {
   AgentRunContext,
@@ -660,12 +661,17 @@ export class AgentService {
    * churn (reasoning level, chat mode, etc.).
    */
   private readonly systemPromptSnapshotStore = new SystemPromptSnapshotStore()
+  private readonly promptSourceWatcher = new PromptSourceWatcher()
 
   constructor(private readonly options: AgentServiceOptions = {}) {}
 
   /** Shared system-prompt snapshot store, injected into RCB at construction. */
   getSystemPromptSnapshotStore(): SystemPromptSnapshotStore {
     return this.systemPromptSnapshotStore
+  }
+
+  getPromptSourceWatcher(): PromptSourceWatcher {
+    return this.promptSourceWatcher
   }
 
   /**

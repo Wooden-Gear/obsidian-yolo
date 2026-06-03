@@ -41,6 +41,7 @@ import {
 } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
+import type { PromptSourceWatcher } from '../agent/promptSourceWatcher'
 import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { TodoItem } from '../agent/todos-from-messages'
 import type { AgentRunContext } from '../agent/types'
@@ -2700,6 +2701,64 @@ const executeFsFileOps = async ({
   }
 }
 
+async function invokeMemoryTool<T extends { filePath: string }>(
+  promptSourceWatcher: PromptSourceWatcher | undefined,
+  fn: (hooks: { onInternalWrite?: (path: string) => void }) => Promise<T>,
+): Promise<T> {
+  if (!promptSourceWatcher) {
+    return fn({})
+  }
+  let writePath: string | undefined
+  try {
+    return await fn({
+      onInternalWrite: (path) => {
+        writePath = path
+        promptSourceWatcher.markInternalWriteStart(path)
+      },
+    })
+  } finally {
+    if (writePath) {
+      await Promise.resolve()
+      promptSourceWatcher.markInternalWriteEnd(writePath)
+    }
+  }
+}
+
+async function maybeWithInternalWrite<T>(
+  promptSourceWatcher: PromptSourceWatcher | undefined,
+  path: string,
+  task: () => Promise<T>,
+): Promise<T> {
+  if (promptSourceWatcher?.isWatchedPath(path)) {
+    return promptSourceWatcher.withInternalWrite(path, task)
+  }
+  return task()
+}
+
+async function maybeWithInternalWrites<T>(
+  promptSourceWatcher: PromptSourceWatcher | undefined,
+  paths: string[],
+  task: () => Promise<T>,
+): Promise<T> {
+  const watched = paths.filter((path) =>
+    promptSourceWatcher?.isWatchedPath(path),
+  )
+  if (!promptSourceWatcher || watched.length === 0) {
+    return task()
+  }
+  for (const path of watched) {
+    promptSourceWatcher.markInternalWriteStart(path)
+  }
+  try {
+    return await task()
+  } finally {
+    await Promise.resolve()
+    for (const path of watched) {
+      promptSourceWatcher.markInternalWriteEnd(path)
+    }
+  }
+}
+
 export async function callLocalFileTool({
   app,
   settings,
@@ -2717,6 +2776,7 @@ export async function callLocalFileTool({
   workspaceScope,
   runContext,
   subagentParentContext,
+  promptSourceWatcher,
 }: {
   app: App
   settings?: YoloSettings
@@ -2734,6 +2794,7 @@ export async function callLocalFileTool({
   workspaceScope?: AssistantWorkspaceScope
   runContext?: AgentRunContext
   subagentParentContext?: SubagentParentContext
+  promptSourceWatcher?: PromptSourceWatcher
 }): Promise<LocalToolCallResult> {
   if (signal?.aborted) {
     return { status: ToolCallResponseStatus.Aborted }
@@ -3584,6 +3645,7 @@ export async function callLocalFileTool({
             `Content too large (${nextContent.length} chars). Max allowed is ${MAX_EDIT_FILE_SIZE_BYTES}.`,
           )
         }
+
         let appliedContent = nextContent
 
         if (requireReview) {
@@ -3611,8 +3673,17 @@ export async function callLocalFileTool({
           }
 
           appliedContent = reviewResult.finalContent
+          await maybeWithInternalWrite(
+            promptSourceWatcher,
+            path,
+            () => app.vault.modify(file, appliedContent),
+          )
         } else {
-          await app.vault.modify(file, nextContent)
+          await maybeWithInternalWrite(
+            promptSourceWatcher,
+            path,
+            () => app.vault.modify(file, nextContent),
+          )
         }
 
         const appliedAt = Date.now()
@@ -3664,12 +3735,14 @@ export async function callLocalFileTool({
       }
 
       case 'fs_write': {
-        return executeFsFileOps({
+        const path = normalizePath(getTextArg(args, 'path'))
+        return maybeWithInternalWrite(promptSourceWatcher, path, () =>
+          executeFsFileOps({
           app,
           settings,
           action: 'write',
           item: {
-            path: getTextArg(args, 'path'),
+            path,
             content: getTextArg(args, 'content'),
           },
           signal,
@@ -3677,17 +3750,19 @@ export async function callLocalFileTool({
           conversationId,
           roundId,
           toolCallId,
-        })
+        }))
       }
 
       case 'fs_delete': {
+        const path = normalizePath(getTextArg(args, 'path'))
         const recursive = getOptionalBooleanArg(args, 'recursive')
-        return executeFsFileOps({
+        return maybeWithInternalWrite(promptSourceWatcher, path, () =>
+          executeFsFileOps({
           app,
           settings,
           action: 'delete',
           item: {
-            path: getTextArg(args, 'path'),
+            path,
             ...(recursive === undefined ? {} : { recursive }),
           },
           signal,
@@ -3695,7 +3770,7 @@ export async function callLocalFileTool({
           conversationId,
           roundId,
           toolCallId,
-        })
+        }))
       }
 
       case 'fs_create_dir': {
@@ -3709,16 +3784,35 @@ export async function callLocalFileTool({
       }
 
       case 'fs_move': {
-        return executeFsFileOps({
-          app,
-          action: 'move',
-          item: {
-            oldPath: getTextArg(args, 'oldPath'),
-            newPath: getTextArg(args, 'newPath'),
-          },
-          signal,
-          tool: 'fs_move',
-        })
+        const oldPath = normalizePath(getTextArg(args, 'oldPath'))
+        const newPath = normalizePath(getTextArg(args, 'newPath'))
+        const runMove = () =>
+          executeFsFileOps({
+            app,
+            action: 'move',
+            item: {
+              oldPath,
+              newPath,
+            },
+            signal,
+            tool: 'fs_move',
+          })
+        if (
+          promptSourceWatcher?.isWatchedPath(oldPath) &&
+          promptSourceWatcher.isWatchedPath(newPath) &&
+          oldPath !== newPath
+        ) {
+          return promptSourceWatcher.withInternalWrite(oldPath, () =>
+            promptSourceWatcher.withInternalWrite(newPath, runMove),
+          )
+        }
+        if (promptSourceWatcher?.isWatchedPath(oldPath)) {
+          return promptSourceWatcher.withInternalWrite(oldPath, runMove)
+        }
+        if (promptSourceWatcher?.isWatchedPath(newPath)) {
+          return promptSourceWatcher.withInternalWrite(newPath, runMove)
+        }
+        return runMove()
       }
 
       case 'fs_search': {
@@ -4054,14 +4148,19 @@ export async function callLocalFileTool({
 
           for (const item of items) {
             try {
-              const result = await memoryAdd({
-                app,
-                settings,
-                content: item.content,
-                category: item.category,
-                scope: item.scope ?? args.scope,
-                assistantId: settings?.currentAssistantId,
-              })
+              const result = await invokeMemoryTool(
+                promptSourceWatcher,
+                (hooks) =>
+                  memoryAdd({
+                    app,
+                    settings,
+                    content: item.content,
+                    category: item.category,
+                    scope: item.scope ?? args.scope,
+                    assistantId: settings?.currentAssistantId,
+                    ...hooks,
+                  }),
+              )
               results.push({
                 ok: true,
                 id: result.id,
@@ -4099,14 +4198,17 @@ export async function callLocalFileTool({
           throw new Error('content or items is required.')
         }
 
-        const result = await memoryAdd({
-          app,
-          settings,
-          content: args.content,
-          category: args.category,
-          scope: args.scope,
-          assistantId: settings?.currentAssistantId,
-        })
+        const result = await invokeMemoryTool(promptSourceWatcher, (hooks) =>
+          memoryAdd({
+            app,
+            settings,
+            content: args.content,
+            category: args.category,
+            scope: args.scope,
+            assistantId: settings?.currentAssistantId,
+            ...hooks,
+          }),
+        )
 
         return {
           status: ToolCallResponseStatus.Success,
@@ -4120,14 +4222,17 @@ export async function callLocalFileTool({
       }
 
       case 'memory_update': {
-        const result = await memoryUpdate({
-          app,
-          settings,
-          id: args.id,
-          newContent: args.new_content,
-          scope: args.scope,
-          assistantId: settings?.currentAssistantId,
-        })
+        const result = await invokeMemoryTool(promptSourceWatcher, (hooks) =>
+          memoryUpdate({
+            app,
+            settings,
+            id: args.id,
+            newContent: args.new_content,
+            scope: args.scope,
+            assistantId: settings?.currentAssistantId,
+            ...hooks,
+          }),
+        )
 
         return {
           status: ToolCallResponseStatus.Success,
@@ -4164,13 +4269,18 @@ export async function callLocalFileTool({
 
           for (const id of ids) {
             try {
-              const result = await memoryDelete({
-                app,
-                settings,
-                id,
-                scope: args.scope,
-                assistantId: settings?.currentAssistantId,
-              })
+              const result = await invokeMemoryTool(
+                promptSourceWatcher,
+                (hooks) =>
+                  memoryDelete({
+                    app,
+                    settings,
+                    id,
+                    scope: args.scope,
+                    assistantId: settings?.currentAssistantId,
+                    ...hooks,
+                  }),
+              )
               results.push({
                 ok: true,
                 id: result.id,
@@ -4207,13 +4317,16 @@ export async function callLocalFileTool({
           throw new Error('id or ids is required.')
         }
 
-        const result = await memoryDelete({
-          app,
-          settings,
-          id: args.id,
-          scope: args.scope,
-          assistantId: settings?.currentAssistantId,
-        })
+        const result = await invokeMemoryTool(promptSourceWatcher, (hooks) =>
+          memoryDelete({
+            app,
+            settings,
+            id: args.id,
+            scope: args.scope,
+            assistantId: settings?.currentAssistantId,
+            ...hooks,
+          }),
+        )
 
         return {
           status: ToolCallResponseStatus.Success,

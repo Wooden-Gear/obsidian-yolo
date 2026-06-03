@@ -126,6 +126,7 @@ import type {
 } from './types/mentionable'
 import { MentionableFile, MentionableFolder } from './types/mentionable'
 import { applyKnownMaxContextTokensToChatModels } from './utils/llm/model-capability-registry'
+import { stableStringify } from './utils/json/stableStringify'
 import { getMentionableBlockData } from './utils/obsidian'
 import { ensureBufferByteLengthCompat } from './utils/runtime/ensureBufferByteLengthCompat'
 
@@ -205,6 +206,45 @@ export default class YoloPlugin extends Plugin {
 
   setSmartSpaceDraftState(state: SmartSpaceDraftState) {
     this.smartSpaceDraftState = state
+  }
+
+  private getPromptSourceSettingsFingerprint(
+    settings: YoloSettings | undefined,
+  ): string {
+    if (!settings) {
+      return ''
+    }
+    return stableStringify({
+      systemPrompt: settings.systemPrompt ?? '',
+      baseDir: normalizePath(settings.yolo?.baseDir ?? ''),
+      disabledSkillIds: [...(settings.skills?.disabledSkillIds ?? [])]
+        .map((id) => id.trim())
+        .sort(),
+      assistants: (settings.assistants ?? [])
+        .map((assistant) => ({
+          id: assistant.id,
+          name: assistant.name,
+          systemPrompt: assistant.systemPrompt ?? '',
+          skillPreferences: assistant.skillPreferences ?? null,
+          enableProjectInstructions:
+            assistant.enableProjectInstructions ?? false,
+          workspaceScope: assistant.workspaceScope ?? null,
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id)),
+    })
+  }
+
+  private markPromptSourceSettingsChange(
+    previousSettings: YoloSettings | undefined,
+    nextSettings: YoloSettings,
+  ): void {
+    if (
+      this.getPromptSourceSettingsFingerprint(previousSettings) ===
+      this.getPromptSourceSettingsFingerprint(nextSettings)
+    ) {
+      return
+    }
+    this.agentService?.getPromptSourceWatcher().markExternalChange()
   }
 
   getChatLeafSessionManager(): ChatLeafSessionManager {
@@ -719,6 +759,7 @@ export default class YoloPlugin extends Plugin {
           listener: (settings: YoloSettings) => void,
         ) => this.addSettingsChangeListener(listener),
         getRagEngine: () => this.getRAGEngine(),
+        promptSourceWatcher: this.getAgentService().getPromptSourceWatcher(),
       })
     }
     return this.mcpCoordinator
@@ -855,6 +896,12 @@ export default class YoloPlugin extends Plugin {
         getSettings: () => this.settings,
         persistConversationMessages,
       })
+      const watcher = this.agentService.getPromptSourceWatcher()
+      const h = watcher.buildVaultHandlers()
+      this.registerEvent(this.app.vault.on('create', h.create))
+      this.registerEvent(this.app.vault.on('modify', h.modify))
+      this.registerEvent(this.app.vault.on('delete', h.delete))
+      this.registerEvent(this.app.vault.on('rename', h.rename))
       // Start listening for async external agent task-completed events (desktop-only, no-op on mobile)
       this.agentService.startExternalAgentResultListener()
       this.agentService.startSubagentResultListener()
@@ -2309,6 +2356,7 @@ export default class YoloPlugin extends Plugin {
 
     this.settings = normalizedSettings
     this.currentSettingsMeta = incomingMeta
+    this.markPromptSourceSettingsChange(previousSettings, normalizedSettings)
 
     if (baseDirChanged) {
       // External payload references a different `baseDir`. Don't call
@@ -2557,6 +2605,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
 
     this.settings = normalizedSettings
     await this.persistPluginDirSettings(normalizedSettings)
+    this.markPromptSourceSettingsChange(previousSettings, normalizedSettings)
     setLLMDebugCaptureEnabled(
       this.settings.debug?.captureRawRequestDebug ?? false,
     )

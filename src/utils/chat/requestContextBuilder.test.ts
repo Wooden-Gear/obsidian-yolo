@@ -1838,6 +1838,42 @@ describe('RequestContextBuilder system prompt freezing', () => {
     expect(getSystemContent(other)).toContain('MEM_V2')
   })
 
+  it('refreshes on the next real request after an external prompt source change', async () => {
+    const store = new SystemPromptSnapshotStore()
+    let revision = 0
+    const builder = new RequestContextBuilder(makeApp(), baseSettings, {
+      includeSkills: false,
+      systemPromptSnapshotStore: store,
+      getPromptSourceRevision: () => revision,
+    })
+
+    memMock.mockResolvedValue({ global: 'MEM_V1', assistant: null })
+    memMock.mockClear()
+
+    const first = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      hasMemoryTools: true,
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(first)).toContain('MEM_V1')
+
+    revision += 1
+    memMock.mockResolvedValue({ global: 'MEM_EXTERNAL', assistant: null })
+
+    const second = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      hasMemoryTools: true,
+      systemPromptSnapshotMode: 'create',
+    })
+
+    expect(getSystemContent(second)).toContain('MEM_EXTERNAL')
+    expect(memMock).toHaveBeenCalledTimes(2)
+  })
+
   it('refreshes memory in the system prompt after conversation compaction', async () => {
     const store = new SystemPromptSnapshotStore()
     const builder = new RequestContextBuilder(makeApp(), baseSettings, {

@@ -632,6 +632,13 @@ export function QuickAskPanel({
         systemPromptSnapshotStore: plugin
           .getAgentService()
           .getSystemPromptSnapshotStore(),
+        getPromptSourceRevision: () =>
+          plugin.getAgentService().getPromptSourceWatcher().getRevision(),
+        promptSourcePathsCallback: (paths) =>
+          plugin
+            .getAgentService()
+            .getPromptSourceWatcher()
+            .setWatchedPaths(paths),
       },
     )
   }, [app, executionMode, selectedAssistant, settings, plugin])
