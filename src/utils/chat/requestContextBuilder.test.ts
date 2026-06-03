@@ -1838,6 +1838,56 @@ describe('RequestContextBuilder system prompt freezing', () => {
     expect(getSystemContent(other)).toContain('MEM_V2')
   })
 
+  it('refreshes memory in the system prompt after conversation compaction', async () => {
+    const store = new SystemPromptSnapshotStore()
+    const builder = new RequestContextBuilder(makeApp(), baseSettings, {
+      includeSkills: false,
+      systemPromptSnapshotStore: store,
+    })
+
+    memMock.mockResolvedValue({ global: 'MEM_BEFORE_COMPACT', assistant: null })
+    memMock.mockClear()
+
+    const beforeCompact = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      hasMemoryTools: true,
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(beforeCompact)).toContain('MEM_BEFORE_COMPACT')
+
+    memMock.mockResolvedValue({ global: 'MEM_AFTER_COMPACT', assistant: null })
+
+    const afterMemoryWrite = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      hasMemoryTools: true,
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(afterMemoryWrite)).toContain('MEM_BEFORE_COMPACT')
+    expect(getSystemContent(afterMemoryWrite)).not.toContain(
+      'MEM_AFTER_COMPACT',
+    )
+
+    const afterCompact = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      hasMemoryTools: true,
+      compaction: {
+        anchorMessageId: 'tool-compact',
+        summary: 'Earlier context summary',
+        compactedAt: 1,
+        triggerToolCallId: 'compact-1',
+      },
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(afterCompact)).toContain('MEM_AFTER_COMPACT')
+    expect(memMock).toHaveBeenCalledTimes(2)
+  })
+
   it('refreshes the snapshot when a prompt-relevant setting changes', async () => {
     const store = new SystemPromptSnapshotStore()
     memMock.mockResolvedValue({ global: 'MEM', assistant: null })
