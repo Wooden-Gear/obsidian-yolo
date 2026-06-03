@@ -574,6 +574,16 @@ export const it: TranslationKeys = {
       autoContextCompactionThresholdRatioPercentDesc:
         'Attiva quando prompt_tokens diviso per la finestra massima del modello di chat raggiunge questa percentuale. Richiede max context sul modello.',
     },
+    terminalCommand: {
+      openSettings: 'Configura comando terminale',
+      blockedPrefixes: 'Prefissi comando bloccati',
+      blockedPrefixesDesc:
+        "I comandi che corrispondono a questi prefissi verranno rifiutati prima dell'esecuzione.",
+      matchingRule:
+        'La corrispondenza usa il primo token del comando: rm blocca rm -rf /, ma non npm run build.',
+      addPrefixPlaceholder: 'Prefisso comando, es. rm',
+      resetDefaults: 'Ripristina predefiniti',
+    },
     webSearch: {
       modalTitle: 'Impostazioni ricerca web',
       openSettings: 'Configura provider di ricerca web',

@@ -583,6 +583,15 @@ export const zh: TranslationKeys = {
     jsSandbox: {
       openSettings: '配置 JavaScript 执行',
     },
+    terminalCommand: {
+      openSettings: '配置终端命令',
+      blockedPrefixes: '禁止命令前缀',
+      blockedPrefixesDesc: '命中以下前缀的命令将在执行前被直接拒绝。',
+      matchingRule:
+        '前缀按首个命令词匹配：rm 会拦截 rm -rf /，但不会拦截 npm run build。',
+      addPrefixPlaceholder: '命令前缀，例如 rm',
+      resetDefaults: '恢复默认',
+    },
     webSearch: {
       modalTitle: '联网搜索设置',
       openSettings: '配置联网搜索 Provider',

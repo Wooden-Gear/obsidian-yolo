@@ -19,10 +19,12 @@ import {
   getBuiltinToolDisplayIndex,
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
+import { DEFAULT_BLOCKED_PREFIXES } from '../../../core/agent/bash/command-classifier'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   LOCAL_MEMORY_SPLIT_ACTION_TOOL_NAMES,
+  TERMINAL_COMMAND_TOOL_NAME,
   getLocalFileTools,
 } from '../../../core/mcp/localFileTools'
 import YoloPlugin from '../../../main'
@@ -32,6 +34,7 @@ import { CollapsibleToolDescription } from '../common/CollapsibleToolDescription
 import { McpSection } from '../sections/McpSection'
 
 import { JsSandboxConfigModal } from './JsSandboxConfigModal'
+import { TerminalCommandConfigModal } from './TerminalCommandConfigModal'
 import { WebSearchSettingsModal } from './WebSearchSettingsModal'
 
 type AgentToolsModalProps = {
@@ -106,7 +109,9 @@ function AgentToolsModalContent({
             ? t(meta.descKey ?? '', meta.descFallback)
             : tool.description,
           enabled: !(toolOptions[tool.name]?.disabled ?? false),
-          hasSettings: tool.name === JS_SANDBOX_TOOL_NAME,
+          hasSettings:
+            tool.name === JS_SANDBOX_TOOL_NAME ||
+            tool.name === TERMINAL_COMMAND_TOOL_NAME,
         }
       })
 
@@ -263,10 +268,15 @@ function AgentToolsModalContent({
                                 'settings.jsSandbox.openSettings',
                                 'Configure JavaScript execution',
                               )
-                            : t(
-                                'settings.webSearch.openSettings',
-                                'Configure web search providers',
-                              )
+                            : tool.id === TERMINAL_COMMAND_TOOL_NAME
+                              ? t(
+                                  'settings.terminalCommand.openSettings',
+                                  'Configure terminal command',
+                                )
+                              : t(
+                                  'settings.webSearch.openSettings',
+                                  'Configure web search providers',
+                                )
                         }
                         onClick={() => {
                           if (tool.id === JS_SANDBOX_TOOL_NAME) {
@@ -280,6 +290,36 @@ function AgentToolsModalContent({
                                 void setSettings({
                                   ...settings,
                                   jsSandbox: next,
+                                }),
+                            }).open()
+                            return
+                          }
+                          if (tool.id === TERMINAL_COMMAND_TOOL_NAME) {
+                            new TerminalCommandConfigModal(app, {
+                              title: t(
+                                'settings.terminalCommand.openSettings',
+                                'Configure terminal command',
+                              ),
+                              value: settings.mcp.builtinToolOptions[
+                                TERMINAL_COMMAND_TOOL_NAME
+                              ]?.blockedPrefixes ?? [
+                                ...DEFAULT_BLOCKED_PREFIXES,
+                              ],
+                              onChange: (next) =>
+                                void setSettings({
+                                  ...settings,
+                                  mcp: {
+                                    ...settings.mcp,
+                                    builtinToolOptions: {
+                                      ...settings.mcp.builtinToolOptions,
+                                      [TERMINAL_COMMAND_TOOL_NAME]: {
+                                        ...settings.mcp.builtinToolOptions[
+                                          TERMINAL_COMMAND_TOOL_NAME
+                                        ],
+                                        blockedPrefixes: next,
+                                      },
+                                    },
+                                  },
                                 }),
                             }).open()
                             return

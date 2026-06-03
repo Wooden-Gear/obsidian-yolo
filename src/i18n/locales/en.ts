@@ -636,6 +636,16 @@ export const en: TranslationKeys = {
     jsSandbox: {
       openSettings: 'Configure JavaScript execution',
     },
+    terminalCommand: {
+      openSettings: 'Configure terminal command',
+      blockedPrefixes: 'Blocked command prefixes',
+      blockedPrefixesDesc:
+        'Commands matching these prefixes will be rejected before execution.',
+      matchingRule:
+        'Prefix matching uses the first command token: rm blocks rm -rf /, but not npm run build.',
+      addPrefixPlaceholder: 'Command prefix, e.g. rm',
+      resetDefaults: 'Reset to defaults',
+    },
     webSearch: {
       modalTitle: 'Web search settings',
       openSettings: 'Configure web search providers',

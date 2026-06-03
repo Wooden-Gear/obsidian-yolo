@@ -483,6 +483,14 @@ export type TranslationKeys = {
     jsSandbox?: {
       openSettings?: string
     }
+    terminalCommand?: {
+      openSettings?: string
+      blockedPrefixes?: string
+      blockedPrefixesDesc?: string
+      matchingRule?: string
+      addPrefixPlaceholder?: string
+      resetDefaults?: string
+    }
     webSearch?: {
       modalTitle?: string
       openSettings?: string
