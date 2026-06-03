@@ -63,7 +63,7 @@ const USER_PROMPT =
 async function testAnthropic() {
   const p = findProvider('DeepSeek')
   if (!p) return { skipped: 'DeepSeek provider missing' }
-  const model = 'deepseek-chat'
+  const model = 'deepseek-v4-flash'
   const url = `${norm(p.baseUrl)}/v1/messages`
   const body = {
     model,
