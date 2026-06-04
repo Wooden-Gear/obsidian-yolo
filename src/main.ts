@@ -125,8 +125,8 @@ import type {
   MentionableImage,
 } from './types/mentionable'
 import { MentionableFile, MentionableFolder } from './types/mentionable'
-import { applyKnownMaxContextTokensToChatModels } from './utils/llm/model-capability-registry'
 import { stableStringify } from './utils/json/stableStringify'
+import { applyKnownMaxContextTokensToChatModels } from './utils/llm/model-capability-registry'
 import { getMentionableBlockData } from './utils/obsidian'
 import { ensureBufferByteLengthCompat } from './utils/runtime/ensureBufferByteLengthCompat'
 

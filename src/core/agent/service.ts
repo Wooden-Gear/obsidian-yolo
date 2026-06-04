@@ -18,19 +18,28 @@ import {
 } from '../../types/tool-call.types'
 import { formatErrorMessageWithCauses } from '../../utils/error-message'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
+import {
+  TERMINAL_COMMAND_TOOL_NAME,
+  getLocalFileToolServerName,
+} from '../mcp/localFileTools'
+import { parseToolName } from '../mcp/tool-name-utils'
 
+import {
+  DEFAULT_BLOCKED_PREFIXES,
+  isBlockedByCommandPrefix,
+} from './bash/command-classifier'
 import { DEFAULT_BRANCH_ID } from './branch'
 import { CitationRegistry } from './citationRegistry'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
 import type { ExternalCliEvent } from './external-cli/streamBus'
+import { NativeAgentRuntime } from './native-runtime'
+import { PromptSourceWatcher } from './promptSourceWatcher'
 import {
-  buildSubagentParentContext,
   type SubagentParentContext,
+  buildSubagentParentContext,
 } from './subagent/parent-context'
 import { subagentStreamBus } from './subagent/stream-bus'
 import type { SubagentTaskRecord } from './subagent/types'
-import { NativeAgentRuntime } from './native-runtime'
-import { PromptSourceWatcher } from './promptSourceWatcher'
 import { SystemPromptSnapshotStore } from './systemPromptSnapshotStore'
 import {
   AgentRunContext,
@@ -148,7 +157,9 @@ function buildSubagentResultMessage(
     taskId: record.taskId,
     source: record.source,
     title: record.title,
-    status: result?.status ?? (record.status === 'running' ? 'completed' : record.status),
+    status:
+      result?.status ??
+      (record.status === 'running' ? 'completed' : record.status),
     content: result?.content ?? record.error ?? '',
     durationMs: result?.durationMs ?? completedAt - record.createdAt,
     toolUseCount: result?.toolUseCount ?? 0,
@@ -303,6 +314,33 @@ const abortVisibleMessages = (messages: ChatMessage[]): ChatMessage[] => {
         }
       : message
   })
+}
+
+const isBlockedTerminalCommandRequest = (
+  request: ToolCallRequest,
+  blockedCommandPrefixes?: string[],
+): boolean => {
+  try {
+    const parsed = parseToolName(request.name)
+    if (
+      parsed.serverName !== getLocalFileToolServerName() ||
+      parsed.toolName !== TERMINAL_COMMAND_TOOL_NAME
+    ) {
+      return false
+    }
+  } catch {
+    return false
+  }
+
+  const args = getToolCallArgumentsObject(request.arguments)
+  if (typeof args?.command !== 'string') {
+    return false
+  }
+
+  return isBlockedByCommandPrefix(
+    args.command,
+    blockedCommandPrefixes ?? DEFAULT_BLOCKED_PREFIXES,
+  )
 }
 
 const mergeVisibleMessages = (
@@ -1041,8 +1079,10 @@ export class AgentService {
   getPendingApprovalSubagentParentContext(
     conversationId: string,
   ): SubagentParentContext | undefined {
-    const recovery = this.getOrCreateConversationEntry(conversationId)
-      .pendingApprovalRecoveryContext
+    const recovery =
+      this.getOrCreateConversationEntry(
+        conversationId,
+      ).pendingApprovalRecoveryContext
     if (!recovery) {
       return undefined
     }
@@ -1075,8 +1115,7 @@ export class AgentService {
     const recoveryContext = conversationEntry.pendingApprovalRecoveryContext
     const activeRunInput = located.runEntry?.lastRunInput ?? null
     const activeLoopConfig = located.runEntry?.lastLoopConfig ?? null
-    const lastRunInput =
-      activeRunInput ?? recoveryContext?.lastRunInput ?? null
+    const lastRunInput = activeRunInput ?? recoveryContext?.lastRunInput ?? null
     const lastLoopConfig =
       activeLoopConfig ?? recoveryContext?.lastLoopConfig ?? null
     const lastRunContext =
@@ -1086,6 +1125,36 @@ export class AgentService {
 
     if (!lastRunInput || !lastLoopConfig) {
       return false
+    }
+
+    if (
+      isBlockedTerminalCommandRequest(
+        toolCall.request,
+        lastRunInput.blockedCommandPrefixes,
+      )
+    ) {
+      const nextMessages = this.updateToolCallResponse({
+        conversationId,
+        toolCallId,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error:
+            'Terminal command rejected because it matches a blocked command prefix.',
+        },
+      })
+      if (!nextMessages) {
+        return false
+      }
+
+      if (isTrailingResolvedToolMessage(nextMessages, toolMessage.id)) {
+        await this.run({
+          conversationId,
+          loopConfig: lastLoopConfig,
+          input: this.buildContinuationInput(lastRunInput, nextMessages),
+        })
+      }
+
+      return true
     }
 
     if (allowForConversation) {
@@ -1157,9 +1226,7 @@ export class AgentService {
       return false
     }
 
-    if (
-      isTrailingResolvedToolMessage(nextMessages, toolMessage.id)
-    ) {
+    if (isTrailingResolvedToolMessage(nextMessages, toolMessage.id)) {
       await this.run({
         conversationId,
         loopConfig: lastLoopConfig,
@@ -2062,10 +2129,7 @@ export class AgentService {
         messages: updatedMessages,
         status: status ?? conversationEntry.state.status,
       }
-      this.syncPendingApprovalRecoveryContext(
-        conversationId,
-        updatedMessages,
-      )
+      this.syncPendingApprovalRecoveryContext(conversationId, updatedMessages)
     }
 
     this.recomputeConversationState(conversationId)

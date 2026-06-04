@@ -639,15 +639,17 @@ export const DEFAULT_CHAT_MODELS: readonly ChatModel[] = [
   },
   {
     providerId: PROVIDER_PRESET_INFO.deepseek.defaultProviderId,
-    id: 'deepseek/deepseek-chat',
-    model: 'deepseek-chat',
+    id: 'deepseek/deepseek-v4-flash',
+    model: 'deepseek-v4-flash',
     enable: false,
+    reasoningType: 'openai',
   },
   {
     providerId: PROVIDER_PRESET_INFO.deepseek.defaultProviderId,
-    id: 'deepseek/deepseek-reasoner',
-    model: 'deepseek-reasoner',
+    id: 'deepseek/deepseek-v4-pro',
+    model: 'deepseek-v4-pro',
     enable: false,
+    reasoningType: 'openai',
   },
   {
     providerId: PROVIDER_PRESET_INFO.xiaomimimo.defaultProviderId,

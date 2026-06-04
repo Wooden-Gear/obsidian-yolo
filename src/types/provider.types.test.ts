@@ -1,5 +1,6 @@
 import {
   getDefaultRequestTransportModeForPresetType,
+  getSupportedApiTypesForPresetType,
   llmProviderSchema,
 } from './provider.types'
 
@@ -103,5 +104,14 @@ describe('getDefaultRequestTransportModeForPresetType', () => {
     expect(
       getDefaultRequestTransportModeForPresetType('chatgpt-oauth', false),
     ).toBeUndefined()
+  })
+})
+
+describe('getSupportedApiTypesForPresetType', () => {
+  it('limits DeepSeek to its official OpenAI-compatible and Anthropic APIs', () => {
+    expect(getSupportedApiTypesForPresetType('deepseek')).toEqual([
+      'openai-compatible',
+      'anthropic',
+    ])
   })
 })

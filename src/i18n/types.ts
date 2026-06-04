@@ -483,6 +483,14 @@ export type TranslationKeys = {
     jsSandbox?: {
       openSettings?: string
     }
+    terminalCommand?: {
+      openSettings?: string
+      blockedPrefixes?: string
+      blockedPrefixesDesc?: string
+      matchingRule?: string
+      addPrefixPlaceholder?: string
+      resetDefaults?: string
+    }
     webSearch?: {
       modalTitle?: string
       openSettings?: string
@@ -525,6 +533,8 @@ export type TranslationKeys = {
       fieldDepth?: string
       fieldSearchUrl?: string
       fieldScrapeUrl?: string
+      fieldUseProviderScrapeApi?: string
+      fieldUseProviderScrapeApiDesc?: string
       fieldBaseUrl?: string
       fieldLanguage?: string
       fieldEngines?: string
@@ -1505,6 +1515,11 @@ export type TranslationKeys = {
         allCompleted?: string
         created?: string
         progress?: string
+      }
+      terminalCommand?: {
+        sessionPoll?: string
+        sessionKill?: string
+        sessionInput?: string
       }
     }
     // delegate_external_agent tool card

@@ -636,6 +636,16 @@ export const en: TranslationKeys = {
     jsSandbox: {
       openSettings: 'Configure JavaScript execution',
     },
+    terminalCommand: {
+      openSettings: 'Configure terminal command',
+      blockedPrefixes: 'Blocked command prefixes',
+      blockedPrefixesDesc:
+        'Commands matching these prefixes will be rejected before execution.',
+      matchingRule:
+        'Prefix matching uses the first command token: rm blocks rm -rf /, but not npm run build.',
+      addPrefixPlaceholder: 'Command prefix, e.g. rm',
+      resetDefaults: 'Reset to defaults',
+    },
     webSearch: {
       modalTitle: 'Web search settings',
       openSettings: 'Configure web search providers',
@@ -683,6 +693,9 @@ export const en: TranslationKeys = {
       fieldDepth: 'Depth',
       fieldSearchUrl: 'Search URL',
       fieldScrapeUrl: 'Scrape URL',
+      fieldUseProviderScrapeApi: 'Use provider scrape API',
+      fieldUseProviderScrapeApiDesc:
+        'When enabled, web_scrape uses this provider\u2019s extract API. When disabled, web_scrape uses the built-in generic scraper (static HTML, no extra API usage).',
       fieldBaseUrl: 'Base URL',
       fieldLanguage: 'Language',
       fieldEngines: 'Engines (comma-separated)',
@@ -1771,6 +1784,11 @@ export const en: TranslationKeys = {
         allCompleted: 'All completed ({count})',
         created: 'Planned {count} tasks',
         progress: 'Progress {done}/{total}',
+      },
+      terminalCommand: {
+        sessionPoll: 'Session {id} · Poll',
+        sessionKill: 'Session {id} · Kill',
+        sessionInput: 'Session {id} · Input: {preview}',
       },
     },
     externalAgent: {

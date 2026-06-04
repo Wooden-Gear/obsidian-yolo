@@ -29,7 +29,6 @@ import {
 import ObsidianFileDropPlugin from './plugins/drop/ObsidianFileDropPlugin'
 import DragDropPaste from './plugins/image/DragDropPastePlugin'
 import ImagePastePlugin from './plugins/image/ImagePastePlugin'
-import PlainTextPastePlugin from './plugins/paste/PlainTextPastePlugin'
 import AutoLinkMentionPlugin from './plugins/mention/AutoLinkMentionPlugin'
 import { MentionNode } from './plugins/mention/MentionNode'
 import MentionPlugin from './plugins/mention/MentionPlugin'
@@ -43,6 +42,7 @@ import OnEnterPlugin from './plugins/on-enter/OnEnterPlugin'
 import OnMutationPlugin, {
   NodeMutations,
 } from './plugins/on-mutation/OnMutationPlugin'
+import PlainTextPastePlugin from './plugins/paste/PlainTextPastePlugin'
 // templates feature removed
 
 export type LexicalContentEditableProps = {

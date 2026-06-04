@@ -1,6 +1,9 @@
 import { getLocalFileToolServerName } from '../../../core/mcp/localFileTools'
 import { getToolName } from '../../../core/mcp/tool-name-utils'
-import type { ChatSubagentResultMessage, ChatToolMessage } from '../../../types/chat'
+import type {
+  ChatSubagentResultMessage,
+  ChatToolMessage,
+} from '../../../types/chat'
 import {
   type ToolCallRequest,
   type ToolCallResponse,
@@ -22,7 +25,9 @@ export function buildSynthToolMessageFromSubagentResult(
   }
 }
 
-function buildSynthRequest(message: ChatSubagentResultMessage): ToolCallRequest {
+function buildSynthRequest(
+  message: ChatSubagentResultMessage,
+): ToolCallRequest {
   return {
     id: `result-${message.taskId}`,
     name: getToolName(getLocalFileToolServerName(), 'delegate_subagent'),
@@ -36,7 +41,9 @@ function buildSynthRequest(message: ChatSubagentResultMessage): ToolCallRequest 
   }
 }
 
-function buildSynthResponse(message: ChatSubagentResultMessage): ToolCallResponse {
+function buildSynthResponse(
+  message: ChatSubagentResultMessage,
+): ToolCallResponse {
   const text = message.content || message.status
 
   switch (message.status) {

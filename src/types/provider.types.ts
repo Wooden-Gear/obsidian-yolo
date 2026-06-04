@@ -151,6 +151,9 @@ export function getSupportedApiTypesForPresetType(
     case 'gemini':
       defaults.add('openai-compatible')
       break
+    case 'deepseek':
+      defaults.add('anthropic')
+      break
     case 'amazon-bedrock':
       defaults.add('openai-compatible')
       break
