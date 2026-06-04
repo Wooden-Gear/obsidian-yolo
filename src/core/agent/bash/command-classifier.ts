@@ -9,6 +9,37 @@ export type BashCommandSafety =
       reason: string
     }
 
+export const DEFAULT_BLOCKED_PREFIXES: readonly string[] = [
+  'rm',
+  'dd',
+  'mkfs',
+  'fdisk',
+  'shutdown',
+  'reboot',
+  'poweroff',
+  'halt',
+]
+
+export const isBlockedByCommandPrefix = (
+  command: string | undefined,
+  blockedPrefixes: readonly string[] = DEFAULT_BLOCKED_PREFIXES,
+): boolean => {
+  const trimmedCommand = command?.trimStart() ?? ''
+  if (!trimmedCommand) {
+    return false
+  }
+
+  return blockedPrefixes
+    .map((prefix) => prefix.trim())
+    .filter((prefix) => prefix.length > 0)
+    .some(
+      (prefix) =>
+        trimmedCommand === prefix ||
+        trimmedCommand.startsWith(`${prefix} `) ||
+        trimmedCommand.startsWith(`${prefix}\t`),
+    )
+}
+
 const POSIX_READONLY_COMMANDS = new Set([
   'basename',
   'cat',

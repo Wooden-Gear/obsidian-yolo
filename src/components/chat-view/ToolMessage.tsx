@@ -63,6 +63,12 @@ export type ToolLabels = {
   todoWriteAllCompleted: (count: number) => string
   todoWriteCreated: (count: number) => string
   todoWriteProgress: (done: number, total: number) => string
+  terminalCommandSessionPoll: (sessionId: number) => string
+  terminalCommandSessionKill: (sessionId: number) => string
+  terminalCommandSessionInput: (
+    sessionId: number,
+    inputPreview: string,
+  ) => string
 }
 
 const DEFAULT_STATUS_LABELS: Record<ToolCallResponseStatus, string> = {
@@ -261,6 +267,23 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
       )
         .replace('{done}', String(done))
         .replace('{total}', String(total)),
+    terminalCommandSessionPoll: (sessionId: number) =>
+      translate(
+        'chat.toolSummary.terminalCommand.sessionPoll',
+        'Session {id} · Poll',
+      ).replace('{id}', String(sessionId)),
+    terminalCommandSessionKill: (sessionId: number) =>
+      translate(
+        'chat.toolSummary.terminalCommand.sessionKill',
+        'Session {id} · Kill',
+      ).replace('{id}', String(sessionId)),
+    terminalCommandSessionInput: (sessionId: number, inputPreview: string) =>
+      translate(
+        'chat.toolSummary.terminalCommand.sessionInput',
+        'Session {id} · Input: {preview}',
+      )
+        .replace('{id}', String(sessionId))
+        .replace('{preview}', inputPreview),
   }
 }
 
@@ -662,6 +685,37 @@ const getLocalToolSummaryText = ({
     const url =
       typeof argumentsObject?.url === 'string' ? argumentsObject.url : ''
     return url ? truncateText(url, 80) : undefined
+  }
+
+  if (toolName === 'terminal_command') {
+    const command =
+      typeof argumentsObject?.command === 'string'
+        ? argumentsObject.command.trim()
+        : ''
+    if (command) {
+      const preview = command.replace(/\s+/g, ' ')
+      return preview ? truncateText(preview, 80) : undefined
+    }
+
+    const sessionId = asInteger(argumentsObject?.session_id)
+    if (typeof sessionId !== 'number') {
+      return undefined
+    }
+
+    if (argumentsObject?.kill === true) {
+      return labels.terminalCommandSessionKill(sessionId)
+    }
+
+    const input =
+      typeof argumentsObject?.input === 'string'
+        ? argumentsObject.input.trim()
+        : ''
+    if (input) {
+      const preview = truncateText(input.replace(/\s+/g, ' '), 60)
+      return labels.terminalCommandSessionInput(sessionId, preview)
+    }
+
+    return labels.terminalCommandSessionPoll(sessionId)
   }
 
   if (toolName === 'js_eval') {

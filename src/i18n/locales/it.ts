@@ -574,6 +574,16 @@ export const it: TranslationKeys = {
       autoContextCompactionThresholdRatioPercentDesc:
         'Attiva quando prompt_tokens diviso per la finestra massima del modello di chat raggiunge questa percentuale. Richiede max context sul modello.',
     },
+    terminalCommand: {
+      openSettings: 'Configura comando terminale',
+      blockedPrefixes: 'Prefissi comando bloccati',
+      blockedPrefixesDesc:
+        "I comandi che corrispondono a questi prefissi verranno rifiutati prima dell'esecuzione.",
+      matchingRule:
+        'La corrispondenza usa il primo token del comando: rm blocca rm -rf /, ma non npm run build.',
+      addPrefixPlaceholder: 'Prefisso comando, es. rm',
+      resetDefaults: 'Ripristina predefiniti',
+    },
     webSearch: {
       modalTitle: 'Impostazioni ricerca web',
       openSettings: 'Configura provider di ricerca web',
@@ -623,6 +633,9 @@ export const it: TranslationKeys = {
       fieldDepth: 'Profondità',
       fieldSearchUrl: 'URL ricerca',
       fieldScrapeUrl: 'URL scrape',
+      fieldUseProviderScrapeApi: 'Usa API scrape del provider',
+      fieldUseProviderScrapeApiDesc:
+        'Se attivo, web_scrape usa l\u2019API extract di questo provider. Se disattivo, web_scrape usa lo scraper generico integrato (HTML statico, senza consumo API aggiuntivo).',
       fieldBaseUrl: 'Base URL',
       fieldLanguage: 'Lingua',
       fieldEngines: 'Motori (separati da virgola)',
@@ -1695,6 +1708,11 @@ export const it: TranslationKeys = {
         allCompleted: 'Tutte completate ({count})',
         created: 'Pianificate {count} attivita',
         progress: 'Avanzamento {done}/{total}',
+      },
+      terminalCommand: {
+        sessionPoll: 'Sessione {id} · Poll',
+        sessionKill: 'Sessione {id} · Termina',
+        sessionInput: 'Sessione {id} · Input: {preview}',
       },
     },
     externalAgent: {

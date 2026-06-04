@@ -241,6 +241,78 @@ describe('AgentToolGateway', () => {
     })
   })
 
+  it('rejects blocked terminal command prefixes before approval', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__terminal_command'],
+      toolPreferences: {
+        yolo_local__terminal_command: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: { command: 'rm -rf test-dir' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Error,
+    )
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
+    const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
+    expect(isToolExecutionAllowedMock).not.toHaveBeenCalled()
+  })
+
+  it('allows blocked terminal defaults to be cleared explicitly', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__terminal_command'],
+      blockedCommandPrefixes: [],
+      toolPreferences: {
+        yolo_local__terminal_command: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: { command: 'rm -rf test-dir' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Running,
+    )
+  })
+
   it('allows conversation-level approval to bypass per-tool approval', () => {
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(true),

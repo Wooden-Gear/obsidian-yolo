@@ -6,6 +6,7 @@ import { useApp } from '../../contexts/app-context'
 import { useMcp } from '../../contexts/mcp-context'
 import { usePlugin } from '../../contexts/plugin-context'
 import { useSettings } from '../../contexts/settings-context'
+import { DEFAULT_BLOCKED_PREFIXES } from '../../core/agent/bash/command-classifier'
 import {
   buildManualCompactionState,
   createConversationCompactionSummary,
@@ -28,6 +29,7 @@ import { getChatModelClient } from '../../core/llm/manager'
 import type { AutoPromotedTransportMode } from '../../core/llm/requestTransport'
 import { shouldUseStreamingForProvider } from '../../core/llm/streamingPolicy'
 import { promoteProviderTransportModeToObsidian } from '../../core/llm/transportModePromotion'
+import { TERMINAL_COMMAND_TOOL_NAME } from '../../core/mcp/localFileTools'
 import { listLiteSkillEntries } from '../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../core/skills/skillPolicy'
 import {
@@ -751,6 +753,9 @@ export function useChatStreamManager({
           allowedToolNames: chatModeRuntime.allowedToolNames,
           enableToolDisclosure: settings.mcp.enableToolDisclosure,
           toolPreferences: chatModeRuntime.toolPreferences,
+          blockedCommandPrefixes: settings.mcp.builtinToolOptions[
+            TERMINAL_COMMAND_TOOL_NAME
+          ]?.blockedPrefixes ?? [...DEFAULT_BLOCKED_PREFIXES],
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),
           allowedSkillNames,

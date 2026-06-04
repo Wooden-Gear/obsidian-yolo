@@ -35,7 +35,11 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
-import { classifyBashCommandSafety } from './bash/command-classifier'
+import {
+  DEFAULT_BLOCKED_PREFIXES,
+  classifyBashCommandSafety,
+  isBlockedByCommandPrefix,
+} from './bash/command-classifier'
 import type { SubagentParentContext } from './subagent/parent-context'
 import { isSubagentBlockedToolName } from './subagent/tool-filter'
 import {
@@ -69,6 +73,7 @@ export class AgentToolGateway {
   private readonly subagentParentContext?: SubagentParentContext
   private readonly isSubagentChildRun: boolean
   private readonly toolApprovalConversationId?: string
+  private readonly blockedCommandPrefixes: readonly string[] | null
   private readonly ajv: AjvInstance
   private readonly schemaValidatorCache = new Map<
     string,
@@ -89,6 +94,7 @@ export class AgentToolGateway {
       subagentParentContext?: SubagentParentContext
       isSubagentChildRun?: boolean
       toolApprovalConversationId?: string
+      blockedCommandPrefixes?: string[]
     },
   ) {
     this.toolsEnabled = options?.toolsEnabled ?? true
@@ -108,6 +114,7 @@ export class AgentToolGateway {
     this.subagentParentContext = options?.subagentParentContext
     this.isSubagentChildRun = options?.isSubagentChildRun ?? false
     this.toolApprovalConversationId = options?.toolApprovalConversationId
+    this.blockedCommandPrefixes = options?.blockedCommandPrefixes ?? null
     // `strict: false` keeps ajv tolerant of MCP tool schemas that include
     // vendor-specific keywords or non-canonical types. `allErrors` lists every
     // violation in the error message so the model has enough signal to retry;
@@ -393,6 +400,19 @@ export class AgentToolGateway {
       return { status: ToolCallResponseStatus.Rejected }
     }
 
+    if (
+      this.isBlockedTerminalCommand(
+        getToolCallArgumentsObject(request.arguments),
+        request.name,
+      )
+    ) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error:
+          'Terminal command rejected because it matches a blocked command prefix.',
+      }
+    }
+
     if (isAskRequest === 'primary-ask') {
       const validation = validateAskUserQuestionArgs(
         getToolCallArgumentsObject(request.arguments) ?? {},
@@ -453,6 +473,22 @@ export class AgentToolGateway {
     for (let i = 0; i < nextToolCalls.length; i += 1) {
       const entry = nextToolCalls[i]
       if (entry.response.status !== ToolCallResponseStatus.Running) {
+        continue
+      }
+      if (
+        this.isBlockedTerminalCommand(
+          getToolCallArgumentsObject(entry.request.arguments),
+          entry.request.name,
+        )
+      ) {
+        nextToolCalls[i] = {
+          ...entry,
+          response: {
+            status: ToolCallResponseStatus.Error,
+            error:
+              'Terminal command rejected because it matches a blocked command prefix.',
+          },
+        }
         continue
       }
       const result = await this.validateAndNormalizeRequest({
@@ -912,6 +948,10 @@ export class AgentToolGateway {
     }
 
     const requestArgs = getToolCallArgumentsObject(request.arguments)
+    if (this.isBlockedTerminalCommand(requestArgs, request.name)) {
+      return false
+    }
+
     const approvalMode = getAssistantToolApprovalMode(
       {
         toolPreferences: this.toolPreferences,
@@ -961,6 +1001,32 @@ export class AgentToolGateway {
       args.command,
       Platform.isWin ? 'powershell' : 'posix',
     ).readonly
+  }
+
+  private isBlockedTerminalCommand(
+    args: Record<string, unknown> | undefined,
+    toolName: string,
+  ): boolean {
+    try {
+      const parsed = parseToolName(toolName)
+      if (
+        parsed.serverName !== getLocalFileToolServerName() ||
+        parsed.toolName !== TERMINAL_COMMAND_TOOL_NAME
+      ) {
+        return false
+      }
+    } catch {
+      return false
+    }
+
+    if (typeof args?.command !== 'string') {
+      return false
+    }
+
+    return isBlockedByCommandPrefix(
+      args.command,
+      this.blockedCommandPrefixes ?? DEFAULT_BLOCKED_PREFIXES,
+    )
   }
 
   private shouldUseFsEditReview(toolName: string): boolean {

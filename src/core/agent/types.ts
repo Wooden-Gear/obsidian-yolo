@@ -94,6 +94,8 @@ export type AgentRuntimeRunInput = {
   systemPromptOverride?: string
   /** Conversation whose approval state should be used for tool auto-execution. */
   toolApprovalConversationId?: string
+  /** Terminal command prefixes rejected before execution or approval. */
+  blockedCommandPrefixes?: string[]
 }
 
 export type AgentRuntimeLoopConfig = {

@@ -6970,6 +6970,101 @@ button.yolo-agent-chip--more:hover {
   height: 18px;
 }
 
+.yolo-terminal-command-modal {
+  width: min(720px, 92vw);
+}
+
+.yolo-terminal-command-modal .modal-content {
+  padding: var(--size-4-3);
+}
+
+.yolo-terminal-command-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+
+.yolo-terminal-command-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.yolo-terminal-command-section-head {
+  display: block;
+}
+
+.yolo-terminal-command-section-head h3 {
+  margin: 0 0 var(--size-4-1);
+  font-size: var(--font-ui-medium);
+}
+
+.yolo-terminal-command-section-head p,
+.yolo-terminal-command-rule {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: var(--line-height-tight);
+}
+
+.yolo-terminal-command-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  align-self: flex-start;
+}
+
+.yolo-string-list-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.yolo-string-list-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.yolo-string-list-input-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.yolo-string-list-input-add {
+  flex: 0 0 auto;
+}
+
+.yolo-string-list-input-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  min-height: 28px;
+}
+
+.yolo-string-list-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  max-width: 100%;
+  min-height: 26px;
+  padding: 2px 4px 2px 8px;
+  color: var(--text-normal);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+}
+
+.yolo-string-list-chip-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.yolo-string-list-chip-remove {
+  flex: 0 0 auto;
+}
+
 /* Web search settings — V1 refined single-column layout */
 
 .yolo-ws {
