@@ -3649,9 +3649,6 @@ export async function callLocalFileTool({
           }
 
           appliedContent = reviewResult.finalContent
-          await maybeWithInternalWrite(promptSourceWatcher, path, () =>
-            app.vault.modify(file, appliedContent),
-          )
         } else {
           await maybeWithInternalWrite(promptSourceWatcher, path, () =>
             app.vault.modify(file, nextContent),
