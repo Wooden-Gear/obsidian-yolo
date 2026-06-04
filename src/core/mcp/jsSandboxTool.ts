@@ -1205,6 +1205,15 @@ function handleLocalProxyRequest(entry, payload) {
   if (payload.cap !== 'html_extract' && payload.cap !== 'html_select') {
     return false
   }
+  if (!entry.allowHtml) {
+    sendWorkerProxyResponse(
+      entry,
+      payload.proxyId,
+      undefined,
+      '$utils.html is not enabled'
+    )
+    return true
+  }
   try {
     const value =
       payload.cap === 'html_extract'
@@ -1249,7 +1258,12 @@ function startRun(data) {
     return
   }
 
-  workers.set(data.reqId, { worker, token })
+  const caps = (data.vars && data.vars._caps) || {}
+  workers.set(data.reqId, {
+    worker,
+    token,
+    allowHtml: Boolean(caps.allowFetch || caps.allowExternalScripts)
+  })
 
   worker.onmessage = (event) => {
     const payload = event.data
