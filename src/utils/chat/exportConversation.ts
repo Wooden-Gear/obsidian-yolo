@@ -163,6 +163,7 @@ function groupSerializedAssistantAndToolMessages(
         message.role === 'external_agent_result' ||
         message.role === 'subagent_result'
       ) {
+        // These side-channel messages are exported through their owning assistant turn.
       } else {
         const lastItem = acc[acc.length - 1]
         if (

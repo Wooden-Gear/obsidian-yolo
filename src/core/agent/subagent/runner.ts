@@ -39,7 +39,8 @@ function countToolUses(messages: ChatMessage[]): number {
     return (
       count +
       message.toolCalls.filter(
-        (toolCall) => toolCall.response.status === ToolCallResponseStatus.Success,
+        (toolCall) =>
+          toolCall.response.status === ToolCallResponseStatus.Success,
       ).length
     )
   }, 0)
@@ -214,8 +215,7 @@ export async function runSubagent(
     taskId,
     title,
     status: 'running',
-    note:
-      'Subagent started asynchronously. The result will arrive as a follow-up background event when the child run completes.',
+    note: 'Subagent started asynchronously. The result will arrive as a follow-up background event when the child run completes.',
   }
 }
 

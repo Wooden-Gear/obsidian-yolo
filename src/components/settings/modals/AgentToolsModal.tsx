@@ -7,6 +7,7 @@ import {
   SettingsProvider,
   useSettings,
 } from '../../../contexts/settings-context'
+import { DEFAULT_BLOCKED_PREFIXES } from '../../../core/agent/bash/command-classifier'
 import {
   BUILTIN_TOOL_CATEGORY_I18N,
   BUILTIN_TOOL_CATEGORY_ORDER,
@@ -19,7 +20,6 @@ import {
   getBuiltinToolDisplayIndex,
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
-import { DEFAULT_BLOCKED_PREFIXES } from '../../../core/agent/bash/command-classifier'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,

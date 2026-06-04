@@ -1,11 +1,11 @@
 import { scrapeUrlGeneric } from './genericScrape'
 import { getWebSearchProvider } from './registry'
 import {
-  isProviderScrapeApiEnabled,
   type WebSearchProviderOptions,
   type WebSearchResult,
   type WebSearchScrapeResult,
   type WebSearchSettings,
+  isProviderScrapeApiEnabled,
 } from './types'
 
 const SHORT_ID_LENGTH = 6
