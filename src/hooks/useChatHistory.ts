@@ -796,6 +796,7 @@ const serializeChatMessage = (message: ChatMessage): SerializedChatMessage => {
       }
     case 'external_agent_result':
     case 'subagent_result':
+    case 'terminal_command_result':
       return message
   }
 }
@@ -840,6 +841,7 @@ const deserializeChatMessage = (
       }
     case 'external_agent_result':
     case 'subagent_result':
+    case 'terminal_command_result':
       return message
   }
 }

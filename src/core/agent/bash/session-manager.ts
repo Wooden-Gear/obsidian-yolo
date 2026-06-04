@@ -11,7 +11,11 @@ import { StringDecoder } from 'node:string_decoder'
 /* eslint-enable import/no-nodejs-modules */
 
 import { spawn as crossSpawn } from 'cross-spawn'
+import { v4 as uuidv4 } from 'uuid'
 
+import type { TaskSource } from '../../../types/chat'
+import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
+import type { BashTaskRecord } from './types'
 import type { ShellProvider } from './shell-provider'
 import { resolveShellProvider } from './shell-provider'
 
@@ -19,7 +23,7 @@ const MAX_OUTPUT_BYTES = 1 * 1024 * 1024
 const TRUNCATE_HEAD_BYTES = 256 * 1024
 const TRUNCATE_TAIL_BYTES = 256 * 1024
 const SIGKILL_DELAY_MS = 3000
-const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_TIMEOUT_MS = 120_000
 const MAX_TIMEOUT_MS = 10 * 60_000
 const BACKGROUND_INITIAL_WAIT_MS = 2_000
 const IDLE_WAIT_MS = 10_000
@@ -34,6 +38,8 @@ export type RunBashParams = {
   timeoutSeconds?: number
   kill?: boolean
   signal?: AbortSignal
+  conversationId?: string
+  source?: TaskSource
 }
 
 export type RunBashResult = {
@@ -59,6 +65,8 @@ type ActiveCommand = {
   lastOutputAt: number
   exitCode?: number | null
   doneAt?: number
+  backgroundRecord?: BashTaskRecord
+  backgroundCompletedEmitted?: boolean
 }
 
 type BashSession = {
@@ -228,6 +236,74 @@ const notifyWaiters = (session: BashSession): void => {
   session.waiters.clear()
 }
 
+const createBashTaskRecord = ({
+  command,
+  conversationId,
+  source,
+  signal,
+}: {
+  command: string
+  conversationId: string
+  source: TaskSource
+  signal?: AbortSignal
+}): BashTaskRecord => {
+  const abortController = new AbortController()
+  signal?.addEventListener('abort', () => abortController.abort(), {
+    once: true,
+  })
+  return {
+    taskId: `bash_${uuidv4().replace(/-/g, '').slice(0, 12)}`,
+    conversationId,
+    source,
+    title: command.slice(0, 80),
+    status: 'running',
+    createdAt: Date.now(),
+    stdoutBuffer: '',
+    stderrBuffer: '',
+    exitCode: null,
+    abortController,
+  }
+}
+
+const emitBackgroundCommandCompleted = (session: BashSession): void => {
+  const active = session.activeCommand
+  if (
+    !active?.backgroundRecord ||
+    active.backgroundCompletedEmitted ||
+    active.exitCode === undefined
+  ) {
+    return
+  }
+
+  active.backgroundCompletedEmitted = true
+  const completedAt = Date.now()
+  const snapshot = active.collector.finalize(session.lineBuffer)
+  const status = active.backgroundRecord.abortController.signal.aborted
+    ? 'cancelled'
+    : active.exitCode === 0
+      ? 'completed'
+      : 'failed'
+  const updatedRecord: BashTaskRecord = {
+    ...active.backgroundRecord,
+    status,
+    completedAt,
+    stdoutBuffer: snapshot.text,
+    stderrBuffer: '',
+    exitCode: active.exitCode ?? null,
+  }
+
+  backgroundTaskCompletionBus.pushCompleted({
+    kind: 'terminal_command',
+    taskId: updatedRecord.taskId,
+    conversationId: updatedRecord.conversationId,
+    record: updatedRecord,
+  })
+
+  session.activeCommand = null
+  session.lineBuffer = ''
+  session.lastUsedAt = Date.now()
+}
+
 const writeToSession = (session: BashSession, text: string): void => {
   session.child.stdin.write(text, 'utf8')
 }
@@ -256,6 +332,7 @@ const handleSessionText = (session: BashSession, text: string): void => {
     if (active && marker && marker.token === active.token) {
       active.exitCode = marker.exitCode
       active.doneAt = Date.now()
+      emitBackgroundCommandCompleted(session)
       notifyWaiters(session)
       continue
     }
@@ -357,6 +434,7 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
       active.exitCode = code
       active.doneAt = Date.now()
     }
+    emitBackgroundCommandCompleted(session)
     notifyWaiters(session)
   })
 
@@ -424,11 +502,13 @@ const waitForCommandState = async ({
   background,
   timeoutMs,
   signal,
+  backgroundRecordFactory,
 }: {
   session: BashSession
   background: boolean
   timeoutMs: number
   signal?: AbortSignal
+  backgroundRecordFactory?: () => BashTaskRecord
 }): Promise<RunBashResult> => {
   const startedAt = Date.now()
   while (true) {
@@ -452,6 +532,9 @@ const waitForCommandState = async ({
 
     const now = Date.now()
     if (background && now - startedAt >= BACKGROUND_INITIAL_WAIT_MS) {
+      if (backgroundRecordFactory && !active.backgroundRecord) {
+        active.backgroundRecord = backgroundRecordFactory()
+      }
       return buildResult(session, 'background')
     }
     if (!background && now - active.lastOutputAt >= IDLE_WAIT_MS) {
@@ -502,6 +585,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   session.lastUsedAt = Date.now()
 
   if (params.kill) {
+    session.activeCommand?.backgroundRecord?.abortController.abort()
     session.killProcess()
     sessions.delete(session.id)
     if (sharedSessionId === session.id) sharedSessionId = null
@@ -544,11 +628,24 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     }
   }
 
+  const backgroundCommand =
+    params.background === true && command ? command : undefined
+
   return waitForCommandState({
     session,
     background: params.background === true,
     timeoutMs,
     signal: params.signal,
+    backgroundRecordFactory:
+      backgroundCommand && params.conversationId && params.source
+        ? () =>
+            createBashTaskRecord({
+              command: backgroundCommand,
+              conversationId: params.conversationId!,
+              source: params.source!,
+              signal: params.signal,
+            })
+        : undefined,
   })
 }
 

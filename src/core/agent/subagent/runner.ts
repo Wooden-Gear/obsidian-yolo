@@ -5,6 +5,7 @@ import type { ChatMessage, ChatUserMessage } from '../../../types/chat'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { formatErrorMessageWithCauses } from '../../../utils/error-message'
 import { CitationRegistry } from '../citationRegistry'
+import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
 import { NativeAgentRuntime } from '../native-runtime'
 import type { AgentRuntimeLoopConfig, AgentRuntimeRunInput } from '../types'
 
@@ -13,7 +14,6 @@ import {
   SUBAGENT_MAX_AUTO_ITERATIONS,
 } from './constants'
 import type { SubagentParentContext } from './parent-context'
-import { subagentStreamBus } from './stream-bus'
 import { subagentTaskRegistry } from './task-registry'
 import { filterAllowedToolsForSubagent } from './tool-filter'
 import type {
@@ -158,8 +158,8 @@ async function runChildAgent(
 
   const updatedRecord = subagentTaskRegistry.get(record.taskId)
   if (updatedRecord && updatedRecord.status !== 'running') {
-    subagentStreamBus.push({
-      type: 'task-completed',
+    backgroundTaskCompletionBus.pushCompleted({
+      kind: 'subagent',
       taskId: updatedRecord.taskId,
       conversationId: updatedRecord.conversationId,
       record: updatedRecord,

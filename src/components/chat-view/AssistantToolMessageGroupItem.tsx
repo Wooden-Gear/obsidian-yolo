@@ -37,6 +37,7 @@ import AssistantToolMessageGroupActions from './AssistantToolMessageGroupActions
 import LLMResponseInlineInfo from './LLMResponseInlineInfo'
 import { buildSynthToolMessageFromResult } from './tool-cards/externalAgentResultAdapter'
 import { buildSynthToolMessageFromSubagentResult } from './tool-cards/subagentResultAdapter'
+import { buildSynthToolMessageFromTerminalCommandResult } from './tool-cards/terminalCommandResultAdapter'
 import ToolMessage from './ToolMessage'
 
 const getBranchStateLabel = (
@@ -93,7 +94,8 @@ const getBranchTabState = (
   const latestMessage = messages.at(-1)
   const latestMetadata =
     latestMessage?.role !== 'external_agent_result' &&
-    latestMessage?.role !== 'subagent_result'
+    latestMessage?.role !== 'subagent_result' &&
+    latestMessage?.role !== 'terminal_command_result'
       ? latestMessage?.metadata
       : undefined
 
@@ -132,7 +134,8 @@ const getMessageGroupRunState = ({
   const latestMessage = messages.at(-1)
   const latestMetadata =
     latestMessage?.role !== 'external_agent_result' &&
-    latestMessage?.role !== 'subagent_result'
+    latestMessage?.role !== 'subagent_result' &&
+    latestMessage?.role !== 'terminal_command_result'
       ? latestMessage?.metadata
       : undefined
 
@@ -286,7 +289,8 @@ export default function AssistantToolMessageGroupItem({
       }
       const branchLabel =
         message.role !== 'external_agent_result' &&
-        message.role !== 'subagent_result'
+        message.role !== 'subagent_result' &&
+        message.role !== 'terminal_command_result'
           ? message.metadata?.branchLabel
           : undefined
       const branchConversationId = message.metadata?.branchConversationId
@@ -701,6 +705,16 @@ export default function AssistantToolMessageGroupItem({
           <div key={message.id}>
             <ToolMessage
               message={buildSynthToolMessageFromSubagentResult(message)}
+              conversationId={effectiveConversationId}
+              showRunningFooter={false}
+              onMessageUpdate={() => {}}
+              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
+            />
+          </div>
+        ) : message.role === 'terminal_command_result' ? (
+          <div key={message.id}>
+            <ToolMessage
+              message={buildSynthToolMessageFromTerminalCommandResult(message)}
               conversationId={effectiveConversationId}
               showRunningFooter={false}
               onMessageUpdate={() => {}}

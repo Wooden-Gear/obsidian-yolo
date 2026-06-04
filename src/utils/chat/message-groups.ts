@@ -19,7 +19,8 @@ export function groupAssistantAndToolMessages(
         acc.push(message)
       } else if (
         message.role === 'external_agent_result' ||
-        message.role === 'subagent_result'
+        message.role === 'subagent_result' ||
+        message.role === 'terminal_command_result'
       ) {
         acc.push([message])
       } else {

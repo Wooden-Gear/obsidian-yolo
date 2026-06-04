@@ -4591,7 +4591,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       if (
         nextFirst &&
         (nextFirst.role === 'external_agent_result' ||
-          nextFirst.role === 'subagent_result')
+          nextFirst.role === 'subagent_result' ||
+          nextFirst.role === 'terminal_command_result')
       ) {
         set.add(current.renderKey)
       }

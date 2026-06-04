@@ -187,18 +187,39 @@ export type ChatSubagentResultMessage = {
   }
 }
 
+export type ChatTerminalCommandResultMessage = {
+  role: 'terminal_command_result'
+  id: string
+  taskId: string
+  source: TaskSource
+  title: string
+  status: AsyncTaskStatus
+  exitCode: number | null
+  stdout: string
+  stderr: string
+  durationMs: number
+  delegateAssistantMessageId: string
+  delegateToolCallId: string
+  metadata?: {
+    branchId?: string
+    branchConversationId?: string
+  }
+}
+
 export type ChatMessage =
   | ChatUserMessage
   | ChatAssistantMessage
   | ChatToolMessage
   | ChatExternalAgentResultMessage
   | ChatSubagentResultMessage
+  | ChatTerminalCommandResultMessage
 
 export type AssistantToolMessageGroup = (
   | ChatAssistantMessage
   | ChatToolMessage
   | ChatExternalAgentResultMessage
   | ChatSubagentResultMessage
+  | ChatTerminalCommandResultMessage
 )[]
 
 export type SerializedChatUserMessage = {
@@ -258,6 +279,8 @@ export type SerializedChatToolMessage = {
 export type SerializedChatExternalAgentResultMessage =
   ChatExternalAgentResultMessage
 export type SerializedChatSubagentResultMessage = ChatSubagentResultMessage
+export type SerializedChatTerminalCommandResultMessage =
+  ChatTerminalCommandResultMessage
 
 export type SerializedChatMessage =
   | SerializedChatUserMessage
@@ -265,6 +288,7 @@ export type SerializedChatMessage =
   | SerializedChatToolMessage
   | SerializedChatExternalAgentResultMessage
   | SerializedChatSubagentResultMessage
+  | SerializedChatTerminalCommandResultMessage
 
 export type ChatConversation = {
   schemaVersion: number

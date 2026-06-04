@@ -25,6 +25,7 @@ import { shellEnvSync } from 'shell-env'
 
 import type { TaskSource } from '../../../types/chat'
 
+import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
 import { type AsyncTaskRecord, asyncTaskRegistry } from './async-task-registry'
 import { ClaudeStreamParser } from './claudeStreamParser'
 import { externalCliStreamBus } from './streamBus'
@@ -631,7 +632,7 @@ export async function runExternalAgent(
     activeProcesses.delete(placeholder)
     activeProcesses.add(killProcess)
 
-    // ── 后台完成处理（async 模式 close 后 emit task-completed）──
+    // ── 后台完成处理（async 模式 close 后 emit background completion event）──
     const handleClose = (code: number | null, timedOut: boolean) => {
       if (!asyncRecord) return
       const { text: stdoutText } = stdoutCollector.finalize()
@@ -660,8 +661,8 @@ export async function runExternalAgent(
 
       const updatedRecord = asyncTaskRegistry.get(asyncRecord.taskId)
       if (updatedRecord) {
-        externalCliStreamBus.push({
-          type: 'task-completed',
+        backgroundTaskCompletionBus.pushCompleted({
+          kind: 'external_agent',
           taskId: asyncRecord.taskId,
           conversationId: asyncRecord.conversationId,
           record: updatedRecord,
@@ -735,7 +736,7 @@ export async function runExternalAgent(
     )
 
     if (isAsync && asyncRecord) {
-      // 后台跑，不 await；错误不上抛（子进程失败已通过 task-completed 事件传出）
+      // 后台跑，不 await；错误不上抛（子进程失败已通过 background completion event 传出）
       syncPromise.catch(() => {})
       return {
         accepted: true,
@@ -818,7 +819,7 @@ export async function runExternalAgent(
   activeProcesses.delete(placeholder)
   activeProcesses.add(killProcess)
 
-  // ── 后台完成处理（async 模式 close 后 emit task-completed）──
+  // ── 后台完成处理（async 模式 close 后 emit background completion event）──
   const handleCloseAsync = (code: number | null, timedOut: boolean) => {
     if (!asyncRecord) return
     const { text: stdoutText } = finalTextCollector.finalize()
@@ -846,8 +847,8 @@ export async function runExternalAgent(
 
     const updatedRecord = asyncTaskRegistry.get(asyncRecord.taskId)
     if (updatedRecord) {
-      externalCliStreamBus.push({
-        type: 'task-completed',
+      backgroundTaskCompletionBus.pushCompleted({
+        kind: 'external_agent',
         taskId: asyncRecord.taskId,
         conversationId: asyncRecord.conversationId,
         record: updatedRecord,

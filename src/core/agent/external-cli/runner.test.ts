@@ -28,6 +28,13 @@ jest.mock('./streamBus', () => ({
   },
 }))
 
+const pushCompletedMock = jest.fn()
+jest.mock('../background-task/completion-bus', () => ({
+  backgroundTaskCompletionBus: {
+    pushCompleted: pushCompletedMock,
+  },
+}))
+
 // ── 模拟 async-task-registry ──
 const registerMock = jest.fn()
 const updateMock = jest.fn()
@@ -739,7 +746,7 @@ describe('runExternalAgent — async mode', () => {
     simulateSuccess('output text')
   })
 
-  it('mode=async — 进程完成后 emit task-completed 事件', async () => {
+  it('mode=async — 进程完成后 emit background completion 事件', async () => {
     const abortController = new AbortController()
     const completedRecord = {
       taskId: 'ext_test002',
@@ -790,10 +797,10 @@ describe('runExternalAgent — async mode', () => {
       expect.objectContaining({ status: 'completed', exitCode: 0 }),
     )
 
-    // streamBus.push 应该有 task-completed 事件
-    expect(pushMock).toHaveBeenCalledWith(
+    // background completion bus 应该收到完成语义事件
+    expect(pushCompletedMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'task-completed',
+        kind: 'external_agent',
         taskId: 'ext_test002',
       }),
     )

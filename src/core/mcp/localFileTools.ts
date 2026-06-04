@@ -4357,6 +4357,17 @@ export async function callLocalFileTool({
       case TERMINAL_COMMAND_TOOL_NAME: {
         const { runBash } = await import('../agent/bash/index')
 
+        let assistantMessageId = ''
+        if (conversationMessages) {
+          for (let i = conversationMessages.length - 1; i >= 0; i--) {
+            const m = conversationMessages[i]
+            if (m.role === 'assistant') {
+              assistantMessageId = m.id
+              break
+            }
+          }
+        }
+
         let cwd = getOptionalTextArg(args, 'cwd')?.trim() ?? ''
         if (!cwd) {
           const adapter = app.vault.adapter
@@ -4384,6 +4395,15 @@ export async function callLocalFileTool({
           }),
           kill: getOptionalBooleanArg(args, 'kill') ?? false,
           signal,
+          conversationId,
+          source:
+            conversationId && toolCallId && assistantMessageId
+              ? {
+                  type: 'llm_tool_call',
+                  toolCallId,
+                  assistantMessageId,
+                }
+              : undefined,
         })
 
         const exitOk =

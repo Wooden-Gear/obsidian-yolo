@@ -36,6 +36,7 @@ import type {
   ChatMessage,
   ChatSelectedSkill,
   ChatSubagentResultMessage,
+  ChatTerminalCommandResultMessage,
   ChatToolMessage,
   ChatUserMessage,
 } from '../../types/chat'
@@ -78,6 +79,7 @@ import {
 } from './contextual-injections'
 import { serializeExternalAgentResultToUserMessage } from './externalAgentResultSerializer'
 import { serializeSubagentResultToUserMessage } from './subagentResultSerializer'
+import { serializeTerminalCommandResultToUserMessage } from './terminalCommandResultSerializer'
 import {
   filterEmptyAssistantMessages,
   filterRequestMessagesByToolBoundary,
@@ -888,6 +890,13 @@ export class RequestContextBuilder {
             continue
           }
 
+          if (message.role === 'terminal_command_result') {
+            requestMessages.push(
+              this.parseTerminalCommandResultMessage(message),
+            )
+            continue
+          }
+
           requestMessages.push(
             ...this.parseToolMessage({ message, prunedToolCallIds }),
           )
@@ -931,6 +940,11 @@ export class RequestContextBuilder {
 
       if (message.role === 'subagent_result') {
         requestMessages.push(this.parseSubagentResultMessage(message))
+        continue
+      }
+
+      if (message.role === 'terminal_command_result') {
+        requestMessages.push(this.parseTerminalCommandResultMessage(message))
         continue
       }
 
@@ -1168,6 +1182,12 @@ ${message.annotations
     message: ChatSubagentResultMessage,
   ): RequestMessage {
     return serializeSubagentResultToUserMessage(message)
+  }
+
+  private parseTerminalCommandResultMessage(
+    message: ChatTerminalCommandResultMessage,
+  ): RequestMessage {
+    return serializeTerminalCommandResultToUserMessage(message)
   }
 
   private parseToolMessage({
