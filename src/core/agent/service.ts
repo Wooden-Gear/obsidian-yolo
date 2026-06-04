@@ -23,14 +23,14 @@ import { DEFAULT_BRANCH_ID } from './branch'
 import { CitationRegistry } from './citationRegistry'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
 import type { ExternalCliEvent } from './external-cli/streamBus'
+import { NativeAgentRuntime } from './native-runtime'
+import { PromptSourceWatcher } from './promptSourceWatcher'
 import {
-  buildSubagentParentContext,
   type SubagentParentContext,
+  buildSubagentParentContext,
 } from './subagent/parent-context'
 import { subagentStreamBus } from './subagent/stream-bus'
 import type { SubagentTaskRecord } from './subagent/types'
-import { NativeAgentRuntime } from './native-runtime'
-import { PromptSourceWatcher } from './promptSourceWatcher'
 import { SystemPromptSnapshotStore } from './systemPromptSnapshotStore'
 import {
   AgentRunContext,
@@ -148,7 +148,9 @@ function buildSubagentResultMessage(
     taskId: record.taskId,
     source: record.source,
     title: record.title,
-    status: result?.status ?? (record.status === 'running' ? 'completed' : record.status),
+    status:
+      result?.status ??
+      (record.status === 'running' ? 'completed' : record.status),
     content: result?.content ?? record.error ?? '',
     durationMs: result?.durationMs ?? completedAt - record.createdAt,
     toolUseCount: result?.toolUseCount ?? 0,
@@ -1041,8 +1043,10 @@ export class AgentService {
   getPendingApprovalSubagentParentContext(
     conversationId: string,
   ): SubagentParentContext | undefined {
-    const recovery = this.getOrCreateConversationEntry(conversationId)
-      .pendingApprovalRecoveryContext
+    const recovery =
+      this.getOrCreateConversationEntry(
+        conversationId,
+      ).pendingApprovalRecoveryContext
     if (!recovery) {
       return undefined
     }
@@ -1075,8 +1079,7 @@ export class AgentService {
     const recoveryContext = conversationEntry.pendingApprovalRecoveryContext
     const activeRunInput = located.runEntry?.lastRunInput ?? null
     const activeLoopConfig = located.runEntry?.lastLoopConfig ?? null
-    const lastRunInput =
-      activeRunInput ?? recoveryContext?.lastRunInput ?? null
+    const lastRunInput = activeRunInput ?? recoveryContext?.lastRunInput ?? null
     const lastLoopConfig =
       activeLoopConfig ?? recoveryContext?.lastLoopConfig ?? null
     const lastRunContext =
@@ -1157,9 +1160,7 @@ export class AgentService {
       return false
     }
 
-    if (
-      isTrailingResolvedToolMessage(nextMessages, toolMessage.id)
-    ) {
+    if (isTrailingResolvedToolMessage(nextMessages, toolMessage.id)) {
       await this.run({
         conversationId,
         loopConfig: lastLoopConfig,
@@ -2062,10 +2063,7 @@ export class AgentService {
         messages: updatedMessages,
         status: status ?? conversationEntry.state.status,
       }
-      this.syncPendingApprovalRecoveryContext(
-        conversationId,
-        updatedMessages,
-      )
+      this.syncPendingApprovalRecoveryContext(conversationId, updatedMessages)
     }
 
     this.recomputeConversationState(conversationId)

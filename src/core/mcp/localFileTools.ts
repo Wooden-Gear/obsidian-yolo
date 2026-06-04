@@ -2735,30 +2735,6 @@ async function maybeWithInternalWrite<T>(
   return task()
 }
 
-async function maybeWithInternalWrites<T>(
-  promptSourceWatcher: PromptSourceWatcher | undefined,
-  paths: string[],
-  task: () => Promise<T>,
-): Promise<T> {
-  const watched = paths.filter((path) =>
-    promptSourceWatcher?.isWatchedPath(path),
-  )
-  if (!promptSourceWatcher || watched.length === 0) {
-    return task()
-  }
-  for (const path of watched) {
-    promptSourceWatcher.markInternalWriteStart(path)
-  }
-  try {
-    return await task()
-  } finally {
-    await Promise.resolve()
-    for (const path of watched) {
-      promptSourceWatcher.markInternalWriteEnd(path)
-    }
-  }
-}
-
 export async function callLocalFileTool({
   app,
   settings,
@@ -3673,16 +3649,12 @@ export async function callLocalFileTool({
           }
 
           appliedContent = reviewResult.finalContent
-          await maybeWithInternalWrite(
-            promptSourceWatcher,
-            path,
-            () => app.vault.modify(file, appliedContent),
+          await maybeWithInternalWrite(promptSourceWatcher, path, () =>
+            app.vault.modify(file, appliedContent),
           )
         } else {
-          await maybeWithInternalWrite(
-            promptSourceWatcher,
-            path,
-            () => app.vault.modify(file, nextContent),
+          await maybeWithInternalWrite(promptSourceWatcher, path, () =>
+            app.vault.modify(file, nextContent),
           )
         }
 
@@ -3738,19 +3710,20 @@ export async function callLocalFileTool({
         const path = normalizePath(getTextArg(args, 'path'))
         return maybeWithInternalWrite(promptSourceWatcher, path, () =>
           executeFsFileOps({
-          app,
-          settings,
-          action: 'write',
-          item: {
-            path,
-            content: getTextArg(args, 'content'),
-          },
-          signal,
-          tool: 'fs_write',
-          conversationId,
-          roundId,
-          toolCallId,
-        }))
+            app,
+            settings,
+            action: 'write',
+            item: {
+              path,
+              content: getTextArg(args, 'content'),
+            },
+            signal,
+            tool: 'fs_write',
+            conversationId,
+            roundId,
+            toolCallId,
+          }),
+        )
       }
 
       case 'fs_delete': {
@@ -3758,19 +3731,20 @@ export async function callLocalFileTool({
         const recursive = getOptionalBooleanArg(args, 'recursive')
         return maybeWithInternalWrite(promptSourceWatcher, path, () =>
           executeFsFileOps({
-          app,
-          settings,
-          action: 'delete',
-          item: {
-            path,
-            ...(recursive === undefined ? {} : { recursive }),
-          },
-          signal,
-          tool: 'fs_delete',
-          conversationId,
-          roundId,
-          toolCallId,
-        }))
+            app,
+            settings,
+            action: 'delete',
+            item: {
+              path,
+              ...(recursive === undefined ? {} : { recursive }),
+            },
+            signal,
+            tool: 'fs_delete',
+            conversationId,
+            roundId,
+            toolCallId,
+          }),
+        )
       }
 
       case 'fs_create_dir': {

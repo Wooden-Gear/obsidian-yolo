@@ -13,7 +13,9 @@ export function filterAllowedToolsForSubagent(
     return []
   }
 
-  const filtered = parentAllowedToolNames.filter((name) => !blockedSet.has(name))
+  const filtered = parentAllowedToolNames.filter(
+    (name) => !blockedSet.has(name),
+  )
   return filtered.length > 0 ? filtered : []
 }
 

@@ -1,4 +1,7 @@
-import type { AssistantToolMessageGroup, ChatToolMessage } from '../../types/chat'
+import type {
+  AssistantToolMessageGroup,
+  ChatToolMessage,
+} from '../../types/chat'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 
 import { buildMessageTimelineItems } from './timeline'

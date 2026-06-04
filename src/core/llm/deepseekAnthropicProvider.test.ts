@@ -18,9 +18,7 @@ describe('resolveDeepSeekAnthropicBaseUrl', () => {
 
   it('keeps explicit Anthropic paths and custom gateways', () => {
     expect(
-      resolveDeepSeekAnthropicBaseUrl(
-        'https://api.deepseek.com/anthropic/v1',
-      ),
+      resolveDeepSeekAnthropicBaseUrl('https://api.deepseek.com/anthropic/v1'),
     ).toBe('https://api.deepseek.com/anthropic')
     expect(resolveDeepSeekAnthropicBaseUrl('https://proxy.example/v1')).toBe(
       'https://proxy.example',

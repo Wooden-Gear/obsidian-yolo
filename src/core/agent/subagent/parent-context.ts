@@ -3,7 +3,10 @@ import type {
   AssistantWorkspaceScope,
 } from '../../../types/assistant.types'
 import type { ChatModel } from '../../../types/chat-model.types'
-import type { LLMProvider, LLMProviderApiType } from '../../../types/provider.types'
+import type {
+  LLMProvider,
+  LLMProviderApiType,
+} from '../../../types/provider.types'
 import type { ReasoningLevel } from '../../../types/reasoning'
 import type { RequestContextBuilder } from '../../../utils/chat/requestContextBuilder'
 import type { BaseLLMProvider } from '../../llm/base'

@@ -6,9 +6,9 @@ describe('model-id-utils', () => {
     expect(detectReasoningTypeFromModelId('deepseek/deepseek-v4-flash')).toBe(
       'openai',
     )
-    expect(detectReasoningTypeFromModelId('provider/custom-deepseek-v4-pro')).toBe(
-      'openai',
-    )
+    expect(
+      detectReasoningTypeFromModelId('provider/custom-deepseek-v4-pro'),
+    ).toBe('openai')
     expect(detectReasoningTypeFromModelId('deepseek-chat')).toBe('none')
   })
 })
