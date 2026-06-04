@@ -469,7 +469,7 @@ const parseSummaryFromResponse = (content: string): string => {
  *   turn (path 1 only); empty for paths 2/3.
  * - `focusInstruction` is the `context_compact` tool's `instruction` hint.
  *
- * Uses `purpose: 'standard'` (NOT auxiliary — that strips provider features and
+ * Uses `purpose: 'standard'` (NOT lightweight — that strips provider features and
  * breaks prefix parity) and forwards the same `tools` with `tool_choice: 'none'`
  * so the tools block stays in the cache prefix while tool calls are forbidden.
  */

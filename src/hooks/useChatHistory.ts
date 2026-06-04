@@ -648,9 +648,10 @@ export function useChatHistory(): UseChatHistory {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: titleInput },
                   ],
+                  reasoningLevel: 'off',
                 },
                 stream: false,
-                purpose: 'auxiliary',
+                purpose: 'lightweight',
                 signal: controller.signal,
                 debugTraceId: debugTrace?.id,
               })

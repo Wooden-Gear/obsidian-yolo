@@ -22,7 +22,7 @@ import {
   bindLLMDebugTraceToSignal,
   runWithLLMDebugTrace,
 } from '../llm/debugCapture'
-import { stripProviderFeatures } from '../llm/strip-provider-features'
+import { applyLightweightRequestPolicy } from '../llm/lightweight-request-policy'
 import { isLocalFsWriteToolName } from '../mcp/localFileTools'
 
 import {
@@ -83,11 +83,11 @@ type SingleTurnExecutionInput = {
   /**
    * `standard` (default): forward the model as-configured, including any
    * hosted tools, reasoning, and custom-parameter injections.
-   * `auxiliary`: strip those features for one-shot helper calls
-   * (title generation, conversation compaction) that should be a plain
-   * "messages in, short reply out" round trip.
+   * `lightweight`: apply the lightweight request policy for one-shot helper
+   * calls (title generation, tab completion, short summaries) that
+   * should not inherit hosted tools or heavyweight model customizations.
    */
-  purpose?: 'standard' | 'auxiliary'
+  purpose?: 'standard' | 'lightweight'
   onStreamDelta?: (delta: {
     contentDelta: string
     reasoningDelta: string
@@ -249,12 +249,16 @@ export async function executeSingleTurn({
 }: SingleTurnExecutionInput): Promise<SingleTurnExecutionResult> {
   const resolvedToolChoice: RequestToolChoice | undefined =
     tool_choice ?? (tools ? 'auto' : undefined)
-  const isAuxiliary = purpose === 'auxiliary'
-  const effectiveModel = isAuxiliary ? stripProviderFeatures(model) : model
-  // Auxiliary calls must never carry Gemini-native hosted tools, regardless of
-  // what the caller passes in — the option lives outside the ChatModel object
-  // and would otherwise bypass stripProviderFeatures.
-  const effectiveGeminiTools = isAuxiliary ? undefined : geminiTools
+  const isLightweight = purpose === 'lightweight'
+  const baseProviderOptions = { geminiTools }
+  const effectivePolicy = isLightweight
+    ? applyLightweightRequestPolicy({
+        model,
+        options: baseProviderOptions,
+      })
+    : { model, options: baseProviderOptions }
+  const effectiveModel = effectivePolicy.model
+  const effectiveProviderOptions = effectivePolicy.options
   const withDebugTrace = <T>(run: () => Promise<T>): Promise<T> =>
     runWithLLMDebugTrace(debugTraceId, run)
   const runNonStreaming = async (): Promise<SingleTurnExecutionResult> => {
@@ -280,7 +284,7 @@ export async function executeSingleTurn({
           {
             signal: requestController.signal,
             debugTraceId,
-            geminiTools: effectiveGeminiTools,
+            geminiTools: effectiveProviderOptions.geminiTools,
           },
         ),
       )
@@ -367,7 +371,7 @@ export async function executeSingleTurn({
         {
           signal: streamController.signal,
           debugTraceId,
-          geminiTools: effectiveGeminiTools,
+          geminiTools: effectiveProviderOptions.geminiTools,
         },
       )
 

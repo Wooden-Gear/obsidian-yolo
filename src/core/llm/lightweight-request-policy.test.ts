@@ -1,6 +1,10 @@
 import { ChatModel } from '../../types/chat-model.types'
 
-import { stripProviderFeatures } from './strip-provider-features'
+import {
+  applyLightweightRequestPolicy,
+  stripHeavyProviderFeatures,
+  stripHostedToolOptions,
+} from './lightweight-request-policy'
 
 const baseModel: ChatModel = {
   providerId: 'openrouter',
@@ -8,9 +12,9 @@ const baseModel: ChatModel = {
   model: 'google/gemini-3-flash-preview',
 }
 
-describe('stripProviderFeatures', () => {
-  it('forces reasoningType to none and clears builtin tool configuration', () => {
-    const stripped = stripProviderFeatures({
+describe('lightweight request policy', () => {
+  it('keeps reasoningType while clearing builtin tool configuration', () => {
+    const stripped = stripHeavyProviderFeatures({
       ...baseModel,
       reasoningType: 'gemini',
       builtinToolProvider: 'openrouter',
@@ -20,14 +24,14 @@ describe('stripProviderFeatures', () => {
       web_search_options: { search_context_size: 'medium' },
     })
 
-    expect(stripped.reasoningType).toBe('none')
+    expect(stripped.reasoningType).toBe('gemini')
     expect(stripped.builtinToolProvider).toBe('none')
     expect(stripped.builtinTools).toBeUndefined()
     expect(stripped.web_search_options).toBeUndefined()
   })
 
   it('drops customParameters that fall outside the lightweight allowlist', () => {
-    const stripped = stripProviderFeatures({
+    const stripped = stripHeavyProviderFeatures({
       ...baseModel,
       customParameters: [
         // hosted tools / search re-injection
@@ -66,7 +70,7 @@ describe('stripProviderFeatures', () => {
       { key: 'seed', value: '42' },
       { key: 'response_format', value: '{"type":"text"}' },
     ]
-    const stripped = stripProviderFeatures({
+    const stripped = stripHeavyProviderFeatures({
       ...baseModel,
       customParameters: allowed,
     })
@@ -74,7 +78,7 @@ describe('stripProviderFeatures', () => {
   })
 
   it('keeps unrelated model fields intact', () => {
-    const stripped = stripProviderFeatures({
+    const stripped = stripHeavyProviderFeatures({
       ...baseModel,
       temperature: 0.3,
       maxOutputTokens: 256,
@@ -84,7 +88,36 @@ describe('stripProviderFeatures', () => {
   })
 
   it('returns an empty customParameters list when input is undefined', () => {
-    const stripped = stripProviderFeatures(baseModel)
+    const stripped = stripHeavyProviderFeatures(baseModel)
     expect(stripped.customParameters).toEqual([])
+  })
+
+  it('clears call-level hosted tool options', () => {
+    expect(
+      stripHostedToolOptions({
+        signal: new AbortController().signal,
+        debugTraceId: 'trace-1',
+        geminiTools: { useWebSearch: true, useUrlContext: true },
+      }),
+    ).toMatchObject({
+      debugTraceId: 'trace-1',
+      geminiTools: undefined,
+    })
+  })
+
+  it('applies model and call-level lightweight policy together', () => {
+    const result = applyLightweightRequestPolicy({
+      model: {
+        ...baseModel,
+        reasoningType: 'openai',
+        builtinToolProvider: 'gpt',
+        builtinTools: { gpt: { webSearch: { enabled: true } } },
+      },
+      options: { geminiTools: { useWebSearch: true } },
+    })
+
+    expect(result.model.reasoningType).toBe('openai')
+    expect(result.model.builtinToolProvider).toBe('none')
+    expect(result.options.geminiTools).toBeUndefined()
   })
 })
