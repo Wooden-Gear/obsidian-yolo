@@ -45,6 +45,77 @@ describe('terminal command session-manager', () => {
     expect(result.stderr.trim()).toBe('err')
   })
 
+  it('returns only tail lines when requested', async () => {
+    const result = await runBash({
+      command: `printf 'one\\ntwo\\nthree\\n'; printf 'warn-1\\nwarn-2\\n' >&2`,
+      cwd: '/tmp',
+      timeoutSeconds: 2,
+      tailLines: 2,
+    })
+
+    expect(result.state).toBe('completed')
+    expect(result.stdout).toBe('two\nthree\n')
+    expect(result.stderr).toBe('warn-1\nwarn-2\n')
+    expect(result.truncated).toEqual(
+      expect.objectContaining({
+        omittedBytes: expect.any(Number),
+      }),
+    )
+  })
+
+  it('returns only tail bytes when requested', async () => {
+    const result = await runBash({
+      command: `printf 'abcdef'; printf '123456' >&2`,
+      cwd: '/tmp',
+      timeoutSeconds: 2,
+      tailBytes: 3,
+    })
+
+    expect(result.state).toBe('completed')
+    expect(result.stdout).toBe('def')
+    expect(result.stderr).toBe('456')
+  })
+
+  it('polls a running session immediately with tail lines', async () => {
+    const started = await runBash({
+      command: `sh -c 'i=0; while [ $i -lt 20 ]; do i=$((i+1)); echo "line-$i"; sleep 0.05; done; sleep 5'`,
+      cwd: '/tmp',
+      background: true,
+      timeoutSeconds: 10,
+    })
+    expect(started.state).toBe('background')
+    expect(started.session_id).toBeDefined()
+
+    const beforePoll = Date.now()
+    const polled = await runBash({
+      sessionId: started.session_id,
+      tailLines: 3,
+      timeoutSeconds: 10,
+    })
+
+    expect(Date.now() - beforePoll).toBeLessThan(500)
+    expect(polled.state).toBe('running')
+    expect(polled.stdout).toBe('line-18\nline-19\nline-20\n')
+  })
+
+  it('keeps the final session snapshot available for later tail polling', async () => {
+    const completed = await runBash({
+      command: `printf 'one\\ntwo\\nthree\\n'`,
+      cwd: '/tmp',
+      timeoutSeconds: 2,
+    })
+    expect(completed.state).toBe('completed')
+    expect(completed.session_id).toBeDefined()
+
+    const polled = await runBash({
+      sessionId: completed.session_id,
+      tailLines: 2,
+    })
+
+    expect(polled.state).toBe('completed')
+    expect(polled.stdout).toBe('two\nthree\n')
+  })
+
   it('keeps shell state across shared foreground commands', async () => {
     await runBash({
       command: 'cd /tmp',

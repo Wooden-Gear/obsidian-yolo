@@ -29,6 +29,7 @@ const MAX_TIMEOUT_MS = 10 * 60_000
 const BACKGROUND_INITIAL_WAIT_MS = 2_000
 const IDLE_WAIT_MS = 10_000
 const SESSION_IDLE_TTL_MS = 5 * 60_000
+const DONE_SETTLE_MS = 50
 
 export type RunBashParams = {
   command?: string
@@ -37,6 +38,8 @@ export type RunBashParams = {
   background?: boolean
   cwd?: string
   timeoutSeconds?: number
+  tailLines?: number
+  tailBytes?: number
   kill?: boolean
   signal?: AbortSignal
   conversationId?: string
@@ -72,8 +75,20 @@ type ActiveCommand = {
   backgroundRecord?: BashTaskRecord
   backgroundCompletedEmitted?: boolean
   backgroundIdleTimer?: ReturnType<typeof setTimeout> | null
+  backgroundCompletionTimer?: ReturnType<typeof setTimeout> | null
   lastWaitingStdoutBytes: number
   lastWaitingStderrBytes: number
+}
+
+type CommandOutputSnapshot = {
+  state: RunBashResult['state']
+  stdout: string
+  stderr: string
+  exitCode?: number | null
+  truncated?: {
+    totalBytes: number
+    omittedBytes: number
+  }
 }
 
 type BashSession = {
@@ -83,6 +98,7 @@ type BashSession = {
   stdoutDecoder: StringDecoder
   stderrDecoder: StringDecoder
   activeCommand: ActiveCommand | null
+  lastSnapshot: CommandOutputSnapshot | null
   lastUsedAt: number
   killProcess: () => void
   cancelPendingKill: () => void
@@ -178,6 +194,75 @@ class CappedOutputCollector {
       truncated: { totalBytes: this.totalBytes, omittedBytes },
     }
   }
+
+  tail(
+    extraText = '',
+    options: TailOutputOptions,
+    trimTrailingNewlineBeforeTail = false,
+  ): {
+    text: string
+    truncated?: { totalBytes: number; omittedBytes: number }
+  } {
+    const rawBaseText = this.getAvailableTailText() + extraText
+    const baseText = trimTrailingNewlineBeforeTail
+      ? rawBaseText.replace(/\r?\n$/, '')
+      : rawBaseText
+    const text =
+      options.tailLines !== undefined
+        ? tailLines(baseText, options.tailLines)
+        : tailBytes(baseText, options.tailBytes)
+    return {
+      text,
+      truncated:
+        this.capped || text !== baseText
+          ? {
+              totalBytes:
+                this.totalBytes + Buffer.byteLength(extraText, 'utf8'),
+              omittedBytes: Math.max(
+                0,
+                this.totalBytes +
+                  Buffer.byteLength(extraText, 'utf8') -
+                  Buffer.byteLength(text, 'utf8'),
+              ),
+            }
+          : undefined,
+    }
+  }
+
+  private getAvailableTailText(): string {
+    if (!this.capped) {
+      return Buffer.concat(this.fullChunks).toString('utf8')
+    }
+    return Buffer.concat(this.tailChunks).toString('utf8')
+  }
+}
+
+type TailOutputOptions =
+  | { tailLines: number; tailBytes?: undefined }
+  | { tailLines?: undefined; tailBytes: number }
+
+type OutputSnapshotOptions = {
+  tail?: TailOutputOptions
+}
+
+const tailBytes = (text: string, maxBytes: number): string => {
+  const buffer = Buffer.from(text, 'utf8')
+  if (buffer.length <= maxBytes) return text
+  return buffer.subarray(-maxBytes).toString('utf8')
+}
+
+const tailLines = (text: string, maxLines: number): string => {
+  const hasTrailingNewline = text.endsWith('\n')
+  const lines = text.split('\n')
+  if (hasTrailingNewline) {
+    lines.pop()
+  }
+  if (lines.length <= maxLines) return text
+  return lines.slice(-maxLines).join('\n') + (hasTrailingNewline ? '\n' : '')
+}
+
+const trimDoneMarkerSeparator = (text: string): string => {
+  return text.replace(/\r?\n$/, '')
 }
 
 const mergeTruncation = (
@@ -256,17 +341,106 @@ const notifyWaiters = (session: BashSession): void => {
 
 const snapshotActiveCommand = (
   active: ActiveCommand,
+  options: OutputSnapshotOptions = {},
 ): {
   stdout: string
   stderr: string
   truncated?: { totalBytes: number; omittedBytes: number }
 } => {
-  const stdout = active.stdoutCollector.finalize(active.stdoutLineBuffer)
-  const stderr = active.stderrCollector.finalize()
+  const commandDone = active.exitCode !== undefined
+  const stdout = options.tail
+    ? active.stdoutCollector.tail(
+        active.stdoutLineBuffer,
+        options.tail,
+        commandDone,
+      )
+    : active.stdoutCollector.finalize(active.stdoutLineBuffer)
+  const stderr = options.tail
+    ? active.stderrCollector.tail('', options.tail)
+    : active.stderrCollector.finalize()
+  const stdoutText =
+    commandDone && !options.tail
+      ? trimDoneMarkerSeparator(stdout.text)
+      : stdout.text
   return {
-    stdout: stdout.text,
+    stdout: stdoutText,
     stderr: stderr.text,
     truncated: mergeTruncation(stdout.truncated, stderr.truncated),
+  }
+}
+
+const createCommandOutputSnapshot = (
+  active: ActiveCommand,
+  state: RunBashResult['state'],
+  options: OutputSnapshotOptions = {},
+): CommandOutputSnapshot => {
+  const snapshot = snapshotActiveCommand(active, options)
+  return {
+    state,
+    stdout: snapshot.stdout,
+    stderr: snapshot.stderr,
+    ...(active.exitCode !== undefined ? { exitCode: active.exitCode } : {}),
+    ...(snapshot.truncated ? { truncated: snapshot.truncated } : {}),
+  }
+}
+
+const buildResultFromSnapshot = (
+  session: BashSession,
+  snapshot: CommandOutputSnapshot,
+  options: OutputSnapshotOptions = {},
+): RunBashResult => {
+  const stdout = options.tail
+    ? tailTextSnapshot(snapshot.stdout, options.tail)
+    : {
+        text: snapshot.stdout,
+        truncated: snapshot.truncated,
+      }
+  const stderr = options.tail
+    ? tailTextSnapshot(snapshot.stderr, options.tail)
+    : {
+        text: snapshot.stderr,
+        truncated: undefined,
+      }
+  const truncated = options.tail
+    ? (mergeTruncation(stdout.truncated, stderr.truncated) ??
+      snapshot.truncated)
+    : snapshot.truncated
+  return {
+    session_id: session.id,
+    state: snapshot.state,
+    stdout: stdout.text,
+    stderr: stderr.text,
+    ...(snapshot.exitCode !== undefined
+      ? { exit_code: snapshot.exitCode }
+      : {}),
+    ...(truncated ? { truncated } : {}),
+  }
+}
+
+const tailTextSnapshot = (
+  text: string,
+  options: TailOutputOptions,
+): {
+  text: string
+  truncated?: { totalBytes: number; omittedBytes: number }
+} => {
+  const nextText =
+    options.tailLines !== undefined
+      ? tailLines(text, options.tailLines)
+      : tailBytes(text, options.tailBytes)
+  if (nextText === text) {
+    return { text }
+  }
+  const totalBytes = Buffer.byteLength(text, 'utf8')
+  return {
+    text: nextText,
+    truncated: {
+      totalBytes,
+      omittedBytes: Math.max(
+        0,
+        totalBytes - Buffer.byteLength(nextText, 'utf8'),
+      ),
+    },
   }
 }
 
@@ -274,6 +448,12 @@ const clearBackgroundIdleTimer = (active: ActiveCommand | null): void => {
   if (!active?.backgroundIdleTimer) return
   clearTimeout(active.backgroundIdleTimer)
   active.backgroundIdleTimer = null
+}
+
+const clearBackgroundCompletionTimer = (active: ActiveCommand | null): void => {
+  if (!active?.backgroundCompletionTimer) return
+  clearTimeout(active.backgroundCompletionTimer)
+  active.backgroundCompletionTimer = null
 }
 
 const createBashTaskRecord = ({
@@ -315,8 +495,22 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
     return
   }
 
+  const doneAt = active.doneAt ?? Date.now()
+  const settleRemainingMs = DONE_SETTLE_MS - (Date.now() - doneAt)
+  if (settleRemainingMs > 0) {
+    if (!active.backgroundCompletionTimer) {
+      active.backgroundCompletionTimer = setTimeout(() => {
+        active.backgroundCompletionTimer = null
+        emitBackgroundCommandCompleted(session)
+      }, settleRemainingMs)
+      active.backgroundCompletionTimer.unref?.()
+    }
+    return
+  }
+
   active.backgroundCompletedEmitted = true
   clearBackgroundIdleTimer(active)
+  clearBackgroundCompletionTimer(active)
   const completedAt = Date.now()
   const snapshot = snapshotActiveCommand(active)
   const status = active.backgroundRecord.abortController.signal.aborted
@@ -331,6 +525,15 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
     stdoutBuffer: snapshot.stdout,
     stderrBuffer: snapshot.stderr,
     exitCode: active.exitCode ?? null,
+  }
+
+  session.lastSnapshot = {
+    state:
+      status === 'completed' || status === 'failed' ? 'completed' : 'killed',
+    stdout: snapshot.stdout,
+    stderr: snapshot.stderr,
+    exitCode: active.exitCode ?? null,
+    ...(snapshot.truncated ? { truncated: snapshot.truncated } : {}),
   }
 
   backgroundTaskCompletionBus.pushCompleted({
@@ -506,6 +709,7 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
     stdoutDecoder: new StringDecoder('utf8'),
     stderrDecoder: new StringDecoder('utf8'),
     activeCommand: null,
+    lastSnapshot: null,
     lastUsedAt: Date.now(),
     killProcess,
     cancelPendingKill,
@@ -584,9 +788,13 @@ const waitForChange = (
 const buildResult = (
   session: BashSession,
   state: RunBashResult['state'],
+  options: OutputSnapshotOptions = {},
 ): RunBashResult => {
   const active = session.activeCommand
   if (!active) {
+    if (session.lastSnapshot) {
+      return buildResultFromSnapshot(session, session.lastSnapshot, options)
+    }
     return {
       session_id: session.id,
       state,
@@ -595,15 +803,8 @@ const buildResult = (
     }
   }
 
-  const snapshot = snapshotActiveCommand(active)
-  return {
-    session_id: session.id,
-    state,
-    stdout: snapshot.stdout,
-    stderr: snapshot.stderr,
-    ...(active.exitCode !== undefined ? { exit_code: active.exitCode } : {}),
-    ...(snapshot.truncated ? { truncated: snapshot.truncated } : {}),
-  }
+  const snapshot = createCommandOutputSnapshot(active, state, options)
+  return buildResultFromSnapshot(session, snapshot)
 }
 
 const waitForCommandState = async ({
@@ -612,12 +813,14 @@ const waitForCommandState = async ({
   timeoutMs,
   signal,
   backgroundRecordFactory,
+  outputSnapshotOptions,
 }: {
   session: BashSession
   background: boolean
   timeoutMs: number
   signal?: AbortSignal
   backgroundRecordFactory?: () => BashTaskRecord
+  outputSnapshotOptions?: OutputSnapshotOptions
 }): Promise<RunBashResult> => {
   const startedAt = Date.now()
   while (true) {
@@ -628,13 +831,23 @@ const waitForCommandState = async ({
 
     if (signal?.aborted) {
       clearBackgroundIdleTimer(active)
+      clearBackgroundCompletionTimer(active)
       session.killProcess()
-      return buildResult(session, 'killed')
+      return buildResult(session, 'killed', outputSnapshotOptions)
     }
 
     if (active.exitCode !== undefined) {
-      const result = buildResult(session, 'completed')
+      if (
+        active.doneAt !== undefined &&
+        Date.now() - active.doneAt < DONE_SETTLE_MS
+      ) {
+        await waitForChange(session, signal)
+        continue
+      }
+      session.lastSnapshot = createCommandOutputSnapshot(active, 'completed')
+      const result = buildResult(session, 'completed', outputSnapshotOptions)
       clearBackgroundIdleTimer(active)
+      clearBackgroundCompletionTimer(active)
       session.activeCommand = null
       session.lastUsedAt = Date.now()
       return result
@@ -646,13 +859,13 @@ const waitForCommandState = async ({
         active.backgroundRecord = backgroundRecordFactory()
         scheduleBackgroundIdleTimer(session)
       }
-      return buildResult(session, 'background')
+      return buildResult(session, 'background', outputSnapshotOptions)
     }
     if (!background && now - active.lastOutputAt >= IDLE_WAIT_MS) {
-      return buildResult(session, 'waiting')
+      return buildResult(session, 'waiting', outputSnapshotOptions)
     }
     if (!background && now - startedAt >= timeoutMs) {
-      return buildResult(session, 'timeout')
+      return buildResult(session, 'timeout', outputSnapshotOptions)
     }
 
     await waitForChange(session, signal)
@@ -665,6 +878,27 @@ const resolveTimeoutMs = (timeoutSeconds?: number): number => {
     throw new Error('timeout must be a positive number of seconds.')
   }
   return Math.min(Math.floor(timeoutSeconds * 1000), MAX_TIMEOUT_MS)
+}
+
+const resolveOutputSnapshotOptions = (
+  params: RunBashParams,
+): OutputSnapshotOptions => {
+  if (params.tailLines !== undefined && params.tailBytes !== undefined) {
+    throw new Error('tail_lines and tail_bytes cannot be used together.')
+  }
+  if (params.tailLines !== undefined) {
+    if (!Number.isFinite(params.tailLines) || params.tailLines <= 0) {
+      throw new Error('tail_lines must be a positive integer.')
+    }
+    return { tail: { tailLines: Math.floor(params.tailLines) } }
+  }
+  if (params.tailBytes !== undefined) {
+    if (!Number.isFinite(params.tailBytes) || params.tailBytes <= 0) {
+      throw new Error('tail_bytes must be a positive integer.')
+    }
+    return { tail: { tailBytes: Math.floor(params.tailBytes) } }
+  }
+  return {}
 }
 
 export async function runBash(params: RunBashParams): Promise<RunBashResult> {
@@ -683,6 +917,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   }
 
   const timeoutMs = resolveTimeoutMs(params.timeoutSeconds)
+  const outputSnapshotOptions = resolveOutputSnapshotOptions(params)
   const session =
     params.sessionId !== undefined
       ? sessions.get(params.sessionId)
@@ -699,6 +934,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   if (params.kill) {
     session.activeCommand?.backgroundRecord?.abortController.abort()
     clearBackgroundIdleTimer(session.activeCommand)
+    clearBackgroundCompletionTimer(session.activeCommand)
     session.killProcess()
     sessions.delete(session.id)
     if (sharedSessionId === session.id) sharedSessionId = null
@@ -710,6 +946,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   }
 
   const command = params.command?.trim()
+  const isPollOnly = params.sessionId !== undefined && !command && !params.input
   if (command) {
     if (session.activeCommand && session.activeCommand.exitCode === undefined) {
       throw new Error(
@@ -717,6 +954,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
       )
     }
     const token = makeToken()
+    session.lastSnapshot = null
     session.activeCommand = {
       token,
       stdoutCollector: new CappedOutputCollector(),
@@ -724,6 +962,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
       stdoutLineBuffer: '',
       lastOutputAt: Date.now(),
       backgroundIdleTimer: null,
+      backgroundCompletionTimer: null,
       lastWaitingStdoutBytes: 0,
       lastWaitingStderrBytes: 0,
     }
@@ -737,13 +976,17 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     )
   }
 
+  if (isPollOnly) {
+    const active = session.activeCommand
+    return buildResult(
+      session,
+      active?.exitCode !== undefined ? 'completed' : 'running',
+      outputSnapshotOptions,
+    )
+  }
+
   if (!session.activeCommand) {
-    return {
-      session_id: session.id,
-      state: 'running',
-      stdout: '',
-      stderr: '',
-    }
+    return buildResult(session, 'running', outputSnapshotOptions)
   }
 
   const backgroundCommand =
@@ -754,6 +997,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     background: params.background === true,
     timeoutMs,
     signal: params.signal,
+    outputSnapshotOptions,
     backgroundRecordFactory:
       backgroundCommand && params.conversationId && params.source
         ? () =>
@@ -770,6 +1014,8 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
 export function killAllBashSessions(): void {
   for (const session of sessions.values()) {
     try {
+      clearBackgroundIdleTimer(session.activeCommand)
+      clearBackgroundCompletionTimer(session.activeCommand)
       session.killProcess()
     } catch {
       // best-effort cleanup

@@ -981,6 +981,7 @@ export function getLocalFileTools(options?: {
         'when the command keeps running; session_id polls or continues an existing ' +
         'session; input sends stdin to that session; kill=true terminates it. ' +
         'Results separate stdout and stderr. ' +
+        'Use tail_lines or tail_bytes when polling verbose sessions to inspect recent logs only. ' +
         'Avoid heredocs and full-screen TUI programs such as vim/top. Long-running ' +
         'commands should use background=true.',
       inputSchema: {
@@ -1015,6 +1016,16 @@ export function getLocalFileTools(options?: {
             type: 'integer',
             description:
               'Maximum seconds to wait for foreground output before returning a live session_id. Defaults to 30.',
+          },
+          tail_lines: {
+            type: 'integer',
+            description:
+              'Return only the last N lines from stdout and stderr. Useful when polling verbose long-running sessions.',
+          },
+          tail_bytes: {
+            type: 'integer',
+            description:
+              'Return only the last N bytes from stdout and stderr. Cannot be combined with tail_lines.',
           },
           kill: {
             type: 'boolean',
@@ -4394,6 +4405,18 @@ export async function callLocalFileTool({
             min: 1,
             max: 600,
           }),
+          tailLines: getOptionalBoundedIntegerArg({
+            args,
+            key: 'tail_lines',
+            min: 1,
+            max: 10_000,
+          }),
+          tailBytes: getOptionalBoundedIntegerArg({
+            args,
+            key: 'tail_bytes',
+            min: 1,
+            max: 1_048_576,
+          }),
           kill: getOptionalBooleanArg(args, 'kill') ?? false,
           signal,
           conversationId,
@@ -4416,7 +4439,8 @@ export async function callLocalFileTool({
             session_id: result.session_id,
             state: result.state,
             exit_code: result.exit_code,
-            stdout: result.stdout || '（无输出）',
+            stdout: result.stdout,
+            stderr: result.stderr,
           },
           null,
           2,
