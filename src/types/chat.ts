@@ -193,7 +193,7 @@ export type ChatTerminalCommandResultMessage = {
   taskId: string
   source: TaskSource
   title: string
-  status: AsyncTaskStatus
+  status: 'running' | AsyncTaskStatus
   exitCode: number | null
   stdout: string
   stderr: string

@@ -67,7 +67,7 @@ const createPosixProvider = (
   spawnArgs: getPosixSpawnArgs(binary),
   env,
   lineEnding: '\n',
-  sessionInitScript: 'exec 2>&1',
+  sessionInitScript: '',
   wrapCommand: ({ command, token, cwd }) => {
     if (!cwd) {
       return `{ ${command}\n}; __yolo_exit=$?; printf '\\n${DONE_PREFIX}${token}_%s__\\n' "$__yolo_exit"`

@@ -980,6 +980,7 @@ export function getLocalFileTools(options?: {
         'Arguments: command starts a command; background=true returns a session_id ' +
         'when the command keeps running; session_id polls or continues an existing ' +
         'session; input sends stdin to that session; kill=true terminates it. ' +
+        'Results separate stdout and stderr. ' +
         'Avoid heredocs and full-screen TUI programs such as vim/top. Long-running ' +
         'commands should use background=true.',
       inputSchema: {

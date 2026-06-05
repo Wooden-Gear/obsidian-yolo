@@ -26,14 +26,14 @@ import {
 import { parseToolName } from '../mcp/tool-name-utils'
 
 import {
+  type BackgroundTaskEvent,
+  backgroundTaskCompletionBus,
+} from './background-task/completion-bus'
+import {
   DEFAULT_BLOCKED_PREFIXES,
   isBlockedByCommandPrefix,
 } from './bash/command-classifier'
 import type { BashTaskRecord } from './bash/types'
-import {
-  type BackgroundTaskCompletedEvent,
-  backgroundTaskCompletionBus,
-} from './background-task/completion-bus'
 import { DEFAULT_BRANCH_ID } from './branch'
 import { CitationRegistry } from './citationRegistry'
 import type { AsyncTaskRecord } from './external-cli/async-task-registry'
@@ -212,7 +212,7 @@ function buildTerminalCommandResultMessage(
     taskId: record.taskId,
     source: record.source,
     title: record.title,
-    status: record.status === 'running' ? 'completed' : record.status,
+    status: record.status,
     exitCode: record.exitCode,
     stdout: record.stdoutBuffer,
     stderr: record.stderrBuffer,
@@ -224,6 +224,13 @@ function buildTerminalCommandResultMessage(
     delegateToolCallId:
       record.source.type === 'llm_tool_call' ? record.source.toolCallId : '',
   }
+}
+
+const getBackgroundTaskEventTime = (event: BackgroundTaskEvent): number => {
+  if (event.kind === 'terminal_command_waiting') {
+    return event.occurredAt
+  }
+  return event.record.completedAt ?? 0
 }
 
 const reconcileAssistantGenerationState = (
@@ -697,7 +704,7 @@ export class AgentService {
   /** pending background task results per conversation (queued while streaming) */
   private pendingBackgroundTaskResults = new Map<
     string,
-    BackgroundTaskCompletedEvent[]
+    BackgroundTaskEvent[]
   >()
   private pendingResultsSubscribers =
     new Set<PendingExternalAgentResultsSubscriber>()
@@ -832,7 +839,7 @@ export class AgentService {
   startBackgroundTaskResultListener(): void {
     if (this.unsubscribeBackgroundTaskCompleted) return
     this.unsubscribeBackgroundTaskCompleted =
-      backgroundTaskCompletionBus.subscribeCompleted((event) => {
+      backgroundTaskCompletionBus.subscribe((event) => {
         this.handleBackgroundTaskCompleted(event)
       })
   }
@@ -858,9 +865,7 @@ export class AgentService {
     this.unsubscribeBackgroundTaskCompleted = null
   }
 
-  private handleBackgroundTaskCompleted(
-    event: BackgroundTaskCompletedEvent,
-  ): void {
+  private handleBackgroundTaskCompleted(event: BackgroundTaskEvent): void {
     const { conversationId } = event
     const isRunning = this.isRunning(conversationId)
     const autoRunPending = this.autoRunScheduled.has(conversationId)
@@ -878,7 +883,7 @@ export class AgentService {
 
   private appendBackgroundTaskResultEvent(
     conversationId: string,
-    event: BackgroundTaskCompletedEvent,
+    event: BackgroundTaskEvent,
   ): void {
     const msg = this.buildBackgroundTaskResultMessage(event)
     const entry = this.getOrCreateConversationEntry(conversationId)
@@ -889,7 +894,7 @@ export class AgentService {
   }
 
   private buildBackgroundTaskResultMessage(
-    event: BackgroundTaskCompletedEvent,
+    event: BackgroundTaskEvent,
   ): ChatMessage {
     switch (event.kind) {
       case 'external_agent':
@@ -897,6 +902,7 @@ export class AgentService {
       case 'subagent':
         return buildSubagentResultMessage(event.record)
       case 'terminal_command':
+      case 'terminal_command_waiting':
         return buildTerminalCommandResultMessage(event.record)
     }
   }
@@ -906,8 +912,7 @@ export class AgentService {
     if (!queue || queue.length === 0) return []
 
     queue.sort(
-      (a, b) =>
-        (a.record.completedAt ?? 0) - (b.record.completedAt ?? 0),
+      (a, b) => getBackgroundTaskEventTime(a) - getBackgroundTaskEventTime(b),
     )
     this.pendingBackgroundTaskResults.delete(conversationId)
 

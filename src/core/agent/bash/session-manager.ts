@@ -15,9 +15,10 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { TaskSource } from '../../../types/chat'
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
-import type { BashTaskRecord } from './types'
+
 import type { ShellProvider } from './shell-provider'
 import { resolveShellProvider } from './shell-provider'
+import type { BashTaskRecord } from './types'
 
 const MAX_OUTPUT_BYTES = 1 * 1024 * 1024
 const TRUNCATE_HEAD_BYTES = 256 * 1024
@@ -52,6 +53,7 @@ export type RunBashResult = {
     | 'timeout'
     | 'killed'
   stdout: string
+  stderr: string
   exit_code?: number | null
   truncated?: {
     totalBytes: number
@@ -61,20 +63,25 @@ export type RunBashResult = {
 
 type ActiveCommand = {
   token: string
-  collector: CappedOutputCollector
+  stdoutCollector: CappedOutputCollector
+  stderrCollector: CappedOutputCollector
+  stdoutLineBuffer: string
   lastOutputAt: number
   exitCode?: number | null
   doneAt?: number
   backgroundRecord?: BashTaskRecord
   backgroundCompletedEmitted?: boolean
+  backgroundIdleTimer?: ReturnType<typeof setTimeout> | null
+  lastWaitingStdoutBytes: number
+  lastWaitingStderrBytes: number
 }
 
 type BashSession = {
   id: number
   provider: ShellProvider
   child: ChildProcessWithoutNullStreams
-  decoder: StringDecoder
-  lineBuffer: string
+  stdoutDecoder: StringDecoder
+  stderrDecoder: StringDecoder
   activeCommand: ActiveCommand | null
   lastUsedAt: number
   killProcess: () => void
@@ -173,6 +180,17 @@ class CappedOutputCollector {
   }
 }
 
+const mergeTruncation = (
+  stdout?: { totalBytes: number; omittedBytes: number },
+  stderr?: { totalBytes: number; omittedBytes: number },
+): { totalBytes: number; omittedBytes: number } | undefined => {
+  if (!stdout && !stderr) return undefined
+  return {
+    totalBytes: (stdout?.totalBytes ?? 0) + (stderr?.totalBytes ?? 0),
+    omittedBytes: (stdout?.omittedBytes ?? 0) + (stderr?.omittedBytes ?? 0),
+  }
+}
+
 const createKillProcess = (child: ChildProcessWithoutNullStreams) => {
   let killed = false
   let killTimer: ReturnType<typeof setTimeout> | null = null
@@ -236,6 +254,28 @@ const notifyWaiters = (session: BashSession): void => {
   session.waiters.clear()
 }
 
+const snapshotActiveCommand = (
+  active: ActiveCommand,
+): {
+  stdout: string
+  stderr: string
+  truncated?: { totalBytes: number; omittedBytes: number }
+} => {
+  const stdout = active.stdoutCollector.finalize(active.stdoutLineBuffer)
+  const stderr = active.stderrCollector.finalize()
+  return {
+    stdout: stdout.text,
+    stderr: stderr.text,
+    truncated: mergeTruncation(stdout.truncated, stderr.truncated),
+  }
+}
+
+const clearBackgroundIdleTimer = (active: ActiveCommand | null): void => {
+  if (!active?.backgroundIdleTimer) return
+  clearTimeout(active.backgroundIdleTimer)
+  active.backgroundIdleTimer = null
+}
+
 const createBashTaskRecord = ({
   command,
   conversationId,
@@ -276,8 +316,9 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
   }
 
   active.backgroundCompletedEmitted = true
+  clearBackgroundIdleTimer(active)
   const completedAt = Date.now()
-  const snapshot = active.collector.finalize(session.lineBuffer)
+  const snapshot = snapshotActiveCommand(active)
   const status = active.backgroundRecord.abortController.signal.aborted
     ? 'cancelled'
     : active.exitCode === 0
@@ -287,8 +328,8 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
     ...active.backgroundRecord,
     status,
     completedAt,
-    stdoutBuffer: snapshot.text,
-    stderrBuffer: '',
+    stdoutBuffer: snapshot.stdout,
+    stderrBuffer: snapshot.stderr,
     exitCode: active.exitCode ?? null,
   }
 
@@ -300,7 +341,6 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
   })
 
   session.activeCommand = null
-  session.lineBuffer = ''
   session.lastUsedAt = Date.now()
 }
 
@@ -308,28 +348,82 @@ const writeToSession = (session: BashSession, text: string): void => {
   session.child.stdin.write(text, 'utf8')
 }
 
-const handleSessionText = (session: BashSession, text: string): void => {
+const emitBackgroundCommandWaiting = (session: BashSession): void => {
+  const active = session.activeCommand
+  const record = active?.backgroundRecord
+  if (!active || !record || active.exitCode !== undefined) return
+
+  const stdoutBytes = active.stdoutCollector.totalBytes
+  const stderrBytes = active.stderrCollector.totalBytes
+  if (
+    stdoutBytes === active.lastWaitingStdoutBytes &&
+    stderrBytes === active.lastWaitingStderrBytes
+  ) {
+    return
+  }
+
+  active.lastWaitingStdoutBytes = stdoutBytes
+  active.lastWaitingStderrBytes = stderrBytes
+  const occurredAt = Date.now()
+  const snapshot = snapshotActiveCommand(active)
+  backgroundTaskCompletionBus.pushTerminalWaiting({
+    kind: 'terminal_command_waiting',
+    taskId: record.taskId,
+    conversationId: record.conversationId,
+    occurredAt,
+    record: {
+      ...record,
+      status: 'running',
+      stdoutBuffer: snapshot.stdout,
+      stderrBuffer: snapshot.stderr,
+      exitCode: null,
+    },
+  })
+}
+
+const scheduleBackgroundIdleTimer = (session: BashSession): void => {
+  const active = session.activeCommand
+  if (!active?.backgroundRecord || active.exitCode !== undefined) return
+
+  if (active.backgroundIdleTimer) {
+    clearTimeout(active.backgroundIdleTimer)
+  }
+
+  const delay = Math.max(0, IDLE_WAIT_MS - (Date.now() - active.lastOutputAt))
+  active.backgroundIdleTimer = setTimeout(() => {
+    active.backgroundIdleTimer = null
+    emitBackgroundCommandWaiting(session)
+  }, delay)
+  active.backgroundIdleTimer.unref?.()
+}
+
+const handleSessionStdout = (session: BashSession, text: string): void => {
   if (!text) return
   const active = session.activeCommand
   if (active) {
     active.lastOutputAt = Date.now()
   }
 
-  session.lineBuffer += text
+  if (!active) {
+    notifyWaiters(session)
+    return
+  }
+
+  active.stdoutLineBuffer += text
   while (true) {
-    const newlineIndex = session.lineBuffer.search(/\r?\n/)
+    const newlineIndex = active.stdoutLineBuffer.search(/\r?\n/)
     if (newlineIndex === -1) break
 
     const lineEnd =
-      session.lineBuffer[newlineIndex] === '\r' &&
-      session.lineBuffer[newlineIndex + 1] === '\n'
+      active.stdoutLineBuffer[newlineIndex] === '\r' &&
+      active.stdoutLineBuffer[newlineIndex + 1] === '\n'
         ? newlineIndex + 2
         : newlineIndex + 1
-    const line = session.lineBuffer.slice(0, lineEnd)
-    session.lineBuffer = session.lineBuffer.slice(lineEnd)
+    const line = active.stdoutLineBuffer.slice(0, lineEnd)
+    active.stdoutLineBuffer = active.stdoutLineBuffer.slice(lineEnd)
 
     const marker = session.provider.parseDoneMarker(line)
-    if (active && marker && marker.token === active.token) {
+    if (marker && marker.token === active.token) {
       active.exitCode = marker.exitCode
       active.doneAt = Date.now()
       emitBackgroundCommandCompleted(session)
@@ -337,9 +431,21 @@ const handleSessionText = (session: BashSession, text: string): void => {
       continue
     }
 
-    active?.collector.pushText(line)
+    active.stdoutCollector.pushText(line)
   }
 
+  scheduleBackgroundIdleTimer(session)
+  notifyWaiters(session)
+}
+
+const handleSessionStderr = (session: BashSession, text: string): void => {
+  if (!text) return
+  const active = session.activeCommand
+  if (active) {
+    active.lastOutputAt = Date.now()
+    active.stderrCollector.pushText(text)
+    scheduleBackgroundIdleTimer(session)
+  }
   notifyWaiters(session)
 }
 
@@ -397,8 +503,8 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
     id: nextSessionId++,
     provider,
     child,
-    decoder: new StringDecoder('utf8'),
-    lineBuffer: '',
+    stdoutDecoder: new StringDecoder('utf8'),
+    stderrDecoder: new StringDecoder('utf8'),
     activeCommand: null,
     lastUsedAt: Date.now(),
     killProcess,
@@ -407,10 +513,10 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
   }
 
   child.stdout.on('data', (chunk: Buffer) => {
-    handleSessionText(session, session.decoder.write(chunk))
+    handleSessionStdout(session, session.stdoutDecoder.write(chunk))
   })
   child.stderr.on('data', (chunk: Buffer) => {
-    handleSessionText(session, chunk.toString('utf8'))
+    handleSessionStderr(session, session.stderrDecoder.write(chunk))
   })
   child.stdin.on('error', () => {
     // close/error events surface the failure; stdin errors can happen after kill.
@@ -418,14 +524,15 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
   child.once('error', (error) => {
     const active = session.activeCommand
     if (active && active.exitCode === undefined) {
-      active.collector.pushText(`\nShell process error: ${error.message}`)
+      active.stderrCollector.pushText(`\nShell process error: ${error.message}`)
       active.exitCode = null
       active.doneAt = Date.now()
     }
     notifyWaiters(session)
   })
   child.once('close', (code) => {
-    handleSessionText(session, session.decoder.end())
+    handleSessionStdout(session, session.stdoutDecoder.end())
+    handleSessionStderr(session, session.stderrDecoder.end())
     session.cancelPendingKill()
     sessions.delete(session.id)
     if (sharedSessionId === session.id) sharedSessionId = null
@@ -439,7 +546,7 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
   })
 
   sessions.set(session.id, session)
-  if (provider.sessionInitScript) {
+  if (provider.sessionInitScript.trim()) {
     writeToSession(session, provider.sessionInitScript + provider.lineEnding)
   }
   return session
@@ -484,14 +591,16 @@ const buildResult = (
       session_id: session.id,
       state,
       stdout: '',
+      stderr: '',
     }
   }
 
-  const snapshot = active.collector.finalize(session.lineBuffer)
+  const snapshot = snapshotActiveCommand(active)
   return {
     session_id: session.id,
     state,
-    stdout: snapshot.text,
+    stdout: snapshot.stdout,
+    stderr: snapshot.stderr,
     ...(active.exitCode !== undefined ? { exit_code: active.exitCode } : {}),
     ...(snapshot.truncated ? { truncated: snapshot.truncated } : {}),
   }
@@ -518,14 +627,15 @@ const waitForCommandState = async ({
     }
 
     if (signal?.aborted) {
+      clearBackgroundIdleTimer(active)
       session.killProcess()
       return buildResult(session, 'killed')
     }
 
     if (active.exitCode !== undefined) {
       const result = buildResult(session, 'completed')
+      clearBackgroundIdleTimer(active)
       session.activeCommand = null
-      session.lineBuffer = ''
       session.lastUsedAt = Date.now()
       return result
     }
@@ -534,6 +644,7 @@ const waitForCommandState = async ({
     if (background && now - startedAt >= BACKGROUND_INITIAL_WAIT_MS) {
       if (backgroundRecordFactory && !active.backgroundRecord) {
         active.backgroundRecord = backgroundRecordFactory()
+        scheduleBackgroundIdleTimer(session)
       }
       return buildResult(session, 'background')
     }
@@ -563,6 +674,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     return {
       state: 'killed',
       stdout: '',
+      stderr: '',
     }
   }
 
@@ -586,6 +698,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
 
   if (params.kill) {
     session.activeCommand?.backgroundRecord?.abortController.abort()
+    clearBackgroundIdleTimer(session.activeCommand)
     session.killProcess()
     sessions.delete(session.id)
     if (sharedSessionId === session.id) sharedSessionId = null
@@ -606,10 +719,14 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     const token = makeToken()
     session.activeCommand = {
       token,
-      collector: new CappedOutputCollector(),
+      stdoutCollector: new CappedOutputCollector(),
+      stderrCollector: new CappedOutputCollector(),
+      stdoutLineBuffer: '',
       lastOutputAt: Date.now(),
+      backgroundIdleTimer: null,
+      lastWaitingStdoutBytes: 0,
+      lastWaitingStderrBytes: 0,
     }
-    session.lineBuffer = ''
     writeToSession(
       session,
       session.provider.wrapCommand({
@@ -625,6 +742,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
       session_id: session.id,
       state: 'running',
       stdout: '',
+      stderr: '',
     }
   }
 

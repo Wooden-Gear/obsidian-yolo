@@ -24,8 +24,8 @@ import { spawn as crossSpawn } from 'cross-spawn'
 import { shellEnvSync } from 'shell-env'
 
 import type { TaskSource } from '../../../types/chat'
-
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
+
 import { type AsyncTaskRecord, asyncTaskRegistry } from './async-task-registry'
 import { ClaudeStreamParser } from './claudeStreamParser'
 import { externalCliStreamBus } from './streamBus'

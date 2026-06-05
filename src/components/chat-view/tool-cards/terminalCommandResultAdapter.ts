@@ -50,6 +50,10 @@ function buildSynthResponse(
     stderr && stdout ? `${stderr}\n---\n${stdout}` : stderr || stdout
 
   switch (message.status) {
+    case 'running':
+      return {
+        status: ToolCallResponseStatus.Running,
+      }
     case 'completed':
       return {
         status: ToolCallResponseStatus.Success,
