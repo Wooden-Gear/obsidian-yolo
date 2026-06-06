@@ -19,7 +19,11 @@ import {
   parseLocalFsActionFromToolArgs,
 } from '../../core/mcp/localFileTools'
 import { parseToolName } from '../../core/mcp/tool-name-utils'
-import { ChatMessage, ChatToolMessage } from '../../types/chat'
+import {
+  ChatMessage,
+  ChatTerminalCommandResultMessage,
+  ChatToolMessage,
+} from '../../types/chat'
 import {
   ToolCallRequest,
   ToolCallResponse,
@@ -532,6 +536,55 @@ const splitTerminalCommandSummary = (
     }
   }
   return null
+}
+
+const mapTerminalCommandResultStatus = (
+  status: ChatTerminalCommandResultMessage['status'],
+): ToolCallResponseStatus => {
+  switch (status) {
+    case 'running':
+      return ToolCallResponseStatus.Running
+    case 'completed':
+      return ToolCallResponseStatus.Success
+    case 'cancelled':
+    case 'killed_by_shutdown':
+      return ToolCallResponseStatus.Aborted
+    case 'failed':
+    case 'timed_out':
+      return ToolCallResponseStatus.Error
+  }
+}
+
+const buildHydratedTerminalCommandResponse = (
+  result: ChatTerminalCommandResultMessage,
+  fallback: ToolCallResponse,
+): ToolCallResponse => {
+  const status = mapTerminalCommandResultStatus(result.status)
+  const combined =
+    result.stderr && result.stdout
+      ? `${result.stderr}\n---\n${result.stdout}`
+      : result.stderr || result.stdout
+
+  if (status === ToolCallResponseStatus.Success) {
+    return {
+      status,
+      data: { type: 'text', text: combined },
+    }
+  }
+  if (status === ToolCallResponseStatus.Aborted) {
+    return {
+      status,
+      data: combined ? { type: 'text', text: combined } : undefined,
+    }
+  }
+  if (status === ToolCallResponseStatus.Error) {
+    const label = result.status === 'timed_out' ? 'Timed out.' : 'Failed.'
+    return {
+      status,
+      error: combined ? `${label}\n${combined}` : label,
+    }
+  }
+  return fallback
 }
 
 const parseToolArguments = (
@@ -1063,6 +1116,7 @@ const ToolMessage = memo(function ToolMessage({
   conversationId,
   isCompactionPending = false,
   showRunningFooter = true,
+  terminalCommandResultsByToolCallId,
   onMessageUpdate,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
@@ -1071,6 +1125,10 @@ const ToolMessage = memo(function ToolMessage({
   conversationId: string
   isCompactionPending?: boolean
   showRunningFooter?: boolean
+  terminalCommandResultsByToolCallId?: ReadonlyMap<
+    string,
+    ChatTerminalCommandResultMessage
+  >
   onMessageUpdate: (message: ChatToolMessage) => void
   onRecoverToolCall?: (payload: {
     conversationId: string
@@ -1104,6 +1162,9 @@ const ToolMessage = memo(function ToolMessage({
                 isCompactionPending && index === message.toolCalls.length - 1
               }
               showRunningFooter={showRunningFooter}
+              terminalCommandResult={terminalCommandResultsByToolCallId?.get(
+                toolCall.request.id,
+              )}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
               onResponseUpdate={(response) =>
@@ -1131,6 +1192,7 @@ function ToolCallItem({
   toolMessageId,
   showCompactionPendingHint = false,
   showRunningFooter = true,
+  terminalCommandResult,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
   onResponseUpdate,
@@ -1141,6 +1203,7 @@ function ToolCallItem({
   toolMessageId: string
   showCompactionPendingHint?: boolean
   showRunningFooter?: boolean
+  terminalCommandResult?: ChatTerminalCommandResultMessage
   onRecoverToolCall?: (payload: {
     conversationId: string
     toolMessageId: string
@@ -1236,6 +1299,11 @@ function ToolCallItem({
     headlineParts.summaryText && isTerminalCommandRequest(request)
       ? splitTerminalCommandSummary(headlineParts.summaryText)
       : null
+  const effectiveTerminalResponse =
+    terminalCommandResult && isTerminalCommandRequest(request)
+      ? buildHydratedTerminalCommandResponse(terminalCommandResult, response)
+      : response
+  const effectiveStatus = effectiveTerminalResponse.status
   const parameters = useMemo(() => {
     if (!request.arguments) {
       return toolLabels.noParameters
@@ -1261,14 +1329,14 @@ function ToolCallItem({
   const [renderCompactionPendingHint, setRenderCompactionPendingHint] =
     useState(
       showCompactionPendingHint &&
-        response.status === ToolCallResponseStatus.Success,
+        effectiveStatus === ToolCallResponseStatus.Success,
     )
   const [isCompactionPendingHintExiting, setIsCompactionPendingHintExiting] =
     useState(false)
   useEffect(() => {
     if (
       !showRunningFooter ||
-      response.status !== ToolCallResponseStatus.Running
+      effectiveStatus !== ToolCallResponseStatus.Running
     ) {
       setShowRunningActions(false)
       return
@@ -1281,15 +1349,15 @@ function ToolCallItem({
     return () => {
       window.clearTimeout(timer)
     }
-  }, [response.status, showRunningFooter])
+  }, [effectiveStatus, showRunningFooter])
 
   const shouldShowPendingFooter =
-    response.status === ToolCallResponseStatus.PendingApproval
+    effectiveStatus === ToolCallResponseStatus.PendingApproval
   const isCompactLiveTaskRequest =
     isDelegateSubagentRequest(request) || isTerminalCommandRequest(request)
   const shouldShowRunningFooter =
     showRunningFooter &&
-    response.status === ToolCallResponseStatus.Running &&
+    effectiveStatus === ToolCallResponseStatus.Running &&
     showRunningActions &&
     !isCompactLiveTaskRequest
   const footerMode: 'pending' | 'running' | null = shouldShowPendingFooter
@@ -1299,12 +1367,12 @@ function ToolCallItem({
       : null
   const shouldShowParameters =
     !isCompactLiveTaskRequest ||
-    response.status === ToolCallResponseStatus.PendingApproval
+    effectiveStatus === ToolCallResponseStatus.PendingApproval
 
   useEffect(() => {
     const shouldShowCompactionPendingHint =
       showCompactionPendingHint &&
-      response.status === ToolCallResponseStatus.Success
+      effectiveStatus === ToolCallResponseStatus.Success
 
     if (shouldShowCompactionPendingHint) {
       setRenderCompactionPendingHint(true)
@@ -1325,7 +1393,7 @@ function ToolCallItem({
     return () => {
       window.clearTimeout(timer)
     }
-  }, [renderCompactionPendingHint, response.status, showCompactionPendingHint])
+  }, [effectiveStatus, renderCompactionPendingHint, showCompactionPendingHint])
 
   return (
     <div className="yolo-toolcall">
@@ -1339,14 +1407,14 @@ function ToolCallItem({
         <div className="yolo-toolcall-header-icon yolo-toolcall-header-icon--status-inline">
           <AnimatePresence mode="wait">
             <motion.span
-              key={response.status}
+              key={effectiveStatus}
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ duration: motionDuration }}
               style={{ display: 'flex', alignItems: 'center' }}
             >
-              <StatusIcon status={response.status} />
+              <StatusIcon status={effectiveStatus} />
             </motion.span>
           </AnimatePresence>
         </div>
@@ -1360,7 +1428,7 @@ function ToolCallItem({
                 <span className="yolo-toolcall-header-separator">: </span>
                 <AnimatePresence mode="wait">
                   <motion.span
-                    key={response.status}
+                    key={effectiveStatus}
                     className="yolo-toolcall-header-summary"
                     title={headlineParts.summaryText}
                     initial={{ opacity: 0 }}
@@ -1423,14 +1491,14 @@ function ToolCallItem({
             // delegate_external_agent 专属卡片：流式输出 + 状态徽章
             <ExternalAgentToolCard
               toolCallId={request.id}
-              response={response}
+              response={effectiveTerminalResponse}
               args={extractExternalAgentArgs(request.arguments)}
               onAbort={handleAbort}
             />
           ) : isDelegateSubagentRequest(request) ? (
             <LiveTaskCard
               toolCallId={request.id}
-              response={response}
+              response={effectiveTerminalResponse}
               variant="subagent"
               args={extractSubagentArgs(request.arguments)}
               initialStdout={
@@ -1448,13 +1516,15 @@ function ToolCallItem({
           ) : isTerminalCommandRequest(request) ? (
             <LiveTaskCard
               toolCallId={request.id}
-              response={response}
+              response={effectiveTerminalResponse}
               variant="terminal"
               args={extractTerminalCommandArgs(request.arguments)}
               initialStdout={
+                terminalCommandResult?.stdout ??
                 extractSyntheticLiveTaskOutput(request.arguments).stdout
               }
               initialStderr={
+                terminalCommandResult?.stderr ??
                 extractSyntheticLiveTaskOutput(request.arguments).stderr
               }
               onAbort={handleAbort}

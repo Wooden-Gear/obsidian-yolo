@@ -97,27 +97,61 @@ export function LiveTaskCard({
     stderrText = stream.stderr || undefined
     progressTruncated = stream.truncated
     if (response.status === ToolCallResponseStatus.Success) {
-      stdoutText = response.data.text || undefined
+      const terminalOutput =
+        variant === 'terminal'
+          ? parseTerminalCommandResponseText(response.data.text)
+          : null
+      stderrText = terminalOutput?.stderr || stderrText
+      stdoutText = terminalOutput
+        ? terminalOutput.stdout || undefined
+        : response.data.text || undefined
     } else if (
       response.status === ToolCallResponseStatus.Aborted &&
       response.data
     ) {
-      stdoutText = response.data.text || undefined
+      const terminalOutput =
+        variant === 'terminal'
+          ? parseTerminalCommandResponseText(response.data.text)
+          : null
+      stderrText = terminalOutput?.stderr || stderrText
+      stdoutText = terminalOutput
+        ? terminalOutput.stdout || undefined
+        : response.data.text || undefined
     } else if (response.status === ToolCallResponseStatus.Error) {
       // Error 状态下保留错误文本，否则进度缓存会把原本的错误信息盖掉
       fallbackText = response.error
     }
   } else if (response.status === ToolCallResponseStatus.Success) {
-    stderrText = initialStderr || undefined
-    stdoutText = initialStdout || response.data.text || undefined
-    if (!stderrText && !stdoutText) fallbackText = response.data.text
+    const terminalOutput =
+      variant === 'terminal'
+        ? parseTerminalCommandResponseText(response.data.text)
+        : null
+    stderrText = initialStderr || terminalOutput?.stderr || undefined
+    stdoutText =
+      initialStdout ||
+      terminalOutput?.stdout ||
+      (!terminalOutput ? response.data.text : undefined) ||
+      undefined
+    if (!stderrText && !stdoutText && !terminalOutput) {
+      fallbackText = response.data.text
+    }
   } else if (
     response.status === ToolCallResponseStatus.Aborted &&
     response.data
   ) {
-    stderrText = initialStderr || undefined
-    stdoutText = initialStdout || response.data.text || undefined
-    if (!stderrText && !stdoutText) fallbackText = response.data.text
+    const terminalOutput =
+      variant === 'terminal'
+        ? parseTerminalCommandResponseText(response.data.text)
+        : null
+    stderrText = initialStderr || terminalOutput?.stderr || undefined
+    stdoutText =
+      initialStdout ||
+      terminalOutput?.stdout ||
+      (!terminalOutput ? response.data.text : undefined) ||
+      undefined
+    if (!stderrText && !stdoutText && !terminalOutput) {
+      fallbackText = response.data.text
+    }
   } else if (response.status === ToolCallResponseStatus.Error) {
     stderrText = initialStderr || undefined
     stdoutText = initialStdout || undefined
@@ -265,6 +299,24 @@ function ArgsInline({ args }: { args?: LiveTaskArgs }) {
       )}
     </div>
   )
+}
+
+function parseTerminalCommandResponseText(
+  text: string,
+): { stdout?: string; stderr?: string } | null {
+  try {
+    const parsed = JSON.parse(text) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null
+    }
+    const record = parsed as Record<string, unknown>
+    const stdout = typeof record.stdout === 'string' ? record.stdout : undefined
+    const stderr = typeof record.stderr === 'string' ? record.stderr : undefined
+    if (stdout === undefined && stderr === undefined) return null
+    return { stdout, stderr }
+  } catch {
+    return null
+  }
 }
 
 function CompactLiveTaskCard({

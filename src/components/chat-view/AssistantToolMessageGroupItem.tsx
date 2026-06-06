@@ -17,6 +17,7 @@ import {
   AssistantToolMessageGroup,
   ChatAssistantMessage,
   ChatMessage,
+  ChatTerminalCommandResultMessage,
   ChatToolMessage,
 } from '../../types/chat'
 import { shouldRenderAssistantToolPreview } from '../../utils/chat/assistantToolPreview'
@@ -197,6 +198,10 @@ export type AssistantToolMessageGroupItemProps = {
     targetFilePath?: string,
   ) => void
   onToolMessageUpdate: (message: ChatToolMessage) => void
+  terminalCommandResultsByToolCallId?: ReadonlyMap<
+    string,
+    ChatTerminalCommandResultMessage
+  >
   onRecoverToolCall?: (payload: {
     conversationId: string
     toolMessageId: string
@@ -246,6 +251,7 @@ export default function AssistantToolMessageGroupItem({
   activeApplyRequestKey,
   onApply,
   onToolMessageUpdate,
+  terminalCommandResultsByToolCallId,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
   editingAssistantMessageId,
@@ -707,6 +713,9 @@ export default function AssistantToolMessageGroupItem({
               message={buildSynthToolMessageFromSubagentResult(message)}
               conversationId={effectiveConversationId}
               showRunningFooter={false}
+              terminalCommandResultsByToolCallId={
+                terminalCommandResultsByToolCallId
+              }
               onMessageUpdate={() => {}}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
@@ -717,6 +726,9 @@ export default function AssistantToolMessageGroupItem({
               message={buildSynthToolMessageFromTerminalCommandResult(message)}
               conversationId={effectiveConversationId}
               showRunningFooter={false}
+              terminalCommandResultsByToolCallId={
+                terminalCommandResultsByToolCallId
+              }
               onMessageUpdate={() => {}}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
@@ -730,6 +742,9 @@ export default function AssistantToolMessageGroupItem({
                 message.id === pendingCompactionAnchorMessageId
               }
               showRunningFooter={showRunningToolFooter}
+              terminalCommandResultsByToolCallId={
+                terminalCommandResultsByToolCallId
+              }
               onMessageUpdate={onToolMessageUpdate}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}

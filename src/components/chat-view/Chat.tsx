@@ -49,6 +49,7 @@ import type {
   ChatAssistantMessage,
   ChatConversationCompactionState,
   ChatMessage,
+  ChatTerminalCommandResultMessage,
   ChatToolMessage,
   ChatUserMessage,
 } from '../../types/chat'
@@ -1473,6 +1474,19 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       showContinueResponseButton,
     ],
   )
+  const terminalCommandResultsByToolCallId = useMemo(() => {
+    const map = new Map<string, ChatTerminalCommandResultMessage>()
+    for (const message of chatMessages) {
+      if (
+        message.role !== 'terminal_command_result' ||
+        !message.delegateToolCallId
+      ) {
+        continue
+      }
+      map.set(message.delegateToolCallId, message)
+    }
+    return map
+  }, [chatMessages])
   useEffect(() => {
     const chatMessagesElement = chatMessagesRef.current
     if (!chatMessagesElement) {
@@ -4687,6 +4701,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             activeApplyRequestKey={activeApplyRequestKey}
             onApply={handleApply}
             onToolMessageUpdate={handleToolMessageUpdate}
+            terminalCommandResultsByToolCallId={
+              terminalCommandResultsByToolCallId
+            }
             onRecoverToolCall={handleRecoverPendingToolCall}
             onRecoverAnswerUserQuestion={handleRecoverAnswerUserQuestion}
             editingAssistantMessageId={editingAssistantMessageId}

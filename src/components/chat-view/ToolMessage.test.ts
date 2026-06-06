@@ -4,6 +4,11 @@ jest.mock('../../contexts/language-context', () => ({
   }),
 }))
 
+jest.mock('clsx', () => ({
+  __esModule: true,
+  default: (...args: unknown[]) => args.filter(Boolean).join(' '),
+}))
+
 jest.mock('../../contexts/plugin-context', () => ({
   usePlugin: () => ({}),
 }))
@@ -16,17 +21,94 @@ jest.mock('./tool-cards/ExternalAgentToolCard', () => ({
   ExternalAgentToolCard: () => null,
 }))
 
+const mockedLiveTaskCard = jest.fn((_: unknown) => null)
 jest.mock('./tool-cards/LiveTaskCard', () => ({
-  LiveTaskCard: () => null,
+  LiveTaskCard: (props: unknown) => mockedLiveTaskCard(props),
 }))
 
+import * as React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+import type { ChatTerminalCommandResultMessage } from '../../types/chat'
 import {
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
 } from '../../types/tool-call.types'
 
 import { getToolHeadlineParts, getToolHeadlineText } from './toolHeadline'
-import { type ToolLabels, getHeadlineDisplayInfo } from './ToolMessage'
+import ToolMessage, {
+  type ToolLabels,
+  getHeadlineDisplayInfo,
+} from './ToolMessage'
+
+describe('ToolMessage rendering', () => {
+  beforeEach(() => {
+    mockedLiveTaskCard.mockClear()
+  })
+
+  it('hydrates original terminal_command card from persisted result output', () => {
+    const terminalResult: ChatTerminalCommandResultMessage = {
+      role: 'terminal_command_result',
+      id: 'result-1',
+      taskId: 'task-1',
+      source: {
+        type: 'llm_tool_call',
+        assistantMessageId: 'assistant-1',
+        toolCallId: 'tool-1',
+      },
+      title: 'for i in $(seq 1 8); do echo $i; sleep 1; done',
+      status: 'completed',
+      exitCode: 0,
+      stdout: '1\n2\n3\n4\n5\n6\n7\n8\n',
+      stderr: '',
+      durationMs: 8000,
+      delegateAssistantMessageId: 'assistant-1',
+      delegateToolCallId: 'tool-1',
+    }
+
+    renderToStaticMarkup(
+      React.createElement(ToolMessage, {
+        message: {
+          role: 'tool',
+          id: 'tool-message-1',
+          toolCalls: [
+            {
+              request: {
+                id: 'tool-1',
+                name: 'yolo_local__terminal_command',
+                arguments: createCompleteToolCallArguments({
+                  value: {
+                    command: 'for i in $(seq 1 8); do echo $i; sleep 1; done',
+                    background: true,
+                  },
+                }),
+              },
+              response: {
+                status: ToolCallResponseStatus.PendingApproval,
+              },
+            },
+          ],
+        },
+        conversationId: 'conversation-1',
+        terminalCommandResultsByToolCallId: new Map([
+          ['tool-1', terminalResult],
+        ]),
+        onMessageUpdate: () => {},
+      }),
+    )
+
+    expect(mockedLiveTaskCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variant: 'terminal',
+        initialStdout: terminalResult.stdout,
+        initialStderr: terminalResult.stderr,
+        response: expect.objectContaining({
+          status: ToolCallResponseStatus.Success,
+        }),
+      }),
+    )
+  })
+})
 
 describe('ToolMessage headline helpers', () => {
   const labels: ToolLabels = {
