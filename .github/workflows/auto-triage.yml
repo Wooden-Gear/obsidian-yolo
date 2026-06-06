@@ -36,8 +36,8 @@ jobs:
       (
         github.event.sender.login == 'Lapis0x0' &&
         (
-          contains(github.event.comment.body, '@lapis0x0-bot') ||
-          contains(github.event.review.body, '@lapis0x0-bot')
+          contains(github.event.comment.body, '@Lapis0x1') ||
+          contains(github.event.review.body, '@Lapis0x1')
         )
       )
     runs-on: ubuntu-latest
@@ -93,8 +93,8 @@ jobs:
           GH_TOKEN: ${{ secrets.YOLO_BOT_GH_TOKEN }}
         run: |
           set -euo pipefail
-          git config user.name "lapis0x0-bot"
-          git config user.email "lapis0x0-bot@users.noreply.github.com"
+          git config user.name "Lapis0x1"
+          git config user.email "Lapis0x1@users.noreply.github.com"
           gh auth setup-git
           gh auth status
 
