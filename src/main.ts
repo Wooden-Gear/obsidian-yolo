@@ -17,6 +17,7 @@ import { InstallerUpdateRequiredModal } from './components/modals/InstallerUpdat
 import { mountUpdateToast } from './components/UpdateToast'
 import { CHAT_VIEW_TYPE } from './constants'
 import { BAKED_PLUGIN_VERSION } from './constants/bakedVersion'
+import { YoloAgentApi, YoloAgentApiService } from './core/agent/agent-api'
 import { createAgentConversationPersistence } from './core/agent/conversationPersistence'
 import { ensureDefaultAssistantInSettings } from './core/agent/default-assistant'
 import { AgentConversationRunSummary, AgentService } from './core/agent/service'
@@ -179,6 +180,7 @@ export default class YoloPlugin extends Plugin {
   // Quick Ask state
   private quickAskController: QuickAskController | null = null
   private agentService: AgentService | null = null
+  private agentApiService: YoloAgentApiService | null = null
   private agentNotificationCoordinator: AgentNotificationCoordinator | null =
     null
   private backgroundActivityRegistry: BackgroundActivityRegistry | null = null
@@ -907,6 +909,18 @@ export default class YoloPlugin extends Plugin {
       this.agentService.startSubagentResultListener()
     }
     return this.agentService
+  }
+
+  getAgentApi(): YoloAgentApi {
+    if (!this.agentApiService) {
+      this.agentApiService = new YoloAgentApiService({
+        app: this.app,
+        getSettings: () => this.settings,
+        getAgentService: () => this.getAgentService(),
+        getMcpManager: () => this.getMcpManager(),
+      })
+    }
+    return this.agentApiService
   }
 
   private getAgentNotificationCoordinator(): AgentNotificationCoordinator {
@@ -2161,6 +2175,7 @@ export default class YoloPlugin extends Plugin {
     this.agentService?.stopSubagentResultListener()
     this.agentService?.abortAll()
     this.agentService = null
+    this.agentApiService = null
     // 终止所有活跃的外部 CLI 子进程（desktop-only，mobile 为空操作）
     void import('./core/agent/external-cli/index').then(
       ({ killAllActiveExternalCli }) => killAllActiveExternalCli(),
