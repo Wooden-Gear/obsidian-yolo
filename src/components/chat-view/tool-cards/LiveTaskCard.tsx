@@ -136,6 +136,24 @@ export function LiveTaskCard({
     meta.turns !== undefined ||
     meta.tokens !== undefined
 
+  if (variant === 'subagent' || variant === 'terminal') {
+    const compactText = [stderrText, stdoutText, fallbackText]
+      .filter((text): text is string => Boolean(text))
+      .join('\n')
+
+    return (
+      <CompactLiveTaskCard
+        text={compactText}
+        status={effectiveStatus}
+        variant={variant}
+        response={response}
+        stream={stream}
+        onAbort={onAbort}
+        t={t}
+      />
+    )
+  }
+
   return (
     <div className="yolo-external-agent-card">
       {/* 状态条 */}
@@ -249,15 +267,73 @@ function ArgsInline({ args }: { args?: LiveTaskArgs }) {
   )
 }
 
+function CompactLiveTaskCard({
+  text,
+  status,
+  variant,
+  response,
+  stream,
+  onAbort,
+  t,
+}: {
+  text: string
+  status: ToolCallResponseStatus
+  variant: LiveTaskVariant
+  response: ToolCallResponse
+  stream: ReturnType<typeof useLiveTaskStream>
+  onAbort?: () => void
+  t: (key: string, fallback?: string) => string
+}) {
+  const isRunning = status === ToolCallResponseStatus.Running
+
+  return (
+    <div className="yolo-external-agent-card yolo-external-agent-card--compact">
+      <div className="yolo-external-agent-card__compact-console-wrap">
+        <div className="yolo-external-agent-card__compact-status">
+          {isRunning && onAbort ? (
+            <button
+              type="button"
+              className="yolo-external-agent-card__compact-abort-btn"
+              onClick={() => void onAbort()}
+              title={t('chat.toolCall.abort', 'Abort')}
+            >
+              <Square size={12} />
+            </button>
+          ) : (
+            <StatusBadge status={status} t={t} />
+          )}
+        </div>
+        {text ? (
+          <ConsoleBlock text={text} variant={variant} tone="output" />
+        ) : response.status === ToolCallResponseStatus.Aborted &&
+          !response.data &&
+          stream === null ? (
+          <div className="yolo-external-agent-card__no-output">
+            {t(
+              'chat.externalAgent.abortedBeforeOutput',
+              'Aborted before any output was collected.',
+            )}
+          </div>
+        ) : (
+          <ConsoleBlock text="" variant={variant} tone="output" />
+        )}
+      </div>
+      <TruncationNotice response={response} t={t} />
+    </div>
+  )
+}
+
 /**
  * 终端日志块。展示全部高度，超长由外层聊天视图滚动。
  */
 function ConsoleBlock({
   text,
   variant,
+  tone = 'progress',
 }: {
   text: string
   variant?: LiveTaskVariant
+  tone?: 'progress' | 'output'
 }) {
   if (variant) {
     const lines = text.split('\n')
@@ -265,7 +341,7 @@ function ConsoleBlock({
       <pre
         className={cx(
           'yolo-external-agent-card__console',
-          'yolo-external-agent-card__console--progress',
+          tone === 'progress' && 'yolo-external-agent-card__console--progress',
         )}
       >
         {lines.map((line, i) => (

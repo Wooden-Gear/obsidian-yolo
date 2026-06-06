@@ -374,6 +374,28 @@ describe('ToolMessage headline helpers', () => {
     })
   })
 
+  it('uses command-name summary for long streaming terminal_command headlines', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              command:
+                'for i in $(seq 1 15); do echo "[$i] $(date +%H:%M:%S)"; sleep 1; done && echo "=== done ===" && pwd && ls -la src | head -8',
+              background: true,
+            },
+          }),
+        },
+        labels,
+      }),
+    ).toEqual({
+      displayName: 'Terminal command',
+      summaryText:
+        'Long bash command with streaming output seq, echo, date, sleep, pwd +2',
+    })
+  })
+
   it('uses session poll/kill/input summaries for terminal_command follow-ups', () => {
     expect(
       getHeadlineDisplayInfo({
