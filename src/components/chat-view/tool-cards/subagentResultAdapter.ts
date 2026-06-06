@@ -36,6 +36,8 @@ function buildSynthRequest(
       value: {
         description: message.title,
         prompt: message.title,
+        stderr: message.activityLog ?? '',
+        stdout: message.content,
       },
     },
   }

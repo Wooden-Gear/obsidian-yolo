@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { TaskSource } from '../../../types/chat'
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
+import { liveTaskStreamBus } from '../live-stream/taskStreamBus'
 
 import type { ShellProvider } from './shell-provider'
 import { resolveShellProvider } from './shell-provider'
@@ -66,6 +67,7 @@ export type RunBashResult = {
 
 type ActiveCommand = {
   token: string
+  source?: TaskSource
   stdoutCollector: CappedOutputCollector
   stderrCollector: CappedOutputCollector
   stdoutLineBuffer: string
@@ -456,6 +458,34 @@ const clearBackgroundCompletionTimer = (active: ActiveCommand | null): void => {
   active.backgroundCompletionTimer = null
 }
 
+const pushLiveCommandStatus = (
+  active: ActiveCommand | null,
+  status: 'starting' | 'running' | 'done',
+): void => {
+  const toolCallId = active?.source?.toolCallId
+  if (!toolCallId) return
+  liveTaskStreamBus.push({
+    type: 'status',
+    toolCallId,
+    status,
+  })
+}
+
+const pushLiveCommandChunk = (
+  active: ActiveCommand | null,
+  type: 'stdout' | 'stderr',
+  chunk: string,
+): void => {
+  const toolCallId = active?.source?.toolCallId
+  if (!toolCallId || !chunk) return
+  liveTaskStreamBus.push({
+    type,
+    toolCallId,
+    chunk,
+    ts: Date.now(),
+  })
+}
+
 const createBashTaskRecord = ({
   command,
   conversationId,
@@ -543,6 +573,7 @@ const emitBackgroundCommandCompleted = (session: BashSession): void => {
     record: updatedRecord,
   })
 
+  pushLiveCommandStatus(active, 'done')
   session.activeCommand = null
   session.lastUsedAt = Date.now()
 }
@@ -630,11 +661,13 @@ const handleSessionStdout = (session: BashSession, text: string): void => {
       active.exitCode = marker.exitCode
       active.doneAt = Date.now()
       emitBackgroundCommandCompleted(session)
+      pushLiveCommandStatus(active, 'done')
       notifyWaiters(session)
       continue
     }
 
     active.stdoutCollector.pushText(line)
+    pushLiveCommandChunk(active, 'stdout', line)
   }
 
   scheduleBackgroundIdleTimer(session)
@@ -647,6 +680,7 @@ const handleSessionStderr = (session: BashSession, text: string): void => {
   if (active) {
     active.lastOutputAt = Date.now()
     active.stderrCollector.pushText(text)
+    pushLiveCommandChunk(active, 'stderr', text)
     scheduleBackgroundIdleTimer(session)
   }
   notifyWaiters(session)
@@ -729,8 +763,14 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
     const active = session.activeCommand
     if (active && active.exitCode === undefined) {
       active.stderrCollector.pushText(`\nShell process error: ${error.message}`)
+      pushLiveCommandChunk(
+        active,
+        'stderr',
+        `\nShell process error: ${error.message}`,
+      )
       active.exitCode = null
       active.doneAt = Date.now()
+      pushLiveCommandStatus(active, 'done')
     }
     notifyWaiters(session)
   })
@@ -746,6 +786,7 @@ const createSession = async (cwd?: string): Promise<BashSession> => {
       active.doneAt = Date.now()
     }
     emitBackgroundCommandCompleted(session)
+    pushLiveCommandStatus(active, 'done')
     notifyWaiters(session)
   })
 
@@ -833,6 +874,7 @@ const waitForCommandState = async ({
       clearBackgroundIdleTimer(active)
       clearBackgroundCompletionTimer(active)
       session.killProcess()
+      pushLiveCommandStatus(active, 'done')
       return buildResult(session, 'killed', outputSnapshotOptions)
     }
 
@@ -850,6 +892,7 @@ const waitForCommandState = async ({
       clearBackgroundCompletionTimer(active)
       session.activeCommand = null
       session.lastUsedAt = Date.now()
+      pushLiveCommandStatus(active, 'done')
       return result
     }
 
@@ -935,6 +978,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     session.activeCommand?.backgroundRecord?.abortController.abort()
     clearBackgroundIdleTimer(session.activeCommand)
     clearBackgroundCompletionTimer(session.activeCommand)
+    pushLiveCommandStatus(session.activeCommand, 'done')
     session.killProcess()
     sessions.delete(session.id)
     if (sharedSessionId === session.id) sharedSessionId = null
@@ -957,6 +1001,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     session.lastSnapshot = null
     session.activeCommand = {
       token,
+      source: params.source,
       stdoutCollector: new CappedOutputCollector(),
       stderrCollector: new CappedOutputCollector(),
       stdoutLineBuffer: '',
@@ -966,6 +1011,7 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
       lastWaitingStdoutBytes: 0,
       lastWaitingStderrBytes: 0,
     }
+    pushLiveCommandStatus(session.activeCommand, 'running')
     writeToSession(
       session,
       session.provider.wrapCommand({

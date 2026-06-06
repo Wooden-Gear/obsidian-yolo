@@ -165,6 +165,7 @@ function buildSubagentResultMessage(
       result?.status ??
       (record.status === 'running' ? 'completed' : record.status),
     content: result?.content ?? record.error ?? '',
+    activityLog: result?.activityLog ?? record.activityLog,
     durationMs: result?.durationMs ?? completedAt - record.createdAt,
     toolUseCount: result?.toolUseCount ?? 0,
     usage: result?.usage,

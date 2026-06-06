@@ -36,6 +36,8 @@ function buildSynthRequest(
       value: {
         command: message.title,
         background: true,
+        stderr: message.stderr ?? '',
+        stdout: message.stdout ?? '',
       },
     },
   }

@@ -4,9 +4,12 @@ import type { TaskSource } from '../../../types/chat'
 import type { ChatMessage, ChatUserMessage } from '../../../types/chat'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { formatErrorMessageWithCauses } from '../../../utils/error-message'
+import { type YoloAgentEvent, conversationStateToEvents } from '../agent-api'
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
 import { CitationRegistry } from '../citationRegistry'
+import { liveTaskStreamBus } from '../live-stream/taskStreamBus'
 import { NativeAgentRuntime } from '../native-runtime'
+import type { AgentConversationState } from '../service'
 import type { AgentRuntimeLoopConfig, AgentRuntimeRunInput } from '../types'
 
 import {
@@ -68,6 +71,79 @@ function extractLastAssistantUsage(
   return undefined
 }
 
+function appendActivityLine(lines: string[], toolCallId: string, line: string) {
+  lines.push(line)
+  liveTaskStreamBus.push({
+    type: 'stderr',
+    toolCallId,
+    chunk: `${line}\n`,
+    ts: Date.now(),
+  })
+}
+
+function projectSubagentEvent({
+  event,
+  parentToolCallId,
+  activityLines,
+}: {
+  event: YoloAgentEvent
+  parentToolCallId: string
+  activityLines: string[]
+}): string | undefined {
+  if (event.type === 'state') {
+    if (event.status === 'running') {
+      liveTaskStreamBus.push({
+        type: 'status',
+        toolCallId: parentToolCallId,
+        status: 'running',
+      })
+    }
+    return undefined
+  }
+
+  if (event.type === 'tool') {
+    appendActivityLine(
+      activityLines,
+      parentToolCallId,
+      `[tool] ${event.name} ${event.status}`,
+    )
+    return undefined
+  }
+
+  if (event.type === 'completed') {
+    if (event.text) {
+      liveTaskStreamBus.push({
+        type: 'stdout',
+        toolCallId: parentToolCallId,
+        chunk: event.text,
+        ts: Date.now(),
+      })
+    }
+    appendActivityLine(activityLines, parentToolCallId, '[state] completed')
+    liveTaskStreamBus.push({
+      type: 'status',
+      toolCallId: parentToolCallId,
+      status: 'done',
+    })
+    return event.text
+  }
+
+  if (event.type === 'error') {
+    appendActivityLine(
+      activityLines,
+      parentToolCallId,
+      `[error] ${event.message}`,
+    )
+    liveTaskStreamBus.push({
+      type: 'status',
+      toolCallId: parentToolCallId,
+      status: 'done',
+    })
+  }
+
+  return undefined
+}
+
 async function runChildAgent(
   record: SubagentTaskRecord,
   parent: SubagentParentContext,
@@ -94,6 +170,20 @@ async function runChildAgent(
   const runtime = new NativeAgentRuntime(loopConfig)
   const citationRegistry = new CitationRegistry()
   const abortController = record.abortController
+  const parentToolCallId = record.source.toolCallId
+  const activityLines: string[] = []
+  type Tracker = Parameters<typeof conversationStateToEvents>[0]['previous']
+  let previous: Tracker = {
+    assistantTextById: new Map(),
+    toolStatusById: new Map(),
+  }
+
+  liveTaskStreamBus.push({
+    type: 'status',
+    toolCallId: parentToolCallId,
+    status: 'starting',
+  })
+  appendActivityLine(activityLines, parentToolCallId, '[state] starting')
 
   const runInput: AgentRuntimeRunInput = {
     providerClient: parent.providerClient,
@@ -102,6 +192,7 @@ async function runChildAgent(
     messages: [childUserMessage],
     requestMessages: [childUserMessage],
     conversationId: record.taskId,
+    sourceUserMessageId: childUserMessage.id,
     assistantId: parent.assistantId,
     requestContextBuilder: parent.requestContextBuilder,
     mcpManager: parent.mcpManager,
@@ -118,16 +209,51 @@ async function runChildAgent(
     runContext: { citationRegistry },
   }
 
+  const unsubscribe = runtime.subscribe((snapshot) => {
+    const state: AgentConversationState = {
+      conversationId: record.taskId,
+      status: abortController.signal.aborted ? 'aborted' : 'running',
+      messages: snapshot.messages,
+      compaction: snapshot.compaction,
+      pendingCompactionAnchorMessageId:
+        snapshot.pendingCompactionAnchorMessageId,
+    }
+    const nextEvents = conversationStateToEvents({
+      state,
+      sourceUserMessageId: childUserMessage.id,
+      previous,
+    })
+    previous = nextEvents.nextTracker
+    for (const event of nextEvents.events) {
+      projectSubagentEvent({
+        event,
+        parentToolCallId,
+        activityLines,
+      })
+    }
+  })
+
   try {
     await runtime.run(runInput)
     const snapshot = runtime.getSnapshot()
     const finalMessages = snapshot.messages
     const content = extractLastAssistantText(finalMessages)
+    const completedEventText =
+      projectSubagentEvent({
+        event: {
+          type: 'completed',
+          conversationId: record.taskId,
+          text: content,
+        },
+        parentToolCallId,
+        activityLines,
+      }) ?? content
     const completedAt = Date.now()
     const result: SubagentResult = {
       taskId: record.taskId,
       status: abortController.signal.aborted ? 'aborted' : 'completed',
-      content,
+      content: completedEventText,
+      activityLog: activityLines.join('\n'),
       durationMs: completedAt - startedAt,
       toolUseCount: countToolUses(finalMessages),
       usage: extractLastAssistantUsage(finalMessages),
@@ -142,19 +268,33 @@ async function runChildAgent(
     const completedAt = Date.now()
     const status = abortController.signal.aborted ? 'aborted' : 'failed'
     const errorMessage = formatErrorMessageWithCauses(error)
+    appendActivityLine(
+      activityLines,
+      parentToolCallId,
+      status === 'aborted' ? '[state] aborted' : `[error] ${errorMessage}`,
+    )
+    liveTaskStreamBus.push({
+      type: 'status',
+      toolCallId: parentToolCallId,
+      status: 'done',
+    })
     subagentTaskRegistry.update(record.taskId, {
       status,
       completedAt,
       error: errorMessage,
+      activityLog: activityLines.join('\n'),
       result: {
         taskId: record.taskId,
         status,
         content: errorMessage,
+        activityLog: activityLines.join('\n'),
         durationMs: completedAt - startedAt,
         toolUseCount: 0,
       },
     })
   }
+
+  unsubscribe()
 
   const updatedRecord = subagentTaskRegistry.get(record.taskId)
   if (updatedRecord && updatedRecord.status !== 'running') {

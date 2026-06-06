@@ -176,6 +176,7 @@ export type ChatSubagentResultMessage = {
   title: string
   status: SubagentResultStatus
   content: string
+  activityLog?: string
   durationMs: number
   toolUseCount: number
   usage?: ResponseUsage

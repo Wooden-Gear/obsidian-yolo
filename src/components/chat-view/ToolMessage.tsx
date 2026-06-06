@@ -10,6 +10,7 @@ import {
   BUILTIN_TOOL_UI_META,
   getBuiltinToolUiMeta,
 } from '../../core/agent/builtinToolUiMeta'
+import { subagentTaskRegistry } from '../../core/agent/subagent/task-registry'
 import { ALWAYS_ALLOW_DISABLED_TOOL_NAMES } from '../../core/agent/tool-preferences'
 import { InvalidToolNameException } from '../../core/mcp/exception'
 import {
@@ -31,6 +32,7 @@ import { SplitButton } from '../common/SplitButton'
 import { AskUserQuestionPanel } from './AskUserQuestionPanel'
 import { ObsidianCodeBlock } from './ObsidianMarkdown'
 import { ExternalAgentToolCard } from './tool-cards/ExternalAgentToolCard'
+import { LiveTaskCard } from './tool-cards/LiveTaskCard'
 import {
   type ToolDisplayInfo,
   getToolHeadlineParts,
@@ -309,6 +311,15 @@ const isDelegateSubagentRequest = (request: ToolRequestLike): boolean => {
   }
 }
 
+const isTerminalCommandRequest = (request: ToolRequestLike): boolean => {
+  try {
+    const { toolName } = parseToolName(request.name)
+    return toolName === 'terminal_command'
+  } catch {
+    return false
+  }
+}
+
 const extractExternalAgentArgs = (
   rawArguments?: ToolCallRequest['arguments'],
 ):
@@ -325,6 +336,54 @@ const extractExternalAgentArgs = (
       : undefined
   if (!provider && !model && !workingDirectory) return undefined
   return { provider, model, workingDirectory }
+}
+
+const extractSubagentArgs = (
+  rawArguments?: ToolCallRequest['arguments'],
+): { title?: string } | undefined => {
+  const parsed = getToolCallArgumentsObject(rawArguments)
+  if (!parsed) return undefined
+  const title =
+    typeof parsed.description === 'string' ? parsed.description : undefined
+  return title ? { title } : undefined
+}
+
+const extractTerminalCommandArgs = (
+  rawArguments?: ToolCallRequest['arguments'],
+): { command?: string; workingDirectory?: string } | undefined => {
+  const parsed = getToolCallArgumentsObject(rawArguments)
+  if (!parsed) return undefined
+  const command =
+    typeof parsed.command === 'string' ? parsed.command : undefined
+  const workingDirectory =
+    typeof parsed.cwd === 'string' ? parsed.cwd : undefined
+  if (!command && !workingDirectory) return undefined
+  return { command, workingDirectory }
+}
+
+const extractSyntheticLiveTaskOutput = (
+  rawArguments?: ToolCallRequest['arguments'],
+): { stdout?: string; stderr?: string } => {
+  const parsed = getToolCallArgumentsObject(rawArguments)
+  if (!parsed) return {}
+  return {
+    stdout: typeof parsed.stdout === 'string' ? parsed.stdout : undefined,
+    stderr: typeof parsed.stderr === 'string' ? parsed.stderr : undefined,
+  }
+}
+
+const extractAcceptedTaskId = (
+  response: ToolCallResponse,
+): string | undefined => {
+  if (response.status !== ToolCallResponseStatus.Success) return undefined
+  try {
+    const parsed = JSON.parse(response.data.text) as unknown
+    if (!parsed || typeof parsed !== 'object') return undefined
+    const taskId = (parsed as Record<string, unknown>).taskId
+    return typeof taskId === 'string' ? taskId : undefined
+  } catch {
+    return undefined
+  }
 }
 
 const translateBuiltinToolLabel = (
@@ -1212,6 +1271,38 @@ function ToolCallItem({
               toolCallId={request.id}
               response={response}
               args={extractExternalAgentArgs(request.arguments)}
+              onAbort={handleAbort}
+            />
+          ) : isDelegateSubagentRequest(request) ? (
+            <LiveTaskCard
+              toolCallId={request.id}
+              response={response}
+              variant="subagent"
+              args={extractSubagentArgs(request.arguments)}
+              initialStdout={
+                extractSyntheticLiveTaskOutput(request.arguments).stdout
+              }
+              initialStderr={
+                extractSyntheticLiveTaskOutput(request.arguments).stderr
+              }
+              onAbort={() => {
+                const taskId = extractAcceptedTaskId(response)
+                if (taskId) subagentTaskRegistry.abort(taskId)
+                void handleAbort()
+              }}
+            />
+          ) : isTerminalCommandRequest(request) ? (
+            <LiveTaskCard
+              toolCallId={request.id}
+              response={response}
+              variant="terminal"
+              args={extractTerminalCommandArgs(request.arguments)}
+              initialStdout={
+                extractSyntheticLiveTaskOutput(request.arguments).stdout
+              }
+              initialStderr={
+                extractSyntheticLiveTaskOutput(request.arguments).stderr
+              }
               onAbort={handleAbort}
             />
           ) : (

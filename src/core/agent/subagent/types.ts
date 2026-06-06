@@ -15,6 +15,7 @@ export type SubagentResult = {
   taskId: string
   status: 'completed' | 'failed' | 'aborted'
   content: string
+  activityLog?: string
   durationMs: number
   toolUseCount: number
   usage?: ResponseUsage
@@ -30,6 +31,7 @@ export type SubagentTaskRecord = {
   completedAt?: number
   prompt: string
   result?: SubagentResult
+  activityLog?: string
   error?: string
   abortController: AbortController
 }

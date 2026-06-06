@@ -16,6 +16,10 @@ jest.mock('./tool-cards/ExternalAgentToolCard', () => ({
   ExternalAgentToolCard: () => null,
 }))
 
+jest.mock('./tool-cards/LiveTaskCard', () => ({
+  LiveTaskCard: () => null,
+}))
+
 import {
   ToolCallResponseStatus,
   createCompleteToolCallArguments,

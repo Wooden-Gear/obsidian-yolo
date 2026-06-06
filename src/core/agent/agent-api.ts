@@ -143,7 +143,6 @@ export class YoloAgentApiService implements YoloAgentApi {
     const conversationId = uuidv4()
     const abortController = new AbortController()
     const abortExternal = () => abortController.abort()
-    let unsubscribe: (() => void) | null = null
 
     this.abortControllers.set(conversationId, abortController)
     if (request.abortSignal) {
@@ -156,10 +155,6 @@ export class YoloAgentApiService implements YoloAgentApi {
       }
     }
 
-    const queue = new AsyncEventQueue<YoloAgentEvent>()
-    let previous = createEmptySnapshotTracker()
-    let settled = false
-
     try {
       const resolved = await resolveAgentApiRunInput({
         request,
@@ -171,49 +166,13 @@ export class YoloAgentApiService implements YoloAgentApi {
         mcpManager: await this.options.getMcpManager(),
       })
 
-      unsubscribe = this.options.getAgentService().subscribe(
+      for await (const event of streamResolvedAgentRunEvents({
         conversationId,
-        (state) => {
-          const nextEvents = conversationStateToEvents({
-            state,
-            sourceUserMessageId: resolved.sourceUserMessageId,
-            previous,
-          })
-          previous = nextEvents.nextTracker
-          for (const event of nextEvents.events) {
-            queue.push(event)
-          }
-          if (
-            state.status === 'completed' ||
-            state.status === 'aborted' ||
-            state.status === 'error'
-          ) {
-            settled = true
-            queue.close()
-          }
-        },
-        { emitCurrent: false },
-      )
-
-      void this.options
-        .getAgentService()
-        .run({
-          conversationId,
-          persistState: false,
-          loopConfig: resolved.loopConfig,
-          input: resolved.input,
-        })
-        .catch((error) => {
-          queue.push({
-            type: 'error',
-            conversationId,
-            message: normalizeErrorMessage(error),
-          })
-          settled = true
-          queue.close()
-        })
-
-      for await (const event of queue) {
+        sourceUserMessageId: resolved.sourceUserMessageId,
+        loopConfig: resolved.loopConfig,
+        input: resolved.input,
+        agentService: this.options.getAgentService(),
+      })) {
         yield event
       }
     } catch (error) {
@@ -222,13 +181,8 @@ export class YoloAgentApiService implements YoloAgentApi {
         conversationId,
         message: normalizeErrorMessage(error),
       }
-      settled = true
     } finally {
-      if (!settled) {
-        abortController.abort()
-        this.options.getAgentService().abortConversation(conversationId)
-      }
-      unsubscribe?.()
+      abortController.abort()
       request.abortSignal?.removeEventListener('abort', abortExternal)
       this.abortControllers.delete(conversationId)
     }
@@ -241,6 +195,76 @@ export class YoloAgentApiService implements YoloAgentApi {
       .getAgentService()
       .abortConversation(conversationId)
     return Boolean(controller) || serviceAborted
+  }
+}
+
+export async function* streamResolvedAgentRunEvents({
+  conversationId,
+  sourceUserMessageId,
+  loopConfig,
+  input,
+  agentService,
+}: {
+  conversationId: string
+  sourceUserMessageId: string
+  loopConfig: AgentRuntimeLoopConfig
+  input: AgentRuntimeRunInput
+  agentService: AgentService
+}): AsyncIterable<YoloAgentEvent> {
+  const queue = new AsyncEventQueue<YoloAgentEvent>()
+  let previous = createEmptySnapshotTracker()
+  let settled = false
+
+  const unsubscribe = agentService.subscribe(
+    conversationId,
+    (state) => {
+      const nextEvents = conversationStateToEvents({
+        state,
+        sourceUserMessageId,
+        previous,
+      })
+      previous = nextEvents.nextTracker
+      for (const event of nextEvents.events) {
+        queue.push(event)
+      }
+      if (
+        state.status === 'completed' ||
+        state.status === 'aborted' ||
+        state.status === 'error'
+      ) {
+        settled = true
+        queue.close()
+      }
+    },
+    { emitCurrent: false },
+  )
+
+  void agentService
+    .run({
+      conversationId,
+      persistState: false,
+      loopConfig,
+      input,
+    })
+    .catch((error) => {
+      queue.push({
+        type: 'error',
+        conversationId,
+        message: normalizeErrorMessage(error),
+      })
+      settled = true
+      queue.close()
+    })
+
+  try {
+    for await (const event of queue) {
+      yield event
+    }
+  } finally {
+    if (!settled) {
+      agentService.abortConversation(conversationId)
+    }
+    unsubscribe()
   }
 }
 
