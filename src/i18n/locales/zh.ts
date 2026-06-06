@@ -1684,6 +1684,17 @@ export const zh: TranslationKeys = {
       output: '输出',
       abortedBeforeOutput: '已中止，未产生任何输出。',
     },
+    liveTask: {
+      statusRunning: '执行中',
+      statusDone: '已完成',
+      statusAborted: '已中止',
+      statusError: '错误',
+      progress: '进度',
+      output: '输出',
+      abortedBeforeOutput: '已中止，未产生任何输出。',
+      progressTruncated: '进度输出已截断。',
+      truncated: '输出已截断。',
+    },
     externalAgentResult: {
       statusCompleted: '已完成',
       statusFailed: '失败',

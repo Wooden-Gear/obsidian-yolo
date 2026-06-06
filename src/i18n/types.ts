@@ -1534,6 +1534,18 @@ export type TranslationKeys = {
       progressTruncated?: string
       truncated?: string
     }
+    // shared live task card
+    liveTask?: {
+      statusRunning?: string
+      statusDone?: string
+      statusAborted?: string
+      statusError?: string
+      progress?: string
+      output?: string
+      abortedBeforeOutput?: string
+      progressTruncated?: string
+      truncated?: string
+    }
     // async external agent result card
     externalAgentResult?: {
       statusCompleted?: string

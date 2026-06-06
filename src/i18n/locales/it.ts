@@ -1724,6 +1724,17 @@ export const it: TranslationKeys = {
       output: 'Output',
       abortedBeforeOutput: 'Interrotto prima di produrre output.',
     },
+    liveTask: {
+      statusRunning: 'In esecuzione',
+      statusDone: 'Completato',
+      statusAborted: 'Interrotto',
+      statusError: 'Errore',
+      progress: 'Avanzamento',
+      output: 'Output',
+      abortedBeforeOutput: 'Interrotto prima di produrre output.',
+      progressTruncated: 'Avanzamento troncato.',
+      truncated: 'Output troncato.',
+    },
     externalAgentResult: {
       statusCompleted: 'Completato',
       statusFailed: 'Fallito',

@@ -1800,6 +1800,17 @@ export const en: TranslationKeys = {
       output: 'Output',
       abortedBeforeOutput: 'Aborted before any output was collected.',
     },
+    liveTask: {
+      statusRunning: 'Running',
+      statusDone: 'Done',
+      statusAborted: 'Aborted',
+      statusError: 'Error',
+      progress: 'Progress',
+      output: 'Output',
+      abortedBeforeOutput: 'Aborted before any output was collected.',
+      progressTruncated: 'Progress truncated.',
+      truncated: 'Output truncated.',
+    },
     externalAgentResult: {
       statusCompleted: 'Completed',
       statusFailed: 'Failed',

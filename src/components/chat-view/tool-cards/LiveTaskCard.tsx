@@ -211,13 +211,13 @@ export function LiveTaskCard({
       {stderrText !== undefined && (
         <div className="yolo-external-agent-card__stream-section">
           <div className="yolo-external-agent-card__stream-label">
-            {t('chat.externalAgent.progress', 'Progress')}
+            {t('chat.liveTask.progress', 'Progress')}
           </div>
           <ConsoleBlock text={stderrText} variant={variant} />
           {progressTruncated && (
             <div className="yolo-external-agent-card__truncation-notice">
               {t(
-                'chat.externalAgent.progressTruncated',
+                'chat.liveTask.progressTruncated',
                 `Progress truncated: ${progressTruncated.omittedBytes.toLocaleString()} bytes omitted.`,
               )}
             </div>
@@ -229,7 +229,7 @@ export function LiveTaskCard({
       {stdoutText !== undefined && (
         <div className="yolo-external-agent-card__stream-section">
           <div className="yolo-external-agent-card__stream-label">
-            {t('chat.externalAgent.output', 'Output')}
+            {t('chat.liveTask.output', 'Output')}
           </div>
           <ConsoleBlock text={stdoutText} />
         </div>
@@ -244,7 +244,7 @@ export function LiveTaskCard({
         stream === null && (
           <div className="yolo-external-agent-card__no-output">
             {t(
-              'chat.externalAgent.abortedBeforeOutput',
+              'chat.liveTask.abortedBeforeOutput',
               'Aborted before any output was collected.',
             )}
           </div>
@@ -362,7 +362,7 @@ function CompactLiveTaskCard({
           stream === null ? (
           <div className="yolo-external-agent-card__no-output">
             {t(
-              'chat.externalAgent.abortedBeforeOutput',
+              'chat.liveTask.abortedBeforeOutput',
               'Aborted before any output was collected.',
             )}
           </div>
@@ -584,7 +584,7 @@ function TruncationNotice({
   return (
     <div className="yolo-external-agent-card__truncation-notice">
       {t(
-        'chat.externalAgent.truncated',
+        'chat.liveTask.truncated',
         `Output truncated: ${truncated.omittedBytes.toLocaleString()} bytes omitted.`,
       )}
     </div>
@@ -608,7 +608,7 @@ function StatusBadge({
           )}
         >
           <Loader2 size={12} className="yolo-spinner" />
-          <span>{t('chat.externalAgent.statusRunning', 'Running')}</span>
+          <span>{t('chat.liveTask.statusRunning', 'Running')}</span>
         </span>
       )
     case ToolCallResponseStatus.Success:
@@ -620,7 +620,7 @@ function StatusBadge({
           )}
         >
           <Check size={12} />
-          <span>{t('chat.externalAgent.statusDone', 'Done')}</span>
+          <span>{t('chat.liveTask.statusDone', 'Done')}</span>
         </span>
       )
     case ToolCallResponseStatus.Aborted:
@@ -632,7 +632,7 @@ function StatusBadge({
           )}
         >
           <X size={12} />
-          <span>{t('chat.externalAgent.statusAborted', 'Aborted')}</span>
+          <span>{t('chat.liveTask.statusAborted', 'Aborted')}</span>
         </span>
       )
     case ToolCallResponseStatus.Error:
@@ -644,7 +644,7 @@ function StatusBadge({
           )}
         >
           <X size={12} />
-          <span>{t('chat.externalAgent.statusError', 'Error')}</span>
+          <span>{t('chat.liveTask.statusError', 'Error')}</span>
         </span>
       )
     default:
