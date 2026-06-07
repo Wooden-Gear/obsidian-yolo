@@ -15,7 +15,7 @@ button.yolo-subagent-card__main {
   appearance: none;
   display: flex;
   align-items: flex-start;
-  gap: var(--size-4-3);
+  gap: var(--size-2-3);
   flex: 1;
   min-width: 0;
   padding: var(--size-2-1) 0;
@@ -42,10 +42,15 @@ button.yolo-subagent-card__main:focus-visible {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
   color: var(--text-muted);
+}
+
+.yolo-subagent-card__icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .yolo-subagent-card--running .yolo-subagent-card__icon {
