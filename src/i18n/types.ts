@@ -677,6 +677,10 @@ export type TranslationKeys = {
         firstToken: string
         dims: string
         noModels: string
+        deleteModel: string
+        deleteChatModelBlocked: string
+        deleteEmbeddingModelBlocked: string
+        deleteEmbeddingModelInProgress: string
       }
       // auto-fetched models helper labels
       availableModelsAuto?: string

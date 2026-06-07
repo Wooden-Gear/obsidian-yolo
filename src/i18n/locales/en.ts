@@ -872,6 +872,12 @@ export const en: TranslationKeys = {
         firstToken: 'First token',
         dims: 'dims',
         noModels: 'No models configured under this provider',
+        deleteModel: 'Delete model',
+        deleteChatModelBlocked:
+          'Cannot delete the model currently selected as chat or title model',
+        deleteEmbeddingModelBlocked:
+          'Cannot delete the currently selected embedding model',
+        deleteEmbeddingModelInProgress: 'Deleting embedding model…',
       },
       availableModelsAuto: 'Available models (auto-fetched)',
       searchModels: 'Search models...',

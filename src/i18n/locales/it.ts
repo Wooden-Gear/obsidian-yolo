@@ -793,6 +793,12 @@ export const it: TranslationKeys = {
         firstToken: 'Primo token',
         dims: 'dim',
         noModels: 'Nessun modello configurato per questo provider',
+        deleteModel: 'Elimina modello',
+        deleteChatModelBlocked:
+          'Impossibile eliminare il modello selezionato come chat o titolo',
+        deleteEmbeddingModelBlocked:
+          'Impossibile eliminare il modello embedding selezionato',
+        deleteEmbeddingModelInProgress: 'Eliminazione modello embedding…',
       },
       availableModelsAuto: 'Modelli disponibili (recuperati automaticamente)',
       searchModels: 'Cerca modelli...',
