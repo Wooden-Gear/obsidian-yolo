@@ -45,8 +45,11 @@ import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { TodoItem } from '../agent/todos-from-messages'
 import type { AgentRunContext } from '../agent/types'
 import {
+  BUILTIN_SKILL_PATH_PREFIX,
+  buildAllowedSkillPathSet,
   findPathOutsideScope,
   isPathAllowedByScope,
+  normalizeSkillPathForExemption,
 } from '../agent/workspaceScope'
 import {
   type TextEditOperation,
@@ -71,7 +74,7 @@ import {
   type AggregatedSearchResult,
   aggregateSearchResults,
 } from '../search/searchResultAggregation'
-import { getLiteSkillDocument } from '../skills/liteSkills'
+import { getLiteSkillDocumentByPath } from '../skills/liteSkills'
 import {
   WEB_SCRAPE_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
@@ -165,7 +168,6 @@ export const LOCAL_FILE_TOOL_SHORT_NAMES = [
   'memory_add',
   'memory_update',
   'memory_delete',
-  'open_skill',
   'web_search',
   'web_scrape',
   JS_SANDBOX_TOOL_NAME,
@@ -442,6 +444,17 @@ const validateVaultPath = (path: string): string => {
   return normalizedPath
 }
 
+const normalizeFsReadPath = (path: string): string => {
+  const trimmed = path.trim()
+  if (trimmed.length === 0) {
+    throw new Error('Path is required.')
+  }
+  if (trimmed.startsWith(BUILTIN_SKILL_PATH_PREFIX)) {
+    return trimmed
+  }
+  return validateVaultPath(trimmed)
+}
+
 export function getLocalFileToolServerName(): string {
   return LOCAL_FILE_TOOL_SERVER
 }
@@ -619,7 +632,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        'Read vault files. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads.',
+        'Read vault files and skill instructions. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -628,7 +641,7 @@ export function getLocalFileTools(options?: {
             items: {
               type: 'string',
             },
-            description: `Vault-relative file paths. Max ${MAX_BATCH_READ_FILES} items.`,
+            description: `Vault-relative file paths or skill paths (including builtin://). Max ${MAX_BATCH_READ_FILES} items.`,
           },
           operation: {
             type: 'object',
@@ -909,22 +922,6 @@ export function getLocalFileTools(options?: {
               'Memory scope. Defaults to assistant, and may fallback to global when assistant memory is unavailable.',
           },
         },
-      },
-    },
-    {
-      name: 'open_skill',
-      description:
-        'Load a lite skill from the configured skills directory by name and return full markdown content.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          name: {
-            type: 'string',
-            description:
-              'Skill name (the kebab-case identifier from frontmatter).',
-          },
-        },
-        required: ['name'],
       },
     },
     {
@@ -2681,6 +2678,7 @@ export async function callLocalFileTool({
   signal,
   chatModelId,
   workspaceScope,
+  allowedSkillPaths,
   runContext,
   subagentParentContext,
   promptSourceWatcher,
@@ -2699,6 +2697,7 @@ export async function callLocalFileTool({
   signal?: AbortSignal
   chatModelId?: string
   workspaceScope?: AssistantWorkspaceScope
+  allowedSkillPaths?: readonly string[]
   runContext?: AgentRunContext
   subagentParentContext?: SubagentParentContext
   promptSourceWatcher?: PromptSourceWatcher
@@ -2713,7 +2712,12 @@ export async function callLocalFileTool({
     // for UI Rejected status, but we re-validate here so manual-approval /
     // direct-call code paths cannot bypass the constraint.
     if (workspaceScope?.enabled) {
-      const offendingPath = findPathOutsideScope(toolName, args, workspaceScope)
+      const exemptPaths = allowedSkillPaths
+        ? buildAllowedSkillPathSet(allowedSkillPaths)
+        : undefined
+      const offendingPath = findPathOutsideScope(toolName, args, workspaceScope, {
+        exemptPaths,
+      })
       if (offendingPath !== null) {
         throw new Error(
           `Path "${offendingPath}" is outside this agent's workspace scope.`,
@@ -2802,7 +2806,7 @@ export async function callLocalFileTool({
       }
       case 'fs_read': {
         const paths = getStringArrayArg(args, 'paths')
-          .map((path) => validateVaultPath(path))
+          .map((path) => normalizeFsReadPath(path))
           .filter((path, index, arr) => arr.indexOf(path) === index)
 
         if (paths.length === 0) {
@@ -2814,6 +2818,9 @@ export async function callLocalFileTool({
           )
         }
         const operation = getFsReadOperation(args)
+        const allowedSkillPathSet = allowedSkillPaths
+          ? buildAllowedSkillPathSet(allowedSkillPaths)
+          : undefined
 
         const results: Array<
           | {
@@ -2866,6 +2873,73 @@ export async function callLocalFileTool({
         for (const path of paths) {
           if (signal?.aborted) {
             return { status: ToolCallResponseStatus.Aborted }
+          }
+
+          if (
+            allowedSkillPathSet?.has(normalizeSkillPathForExemption(path))
+          ) {
+            const skillDocument = await getLiteSkillDocumentByPath({
+              app,
+              path,
+              settings,
+            })
+            if (!skillDocument) {
+              results.push({ path, ok: false, error: 'Skill not found.' })
+              continue
+            }
+
+            const content = skillDocument.content
+            const lines = content.length === 0 ? [] : content.split('\n')
+            const totalLines = lines.length
+            let outputContent = ''
+            let returnedStartLine: number | null = null
+            let returnedEndLine: number | null = null
+            let hasMoreBelow = false
+            let nextStartLine: number | null = null
+
+            if (operation.type === 'full') {
+              outputContent = lines
+                .map((line, index) => `${index + 1}|${line}`)
+                .join('\n')
+              returnedStartLine = totalLines > 0 ? 1 : null
+              returnedEndLine = totalLines > 0 ? totalLines : null
+            } else {
+              const startIndex = Math.min(
+                Math.max(operation.startLine - 1, 0),
+                totalLines,
+              )
+              const endExclusive = Math.min(
+                totalLines,
+                operation.endLine ?? startIndex + operation.maxLines,
+              )
+              const selectedLines = lines.slice(startIndex, endExclusive)
+              outputContent = selectedLines
+                .map((line, index) => `${startIndex + index + 1}|${line}`)
+                .join('\n')
+              const returnedCount = selectedLines.length
+              returnedStartLine = returnedCount > 0 ? startIndex + 1 : null
+              returnedEndLine =
+                returnedCount > 0 ? startIndex + returnedCount : null
+              hasMoreBelow = endExclusive < totalLines
+              nextStartLine = hasMoreBelow ? endExclusive + 1 : null
+            }
+
+            results.push({
+              path,
+              ok: true,
+              totalLines,
+              returnedRange:
+                operation.type === 'lines'
+                  ? {
+                      startLine: returnedStartLine,
+                      endLine: returnedEndLine,
+                    }
+                  : undefined,
+              hasMoreBelow,
+              nextStartLine,
+              content: outputContent,
+            })
+            continue
           }
 
           const file = app.vault.getFileByPath(path)
@@ -3927,28 +4001,6 @@ export async function callLocalFileTool({
               aggregateSearchResults({ results: fused, maxResults }),
               runContext,
             ),
-          }),
-        }
-      }
-
-      case 'open_skill': {
-        const name = getOptionalTextArg(args, 'name')?.trim()
-
-        if (!name) {
-          throw new Error('name is required.')
-        }
-
-        const skill = await getLiteSkillDocument({ app, name, settings })
-        if (!skill) {
-          throw new Error(`Skill not found. name=${name}`)
-        }
-
-        return {
-          status: ToolCallResponseStatus.Success,
-          text: formatJsonResult({
-            tool: 'open_skill',
-            skill: skill.entry,
-            content: skill.content,
           }),
         }
       }

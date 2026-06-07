@@ -1110,7 +1110,7 @@ export function QuickAskPanel({
               }),
             )
           : []
-        const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
+        const allowedSkillPaths = enabledSkillEntries.map((skill) => skill.path)
 
         const agentService = plugin.getAgentService()
         unsubscribeRunner = agentService.subscribe(
@@ -1136,7 +1136,7 @@ export function QuickAskPanel({
             allowedToolNames: chatModeRuntime.allowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
-            allowedSkillNames,
+            allowedSkillPaths,
             contextualInjections: editorSnapshotInjection
               ? [editorSnapshotInjection]
               : [],

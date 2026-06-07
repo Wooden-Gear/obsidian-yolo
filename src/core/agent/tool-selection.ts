@@ -24,18 +24,6 @@ const LOCAL_MEMORY_TOOL_NAMES = new Set([
   'memory_delete',
 ])
 
-const isOpenSkillToolName = (toolName: string): boolean => {
-  try {
-    const parsed = parseToolName(toolName)
-    return (
-      parsed.serverName === getLocalFileToolServerName() &&
-      parsed.toolName === 'open_skill'
-    )
-  } catch {
-    return toolName === 'open_skill'
-  }
-}
-
 export const isLoadToolSchemasToolName = (toolName: string): boolean => {
   try {
     const parsed = parseToolName(toolName)
@@ -100,19 +88,10 @@ export const isMemoryToolAvailable = (toolName: string): boolean => {
 const isToolAllowed = ({
   toolName,
   allowedToolNames,
-  allowedSkillNames,
 }: {
   toolName: string
   allowedToolNames?: ReadonlySet<string>
-  allowedSkillNames?: ReadonlySet<string>
 }): boolean => {
-  if (isOpenSkillToolName(toolName)) {
-    const hasAllowedSkills = (allowedSkillNames?.size ?? 0) > 0
-    if (!hasAllowedSkills) {
-      return false
-    }
-  }
-
   if (!allowedToolNames) {
     return true
   }
@@ -171,7 +150,6 @@ export function applyDynamicToolDescriptions(
 export const selectAllowedTools = ({
   availableTools,
   allowedToolNames,
-  allowedSkillNames,
   toolPreferences,
   apiType,
   enableToolDisclosure = true,
@@ -179,7 +157,6 @@ export const selectAllowedTools = ({
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
-  allowedSkillNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
   apiType?: LLMProviderApiType | null
   enableToolDisclosure?: boolean
@@ -191,17 +168,12 @@ export const selectAllowedTools = ({
   requestTools: RequestTool[] | undefined
 } => {
   const normalizedAllowedToolNames = expandAllowedToolNames(allowedToolNames)
-  // Canonical skill names: trim only, case-sensitive (A1).
-  const normalizedAllowedSkillNames = allowedSkillNames
-    ? new Set(allowedSkillNames.map((name) => name.trim()))
-    : undefined
 
   const baseFiltered = applyDynamicToolDescriptions(
     availableTools.filter((tool) =>
       isToolAllowed({
         toolName: tool.name,
         allowedToolNames: normalizedAllowedToolNames,
-        allowedSkillNames: normalizedAllowedSkillNames,
       }),
     ),
     { jsSandboxSettings },

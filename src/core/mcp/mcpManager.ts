@@ -788,6 +788,7 @@ export class McpManager {
     requireReview = false,
     chatModelId,
     workspaceScope,
+    allowedSkillPaths,
     subagentParentContext,
     runContext,
   }: {
@@ -801,6 +802,7 @@ export class McpManager {
     requireReview?: boolean
     chatModelId?: string
     workspaceScope?: AssistantWorkspaceScope
+    allowedSkillPaths?: readonly string[]
     runContext?: AgentRunContext
     subagentParentContext?: SubagentParentContext
   }): Promise<ToolCallResponse> {
@@ -845,6 +847,7 @@ export class McpManager {
           signal: compositeSignal,
           chatModelId,
           workspaceScope,
+          allowedSkillPaths,
           runContext,
           subagentParentContext,
           promptSourceWatcher: this.promptSourceWatcher,

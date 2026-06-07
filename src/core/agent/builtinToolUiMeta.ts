@@ -95,12 +95,6 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelFallback: 'Delete Memory',
     descFallback: 'Delete an existing memory item by id.',
   },
-  open_skill: {
-    labelKey: 'settings.agent.builtinOpenSkillLabel',
-    descKey: 'settings.agent.builtinOpenSkillDesc',
-    labelFallback: 'Open Skill',
-    descFallback: 'Load a skill markdown file by name.',
-  },
   [WEB_OPS_GROUP_TOOL_NAME]: {
     labelKey: 'settings.agent.builtinWebOpsLabel',
     descKey: 'settings.agent.builtinWebOpsDesc',
@@ -184,7 +178,6 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   ask_user_question: 'context',
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
-  open_skill: 'external',
   js_eval: 'external',
   terminal_command: 'external',
   delegate_subagent: 'external',
@@ -203,7 +196,6 @@ const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
   vault: [],
   context: [],
   external: [
-    'open_skill',
     WEB_OPS_GROUP_TOOL_NAME,
     'js_eval',
     'terminal_command',

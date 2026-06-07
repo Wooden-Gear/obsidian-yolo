@@ -479,7 +479,7 @@ export function useChatStreamManager({
             }),
           )
         : []
-      const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
+      const allowedSkillPaths = enabledSkillEntries.map((skill) => skill.path)
       const chatModeRuntime = resolveChatModeRuntime({
         mode: chatMode,
         assistant: selectedAssistant,
@@ -529,7 +529,6 @@ export function useChatStreamManager({
       const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
         availableTools,
         allowedToolNames: effectiveAllowedToolNames,
-        allowedSkillNames,
         toolPreferences: chatModeRuntime.toolPreferences,
         apiType: manualApiType,
         enableToolDisclosure: settings.mcp.enableToolDisclosure,
@@ -581,7 +580,6 @@ export function useChatStreamManager({
             allowedToolNames: effectiveAllowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
-            allowedSkillNames,
             contextualInjections: manualContextualInjections,
           })
       } catch (error) {
@@ -719,7 +717,7 @@ export function useChatStreamManager({
               }),
             )
           : []
-        const allowedSkillNames = enabledSkillEntries.map((skill) => skill.name)
+        const allowedSkillPaths = enabledSkillEntries.map((skill) => skill.path)
 
         const chatModeRuntime = resolveChatModeRuntime({
           mode: chatMode,
@@ -758,7 +756,7 @@ export function useChatStreamManager({
           ]?.blockedPrefixes ?? [...DEFAULT_BLOCKED_PREFIXES],
           workspaceScope:
             resolveWorkspaceScopeForRuntimeInput(selectedAssistant),
-          allowedSkillNames,
+          allowedSkillPaths,
           requestParams,
           contextualInjections: buildChatContextualInjections({
             includeCurrentFileContent:
@@ -1010,7 +1008,6 @@ export function useChatStreamManager({
         allowedToolNames: chatModeRuntime.allowedToolNames,
         enableToolDisclosure: settings.mcp.enableToolDisclosure,
         toolPreferences: chatModeRuntime.toolPreferences,
-        allowedSkillNames: enabledSkillEntries.map((s) => s.name),
         contextualInjections: buildChatContextualInjections({
           includeCurrentFileContent:
             settings.chatOptions.includeCurrentFileContent,

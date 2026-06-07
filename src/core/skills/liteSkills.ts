@@ -256,8 +256,8 @@ type SkillRegistryRecord = {
 
 /**
  * Build the single name -> skill registry that BOTH `list` and `get` consume,
- * so the skill shown in the UI is always the exact same one `open_skill`
- * resolves. Resolution order:
+ * so the skill shown in the UI is always the exact same one lazy-loaded via
+ * `fs_read` on the listed path. Resolution order:
  *   1. builtins seeded first (file = null);
  *   2. vault skill dirs in `getSkillScanDirs` order; within each dir, paths are
  *      sorted and the first file claiming a given `name` wins and overrides
@@ -396,6 +396,33 @@ export async function getLiteSkillDocument({
     },
     content: builtin.content,
   }
+}
+
+export async function getLiteSkillDocumentByPath({
+  app,
+  path,
+  settings,
+}: {
+  app: App
+  path: string
+  settings?: SkillSettings
+}): Promise<LiteSkillDocument | null> {
+  const targetPath = path.trim()
+  if (!targetPath) {
+    return null
+  }
+
+  const registry = await buildSkillRegistry({ app, settings })
+  for (const record of registry.values()) {
+    if (record.entry.path === targetPath) {
+      return getLiteSkillDocument({
+        app,
+        name: record.entry.name,
+        settings,
+      })
+    }
+  }
+  return null
 }
 
 /**

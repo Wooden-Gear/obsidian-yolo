@@ -69,7 +69,7 @@ export type AgentRuntimeRunInput = {
     include: string[]
     exclude: string[]
   }
-  allowedSkillNames?: string[]
+  allowedSkillPaths?: string[]
   contextualInjections?: ContextualInjection[]
   geminiTools?: {
     useWebSearch?: boolean

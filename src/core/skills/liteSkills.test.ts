@@ -2,6 +2,7 @@ import { App, normalizePath } from 'obsidian'
 
 import {
   getLiteSkillDocument,
+  getLiteSkillDocumentByPath,
   getSkillScanDirs,
   humanizeSkillName,
   listLiteSkillEntries,
@@ -569,6 +570,24 @@ describe('listLiteSkillEntries and getLiteSkillDocument', () => {
       `${OBSIDIAN_CONFIG_DIR}/skills/hidden-open.md`,
     )
     expect(document?.content).toBe(content)
+  })
+
+  it('resolves builtin skill documents by canonical path', async () => {
+    const app = makeAdapterApp({
+      listings: {
+        'YOLO/skills': { files: [], folders: [] },
+      },
+      fileContents: {},
+    })
+
+    const document = await getLiteSkillDocumentByPath({
+      app,
+      path: 'builtin://skills/skill-creator.md',
+      settings,
+    })
+
+    expect(document?.entry.name).toBe('skill-creator')
+    expect(document?.content).toContain('YOLO/skills')
   })
 })
 

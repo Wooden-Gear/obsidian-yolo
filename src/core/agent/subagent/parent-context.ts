@@ -21,7 +21,7 @@ export type SubagentParentContext = {
   allowedToolNames?: string[]
   toolPreferences?: Record<string, AssistantToolPreference>
   workspaceScope?: AssistantWorkspaceScope
-  allowedSkillNames?: string[]
+  allowedSkillPaths?: string[]
   enableToolDisclosure?: boolean
   reasoningLevel?: ReasoningLevel
   requestParams?: {
@@ -50,7 +50,7 @@ export function buildSubagentParentContext(
     allowedToolNames: input.allowedToolNames,
     toolPreferences: input.toolPreferences,
     workspaceScope: input.workspaceScope,
-    allowedSkillNames: input.allowedSkillNames,
+    allowedSkillPaths: input.allowedSkillPaths,
     enableToolDisclosure: input.enableToolDisclosure,
     reasoningLevel: input.reasoningLevel,
     requestParams: input.requestParams,

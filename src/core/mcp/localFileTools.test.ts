@@ -672,6 +672,77 @@ describe('local fs tool action helpers', () => {
     expect(payload.results[0].returnedRange).toBeUndefined()
   })
 
+  it('reads allowed hidden-directory skills through the skill registry', async () => {
+    const hiddenPath = '.obsidian/skills/hidden-open.md'
+    const content = [
+      '---',
+      'name: hidden-open',
+      'description: hidden body',
+      '---',
+      '# Hidden body',
+    ].join('\n')
+    const app = {
+      vault: {
+        configDir: '.obsidian',
+        adapter: {
+          exists: jest.fn(async (path: string) => path === '.obsidian/skills'),
+          list: jest.fn(async (path: string) =>
+            path === '.obsidian/skills'
+              ? { files: [hiddenPath], folders: [] }
+              : { files: [], folders: [] },
+          ),
+          read: jest.fn(async (path: string) => {
+            if (path !== hiddenPath) {
+              throw new Error(`Unexpected read: ${path}`)
+            }
+            return content
+          }),
+        },
+        getFileByPath: jest.fn().mockReturnValue(null),
+      },
+      metadataCache: {
+        getFileCache: jest.fn().mockReturnValue(undefined),
+      },
+    } as unknown as App
+
+    const result = await callLocalFileTool({
+      app,
+      toolName: 'fs_read',
+      args: {
+        paths: [hiddenPath],
+        operation: {
+          type: 'full',
+        },
+      },
+      allowedSkillPaths: [hiddenPath],
+      settings: {} as YoloSettings,
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+
+    const payload = JSON.parse(result.text) as {
+      results: Array<{
+        ok: boolean
+        path: string
+        content: string
+      }>
+    }
+    expect(payload.results[0]).toMatchObject({
+      ok: true,
+      path: hiddenPath,
+      content: [
+        '1|---',
+        '2|name: hidden-open',
+        '3|description: hidden body',
+        '4|---',
+        '5|# Hidden body',
+      ].join('\n'),
+    })
+  })
+
   describe('fs_read image reading gating by chat model modalities', () => {
     const extractMock = extractMarkdownImages as jest.MockedFunction<
       typeof extractMarkdownImages

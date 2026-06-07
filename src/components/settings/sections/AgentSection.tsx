@@ -269,11 +269,11 @@ export function AgentSection({ app }: AgentSectionProps) {
       enabled: webSplitToolEnabled,
     }
 
-    const openSkillIndex = tools.findIndex((tool) => tool.id === 'open_skill')
-    if (openSkillIndex >= 0) {
-      tools.splice(openSkillIndex, 0, fileOpsTool)
-      tools.splice(openSkillIndex + 1, 0, memoryOpsTool)
-      tools.splice(openSkillIndex + 2, 0, webOpsTool)
+    const fsReadIndex = tools.findIndex((tool) => tool.id === 'fs_read')
+    if (fsReadIndex >= 0) {
+      tools.splice(fsReadIndex, 0, fileOpsTool)
+      tools.splice(fsReadIndex + 1, 0, memoryOpsTool)
+      tools.splice(fsReadIndex + 2, 0, webOpsTool)
     } else {
       tools.push(fileOpsTool)
       tools.push(memoryOpsTool)

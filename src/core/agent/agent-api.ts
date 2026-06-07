@@ -308,7 +308,7 @@ export async function resolveAgentApiRunInput({
     chatModeRuntime.allowedToolNames,
     request.tools?.allowedToolNames,
   )
-  const allowedSkillNames = await resolveAllowedSkillNames({
+  const allowedSkillPaths = await resolveAllowedSkillPaths({
     app,
     settings,
     assistant,
@@ -357,7 +357,7 @@ export async function resolveAgentApiRunInput({
       enableToolDisclosure: settings.mcp.enableToolDisclosure,
       toolPreferences: chatModeRuntime.toolPreferences,
       workspaceScope: resolveWorkspaceScopeForRuntimeInput(assistant),
-      allowedSkillNames,
+      allowedSkillPaths,
       requestParams: {
         stream: true,
         primaryRequestTimeoutMs:
@@ -604,7 +604,7 @@ function mapToolStatus(
   }
 }
 
-async function resolveAllowedSkillNames({
+async function resolveAllowedSkillPaths({
   app,
   settings,
   assistant,
@@ -627,7 +627,7 @@ async function resolveAllowedSkillNames({
         disabledSkillNames,
       }),
     )
-    .map((skill) => skill.name)
+    .map((skill) => skill.path)
 }
 
 function normalizeErrorMessage(error: unknown): string {

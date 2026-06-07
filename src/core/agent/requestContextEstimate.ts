@@ -25,7 +25,6 @@ export const estimateContinuationRequestContextTokens = async ({
   allowedToolNames,
   enableToolDisclosure,
   toolPreferences,
-  allowedSkillNames,
   contextualInjections,
 }: {
   requestContextBuilder: RequestContextBuilder
@@ -40,7 +39,6 @@ export const estimateContinuationRequestContextTokens = async ({
   allowedToolNames?: string[]
   enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
-  allowedSkillNames?: string[]
   contextualInjections?: ContextualInjection[]
 }): Promise<number> => {
   const availableTools = enableTools
@@ -54,7 +52,6 @@ export const estimateContinuationRequestContextTokens = async ({
   const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
     availableTools,
     allowedToolNames,
-    allowedSkillNames,
     toolPreferences,
     apiType,
     enableToolDisclosure,

@@ -54,7 +54,10 @@ import {
 import { isLoadToolSchemasToolName } from './tool-selection'
 import { GEMINI_STUB_ARGS_JSON_FIELD, isGeminiStubApiType } from './tool-stub'
 import type { AgentRunContext } from './types'
-import { findPathOutsideScope } from './workspaceScope'
+import {
+  buildAllowedSkillPathSet,
+  findPathOutsideScope,
+} from './workspaceScope'
 
 type McpToolCallParams = Parameters<McpManager['callTool']>[0]
 type McpToolCallParamsWithDebug = McpToolCallParams & {
@@ -67,7 +70,7 @@ export class AgentToolGateway {
   private readonly toolPreferences?: Record<string, AssistantToolPreference>
   private readonly enableToolDisclosure: boolean
   private readonly workspaceScope?: AssistantWorkspaceScope
-  private readonly allowedSkillNames?: Set<string>
+  private readonly allowedSkillPaths?: readonly string[]
   private readonly apiType?: LLMProviderApiType | null
   private readonly runContext?: AgentRunContext
   private readonly subagentParentContext?: SubagentParentContext
@@ -88,7 +91,7 @@ export class AgentToolGateway {
       toolPreferences?: Record<string, AssistantToolPreference>
       enableToolDisclosure?: boolean
       workspaceScope?: AssistantWorkspaceScope
-      allowedSkillNames?: string[]
+      allowedSkillPaths?: string[]
       apiType?: LLMProviderApiType | null
       runContext?: AgentRunContext
       subagentParentContext?: SubagentParentContext
@@ -104,11 +107,7 @@ export class AgentToolGateway {
     this.toolPreferences = options?.toolPreferences
     this.enableToolDisclosure = options?.enableToolDisclosure ?? true
     this.workspaceScope = options?.workspaceScope
-    // Canonical skill names: trim only, case-sensitive (A1). Must mirror the
-    // resolver in liteSkills.ts so the permission gate agrees with lookup.
-    this.allowedSkillNames = options?.allowedSkillNames
-      ? new Set(options.allowedSkillNames.map((name) => name.trim()))
-      : undefined
+    this.allowedSkillPaths = options?.allowedSkillPaths
     this.apiType = options?.apiType
     this.runContext = options?.runContext
     this.subagentParentContext = options?.subagentParentContext
@@ -308,8 +307,11 @@ export class AgentToolGateway {
       if (parsed.serverName !== getLocalFileToolServerName()) return true
       const args = getToolCallArgumentsObject(request.arguments)
       return (
-        findPathOutsideScope(parsed.toolName, args, this.workspaceScope) ===
-        null
+        findPathOutsideScope(parsed.toolName, args, this.workspaceScope, {
+          exemptPaths: this.allowedSkillPaths
+            ? buildAllowedSkillPathSet(this.allowedSkillPaths)
+            : undefined,
+        }) === null
       )
     } catch {
       return true
@@ -576,6 +578,7 @@ export class AgentToolGateway {
           chatModelId,
           debugTraceId,
           workspaceScope: this.workspaceScope,
+          allowedSkillPaths: this.allowedSkillPaths,
           runContext: this.runContext,
           subagentParentContext: this.subagentParentContext,
         }).then((response) => ({ entries: [entry], responses: [response] })),
@@ -614,6 +617,7 @@ export class AgentToolGateway {
             chatModelId,
             debugTraceId,
             workspaceScope: this.workspaceScope,
+            allowedSkillPaths: this.allowedSkillPaths,
             runContext: this.runContext,
             subagentParentContext: this.subagentParentContext,
           }).then((response) => ({ entries: [entry], responses: [response] })),
@@ -644,6 +648,7 @@ export class AgentToolGateway {
           chatModelId,
           debugTraceId,
           workspaceScope: this.workspaceScope,
+          allowedSkillPaths: this.allowedSkillPaths,
           runContext: this.runContext,
           subagentParentContext: this.subagentParentContext,
         }).then((response) => ({
@@ -767,6 +772,7 @@ export class AgentToolGateway {
             chatModelId,
             debugTraceId,
             workspaceScope: this.workspaceScope,
+            allowedSkillPaths: this.allowedSkillPaths,
             runContext: this.runContext,
             subagentParentContext: this.subagentParentContext,
           }),
@@ -1048,10 +1054,6 @@ export class AgentToolGateway {
     if (!this.isToolAllowed(request.name)) {
       return false
     }
-    if (!this.isSkillPermissionAllowed(request)) {
-      return false
-    }
-
     const requestArgs = getToolCallArgumentsObject(request.arguments)
     if (this.isBlockedTerminalCommand(requestArgs, request.name)) {
       return false
@@ -1170,13 +1172,6 @@ export class AgentToolGateway {
       return this.enableToolDisclosure
     }
 
-    if (this.isOpenSkillToolName(toolName)) {
-      const hasAllowedSkills = (this.allowedSkillNames?.size ?? 0) > 0
-      if (!hasAllowedSkills) {
-        return false
-      }
-    }
-
     if (!this.allowedToolNames) {
       return true
     }
@@ -1193,38 +1188,4 @@ export class AgentToolGateway {
     )
   }
 
-  private isOpenSkillToolName(toolName: string): boolean {
-    try {
-      const parsed = parseToolName(toolName)
-      return (
-        parsed.serverName === getLocalFileToolServerName() &&
-        parsed.toolName === 'open_skill'
-      )
-    } catch {
-      return false
-    }
-  }
-
-  private isSkillPermissionAllowed(request: ToolCallRequest): boolean {
-    try {
-      const parsed = parseToolName(request.name)
-      if (
-        parsed.serverName !== getLocalFileToolServerName() ||
-        parsed.toolName !== 'open_skill'
-      ) {
-        return true
-      }
-
-      if (!this.allowedSkillNames) {
-        return false
-      }
-
-      const args = getToolCallArgumentsObject(request.arguments) ?? {}
-      const name = typeof args.name === 'string' ? args.name.trim() : ''
-
-      return Boolean(name) && Boolean(this.allowedSkillNames.has(name))
-    } catch {
-      return true
-    }
-  }
 }
