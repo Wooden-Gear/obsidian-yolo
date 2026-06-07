@@ -25,7 +25,7 @@ import { useLiveTaskStream } from '../../../hooks/useLiveTaskStream'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import type { ToolCallResponse } from '../../../types/tool-call.types'
 
-export type LiveTaskVariant = 'external-agent' | 'subagent' | 'terminal'
+export type LiveTaskVariant = 'external-agent' | 'terminal'
 
 export type LiveTaskArgs = {
   provider?: string
@@ -178,23 +178,6 @@ export function LiveTaskCard({
     return (
       <TerminalLiveTaskCard
         text={compactText}
-        status={effectiveStatus}
-        response={response}
-        stream={stream}
-        onAbort={onAbort}
-        t={t}
-      />
-    )
-  }
-
-  if (variant === 'subagent') {
-    const activityText = [stderrText, stdoutText, fallbackText]
-      .filter((text): text is string => Boolean(text))
-      .join('\n')
-
-    return (
-      <SubagentLiveTaskCard
-        text={activityText}
         status={effectiveStatus}
         response={response}
         stream={stream}
@@ -389,104 +372,6 @@ function TerminalLiveTaskCard({
   )
 }
 
-function SubagentLiveTaskCard({
-  text,
-  status,
-  response,
-  stream,
-  onAbort,
-  t,
-}: {
-  text: string
-  status: ToolCallResponseStatus
-  response: ToolCallResponse
-  stream: ReturnType<typeof useLiveTaskStream>
-  onAbort?: () => void
-  t: (key: string, fallback?: string) => string
-}) {
-  const isRunning = status === ToolCallResponseStatus.Running
-  const lines = normalizeActivityLines(text)
-
-  return (
-    <div className="yolo-external-agent-card yolo-live-task-subagent-card">
-      <div className="yolo-live-task-subagent-card__header">
-        <div className="yolo-live-task-subagent-card__title">
-          {t('chat.liveTask.activity', 'Activity')}
-        </div>
-        {isRunning && onAbort ? (
-          <button
-            type="button"
-            className="yolo-external-agent-card__compact-abort-btn"
-            onClick={() => void onAbort()}
-            title={t('chat.toolCall.abort', 'Abort')}
-          >
-            <Square size={12} />
-          </button>
-        ) : (
-          <StatusBadge status={status} t={t} />
-        )}
-      </div>
-
-      {lines.length > 0 ? (
-        <div className="yolo-live-task-subagent-card__activity-list">
-          {lines.map((line, index) => (
-            <div
-              key={`${index}-${line}`}
-              className={cx(
-                'yolo-live-task-subagent-card__activity-row',
-                subagentActivityClass(line),
-              )}
-            >
-              <span className="yolo-live-task-subagent-card__activity-dot" />
-              <span className="yolo-live-task-subagent-card__activity-text">
-                {line}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : response.status === ToolCallResponseStatus.Aborted &&
-        !response.data &&
-        stream === null ? (
-        <div className="yolo-external-agent-card__no-output">
-          {t(
-            'chat.liveTask.abortedBeforeOutput',
-            'Aborted before any output was collected.',
-          )}
-        </div>
-      ) : (
-        <div className="yolo-external-agent-card__no-output">
-          {t('chat.liveTask.noActivity', 'No activity yet.')}
-        </div>
-      )}
-
-      <TruncationNotice response={response} t={t} />
-    </div>
-  )
-}
-
-function normalizeActivityLines(text: string): string[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
-function subagentActivityClass(line: string): string | undefined {
-  if (/\b(error|failed|aborted)\b/i.test(line)) {
-    return 'yolo-live-task-subagent-card__activity-row--error'
-  }
-  if (/\b(completed|done)\b/i.test(line)) {
-    return 'yolo-live-task-subagent-card__activity-row--done'
-  }
-  if (line.startsWith('[tool]')) {
-    return 'yolo-live-task-subagent-card__activity-row--tool'
-  }
-  if (line.startsWith('[state]')) {
-    return 'yolo-live-task-subagent-card__activity-row--system'
-  }
-  return undefined
-}
-
 /**
  * 终端日志块。展示全部高度，超长由外层聊天视图滚动。
  */
@@ -530,19 +415,6 @@ function progressLineClass(
   line: string,
   variant: LiveTaskVariant,
 ): string | undefined {
-  if (variant === 'subagent') {
-    if (/\b(error|failed|aborted)\b/i.test(line)) {
-      return 'yolo-external-agent-card__line--parse-error'
-    }
-    if (/\b(completed|done)\b/i.test(line)) {
-      return 'yolo-external-agent-card__line--done'
-    }
-    if (line.startsWith('[tool]')) return 'yolo-external-agent-card__line--tool'
-    if (line.startsWith('[state]'))
-      return 'yolo-external-agent-card__line--system'
-    return undefined
-  }
-
   if (variant === 'terminal') {
     if (/\b(error|failed|denied|killed|timeout)\b/i.test(line)) {
       return 'yolo-external-agent-card__line--parse-error'

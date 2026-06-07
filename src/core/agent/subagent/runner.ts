@@ -361,6 +361,7 @@ export async function runSubagent(
     title,
     status: 'running',
     note: 'Subagent started asynchronously. The result will arrive as a follow-up background event when the child run completes.',
+    modelName: parent.model.name ?? parent.model.model,
   }
 }
 

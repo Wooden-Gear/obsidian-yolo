@@ -49,6 +49,7 @@ import type {
   ChatAssistantMessage,
   ChatConversationCompactionState,
   ChatMessage,
+  ChatSubagentResultMessage,
   ChatTerminalCommandResultMessage,
   ChatToolMessage,
   ChatUserMessage,
@@ -1481,6 +1482,16 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         message.role !== 'terminal_command_result' ||
         !message.delegateToolCallId
       ) {
+        continue
+      }
+      map.set(message.delegateToolCallId, message)
+    }
+    return map
+  }, [chatMessages])
+  const subagentResultsByToolCallId = useMemo(() => {
+    const map = new Map<string, ChatSubagentResultMessage>()
+    for (const message of chatMessages) {
+      if (message.role !== 'subagent_result' || !message.delegateToolCallId) {
         continue
       }
       map.set(message.delegateToolCallId, message)
@@ -4704,6 +4715,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             terminalCommandResultsByToolCallId={
               terminalCommandResultsByToolCallId
             }
+            subagentResultsByToolCallId={subagentResultsByToolCallId}
             onRecoverToolCall={handleRecoverPendingToolCall}
             onRecoverAnswerUserQuestion={handleRecoverAnswerUserQuestion}
             editingAssistantMessageId={editingAssistantMessageId}

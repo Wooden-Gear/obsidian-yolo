@@ -1548,6 +1548,15 @@ export type TranslationKeys = {
       progressTruncated?: string
       truncated?: string
     }
+    subagent?: {
+      openDetails?: string
+      planningNextMoves?: string
+      noActivity?: string
+      statusCompleted?: string
+      statusAborted?: string
+      statusFailed?: string
+      toolUseCount?: string
+    }
     // async external agent result card
     externalAgentResult?: {
       statusCompleted?: string

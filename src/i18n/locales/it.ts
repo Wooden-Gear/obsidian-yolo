@@ -1737,6 +1737,15 @@ export const it: TranslationKeys = {
       progressTruncated: 'Avanzamento troncato.',
       truncated: 'Output troncato.',
     },
+    subagent: {
+      openDetails: 'Visualizza dettagli subagent',
+      planningNextMoves: 'Pianificazione prossimi passi',
+      noActivity: 'Nessuna attività.',
+      statusCompleted: 'Completato',
+      statusAborted: 'Interrotto',
+      statusFailed: 'Fallito',
+      toolUseCount: '{count} strumenti',
+    },
     externalAgentResult: {
       statusCompleted: 'Completato',
       statusFailed: 'Fallito',

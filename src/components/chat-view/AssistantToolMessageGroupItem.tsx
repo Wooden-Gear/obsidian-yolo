@@ -17,6 +17,7 @@ import {
   AssistantToolMessageGroup,
   ChatAssistantMessage,
   ChatMessage,
+  ChatSubagentResultMessage,
   ChatTerminalCommandResultMessage,
   ChatToolMessage,
 } from '../../types/chat'
@@ -37,7 +38,6 @@ import AssistantMessageSources from './AssistantMessageSources'
 import AssistantToolMessageGroupActions from './AssistantToolMessageGroupActions'
 import LLMResponseInlineInfo from './LLMResponseInlineInfo'
 import { buildSynthToolMessageFromResult } from './tool-cards/externalAgentResultAdapter'
-import { buildSynthToolMessageFromSubagentResult } from './tool-cards/subagentResultAdapter'
 import { buildSynthToolMessageFromTerminalCommandResult } from './tool-cards/terminalCommandResultAdapter'
 import ToolMessage from './ToolMessage'
 
@@ -202,6 +202,7 @@ export type AssistantToolMessageGroupItemProps = {
     string,
     ChatTerminalCommandResultMessage
   >
+  subagentResultsByToolCallId?: ReadonlyMap<string, ChatSubagentResultMessage>
   onRecoverToolCall?: (payload: {
     conversationId: string
     toolMessageId: string
@@ -252,6 +253,7 @@ export default function AssistantToolMessageGroupItem({
   onApply,
   onToolMessageUpdate,
   terminalCommandResultsByToolCallId,
+  subagentResultsByToolCallId,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
   editingAssistantMessageId,
@@ -705,20 +707,8 @@ export default function AssistantToolMessageGroupItem({
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
           </div>
-        ) : message.role === 'subagent_result' ? (
-          <div key={message.id}>
-            <ToolMessage
-              message={buildSynthToolMessageFromSubagentResult(message)}
-              conversationId={effectiveConversationId}
-              showRunningFooter={false}
-              terminalCommandResultsByToolCallId={
-                terminalCommandResultsByToolCallId
-              }
-              onMessageUpdate={() => {}}
-              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
-            />
-          </div>
-        ) : message.role === 'terminal_command_result' ? (
+        ) : message.role === 'subagent_result' ? null : message.role ===
+          'terminal_command_result' ? (
           <div key={message.id}>
             <ToolMessage
               message={buildSynthToolMessageFromTerminalCommandResult(message)}
@@ -743,6 +733,7 @@ export default function AssistantToolMessageGroupItem({
               terminalCommandResultsByToolCallId={
                 terminalCommandResultsByToolCallId
               }
+              subagentResultsByToolCallId={subagentResultsByToolCallId}
               onMessageUpdate={onToolMessageUpdate}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}

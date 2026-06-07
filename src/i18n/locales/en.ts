@@ -1813,6 +1813,15 @@ export const en: TranslationKeys = {
       progressTruncated: 'Progress truncated.',
       truncated: 'Output truncated.',
     },
+    subagent: {
+      openDetails: 'View subagent details',
+      planningNextMoves: 'Planning next moves',
+      noActivity: 'No activity yet.',
+      statusCompleted: 'Completed',
+      statusAborted: 'Aborted',
+      statusFailed: 'Failed',
+      toolUseCount: '{count} tools',
+    },
     externalAgentResult: {
       statusCompleted: 'Completed',
       statusFailed: 'Failed',

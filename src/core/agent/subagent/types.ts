@@ -9,6 +9,7 @@ export type SubagentAcceptedResult = {
   title: string
   status: 'running'
   note: string
+  modelName?: string
 }
 
 export type SubagentResult = {

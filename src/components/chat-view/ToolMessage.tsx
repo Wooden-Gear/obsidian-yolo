@@ -21,6 +21,7 @@ import {
 import { parseToolName } from '../../core/mcp/tool-name-utils'
 import {
   ChatMessage,
+  ChatSubagentResultMessage,
   ChatTerminalCommandResultMessage,
   ChatToolMessage,
 } from '../../types/chat'
@@ -37,6 +38,7 @@ import { AskUserQuestionPanel } from './AskUserQuestionPanel'
 import { ObsidianCodeBlock } from './ObsidianMarkdown'
 import { ExternalAgentToolCard } from './tool-cards/ExternalAgentToolCard'
 import { LiveTaskCard } from './tool-cards/LiveTaskCard'
+import { SubagentCard } from './tool-cards/SubagentCard'
 import {
   type ToolDisplayInfo,
   getToolHeadlineParts,
@@ -1117,6 +1119,7 @@ const ToolMessage = memo(function ToolMessage({
   isCompactionPending = false,
   showRunningFooter = true,
   terminalCommandResultsByToolCallId,
+  subagentResultsByToolCallId,
   onMessageUpdate,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
@@ -1129,6 +1132,7 @@ const ToolMessage = memo(function ToolMessage({
     string,
     ChatTerminalCommandResultMessage
   >
+  subagentResultsByToolCallId?: ReadonlyMap<string, ChatSubagentResultMessage>
   onMessageUpdate: (message: ChatToolMessage) => void
   onRecoverToolCall?: (payload: {
     conversationId: string
@@ -1165,6 +1169,9 @@ const ToolMessage = memo(function ToolMessage({
               terminalCommandResult={terminalCommandResultsByToolCallId?.get(
                 toolCall.request.id,
               )}
+              subagentResult={subagentResultsByToolCallId?.get(
+                toolCall.request.id,
+              )}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
               onResponseUpdate={(response) =>
@@ -1193,6 +1200,7 @@ function ToolCallItem({
   showCompactionPendingHint = false,
   showRunningFooter = true,
   terminalCommandResult,
+  subagentResult,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
   onResponseUpdate,
@@ -1204,6 +1212,7 @@ function ToolCallItem({
   showCompactionPendingHint?: boolean
   showRunningFooter?: boolean
   terminalCommandResult?: ChatTerminalCommandResultMessage
+  subagentResult?: ChatSubagentResultMessage
   onRecoverToolCall?: (payload: {
     conversationId: string
     toolMessageId: string
@@ -1353,8 +1362,7 @@ function ToolCallItem({
 
   const shouldShowPendingFooter =
     effectiveStatus === ToolCallResponseStatus.PendingApproval
-  const isCompactLiveTaskRequest =
-    isDelegateSubagentRequest(request) || isTerminalCommandRequest(request)
+  const isCompactLiveTaskRequest = isTerminalCommandRequest(request)
   const shouldShowRunningFooter =
     showRunningFooter &&
     effectiveStatus === ToolCallResponseStatus.Running &&
@@ -1394,6 +1402,24 @@ function ToolCallItem({
       window.clearTimeout(timer)
     }
   }, [effectiveStatus, renderCompactionPendingHint, showCompactionPendingHint])
+
+  if (isDelegateSubagentRequest(request)) {
+    return (
+      <SubagentCard
+        toolCallId={request.id}
+        response={response}
+        args={extractSubagentArgs(request.arguments)}
+        subagentResult={subagentResult}
+        initialStdout={extractSyntheticLiveTaskOutput(request.arguments).stdout}
+        initialStderr={extractSyntheticLiveTaskOutput(request.arguments).stderr}
+        onAbort={() => {
+          const taskId = extractAcceptedTaskId(response)
+          if (taskId) subagentTaskRegistry.abort(taskId)
+          void handleAbort()
+        }}
+      />
+    )
+  }
 
   return (
     <div className="yolo-toolcall">
@@ -1494,24 +1520,6 @@ function ToolCallItem({
               response={effectiveTerminalResponse}
               args={extractExternalAgentArgs(request.arguments)}
               onAbort={handleAbort}
-            />
-          ) : isDelegateSubagentRequest(request) ? (
-            <LiveTaskCard
-              toolCallId={request.id}
-              response={effectiveTerminalResponse}
-              variant="subagent"
-              args={extractSubagentArgs(request.arguments)}
-              initialStdout={
-                extractSyntheticLiveTaskOutput(request.arguments).stdout
-              }
-              initialStderr={
-                extractSyntheticLiveTaskOutput(request.arguments).stderr
-              }
-              onAbort={() => {
-                const taskId = extractAcceptedTaskId(response)
-                if (taskId) subagentTaskRegistry.abort(taskId)
-                void handleAbort()
-              }}
             />
           ) : isTerminalCommandRequest(request) ? (
             <LiveTaskCard

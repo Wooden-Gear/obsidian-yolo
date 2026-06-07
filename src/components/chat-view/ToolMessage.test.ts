@@ -26,6 +26,10 @@ jest.mock('./tool-cards/LiveTaskCard', () => ({
   LiveTaskCard: (props: unknown) => mockedLiveTaskCard(props),
 }))
 
+jest.mock('./tool-cards/SubagentCard', () => ({
+  SubagentCard: () => null,
+}))
+
 import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 

@@ -192,9 +192,17 @@ export const buildMessageTimelineItems = ({
   const assistantGroupBoundaryMessageIdSet = new Set(
     assistantGroupBoundaryMessageIds,
   )
-  const items: ChatTimelineItem[] = groupedChatMessages.map(
+  const renderableGroupedChatMessages = groupedChatMessages.filter(
+    (messageOrGroup) =>
+      !(
+        Array.isArray(messageOrGroup) &&
+        messageOrGroup.length === 1 &&
+        messageOrGroup[0]?.role === 'subagent_result'
+      ),
+  )
+  const items: ChatTimelineItem[] = renderableGroupedChatMessages.map(
     (messageOrGroup, index) => {
-      const previousItem = groupedChatMessages[index - 1]
+      const previousItem = renderableGroupedChatMessages[index - 1]
       const firstMessageId = Array.isArray(messageOrGroup)
         ? (messageOrGroup.at(0)?.id ?? 'assistant-group')
         : messageOrGroup.id

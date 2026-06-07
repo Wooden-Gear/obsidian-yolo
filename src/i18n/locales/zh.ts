@@ -1697,6 +1697,15 @@ export const zh: TranslationKeys = {
       progressTruncated: '进度输出已截断。',
       truncated: '输出已截断。',
     },
+    subagent: {
+      openDetails: '查看 Subagent 详情',
+      planningNextMoves: '正在规划下一步',
+      noActivity: '暂无活动。',
+      statusCompleted: '已完成',
+      statusAborted: '已中止',
+      statusFailed: '失败',
+      toolUseCount: '{count} 个工具',
+    },
     externalAgentResult: {
       statusCompleted: '已完成',
       statusFailed: '失败',
