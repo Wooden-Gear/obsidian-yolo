@@ -463,9 +463,6 @@ export const it: TranslationKeys = {
       builtinTerminalCommandLabel: 'Comandi del terminale',
       builtinTerminalCommandDesc:
         'Esegue comandi nel terminale locale. Solo desktop.',
-      builtinDelegateExternalAgentLabel: 'Delega a agente esterno',
-      builtinDelegateExternalAgentDesc:
-        'Delega le attività complesse a un agente CLI installato localmente (Codex / Claude Code).',
       builtinDelegateSubagentLabel: 'Delega a subagent',
       builtinDelegateSubagentDesc:
         'Avvia in modo asincrono un subagent temporaneo e isolato per completare un task autonomo.',
@@ -1715,15 +1712,6 @@ export const it: TranslationKeys = {
         sessionInput: 'Sessione {id} · Input: {preview}',
       },
     },
-    externalAgent: {
-      statusRunning: 'In esecuzione',
-      statusDone: 'Completato',
-      statusAborted: 'Interrotto',
-      statusError: 'Errore',
-      progress: 'Avanzamento',
-      output: 'Output',
-      abortedBeforeOutput: 'Interrotto prima di produrre output.',
-    },
     liveTask: {
       statusRunning: 'In esecuzione',
       statusDone: 'Completato',
@@ -1746,15 +1734,6 @@ export const it: TranslationKeys = {
       statusFailed: 'Fallito',
       toolUseCount: '{count} strumenti',
       tokenCount: '{count} token',
-    },
-    externalAgentResult: {
-      statusCompleted: 'Completato',
-      statusFailed: 'Fallito',
-      statusCancelled: 'Annullato',
-      statusTimedOut: 'Timeout',
-      statusKilledByShutdown: 'Fermato',
-      showOutput: 'Mostra output',
-      jumpToDelegate: 'Vai al messaggio di delega originale',
     },
     conversationSettings: {
       openAria: 'Impostazioni conversazione',

@@ -5,7 +5,7 @@ jest.mock('shell-env', () => ({
   }),
 }))
 
-jest.mock('../external-cli/which', () => ({
+jest.mock('./which', () => ({
   which: jest.fn().mockResolvedValue('/bin/bash'),
 }))
 

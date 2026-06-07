@@ -904,9 +904,7 @@ export default class YoloPlugin extends Plugin {
       this.registerEvent(this.app.vault.on('modify', h.modify))
       this.registerEvent(this.app.vault.on('delete', h.delete))
       this.registerEvent(this.app.vault.on('rename', h.rename))
-      // Start listening for async external agent task-completed events (desktop-only, no-op on mobile)
-      this.agentService.startExternalAgentResultListener()
-      this.agentService.startSubagentResultListener()
+      this.agentService.startBackgroundTaskResultListener()
     }
     return this.agentService
   }
@@ -1021,22 +1019,9 @@ export default class YoloPlugin extends Plugin {
       this.getAgentService().subscribeToRunSummaries((summaries) => {
         this.syncAgentBackgroundActivities(summaries)
       })
-    // 异步派遣的子进程是 desktop-only，懒加载注册表后再订阅。
-    let unsubscribeAsyncTasks: (() => void) | null = null
-    if (Platform.isDesktopApp) {
-      void import('./core/agent/external-cli/async-task-registry').then(
-        ({ asyncTaskRegistry }) => {
-          unsubscribeAsyncTasks = asyncTaskRegistry.subscribe((records) => {
-            this.syncAsyncExternalAgentBackgroundActivities(records)
-          })
-        },
-      )
-    }
-
     this.register(() => {
       unsubscribeActivities()
       unsubscribeAgentSummaries()
-      unsubscribeAsyncTasks?.()
       this.backgroundStatusBarItem = null
       this.backgroundStatusBarRing = null
       this.backgroundStatusBarLabel = null
@@ -1049,41 +1034,6 @@ export default class YoloPlugin extends Plugin {
       this.backgroundActivityRegistry?.clear()
       this.backgroundActivityRegistry = null
     })
-  }
-
-  private syncAsyncExternalAgentBackgroundActivities(
-    records: import('./core/agent/external-cli/async-task-registry').AsyncTaskRecord[],
-  ): void {
-    const registry = this.getBackgroundActivityRegistry()
-    const nextActivityIds = new Set<string>()
-
-    for (const record of records) {
-      if (record.status !== 'running') continue
-      const id = `external-agent:${record.taskId}`
-      nextActivityIds.add(id)
-      registry.upsert({
-        id,
-        kind: 'agent',
-        title: record.title,
-        detail: record.provider,
-        status: 'running',
-        updatedAt: record.createdAt,
-        ...(record.conversationId
-          ? {
-              action: {
-                type: 'open-agent-conversation',
-                conversationId: record.conversationId,
-              },
-            }
-          : {}),
-      })
-    }
-
-    for (const activityId of this.latestBackgroundActivities.keys()) {
-      if (!activityId.startsWith('external-agent:')) continue
-      if (nextActivityIds.has(activityId)) continue
-      registry.remove(activityId)
-    }
   }
 
   private syncAgentBackgroundActivities(
@@ -2171,23 +2121,15 @@ export default class YoloPlugin extends Plugin {
     this.mcpManager = null
     this.ragAutoUpdateService?.cleanup()
     this.ragAutoUpdateService = null
-    this.agentService?.stopExternalAgentResultListener()
-    this.agentService?.stopSubagentResultListener()
+    this.agentService?.stopBackgroundTaskResultListener()
     this.agentService?.abortAll()
     this.agentService = null
     this.agentApiService = null
-    // 终止所有活跃的外部 CLI 子进程（desktop-only，mobile 为空操作）
-    void import('./core/agent/external-cli/index').then(
-      ({ killAllActiveExternalCli }) => killAllActiveExternalCli(),
-    )
     void import('./core/agent/bash/index').then(({ killAllBashSessions }) =>
       killAllBashSessions(),
     )
     void import('./core/agent/subagent/runner').then(
       ({ abortAllSubagentTasks }) => abortAllSubagentTasks(),
-    )
-    void import('./core/agent/external-cli/async-task-registry').then(
-      ({ asyncTaskRegistry }) => asyncTaskRegistry.abortAll(),
     )
     // Ensure all in-flight requests are aborted on unload
     this.cancelAllAiTasks()

@@ -15822,7 +15822,7 @@ button.yolo-chat-input-model-select .yolo-chat-input-model-select__icon {
 
 /* 外部 Agent 工具卡：终端样式
  * 布局：状态条 → Progress（始终展开+自动滚底） → Output → metadata chips
- * 同步派遣与异步派遣完成卡片共用此样式（异步走 ExternalAgentToolCard 适配层）。
+ * 终端命令与实时任务卡片共用此样式。
  */
 
 .yolo-external-agent-card {

@@ -134,13 +134,6 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelFallback: 'Terminal Commands',
     descFallback: 'Run commands in the local terminal. Desktop-only.',
   },
-  delegate_external_agent: {
-    labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',
-    descKey: 'settings.agent.builtinDelegateExternalAgentDesc',
-    labelFallback: 'Delegate to External Agent',
-    descFallback:
-      'Spawn a local CLI agent (codex exec or claude -p) as a subprocess, stream its output back into the chat, and feed the result to the LLM. Desktop-only. Requires manual approval every time.',
-  },
   delegate_subagent: {
     labelKey: 'settings.agent.builtinDelegateSubagentLabel',
     descKey: 'settings.agent.builtinDelegateSubagentDesc',
@@ -194,7 +187,6 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   open_skill: 'external',
   js_eval: 'external',
   terminal_command: 'external',
-  delegate_external_agent: 'external',
   delegate_subagent: 'external',
 }
 
@@ -215,7 +207,6 @@ const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
     WEB_OPS_GROUP_TOOL_NAME,
     'js_eval',
     'terminal_command',
-    'delegate_external_agent',
     'delegate_subagent',
   ],
 }

@@ -1,12 +1,7 @@
 // 跨平台 which 实现，处理 Windows PATHEXT
 //
-// 关于 node 模块的 import 策略：
-// 此模块仅被 runner.ts 静态 import；而 runner.ts 整体由 external-cli/index.ts
-// 在 Platform.isDesktop 守卫后通过 `await import('./runner')` 懒加载。所以本文件
-// 不会在 mobile 求值，可安全顶级静态 import node 内置模块——esbuild 已将 node:*
-// 标记为 external，cjs 输出会转换为 `require()`，可被 Electron renderer 正确解析。
-// 反之 dynamic `await import('node:...')` 在 cjs 下会保留为 ES dynamic import，
-// 浏览器引擎会把 node: 前缀当 URL fetch 而失败。
+// 此模块由 bash/shell-provider.ts 静态 import；shell-provider 由 bash/index.ts
+// 在 Platform.isDesktop 守卫后懒加载，因此不会在 mobile 求值。
 /* eslint-disable import/no-nodejs-modules -- desktop-only module, lazy-loaded behind Platform.isDesktop */
 import { access, constants } from 'node:fs/promises'
 import * as path from 'node:path'

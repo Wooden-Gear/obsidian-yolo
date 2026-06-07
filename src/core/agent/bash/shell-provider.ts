@@ -4,7 +4,7 @@ import { basename } from 'node:path'
 
 import { shellEnvSync } from 'shell-env'
 
-import { which } from '../external-cli/which'
+import { which } from './which'
 
 export type ShellProviderFlavor = 'posix' | 'powershell'
 

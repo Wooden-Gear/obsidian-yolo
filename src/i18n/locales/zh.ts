@@ -426,9 +426,6 @@ export const zh: TranslationKeys = {
       builtinJsEvalDesc: '在隔离环境中执行 JavaScript 代码',
       builtinTerminalCommandLabel: '终端命令',
       builtinTerminalCommandDesc: '在本机终端中运行命令。仅桌面端可用。',
-      builtinDelegateExternalAgentLabel: '派遣外部 Agent',
-      builtinDelegateExternalAgentDesc:
-        '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）',
       builtinDelegateSubagentLabel: '派遣子 Agent',
       builtinDelegateSubagentDesc:
         '异步派遣一个隔离的临时子 Agent，完成自包含任务',
@@ -1675,15 +1672,6 @@ export const zh: TranslationKeys = {
         sessionInput: '会话 {id} · 输入: {preview}',
       },
     },
-    externalAgent: {
-      statusRunning: '执行中',
-      statusDone: '已完成',
-      statusAborted: '已中止',
-      statusError: '错误',
-      progress: '进度',
-      output: '输出',
-      abortedBeforeOutput: '已中止，未产生任何输出。',
-    },
     liveTask: {
       statusRunning: '执行中',
       statusDone: '已完成',
@@ -1706,15 +1694,6 @@ export const zh: TranslationKeys = {
       statusFailed: '失败',
       toolUseCount: '{count} 个工具',
       tokenCount: '{count} tokens',
-    },
-    externalAgentResult: {
-      statusCompleted: '已完成',
-      statusFailed: '失败',
-      statusCancelled: '已取消',
-      statusTimedOut: '已超时',
-      statusKilledByShutdown: '已停止',
-      showOutput: '查看输出',
-      jumpToDelegate: '跳转到原派遣消息',
     },
     conversationSettings: {
       openAria: '对话设置',

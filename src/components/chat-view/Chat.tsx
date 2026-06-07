@@ -1634,7 +1634,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   // Auto-run when external agent results arrive for the current conversation
   useEffect(() => {
-    const unsubscribe = agentService.subscribeToPendingExternalAgentResults(
+    const unsubscribe = agentService.subscribeToPendingBackgroundTaskResults(
       (conversationId) => {
         if (conversationId !== currentConversationId) return
         if (agentService.isRunning(conversationId)) return

@@ -2,9 +2,7 @@ import cx from 'clsx'
 import { Bot, Check, Loader2, Square, X } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 
-import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
-import { useSettings } from '../../../contexts/settings-context'
 import { useLiveTaskStream } from '../../../hooks/useLiveTaskStream'
 import { useSubagentTask } from '../../../hooks/useSubagentTask'
 import type { ChatSubagentResultMessage } from '../../../types/chat'
@@ -58,13 +56,7 @@ export function SubagentCard({
   onAbort,
 }: SubagentCardProps) {
   const { t } = useLanguage()
-  const app = useApp()
-  const { settings } = useSettings()
-  const stream = useLiveTaskStream(toolCallId, {
-    app,
-    settings,
-    kind: 'subagent',
-  })
+  const stream = useLiveTaskStream(toolCallId)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [detailContainer, setDetailContainer] = useState<HTMLElement | null>(
     null,

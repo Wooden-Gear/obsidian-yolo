@@ -1,14 +1,7 @@
 import type { BashTaskRecord } from '../bash/types'
-import type { AsyncTaskRecord } from '../external-cli/async-task-registry'
 import type { SubagentTaskRecord } from '../subagent/types'
 
 export type BackgroundTaskCompletedEvent =
-  | {
-      kind: 'external_agent'
-      taskId: string
-      conversationId: string
-      record: AsyncTaskRecord
-    }
   | {
       kind: 'subagent'
       taskId: string

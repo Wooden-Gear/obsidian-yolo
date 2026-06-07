@@ -17,10 +17,6 @@ jest.mock('./ObsidianMarkdown', () => ({
   ObsidianCodeBlock: () => null,
 }))
 
-jest.mock('./tool-cards/ExternalAgentToolCard', () => ({
-  ExternalAgentToolCard: () => null,
-}))
-
 const mockedLiveTaskCard = jest.fn((_: unknown) => null)
 jest.mock('./tool-cards/LiveTaskCard', () => ({
   LiveTaskCard: (props: unknown) => mockedLiveTaskCard(props),
@@ -103,7 +99,6 @@ describe('ToolMessage rendering', () => {
 
     expect(mockedLiveTaskCard).toHaveBeenCalledWith(
       expect.objectContaining({
-        variant: 'terminal',
         initialStdout: terminalResult.stdout,
         initialStderr: terminalResult.stderr,
         response: expect.objectContaining({

@@ -6,30 +6,14 @@
 // - metadata 从 progress 文本解析，失败整块隐藏
 
 import cx from 'clsx'
-import {
-  Check,
-  Clock,
-  Coins,
-  DollarSign,
-  Loader2,
-  RefreshCw,
-  Square,
-  X,
-} from 'lucide-react'
-import { useMemo } from 'react'
+import { Check, Loader2, Square, X } from 'lucide-react'
 
-import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
-import { useSettings } from '../../../contexts/settings-context'
 import { useLiveTaskStream } from '../../../hooks/useLiveTaskStream'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import type { ToolCallResponse } from '../../../types/tool-call.types'
 
-export type LiveTaskVariant = 'external-agent' | 'terminal'
-
 export type LiveTaskArgs = {
-  provider?: string
-  model?: string
   workingDirectory?: string
   title?: string
   command?: string
@@ -38,8 +22,6 @@ export type LiveTaskArgs = {
 type LiveTaskCardProps = {
   toolCallId: string
   response: ToolCallResponse
-  variant: LiveTaskVariant
-  /** 用于在状态条显示 provider · model · cwd 摘要 */
   args?: LiveTaskArgs
   initialStdout?: string
   initialStderr?: string
@@ -49,38 +31,24 @@ type LiveTaskCardProps = {
 
 type Truncated = { totalBytes: number; omittedBytes: number }
 
-type ProgressMeta = {
-  durationMs?: number
-  costUsd?: number
-  turns?: number
-  tokens?: number
-}
-
 export function LiveTaskCard({
   toolCallId,
   response,
-  variant,
-  args,
   initialStdout,
   initialStderr,
   onAbort,
 }: LiveTaskCardProps) {
   const { t } = useLanguage()
-  const app = useApp()
-  const { settings } = useSettings()
-  const stream = useLiveTaskStream(toolCallId, { app, settings, kind: variant })
+  const stream = useLiveTaskStream(toolCallId)
 
   const effectiveStatus =
     stream?.source === 'live'
       ? mapLiveStatusToToolStatus(stream.status, response.status)
       : response.status
-  const isRunning = effectiveStatus === ToolCallResponseStatus.Running
-
   // ── 决定文本来源 ──
   let stderrText: string | undefined
   let stdoutText: string | undefined
   let fallbackText: string | undefined
-  let progressTruncated: Truncated | undefined
   if (stream !== null && stream.source === 'live') {
     stderrText = stream.stderr || undefined
     stdoutText = stream.stdout || undefined
@@ -95,12 +63,10 @@ export function LiveTaskCard({
     }
   } else if (stream !== null && stream.source === 'historical') {
     stderrText = stream.stderr || undefined
-    progressTruncated = stream.truncated
     if (response.status === ToolCallResponseStatus.Success) {
-      const terminalOutput =
-        variant === 'terminal'
-          ? parseTerminalCommandResponseText(response.data.text)
-          : null
+      const terminalOutput = parseTerminalCommandResponseText(
+        response.data.text,
+      )
       stderrText = terminalOutput?.stderr || stderrText
       stdoutText = terminalOutput
         ? terminalOutput.stdout || undefined
@@ -109,10 +75,9 @@ export function LiveTaskCard({
       response.status === ToolCallResponseStatus.Aborted &&
       response.data
     ) {
-      const terminalOutput =
-        variant === 'terminal'
-          ? parseTerminalCommandResponseText(response.data.text)
-          : null
+      const terminalOutput = parseTerminalCommandResponseText(
+        response.data.text,
+      )
       stderrText = terminalOutput?.stderr || stderrText
       stdoutText = terminalOutput
         ? terminalOutput.stdout || undefined
@@ -122,10 +87,7 @@ export function LiveTaskCard({
       fallbackText = response.error
     }
   } else if (response.status === ToolCallResponseStatus.Success) {
-    const terminalOutput =
-      variant === 'terminal'
-        ? parseTerminalCommandResponseText(response.data.text)
-        : null
+    const terminalOutput = parseTerminalCommandResponseText(response.data.text)
     stderrText = initialStderr || terminalOutput?.stderr || undefined
     stdoutText =
       initialStdout ||
@@ -139,10 +101,7 @@ export function LiveTaskCard({
     response.status === ToolCallResponseStatus.Aborted &&
     response.data
   ) {
-    const terminalOutput =
-      variant === 'terminal'
-        ? parseTerminalCommandResponseText(response.data.text)
-        : null
+    const terminalOutput = parseTerminalCommandResponseText(response.data.text)
     stderrText = initialStderr || terminalOutput?.stderr || undefined
     stdoutText =
       initialStdout ||
@@ -158,145 +117,19 @@ export function LiveTaskCard({
     if (!stderrText && !stdoutText) fallbackText = response.error
   }
 
-  // ── 从 stderr 解析 metadata（失败则不显示）──
-  const meta = useMemo<ProgressMeta>(
-    () => parseProgressMeta(stderrText, variant),
-    [stderrText, variant],
-  )
-
-  const hasMeta =
-    meta.durationMs !== undefined ||
-    meta.costUsd !== undefined ||
-    meta.turns !== undefined ||
-    meta.tokens !== undefined
-
-  if (variant === 'terminal') {
-    const compactText = [stderrText, stdoutText, fallbackText]
-      .filter((text): text is string => Boolean(text))
-      .join('\n')
-
-    return (
-      <TerminalLiveTaskCard
-        text={compactText}
-        status={effectiveStatus}
-        response={response}
-        stream={stream}
-        onAbort={onAbort}
-        t={t}
-      />
-    )
-  }
+  const compactText = [stderrText, stdoutText, fallbackText]
+    .filter((text): text is string => Boolean(text))
+    .join('\n')
 
   return (
-    <div className="yolo-external-agent-card">
-      {/* 状态条 */}
-      <div className="yolo-external-agent-card__status-row">
-        <StatusBadge status={effectiveStatus} t={t} />
-        <ArgsInline args={args} />
-        {isRunning && onAbort && (
-          <button
-            type="button"
-            className="yolo-external-agent-card__abort-btn"
-            onClick={() => void onAbort?.()}
-            title={t('chat.toolCall.abort', 'Abort')}
-          >
-            <Square size={12} />
-            <span>{t('chat.toolCall.abort', 'Abort')}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Progress 块 */}
-      {stderrText !== undefined && (
-        <div className="yolo-external-agent-card__stream-section">
-          <div className="yolo-external-agent-card__stream-label">
-            {t('chat.liveTask.progress', 'Progress')}
-          </div>
-          <ConsoleBlock text={stderrText} variant={variant} />
-          {progressTruncated && (
-            <div className="yolo-external-agent-card__truncation-notice">
-              {t(
-                'chat.liveTask.progressTruncated',
-                `Progress truncated: ${progressTruncated.omittedBytes.toLocaleString()} bytes omitted.`,
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Output 块 */}
-      {stdoutText !== undefined && (
-        <div className="yolo-external-agent-card__stream-section">
-          <div className="yolo-external-agent-card__stream-label">
-            {t('chat.liveTask.output', 'Output')}
-          </div>
-          <ConsoleBlock text={stdoutText} />
-        </div>
-      )}
-
-      {/* 历史/错误路径单块输出 */}
-      {fallbackText !== undefined && <ConsoleBlock text={fallbackText} />}
-
-      {/* Aborted 无输出文案 */}
-      {response.status === ToolCallResponseStatus.Aborted &&
-        !response.data &&
-        stream === null && (
-          <div className="yolo-external-agent-card__no-output">
-            {t(
-              'chat.liveTask.abortedBeforeOutput',
-              'Aborted before any output was collected.',
-            )}
-          </div>
-        )}
-
-      {/* metadata chips */}
-      {hasMeta && <MetaRow meta={meta} />}
-
-      {/* output 截断提示 */}
-      <TruncationNotice response={response} t={t} />
-    </div>
-  )
-}
-
-// ──────── 子组件 ────────
-
-function ArgsInline({ args }: { args?: LiveTaskArgs }) {
-  if (!args) return null
-  const parts: string[] = []
-  if (args.provider) parts.push(args.provider)
-  if (args.model) parts.push(args.model)
-  if (args.title) parts.push(args.title)
-  if (args.command) parts.push(args.command)
-  if (parts.length === 0 && !args.workingDirectory) return null
-
-  return (
-    <div className="yolo-external-agent-card__meta-inline">
-      {parts.map((p, i) => (
-        <span key={p}>
-          {i > 0 && (
-            <span className="yolo-external-agent-card__meta-inline-sep">
-              {' · '}
-            </span>
-          )}
-          {p}
-        </span>
-      ))}
-      {args.workingDirectory && (
-        <>
-          {parts.length > 0 && (
-            <span className="yolo-external-agent-card__meta-inline-sep">
-              {' · '}
-            </span>
-          )}
-          <span
-            className="yolo-external-agent-card__cwd"
-            title={args.workingDirectory}
-          >
-            {args.workingDirectory}
-          </span>
-        </>
-      )}
-    </div>
+    <TerminalLiveTaskCard
+      text={compactText}
+      status={effectiveStatus}
+      response={response}
+      stream={stream}
+      onAbort={onAbort}
+      t={t}
+    />
   )
 }
 
@@ -353,7 +186,7 @@ function TerminalLiveTaskCard({
           )}
         </div>
         {text ? (
-          <ConsoleBlock text={text} variant="terminal" tone="output" />
+          <ConsoleBlock text={text} tone="output" />
         ) : response.status === ToolCallResponseStatus.Aborted &&
           !response.data &&
           stream === null ? (
@@ -364,7 +197,7 @@ function TerminalLiveTaskCard({
             )}
           </div>
         ) : (
-          <ConsoleBlock text="" variant="terminal" tone="output" />
+          <ConsoleBlock text="" tone="output" />
         )}
       </div>
       <TruncationNotice response={response} t={t} />
@@ -377,111 +210,39 @@ function TerminalLiveTaskCard({
  */
 function ConsoleBlock({
   text,
-  variant,
   tone = 'progress',
 }: {
   text: string
-  variant?: LiveTaskVariant
   tone?: 'progress' | 'output'
 }) {
-  if (variant) {
-    const lines = text.split('\n')
-    return (
-      <pre
-        className={cx(
-          'yolo-external-agent-card__console',
-          tone === 'progress' && 'yolo-external-agent-card__console--progress',
-        )}
-      >
-        {lines.map((line, i) => (
-          <span
-            key={i}
-            className={cx(
-              'yolo-external-agent-card__line',
-              progressLineClass(line, variant),
-            )}
-          >
-            {line}
-          </span>
-        ))}
-      </pre>
-    )
-  }
-
-  return <pre className="yolo-external-agent-card__console">{text}</pre>
+  const lines = text.split('\n')
+  return (
+    <pre
+      className={cx(
+        'yolo-external-agent-card__console',
+        tone === 'progress' && 'yolo-external-agent-card__console--progress',
+      )}
+    >
+      {lines.map((line, i) => (
+        <span
+          key={i}
+          className={cx(
+            'yolo-external-agent-card__line',
+            progressLineClass(line),
+          )}
+        >
+          {line}
+        </span>
+      ))}
+    </pre>
+  )
 }
 
-function progressLineClass(
-  line: string,
-  variant: LiveTaskVariant,
-): string | undefined {
-  if (variant === 'terminal') {
-    if (/\b(error|failed|denied|killed|timeout)\b/i.test(line)) {
-      return 'yolo-external-agent-card__line--parse-error'
-    }
-    return undefined
+function progressLineClass(line: string): string | undefined {
+  if (/\b(error|failed|denied|killed|timeout)\b/i.test(line)) {
+    return 'yolo-external-agent-card__line--parse-error'
   }
-
-  // ── claude 标签前缀 ──
-  if (line.startsWith('[system]'))
-    return 'yolo-external-agent-card__line--system'
-  if (line.startsWith('[thinking]'))
-    return 'yolo-external-agent-card__line--thinking'
-  if (line.startsWith('[tool result]'))
-    return 'yolo-external-agent-card__line--tool-result'
-  if (line.startsWith('[tool]')) return 'yolo-external-agent-card__line--tool'
-  if (line.startsWith('[done]')) return 'yolo-external-agent-card__line--done'
-  if (line.startsWith('[parse error]') || line.startsWith('[event]'))
-    return 'yolo-external-agent-card__line--parse-error'
-
-  // ── codex 原生格式 ──
-  const trimmed = line.trim()
-  if (trimmed === '') return undefined
-  if (/^-{3,}$/.test(trimmed)) return 'yolo-external-agent-card__line--system'
-  if (
-    trimmed === 'user' ||
-    trimmed === 'codex' ||
-    trimmed === 'exec' ||
-    trimmed === 'tokens used'
-  )
-    return 'yolo-external-agent-card__line--section'
-  if (trimmed.startsWith('succeeded in'))
-    return 'yolo-external-agent-card__line--tool-result'
-  if (/\b(ERROR|WARN|WARNING)\b/.test(line))
-    return 'yolo-external-agent-card__line--parse-error'
-  // codex 横幅元数据 key: value 行
-  if (
-    /^(workdir|model|provider|approval|sandbox|reasoning effort|reasoning summaries|session id):/.test(
-      trimmed,
-    )
-  )
-    return 'yolo-external-agent-card__line--system'
-
   return undefined
-}
-
-function parseProgressMeta(
-  stderrText: string | undefined,
-  variant: LiveTaskVariant,
-): ProgressMeta {
-  if (!stderrText || variant !== 'external-agent') return {}
-  const out: ProgressMeta = {}
-
-  const claudeDone = stderrText.match(
-    /\[done\] duration=(\d+)ms cost=\$([\d.]+) turns=(\d+)/,
-  )
-  if (claudeDone) {
-    out.durationMs = parseInt(claudeDone[1], 10)
-    out.costUsd = parseFloat(claudeDone[2])
-    out.turns = parseInt(claudeDone[3], 10)
-  }
-
-  const codexTokens = stderrText.match(/tokens used\s*\n?\s*([\d,]+)/)
-  if (codexTokens) {
-    out.tokens = parseInt(codexTokens[1].replace(/,/g, ''), 10)
-  }
-
-  return out
 }
 
 function mapLiveStatusToToolStatus(
@@ -494,52 +255,6 @@ function mapLiveStatusToToolStatus(
   if (fallback === ToolCallResponseStatus.Error) return fallback
   if (fallback === ToolCallResponseStatus.Aborted) return fallback
   return ToolCallResponseStatus.Success
-}
-
-function MetaRow({ meta }: { meta: ProgressMeta }) {
-  return (
-    <div className="yolo-external-agent-card__meta-row">
-      {meta.durationMs !== undefined && (
-        <span className="yolo-external-agent-card__chip">
-          <Clock size={12} className="yolo-external-agent-card__chip-icon" />
-          {formatDuration(meta.durationMs)}
-        </span>
-      )}
-      {meta.tokens !== undefined && (
-        <span className="yolo-external-agent-card__chip">
-          <Coins size={12} className="yolo-external-agent-card__chip-icon" />
-          {meta.tokens.toLocaleString()}
-        </span>
-      )}
-      {meta.costUsd !== undefined && (
-        <span className="yolo-external-agent-card__chip">
-          <DollarSign
-            size={12}
-            className="yolo-external-agent-card__chip-icon"
-          />
-          {meta.costUsd.toFixed(4)}
-        </span>
-      )}
-      {meta.turns !== undefined && (
-        <span className="yolo-external-agent-card__chip">
-          <RefreshCw
-            size={12}
-            className="yolo-external-agent-card__chip-icon"
-          />
-          {meta.turns}t
-        </span>
-      )}
-    </div>
-  )
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
-  const seconds = ms / 1000
-  if (seconds < 60) return `${seconds.toFixed(1)}s`
-  const minutes = Math.floor(seconds / 60)
-  const rest = Math.round(seconds - minutes * 60)
-  return `${minutes}m${rest}s`
 }
 
 function TruncationNotice({

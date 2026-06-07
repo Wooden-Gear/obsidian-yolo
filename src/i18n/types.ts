@@ -341,8 +341,6 @@ export type TranslationKeys = {
       builtinJsEvalDesc?: string
       builtinTerminalCommandLabel?: string
       builtinTerminalCommandDesc?: string
-      builtinDelegateExternalAgentLabel?: string
-      builtinDelegateExternalAgentDesc?: string
       builtinDelegateSubagentLabel?: string
       builtinDelegateSubagentDesc?: string
       builtinTodoWriteLabel?: string
@@ -1522,18 +1520,6 @@ export type TranslationKeys = {
         sessionInput?: string
       }
     }
-    // delegate_external_agent tool card
-    externalAgent?: {
-      statusRunning?: string
-      statusDone?: string
-      statusAborted?: string
-      statusError?: string
-      progress?: string
-      output?: string
-      abortedBeforeOutput?: string
-      progressTruncated?: string
-      truncated?: string
-    }
     // shared live task card
     liveTask?: {
       statusRunning?: string
@@ -1557,16 +1543,6 @@ export type TranslationKeys = {
       statusFailed?: string
       toolUseCount?: string
       tokenCount?: string
-    }
-    // async external agent result card
-    externalAgentResult?: {
-      statusCompleted?: string
-      statusFailed?: string
-      statusCancelled?: string
-      statusTimedOut?: string
-      statusKilledByShutdown?: string
-      showOutput?: string
-      jumpToDelegate?: string
     }
     // conversation settings popover
     conversationSettings?: {

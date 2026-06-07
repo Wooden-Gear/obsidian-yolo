@@ -36,7 +36,6 @@ import { SplitButton } from '../common/SplitButton'
 
 import { AskUserQuestionPanel } from './AskUserQuestionPanel'
 import { ObsidianCodeBlock } from './ObsidianMarkdown'
-import { ExternalAgentToolCard } from './tool-cards/ExternalAgentToolCard'
 import { LiveTaskCard } from './tool-cards/LiveTaskCard'
 import { SubagentCard } from './tool-cards/SubagentCard'
 import {
@@ -295,11 +294,9 @@ export const getToolLabels = (t?: TranslateFn): ToolLabels => {
   }
 }
 
-/**
- * 判断工具调用是否为 delegate_external_agent。
- * 完整 tool name 形如 yolo_local__delegate_external_agent。
- */
-const isDelegateExternalAgentRequest = (request: ToolRequestLike): boolean => {
+const isLegacyDelegateExternalAgentRequest = (
+  request: ToolRequestLike,
+): boolean => {
   try {
     const { toolName } = parseToolName(request.name)
     return toolName === 'delegate_external_agent'
@@ -326,22 +323,19 @@ const isTerminalCommandRequest = (request: ToolRequestLike): boolean => {
   }
 }
 
-const extractExternalAgentArgs = (
+const extractLegacyExternalAgentArgs = (
   rawArguments?: ToolCallRequest['arguments'],
-):
-  | { provider?: string; model?: string; workingDirectory?: string }
-  | undefined => {
+): { command?: string; workingDirectory?: string } | undefined => {
   const parsed = getToolCallArgumentsObject(rawArguments)
   if (!parsed) return undefined
-  const provider =
-    typeof parsed.provider === 'string' ? parsed.provider : undefined
-  const model = typeof parsed.model === 'string' ? parsed.model : undefined
+  const prompt =
+    typeof parsed.prompt === 'string' ? parsed.prompt.trim() : undefined
   const workingDirectory =
     typeof parsed.workingDirectory === 'string'
       ? parsed.workingDirectory
       : undefined
-  if (!provider && !model && !workingDirectory) return undefined
-  return { provider, model, workingDirectory }
+  if (!prompt && !workingDirectory) return undefined
+  return { command: prompt, workingDirectory }
 }
 
 const extractSubagentArgs = (
@@ -737,13 +731,6 @@ export const getHeadlineDisplayInfo = ({
     }
   }
 
-  if (toolName === 'delegate_external_agent') {
-    return {
-      ...displayInfo,
-      summaryText: getDelegateExternalAgentSummary({ request, response }),
-    }
-  }
-
   if (toolName === 'delegate_subagent') {
     return {
       ...displayInfo,
@@ -754,56 +741,7 @@ export const getHeadlineDisplayInfo = ({
   return displayInfo
 }
 
-/**
- * delegate_external_agent 折叠态 summary：
- * - Running/Pending：provider | prompt 前 80 字（让用户一眼看到派了啥任务）
- * - Success：provider | stdout 前 80 字（直接看模型最终回答）
- * - Aborted（含已采集输出）：provider | stdout 前 80 字
- * - Error：provider | error 前 80 字（直接看为啥失败）
- */
 const DELEGATE_SUMMARY_MAX_CHARS = 80
-
-const getDelegateExternalAgentSummary = ({
-  request,
-  response,
-}: {
-  request: ToolRequestLike
-  response?: ToolCallResponse
-}): string | undefined => {
-  const argsObject = parseToolArguments(request.arguments)
-  const provider =
-    typeof argsObject?.provider === 'string' ? argsObject.provider : ''
-
-  let mainText = ''
-  if (response?.status === ToolCallResponseStatus.Success) {
-    mainText = response.data.text?.trim() ?? ''
-  } else if (response?.status === ToolCallResponseStatus.Error) {
-    mainText = response.error?.trim() ?? ''
-  } else if (
-    response?.status === ToolCallResponseStatus.Aborted &&
-    response.data
-  ) {
-    mainText = response.data.text?.trim() ?? ''
-  }
-  // Running / PendingApproval / Aborted-without-data / 没拿到 mainText 时回退 prompt
-  if (!mainText) {
-    const prompt =
-      typeof argsObject?.prompt === 'string' ? argsObject.prompt.trim() : ''
-    mainText = prompt
-  }
-
-  // 多行折叠成单行，避免 headline 被换行符撑高
-  const collapsedMain = mainText
-    ? truncateText(mainText.replace(/\s+/g, ' '), DELEGATE_SUMMARY_MAX_CHARS)
-    : ''
-
-  if (!provider && !collapsedMain) {
-    return undefined
-  }
-  if (!provider) return collapsedMain
-  if (!collapsedMain) return provider
-  return `${provider} | ${collapsedMain}`
-}
 
 const getDelegateSubagentSummary = ({
   request,
@@ -1513,20 +1451,16 @@ function ToolCallItem({
               <ObsidianCodeBlock language="json" content={parameters} />
             </div>
           )}
-          {isDelegateExternalAgentRequest(request) ? (
-            // delegate_external_agent 专属卡片：流式输出 + 状态徽章
-            <ExternalAgentToolCard
-              toolCallId={request.id}
-              response={effectiveTerminalResponse}
-              args={extractExternalAgentArgs(request.arguments)}
-              onAbort={handleAbort}
-            />
-          ) : isTerminalCommandRequest(request) ? (
+          {isTerminalCommandRequest(request) ||
+          isLegacyDelegateExternalAgentRequest(request) ? (
             <LiveTaskCard
               toolCallId={request.id}
               response={effectiveTerminalResponse}
-              variant="terminal"
-              args={extractTerminalCommandArgs(request.arguments)}
+              args={
+                isLegacyDelegateExternalAgentRequest(request)
+                  ? extractLegacyExternalAgentArgs(request.arguments)
+                  : extractTerminalCommandArgs(request.arguments)
+              }
               initialStdout={
                 terminalCommandResult?.stdout ??
                 extractSyntheticLiveTaskOutput(request.arguments).stdout

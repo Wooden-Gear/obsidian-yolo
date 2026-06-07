@@ -4,7 +4,6 @@ import type { YoloSettings } from '../../settings/schema/setting.types'
 import {
   ChatConversationCompactionLike,
   ChatConversationCompactionState,
-  ChatExternalAgentResultMessage,
   ChatMessage,
   ChatSubagentResultMessage,
   ChatTerminalCommandResultMessage,
@@ -36,7 +35,6 @@ import {
 import type { BashTaskRecord } from './bash/types'
 import { DEFAULT_BRANCH_ID } from './branch'
 import { CitationRegistry } from './citationRegistry'
-import type { AsyncTaskRecord } from './external-cli/async-task-registry'
 import { NativeAgentRuntime } from './native-runtime'
 import { PromptSourceWatcher } from './promptSourceWatcher'
 import {
@@ -172,31 +170,6 @@ function buildSubagentResultMessage(
     prompt: result?.prompt ?? record.prompt,
     modelName: result?.modelName,
     transcript: result?.transcript,
-    delegateAssistantMessageId:
-      record.source.type === 'llm_tool_call'
-        ? record.source.assistantMessageId
-        : '',
-    delegateToolCallId:
-      record.source.type === 'llm_tool_call' ? record.source.toolCallId : '',
-  }
-}
-
-function buildExternalAgentResultMessage(
-  record: AsyncTaskRecord,
-): ChatExternalAgentResultMessage {
-  const completedAt = record.completedAt ?? Date.now()
-  return {
-    role: 'external_agent_result',
-    id: uuidv4(),
-    taskId: record.taskId,
-    source: record.source,
-    provider: record.provider,
-    title: record.title,
-    status: record.status === 'running' ? 'completed' : record.status,
-    exitCode: record.exitCode,
-    stdout: record.stdoutBuffer,
-    stderr: record.stderrBuffer,
-    durationMs: completedAt - record.createdAt,
     delegateAssistantMessageId:
       record.source.type === 'llm_tool_call'
         ? record.source.assistantMessageId
@@ -646,7 +619,7 @@ const buildBranchAggregateMessages = ({
   ]
 }
 
-export type PendingExternalAgentResultsSubscriber = (
+export type PendingBackgroundTaskResultsSubscriber = (
   conversationId: string,
 ) => void
 
@@ -711,7 +684,7 @@ export class AgentService {
     BackgroundTaskEvent[]
   >()
   private pendingResultsSubscribers =
-    new Set<PendingExternalAgentResultsSubscriber>()
+    new Set<PendingBackgroundTaskResultsSubscriber>()
   private unsubscribeBackgroundTaskCompleted: (() => void) | null = null
   // Conversations that have notified subscribers about an auto-run trigger but
   // whose run hasn't yet flipped `isRunning` to true. Prevents duplicate
@@ -830,9 +803,9 @@ export class AgentService {
     }
   }
 
-  /** Subscribe to be notified when pending external agent results are ready to drain */
-  subscribeToPendingExternalAgentResults(
-    fn: PendingExternalAgentResultsSubscriber,
+  /** Subscribe to be notified when pending background task results are ready to drain */
+  subscribeToPendingBackgroundTaskResults(
+    fn: PendingBackgroundTaskResultsSubscriber,
   ): () => void {
     this.pendingResultsSubscribers.add(fn)
     return () => {
@@ -846,22 +819,6 @@ export class AgentService {
       backgroundTaskCompletionBus.subscribe((event) => {
         this.handleBackgroundTaskCompleted(event)
       })
-  }
-
-  startExternalAgentResultListener(): void {
-    this.startBackgroundTaskResultListener()
-  }
-
-  stopExternalAgentResultListener(): void {
-    this.stopBackgroundTaskResultListener()
-  }
-
-  startSubagentResultListener(): void {
-    this.startBackgroundTaskResultListener()
-  }
-
-  stopSubagentResultListener(): void {
-    this.stopBackgroundTaskResultListener()
   }
 
   stopBackgroundTaskResultListener(): void {
@@ -901,8 +858,6 @@ export class AgentService {
     event: BackgroundTaskEvent,
   ): ChatMessage {
     switch (event.kind) {
-      case 'external_agent':
-        return buildExternalAgentResultMessage(event.record)
       case 'subagent':
         return buildSubagentResultMessage(event.record)
       case 'terminal_command':
@@ -934,22 +889,10 @@ export class AgentService {
     return appended
   }
 
-  drainPendingExternalAgentResults(conversationId: string): ChatMessage[] {
-    return this.drainPendingBackgroundTaskResults(conversationId)
-  }
-
-  drainPendingSubagentResults(conversationId: string): ChatMessage[] {
-    return this.drainPendingBackgroundTaskResults(conversationId)
-  }
-
   hasPendingBackgroundTaskResults(conversationId: string): boolean {
     return (
       (this.pendingBackgroundTaskResults.get(conversationId)?.length ?? 0) > 0
     )
-  }
-
-  hasPendingExternalAgentResults(conversationId: string): boolean {
-    return this.hasPendingBackgroundTaskResults(conversationId)
   }
 
   private notifyPendingResultsSubscribers(conversationId: string): void {
