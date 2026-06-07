@@ -1,5 +1,5 @@
-import { Clock, Coins, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { Clock, Coins, Wrench, X } from 'lucide-react'
+import { useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 
 import { useLanguage } from '../../../contexts/language-context'
@@ -9,6 +9,7 @@ import type {
 } from '../../../types/chat'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { groupAssistantAndToolMessages } from '../../../utils/chat/message-groups'
+import { formatTokenCount } from '../../../utils/llm/formatTokenCount'
 import AssistantToolMessageGroupItem from '../AssistantToolMessageGroupItem'
 
 import { formatDuration, formatSubagentActivityLine } from './subagentCardUtils'
@@ -57,6 +58,7 @@ export function SubagentDetailModal({
   onClose,
 }: SubagentDetailModalProps) {
   const { t } = useLanguage()
+  const titleId = useId()
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -90,7 +92,7 @@ export function SubagentDetailModal({
       className="yolo-subagent-detail-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-labelledby={titleId}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose()
@@ -100,7 +102,9 @@ export function SubagentDetailModal({
       <div className="yolo-subagent-detail-panel">
         <div className="yolo-subagent-detail-header">
           <div className="yolo-subagent-detail-header-text">
-            <div className="yolo-subagent-detail-title">{title}</div>
+            <div id={titleId} className="yolo-subagent-detail-title">
+              {title}
+            </div>
             <div className="yolo-subagent-detail-meta">
               {modelName && (
                 <span className="yolo-subagent-detail-meta-item">
@@ -118,13 +122,24 @@ export function SubagentDetailModal({
               )}
               {subagentResult && subagentResult.toolUseCount > 0 && (
                 <span className="yolo-subagent-detail-meta-item">
-                  <Coins size={12} />
+                  <Wrench size={12} />
                   {t('chat.subagent.toolUseCount', '{count} tools').replace(
                     '{count}',
                     String(subagentResult.toolUseCount),
                   )}
                 </span>
               )}
+              {subagentResult &&
+                subagentResult.usage &&
+                subagentResult.usage.total_tokens > 0 && (
+                  <span className="yolo-subagent-detail-meta-item">
+                    <Coins size={12} />
+                    {t('chat.subagent.tokenCount', '{count} tokens').replace(
+                      '{count}',
+                      formatTokenCount(subagentResult.usage.total_tokens),
+                    )}
+                  </span>
+                )}
             </div>
           </div>
           <button
