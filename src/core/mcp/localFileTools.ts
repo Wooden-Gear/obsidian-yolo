@@ -536,7 +536,6 @@ export function getLocalFileTools(options?: {
   vaultBasePath?: string
   chatModelModalities?: ChatModelModality[]
 }): McpTool[] {
-  const vaultBasePath = options?.vaultBasePath
   const modalitySchema = buildFsReadModalitySchema(options?.chatModelModalities)
   return [
     {

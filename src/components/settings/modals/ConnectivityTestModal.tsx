@@ -376,10 +376,7 @@ function ConnectivityTestPanel({
   )
 
   const getChatDeleteState = (modelId: string) => {
-    if (
-      modelId === chatModelId ||
-      modelId === chatTitleModelId
-    ) {
+    if (modelId === chatModelId || modelId === chatTitleModelId) {
       return {
         disabled: true,
         reason: t(
@@ -418,8 +415,7 @@ function ConnectivityTestPanel({
     [settings.chatModels, provider.id],
   )
   const embeddingModels = useMemo(
-    () =>
-      settings.embeddingModels.filter((m) => m.providerId === provider.id),
+    () => settings.embeddingModels.filter((m) => m.providerId === provider.id),
     [settings.embeddingModels, provider.id],
   )
 
@@ -518,59 +514,59 @@ function ConnectivityTestPanel({
         ) : null}
 
         <Tooltip.Provider delayDuration={200}>
-        {chatModels.length > 0 ? (
-          <>
-            <div className="yolo-health-grouplabel">
-              {t('settings.models.chatModels', '聊天模型')}
-              <span className="yolo-health-grouplabel-ct">
-                {chatModels.length}
-              </span>
-            </div>
-            {chatModels.map((model) => {
-              const deleteState = getChatDeleteState(model.id)
-              return (
-                <ModelRow
-                  key={model.id}
-                  model={model}
-                  kind="chat"
-                  cell={results[model.id] ?? { status: 'idle' }}
-                  disabled={running}
-                  onTest={testOne}
-                  onDelete={handleDeleteChatModel}
-                  deleteDisabled={deleteState.disabled}
-                  deleteDisabledReason={deleteState.reason}
-                />
-              )
-            })}
-          </>
-        ) : null}
+          {chatModels.length > 0 ? (
+            <>
+              <div className="yolo-health-grouplabel">
+                {t('settings.models.chatModels', '聊天模型')}
+                <span className="yolo-health-grouplabel-ct">
+                  {chatModels.length}
+                </span>
+              </div>
+              {chatModels.map((model) => {
+                const deleteState = getChatDeleteState(model.id)
+                return (
+                  <ModelRow
+                    key={model.id}
+                    model={model}
+                    kind="chat"
+                    cell={results[model.id] ?? { status: 'idle' }}
+                    disabled={running}
+                    onTest={testOne}
+                    onDelete={handleDeleteChatModel}
+                    deleteDisabled={deleteState.disabled}
+                    deleteDisabledReason={deleteState.reason}
+                  />
+                )
+              })}
+            </>
+          ) : null}
 
-        {embeddingModels.length > 0 ? (
-          <>
-            <div className="yolo-health-grouplabel">
-              {t('settings.models.embeddingModels', '嵌入模型')}
-              <span className="yolo-health-grouplabel-ct">
-                {embeddingModels.length}
-              </span>
-            </div>
-            {embeddingModels.map((model) => {
-              const deleteState = getEmbeddingDeleteState(model.id)
-              return (
-                <ModelRow
-                  key={model.id}
-                  model={model}
-                  kind="embedding"
-                  cell={results[model.id] ?? { status: 'idle' }}
-                  disabled={running}
-                  onTest={testOne}
-                  onDelete={handleDeleteEmbeddingModel}
-                  deleteDisabled={deleteState.disabled}
-                  deleteDisabledReason={deleteState.reason}
-                />
-              )
-            })}
-          </>
-        ) : null}
+          {embeddingModels.length > 0 ? (
+            <>
+              <div className="yolo-health-grouplabel">
+                {t('settings.models.embeddingModels', '嵌入模型')}
+                <span className="yolo-health-grouplabel-ct">
+                  {embeddingModels.length}
+                </span>
+              </div>
+              {embeddingModels.map((model) => {
+                const deleteState = getEmbeddingDeleteState(model.id)
+                return (
+                  <ModelRow
+                    key={model.id}
+                    model={model}
+                    kind="embedding"
+                    cell={results[model.id] ?? { status: 'idle' }}
+                    disabled={running}
+                    onTest={testOne}
+                    onDelete={handleDeleteEmbeddingModel}
+                    deleteDisabled={deleteState.disabled}
+                    deleteDisabledReason={deleteState.reason}
+                  />
+                )
+              })}
+            </>
+          ) : null}
         </Tooltip.Provider>
       </div>
     </div>

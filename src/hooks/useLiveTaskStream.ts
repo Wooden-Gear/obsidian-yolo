@@ -18,7 +18,9 @@ export type LiveTaskViewSnapshot =
       truncated?: { totalBytes: number; omittedBytes: number }
     }
 
-export function useLiveTaskStream(toolCallId: string): LiveTaskViewSnapshot | null {
+export function useLiveTaskStream(
+  toolCallId: string,
+): LiveTaskViewSnapshot | null {
   const [snapshot, setSnapshot] = useState<LiveTaskViewSnapshot | null>(() => {
     const live = liveTaskStreamBus.getSnapshot(toolCallId)
     if (live !== null) return { ...live, source: 'live' }

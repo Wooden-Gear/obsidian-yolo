@@ -4,7 +4,6 @@ import {
   Editor,
   MarkdownView,
   Notice,
-  Platform,
   Plugin,
   TFile,
   TFolder,
