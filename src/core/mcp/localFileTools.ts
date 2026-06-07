@@ -981,7 +981,8 @@ export function getLocalFileTools(options?: {
         'Results separate stdout and stderr. ' +
         'Use tail_lines or tail_bytes when polling verbose sessions to inspect recent logs only. ' +
         'Avoid heredocs and full-screen TUI programs such as vim/top. Long-running ' +
-        'commands should use background=true.',
+        'commands should use background=true; completion is pushed when finished. ' +
+        'Avoid frequent polling to check status.',
       inputSchema: {
         type: 'object',
         properties: {
