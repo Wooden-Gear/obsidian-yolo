@@ -111,6 +111,7 @@ export const DEFAULT_TAB_COMPLETION_OPTIONS: TabCompletionOptionDefaults = {
 }
 
 export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 60000
+export const MAX_MODEL_REQUEST_TIMEOUT_MS = 60 * 60 * 1000
 
 const notificationOptionsSchema = z
   .object({
@@ -561,7 +562,7 @@ export const yoloSettingsSchema = z.object({
         .number()
         .int()
         .min(1000)
-        .max(600000)
+        .max(MAX_MODEL_REQUEST_TIMEOUT_MS)
         .optional(),
     })
     .catch({
