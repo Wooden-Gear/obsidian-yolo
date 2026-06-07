@@ -257,6 +257,9 @@ async function runChildAgent(
       durationMs: completedAt - startedAt,
       toolUseCount: countToolUses(finalMessages),
       usage: extractLastAssistantUsage(finalMessages),
+      prompt: record.prompt,
+      modelName: parent.model.name ?? parent.model.model,
+      transcript: finalMessages,
     }
 
     subagentTaskRegistry.update(record.taskId, {
@@ -290,6 +293,8 @@ async function runChildAgent(
         activityLog: activityLines.join('\n'),
         durationMs: completedAt - startedAt,
         toolUseCount: 0,
+        prompt: record.prompt,
+        modelName: parent.model.name ?? parent.model.model,
       },
     })
   }

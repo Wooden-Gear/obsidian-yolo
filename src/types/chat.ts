@@ -180,6 +180,9 @@ export type ChatSubagentResultMessage = {
   durationMs: number
   toolUseCount: number
   usage?: ResponseUsage
+  prompt?: string
+  modelName?: string
+  transcript?: ChatMessage[]
   delegateAssistantMessageId: string
   delegateToolCallId: string
   metadata?: {

@@ -365,15 +365,13 @@ export default function AssistantToolMessageGroupItem({
   }, [activeBranchKey, branchGroups, hasMultipleBranches, onActiveBranchChange])
 
   const displayedMessages = useMemo(() => {
-    if (!hasMultipleBranches) {
-      return messages
-    }
-    return (
-      branchGroups.find((group) => group.key === resolvedActiveBranchKey)
-        ?.messages ??
-      branchGroups[0]?.messages ??
-      messages
-    )
+    const selectedMessages = !hasMultipleBranches
+      ? messages
+      : (branchGroups.find((group) => group.key === resolvedActiveBranchKey)
+          ?.messages ??
+        branchGroups[0]?.messages ??
+        messages)
+    return selectedMessages
   }, [branchGroups, hasMultipleBranches, messages, resolvedActiveBranchKey])
   const effectiveConversationId = useMemo(() => {
     if (!hasMultipleBranches) {

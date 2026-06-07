@@ -1542,7 +1542,9 @@ export type TranslationKeys = {
       statusError?: string
       progress?: string
       output?: string
+      activity?: string
       abortedBeforeOutput?: string
+      noActivity?: string
       progressTruncated?: string
       truncated?: string
     }

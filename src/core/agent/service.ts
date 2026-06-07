@@ -169,6 +169,9 @@ function buildSubagentResultMessage(
     durationMs: result?.durationMs ?? completedAt - record.createdAt,
     toolUseCount: result?.toolUseCount ?? 0,
     usage: result?.usage,
+    prompt: result?.prompt ?? record.prompt,
+    modelName: result?.modelName,
+    transcript: result?.transcript,
     delegateAssistantMessageId:
       record.source.type === 'llm_tool_call'
         ? record.source.assistantMessageId

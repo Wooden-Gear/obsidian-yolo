@@ -15990,6 +15990,92 @@ button.yolo-external-agent-card__compact-abort-btn:focus-visible {
   padding-right: 92px;
 }
 
+.yolo-live-task-subagent-card {
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary-alt);
+}
+
+.yolo-live-task-subagent-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.yolo-live-task-subagent-card__title {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+}
+
+.yolo-live-task-subagent-card__activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+}
+
+.yolo-live-task-subagent-card__activity-row {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--size-4-2);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  line-height: 1.45;
+}
+
+.yolo-live-task-subagent-card__activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--text-faint);
+  transform: translateY(-1px);
+}
+
+.yolo-live-task-subagent-card__activity-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.yolo-live-task-subagent-card__activity-row--system {
+  color: var(--text-muted);
+}
+
+.yolo-live-task-subagent-card__activity-row--system
+  .yolo-live-task-subagent-card__activity-dot {
+  background: var(--text-faint);
+}
+
+.yolo-live-task-subagent-card__activity-row--tool {
+  color: var(--text-accent);
+}
+
+.yolo-live-task-subagent-card__activity-row--tool
+  .yolo-live-task-subagent-card__activity-dot {
+  background: var(--text-accent);
+}
+
+.yolo-live-task-subagent-card__activity-row--done {
+  color: var(--text-success);
+}
+
+.yolo-live-task-subagent-card__activity-row--done
+  .yolo-live-task-subagent-card__activity-dot {
+  background: var(--text-success);
+}
+
+.yolo-live-task-subagent-card__activity-row--error {
+  color: var(--text-error);
+}
+
+.yolo-live-task-subagent-card__activity-row--error
+  .yolo-live-task-subagent-card__activity-dot {
+  background: var(--text-error);
+}
+
 .yolo-external-agent-card__console--progress {
   color: var(--text-muted);
 }

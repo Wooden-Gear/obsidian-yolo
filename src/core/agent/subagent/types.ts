@@ -1,4 +1,4 @@
-import type { TaskSource } from '../../../types/chat'
+import type { ChatMessage, TaskSource } from '../../../types/chat'
 import type { ResponseUsage } from '../../../types/llm/response'
 
 export type SubagentTaskStatus = 'running' | 'completed' | 'failed' | 'aborted'
@@ -19,6 +19,9 @@ export type SubagentResult = {
   durationMs: number
   toolUseCount: number
   usage?: ResponseUsage
+  prompt?: string
+  modelName?: string
+  transcript?: ChatMessage[]
 }
 
 export type SubagentTaskRecord = {
