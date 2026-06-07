@@ -66,6 +66,7 @@ export const zh: TranslationKeys = {
     chatList: {
       searchPlaceholder: '搜索聊天记录',
       empty: '暂无聊天记录',
+      current: '当前',
       retryTitle: '重试命名',
       archived: '已归档',
       hideArchived: '收起归档',

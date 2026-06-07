@@ -71,6 +71,7 @@ function ChatListItem({
   title,
   displayTitle,
   runSummary,
+  isCurrent,
   isFocused,
   shouldScrollIntoView,
   isEditing,
@@ -93,6 +94,7 @@ function ChatListItem({
   title: string
   displayTitle?: string
   runSummary?: AgentConversationRunSummary
+  isCurrent: boolean
   isFocused: boolean
   shouldScrollIntoView: boolean
   isEditing: boolean
@@ -170,9 +172,16 @@ function ChatListItem({
             isRetrying ? ' is-retrying' : ''
           }`}
         >
-          <span className="yolo-chat-list-dropdown-item-title-text">
-            {displayTitle ?? title}
-          </span>
+          <div className="yolo-chat-list-dropdown-item-title-group">
+            <span className="yolo-chat-list-dropdown-item-title-text">
+              {displayTitle ?? title}
+            </span>
+            {isCurrent ? (
+              <span className="yolo-chat-list-dropdown-item-current-badge">
+                {t('sidebar.chatList.current', 'Current')}
+              </span>
+            ) : null}
+          </div>
           {runSummary &&
           (runSummary.isRunning || runSummary.isWaitingApproval) ? (
             <span
@@ -785,6 +794,7 @@ export function ChatListDropdown({
                   title={chat.title}
                   displayTitle={getDisplayTitle(chat)}
                   runSummary={runSummariesByConversationId.get(chat.id)}
+                  isCurrent={chat.id === currentConversationId}
                   isFocused={
                     focusedConversationId === chat.id && !isHoveringArchiveRow
                   }

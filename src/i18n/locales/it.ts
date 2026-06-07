@@ -63,6 +63,7 @@ export const it: TranslationKeys = {
     chatList: {
       searchPlaceholder: 'Cerca conversazioni',
       empty: 'Nessuna conversazione',
+      current: 'Attuale',
       retryTitle: 'Riprova titolo',
       archived: 'Archiviate',
       hideArchived: 'Nascondi archiviate',

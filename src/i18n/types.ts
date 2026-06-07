@@ -69,6 +69,7 @@ export type TranslationKeys = {
     chatList?: {
       searchPlaceholder?: string
       empty?: string
+      current?: string
       retryTitle?: string
       archived?: string
       hideArchived?: string
