@@ -1,5 +1,7 @@
 import type {
   AssistantToolMessageGroup,
+  ChatSubagentResultMessage,
+  ChatTerminalCommandResultMessage,
   ChatToolMessage,
 } from '../../types/chat'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
@@ -51,6 +53,47 @@ function getAssistantGroupEstimate(group: AssistantToolMessageGroup): number {
 }
 
 describe('buildMessageTimelineItems', () => {
+  it('hides standalone background tool result messages from the visible timeline', () => {
+    const source = {
+      type: 'llm_tool_call' as const,
+      toolCallId: 'tool-call-1',
+      assistantMessageId: 'assistant-1',
+    }
+    const subagentResult: ChatSubagentResultMessage = {
+      role: 'subagent_result',
+      id: 'subagent-result-1',
+      taskId: 'subagent-task-1',
+      source,
+      title: 'Inspect code',
+      status: 'completed',
+      content: 'Done',
+      durationMs: 1000,
+      toolUseCount: 1,
+      delegateAssistantMessageId: 'assistant-1',
+      delegateToolCallId: 'tool-call-1',
+    }
+    const terminalCommandResult: ChatTerminalCommandResultMessage = {
+      role: 'terminal_command_result',
+      id: 'terminal-result-1',
+      taskId: 'terminal-task-1',
+      source,
+      title: 'npm test',
+      status: 'completed',
+      exitCode: 0,
+      stdout: 'ok',
+      stderr: '',
+      durationMs: 1000,
+      delegateAssistantMessageId: 'assistant-1',
+      delegateToolCallId: 'tool-call-1',
+    }
+
+    const items = buildMessageTimelineItems({
+      groupedChatMessages: [[subagentResult], [terminalCommandResult]],
+    })
+
+    expect(items).toEqual([])
+  })
+
   it('estimates collapsed tool cards by count instead of response payload size', () => {
     const smallPayloadEstimate = getAssistantGroupEstimate([
       makeToolMessage({

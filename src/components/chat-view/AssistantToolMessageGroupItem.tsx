@@ -38,7 +38,6 @@ import AssistantMessageSources from './AssistantMessageSources'
 import AssistantToolMessageGroupActions from './AssistantToolMessageGroupActions'
 import LLMResponseInlineInfo from './LLMResponseInlineInfo'
 import { buildSynthToolMessageFromResult } from './tool-cards/externalAgentResultAdapter'
-import { buildSynthToolMessageFromTerminalCommandResult } from './tool-cards/terminalCommandResultAdapter'
 import ToolMessage from './ToolMessage'
 
 const getBranchStateLabel = (
@@ -707,21 +706,8 @@ export default function AssistantToolMessageGroupItem({
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />
           </div>
-        ) : message.role === 'subagent_result' ? null : message.role ===
-          'terminal_command_result' ? (
-          <div key={message.id}>
-            <ToolMessage
-              message={buildSynthToolMessageFromTerminalCommandResult(message)}
-              conversationId={effectiveConversationId}
-              showRunningFooter={false}
-              terminalCommandResultsByToolCallId={
-                terminalCommandResultsByToolCallId
-              }
-              onMessageUpdate={() => {}}
-              onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
-            />
-          </div>
-        ) : (
+        ) : message.role === 'subagent_result' ||
+          message.role === 'terminal_command_result' ? null : (
           <div key={message.id}>
             <ToolMessage
               message={message}

@@ -193,12 +193,17 @@ export const buildMessageTimelineItems = ({
     assistantGroupBoundaryMessageIds,
   )
   const renderableGroupedChatMessages = groupedChatMessages.filter(
-    (messageOrGroup) =>
-      !(
-        Array.isArray(messageOrGroup) &&
-        messageOrGroup.length === 1 &&
-        messageOrGroup[0]?.role === 'subagent_result'
-      ),
+    (messageOrGroup) => {
+      if (!Array.isArray(messageOrGroup) || messageOrGroup.length !== 1) {
+        return true
+      }
+
+      const message = messageOrGroup[0]
+      return (
+        message?.role !== 'subagent_result' &&
+        message?.role !== 'terminal_command_result'
+      )
+    },
   )
   const items: ChatTimelineItem[] = renderableGroupedChatMessages.map(
     (messageOrGroup, index) => {
