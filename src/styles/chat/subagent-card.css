@@ -137,21 +137,22 @@ button.yolo-subagent-card__abort-btn:focus-visible {
 /* ── 详情弹窗 ── */
 
 .yolo-subagent-detail-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--layer-popover, 30);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--size-4-6);
-  background: rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--background-primary) 62%, transparent);
+  backdrop-filter: blur(1px);
 }
 
 .yolo-subagent-detail-panel {
   display: flex;
   flex-direction: column;
-  width: min(760px, 100%);
-  max-height: min(82vh, 900px);
+  width: min(760px, calc(100% - var(--size-4-6) * 2));
+  max-height: min(82%, 900px);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-l);
   background: var(--background-primary);

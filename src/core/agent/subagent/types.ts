@@ -35,6 +35,7 @@ export type SubagentTaskRecord = {
   completedAt?: number
   prompt: string
   result?: SubagentResult
+  liveTranscript?: ChatMessage[]
   activityLog?: string
   error?: string
   abortController: AbortController

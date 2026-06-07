@@ -3,8 +3,10 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 import { useLanguage } from '../../../contexts/language-context'
-import type { LiveTaskViewSnapshot } from '../../../hooks/useLiveTaskStream'
-import type { ChatSubagentResultMessage } from '../../../types/chat'
+import type {
+  ChatMessage,
+  ChatSubagentResultMessage,
+} from '../../../types/chat'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { groupAssistantAndToolMessages } from '../../../utils/chat/message-groups'
 import AssistantToolMessageGroupItem from '../AssistantToolMessageGroupItem'
@@ -12,14 +14,15 @@ import AssistantToolMessageGroupItem from '../AssistantToolMessageGroupItem'
 import { formatDuration, formatSubagentActivityLine } from './subagentCardUtils'
 
 type SubagentDetailModalProps = {
+  container: HTMLElement
   title: string
   modelName?: string
   prompt?: string
   taskId?: string
   effectiveStatus: ToolCallResponseStatus
   subagentResult?: ChatSubagentResultMessage
+  liveTranscript?: ChatMessage[]
   activityLines: string[]
-  stream: LiveTaskViewSnapshot | null
   onClose: () => void
 }
 
@@ -42,14 +45,15 @@ function getStatusLabel(
 }
 
 export function SubagentDetailModal({
+  container,
   title,
   modelName,
   prompt,
   taskId,
   effectiveStatus,
   subagentResult,
+  liveTranscript,
   activityLines,
-  stream,
   onClose,
 }: SubagentDetailModalProps) {
   const { t } = useLanguage()
@@ -67,16 +71,19 @@ export function SubagentDetailModal({
     }
   }, [onClose])
 
-  const transcript = subagentResult?.transcript
+  const transcript =
+    subagentResult?.transcript ??
+    (liveTranscript && liveTranscript.length > 0 ? liveTranscript : undefined)
   const groupedTranscript =
     transcript && transcript.length > 0
       ? groupAssistantAndToolMessages(transcript)
       : null
 
-  const liveOutput =
-    stream?.source === 'live'
-      ? [stream.stderr, stream.stdout].filter(Boolean).join('\n')
-      : ''
+  const visibleActivityLines = activityLines.filter(
+    (line) =>
+      !line.startsWith('[state] starting') &&
+      !line.startsWith('[state] completed'),
+  )
 
   return createPortal(
     <div
@@ -167,12 +174,9 @@ export function SubagentDetailModal({
                 />
               ) : null,
             )
-          ) : activityLines.length > 0 || liveOutput ? (
+          ) : visibleActivityLines.length > 0 ? (
             <div className="yolo-subagent-detail-activity">
-              {(activityLines.length > 0
-                ? activityLines
-                : liveOutput.split('\n')
-              )
+              {visibleActivityLines
                 .map((line) => line.trim())
                 .filter(Boolean)
                 .map((line, index) => (
@@ -192,6 +196,6 @@ export function SubagentDetailModal({
         </div>
       </div>
     </div>,
-    document.body,
+    container,
   )
 }

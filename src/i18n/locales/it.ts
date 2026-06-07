@@ -1745,6 +1745,7 @@ export const it: TranslationKeys = {
       statusAborted: 'Interrotto',
       statusFailed: 'Fallito',
       toolUseCount: '{count} strumenti',
+      tokenCount: '{count} token',
     },
     externalAgentResult: {
       statusCompleted: 'Completato',

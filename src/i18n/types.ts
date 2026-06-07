@@ -1556,6 +1556,7 @@ export type TranslationKeys = {
       statusAborted?: string
       statusFailed?: string
       toolUseCount?: string
+      tokenCount?: string
     }
     // async external agent result card
     externalAgentResult?: {

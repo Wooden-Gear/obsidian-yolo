@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { TaskSource } from '../../../types/chat'
 import type { ChatMessage, ChatUserMessage } from '../../../types/chat'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
+import { collectTotalAssistantUsage } from '../../../utils/chat/llmUsage'
 import { formatErrorMessageWithCauses } from '../../../utils/error-message'
 import { type YoloAgentEvent, conversationStateToEvents } from '../agent-api'
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
@@ -57,18 +58,6 @@ function extractLastAssistantText(messages: ChatMessage[]): string {
     }
   }
   return ''
-}
-
-function extractLastAssistantUsage(
-  messages: ChatMessage[],
-): SubagentResult['usage'] {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i]
-    if (message.role === 'assistant' && message.metadata?.usage) {
-      return message.metadata.usage
-    }
-  }
-  return undefined
 }
 
 function appendActivityLine(lines: string[], toolCallId: string, line: string) {
@@ -218,6 +207,9 @@ async function runChildAgent(
       pendingCompactionAnchorMessageId:
         snapshot.pendingCompactionAnchorMessageId,
     }
+    subagentTaskRegistry.update(record.taskId, {
+      liveTranscript: snapshot.messages,
+    })
     const nextEvents = conversationStateToEvents({
       state,
       sourceUserMessageId: childUserMessage.id,
@@ -256,7 +248,7 @@ async function runChildAgent(
       activityLog: activityLines.join('\n'),
       durationMs: completedAt - startedAt,
       toolUseCount: countToolUses(finalMessages),
-      usage: extractLastAssistantUsage(finalMessages),
+      usage: collectTotalAssistantUsage(finalMessages),
       prompt: record.prompt,
       modelName: parent.model.name ?? parent.model.model,
       transcript: finalMessages,
@@ -265,6 +257,7 @@ async function runChildAgent(
     subagentTaskRegistry.update(record.taskId, {
       status: result.status,
       completedAt,
+      liveTranscript: finalMessages,
       result,
     })
   } catch (error) {

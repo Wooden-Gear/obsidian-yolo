@@ -1821,6 +1821,7 @@ export const en: TranslationKeys = {
       statusAborted: 'Aborted',
       statusFailed: 'Failed',
       toolUseCount: '{count} tools',
+      tokenCount: '{count} tokens',
     },
     externalAgentResult: {
       statusCompleted: 'Completed',

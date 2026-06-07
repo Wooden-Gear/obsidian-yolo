@@ -7,6 +7,7 @@ import {
   type ToolCallResponse,
   ToolCallResponseStatus,
 } from '../../../types/tool-call.types'
+import { formatTokenCount } from '../../../utils/llm/formatTokenCount'
 
 export type SubagentCardArgs = {
   title?: string
@@ -174,6 +175,14 @@ export function buildSubagentCompletionSummary({
   }
   if (subagentResult.durationMs > 0) {
     parts.push(formatDuration(subagentResult.durationMs))
+  }
+  if (subagentResult.usage && subagentResult.usage.total_tokens > 0) {
+    parts.push(
+      t('chat.subagent.tokenCount', '{count} tokens').replace(
+        '{count}',
+        formatTokenCount(subagentResult.usage.total_tokens),
+      ),
+    )
   }
   return parts.join(' · ')
 }

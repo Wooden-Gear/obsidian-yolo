@@ -1705,6 +1705,7 @@ export const zh: TranslationKeys = {
       statusAborted: '已中止',
       statusFailed: '失败',
       toolUseCount: '{count} 个工具',
+      tokenCount: '{count} tokens',
     },
     externalAgentResult: {
       statusCompleted: '已完成',

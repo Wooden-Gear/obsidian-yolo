@@ -1,11 +1,12 @@
 import cx from 'clsx'
 import { Bot, Check, Loader2, Square, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { useLiveTaskStream } from '../../../hooks/useLiveTaskStream'
+import { useSubagentTask } from '../../../hooks/useSubagentTask'
 import type { ChatSubagentResultMessage } from '../../../types/chat'
 import {
   type ToolCallResponse,
@@ -65,6 +66,10 @@ export function SubagentCard({
     kind: 'subagent',
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [detailContainer, setDetailContainer] = useState<HTMLElement | null>(
+    null,
+  )
+  const cardRef = useRef<HTMLDivElement | null>(null)
 
   const accepted = useMemo(
     () => parseAcceptedSubagentResponse(response),
@@ -81,6 +86,8 @@ export function SubagentCard({
   const title =
     args?.title || subagentResult?.title || accepted.title || toolCallId
   const modelName = subagentResult?.modelName || accepted.modelName
+  const taskId = subagentResult?.taskId || accepted.taskId
+  const liveTask = useSubagentTask(taskId)
 
   const fallbackError =
     response.status === ToolCallResponseStatus.Error
@@ -103,20 +110,32 @@ export function SubagentCard({
     () => normalizeActivityLines(activityText),
     [activityText],
   )
+  const liveAssistantSummary = useMemo(() => {
+    const liveTranscript = liveTask?.liveTranscript
+    if (!liveTranscript) return undefined
+    for (let index = liveTranscript.length - 1; index >= 0; index -= 1) {
+      const message = liveTranscript[index]
+      if (message.role === 'assistant' && message.content.trim().length > 0) {
+        return message.content.trim().split('\n').at(-1)
+      }
+    }
+    return undefined
+  }, [liveTask?.liveTranscript])
 
   const subtitle = subagentResult
     ? buildSubagentCompletionSummary({ subagentResult, t })
-    : getLatestActivityLine(activityLines) ||
+    : liveAssistantSummary ||
+      getLatestActivityLine(activityLines) ||
       (isRunning
         ? t('chat.subagent.planningNextMoves', 'Planning next moves')
         : t('chat.subagent.noActivity', 'No activity yet.'))
 
-  const taskId = subagentResult?.taskId || accepted.taskId
-  const prompt = subagentResult?.prompt
+  const prompt = subagentResult?.prompt ?? liveTask?.prompt
 
   return (
     <>
       <div
+        ref={cardRef}
         className={cx(
           'yolo-subagent-card',
           isRunning && 'yolo-subagent-card--running',
@@ -131,7 +150,14 @@ export function SubagentCard({
         <button
           type="button"
           className="yolo-subagent-card__main"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            const chatContainer =
+              cardRef.current?.closest<HTMLElement>('.yolo-chat-container') ??
+              null
+            if (!chatContainer) return
+            setDetailContainer(chatContainer)
+            setIsModalOpen(true)
+          }}
           aria-label={t('chat.subagent.openDetails', 'View subagent details')}
         >
           <span className="yolo-subagent-card__icon">
@@ -162,16 +188,17 @@ export function SubagentCard({
         )}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && detailContainer && (
         <SubagentDetailModal
+          container={detailContainer}
           title={title}
           modelName={modelName}
           prompt={prompt}
           taskId={taskId}
           effectiveStatus={effectiveStatus}
           subagentResult={subagentResult}
+          liveTranscript={liveTask?.liveTranscript}
           activityLines={activityLines}
-          stream={stream}
           onClose={() => setIsModalOpen(false)}
         />
       )}
