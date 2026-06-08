@@ -139,7 +139,9 @@ export function useChatHighlightSession({
   const stickyCandidateIds = useMemo(() => {
     const ids = collectStickyHighlightIds(inputMentionables)
     if (focusedHistoricalMentionables) {
-      for (const id of collectStickyHighlightIds(focusedHistoricalMentionables)) {
+      for (const id of collectStickyHighlightIds(
+        focusedHistoricalMentionables,
+      )) {
         ids.add(id)
       }
     }

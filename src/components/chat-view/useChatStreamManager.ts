@@ -469,17 +469,6 @@ export function useChatStreamManager({
       }
 
       const effectiveModel = resolvedClient.model
-      const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
-      const enabledSkillEntries = selectedAssistant
-        ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
-            isSkillEnabledForAssistant({
-              assistant: selectedAssistant,
-              skillName: skill.name,
-              disabledSkillNames,
-            }),
-          )
-        : []
-      const allowedSkillPaths = enabledSkillEntries.map((skill) => skill.path)
       const chatModeRuntime = resolveChatModeRuntime({
         mode: chatMode,
         assistant: selectedAssistant,
@@ -974,16 +963,6 @@ export function useChatStreamManager({
       }
 
       const effectiveModel = resolvedClient.model
-      const disabledSkillNames = settings.skills?.disabledSkillIds ?? []
-      const enabledSkillEntries = selectedAssistant
-        ? (await listLiteSkillEntries(app, { settings })).filter((skill) =>
-            isSkillEnabledForAssistant({
-              assistant: selectedAssistant,
-              skillName: skill.name,
-              disabledSkillNames,
-            }),
-          )
-        : []
       const chatModeRuntime = resolveChatModeRuntime({
         mode: chatMode,
         assistant: selectedAssistant,

@@ -111,9 +111,7 @@ export function findPathOutsideScope(
   if (!scope?.enabled) return null
   const paths = collectToolCallPaths(toolName, args)
   for (const path of paths) {
-    if (
-      options?.exemptPaths?.has(normalizeSkillPathForExemption(path))
-    ) {
+    if (options?.exemptPaths?.has(normalizeSkillPathForExemption(path))) {
       continue
     }
     if (!isPathAllowedByScope(path, scope)) return path

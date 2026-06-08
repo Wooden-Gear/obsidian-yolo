@@ -1187,5 +1187,4 @@ export class AgentToolGateway {
       toolName,
     )
   }
-
 }

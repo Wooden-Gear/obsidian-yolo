@@ -151,9 +151,10 @@ export class SelectionHighlightController {
           '& .cm-selectionLayer': {
             display: 'none',
           },
-          '& .cm-line .cm-selection, & .cm-line .cm-inline-code .cm-selection': {
-            backgroundColor: 'transparent !important',
-          },
+          '& .cm-line .cm-selection, & .cm-line .cm-inline-code .cm-selection':
+            {
+              backgroundColor: 'transparent !important',
+            },
         },
       }),
       // Layer renders highlight rectangles using absolutely-positioned divs,

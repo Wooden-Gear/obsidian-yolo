@@ -2715,9 +2715,14 @@ export async function callLocalFileTool({
       const exemptPaths = allowedSkillPaths
         ? buildAllowedSkillPathSet(allowedSkillPaths)
         : undefined
-      const offendingPath = findPathOutsideScope(toolName, args, workspaceScope, {
-        exemptPaths,
-      })
+      const offendingPath = findPathOutsideScope(
+        toolName,
+        args,
+        workspaceScope,
+        {
+          exemptPaths,
+        },
+      )
       if (offendingPath !== null) {
         throw new Error(
           `Path "${offendingPath}" is outside this agent's workspace scope.`,
@@ -2875,9 +2880,7 @@ export async function callLocalFileTool({
             return { status: ToolCallResponseStatus.Aborted }
           }
 
-          if (
-            allowedSkillPathSet?.has(normalizeSkillPathForExemption(path))
-          ) {
+          if (allowedSkillPathSet?.has(normalizeSkillPathForExemption(path))) {
             const skillDocument = await getLiteSkillDocumentByPath({
               app,
               path,

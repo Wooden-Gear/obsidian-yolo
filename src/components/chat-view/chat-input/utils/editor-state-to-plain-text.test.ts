@@ -44,7 +44,8 @@ describe('editorStateToPlainText', () => {
   })
 
   it('uses full mentionName instead of truncated display text for URL mentions', () => {
-    const fullUrl = 'https://www.anthropic.com/engineering/some-long-article-path'
+    const fullUrl =
+      'https://www.anthropic.com/engineering/some-long-article-path'
     const editorState: SerializedEditorState = {
       root: {
         children: [

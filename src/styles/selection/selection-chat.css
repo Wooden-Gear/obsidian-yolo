@@ -26,20 +26,29 @@
 /* Suppress native CM + browser selection when our persisted layer paints it.
    Obsidian sets both .cm-selectionLayer and ::selection on .markdown-source-view. */
 .markdown-source-view.mod-cm6 .cm-editor.yolo-hide-native-selection ::selection,
-.markdown-source-view.mod-cm6 .cm-editor.yolo-hide-native-selection *::selection,
+.markdown-source-view.mod-cm6
+  .cm-editor.yolo-hide-native-selection
+  *::selection,
 .cm-editor.yolo-hide-native-selection ::selection,
 .cm-editor.yolo-hide-native-selection *::selection {
   background: transparent !important;
   background-color: transparent !important;
 }
 
-.markdown-source-view.mod-cm6 .cm-editor.yolo-hide-native-selection .cm-selectionLayer,
+.markdown-source-view.mod-cm6
+  .cm-editor.yolo-hide-native-selection
+  .cm-selectionLayer,
 .cm-editor.yolo-hide-native-selection .cm-selectionLayer {
   display: none !important;
 }
 
-.markdown-source-view.mod-cm6 .cm-editor.yolo-hide-native-selection .cm-selectionBackground,
-.markdown-source-view.mod-cm6 .cm-editor.yolo-hide-native-selection .cm-line .cm-selection,
+.markdown-source-view.mod-cm6
+  .cm-editor.yolo-hide-native-selection
+  .cm-selectionBackground,
+.markdown-source-view.mod-cm6
+  .cm-editor.yolo-hide-native-selection
+  .cm-line
+  .cm-selection,
 .markdown-source-view.mod-cm6
   .cm-editor.yolo-hide-native-selection
   .cm-line

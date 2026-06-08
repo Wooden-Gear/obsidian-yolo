@@ -673,7 +673,9 @@ describe('local fs tool action helpers', () => {
   })
 
   it('reads allowed hidden-directory skills through the skill registry', async () => {
-    const hiddenPath = '.obsidian/skills/hidden-open.md'
+    // eslint-disable-next-line obsidianmd/hardcoded-config-path -- mock Vault#configDir for adapter paths
+    const configDir = '.obsidian'
+    const hiddenPath = `${configDir}/skills/hidden-open.md`
     const content = [
       '---',
       'name: hidden-open',
@@ -683,11 +685,13 @@ describe('local fs tool action helpers', () => {
     ].join('\n')
     const app = {
       vault: {
-        configDir: '.obsidian',
+        configDir,
         adapter: {
-          exists: jest.fn(async (path: string) => path === '.obsidian/skills'),
+          exists: jest.fn(
+            async (path: string) => path === `${configDir}/skills`,
+          ),
           list: jest.fn(async (path: string) =>
-            path === '.obsidian/skills'
+            path === `${configDir}/skills`
               ? { files: [hiddenPath], folders: [] }
               : { files: [], folders: [] },
           ),
