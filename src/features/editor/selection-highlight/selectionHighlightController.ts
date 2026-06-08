@@ -14,7 +14,7 @@ import type { HighlightOwner } from './pdfSelectionHighlightController'
 // Internal types
 // ──────────────────────────────────────────────────────────────────────────────
 
-type HighlightVariant = 'sync' | 'pinned'
+export type HighlightVariant = 'sync' | 'pinned'
 
 /** Visual style independent of the lifecycle variant. */
 type HighlightVisual = 'selection' | 'pending' | 'updated'
@@ -33,12 +33,50 @@ type HighlightEntry = {
  * Payload dispatched via the StateEffect.
  * Each EditorView receives only its own entries filtered from the global map.
  */
-type EffectPayload = Array<{
+export type SelectionHighlightPayloadEntry = {
   id: string
   from: number
   to: number
   visual: HighlightVisual
-}>
+  variant: HighlightVariant
+}
+
+type EffectPayload = SelectionHighlightPayloadEntry[]
+
+const HIDE_NATIVE_SELECTION_CLASS = 'yolo-hide-native-selection'
+
+function syncHideNativeSelectionClass(view: EditorView): void {
+  const hide = shouldHideNativeSelection(
+    view.state.field(selectionHighlightField),
+    view.state.selection,
+  )
+  view.dom.classList.toggle(HIDE_NATIVE_SELECTION_CLASS, hide)
+}
+
+/**
+ * When our persisted layer is already painting the selection, suppress
+ * CodeMirror's native selection background to avoid double-stacked highlights.
+ */
+export function shouldHideNativeSelection(
+  payload: EffectPayload,
+  selection: EditorSelection,
+): boolean {
+  if (payload.some((entry) => entry.variant === 'sync')) {
+    return true
+  }
+
+  const main = selection.main
+  if (main.empty) {
+    return false
+  }
+
+  return payload.some(
+    (entry) =>
+      entry.variant === 'pinned' &&
+      entry.from === main.from &&
+      entry.to === main.to,
+  )
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CSS class names (yolo- prefix per CLAUDE.md)
@@ -105,6 +143,19 @@ export class SelectionHighlightController {
   createExtension(): Extension {
     return [
       selectionHighlightField,
+      EditorView.theme({
+        [`&.${HIDE_NATIVE_SELECTION_CLASS}`]: {
+          '& ::selection, & *::selection': {
+            background: 'transparent !important',
+          },
+          '& .cm-selectionLayer': {
+            display: 'none',
+          },
+          '& .cm-line .cm-selection, & .cm-line .cm-inline-code .cm-selection': {
+            backgroundColor: 'transparent !important',
+          },
+        },
+      }),
       // Layer renders highlight rectangles using absolutely-positioned divs,
       // without touching the document DOM (no text-node splitting).
       layer({
@@ -184,7 +235,9 @@ export class SelectionHighlightController {
     const controller = this
     return ViewPlugin.fromClass(
       class {
-        constructor(private readonly view: EditorView) {}
+        constructor(private readonly view: EditorView) {
+          syncHideNativeSelectionClass(this.view)
+        }
 
         update(update: ViewUpdate) {
           // Keep stored offsets in sync with document edits so future
@@ -196,9 +249,11 @@ export class SelectionHighlightController {
             // Selection collapsed — clear sync entries for this view.
             controller.clearSyncForView(this.view)
           }
+          syncHideNativeSelectionClass(this.view)
         }
 
         destroy() {
+          this.view.dom.classList.remove(HIDE_NATIVE_SELECTION_CLASS)
           // Remove all entries for this view when it is torn down.
           controller.clearAllForView(this.view)
         }
@@ -401,6 +456,7 @@ export class SelectionHighlightController {
     if (!view.dom.isConnected) return
     const payload = this._buildPayloadForView(view)
     view.dispatch({ effects: setSelectionHighlightEffect.of(payload) })
+    syncHideNativeSelectionClass(view)
   }
 
   private _buildPayloadForView(view: EditorView): EffectPayload {
@@ -412,6 +468,7 @@ export class SelectionHighlightController {
           from: entry.from,
           to: entry.to,
           visual: entry.visual,
+          variant: entry.variant,
         })
       }
     }
