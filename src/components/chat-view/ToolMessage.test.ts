@@ -22,8 +22,9 @@ jest.mock('./tool-cards/LiveTaskCard', () => ({
   LiveTaskCard: (props: unknown) => mockedLiveTaskCard(props),
 }))
 
+const mockedSubagentCard = jest.fn((_: unknown) => null)
 jest.mock('./tool-cards/SubagentCard', () => ({
-  SubagentCard: () => null,
+  SubagentCard: (props: unknown) => mockedSubagentCard(props),
 }))
 
 import * as React from 'react'
@@ -44,6 +45,7 @@ import ToolMessage, {
 describe('ToolMessage rendering', () => {
   beforeEach(() => {
     mockedLiveTaskCard.mockClear()
+    mockedSubagentCard.mockClear()
   })
 
   it('hydrates original terminal_command card from persisted result output', () => {
@@ -106,6 +108,40 @@ describe('ToolMessage rendering', () => {
         }),
       }),
     )
+  })
+
+  it('renders approval actions for pending delegate_subagent calls', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ToolMessage, {
+        message: {
+          role: 'tool',
+          id: 'tool-message-1',
+          toolCalls: [
+            {
+              request: {
+                id: 'tool-1',
+                name: 'yolo_local__delegate_subagent',
+                arguments: createCompleteToolCallArguments({
+                  value: {
+                    description: 'Count vault files',
+                    prompt: 'Count files in the vault.',
+                  },
+                }),
+              },
+              response: {
+                status: ToolCallResponseStatus.PendingApproval,
+              },
+            },
+          ],
+        },
+        conversationId: 'conversation-1',
+        onMessageUpdate: () => {},
+      }),
+    )
+
+    expect(mockedSubagentCard).not.toHaveBeenCalled()
+    expect(markup).toContain('Allow')
+    expect(markup).toContain('Reject')
   })
 })
 

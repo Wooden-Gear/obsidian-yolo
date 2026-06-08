@@ -1341,7 +1341,10 @@ function ToolCallItem({
     }
   }, [effectiveStatus, renderCompactionPendingHint, showCompactionPendingHint])
 
-  if (isDelegateSubagentRequest(request)) {
+  if (
+    isDelegateSubagentRequest(request) &&
+    effectiveStatus !== ToolCallResponseStatus.PendingApproval
+  ) {
     return (
       <SubagentCard
         toolCallId={request.id}
