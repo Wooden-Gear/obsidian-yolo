@@ -1155,14 +1155,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     chatMessagesStateRef.current = chatMessages
   }, [chatMessages])
 
-  // Selection-highlight lifecycle.
-  //
-  // The hook owns the "sticky" cycle: highlights for selection-style mentions
-  // survive sending the user message and stay visible while the user keeps
-  // working in the chat panel.  They drop only when the user (a) interacts
-  // with any real editor leaf outside the chat container, or (b) switches /
-  // closes the conversation.  See useChatHighlightSession for the full
-  // contract.
+  // Selection-highlight lifecycle — see useChatHighlightSession for the full
+  // contract.  In-input mentions reconcile immediately on delete; pinned ids
+  // commit to sticky only on send, then drop on the next editor interaction.
   const focusedHistoricalMentionables = useMemo<Mentionable[] | null>(() => {
     if (!focusedMessageId || focusedMessageId === inputMessage.id) return null
     const focused = chatMessages.find(
@@ -1171,12 +1166,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return focused?.role === 'user' ? focused.mentionables : null
   }, [chatMessages, focusedMessageId, inputMessage.id])
 
-  useChatHighlightSession({
-    conversationId: currentConversationId,
-    containerRef,
-    inputMentionables: inputMessage.mentionables,
-    focusedHistoricalMentionables,
-  })
+  const { commitSentPinnedHighlights, releaseHighlightIds } =
+    useChatHighlightSession({
+      conversationId: currentConversationId,
+      containerRef,
+      inputMentionables: inputMessage.mentionables,
+      focusedHistoricalMentionables,
+    })
 
   const compactionDividerAnchorMessageIds = useMemo(
     () => effectiveCompactionState.map((entry) => entry.anchorMessageId),
@@ -3939,6 +3935,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         serializeMentionable(mentionable),
       )
 
+      if (mentionable.type === 'block' && mentionable.highlightId) {
+        releaseHighlightIds([mentionable.highlightId])
+      }
+
       // 从所有历史消息中删除
       const sourceMessages = chatMessagesStateRef.current
       let didChangeHistory = false
@@ -4045,6 +4045,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       inputMessage.id,
       isUserMessageEffectivelyEmpty,
       persistConversation,
+      releaseHighlightIds,
     ],
   )
 
@@ -5190,6 +5191,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                           next.set(inputMessage.id, reasoningLevel)
                           return next
                         })
+                        commitSentPinnedHighlights()
                         setInputMessage(getNewInputMessage(reasoningLevel))
                         return
                       }
@@ -5224,6 +5226,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       next.set(inputMessage.id, reasoningLevel)
                       return next
                     })
+                    commitSentPinnedHighlights()
                     setInputMessage(getNewInputMessage(reasoningLevel))
                   }}
                   onFocus={() => {
