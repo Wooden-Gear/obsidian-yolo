@@ -6,6 +6,7 @@ import { useApp } from '../../contexts/app-context'
 import { useMcp } from '../../contexts/mcp-context'
 import { usePlugin } from '../../contexts/plugin-context'
 import { useSettings } from '../../contexts/settings-context'
+import { resolveAssistantIncludeCurrentFileContent } from '../../core/agent/assistant-capabilities'
 import { DEFAULT_BLOCKED_PREFIXES } from '../../core/agent/bash/command-classifier'
 import {
   buildManualCompactionState,
@@ -484,8 +485,10 @@ export function useChatStreamManager({
       )
       const manualApiType = manualProvider?.apiType ?? null
       const manualContextualInjections = buildChatContextualInjections({
-        includeCurrentFileContent:
-          settings.chatOptions.includeCurrentFileContent,
+        includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+          selectedAssistant,
+          settings,
+        ),
         currentFile: currentFileOverride,
         currentFileViewState,
       })
@@ -749,7 +752,10 @@ export function useChatStreamManager({
           requestParams,
           contextualInjections: buildChatContextualInjections({
             includeCurrentFileContent:
-              settings.chatOptions.includeCurrentFileContent,
+              resolveAssistantIncludeCurrentFileContent(
+                selectedAssistant,
+                settings,
+              ),
             currentFile: currentFileOverride,
             currentFileViewState,
           }),
@@ -988,8 +994,10 @@ export function useChatStreamManager({
         enableToolDisclosure: settings.mcp.enableToolDisclosure,
         toolPreferences: chatModeRuntime.toolPreferences,
         contextualInjections: buildChatContextualInjections({
-          includeCurrentFileContent:
-            settings.chatOptions.includeCurrentFileContent,
+          includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+            selectedAssistant,
+            settings,
+          ),
           currentFile: currentFileOverride,
           currentFileViewState,
         }),

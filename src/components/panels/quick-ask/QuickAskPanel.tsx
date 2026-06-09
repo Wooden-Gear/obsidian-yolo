@@ -30,6 +30,7 @@ import { useApp } from '../../../contexts/app-context'
 import { useLanguage } from '../../../contexts/language-context'
 import { useMcp } from '../../../contexts/mcp-context'
 import { useSettings } from '../../../contexts/settings-context'
+import { resolveAssistantTimeContextEnabled } from '../../../core/agent/assistant-capabilities'
 import { getEnabledAssistantToolNames } from '../../../core/agent/tool-preferences'
 import { materializeTextEditPlan } from '../../../core/edits/textEditEngine'
 import { parseTextEditPlan } from '../../../core/edits/textEditPlan'
@@ -1019,7 +1020,7 @@ export function QuickAskPanel({
           id: options?.userMessageId ?? uuidv4(),
           mentionables: mentionablesOverride ?? mentionables,
         },
-        settings,
+        resolveAssistantTimeContextEnabled(selectedAssistant, settings),
       )
 
       // Clear mentionables after creating the message

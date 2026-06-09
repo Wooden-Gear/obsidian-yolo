@@ -23,6 +23,10 @@ import { useMcp } from '../../contexts/mcp-context'
 import { usePlugin } from '../../contexts/plugin-context'
 import { useSettings } from '../../contexts/settings-context'
 import {
+  resolveAssistantIncludeCurrentFileContent,
+  resolveAssistantTimeContextEnabled,
+} from '../../core/agent/assistant-capabilities'
+import {
   getLatestAssistantContextUsage,
   resolveAutoContextCompactionChatOptions,
   shouldTriggerAutoContextCompaction,
@@ -1257,7 +1261,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   const displayMentionablesForInput = inputMessage.mentionables
 
-  const currentFileOverride = settings.chatOptions.includeCurrentFileContent
+  const currentFileOverride = resolveAssistantIncludeCurrentFileContent(
+    selectedAssistant,
+    settings,
+  )
     ? activeFile
     : null
 
@@ -4825,7 +4832,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       messageOrGroup.mentionables,
                     ),
                   },
-                  settings,
+                  resolveAssistantTimeContextEnabled(
+                    selectedAssistant,
+                    settings,
+                  ),
                 )
               const inputChatMessages = [
                 ...groupedChatMessages
@@ -5156,7 +5166,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                     // 那一刻的时间,而非 drain 时刻。
                     const messageForSubmit = stampUserMessageTimeContext(
                       buildInputMessageForSubmit(content),
-                      settings,
+                      resolveAssistantTimeContextEnabled(
+                        selectedAssistant,
+                        settings,
+                      ),
                     )
 
                     // ask_user_question parks the agent in a paused state that

@@ -262,6 +262,8 @@ function createNewAgent(defaultModelId: string): Assistant {
     toolPreferences: buildDefaultBuiltinToolPreferences(),
     enabledSkills: [],
     skillPreferences: {},
+    includeCurrentFileContent: true,
+    timeContextEnabled: true,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -281,6 +283,8 @@ function toDraftAgent(
     skillPreferences: assistant.skillPreferences ?? {},
     enableTools: assistant.enableTools ?? true,
     includeBuiltinTools: assistant.includeBuiltinTools ?? true,
+    includeCurrentFileContent: assistant.includeCurrentFileContent ?? true,
+    timeContextEnabled: assistant.timeContextEnabled ?? true,
   }
 }
 
@@ -1349,6 +1353,34 @@ export function AgentsSectionContent({
                   </div>,
                   systemPromptOverlayTarget,
                 )}
+              <ObsidianSetting
+                name={t('settings.agent.focusSyncTitle')}
+                desc={t('settings.agent.focusSyncDesc')}
+              >
+                <ObsidianToggle
+                  value={draftAgent.includeCurrentFileContent !== false}
+                  onChange={(value) => {
+                    setDraftAgent({
+                      ...draftAgent,
+                      includeCurrentFileContent: value,
+                    })
+                  }}
+                />
+              </ObsidianSetting>
+              <ObsidianSetting
+                name={t('settings.agent.timeContextTitle')}
+                desc={t('settings.agent.timeContextDesc')}
+              >
+                <ObsidianToggle
+                  value={draftAgent.timeContextEnabled !== false}
+                  onChange={(value) => {
+                    setDraftAgent({
+                      ...draftAgent,
+                      timeContextEnabled: value,
+                    })
+                  }}
+                />
+              </ObsidianSetting>
               <ObsidianSetting
                 name={t(
                   'settings.agent.editorEnableProjectInstructions',
