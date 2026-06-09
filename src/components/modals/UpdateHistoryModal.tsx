@@ -7,6 +7,8 @@ import {
   type ReleaseHistoryEntry,
   type ReleaseHistoryPageResult,
   fetchReleaseHistoryPage,
+  locateReleaseHistoryPage,
+  normalizePluginVersion,
   parseChangelog,
 } from '../../core/update/updateChecker'
 import YoloPlugin from '../../main'
@@ -38,6 +40,7 @@ export class UpdateHistoryModal extends ReactModal<UpdateHistoryModalComponentPr
 
 function UpdateHistoryModalComponent({
   title,
+  plugin,
   onClose,
 }: UpdateHistoryModalComponentProps & { onClose: () => void }) {
   const { language, t } = useLanguage()
@@ -47,9 +50,14 @@ function UpdateHistoryModalComponent({
   const [hasNext, setHasNext] = useState(false)
   const [lang, setLang] = useState<ReleaseLanguage>('en')
   const [page, setPage] = useState(0)
+  const [initialized, setInitialized] = useState(false)
   const pageCacheRef = useRef<Map<number, ReleaseHistoryPageResult>>(new Map())
   const prefetchInFlightRef = useRef<Set<number>>(new Set())
   const listRef = useRef<HTMLDivElement>(null)
+  const currentVersion = useMemo(
+    () => normalizePluginVersion(plugin.manifest.version),
+    [plugin.manifest.version],
+  )
 
   const prefetchPage = useCallback(async (targetPage: number) => {
     if (pageCacheRef.current.has(targetPage)) return
@@ -104,8 +112,32 @@ function UpdateHistoryModalComponent({
   )
 
   useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      setLoading(true)
+      setError(false)
+      const located = await locateReleaseHistoryPage(currentVersion)
+      if (cancelled) return
+
+      if (located) {
+        for (const [pageIndex, result] of located.pageCache) {
+          pageCacheRef.current.set(pageIndex, result)
+        }
+        setPage(located.pageIndex)
+      }
+
+      setInitialized(true)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentVersion])
+
+  useEffect(() => {
+    if (!initialized) return
     void loadPage(page)
-  }, [loadPage, page])
+  }, [initialized, loadPage, page])
 
   useEffect(() => {
     if (loading || entries.length === 0) return
@@ -185,20 +217,33 @@ function UpdateHistoryModalComponent({
                 lang,
               )
               const parsed = parseChangelog(notes)
+              const isCurrent = entry.version === currentVersion
               return (
                 <section
-                  className="yolo-update-history-entry"
+                  className={`yolo-update-history-entry${
+                    isCurrent ? ' is-current' : ''
+                  }`}
                   key={entry.version}
                 >
                   <div className="yolo-update-history-entry-head">
-                    <span className="yolo-update-toast-version">
+                    <span className="yolo-update-history-entry-version">
                       {entry.version}
                     </span>
-                    {parsed.subtitle ? (
-                      <span className="yolo-update-history-entry-subtitle">
-                        {parsed.subtitle}
-                      </span>
-                    ) : null}
+                    <div className="yolo-update-history-entry-head-main">
+                      {parsed.subtitle ? (
+                        <span
+                          className="yolo-update-history-entry-subtitle"
+                          title={parsed.subtitle}
+                        >
+                          {parsed.subtitle}
+                        </span>
+                      ) : null}
+                      {isCurrent ? (
+                        <span className="yolo-update-history-entry-current-badge">
+                          {t('update.currentVersion', 'Current')}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   {parsed.sections.length > 0 ? (
                     <UpdateChangelogSections

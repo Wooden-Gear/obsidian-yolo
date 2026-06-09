@@ -1846,6 +1846,12 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
+.yolo-update-history-entry.is-current {
+  padding-inline-start: 10px;
+  margin-inline-start: -10px;
+  border-inline-start: 2px solid var(--interactive-accent);
+}
+
 .yolo-update-history-entry:last-child {
   padding-bottom: 0;
   border-bottom: none;
@@ -1854,15 +1860,54 @@
 .yolo-update-history-entry-head {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.yolo-update-history-entry-version {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.yolo-update-history-entry-head-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.yolo-update-history-entry-current-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 3px 7px;
+  border-radius: var(--radius-s);
+  color: var(--color-green);
+  background: color-mix(in srgb, var(--color-green) 15%, transparent);
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
 }
 
 .yolo-update-history-entry-subtitle {
-  font-size: var(--font-ui-smaller);
-  line-height: 1.4;
-  color: var(--text-muted);
+  min-width: 0;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  line-height: 1.35;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .yolo-update-history-pagination {

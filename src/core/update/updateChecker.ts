@@ -46,6 +46,60 @@ function stripVersionPrefix(tag: string): string {
   return tag.replace(/^v/i, '').trim()
 }
 
+/** Normalizes manifest/tag versions for equality checks against release entries. */
+export function normalizePluginVersion(version: string): string {
+  return stripVersionPrefix(version.trim())
+}
+
+export type ReleaseHistoryLocateResult = {
+  pageIndex: number
+  pageCache: Map<number, ReleaseHistoryPageResult>
+  found: boolean
+}
+
+const RELEASE_HISTORY_LOCATE_MAX_PAGES = 50
+
+/**
+ * Walks GitHub release pages until `currentVersion` is found, caching each page
+ * along the way so the history modal can open directly on the installed build.
+ */
+export async function locateReleaseHistoryPage(
+  currentVersion: string,
+): Promise<ReleaseHistoryLocateResult | null> {
+  const normalized = normalizePluginVersion(currentVersion)
+  if (!normalized) {
+    return null
+  }
+
+  const pageCache = new Map<number, ReleaseHistoryPageResult>()
+  let githubPage = 1
+
+  while (githubPage <= RELEASE_HISTORY_LOCATE_MAX_PAGES) {
+    const fetched = await fetchReleaseHistoryPage(githubPage)
+    if (!fetched) {
+      if (pageCache.size === 0) {
+        return null
+      }
+      return { pageIndex: 0, pageCache, found: false }
+    }
+
+    const pageIndex = githubPage - 1
+    pageCache.set(pageIndex, fetched)
+
+    if (fetched.entries.some((entry) => entry.version === normalized)) {
+      return { pageIndex, pageCache, found: true }
+    }
+
+    if (!fetched.hasNext) {
+      return { pageIndex: 0, pageCache, found: false }
+    }
+
+    githubPage += 1
+  }
+
+  return { pageIndex: 0, pageCache, found: false }
+}
+
 /**
  * Returns true if `latest` is strictly newer than `current`.
  * Compares dot-separated numeric segments; non-numeric segments sort as 0.
