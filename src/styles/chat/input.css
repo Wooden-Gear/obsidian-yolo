@@ -1786,6 +1786,10 @@
 
 /* Release history modal — custom header row (title · lang · close), same
  * pattern as the update toast; native modal-header and close button hidden. */
+.yolo-update-history-modal {
+  max-height: min(90vh, 860px);
+}
+
 .yolo-update-history-modal .modal-header {
   display: none;
 }
@@ -1799,6 +1803,10 @@
 }
 
 .yolo-update-history {
+  /* Between Obsidian --font-ui-small (13px) and --font-ui-medium (15px). */
+  --yolo-update-history-body-size: calc(
+    (var(--font-ui-small) + var(--font-ui-medium)) / 2
+  );
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1826,14 +1834,14 @@
   padding: 24px 0;
   text-align: center;
   color: var(--text-muted);
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-medium);
 }
 
 .yolo-update-history-list {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-height: min(70vh, 560px);
+  max-height: min(85vh, 720px);
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
@@ -1867,12 +1875,12 @@
 
 .yolo-update-history-entry-version {
   flex-shrink: 0;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-s);
   background: var(--background-modifier-hover);
   color: var(--text-muted);
   font-family: var(--font-monospace);
-  font-size: 12px;
+  font-size: var(--font-ui-smaller);
   font-weight: var(--font-semibold);
   letter-spacing: 0.2px;
   white-space: nowrap;
@@ -1889,9 +1897,9 @@
 
 .yolo-update-history-entry-current-badge {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: var(--font-ui-smaller);
   line-height: 1.2;
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: var(--radius-s);
   color: var(--color-green);
   background: color-mix(in srgb, var(--color-green) 15%, transparent);
@@ -1901,13 +1909,39 @@
 
 .yolo-update-history-entry-subtitle {
   min-width: 0;
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
   line-height: 1.35;
   color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Larger changelog body than the compact update toast */
+.yolo-update-history .yolo-update-toast-section-head {
+  font-size: var(--yolo-update-history-body-size);
+  margin-bottom: 8px;
+}
+
+.yolo-update-history .yolo-update-toast-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.yolo-update-history .yolo-update-toast-item {
+  font-size: var(--yolo-update-history-body-size);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.yolo-update-history .yolo-update-toast-bullet {
+  font-size: var(--font-ui-small);
+}
+
+.yolo-update-history-modal .yolo-update-toast-lang-option {
+  font-size: var(--font-ui-smaller);
+  padding: 4px 10px;
 }
 
 .yolo-update-history-pagination {
@@ -1921,7 +1955,7 @@
 
 .yolo-update-history-page-label {
   flex-shrink: 0;
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-ui-small);
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -1936,7 +1970,7 @@
   box-shadow: none !important;
   background: transparent !important;
   color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-ui-small);
   font-weight: var(--font-medium);
   cursor: var(--cursor);
   transition:
