@@ -10138,13 +10138,28 @@ button.yolo-agent-chip--more:hover {
   padding: 4px 10px;
 }
 
+.yolo-update-history-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
 .yolo-update-history-pagination {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
+}
+
+.yolo-update-history-update-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
 }
 
 .yolo-update-history-page-label {

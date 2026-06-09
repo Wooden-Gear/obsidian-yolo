@@ -26,7 +26,6 @@ export type TranslationKeys = {
     capturePdfRegion?: string
     exportSettings?: string
     importSettings?: string
-    debugShowUpdateToast?: string
   }
 
   // UI Common

@@ -23,7 +23,6 @@ export const it: TranslationKeys = {
     triggerTabCompletion: 'Attiva completamento tab',
     acceptInlineSuggestion: 'Accetta completamento',
     capturePdfRegion: 'Cattura regione PDF nella chat',
-    debugShowUpdateToast: 'Debug: Mostra toast aggiornamento',
   },
 
   common: {
@@ -1956,7 +1955,7 @@ export const it: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: 'Non notificare per questa versione',
-    viewHistory: 'Visualizza cronologia',
+    viewHistory: 'Visualizza cronologia aggiornamenti',
     historyTitle: 'Cronologia aggiornamenti',
     historyLoading: 'Caricamento cronologia aggiornamenti...',
     historyError:

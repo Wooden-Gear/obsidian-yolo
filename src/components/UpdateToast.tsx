@@ -144,6 +144,7 @@ function UpdateToast() {
           className="yolo-update-toast-history-btn"
           title={t('update.viewHistory', 'View release history')}
           onClick={() => {
+            setHiddenForSession(true)
             new UpdateHistoryModal(
               app,
               plugin,

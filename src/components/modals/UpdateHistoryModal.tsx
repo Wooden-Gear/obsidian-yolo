@@ -158,6 +158,15 @@ function UpdateHistoryModalComponent({
   const pageLabel = t('update.historyPage', 'Page {{current}}')
     .replace('{{current}}', String(page + 1))
 
+  const openCommunityPluginUpdate = () => {
+    const { app } = plugin
+    // @ts-expect-error: setting property exists in Obsidian's App but is not typed
+    app.setting.open()
+    // @ts-expect-error: setting property exists in Obsidian's App but is not typed
+    app.setting.openTabById('community-plugins')
+    onClose()
+  }
+
   const langToggle = hasBilingual ? (
     <div
       className="yolo-update-toast-lang"
@@ -255,33 +264,47 @@ function UpdateHistoryModalComponent({
               )
             })}
           </div>
-          {showPagination ? (
-            <div className="yolo-update-history-pagination">
-              <button
-                type="button"
-                className="yolo-update-history-page-btn"
-                disabled={page <= 0 || loading}
-                aria-label={t('update.historyPrev', 'Previous page')}
-                title={t('update.historyPrev', 'Previous page')}
-                onClick={() => setPage((current) => Math.max(0, current - 1))}
-              >
-                <ChevronLeft size={14} strokeWidth={2} />
-                <span>{t('update.historyPrev', 'Previous page')}</span>
-              </button>
-              <span className="yolo-update-history-page-label">{pageLabel}</span>
-              <button
-                type="button"
-                className="yolo-update-history-page-btn"
-                disabled={!hasNext || loading}
-                aria-label={t('update.historyNext', 'Next page')}
-                title={t('update.historyNext', 'Next page')}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                <span>{t('update.historyNext', 'Next page')}</span>
-                <ChevronRight size={14} strokeWidth={2} />
-              </button>
-            </div>
-          ) : null}
+          <div className="yolo-update-history-footer">
+            {showPagination ? (
+              <div className="yolo-update-history-pagination">
+                <button
+                  type="button"
+                  className="yolo-update-history-page-btn"
+                  disabled={page <= 0 || loading}
+                  aria-label={t('update.historyPrev', 'Previous page')}
+                  title={t('update.historyPrev', 'Previous page')}
+                  onClick={() =>
+                    setPage((current) => Math.max(0, current - 1))
+                  }
+                >
+                  <ChevronLeft size={14} strokeWidth={2} />
+                  <span>{t('update.historyPrev', 'Previous page')}</span>
+                </button>
+                <span className="yolo-update-history-page-label">
+                  {pageLabel}
+                </span>
+                <button
+                  type="button"
+                  className="yolo-update-history-page-btn"
+                  disabled={!hasNext || loading}
+                  aria-label={t('update.historyNext', 'Next page')}
+                  title={t('update.historyNext', 'Next page')}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  <span>{t('update.historyNext', 'Next page')}</span>
+                  <ChevronRight size={14} strokeWidth={2} />
+                </button>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="yolo-update-toast-cta yolo-update-history-update-btn"
+              title={t('update.viewDetails', 'Check for updates')}
+              onClick={openCommunityPluginUpdate}
+            >
+              {t('update.goUpdate', 'Update')}
+            </button>
+          </div>
         </>
       )}
     </div>
