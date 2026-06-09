@@ -26,6 +26,7 @@ export type TranslationKeys = {
     capturePdfRegion?: string
     exportSettings?: string
     importSettings?: string
+    debugShowUpdateToast?: string
   }
 
   // UI Common
@@ -1833,6 +1834,14 @@ export type TranslationKeys = {
     languageEnglish: string
     languageChinese: string
     muteThisVersion: string
+    viewHistory?: string
+    historyTitle?: string
+    historyLoading?: string
+    historyError?: string
+    historyEmpty?: string
+    historyPage?: string
+    historyPrev?: string
+    historyNext?: string
     installationIncompleteTitle: string
     installationIncompleteMeta: string
     installationIncompleteNotes: string

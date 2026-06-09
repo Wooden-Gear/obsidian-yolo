@@ -25,6 +25,7 @@ export const zh: TranslationKeys = {
     capturePdfRegion: '截取 PDF 区域到聊天',
     exportSettings: '导出插件配置',
     importSettings: '导入插件配置',
+    debugShowUpdateToast: 'Debug: 显示更新提示浮窗',
   },
 
   common: {
@@ -1991,6 +1992,14 @@ export const zh: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: '当前版本不提示',
+    viewHistory: '查看历史',
+    historyTitle: '历史更新日志',
+    historyLoading: '正在加载更新日志…',
+    historyError: '加载更新日志失败，请稍后重试。',
+    historyEmpty: '暂无历史更新日志。',
+    historyPage: '第 {{current}} 页',
+    historyPrev: '上一页',
+    historyNext: '下一页',
     installationIncompleteTitle: '插件安装不完整',
     installationIncompleteMeta:
       '主程序 {bakedVersion} · manifest {manifestVersion}',

@@ -9928,10 +9928,31 @@ button.yolo-agent-chip--more:hover {
 .yolo-update-toast-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 4px;
   padding: 7px 0 6px;
+}
+
+.yolo-update-toast-history-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: none !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  cursor: var(--cursor);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.yolo-update-toast-history-btn:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
 }
 
 .yolo-update-toast-cta {
@@ -9953,6 +9974,132 @@ button.yolo-agent-chip--more:hover {
 
 .yolo-update-toast-cta:hover {
   background: var(--interactive-accent-hover) !important;
+}
+
+/* Release history modal — custom header row (title · lang · close), same
+ * pattern as the update toast; native modal-header and close button hidden. */
+
+.yolo-update-history-modal .modal-header {
+  display: none;
+}
+
+.yolo-update-history-modal .modal-close-button {
+  display: none;
+}
+
+.yolo-update-history-modal .modal-content {
+  padding-top: var(--size-4-2);
+}
+
+.yolo-update-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 120px;
+}
+
+.yolo-update-history-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+}
+
+.yolo-update-history-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--h3-size, 1.3em);
+  font-weight: var(--font-bold, 700);
+  line-height: 1.2;
+  color: var(--text-normal);
+}
+
+.yolo-update-history-status {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.yolo-update-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 35%, transparent)
+    transparent;
+}
+
+.yolo-update-history-entry {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.yolo-update-history-entry:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.yolo-update-history-entry-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.yolo-update-history-entry-subtitle {
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.yolo-update-history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.yolo-update-history-page-label {
+  flex-shrink: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.yolo-update-history-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  cursor: var(--cursor);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.yolo-update-history-page-btn:hover:not(:disabled) {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+.yolo-update-history-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Installation incomplete — same layout as update banner, red / error emphasis */

@@ -1,44 +1,19 @@
 import { X } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Root, createRoot } from 'react-dom/client'
 
 import { LanguageProvider, useLanguage } from '../contexts/language-context'
 import { PluginProvider, usePlugin } from '../contexts/plugin-context'
-import {
-  type ReleaseNotesByLanguage,
-  parseChangelog,
-} from '../core/update/updateChecker'
+import { parseChangelog } from '../core/update/updateChecker'
 import { useUpdateCheck } from '../hooks/useUpdateCheck'
 import type YoloPlugin from '../main'
-
-type ReleaseLanguage = 'en' | 'zh'
-
-function resolveDefaultLanguage(
-  notes: ReleaseNotesByLanguage,
-  uiLanguage: string,
-): ReleaseLanguage {
-  const preferred: ReleaseLanguage = uiLanguage === 'zh' ? 'zh' : 'en'
-  if (notes[preferred]) return preferred
-  return notes.en ? 'en' : 'zh'
-}
-
-// Renders a body string, turning `inline code` spans into styled <code>.
-function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(`[^`]+`)/g)
-  return (
-    <>
-      {parts.map((part, index) =>
-        part.length > 1 && part.startsWith('`') && part.endsWith('`') ? (
-          <code key={index} className="yolo-update-toast-code">
-            {part.slice(1, -1)}
-          </code>
-        ) : (
-          <Fragment key={index}>{part}</Fragment>
-        ),
-      )}
-    </>
-  )
-}
+import { UpdateHistoryModal } from './modals/UpdateHistoryModal'
+import { UpdateChangelogSections } from './update/UpdateChangelogSections'
+import {
+  type ReleaseLanguage,
+  hasBilingualReleaseNotes,
+  resolveDefaultLanguage,
+} from './update/updateReleaseLanguage'
 
 function UpdateToast() {
   const { language, t } = useLanguage()
@@ -97,7 +72,7 @@ function UpdateToast() {
     return null
   }
 
-  const hasBilingual = Boolean(releaseNotes.en && releaseNotes.zh)
+  const hasBilingual = hasBilingualReleaseNotes(releaseNotes)
   const separator = lang === 'zh' ? '：' : ': '
 
   const closeLabel = plugin.isUpdateVersionSoftDismissed(result.latestVersion)
@@ -160,49 +135,24 @@ function UpdateToast() {
       <div className="yolo-update-toast-divider" />
 
       <div className="yolo-update-toast-body">
-        <div className="yolo-update-toast-sections">
-          {sections.map((section, si) => (
-            <div className="yolo-update-toast-section" key={si}>
-              {section.name ? (
-                <div className="yolo-update-toast-section-head">
-                  <span
-                    className={`yolo-update-toast-dot yolo-update-toast-dot--${section.tone}`}
-                    aria-hidden
-                  />
-                  <span>{section.name}</span>
-                </div>
-              ) : null}
-              <ul className="yolo-update-toast-items">
-                {section.items.map((item, ii) => (
-                  <li className="yolo-update-toast-item" key={ii}>
-                    <span className="yolo-update-toast-bullet" aria-hidden>
-                      —
-                    </span>
-                    <span className="yolo-update-toast-item-text">
-                      {item.title ? (
-                        <span className="yolo-update-toast-item-title">
-                          {item.title}
-                        </span>
-                      ) : null}
-                      {item.ref ? (
-                        <span className="yolo-update-toast-item-ref">
-                          {item.ref}
-                        </span>
-                      ) : null}
-                      {item.title && item.body ? (
-                        <span>{separator}</span>
-                      ) : null}
-                      <InlineText text={item.body} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <UpdateChangelogSections sections={sections} separator={separator} />
       </div>
 
       <div className="yolo-update-toast-footer">
+        <button
+          type="button"
+          className="yolo-update-toast-history-btn"
+          title={t('update.viewHistory', 'View release history')}
+          onClick={() => {
+            new UpdateHistoryModal(
+              app,
+              plugin,
+              t('update.historyTitle', 'Release history'),
+            ).open()
+          }}
+        >
+          {t('update.viewHistory', 'View release history')}
+        </button>
         <button
           type="button"
           className="yolo-update-toast-cta"

@@ -25,6 +25,7 @@ export const en: TranslationKeys = {
     capturePdfRegion: 'Capture PDF region to chat',
     exportSettings: 'Export plugin settings',
     importSettings: 'Import plugin settings',
+    debugShowUpdateToast: 'Debug: Show update toast',
   },
 
   common: {
@@ -2132,6 +2133,14 @@ export const en: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     muteThisVersion: "Don't notify for this version",
+    viewHistory: 'View history',
+    historyTitle: 'Release history',
+    historyLoading: 'Loading release history...',
+    historyError: 'Failed to load release history. Please try again later.',
+    historyEmpty: 'No release history found.',
+    historyPage: 'Page {{current}}',
+    historyPrev: 'Previous',
+    historyNext: 'Next',
     installationIncompleteTitle: 'Plugin installation incomplete',
     installationIncompleteMeta:
       'main.js {bakedVersion} · manifest {manifestVersion}',

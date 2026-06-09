@@ -3,9 +3,27 @@ import { requestUrl } from 'obsidian'
 const GITHUB_RELEASE_URL =
   'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases/latest'
 
+const GITHUB_RELEASES_URL =
+  'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases'
+
+/** Matches the UI page size and GitHub `per_page` for on-demand loading. */
+export const RELEASE_HISTORY_PAGE_SIZE = 10
+
 export type ReleaseNotesByLanguage = {
   en: string | null
   zh: string | null
+}
+
+export type ReleaseHistoryEntry = {
+  version: string
+  releaseNotes: ReleaseNotesByLanguage
+  releaseUrl: string
+  publishedAt: string | null
+}
+
+export type ReleaseHistoryPageResult = {
+  entries: ReleaseHistoryEntry[]
+  hasNext: boolean
 }
 
 export type UpdateCheckResult = {
@@ -19,6 +37,9 @@ type GitHubReleaseResponse = {
   tag_name?: string
   body?: string
   html_url?: string
+  draft?: boolean
+  prerelease?: boolean
+  published_at?: string
 }
 
 function stripVersionPrefix(tag: string): string {
@@ -251,5 +272,116 @@ export async function checkForUpdate(
     }
   } catch {
     return null
+  }
+}
+
+/**
+ * Fetches one page of published GitHub releases for the release-history modal.
+ * `page` is 1-based (GitHub API convention). Returns null on network/parse failure.
+ */
+export async function fetchReleaseHistoryPage(
+  page: number,
+  perPage: number = RELEASE_HISTORY_PAGE_SIZE,
+): Promise<ReleaseHistoryPageResult | null> {
+  try {
+    const response = await requestUrl({
+      url: `${GITHUB_RELEASES_URL}?page=${page}&per_page=${perPage}`,
+      method: 'GET',
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+    })
+
+    if (response.status < 200 || response.status >= 300) {
+      return null
+    }
+
+    const data = JSON.parse(response.text) as GitHubReleaseResponse[]
+    if (!Array.isArray(data)) {
+      return null
+    }
+
+    const entries = parseReleaseHistoryEntries(data)
+    return {
+      entries,
+      // A full GitHub page implies there may be more releases to load.
+      hasNext: data.length >= perPage,
+    }
+  } catch {
+    return null
+  }
+}
+
+function parseReleaseHistoryEntries(
+  releases: GitHubReleaseResponse[],
+): ReleaseHistoryEntry[] {
+  const entries: ReleaseHistoryEntry[] = []
+  for (const release of releases) {
+    if (release.draft || release.prerelease) {
+      continue
+    }
+
+    const tag = typeof release.tag_name === 'string' ? release.tag_name : ''
+    const version = stripVersionPrefix(tag)
+    if (!version) {
+      continue
+    }
+
+    const body = typeof release.body === 'string' ? release.body : ''
+    entries.push({
+      version,
+      releaseNotes: body
+        ? splitReleaseNotesByLanguage(body)
+        : { en: null, zh: null },
+      releaseUrl: typeof release.html_url === 'string' ? release.html_url : '',
+      publishedAt:
+        typeof release.published_at === 'string' ? release.published_at : null,
+    })
+  }
+  return entries
+}
+
+const DEBUG_UPDATE_PREVIEW_NOTES: ReleaseNotesByLanguage = {
+  en: [
+    '## Debug Preview Pop-out Chat & Context Clarity ✨',
+    '',
+    '### ✨ New Features',
+    '',
+    '- **Debug preview**: This toast was triggered by a debug command.',
+  ].join('\n'),
+  zh: [
+    '## Debug Preview 独立窗口聊天与上下文拆分 ✨',
+    '',
+    '### ✨ 新功能',
+    '',
+    '- **调试预览**：此更新提示由调试命令触发。',
+  ].join('\n'),
+}
+
+/**
+ * Loads release data for the update toast preview. Always returns `hasUpdate:
+ * true` so the toast can be exercised even when the installed build is current.
+ * Falls back to static bilingual notes when GitHub is unreachable.
+ */
+export async function fetchUpdateToastPreview(
+  currentVersion: string,
+): Promise<UpdateCheckResult> {
+  const fetched = await checkForUpdate(currentVersion)
+  if (fetched) {
+    return {
+      ...fetched,
+      hasUpdate: true,
+      releaseNotes: {
+        en: fetched.releaseNotes.en ?? DEBUG_UPDATE_PREVIEW_NOTES.en,
+        zh: fetched.releaseNotes.zh ?? DEBUG_UPDATE_PREVIEW_NOTES.zh,
+      },
+    }
+  }
+
+  return {
+    hasUpdate: true,
+    latestVersion: '9.9.9',
+    releaseNotes: DEBUG_UPDATE_PREVIEW_NOTES,
+    releaseUrl: 'https://github.com/Lapis0x0/obsidian-yolo/releases/latest',
   }
 }

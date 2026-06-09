@@ -66,6 +66,7 @@ import { migrateVaultSkillFrontmatter } from './core/skills/liteSkills'
 import {
   type UpdateCheckResult,
   checkForUpdate,
+  fetchUpdateToastPreview,
 } from './core/update/updateChecker'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
@@ -2032,6 +2033,14 @@ export default class YoloPlugin extends Plugin {
       },
     })
 
+    this.addCommand({
+      id: 'debug-show-update-toast',
+      name: this.t('commands.debugShowUpdateToast', 'Debug: 显示更新提示浮窗'),
+      callback: () => {
+        this.debugShowUpdateToast()
+      },
+    })
+
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new YoloSettingTab(this.app, this))
 
@@ -2648,6 +2657,16 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
       }
+    })()
+  }
+
+  /** Debug-only: force the bottom-left update toast to appear. */
+  debugShowUpdateToast(): void {
+    void (async () => {
+      this.updateCheckResult = await fetchUpdateToastPreview(
+        this.manifest.version,
+      )
+      this.notifyUpdateCheckListeners()
     })()
   }
 
