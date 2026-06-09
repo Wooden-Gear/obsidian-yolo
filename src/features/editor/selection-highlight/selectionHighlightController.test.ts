@@ -3,6 +3,7 @@ import { EditorSelection } from '@codemirror/state'
 import {
   type SelectionHighlightPayloadEntry,
   shouldHideNativeSelection,
+  shouldPaintPersistedHighlight,
 } from './selectionHighlightController'
 
 function selection(from: number, to: number): EditorSelection {
@@ -23,6 +24,13 @@ function entry(
 describe('shouldHideNativeSelection', () => {
   it('returns false for an empty payload', () => {
     expect(shouldHideNativeSelection([], selection(0, 5))).toBe(false)
+  })
+
+  it('returns false while the primary pointer button is down', () => {
+    const payload = [entry({ variant: 'sync', from: 0, to: 5 })]
+    expect(shouldHideNativeSelection(payload, selection(10, 20), true)).toBe(
+      false,
+    )
   })
 
   it('returns true when any sync highlight exists', () => {
@@ -57,5 +65,35 @@ describe('shouldHideNativeSelection', () => {
       entry({ variant: 'sync', from: 10, to: 20 }),
     ]
     expect(shouldHideNativeSelection(payload, selection(1, 4))).toBe(true)
+  })
+})
+
+describe('shouldPaintPersistedHighlight', () => {
+  it('returns false for sync highlights while pointer is down', () => {
+    const payload = entry({ variant: 'sync', from: 0, to: 5 })
+    expect(shouldPaintPersistedHighlight(payload, selection(0, 5), true)).toBe(
+      false,
+    )
+  })
+
+  it('returns false for pinned highlights matching live selection while pointer is down', () => {
+    const payload = entry({ variant: 'pinned', from: 3, to: 9 })
+    expect(shouldPaintPersistedHighlight(payload, selection(3, 9), true)).toBe(
+      false,
+    )
+  })
+
+  it('returns true for non-matching pinned highlights while pointer is down', () => {
+    const payload = entry({ variant: 'pinned', from: 3, to: 9 })
+    expect(
+      shouldPaintPersistedHighlight(payload, selection(10, 20), true),
+    ).toBe(true)
+  })
+
+  it('returns true once the pointer is released', () => {
+    const payload = entry({ variant: 'sync', from: 0, to: 5 })
+    expect(shouldPaintPersistedHighlight(payload, selection(0, 5), false)).toBe(
+      true,
+    )
   })
 })

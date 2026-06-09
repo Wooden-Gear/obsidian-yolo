@@ -45,6 +45,14 @@ type EffectPayload = SelectionHighlightPayloadEntry[]
 
 const HIDE_NATIVE_SELECTION_CLASS = 'yolo-hide-native-selection'
 
+/** Primary button held after pointerdown in a cm-editor — native CM selection stays visible. */
+let isPointerSelecting = false
+let pointerTrackingInstalled = false
+
+export function setPointerSelectingForTests(value: boolean): void {
+  isPointerSelecting = value
+}
+
 function syncHideNativeSelectionClass(view: EditorView): void {
   const hide = shouldHideNativeSelection(
     view.state.field(selectionHighlightField),
@@ -54,13 +62,39 @@ function syncHideNativeSelectionClass(view: EditorView): void {
 }
 
 /**
+ * While the user is drag-selecting (primary button down), keep painting native
+ * CM selection and skip persisted markers that would duplicate it.
+ */
+export function shouldPaintPersistedHighlight(
+  entry: SelectionHighlightPayloadEntry,
+  selection: EditorSelection,
+  pointerSelecting = isPointerSelecting,
+): boolean {
+  if (!pointerSelecting) return true
+
+  if (entry.variant === 'sync') return false
+
+  const main = selection.main
+  if (main.empty) return true
+
+  return !(
+    entry.variant === 'pinned' &&
+    entry.from === main.from &&
+    entry.to === main.to
+  )
+}
+
+/**
  * When our persisted layer is already painting the selection, suppress
  * CodeMirror's native selection background to avoid double-stacked highlights.
  */
 export function shouldHideNativeSelection(
   payload: EffectPayload,
   selection: EditorSelection,
+  pointerSelecting = isPointerSelecting,
 ): boolean {
+  if (pointerSelecting) return false
+
   if (payload.some((entry) => entry.variant === 'sync')) {
     return true
   }
@@ -82,9 +116,53 @@ export function shouldHideNativeSelection(
 // CSS class names (yolo- prefix per CLAUDE.md)
 // ──────────────────────────────────────────────────────────────────────────────
 
+const NATIVE_SELECTION_CLASS = 'cm-selectionBackground'
 const CLASS_SELECTION = 'yolo-selection-persisted-layer'
 const CLASS_UPDATED = 'yolo-selection-persisted-layer-updated'
 const CLASS_PENDING = 'yolo-selection-persisted-layer-pending'
+
+function buildMarkerClassName(visual: HighlightVisual): string {
+  const parts = [NATIVE_SELECTION_CLASS, CLASS_SELECTION]
+  if (visual === 'updated') parts.push(CLASS_UPDATED)
+  else if (visual === 'pending') parts.push(CLASS_PENDING)
+  return parts.join(' ')
+}
+
+/**
+ * Paint only the glyphs on each non-empty line. Full-range forRange also draws
+ * full-width "between" rectangles across blank lines in multi-line selections;
+ * per-line segments match the tighter look users expect for persisted highlights.
+ */
+function markersForTextRange(
+  view: EditorView,
+  className: string,
+  from: number,
+  to: number,
+): RectangleMarker[] {
+  const doc = view.state.doc
+  const startLine = doc.lineAt(from).number
+  const endLine = doc.lineAt(to).number
+  const markers: RectangleMarker[] = []
+
+  for (let n = startLine; n <= endLine; n++) {
+    const line = doc.line(n)
+    if (!line.text.length) continue
+
+    const segFrom = Math.max(from, line.from)
+    const segTo = Math.min(to, line.to)
+    if (segFrom >= segTo) continue
+
+    markers.push(
+      ...RectangleMarker.forRange(
+        view,
+        className,
+        EditorSelection.range(segFrom, segTo),
+      ),
+    )
+  }
+
+  return markers
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CodeMirror state primitives
@@ -141,6 +219,8 @@ export class SelectionHighlightController {
   // ── Public API ───────────────────────────────────────────────────────────────
 
   createExtension(): Extension {
+    this._ensurePointerTracking()
+
     return [
       selectionHighlightField,
       EditorView.theme({
@@ -175,37 +255,28 @@ export class SelectionHighlightController {
           const payload = view.state.field(selectionHighlightField)
           if (!payload || payload.length === 0) return []
 
+          const selection = view.state.selection
           const markers: RectangleMarker[] = []
           const { from: vpFrom, to: vpTo } = view.viewport
-          const doc = view.state.doc
 
           for (const entry of payload) {
+            if (!shouldPaintPersistedHighlight(entry, selection)) continue
+
             // Clamp to visible range — only generate markers for visible text.
             const from = Math.max(entry.from, vpFrom)
             const to = Math.min(entry.to, vpTo)
             if (from >= to) continue
 
-            const className =
-              entry.visual === 'updated'
-                ? `${CLASS_SELECTION} ${CLASS_UPDATED}`
-                : entry.visual === 'pending'
-                  ? `${CLASS_SELECTION} ${CLASS_PENDING}`
-                  : CLASS_SELECTION
-
-            // Walk the range line-by-line so each line emits a text-tight
-            // rectangle (single-line forRange == glyph-tight). Empty lines
-            // yield from===to and are skipped, so blank lines between
-            // paragraphs don't get painted.
-            const startLine = doc.lineAt(from).number
-            const endLine = doc.lineAt(to).number
-            for (let n = startLine; n <= endLine; n++) {
-              const line = doc.line(n)
-              const segFrom = Math.max(from, line.from)
-              const segTo = Math.min(to, line.to)
-              if (segFrom >= segTo) continue
-              const range = EditorSelection.range(segFrom, segTo)
-              markers.push(...RectangleMarker.forRange(view, className, range))
-            }
+            // Per-line glyph rects: cm-selectionBackground for theme styling,
+            // without full-range between-rectangles that fill blank lines.
+            markers.push(
+              ...markersForTextRange(
+                view,
+                buildMarkerClassName(entry.visual),
+                from,
+                to,
+              ),
+            )
           }
 
           return markers
@@ -479,6 +550,45 @@ export class SelectionHighlightController {
   private shouldIgnoreTarget(target: EventTarget | null): boolean {
     if (!(target instanceof Element)) return false
     return Boolean(target.closest(INTERACTIVE_OVERLAY_SELECTOR))
+  }
+
+  /** Re-sync hide-native class + layer after pointer-driven selection ends. */
+  refreshNativeSelectionSuppression(): void {
+    const views = new Set<EditorView>()
+    for (const entry of this.entries.values()) {
+      views.add(entry.view)
+    }
+    for (const view of views) {
+      this._dispatchToView(view)
+    }
+  }
+
+  private _ensurePointerTracking(): void {
+    if (pointerTrackingInstalled) return
+    pointerTrackingInstalled = true
+
+    const controller = this
+    const endPointerSelect = (): void => {
+      if (!isPointerSelecting) return
+      isPointerSelecting = false
+      controller.refreshNativeSelectionSuppression()
+    }
+
+    document.addEventListener(
+      'pointerdown',
+      (event) => {
+        if (event.button !== 0) return
+        const target = event.target
+        if (!(target instanceof Element)) return
+        if (!target.closest('.cm-editor')) return
+        if (controller.shouldIgnoreTarget(target)) return
+        isPointerSelecting = true
+        controller.refreshNativeSelectionSuppression()
+      },
+      true,
+    )
+    document.addEventListener('pointerup', endPointerSelect, true)
+    document.addEventListener('pointercancel', endPointerSelect, true)
   }
 }
 
