@@ -979,7 +979,8 @@ export function getLocalFileTools(options?: {
         'Use tail_lines or tail_bytes when polling verbose sessions to inspect recent logs only. ' +
         'Avoid heredocs and full-screen TUI programs such as vim/top. Long-running ' +
         'commands should use background=true; completion is pushed when finished. ' +
-        'Avoid frequent polling to check status.',
+        'Avoid frequent polling to check status. ' +
+        'The tool result is returned to you, but it does not automatically become a user-facing answer; to show the user the result, send a concise text summary of the relevant output.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -1038,7 +1039,8 @@ export function getLocalFileTools(options?: {
         'Returns immediately with a taskId while the child runs in the background. ' +
         'When complete, a follow-up background message starting with ' +
         '[subagent_result taskId=...] will arrive for you to summarize or continue. ' +
-        'The child inherits your current model and allowed tools (except recursive delegation and user-interaction tools).',
+        'The child inherits your current model and allowed tools (except recursive delegation and user-interaction tools). ' +
+        'The tool result is returned to you, but it does not automatically become a user-facing answer; to show the user the result, send a concise text summary of the relevant output.',
       inputSchema: {
         type: 'object',
         properties: {
