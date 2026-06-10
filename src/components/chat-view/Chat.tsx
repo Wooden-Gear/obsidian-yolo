@@ -672,6 +672,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     setEnteringCompactionDividerAnchorMessageId,
   ] = useState<string | null>(null)
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null)
+  const suppressNextHistoricalUserMessageOutsidePointerRef = useRef<
+    string | null
+  >(null)
   const [currentConversationId, setCurrentConversationId] = useState<string>(
     () => seededRuntimeSnapshot?.currentConversationId ?? uuidv4(),
   )
@@ -2089,6 +2092,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   useEffect(() => {
     if (!focusedMessageId || focusedMessageId === inputMessage.id) {
+      suppressNextHistoricalUserMessageOutsidePointerRef.current = null
       return
     }
 
@@ -2106,6 +2110,14 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         `[data-user-message-id="${focusedMessageId}"]`,
       )
       if (activeMessageElement?.contains(target)) {
+        return
+      }
+
+      if (
+        suppressNextHistoricalUserMessageOutsidePointerRef.current ===
+        focusedMessageId
+      ) {
+        suppressNextHistoricalUserMessageOutsidePointerRef.current = null
         return
       }
 
@@ -4800,11 +4812,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             chatUserInputRef={(ref) =>
               registerChatUserInputRef(messageOrGroup.id, ref)
             }
-            onBlur={() => {
-              if (focusedMessageId === messageOrGroup.id) {
-                finalizeHistoricalUserMessageEdit(messageOrGroup.id)
-                setFocusedMessageId(inputMessage.id)
+            onControlPopoverOpenChange={(isOpen) => {
+              if (!isOpen) {
+                return
               }
+              suppressNextHistoricalUserMessageOutsidePointerRef.current =
+                messageOrGroup.id
             }}
             onInputChange={(content) => {
               updateHistoricalUserMessage(messageOrGroup.id, (message) => ({

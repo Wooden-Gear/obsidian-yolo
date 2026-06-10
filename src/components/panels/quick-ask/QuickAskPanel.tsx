@@ -332,6 +332,9 @@ export function QuickAskPanel({
   const [focusedUserMessageId, setFocusedUserMessageId] = useState<
     string | null
   >(null)
+  const suppressNextFocusedUserMessageOutsidePointerRef = useRef<string | null>(
+    null,
+  )
 
   useEffect(() => {
     if (initialMode) {
@@ -1223,6 +1226,7 @@ export function QuickAskPanel({
 
   useEffect(() => {
     if (!focusedUserMessageId) {
+      suppressNextFocusedUserMessageOutsidePointerRef.current = null
       return
     }
 
@@ -1240,6 +1244,14 @@ export function QuickAskPanel({
         `[data-user-message-id="${focusedUserMessageId}"]`,
       )
       if (activeMessageElement?.contains(target)) {
+        return
+      }
+
+      if (
+        suppressNextFocusedUserMessageOutsidePointerRef.current ===
+        focusedUserMessageId
+      ) {
+        suppressNextFocusedUserMessageOutsidePointerRef.current = null
         return
       }
 
@@ -2108,8 +2120,12 @@ export function QuickAskPanel({
               chatUserInputRef={(ref) =>
                 registerChatUserInputRef(messageOrGroup.id, ref)
               }
-              onBlur={() => {
-                setFocusedUserMessageId(null)
+              onControlPopoverOpenChange={(isOpen) => {
+                if (!isOpen) {
+                  return
+                }
+                suppressNextFocusedUserMessageOutsidePointerRef.current =
+                  messageOrGroup.id
               }}
               onInputChange={(content) => {
                 setChatMessages((prev) =>

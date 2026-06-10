@@ -2502,6 +2502,50 @@
   gap: calc(var(--size-2-3) + 1px);
 }
 
+.yolo-chat-user-input-controls {
+  display: flex;
+  flex-direction: row;
+  gap: var(--size-4-1);
+  align-items: center;
+  flex-wrap: nowrap;
+  /* 用 min-height 而非固定 height：发送圆按钮（24px）比该尺寸大时
+   * 行会自然撑高，避免按钮底边伸出行外、与容器底 padding 视觉不对称 */
+  min-height: var(--size-4-4);
+}
+
+.yolo-chat-user-input-controls__left {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.yolo-chat-user-input-controls__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--size-2-3) + 1px);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.yolo-chat-user-input-controls__left .yolo-chat-input-model-select {
+  max-width: 160px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.yolo-chat-user-input-controls__left .yolo-reasoning-select {
+  min-width: 72px;
+  flex: 0 1 auto;
+}
+
+.yolo-chat-user-input-controls__left .yolo-chat-input-model-select__model-name {
+  max-width: 120px;
+}
+
 .yolo-chat-user-input-toolbar {
   display: flex;
   flex-direction: row;
@@ -2561,6 +2605,7 @@
   color: var(--text-normal);
 }
 
+.yolo-chat-user-input-controls .yolo-chat-user-input-submit-button,
 .yolo-chat-user-input-toolbar .yolo-chat-user-input-submit-button,
 .yolo-chat-user-input-send-row .yolo-chat-user-input-submit-button {
   display: flex;
@@ -2596,6 +2641,7 @@
   white-space: nowrap;
 }
 
+.yolo-chat-user-input-controls__left .yolo-chat-user-input-upload-button,
 .yolo-chat-user-input-send-row .yolo-chat-user-input-upload-button {
   width: var(--size-4-5);
   height: var(--size-4-5);
@@ -2820,6 +2866,7 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
 }
 
 @media (max-width: 520px) {
+  .yolo-chat-user-input-controls__left .yolo-reasoning-select,
   .yolo-chat-user-input-toolbar__right .yolo-reasoning-select {
     flex-basis: auto;
   }

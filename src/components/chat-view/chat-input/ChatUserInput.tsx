@@ -15,7 +15,6 @@ import {
 import { Notice } from 'obsidian'
 import {
   type CSSProperties,
-  type FocusEvent,
   type MouseEvent as ReactMouseEvent,
   forwardRef,
   useCallback,
@@ -59,8 +58,8 @@ import ContextUsageRing from '../ContextUsageRing'
 import { useSnippetEntries } from '../hooks/useSnippetEntries'
 import type { ContextBreakdownInputs } from '../useContextBreakdown'
 
-import ChatSkillBadge from './ChatSkillBadge'
 import { ChatMode, ChatModeSelect } from './ChatModeSelect'
+import ChatSkillBadge from './ChatSkillBadge'
 import { FileUploadButton } from './FileUploadButton'
 import LexicalContentEditable from './LexicalContentEditable'
 import MentionableBadge from './MentionableBadge'
@@ -88,6 +87,8 @@ export type ChatUserInputRef = {
   submit: () => void
 }
 
+export type ChatUserInputControlLayout = 'composer-toolbar' | 'inline'
+
 export type ChatUserInputProps = {
   initialSerializedEditorState: SerializedEditorState | null
   onChange: (content: SerializedEditorState) => void
@@ -114,13 +115,14 @@ export type ChatUserInputProps = {
   compact?: boolean
   hideBadgeMentionables?: boolean
   onToggleCompact?: () => void
-  onBlur?: () => void
   currentAssistantId?: string
   onSelectAssistantForConversation?: (assistantId: string) => void
   currentChatMode?: ChatMode
   onSelectChatModeForConversation?: (mode: ChatMode) => void
   chatMode?: ChatMode
   onChatModeChange?: (mode: ChatMode) => void
+  controlLayout?: ChatUserInputControlLayout
+  onControlPopoverOpenChange?: (isOpen: boolean) => void
   allowAgentModeOption?: boolean
   enableResize?: boolean
   onRunSlashCommand?: (command: SlashCommand) => void
@@ -180,13 +182,14 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       compact = false,
       hideBadgeMentionables = false,
       onToggleCompact,
-      onBlur,
       currentAssistantId,
       onSelectAssistantForConversation,
       currentChatMode,
       onSelectChatModeForConversation,
       chatMode,
       onChatModeChange,
+      controlLayout = 'composer-toolbar',
+      onControlPopoverOpenChange,
       allowAgentModeOption = true,
       enableResize = false,
       onRunSlashCommand,
@@ -317,20 +320,6 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       if (reasoningLevel) return reasoningLevel
       return getDefaultReasoningLevel(currentModel)
     }, [currentModel, reasoningLevel])
-
-    const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-      if (!onBlur) return
-      const nextTarget = event.relatedTarget as Node | null
-      if (
-        nextTarget &&
-        nextTarget instanceof HTMLElement &&
-        nextTarget.closest('.yolo-popover-surface')
-      ) {
-        return
-      }
-      if (nextTarget && event.currentTarget.contains(nextTarget)) return
-      onBlur()
-    }
 
     useEffect(() => {
       if (isEditorReady) return
@@ -1247,6 +1236,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
         if (
           target.closest('.yolo-chat-user-input-send-row') ||
+          target.closest('.yolo-chat-user-input-controls') ||
           target.closest('button') ||
           target.closest('[role="button"]')
         ) {
@@ -1274,10 +1264,75 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       }
     }, [compact, enableResize, resizedHeight])
 
+    const renderChatModeControl = () =>
+      onChatModeChange && chatMode ? (
+        <ChatModeSelect
+          mode={chatMode}
+          onChange={onChatModeChange}
+          side="top"
+          sideOffset={8}
+        />
+      ) : null
+
+    const renderModelControl = () => (
+      <ModelSelect
+        modelId={modelId}
+        onChange={onModelChange}
+        onMenuOpenChange={onControlPopoverOpenChange}
+        align="center"
+        sideOffset={8}
+        popover={{
+          variant: 'default',
+          minWidth: 240,
+          maxWidth: 320,
+          maxHeight: 560,
+        }}
+      />
+    )
+
+    const renderReasoningControl = () =>
+      showReasoningSelect && supportsReasoning(currentModel) ? (
+        <ReasoningSelect
+          model={currentModel}
+          value={resolvedReasoningLevel}
+          onChange={(level) => onReasoningChange?.(level)}
+          onMenuOpenChange={onControlPopoverOpenChange}
+          side="top"
+          sideOffset={8}
+        />
+      ) : null
+
+    const renderContextUsageControl = () =>
+      contextUsage ? (
+        contextUsage.buildBreakdownInputs ? (
+          <ContextUsagePopover
+            promptTokens={contextUsage.promptTokens}
+            maxContextTokens={contextUsage.maxContextTokens}
+            label={contextUsage.label}
+            anchorRef={containerRef}
+            buildInputs={contextUsage.buildBreakdownInputs}
+          />
+        ) : (
+          <ContextUsageRing
+            promptTokens={contextUsage.promptTokens}
+            maxContextTokens={contextUsage.maxContextTokens}
+            label={contextUsage.label}
+          />
+        )
+      ) : null
+
+    const renderSubmitControl = () => (
+      <SubmitButton
+        onClick={() => handleSubmit()}
+        isGenerating={isGenerating}
+        onAbort={onAbort}
+        disabled={submitDisabled}
+      />
+    )
+
     return (
       <div
         className={`yolo-chat-user-input-wrapper${compact ? ' yolo-chat-user-input-wrapper--compact' : ''}`}
-        onBlur={handleBlur}
         role="presentation"
       >
         {enableResize && !compact && (
@@ -1457,70 +1512,38 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             />
           </div>
 
-          {!compact && (
+          {!compact && controlLayout === 'inline' && (
+            <div className="yolo-chat-user-input-controls">
+              <div className="yolo-chat-user-input-controls__left">
+                <FileUploadButton onUpload={handleUploadFiles} />
+                {renderModelControl()}
+                {renderReasoningControl()}
+              </div>
+              <div className="yolo-chat-user-input-controls__right">
+                {renderContextUsageControl()}
+                {renderSubmitControl()}
+              </div>
+            </div>
+          )}
+
+          {!compact && controlLayout === 'composer-toolbar' && (
             <div className="yolo-chat-user-input-send-row">
               <FileUploadButton onUpload={handleUploadFiles} />
               <div className="yolo-chat-user-input-send-row__right">
-                {contextUsage &&
-                  (contextUsage.buildBreakdownInputs ? (
-                    <ContextUsagePopover
-                      promptTokens={contextUsage.promptTokens}
-                      maxContextTokens={contextUsage.maxContextTokens}
-                      label={contextUsage.label}
-                      anchorRef={containerRef}
-                      buildInputs={contextUsage.buildBreakdownInputs}
-                    />
-                  ) : (
-                    <ContextUsageRing
-                      promptTokens={contextUsage.promptTokens}
-                      maxContextTokens={contextUsage.maxContextTokens}
-                      label={contextUsage.label}
-                    />
-                  ))}
-                <SubmitButton
-                  onClick={() => handleSubmit()}
-                  isGenerating={isGenerating}
-                  onAbort={onAbort}
-                  disabled={submitDisabled}
-                />
+                {renderContextUsageControl()}
+                {renderSubmitControl()}
               </div>
             </div>
           )}
         </div>
-        {!compact && (
+        {!compact && controlLayout === 'composer-toolbar' && (
           <div className="yolo-chat-user-input-toolbar">
             <div className="yolo-chat-user-input-toolbar__left">
-              {onChatModeChange && chatMode ? (
-                <ChatModeSelect
-                  mode={chatMode}
-                  onChange={onChatModeChange}
-                  side="top"
-                  sideOffset={8}
-                />
-              ) : null}
+              {renderChatModeControl()}
             </div>
             <div className="yolo-chat-user-input-toolbar__right">
-              <ModelSelect
-                modelId={modelId}
-                onChange={onModelChange}
-                align="center"
-                sideOffset={8}
-                popover={{
-                  variant: 'default',
-                  minWidth: 240,
-                  maxWidth: 320,
-                  maxHeight: 560,
-                }}
-              />
-              {showReasoningSelect && supportsReasoning(currentModel) && (
-                <ReasoningSelect
-                  model={currentModel}
-                  value={resolvedReasoningLevel}
-                  onChange={(level) => onReasoningChange?.(level)}
-                  side="top"
-                  sideOffset={8}
-                />
-              )}
+              {renderModelControl()}
+              {renderReasoningControl()}
             </div>
           </div>
         )}

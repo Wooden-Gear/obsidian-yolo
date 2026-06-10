@@ -20,7 +20,6 @@ export type UserMessageItemProps = {
   onInputChange: (content: SerializedEditorState) => void
   onSubmit: (content: SerializedEditorState) => void
   onFocus: () => void
-  onBlur: () => void
   onMentionablesChange: (mentionables: Mentionable[]) => void
   onSelectedSkillsChange?: (skills: ChatSelectedSkill[]) => void
   onDelete?: () => void
@@ -38,6 +37,7 @@ export type UserMessageItemProps = {
   onSelectChatModeForConversation?: (
     mode: import('./chat-input/ChatModeSelect').ChatMode,
   ) => void
+  onControlPopoverOpenChange?: (isOpen: boolean) => void
   allowAgentModeOption?: boolean
 }
 
@@ -151,7 +151,6 @@ function UserMessageItem({
   onInputChange,
   onSubmit,
   onFocus,
-  onBlur,
   onMentionablesChange,
   onSelectedSkillsChange,
   onDelete,
@@ -167,6 +166,7 @@ function UserMessageItem({
   currentAssistantId,
   currentChatMode,
   onSelectChatModeForConversation,
+  onControlPopoverOpenChange,
   allowAgentModeOption,
 }: UserMessageItemProps) {
   const snapshot = useMemo<UserMessageDisplaySnapshot>(
@@ -198,7 +198,6 @@ function UserMessageItem({
           onInputChange={onInputChange}
           onSubmit={onSubmit}
           onFocus={onFocus}
-          onBlur={onBlur}
           onMentionablesChange={onMentionablesChange}
           onSelectedSkillsChange={onSelectedSkillsChange}
           displayMentionables={displayMentionables}
@@ -211,6 +210,7 @@ function UserMessageItem({
           currentAssistantId={currentAssistantId}
           currentChatMode={currentChatMode}
           onSelectChatModeForConversation={onSelectChatModeForConversation}
+          onControlPopoverOpenChange={onControlPopoverOpenChange}
           allowAgentModeOption={allowAgentModeOption}
         />
       ) : (
