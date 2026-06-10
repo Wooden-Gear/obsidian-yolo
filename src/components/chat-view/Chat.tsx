@@ -106,7 +106,11 @@ import { AgentModeWarningModal } from '../modals/AgentModeWarningModal'
 
 import { AssistantSelector } from './AssistantSelector'
 import AssistantToolMessageGroupItem from './AssistantToolMessageGroupItem'
-import type { ChatMode } from './chat-input/ChatModeSelect'
+import {
+  type ChatMode,
+  isAgentChatMode,
+  normalizeChatMode,
+} from './chat-input/ChatModeSelect'
 import ChatUserInput from './chat-input/ChatUserInput'
 import type { ChatUserInputRef } from './chat-input/ChatUserInput'
 import MentionableBadge from './chat-input/MentionableBadge'
@@ -2166,11 +2170,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           conversationId,
           loadedAssistantId,
         )
-        const loadedChatModeRaw = conversation.overrides?.chatMode
-        const loadedChatMode: ChatMode =
-          loadedChatModeRaw === 'agent' || loadedChatModeRaw === 'chat'
-            ? loadedChatModeRaw
-            : (settings.chatOptions.chatMode ?? 'agent')
+        const loadedChatMode = normalizeChatMode(
+          conversation.overrides?.chatMode,
+          settings.chatOptions.chatMode ?? 'agent',
+        )
         setChatMode(loadedChatMode)
         if (conversation.overrides) {
           conversationOverridesRef.current.set(
@@ -2546,12 +2549,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         conversationOverridesRef.current.get(currentConversationId) ??
         conversationOverrides ??
         null
-      const rawNextChatMode = nextOverrides?.chatMode
-      const resolvedNextChatMode: ChatMode =
-        rawNextChatMode === 'agent' || rawNextChatMode === 'chat'
-          ? rawNextChatMode
-          : chatMode
-      const nextChatMode = resolvedNextChatMode
+      const nextChatMode = normalizeChatMode(
+        nextOverrides?.chatMode,
+        chatMode,
+      )
 
       const resolvedConversationModelId =
         conversationModelIdRef.current.get(currentConversationId) ??
@@ -2799,10 +2800,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               // match the schema used when the call was emitted.
               chatModelId:
                 toolMessage.metadata?.branchModelId ?? conversationModelId,
-              workspaceScope:
-                chatMode === 'agent'
-                  ? selectedAssistant?.workspaceScope
-                  : undefined,
+              workspaceScope: isAgentChatMode(chatMode)
+                ? selectedAssistant?.workspaceScope
+                : undefined,
               subagentParentContext: isDelegateSubagentToolName(request.name)
                 ? plugin
                     .getAgentService()
@@ -4399,6 +4399,66 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       const resolvedMode = nextMode
 
       if (
+        resolvedMode === 'agent-full' &&
+        !settings.chatOptions.fullAccessWarningConfirmed
+      ) {
+        new AgentModeWarningModal(app, {
+          title: t(
+            'chatMode.fullAccessWarning.title',
+            'Please confirm before enabling full access',
+          ),
+          description: t(
+            'chatMode.fullAccessWarning.description',
+            'Full access auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
+          ),
+          risks: [
+            t(
+              'chatMode.fullAccessWarning.permission',
+              'Tools run without per-call approval. Dangerous command prefixes are still blocked.',
+            ),
+            t(
+              'chatMode.fullAccessWarning.cost',
+              'Autonomous runs may consume significant model resources and incur higher costs.',
+            ),
+            t(
+              'chatMode.fullAccessWarning.backup',
+              'Back up important content in advance to avoid unintended changes.',
+            ),
+          ],
+          checkboxLabel: t(
+            'chatMode.fullAccessWarning.checkbox',
+            'I understand the risks above and accept responsibility for proceeding',
+          ),
+          cancelText: t('chatMode.fullAccessWarning.cancel', 'Cancel'),
+          confirmText: t(
+            'chatMode.fullAccessWarning.confirm',
+            'Continue with Full Access',
+          ),
+          onConfirm: () => {
+            applyChatModeChange('agent-full')
+            void persistPreferredChatMode('agent-full')
+            void (async () => {
+              try {
+                await setSettings({
+                  ...settings,
+                  chatOptions: {
+                    ...settings.chatOptions,
+                    fullAccessWarningConfirmed: true,
+                  },
+                })
+              } catch (error: unknown) {
+                console.error(
+                  'Failed to persist full access warning confirmation',
+                  error,
+                )
+              }
+            })()
+          },
+        }).open()
+        return
+      }
+
+      if (
         resolvedMode === 'agent' &&
         !settings.chatOptions.agentModeWarningConfirmed
       ) {
@@ -4462,7 +4522,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       void persistPreferredChatMode(resolvedMode)
 
       if (
-        resolvedMode === 'agent' &&
+        isAgentChatMode(resolvedMode) &&
         selectedAssistant?.modelId &&
         conversationModelId === settings.chatModelId
       ) {
@@ -4493,8 +4553,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         <ViewToggle
           activeView={activeView}
           onChangeView={onChangeView}
-          chatMode={chatMode}
-          onChangeChatMode={handleChatModeChange}
           showComposer={isSidebarPlacement}
           disabled={false}
         />
@@ -5070,18 +5128,26 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             'chat.scrollToBottomWhileStreaming',
             '回到底部继续跟随',
           )}
-          emptyStateChatTitle={t(
-            'chat.emptyState.chatTitle',
+          emptyStateAskTitle={t(
+            'chat.emptyState.askTitle',
             '先想清楚，再落笔',
           )}
           emptyStateAgentTitle={t('chat.emptyState.agentTitle', '让 AI 去执行')}
-          emptyStateChatDescription={t(
-            'chat.emptyState.chatDescription',
+          emptyStateAgentFullTitle={t(
+            'chat.emptyState.agentFullTitle',
+            '全权执行',
+          )}
+          emptyStateAskDescription={t(
+            'chat.emptyState.askDescription',
             '适合提问、润色与改写，专注表达本身',
           )}
           emptyStateAgentDescription={t(
             'chat.emptyState.agentDescription',
             '启用工具链，处理搜索、读写与多步骤任务',
+          )}
+          emptyStateAgentFullDescription={t(
+            'chat.emptyState.agentFullDescription',
+            '自动放行全部工具调用，适合需要连续执行的多步骤任务',
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
           bottomSpacerHeight={inputOverlayHeight}
@@ -5308,6 +5374,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   }
                   currentChatMode={chatMode}
                   onSelectChatModeForConversation={handleChatModeChange}
+                  chatMode={chatMode}
+                  onChatModeChange={handleChatModeChange}
                   allowAgentModeOption={true}
                   enableResize
                   onRunSlashCommand={(command) => {

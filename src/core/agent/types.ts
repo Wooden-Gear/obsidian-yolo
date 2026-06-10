@@ -96,6 +96,11 @@ export type AgentRuntimeRunInput = {
   toolApprovalConversationId?: string
   /** Terminal command prefixes rejected before execution or approval. */
   blockedCommandPrefixes?: string[]
+  /**
+   * When true, auto-execute all allowed tools without per-tool approval.
+   * Dangerous command prefix blocklist and global tool enable gates still apply.
+   */
+  bypassToolApproval?: boolean
 }
 
 export type AgentRuntimeLoopConfig = {

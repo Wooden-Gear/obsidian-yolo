@@ -743,6 +743,7 @@ export function useChatStreamManager({
           allowedToolNames: chatModeRuntime.allowedToolNames,
           enableToolDisclosure: settings.mcp.enableToolDisclosure,
           toolPreferences: chatModeRuntime.toolPreferences,
+          bypassToolApproval: chatModeRuntime.bypassToolApproval,
           blockedCommandPrefixes: settings.mcp.builtinToolOptions[
             TERMINAL_COMMAND_TOOL_NAME
           ]?.blockedPrefixes ?? [...DEFAULT_BLOCKED_PREFIXES],

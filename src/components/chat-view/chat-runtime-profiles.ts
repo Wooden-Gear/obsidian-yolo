@@ -4,6 +4,7 @@ import { getToolName } from '../../core/mcp/tool-name-utils'
 import type { Assistant } from '../../types/assistant.types'
 
 import type { ChatMode } from './chat-input/ChatModeSelect'
+import { isAgentChatMode } from './chat-input/ChatModeSelect'
 
 type AssistantRuntimeOptions = Pick<
   Assistant,
@@ -27,6 +28,7 @@ export type ChatModeRuntime = {
   loopConfig: AgentRuntimeLoopConfig
   allowedToolNames: string[] | undefined
   toolPreferences: Assistant['toolPreferences']
+  bypassToolApproval: boolean
 }
 
 export type ChatModeRuntimeInput = {
@@ -45,7 +47,7 @@ export function resolveChatModeRuntime({
     ? (assistant?.includeBuiltinTools ?? true)
     : false
 
-  const isAgentMode = mode === 'agent'
+  const isAgentMode = isAgentChatMode(mode)
   const blocked = new Set(CHAT_BLOCKED_TOOL_NAMES)
   const allowedToolNames = enableTools
     ? isAgentMode
@@ -61,5 +63,6 @@ export function resolveChatModeRuntime({
     },
     allowedToolNames,
     toolPreferences: isAgentMode ? assistant?.toolPreferences : undefined,
+    bypassToolApproval: mode === 'agent-full',
   }
 }

@@ -38,7 +38,7 @@ export type YoloAgentContext =
 export type YoloAgentRunRequest = {
   prompt: string
   assistantId?: string
-  mode?: 'chat' | 'agent'
+  mode?: 'ask' | 'agent' | 'agent-full'
   context?: YoloAgentContext[]
   tools?: {
     allowedToolNames?: string[]
@@ -304,7 +304,7 @@ export async function resolveAgentApiRunInput({
   )
   const assistantEnabledToolNames = getEnabledAssistantToolNames(assistant)
   const chatModeRuntime = resolveChatModeRuntime({
-    mode: request.mode ?? 'chat',
+    mode: request.mode ?? 'ask',
     assistant,
     assistantEnabledToolNames,
   })
@@ -374,6 +374,7 @@ export async function resolveAgentApiRunInput({
       allowedToolNames,
       enableToolDisclosure: settings.mcp.enableToolDisclosure,
       toolPreferences: chatModeRuntime.toolPreferences,
+      bypassToolApproval: chatModeRuntime.bypassToolApproval,
       workspaceScope: resolveWorkspaceScopeForRuntimeInput(assistant),
       allowedSkillPaths,
       requestParams: {

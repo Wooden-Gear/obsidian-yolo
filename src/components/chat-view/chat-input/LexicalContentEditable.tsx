@@ -69,8 +69,8 @@ export type LexicalContentEditableProps = {
   assistants?: Assistant[]
   currentAssistantId?: string
   onSelectAssistant?: (assistantId: string) => void
-  currentChatMode?: 'chat' | 'agent'
-  onSelectChatMode?: (mode: 'chat' | 'agent') => void
+  currentChatMode?: import('./ChatModeSelect').ChatMode
+  onSelectChatMode?: (mode: import('./ChatModeSelect').ChatMode) => void
   allowAgentModeOption?: boolean
   models?: ChatModel[]
   selectedModelIds?: string[]

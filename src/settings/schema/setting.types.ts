@@ -397,10 +397,12 @@ export const yoloSettingsSchema = z.object({
       chatInputHeight: z.number().int().min(80).max(520).optional(),
       chatApplyMode: z.enum(['review-required', 'direct-apply']).optional(),
       chatTitlePrompt: z.string().optional(),
-      // Chat mode (chat/agent)
-      chatMode: z.enum(['chat', 'agent']).optional(),
+      // Chat mode (ask/agent/agent-full)
+      chatMode: z.enum(['ask', 'agent', 'agent-full']).optional(),
       // Whether the user has acknowledged the first-time agent mode warning
       agentModeWarningConfirmed: z.boolean().optional(),
+      // Whether the user has acknowledged the first-time full access warning
+      fullAccessWarningConfirmed: z.boolean().optional(),
       // Persist preferred reasoning level per model id in Chat input
       reasoningLevelByModelId: z
         .record(z.string(), z.enum(REASONING_LEVELS))
@@ -443,6 +445,7 @@ export const yoloSettingsSchema = z.object({
       chatTitlePrompt: '',
       chatMode: 'agent',
       agentModeWarningConfirmed: false,
+      fullAccessWarningConfirmed: false,
       reasoningLevelByModelId: {},
       autoContextCompactionEnabled: false,
       autoContextCompactionThresholdMode: 'tokens',
@@ -547,7 +550,7 @@ export const yoloSettingsSchema = z.object({
       quickAskTrigger: z.string().optional(),
       // quick ask mode: support legacy ask/edit values and current chat/agent values
       quickAskMode: z
-        .enum(['ask', 'edit', 'edit-direct', 'chat', 'agent'])
+        .enum(['ask', 'edit', 'edit-direct', 'agent'])
         .optional(),
       // auto dock quick ask to editor top right after sending
       quickAskAutoDockToTopRight: z.boolean().optional(),
@@ -594,7 +597,7 @@ export const yoloSettingsSchema = z.object({
       smartSpaceUseUrlContext: false,
       enableQuickAsk: true,
       quickAskTrigger: '@',
-      quickAskMode: 'chat',
+      quickAskMode: 'ask',
       quickAskAutoDockToTopRight: true,
       quickAskContextBeforeChars: 5000,
       quickAskContextAfterChars: 2000,

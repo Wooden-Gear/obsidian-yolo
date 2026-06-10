@@ -11,6 +11,7 @@ jest.mock('../../components/chat-view/chat-runtime-profiles', () => ({
     },
     allowedToolNames: ['server__search'],
     toolPreferences: undefined,
+    bypassToolApproval: false,
   })),
 }))
 

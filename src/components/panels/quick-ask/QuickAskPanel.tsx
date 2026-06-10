@@ -97,7 +97,7 @@ type QuickAskExecutionMode = QuickAskMode | 'edit' | 'edit-direct'
 function normalizeQuickAskVisibleMode(
   mode?: QuickAskLaunchMode | null,
 ): QuickAskMode {
-  return mode === 'agent' ? 'agent' : 'chat'
+  return mode === 'agent' ? 'agent' : 'ask'
 }
 
 function normalizeQuickAskExecutionMode(
@@ -107,7 +107,7 @@ function normalizeQuickAskExecutionMode(
     return mode
   }
 
-  return 'chat'
+  return 'ask'
 }
 
 function getSelectionMentionable(
@@ -303,12 +303,12 @@ export function QuickAskPanel({
       const resolved = normalizeQuickAskExecutionMode(
         initialMode ?? settings.continuationOptions?.quickAskMode,
       )
-      // PDF path: edit modes are unavailable; fall back to 'chat'
+      // PDF path: edit modes are unavailable; fall back to 'ask'
       if (
         !capabilities.edit &&
         (resolved === 'edit' || resolved === 'edit-direct')
       ) {
-        return 'chat'
+        return 'ask'
       }
       return resolved
     },
@@ -338,12 +338,12 @@ export function QuickAskPanel({
     if (initialMode) {
       setMode(normalizeQuickAskVisibleMode(initialMode))
       const resolved = normalizeQuickAskExecutionMode(initialMode)
-      // PDF path: edit modes are unavailable; fall back to 'chat'
+      // PDF path: edit modes are unavailable; fall back to 'ask'
       if (
         !capabilities.edit &&
         (resolved === 'edit' || resolved === 'edit-direct')
       ) {
-        setExecutionMode('chat')
+        setExecutionMode('ask')
       } else {
         setExecutionMode(resolved)
       }
@@ -508,7 +508,7 @@ export function QuickAskPanel({
   const shouldShowInlineRunStatus =
     isStreaming &&
     !!runStatusLabel &&
-    ((executionMode !== 'agent' && executionMode !== 'chat') ||
+    ((executionMode !== 'agent' && executionMode !== 'ask') ||
       (!hasStreamingAssistantPlaceholder && !hasVisibleAssistantOrToolMessages))
 
   const noop = useCallback(() => {}, [])
@@ -629,7 +629,7 @@ export function QuickAskPanel({
         systemPrompt: combinedSystemPrompt,
       },
       {
-        includeSkills: executionMode === 'agent' || executionMode === 'chat',
+        includeSkills: executionMode === 'agent' || executionMode === 'ask',
         systemPromptSnapshotStore: plugin
           .getAgentService()
           .getSystemPromptSnapshotStore(),
@@ -1095,7 +1095,7 @@ export function QuickAskPanel({
 
         const isAgentMode = executionMode === 'agent'
         const chatModeRuntime = resolveChatModeRuntime({
-          mode: isAgentMode ? 'agent' : 'chat',
+          mode: isAgentMode ? 'agent' : 'ask',
           assistant: selectedAssistant,
           assistantEnabledToolNames:
             getEnabledAssistantToolNames(selectedAssistant),

@@ -114,6 +114,7 @@ export class NativeAgentRuntime implements AgentRuntime {
       isSubagentChildRun: Boolean(input.systemPromptOverride),
       toolApprovalConversationId: input.toolApprovalConversationId,
       blockedCommandPrefixes: input.blockedCommandPrefixes,
+      bypassToolApproval: input.bypassToolApproval,
     })
     const worker = createAgentLoopWorker()
     const runId = uuidv4()

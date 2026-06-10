@@ -195,6 +195,7 @@ async function runChildAgent(
     abortSignal: abortController.signal,
     systemPromptOverride: SUBAGENT_DEFAULT_SYSTEM_PROMPT,
     toolApprovalConversationId: parent.conversationId,
+    bypassToolApproval: parent.bypassToolApproval,
     runContext: { citationRegistry },
   }
 

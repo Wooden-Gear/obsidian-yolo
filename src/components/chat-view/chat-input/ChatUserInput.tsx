@@ -60,6 +60,7 @@ import { useSnippetEntries } from '../hooks/useSnippetEntries'
 import type { ContextBreakdownInputs } from '../useContextBreakdown'
 
 import ChatSkillBadge from './ChatSkillBadge'
+import { ChatMode, ChatModeSelect } from './ChatModeSelect'
 import { FileUploadButton } from './FileUploadButton'
 import LexicalContentEditable from './LexicalContentEditable'
 import MentionableBadge from './MentionableBadge'
@@ -116,8 +117,10 @@ export type ChatUserInputProps = {
   onBlur?: () => void
   currentAssistantId?: string
   onSelectAssistantForConversation?: (assistantId: string) => void
-  currentChatMode?: 'chat' | 'agent'
-  onSelectChatModeForConversation?: (mode: 'chat' | 'agent') => void
+  currentChatMode?: ChatMode
+  onSelectChatModeForConversation?: (mode: ChatMode) => void
+  chatMode?: ChatMode
+  onChatModeChange?: (mode: ChatMode) => void
   allowAgentModeOption?: boolean
   enableResize?: boolean
   onRunSlashCommand?: (command: SlashCommand) => void
@@ -182,6 +185,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       onSelectAssistantForConversation,
       currentChatMode,
       onSelectChatModeForConversation,
+      chatMode,
+      onChatModeChange,
       allowAgentModeOption = true,
       enableResize = false,
       onRunSlashCommand,
@@ -1456,6 +1461,14 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             <div className="yolo-chat-user-input-controls">
               <div className="yolo-chat-user-input-controls__left">
                 <FileUploadButton onUpload={handleUploadFiles} />
+                {onChatModeChange && chatMode ? (
+                  <ChatModeSelect
+                    mode={chatMode}
+                    onChange={onChatModeChange}
+                    side="top"
+                    sideOffset={8}
+                  />
+                ) : null}
                 <ModelSelect
                   modelId={modelId}
                   onChange={onModelChange}

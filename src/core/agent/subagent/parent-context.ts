@@ -36,6 +36,7 @@ export type SubagentParentContext = {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
   assistantId?: string
+  bypassToolApproval?: boolean
 }
 
 export function buildSubagentParentContext(
@@ -58,5 +59,6 @@ export function buildSubagentParentContext(
     requestContextBuilder: input.requestContextBuilder,
     mcpManager: input.mcpManager,
     assistantId: input.assistantId,
+    bypassToolApproval: input.bypassToolApproval,
   }
 }

@@ -77,6 +77,7 @@ export class AgentToolGateway {
   private readonly isSubagentChildRun: boolean
   private readonly toolApprovalConversationId?: string
   private readonly blockedCommandPrefixes: readonly string[] | null
+  private readonly bypassToolApproval: boolean
   private readonly ajv: AjvInstance
   private readonly schemaValidatorCache = new Map<
     string,
@@ -98,6 +99,7 @@ export class AgentToolGateway {
       isSubagentChildRun?: boolean
       toolApprovalConversationId?: string
       blockedCommandPrefixes?: string[]
+      bypassToolApproval?: boolean
     },
   ) {
     this.toolsEnabled = options?.toolsEnabled ?? true
@@ -114,6 +116,7 @@ export class AgentToolGateway {
     this.isSubagentChildRun = options?.isSubagentChildRun ?? false
     this.toolApprovalConversationId = options?.toolApprovalConversationId
     this.blockedCommandPrefixes = options?.blockedCommandPrefixes ?? null
+    this.bypassToolApproval = options?.bypassToolApproval ?? false
     // `strict: false` keeps ajv tolerant of MCP tool schemas that include
     // vendor-specific keywords or non-canonical types. `allErrors` lists every
     // violation in the error message so the model has enough signal to retry;
@@ -1059,6 +1062,15 @@ export class AgentToolGateway {
       return false
     }
 
+    if (this.bypassToolApproval) {
+      return this.mcpManager.isToolExecutionAllowed({
+        requestToolName: request.name,
+        conversationId: this.toolApprovalConversationId ?? conversationId,
+        requestArgs,
+        requireAutoExecution: true,
+      })
+    }
+
     const approvalMode = getAssistantToolApprovalMode(
       {
         toolPreferences: this.toolPreferences,
@@ -1137,6 +1149,9 @@ export class AgentToolGateway {
   }
 
   private shouldUseFsEditReview(toolName: string): boolean {
+    if (this.bypassToolApproval) {
+      return false
+    }
     try {
       const parsed = parseToolName(toolName)
       return (

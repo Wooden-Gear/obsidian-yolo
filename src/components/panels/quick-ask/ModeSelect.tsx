@@ -11,10 +11,10 @@ import { useLanguage } from '../../../contexts/language-context'
 import { getNodeWindow } from '../../../utils/dom/window-context'
 import { YoloDropdownContent } from '../../common/popover'
 
-export type QuickAskMode = 'chat' | 'agent'
+export type QuickAskMode = 'ask' | 'agent'
 
 const isQuickAskMode = (value: string): value is QuickAskMode =>
-  value === 'chat' || value === 'agent'
+  value === 'ask' || value === 'agent'
 
 type ModeOption = {
   value: QuickAskMode
@@ -27,11 +27,11 @@ type ModeOption = {
 
 const MODE_OPTIONS: ModeOption[] = [
   {
-    value: 'chat',
-    labelKey: 'chatMode.chat',
-    labelFallback: 'Chat',
-    descKey: 'chatMode.chatDesc',
-    descFallback: 'Normal conversation mode',
+    value: 'ask',
+    labelKey: 'chatMode.ask',
+    labelFallback: 'Ask',
+    descKey: 'chatMode.askDesc',
+    descFallback: 'Ask, refine, create',
     icon: <MessageSquare size={14} />,
   },
   {
@@ -83,7 +83,7 @@ export const ModeSelect = forwardRef<
     const [isOpen, setIsOpen] = useState(false)
     const triggerRef = useRef<HTMLButtonElement | null>(null)
     const itemRefs = useRef<Record<QuickAskMode, HTMLDivElement | null>>({
-      chat: null,
+      ask: null,
       agent: null,
     })
     const setTriggerRef = useCallback(
@@ -112,7 +112,7 @@ export const ModeSelect = forwardRef<
 
     const focusByDelta = useCallback(
       (delta: number) => {
-        const values: QuickAskMode[] = ['chat', 'agent']
+        const values: QuickAskMode[] = ['ask', 'agent']
         const currentIndex = values.indexOf(mode)
         const nextIndex = (currentIndex + delta + values.length) % values.length
         const nextValue = values[nextIndex]
@@ -184,8 +184,8 @@ export const ModeSelect = forwardRef<
           <div className="yolo-chat-input-model-select__model-name">
             {triggerLabel ??
               t(
-                currentOption?.labelKey ?? 'chatMode.chat',
-                currentOption?.labelFallback ?? 'Chat',
+                currentOption?.labelKey ?? 'chatMode.ask',
+                currentOption?.labelFallback ?? 'Ask',
               )}
           </div>
           <div className="yolo-chat-input-model-select__icon">

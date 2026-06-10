@@ -1491,12 +1491,18 @@ export const it: TranslationKeys = {
       createSnippetsFile: 'Clicca per creare snippets.md',
     },
     emptyState: {
+      askTitle: 'Pensa prima, poi scrivi',
+      askDescription:
+        "Ideale per domande, revisione e riscrittura, con focus sull'espressione.",
       chatTitle: 'Pensa prima, poi scrivi',
       chatDescription:
         "Ideale per domande, revisione e riscrittura, con focus sull'espressione.",
       agentTitle: "Lascia eseguire all'AI",
       agentDescription:
         'Abilita gli strumenti per ricerca, lettura/scrittura e task multi-step.',
+      agentFullTitle: 'Esecuzione con accesso completo',
+      agentFullDescription:
+        'Approva automaticamente tutte le chiamate agli strumenti per task multi-step continui.',
     },
     compaction: {
       pendingTitle: 'Compattazione del contesto in corso',
@@ -1906,12 +1912,16 @@ export const it: TranslationKeys = {
   },
 
   chatMode: {
+    ask: 'Ask',
+    askDesc: 'Chiedi, rifinisci, crea',
     chat: 'Chat',
     chatDesc: 'Chiedi, rifinisci, crea',
     rewrite: 'Riscrivi',
     rewriteDesc: 'Modifica solo la selezione corrente',
     agent: 'Agent',
     agentDesc: 'Strumenti per task complessi',
+    agentFull: 'Agent (accesso completo)',
+    agentFullDesc: 'Approva automaticamente tutte le chiamate agli strumenti',
     warning: {
       title: 'Conferma prima di abilitare la modalita Agent',
       description:
@@ -1925,6 +1935,20 @@ export const it: TranslationKeys = {
         'Ho compreso i rischi sopra indicati e accetto la responsabilita di procedere',
       cancel: 'Annulla',
       confirm: 'Continua e abilita Agent',
+    },
+    fullAccessWarning: {
+      title: "Conferma prima di abilitare l'accesso completo",
+      description:
+        "L'accesso completo approva automaticamente tutte le chiamate agli strumenti, incluse modifiche ai file e comandi terminal. Prima di continuare, leggi i seguenti rischi:",
+      permission:
+        'Gli strumenti vengono eseguiti senza approvazione per chiamata. I prefissi di comandi pericolosi restano bloccati.',
+      cost: "Le esecuzioni autonome possono consumare molte risorse del modello e comportare costi piu elevati.",
+      backup:
+        'Esegui un backup dei contenuti importanti in anticipo per evitare modifiche indesiderate.',
+      checkbox:
+        'Ho compreso i rischi sopra indicati e accetto la responsabilita di procedere',
+      cancel: 'Annulla',
+      confirm: 'Continua con accesso completo',
     },
   },
 

@@ -1359,10 +1359,14 @@ export type TranslationKeys = {
       createSnippetsFile?: string
     }
     emptyState?: {
+      askTitle?: string
+      askDescription?: string
       chatTitle?: string
       chatDescription?: string
       agentTitle?: string
       agentDescription?: string
+      agentFullTitle?: string
+      agentFullDescription?: string
     }
     compaction?: {
       pendingTitle?: string
@@ -1702,13 +1706,27 @@ export type TranslationKeys = {
 
   // Chat Mode Select
   chatMode?: {
+    ask?: string
+    askDesc?: string
     chat?: string
     chatDesc?: string
     rewrite?: string
     rewriteDesc?: string
     agent?: string
     agentDesc?: string
+    agentFull?: string
+    agentFullDesc?: string
     warning?: {
+      title?: string
+      description?: string
+      permission?: string
+      cost?: string
+      backup?: string
+      checkbox?: string
+      cancel?: string
+      confirm?: string
+    }
+    fullAccessWarning?: {
       title?: string
       description?: string
       permission?: string

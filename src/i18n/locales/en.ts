@@ -1588,12 +1588,18 @@ export const en: TranslationKeys = {
       createSnippetsFile: 'Click to create snippets.md',
     },
     emptyState: {
+      askTitle: 'Think first, then write',
+      askDescription:
+        'Great for questions, polishing, and rewriting with focus on expression.',
       chatTitle: 'Think first, then write',
       chatDescription:
         'Great for questions, polishing, and rewriting with focus on expression.',
       agentTitle: 'Let AI execute',
       agentDescription:
         'Enable tools to handle search, read/write operations, and multi-step tasks.',
+      agentFullTitle: 'Full access execution',
+      agentFullDescription:
+        'Auto-approve all tool calls for continuous multi-step tasks.',
     },
     compaction: {
       pendingTitle: 'Compacting context',
@@ -1980,12 +1986,16 @@ export const en: TranslationKeys = {
   },
 
   chatMode: {
+    ask: 'Ask',
+    askDesc: 'Ask, refine, create',
     chat: 'Chat',
     chatDesc: 'Ask, refine, create',
     rewrite: 'Rewrite',
     rewriteDesc: 'Only modify the current selection',
     agent: 'Agent',
     agentDesc: 'Tools for complex tasks',
+    agentFull: 'Agent (full access)',
+    agentFullDesc: 'Auto-approve all tool calls',
     warning: {
       title: 'Please confirm before enabling Agent mode',
       description:
@@ -1999,6 +2009,20 @@ export const en: TranslationKeys = {
         'I understand the risks above and accept responsibility for proceeding',
       cancel: 'Cancel',
       confirm: 'Continue and Enable Agent',
+    },
+    fullAccessWarning: {
+      title: 'Please confirm before enabling full access',
+      description:
+        'Full access auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
+      permission:
+        'Tools run without per-call approval. Dangerous command prefixes are still blocked.',
+      cost: 'Autonomous runs may consume significant model resources and incur higher costs.',
+      backup:
+        'Back up important content in advance to avoid unintended changes.',
+      checkbox:
+        'I understand the risks above and accept responsibility for proceeding',
+      cancel: 'Cancel',
+      confirm: 'Continue with Full Access',
     },
   },
 

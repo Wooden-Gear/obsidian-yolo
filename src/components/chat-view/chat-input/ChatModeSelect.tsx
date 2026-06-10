@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Infinity as InfinityIcon,
   MessageSquare,
+  ShieldOff,
 } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
@@ -11,10 +12,28 @@ import { useLanguage } from '../../../contexts/language-context'
 import { getNodeWindow } from '../../../utils/dom/window-context'
 import { YoloDropdownContent } from '../../common/popover'
 
-export type ChatMode = 'chat' | 'agent'
+export type ChatMode = 'ask' | 'agent' | 'agent-full'
 
-const isChatMode = (value: string): value is ChatMode =>
-  value === 'chat' || value === 'agent'
+export const CHAT_MODES: readonly ChatMode[] = ['ask', 'agent', 'agent-full']
+
+export const isChatMode = (value: string): value is ChatMode =>
+  value === 'ask' || value === 'agent' || value === 'agent-full'
+
+export const normalizeChatMode = (
+  raw: string | null | undefined,
+  fallback: ChatMode = 'agent',
+): ChatMode => {
+  if (raw === 'chat') {
+    return 'ask'
+  }
+  if (raw && isChatMode(raw)) {
+    return raw
+  }
+  return fallback
+}
+
+export const isAgentChatMode = (mode: ChatMode): boolean =>
+  mode === 'agent' || mode === 'agent-full'
 
 type ModeOption = {
   value: ChatMode
@@ -23,15 +42,16 @@ type ModeOption = {
   descKey: string
   descFallback: string
   icon: React.ReactNode
+  danger?: boolean
 }
 
 const MODE_OPTIONS: ModeOption[] = [
   {
-    value: 'chat',
-    labelKey: 'chatMode.chat',
-    labelFallback: 'Chat',
-    descKey: 'chatMode.chatDesc',
-    descFallback: 'Normal conversation mode',
+    value: 'ask',
+    labelKey: 'chatMode.ask',
+    labelFallback: 'Ask',
+    descKey: 'chatMode.askDesc',
+    descFallback: 'Ask, refine, create',
     icon: <MessageSquare size={14} />,
   },
   {
@@ -39,8 +59,17 @@ const MODE_OPTIONS: ModeOption[] = [
     labelKey: 'chatMode.agent',
     labelFallback: 'Agent',
     descKey: 'chatMode.agentDesc',
-    descFallback: 'Enable tool calling capabilities',
+    descFallback: 'Tools for complex tasks',
     icon: <InfinityIcon size={14} />,
+  },
+  {
+    value: 'agent-full',
+    labelKey: 'chatMode.agentFull',
+    labelFallback: 'Agent (full access)',
+    descKey: 'chatMode.agentFullDesc',
+    descFallback: 'Auto-approve all tool calls',
+    icon: <ShieldOff size={14} />,
+    danger: true,
   },
 ]
 
@@ -79,8 +108,9 @@ export const ChatModeSelect = forwardRef<
     const [isOpen, setIsOpen] = useState(false)
     const triggerRef = useRef<HTMLButtonElement | null>(null)
     const itemRefs = useRef<Record<ChatMode, HTMLDivElement | null>>({
-      chat: null,
+      ask: null,
       agent: null,
+      'agent-full': null,
     })
 
     const setTriggerRef = useCallback(
@@ -109,7 +139,7 @@ export const ChatModeSelect = forwardRef<
 
     const focusByDelta = useCallback(
       (delta: number) => {
-        const values: ChatMode[] = ['chat', 'agent']
+        const values = [...CHAT_MODES]
         const currentIndex = values.indexOf(mode)
         const nextIndex = (currentIndex + delta + values.length) % values.length
         const nextValue = values[nextIndex]
@@ -172,7 +202,10 @@ export const ChatModeSelect = forwardRef<
       <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
           ref={setTriggerRef}
-          className="yolo-chat-input-model-select yolo-chat-mode-select"
+          className={`yolo-chat-input-model-select yolo-chat-mode-select${
+            currentOption?.danger ? ' yolo-chat-mode-select--danger' : ''
+          }`}
+          data-mode={mode}
           onKeyDown={handleTriggerKeyDown}
         >
           <div className="yolo-chat-mode-select__icon">
@@ -180,8 +213,8 @@ export const ChatModeSelect = forwardRef<
           </div>
           <div className="yolo-chat-input-model-select__model-name">
             {t(
-              currentOption?.labelKey ?? 'chatMode.chat',
-              currentOption?.labelFallback ?? 'Chat',
+              currentOption?.labelKey ?? 'chatMode.ask',
+              currentOption?.labelFallback ?? 'Ask',
             )}
           </div>
           <div className="yolo-chat-input-model-select__icon">
@@ -230,7 +263,9 @@ export const ChatModeSelect = forwardRef<
             {MODE_OPTIONS.map((option) => (
               <DropdownMenu.RadioItem
                 key={option.value}
-                className="yolo-popover-item yolo-chat-mode-select-item"
+                className={`yolo-popover-item yolo-chat-mode-select-item${
+                  option.danger ? ' yolo-chat-mode-select-item--danger' : ''
+                }`}
                 value={option.value}
                 ref={(element) => {
                   itemRefs.current[option.value] = element

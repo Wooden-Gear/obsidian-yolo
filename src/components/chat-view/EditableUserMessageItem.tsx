@@ -25,8 +25,10 @@ export type EditableUserMessageItemProps = {
   showReasoningSelect?: boolean
   showPlaceholder?: boolean
   currentAssistantId?: string
-  currentChatMode?: 'chat' | 'agent'
-  onSelectChatModeForConversation?: (mode: 'chat' | 'agent') => void
+  currentChatMode?: import('./chat-input/ChatModeSelect').ChatMode
+  onSelectChatModeForConversation?: (
+    mode: import('./chat-input/ChatModeSelect').ChatMode,
+  ) => void
   allowAgentModeOption?: boolean
 }
 

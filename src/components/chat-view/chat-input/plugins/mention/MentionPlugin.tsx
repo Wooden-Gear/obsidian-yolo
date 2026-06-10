@@ -34,6 +34,7 @@ import {
 import type { JSX as ReactJSX } from 'react/jsx-runtime'
 import { createPortal } from 'react-dom'
 
+import { CHAT_MODES, type ChatMode } from '../../ChatModeSelect'
 import { PROVIDER_PRESET_INFO } from '../../../../../constants'
 import { useApp } from '../../../../../contexts/app-context'
 import { useLanguage } from '../../../../../contexts/language-context'
@@ -131,7 +132,7 @@ type MentionEntryOptionType =
   | 'folder'
   | 'mode'
   | 'model'
-type MentionChatMode = 'chat' | 'agent'
+type MentionChatMode = ChatMode
 type MentionMenuTransitionDirection = 'none' | 'forward' | 'back'
 
 type MentionTypeaheadOptionPayload =
@@ -611,18 +612,22 @@ export default function NewMentionsPlugin({
 
       if (entryType === 'mode') {
         const modeOptions: MentionChatMode[] = allowAgentModeOption
-          ? ['chat', 'agent']
-          : ['chat']
+          ? [...CHAT_MODES]
+          : ['ask']
         return modeOptions
           .map((mode) => {
             const label =
-              mode === 'agent'
-                ? t('chatMode.agent', 'Agent')
-                : t('chatMode.chat', 'Chat')
+              mode === 'agent-full'
+                ? t('chatMode.agentFull', 'Agent (full access)')
+                : mode === 'agent'
+                  ? t('chatMode.agent', 'Agent')
+                  : t('chatMode.ask', 'Ask')
             const subtitle =
-              mode === 'agent'
-                ? t('chatMode.agentDesc', 'Enable tool calling capabilities')
-                : t('chatMode.chatDesc', 'Normal conversation mode')
+              mode === 'agent-full'
+                ? t('chatMode.agentFullDesc', 'Auto-approve all tool calls')
+                : mode === 'agent'
+                  ? t('chatMode.agentDesc', 'Enable tool calling capabilities')
+                  : t('chatMode.askDesc', 'Ask, refine, create')
             return { mode, label, subtitle }
           })
           .filter((option) => {
@@ -639,7 +644,7 @@ export default function NewMentionsPlugin({
                 mode: option.mode,
                 label: option.label,
                 subtitle: option.subtitle,
-                isCurrent: option.mode === (currentChatMode ?? 'chat'),
+                isCurrent: option.mode === (currentChatMode ?? 'ask'),
               }),
           )
       }

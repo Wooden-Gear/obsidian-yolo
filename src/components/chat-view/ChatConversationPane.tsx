@@ -1,10 +1,11 @@
-import { ArrowDown, Bot, MessageCircle } from 'lucide-react'
+import { ArrowDown, Bot, MessageCircle, ShieldOff } from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import type { FollowOutput } from 'react-virtuoso'
 
 import type { ChatTimelineItem } from '../../types/chat-timeline'
 
 import type { ChatMode } from './chat-input/ChatModeSelect'
+import { isAgentChatMode } from './chat-input/ChatModeSelect'
 import { InstallationIncompleteBanner } from './InstallationIncompleteBanner'
 import { SharedConversationSurface } from './SharedConversationSurface'
 
@@ -24,10 +25,12 @@ type ChatConversationPaneProps = {
   hasStreamingMessages: boolean
   scrollToBottomLabel: string
   scrollToBottomWhileStreamingLabel: string
-  emptyStateChatTitle: string
+  emptyStateAskTitle: string
   emptyStateAgentTitle: string
-  emptyStateChatDescription: string
+  emptyStateAgentFullTitle: string
+  emptyStateAskDescription: string
   emptyStateAgentDescription: string
+  emptyStateAgentFullDescription: string
   footerContent: ReactNode
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
   bottomSpacerHeight?: number
@@ -49,10 +52,12 @@ export function ChatConversationPane({
   hasStreamingMessages,
   scrollToBottomLabel,
   scrollToBottomWhileStreamingLabel,
-  emptyStateChatTitle,
+  emptyStateAskTitle,
   emptyStateAgentTitle,
-  emptyStateChatDescription,
+  emptyStateAgentFullTitle,
+  emptyStateAskDescription,
   emptyStateAgentDescription,
+  emptyStateAgentFullDescription,
   footerContent,
   onTimelineVirtualizationChange,
   bottomSpacerHeight,
@@ -61,6 +66,19 @@ export function ChatConversationPane({
     groupedChatMessagesLength === 0 && !isCurrentConversationRunActive
   const showScrollToBottomButton =
     !showEmptyState && groupedChatMessagesLength > 0 && !isAutoFollowEnabled
+
+  const emptyStateTitle =
+    chatMode === 'agent-full'
+      ? emptyStateAgentFullTitle
+      : isAgentChatMode(chatMode)
+        ? emptyStateAgentTitle
+        : emptyStateAskTitle
+  const emptyStateDescription =
+    chatMode === 'agent-full'
+      ? emptyStateAgentFullDescription
+      : isAgentChatMode(chatMode)
+        ? emptyStateAgentDescription
+        : emptyStateAskDescription
 
   return (
     <>
@@ -87,21 +105,19 @@ export function ChatConversationPane({
                     className="yolo-chat-empty-state-icon"
                     data-mode={chatMode}
                   >
-                    {chatMode === 'agent' ? (
+                    {chatMode === 'agent-full' ? (
+                      <ShieldOff size={18} strokeWidth={2} />
+                    ) : isAgentChatMode(chatMode) ? (
                       <Bot size={18} strokeWidth={2} />
                     ) : (
                       <MessageCircle size={18} strokeWidth={2} />
                     )}
                   </div>
                   <div className="yolo-chat-empty-state-title">
-                    {chatMode === 'agent'
-                      ? emptyStateAgentTitle
-                      : emptyStateChatTitle}
+                    {emptyStateTitle}
                   </div>
                   <div className="yolo-chat-empty-state-description">
-                    {chatMode === 'agent'
-                      ? emptyStateAgentDescription
-                      : emptyStateChatDescription}
+                    {emptyStateDescription}
                   </div>
                 </div>
               </div>
