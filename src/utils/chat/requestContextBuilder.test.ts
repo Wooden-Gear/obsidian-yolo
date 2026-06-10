@@ -18,8 +18,14 @@ jest.mock('../llm/image', () => ({
   tFileToImageDataUrl: jest.fn(async () => 'data:image/png;base64,fake'),
 }))
 
+jest.mock('../../core/skills/liteSkills', () => ({
+  ...jest.requireActual('../../core/skills/liteSkills'),
+  getLiteSkillDocument: jest.fn(),
+}))
+
 import { SystemPromptSnapshotStore } from '../../core/agent/systemPromptSnapshotStore'
 import { getMemoryPromptContext } from '../../core/memory/memoryManager'
+import { getLiteSkillDocument } from '../../core/skills/liteSkills'
 import type { YoloSettings } from '../../settings/schema/setting.types'
 import type { ChatUserMessage } from '../../types/chat'
 import type { ChatModel } from '../../types/chat-model.types'
@@ -32,6 +38,10 @@ import {
   extractMarkdownAtxHeadings,
   stripUnsupportedImages,
 } from './requestContextBuilder'
+
+const mockGetLiteSkillDocument = getLiteSkillDocument as jest.MockedFunction<
+  typeof getLiteSkillDocument
+>
 
 function createMockFile(path: string): InstanceType<typeof TFile> {
   const extension = path.split('.').pop() ?? ''
@@ -151,6 +161,11 @@ function createMockApp({
   }
 }
 
+beforeEach(() => {
+  mockGetLiteSkillDocument.mockReset()
+  mockGetLiteSkillDocument.mockResolvedValue(null)
+})
+
 describe('extractMarkdownAtxHeadings', () => {
   it('extracts ATX headings and ignores fenced code blocks', () => {
     const content = [
@@ -206,6 +221,78 @@ describe('RequestContextBuilder compileUserMessagePrompt', () => {
     expect(textContent).toContain('Please check https://example.com')
     expect(textContent).not.toContain('Potentially Relevant Websearch Results')
     expect(textContent).not.toContain('Website Content:')
+  })
+
+  it('compiles plain prompts without constructing editor state', async () => {
+    const app = createMockApp({
+      files: [],
+      fileContents: new Map(),
+    })
+    const builder = new RequestContextBuilder(app as never, settings)
+
+    const result = await builder.compilePlainUserMessagePrompt({
+      prompt: 'Explain this note',
+      mentionables: [],
+    })
+
+    expect(getTextContent(result.promptContent)).toBe(
+      '\n\nExplain this note\n\n',
+    )
+  })
+
+  it('reuses file mention compilation for plain prompts', async () => {
+    const explicitFile = createMockFile('notes/explicit.md')
+    const app = createMockApp({
+      files: [explicitFile],
+      fileContents: new Map([[explicitFile.path, '# Explicit\nBody']]),
+    })
+    const builder = new RequestContextBuilder(app as never, settings)
+
+    const result = await builder.compilePlainUserMessagePrompt({
+      prompt: 'Summarize this file',
+      mentionables: [{ type: 'file', file: explicitFile }],
+    })
+
+    const textContent = getTextContent(result.promptContent)
+    expect(textContent).toContain('## Mentioned Vault Files (outline only)')
+    expect(textContent).toContain('- `notes/explicit.md`\n  - L1 # Explicit')
+    expect(textContent).toContain('Summarize this file')
+  })
+
+  it('adds selected skill content for plain prompts', async () => {
+    mockGetLiteSkillDocument.mockResolvedValueOnce({
+      entry: {
+        name: 'skill-creator',
+        description: 'Create skills',
+        mode: 'lazy',
+        path: 'builtin://skills/skill-creator',
+      },
+      content: '# skill body',
+    })
+
+    const app = createMockApp({
+      files: [],
+      fileContents: new Map(),
+    })
+    const builder = new RequestContextBuilder(app as never, settings)
+
+    const result = await builder.compilePlainUserMessagePrompt({
+      prompt: 'Use the skill',
+      mentionables: [],
+      selectedSkills: [
+        {
+          name: 'skill-creator',
+          description: 'Create skills',
+          path: 'builtin://skills/skill-creator',
+        },
+      ],
+    })
+
+    expect(getTextContent(result.promptContent)).toContain(
+      '<user_selected_skills>',
+    )
+    expect(getTextContent(result.promptContent)).toContain('# skill body')
+    expect(getTextContent(result.promptContent)).toContain('Use the skill')
   })
 
   it('builds unified mentioned file context with outlines for files, current file, and folder files', async () => {

@@ -130,6 +130,14 @@ import { applyKnownMaxContextTokensToChatModels } from './utils/llm/model-capabi
 import { getMentionableBlockData } from './utils/obsidian'
 import { ensureBufferByteLengthCompat } from './utils/runtime/ensureBufferByteLengthCompat'
 
+export type {
+  YoloAgentApi,
+  YoloAgentContext,
+  YoloAgentEvent,
+  YoloAgentRunRequest,
+  YoloAgentRunResult,
+} from './core/agent/agent-api'
+
 const STARTUP_GRACE_MS = 30 * 1000
 
 export default class YoloPlugin extends Plugin {
@@ -918,6 +926,10 @@ export default class YoloPlugin extends Plugin {
       })
     }
     return this.agentApiService
+  }
+
+  get agent(): YoloAgentApi {
+    return this.getAgentApi()
   }
 
   private getAgentNotificationCoordinator(): AgentNotificationCoordinator {

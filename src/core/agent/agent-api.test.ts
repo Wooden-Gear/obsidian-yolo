@@ -1,3 +1,65 @@
+jest.mock('../../components/chat-view/chat-runtime-inputs', () => ({
+  resolveWorkspaceScopeForRuntimeInput: jest.fn(() => null),
+}))
+
+jest.mock('../../components/chat-view/chat-runtime-profiles', () => ({
+  resolveChatModeRuntime: jest.fn(() => ({
+    loopConfig: {
+      enableTools: true,
+      includeBuiltinTools: true,
+      maxAutoIterations: 100,
+    },
+    allowedToolNames: ['server__search'],
+    toolPreferences: undefined,
+  })),
+}))
+
+jest.mock('../llm/manager', () => ({
+  getChatModelClient: jest.fn(() => ({
+    providerClient: { id: 'provider-client' },
+    model: {
+      id: 'mock-model',
+      providerId: 'mock-provider',
+    },
+  })),
+}))
+
+jest.mock('../skills/liteSkills', () => ({
+  listLiteSkillEntries: jest.fn(async () => [
+    {
+      name: 'skill-creator',
+      description: 'Create skills',
+      mode: 'lazy',
+      path: 'builtin://skills/skill-creator',
+    },
+  ]),
+}))
+
+jest.mock('../../utils/chat/requestContextBuilder', () => ({
+  RequestContextBuilder: jest.fn().mockImplementation(() => ({
+    compilePlainUserMessagePrompt: jest.fn(
+      async ({
+        prompt,
+        mentionables,
+        selectedSkills,
+      }: {
+        prompt: string
+        mentionables: unknown[]
+        selectedSkills?: unknown[]
+      }) => ({
+        promptContent: {
+          prompt,
+          mentionables,
+          selectedSkills: selectedSkills ?? [],
+        },
+      }),
+    ),
+  })),
+}))
+
+import { TFile, TFolder } from 'obsidian'
+
+import type { ChatUserMessage } from '../../types/chat'
 import {
   ToolCallResponse,
   ToolCallResponseStatus,
@@ -7,6 +69,7 @@ import {
   buildAgentApiPrompt,
   conversationStateToEvents,
   narrowAllowedToolNames,
+  resolveAgentApiRunInput,
 } from './agent-api'
 import type { AgentConversationState } from './service'
 
@@ -23,6 +86,7 @@ describe('agent api helpers', () => {
           },
           {
             type: 'canvas',
+            path: 'Boards/Flow.canvas',
             content: '{"nodes":[]}',
           },
           {
@@ -35,9 +99,116 @@ describe('agent api helpers', () => {
       [
         'Analyze this',
         'Markdown context: Notes/A.md\n\n```markdown\n# A\n```',
-        'Canvas context\n\n```json\n{"nodes":[]}\n```',
+        'Canvas context: Boards/Flow.canvas\n\n```json\n{"nodes":[]}\n```',
         'Plain context',
       ].join('\n\n'),
+    )
+  })
+
+  it('resolves file, folder, skill, and text contexts into a compiled user message', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'Daily/2026-05-29.md',
+      extension: 'md',
+    })
+    const folder = Object.assign(new TFolder(), {
+      path: 'Projects/YOLO',
+      children: [],
+    })
+    const app = {
+      vault: {
+        getFileByPath: jest.fn((path: string) =>
+          path === file.path ? file : null,
+        ),
+        getFolderByPath: jest.fn((path: string) =>
+          path === folder.path ? folder : null,
+        ),
+      },
+    } as unknown as import('obsidian').App
+    const settings = {
+      currentAssistantId: 'assistant-1',
+      chatModelId: 'mock-model',
+      assistants: [
+        {
+          id: 'assistant-1',
+          modelId: 'mock-model',
+          toolPreferences: {},
+          enabledToolNames: [],
+          includeBuiltinTools: true,
+          skillPreferences: {},
+        },
+      ],
+      providers: [{ id: 'mock-provider', apiType: 'openai' }],
+      mcp: {
+        enableToolDisclosure: false,
+      },
+      continuationOptions: {
+        primaryRequestTimeoutMs: 30000,
+        streamFallbackRecoveryEnabled: true,
+      },
+      skills: {},
+    } as any
+    const agentService = {
+      getSystemPromptSnapshotStore: jest.fn(() => null),
+      getPromptSourceWatcher: jest.fn(() => ({
+        getRevision: jest.fn(() => 1),
+        setWatchedPaths: jest.fn(),
+      })),
+    } as any
+
+    const result = await resolveAgentApiRunInput({
+      request: {
+        prompt: '总结这些资料',
+        context: [
+          { type: 'file', path: 'Daily/2026-05-29.md' },
+          { type: 'folder', path: 'Projects/YOLO' },
+          { type: 'skill', name: 'skill-creator' },
+          { type: 'markdown', path: 'Docs/spec.md', content: '# Spec' },
+          { type: 'text', content: '补充说明' },
+        ],
+      },
+      conversationId: 'conversation-1',
+      abortSignal: new AbortController().signal,
+      app,
+      settings,
+      agentService,
+      mcpManager: {} as any,
+    })
+
+    expect(result.input.messages).toHaveLength(1)
+    expect(result.input.messages[0]).toMatchObject({
+      role: 'user',
+      content: null,
+      mentionables: [
+        { type: 'file', file },
+        { type: 'folder', folder },
+      ],
+      selectedSkills: [
+        {
+          name: 'skill-creator',
+          description: 'Create skills',
+          path: 'builtin://skills/skill-creator',
+        },
+      ],
+    })
+    expect((result.input.messages[0] as ChatUserMessage).promptContent).toEqual(
+      {
+        prompt: [
+          '总结这些资料',
+          'Markdown context: Docs/spec.md\n\n```markdown\n# Spec\n```',
+          '补充说明',
+        ].join('\n\n'),
+        mentionables: [
+          { type: 'file', file },
+          { type: 'folder', folder },
+        ],
+        selectedSkills: [
+          {
+            name: 'skill-creator',
+            description: 'Create skills',
+            path: 'builtin://skills/skill-creator',
+          },
+        ],
+      },
     )
   })
 

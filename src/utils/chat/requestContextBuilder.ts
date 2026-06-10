@@ -44,6 +44,7 @@ import { getLatestChatConversationCompaction } from '../../types/chat'
 import type { ChatModel } from '../../types/chat-model.types'
 import type { ContentPart, RequestMessage } from '../../types/llm/request'
 import type {
+  Mentionable,
   MentionableAssistantQuote,
   MentionableBlock,
   MentionableFile,
@@ -1302,106 +1303,13 @@ ${message.annotations
             ignoreMentionableTypes: ['model'],
           })
         : ''
-
-      onQueryProgressChange?.({
-        type: 'reading-mentionables',
-      })
-
-      const allMentionedFiles = message.mentionables
-        .filter((m): m is MentionableFile => m.type === 'file')
-        .map((m) => this.app.vault.getFileByPath(m.file.path))
-        .filter((file): file is TFile => Boolean(file))
-      const mentionedImageFiles = allMentionedFiles.filter(isImageTFile)
-      const files = allMentionedFiles.filter((f) => !isImageTFile(f))
-      const folders = message.mentionables
-        .filter((m): m is MentionableFolder => m.type === 'folder')
-        .map((m) => this.app.vault.getFolderByPath(m.folder.path))
-        .filter((folder): folder is TFolder => Boolean(folder))
-
-      const filePrompt = await this.buildMentionedFilePrompt({
-        files,
-        folders,
-      })
-
-      const blocks = message.mentionables.filter(
-        (m): m is MentionableBlock => m.type === 'block',
-      )
-      const assistantQuotes = message.mentionables.filter(
-        (m): m is MentionableAssistantQuote => m.type === 'assistant-quote',
-      )
-      const pdfs = message.mentionables.filter(
-        (m): m is MentionablePDF => m.type === 'pdf',
-      )
-      const blockPrompt = blocks
-        .map(({ file, content, startLine, pageNumber }) => {
-          const pageTag =
-            pageNumber !== undefined ? ` (page ${pageNumber})` : ''
-          const header = `${file.path}${pageTag}`
-          if (pageNumber !== undefined) {
-            // PDF block: skip line numbering (startLine/endLine are 0)
-            return `\`\`\`${header}\n${content}\n\`\`\`\n`
-          }
-          const numberedContent = this.addLineNumbersToContent({
-            content,
-            startLine,
-          })
-          return `\`\`\`${header}\n${numberedContent}\n\`\`\`\n`
-        })
-        .join('')
-      const assistantQuotePrompt =
-        this.buildAssistantQuotePrompt(assistantQuotes)
-      const {
-        documentParts: pdfDocumentParts,
-        legacyText: legacyPdfFallbackText,
-      } = this.buildPdfAttachments(pdfs)
-
-      const inlineImageDataUrls = message.mentionables
-        .filter((m): m is MentionableImage => m.type === 'image')
-        .map(({ data }) => data)
-      const vaultImageDataUrls = (
-        await Promise.all(
-          mentionedImageFiles.map(async (file) => {
-            try {
-              return await tFileToImageDataUrl(this.app, file, {
-                cache: { enabled: true, settings: this.settings },
-              })
-            } catch (error) {
-              console.warn(
-                '[YOLO] Failed to read mentioned image file',
-                file.path,
-                error,
-              )
-              return null
-            }
-          }),
-        )
-      ).filter((url): url is string => url !== null)
-      const imageDataUrls = [...inlineImageDataUrls, ...vaultImageDataUrls]
-      const selectedSkillsPrompt = await this.buildSelectedSkillsPrompt(
-        message.selectedSkills,
-      )
-
-      // Reset query progress
-      onQueryProgressChange?.({
-        type: 'idle',
-      })
-
       return {
-        promptContent: [
-          ...imageDataUrls.map(
-            (data): ContentPart => ({
-              type: 'image_url',
-              image_url: {
-                url: data,
-              },
-            }),
-          ),
-          ...pdfDocumentParts,
-          {
-            type: 'text',
-            text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
-          },
-        ],
+        promptContent: await this.compileUserPromptParts({
+          query,
+          mentionables: message.mentionables,
+          selectedSkills: message.selectedSkills,
+          onQueryProgressChange,
+        }),
       }
     } catch (error) {
       console.error('Failed to compile user message', error)
@@ -1410,6 +1318,154 @@ ${message.annotations
       })
       throw error
     }
+  }
+
+  public async compilePlainUserMessagePrompt({
+    prompt,
+    mentionables,
+    selectedSkills,
+    onQueryProgressChange,
+  }: {
+    prompt: string
+    mentionables: Mentionable[]
+    selectedSkills?: ChatSelectedSkill[]
+    onQueryProgressChange?: (queryProgress: QueryProgressState) => void
+  }): Promise<{
+    promptContent: ChatUserMessage['promptContent']
+  }> {
+    try {
+      if (
+        prompt.trim().length === 0 &&
+        mentionables.length === 0 &&
+        (selectedSkills?.length ?? 0) === 0
+      ) {
+        return {
+          promptContent: '',
+        }
+      }
+
+      return {
+        promptContent: await this.compileUserPromptParts({
+          query: prompt,
+          mentionables,
+          selectedSkills,
+          onQueryProgressChange,
+        }),
+      }
+    } catch (error) {
+      console.error('Failed to compile plain user message', error)
+      onQueryProgressChange?.({
+        type: 'idle',
+      })
+      throw error
+    }
+  }
+
+  private async compileUserPromptParts({
+    query,
+    mentionables,
+    selectedSkills,
+    onQueryProgressChange,
+  }: {
+    query: string
+    mentionables: Mentionable[]
+    selectedSkills?: ChatSelectedSkill[]
+    onQueryProgressChange?: (queryProgress: QueryProgressState) => void
+  }): Promise<ChatUserMessage['promptContent']> {
+    onQueryProgressChange?.({
+      type: 'reading-mentionables',
+    })
+
+    const allMentionedFiles = mentionables
+      .filter((m): m is MentionableFile => m.type === 'file')
+      .map((m) => this.app.vault.getFileByPath(m.file.path))
+      .filter((file): file is TFile => Boolean(file))
+    const mentionedImageFiles = allMentionedFiles.filter(isImageTFile)
+    const files = allMentionedFiles.filter((f) => !isImageTFile(f))
+    const folders = mentionables
+      .filter((m): m is MentionableFolder => m.type === 'folder')
+      .map((m) => this.app.vault.getFolderByPath(m.folder.path))
+      .filter((folder): folder is TFolder => Boolean(folder))
+
+    const filePrompt = await this.buildMentionedFilePrompt({
+      files,
+      folders,
+    })
+
+    const blocks = mentionables.filter(
+      (m): m is MentionableBlock => m.type === 'block',
+    )
+    const assistantQuotes = mentionables.filter(
+      (m): m is MentionableAssistantQuote => m.type === 'assistant-quote',
+    )
+    const pdfs = mentionables.filter(
+      (m): m is MentionablePDF => m.type === 'pdf',
+    )
+    const blockPrompt = blocks
+      .map(({ file, content, startLine, pageNumber }) => {
+        const pageTag = pageNumber !== undefined ? ` (page ${pageNumber})` : ''
+        const header = `${file.path}${pageTag}`
+        if (pageNumber !== undefined) {
+          // PDF block: skip line numbering (startLine/endLine are 0)
+          return `\`\`\`${header}\n${content}\n\`\`\`\n`
+        }
+        const numberedContent = this.addLineNumbersToContent({
+          content,
+          startLine,
+        })
+        return `\`\`\`${header}\n${numberedContent}\n\`\`\`\n`
+      })
+      .join('')
+    const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
+    const {
+      documentParts: pdfDocumentParts,
+      legacyText: legacyPdfFallbackText,
+    } = this.buildPdfAttachments(pdfs)
+
+    const inlineImageDataUrls = mentionables
+      .filter((m): m is MentionableImage => m.type === 'image')
+      .map(({ data }) => data)
+    const vaultImageDataUrls = (
+      await Promise.all(
+        mentionedImageFiles.map(async (file) => {
+          try {
+            return await tFileToImageDataUrl(this.app, file, {
+              cache: { enabled: true, settings: this.settings },
+            })
+          } catch (error) {
+            console.warn(
+              '[YOLO] Failed to read mentioned image file',
+              file.path,
+              error,
+            )
+            return null
+          }
+        }),
+      )
+    ).filter((url): url is string => url !== null)
+    const imageDataUrls = [...inlineImageDataUrls, ...vaultImageDataUrls]
+    const selectedSkillsPrompt =
+      await this.buildSelectedSkillsPrompt(selectedSkills)
+
+    onQueryProgressChange?.({
+      type: 'idle',
+    })
+
+    return [
+      ...imageDataUrls.map(
+        (data): ContentPart => ({
+          type: 'image_url',
+          image_url: {
+            url: data,
+          },
+        }),
+      ),
+      ...pdfDocumentParts,
+      {
+        type: 'text',
+        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
+      },
+    ]
   }
 
   private buildAssistantQuotePrompt(

@@ -17,6 +17,7 @@ import type { McpManager } from '../mcp/mcpManager'
 import { listLiteSkillEntries } from '../skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../skills/skillPolicy'
 
+import { resolveAgentApiContext } from './agent-api-context'
 import { DEFAULT_ASSISTANT_ID } from './default-assistant'
 import type {
   AgentConversationState,
@@ -27,8 +28,11 @@ import { getEnabledAssistantToolNames } from './tool-preferences'
 import type { AgentRuntimeLoopConfig, AgentRuntimeRunInput } from './types'
 
 export type YoloAgentContext =
+  | { type: 'file'; path: string }
+  | { type: 'folder'; path: string }
+  | { type: 'skill'; name: string }
   | { type: 'markdown'; path?: string; content: string }
-  | { type: 'canvas'; content: string }
+  | { type: 'canvas'; path?: string; content: string }
   | { type: 'text'; content: string }
 
 export type YoloAgentRunRequest = {
@@ -313,15 +317,6 @@ export async function resolveAgentApiRunInput({
     settings,
     assistant,
   })
-  const sourceUserMessageId = uuidv4()
-  const messages = [
-    buildAgentApiUserMessage({
-      id: sourceUserMessageId,
-      prompt: request.prompt,
-      context: request.context,
-    }),
-  ]
-
   const requestContextBuilder = new RequestContextBuilder(
     app,
     {
@@ -337,6 +332,29 @@ export async function resolveAgentApiRunInput({
         agentService.getPromptSourceWatcher().setWatchedPaths(paths),
     },
   )
+  const resolvedContext = await resolveAgentApiContext({
+    app,
+    settings,
+    context: request.context,
+  })
+  const compiledPrompt =
+    await requestContextBuilder.compilePlainUserMessagePrompt({
+      prompt: buildAgentApiPrompt({
+        prompt: request.prompt,
+        context: resolvedContext.textBlocks,
+      }),
+      mentionables: resolvedContext.mentionables,
+      selectedSkills: resolvedContext.selectedSkills,
+    })
+  const sourceUserMessageId = uuidv4()
+  const messages = [
+    buildAgentApiUserMessage({
+      id: sourceUserMessageId,
+      promptContent: compiledPrompt.promptContent,
+      mentionables: resolvedContext.mentionables,
+      selectedSkills: resolvedContext.selectedSkills,
+    }),
+  ]
 
   return {
     conversationId,
@@ -374,7 +392,9 @@ export function buildAgentApiPrompt({
   context,
 }: {
   prompt: string
-  context?: YoloAgentContext[]
+  context?: Array<
+    Extract<YoloAgentContext, { type: 'text' | 'markdown' | 'canvas' }>
+  >
 }): string {
   const blocks = (context ?? []).map((entry) => {
     if (entry.type === 'markdown') {
@@ -384,7 +404,10 @@ export function buildAgentApiPrompt({
       return `${label}\n\n\`\`\`markdown\n${entry.content}\n\`\`\``
     }
     if (entry.type === 'canvas') {
-      return `Canvas context\n\n\`\`\`json\n${entry.content}\n\`\`\``
+      const label = entry.path
+        ? `Canvas context: ${entry.path}`
+        : 'Canvas context'
+      return `${label}\n\n\`\`\`json\n${entry.content}\n\`\`\``
     }
     return entry.content
   })
@@ -396,19 +419,22 @@ export function buildAgentApiPrompt({
 
 export function buildAgentApiUserMessage({
   id,
-  prompt,
-  context,
+  promptContent,
+  mentionables,
+  selectedSkills,
 }: {
   id: string
-  prompt: string
-  context?: YoloAgentContext[]
+  promptContent: ChatUserMessage['promptContent']
+  mentionables: ChatUserMessage['mentionables']
+  selectedSkills?: ChatUserMessage['selectedSkills']
 }): ChatUserMessage {
   return {
     role: 'user',
     id,
     content: null,
-    promptContent: buildAgentApiPrompt({ prompt, context }),
-    mentionables: [],
+    promptContent,
+    mentionables,
+    selectedSkills,
   }
 }
 
