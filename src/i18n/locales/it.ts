@@ -1500,9 +1500,9 @@ export const it: TranslationKeys = {
       agentTitle: "Lascia eseguire all'AI",
       agentDescription:
         'Abilita gli strumenti per ricerca, lettura/scrittura e task multi-step.',
-      agentFullTitle: 'Esecuzione con accesso completo',
+      agentFullTitle: "Lascia eseguire all'AI · Full Access",
       agentFullDescription:
-        'Approva automaticamente tutte le chiamate agli strumenti per task multi-step continui.',
+        'Abilita gli strumenti per ricerca, lettura/scrittura e task multi-step.',
     },
     compaction: {
       pendingTitle: 'Compattazione del contesto in corso',

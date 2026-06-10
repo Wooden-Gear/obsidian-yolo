@@ -5135,7 +5135,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           emptyStateAgentTitle={t('chat.emptyState.agentTitle', '让 AI 去执行')}
           emptyStateAgentFullTitle={t(
             'chat.emptyState.agentFullTitle',
-            '全权执行',
+            '让 AI 去执行 · Full Access',
           )}
           emptyStateAskDescription={t(
             'chat.emptyState.askDescription',
@@ -5147,7 +5147,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           )}
           emptyStateAgentFullDescription={t(
             'chat.emptyState.agentFullDescription',
-            '自动放行全部工具调用，适合需要连续执行的多步骤任务',
+            '启用工具链，处理搜索、读写与多步骤任务',
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
           bottomSpacerHeight={inputOverlayHeight}

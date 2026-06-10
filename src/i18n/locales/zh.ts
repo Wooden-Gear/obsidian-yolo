@@ -1494,9 +1494,8 @@ export const zh: TranslationKeys = {
       chatDescription: '适合提问、润色与改写，专注表达本身',
       agentTitle: '让 AI 去执行',
       agentDescription: '启用工具链，处理搜索、读写与多步骤任务',
-      agentFullTitle: '全权执行',
-      agentFullDescription:
-        '自动放行全部工具调用，适合需要连续执行的多步骤任务',
+      agentFullTitle: '让 AI 去执行 · Full Access',
+      agentFullDescription: '启用工具链，处理搜索、读写与多步骤任务',
     },
     compaction: {
       pendingTitle: '正在压缩上下文',

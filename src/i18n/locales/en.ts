@@ -1597,9 +1597,9 @@ export const en: TranslationKeys = {
       agentTitle: 'Let AI execute',
       agentDescription:
         'Enable tools to handle search, read/write operations, and multi-step tasks.',
-      agentFullTitle: 'Full access execution',
+      agentFullTitle: 'Let AI execute · Full Access',
       agentFullDescription:
-        'Auto-approve all tool calls for continuous multi-step tasks.',
+        'Enable tools to handle search, read/write operations, and multi-step tasks.',
     },
     compaction: {
       pendingTitle: 'Compacting context',
