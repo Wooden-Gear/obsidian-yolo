@@ -1,8 +1,8 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
+  Bot,
   ChevronDown,
   ChevronUp,
-  Infinity as InfinityIcon,
   MessageSquare,
 } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
@@ -40,7 +40,7 @@ const MODE_OPTIONS: ModeOption[] = [
     labelFallback: 'Agent',
     descKey: 'chatMode.agentDesc',
     descFallback: 'Enable tool calling capabilities',
-    icon: <InfinityIcon size={14} />,
+    icon: <Bot size={14} />,
   },
 ]
 

@@ -1862,7 +1862,7 @@ export const zh: TranslationKeys = {
     rewriteDesc: '仅修改当前选区',
     agent: 'Agent',
     agentDesc: '启用工具链，处理多步骤任务',
-    agentFull: 'Agent（完全放行）',
+    agentFull: 'Agent（Full Access）',
     agentFullDesc: '自动放行全部工具调用',
     warning: {
       title: '⚠️ Agent 模式风险提示',

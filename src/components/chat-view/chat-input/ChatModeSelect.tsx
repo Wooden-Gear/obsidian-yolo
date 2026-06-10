@@ -1,10 +1,10 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
+  Bot,
   ChevronDown,
   ChevronUp,
   Infinity as InfinityIcon,
   MessageSquare,
-  ShieldOff,
 } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
@@ -42,7 +42,6 @@ type ModeOption = {
   descKey: string
   descFallback: string
   icon: React.ReactNode
-  danger?: boolean
 }
 
 const MODE_OPTIONS: ModeOption[] = [
@@ -52,7 +51,7 @@ const MODE_OPTIONS: ModeOption[] = [
     labelFallback: 'Ask',
     descKey: 'chatMode.askDesc',
     descFallback: 'Ask, refine, create',
-    icon: <MessageSquare size={14} />,
+    icon: <MessageSquare size={16} />,
   },
   {
     value: 'agent',
@@ -60,16 +59,15 @@ const MODE_OPTIONS: ModeOption[] = [
     labelFallback: 'Agent',
     descKey: 'chatMode.agentDesc',
     descFallback: 'Tools for complex tasks',
-    icon: <InfinityIcon size={14} />,
+    icon: <Bot size={16} />,
   },
   {
     value: 'agent-full',
     labelKey: 'chatMode.agentFull',
-    labelFallback: 'Agent (full access)',
+    labelFallback: 'Agent (Full Access)',
     descKey: 'chatMode.agentFullDesc',
     descFallback: 'Auto-approve all tool calls',
-    icon: <ShieldOff size={14} />,
-    danger: true,
+    icon: <InfinityIcon size={16} />,
   },
 ]
 
@@ -100,7 +98,7 @@ export const ChatModeSelect = forwardRef<
       side = 'top',
       sideOffset = 4,
       align = 'start',
-      alignOffset = 0,
+      alignOffset = -12,
     },
     ref,
   ) => {
@@ -202,9 +200,7 @@ export const ChatModeSelect = forwardRef<
       <DropdownMenu.Root open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenu.Trigger
           ref={setTriggerRef}
-          className={`yolo-chat-input-model-select yolo-chat-mode-select${
-            currentOption?.danger ? ' yolo-chat-mode-select--danger' : ''
-          }`}
+          className="yolo-chat-input-model-select yolo-chat-mode-select"
           data-mode={mode}
           onKeyDown={handleTriggerKeyDown}
         >
@@ -263,9 +259,7 @@ export const ChatModeSelect = forwardRef<
             {MODE_OPTIONS.map((option) => (
               <DropdownMenu.RadioItem
                 key={option.value}
-                className={`yolo-popover-item yolo-chat-mode-select-item${
-                  option.danger ? ' yolo-chat-mode-select-item--danger' : ''
-                }`}
+                className="yolo-popover-item yolo-chat-mode-select-item"
                 value={option.value}
                 ref={(element) => {
                   itemRefs.current[option.value] = element

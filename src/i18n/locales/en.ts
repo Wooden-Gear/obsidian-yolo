@@ -1994,7 +1994,7 @@ export const en: TranslationKeys = {
     rewriteDesc: 'Only modify the current selection',
     agent: 'Agent',
     agentDesc: 'Tools for complex tasks',
-    agentFull: 'Agent (full access)',
+    agentFull: 'Agent (Full Access)',
     agentFullDesc: 'Auto-approve all tool calls',
     warning: {
       title: 'Please confirm before enabling Agent mode',

@@ -321,11 +321,13 @@ function MentionsTypeaheadMenuItem({
     )
   } else if (option.payload.kind === 'mode') {
     iconNode =
-      option.payload.mode === 'agent' ? (
+      option.payload.mode === 'agent-full' ? (
         <InfinityIcon
           size={14}
           className="yolo-smart-space-mention-option-icon"
         />
+      ) : option.payload.mode === 'agent' ? (
+        <Bot size={14} className="yolo-smart-space-mention-option-icon" />
       ) : (
         <MessageSquare
           size={14}
@@ -618,7 +620,7 @@ export default function NewMentionsPlugin({
           .map((mode) => {
             const label =
               mode === 'agent-full'
-                ? t('chatMode.agentFull', 'Agent (full access)')
+                ? t('chatMode.agentFull', 'Agent (Full Access)')
                 : mode === 'agent'
                   ? t('chatMode.agent', 'Agent')
                   : t('chatMode.ask', 'Ask')

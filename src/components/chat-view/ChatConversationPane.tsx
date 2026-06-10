@@ -1,4 +1,9 @@
-import { ArrowDown, Bot, MessageCircle, ShieldOff } from 'lucide-react'
+import {
+  ArrowDown,
+  Bot,
+  Infinity as InfinityIcon,
+  MessageCircle,
+} from 'lucide-react'
 import type { ReactNode, RefObject } from 'react'
 import type { FollowOutput } from 'react-virtuoso'
 
@@ -106,7 +111,7 @@ export function ChatConversationPane({
                     data-mode={chatMode}
                   >
                     {chatMode === 'agent-full' ? (
-                      <ShieldOff size={18} strokeWidth={2} />
+                      <InfinityIcon size={18} strokeWidth={2} />
                     ) : isAgentChatMode(chatMode) ? (
                       <Bot size={18} strokeWidth={2} />
                     ) : (

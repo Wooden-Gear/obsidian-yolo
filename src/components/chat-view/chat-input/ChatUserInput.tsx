@@ -1246,7 +1246,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
         }
 
         if (
-          target.closest('.yolo-chat-user-input-controls') ||
+          target.closest('.yolo-chat-user-input-send-row') ||
           target.closest('button') ||
           target.closest('[role="button"]')
         ) {
@@ -1458,40 +1458,9 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           </div>
 
           {!compact && (
-            <div className="yolo-chat-user-input-controls">
-              <div className="yolo-chat-user-input-controls__left">
-                <FileUploadButton onUpload={handleUploadFiles} />
-                {onChatModeChange && chatMode ? (
-                  <ChatModeSelect
-                    mode={chatMode}
-                    onChange={onChatModeChange}
-                    side="top"
-                    sideOffset={8}
-                  />
-                ) : null}
-                <ModelSelect
-                  modelId={modelId}
-                  onChange={onModelChange}
-                  align="center"
-                  sideOffset={8}
-                  popover={{
-                    variant: 'default',
-                    minWidth: 240,
-                    maxWidth: 320,
-                    maxHeight: 560,
-                  }}
-                />
-                {showReasoningSelect && supportsReasoning(currentModel) && (
-                  <ReasoningSelect
-                    model={currentModel}
-                    value={resolvedReasoningLevel}
-                    onChange={(level) => onReasoningChange?.(level)}
-                    side="top"
-                    sideOffset={8}
-                  />
-                )}
-              </div>
-              <div className="yolo-chat-user-input-controls__right">
+            <div className="yolo-chat-user-input-send-row">
+              <FileUploadButton onUpload={handleUploadFiles} />
+              <div className="yolo-chat-user-input-send-row__right">
                 {contextUsage &&
                   (contextUsage.buildBreakdownInputs ? (
                     <ContextUsagePopover
@@ -1518,6 +1487,43 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             </div>
           )}
         </div>
+        {!compact && (
+          <div className="yolo-chat-user-input-toolbar">
+            <div className="yolo-chat-user-input-toolbar__left">
+              {onChatModeChange && chatMode ? (
+                <ChatModeSelect
+                  mode={chatMode}
+                  onChange={onChatModeChange}
+                  side="top"
+                  sideOffset={8}
+                />
+              ) : null}
+            </div>
+            <div className="yolo-chat-user-input-toolbar__right">
+              <ModelSelect
+                modelId={modelId}
+                onChange={onModelChange}
+                align="center"
+                sideOffset={8}
+                popover={{
+                  variant: 'default',
+                  minWidth: 240,
+                  maxWidth: 320,
+                  maxHeight: 560,
+                }}
+              />
+              {showReasoningSelect && supportsReasoning(currentModel) && (
+                <ReasoningSelect
+                  model={currentModel}
+                  value={resolvedReasoningLevel}
+                  onChange={(level) => onReasoningChange?.(level)}
+                  side="top"
+                  sideOffset={8}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   },
