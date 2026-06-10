@@ -204,9 +204,6 @@ export const ChatModeSelect = forwardRef<
           data-mode={mode}
           onKeyDown={handleTriggerKeyDown}
         >
-          <div className="yolo-chat-mode-select__icon">
-            {currentOption?.icon}
-          </div>
           <div className="yolo-chat-input-model-select__model-name">
             {t(
               currentOption?.labelKey ?? 'chatMode.ask',

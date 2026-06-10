@@ -2746,19 +2746,6 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   gap: var(--size-4-1);
 }
 
-.yolo-chat-mode-select__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-  margin-right: 2px;
-}
-
-.yolo-chat-mode-select__icon svg {
-  width: 16px;
-  height: 16px;
-}
-
 .yolo-popover-surface--default
   .yolo-model-select-list
   > .yolo-chat-mode-select-item {

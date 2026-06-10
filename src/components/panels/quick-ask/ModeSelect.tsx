@@ -50,7 +50,6 @@ export const ModeSelect = forwardRef<
     mode: QuickAskMode
     onChange: (mode: QuickAskMode) => void
     triggerLabel?: string
-    triggerIcon?: React.ReactNode
     onMenuOpenChange?: (isOpen: boolean) => void
     onKeyDown?: (
       event: React.KeyboardEvent<HTMLButtonElement>,
@@ -68,7 +67,6 @@ export const ModeSelect = forwardRef<
       mode,
       onChange,
       triggerLabel,
-      triggerIcon,
       onMenuOpenChange,
       onKeyDown,
       container,
@@ -178,9 +176,6 @@ export const ModeSelect = forwardRef<
           className="yolo-chat-input-model-select yolo-mode-select"
           onKeyDown={handleTriggerKeyDown}
         >
-          <div className="yolo-mode-select__icon">
-            {triggerIcon ?? currentOption?.icon}
-          </div>
           <div className="yolo-chat-input-model-select__model-name">
             {triggerLabel ??
               t(

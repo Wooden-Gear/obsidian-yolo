@@ -9,7 +9,6 @@ import {
 import {
   ChevronDown,
   ChevronUp,
-  PencilLine,
   RotateCcw,
   Send,
   Square,
@@ -401,9 +400,6 @@ export function QuickAskPanel({
   const modeTriggerLabel = isTemporaryRewriteMode
     ? t('chatMode.rewrite', '改写')
     : undefined
-  const modeTriggerIcon = isTemporaryRewriteMode ? (
-    <PencilLine size={14} />
-  ) : undefined
   const buildEditInstruction = useCallback(
     (instruction: string) => {
       const context = selectionEditContextText.trim()
@@ -2486,7 +2482,6 @@ export function QuickAskPanel({
               mode={mode}
               onChange={handleModeChange}
               triggerLabel={modeTriggerLabel}
-              triggerIcon={modeTriggerIcon}
               onMenuOpenChange={(open) => setIsModeMenuOpen(open)}
               side="bottom"
               align="start"

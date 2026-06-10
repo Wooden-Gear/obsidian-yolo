@@ -300,18 +300,6 @@
   outline: none;
 }
 
-.yolo-mode-select__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-}
-
-.yolo-mode-select__icon svg {
-  width: 14px;
-  height: 14px;
-}
-
 .yolo-quick-ask-mode-popover {
   min-width: 140px;
   max-width: 200px;
