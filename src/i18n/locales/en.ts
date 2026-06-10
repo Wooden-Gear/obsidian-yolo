@@ -307,7 +307,7 @@ export const en: TranslationKeys = {
     },
     agent: {
       title: 'Agent',
-      desc: 'Manage global capabilities and configure your agents.',
+      desc: 'Manage global tool availability. Enabled tools become selectable by agents; actual use must still be enabled in each agent.',
       globalCapabilities: 'Global capabilities',
       mcpServerCount: '{count} custom tool servers (MCP) connected',
       tools: 'Tools',

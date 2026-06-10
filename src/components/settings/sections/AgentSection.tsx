@@ -341,7 +341,7 @@ export function AgentSection({ app }: AgentSectionProps) {
       <div className="yolo-settings-desc yolo-agent-intro">
         {t(
           'settings.agent.desc',
-          'Manage global capabilities and configure your agents.',
+          'Manage global tool availability. Enabled tools become selectable by agents; actual use must still be enabled in each agent.',
         )}
       </div>
 

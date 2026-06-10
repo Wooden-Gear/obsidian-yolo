@@ -309,7 +309,7 @@ export const it: TranslationKeys = {
     },
     agent: {
       title: 'Agent',
-      desc: 'Gestisci le capacità globali e configura i tuoi agenti.',
+      desc: "Gestisci la disponibilità globale degli strumenti. Dopo l'abilitazione, gli strumenti possono essere selezionati dagli agent; l'uso effettivo va comunque abilitato nel singolo agent.",
       globalCapabilities: 'Capacità globali',
       mcpServerCount: '{count} server strumenti personalizzati (MCP) connessi',
       tools: 'Strumenti',

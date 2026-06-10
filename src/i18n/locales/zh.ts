@@ -276,7 +276,7 @@ export const zh: TranslationKeys = {
     },
     agent: {
       title: 'Agent',
-      desc: '管理全局能力并配置你的 Agent。',
+      desc: '管理工具的全局可用性。启用后，工具才可被各 Agent 选择；是否实际使用，仍需在对应 Agent 中开启。',
       globalCapabilities: '全局能力',
       mcpServerCount: '已连接 {count} 个自定义工具服务器（MCP）',
       tools: '工具',
