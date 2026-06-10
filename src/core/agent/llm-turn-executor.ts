@@ -63,6 +63,7 @@ type AgentLlmTurnExecutorInput = {
     streamFallbackRecoveryEnabled?: boolean
   }
   contextualInjections?: ContextualInjection[]
+  runtimeModePrompt?: string
   geminiTools?: {
     useWebSearch?: boolean
     useUrlContext?: boolean
@@ -132,6 +133,7 @@ export class AgentLlmTurnExecutor {
         conversationId: this.input.conversationId,
         compaction: this.input.compaction,
         contextualInjections: this.input.contextualInjections,
+        runtimeModePrompt: this.input.runtimeModePrompt,
         systemPromptOverride: this.input.systemPromptOverride,
         // Real LLM request: freeze (or reuse) the per-conversation system prompt.
         systemPromptSnapshotMode: 'create',

@@ -527,6 +527,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    runtimeModePrompt?: string
     systemPromptOverride?: string
     systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<RequestMessage[]> {
@@ -549,6 +550,7 @@ export class RequestContextBuilder {
     conversationId,
     compaction,
     contextualInjections,
+    runtimeModePrompt,
     systemPromptOverride,
     systemPromptSnapshotMode,
   }: {
@@ -559,6 +561,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    runtimeModePrompt?: string
     systemPromptOverride?: string
     systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<{
@@ -650,6 +653,7 @@ export class RequestContextBuilder {
           hasTools,
           hasMemoryTools,
           compaction,
+          runtimeModePrompt,
           mode: systemPromptSnapshotMode,
         })
     const systemMessage: RequestMessage = {
@@ -705,6 +709,7 @@ export class RequestContextBuilder {
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
     contextualInjections?: ContextualInjection[]
+    runtimeModePrompt?: string
     requestTools?: unknown[] | undefined
     systemPromptSnapshotMode: SystemPromptSnapshotMode
   }): Promise<PromptSection[]> {
@@ -1594,18 +1599,21 @@ ${entries}
     hasTools,
     hasMemoryTools,
     compaction,
+    runtimeModePrompt,
     mode,
   }: {
     conversationId: string
     hasTools: boolean
     hasMemoryTools: boolean
     compaction?: ChatConversationCompactionLike | null
+    runtimeModePrompt?: string
     mode: SystemPromptSnapshotMode
   }): Promise<SystemPromptSnapshot> {
     const build = async (): Promise<SystemPromptSnapshot> => {
       const systemSections = await this.buildSystemPromptSections(
         hasTools,
         hasMemoryTools,
+        runtimeModePrompt,
       )
       const systemContent = systemSections
         .map((section) =>
@@ -1625,6 +1633,7 @@ ${entries}
       hasTools,
       hasMemoryTools,
       compaction,
+      runtimeModePrompt,
     )
     return store.getOrCreate(conversationId, fingerprint, build, {
       reuseOnly: mode === 'reuse',
@@ -1637,12 +1646,13 @@ ${entries}
    * snapshot; everything NOT listed (memory file content, project-instruction
    * and skill file content, time variables) is intentionally frozen until the
    * next conversation. Settings that never reach the system prompt (reasoning
-   * level, chat mode, …) are excluded so they don't evict the snapshot.
+   * level, …) are excluded so they don't evict the snapshot.
    */
   private computeSystemPromptFingerprint(
     hasTools: boolean,
     hasMemoryTools: boolean,
     compaction?: ChatConversationCompactionLike | null,
+    runtimeModePrompt?: string,
   ): string {
     const assistant = this.getCurrentAssistant()
     const latestCompaction = getLatestChatConversationCompaction(compaction)
@@ -1670,6 +1680,7 @@ ${entries}
     return stableStringify({
       hasTools,
       hasMemoryTools,
+      runtimeModePrompt: runtimeModePrompt?.trim() ?? '',
       includeSkills: this.includeSkills,
       systemPrompt: this.settings.systemPrompt ?? '',
       // Normalize the same way the real path/skill lookups do, so cosmetic-only
@@ -1717,6 +1728,7 @@ ${entries}
   private async buildSystemPromptSections(
     hasTools: boolean,
     hasMemoryTools: boolean,
+    runtimeModePrompt?: string,
   ): Promise<SystemPromptSections> {
     const sections: SystemPromptSections = []
     const currentAssistant = this.getCurrentAssistant()
@@ -1734,6 +1746,15 @@ ${entries}
         bucket: 'system',
         id: 'system.base-behavior',
         content: baseBehaviorContent,
+      })
+    }
+
+    const trimmedRuntimeModePrompt = runtimeModePrompt?.trim()
+    if (trimmedRuntimeModePrompt) {
+      sections.push({
+        bucket: 'system',
+        id: 'system.runtime-mode',
+        content: trimmedRuntimeModePrompt,
       })
     }
 

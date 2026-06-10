@@ -28,6 +28,8 @@ describe('resolveChatModeRuntime', () => {
     expect(runtime.allowedToolNames).toEqual(['yolo_local__fs_read'])
     expect(runtime.toolPreferences).toBeUndefined()
     expect(runtime.bypassToolApproval).toBe(false)
+    expect(runtime.runtimeModePrompt).toContain('Ask mode')
+    expect(runtime.runtimeModePrompt).toContain('switch to Agent mode')
   })
 
   it('keeps full tool set in agent mode with per-tool preferences', () => {
@@ -40,6 +42,7 @@ describe('resolveChatModeRuntime', () => {
     expect(runtime.allowedToolNames).toEqual(assistantEnabledToolNames)
     expect(runtime.toolPreferences).toEqual(assistant.toolPreferences)
     expect(runtime.bypassToolApproval).toBe(false)
+    expect(runtime.runtimeModePrompt).toBeUndefined()
   })
 
   it('keeps agent tools but enables bypass in agent-full mode', () => {
@@ -52,5 +55,6 @@ describe('resolveChatModeRuntime', () => {
     expect(runtime.allowedToolNames).toEqual(assistantEnabledToolNames)
     expect(runtime.toolPreferences).toEqual(assistant.toolPreferences)
     expect(runtime.bypassToolApproval).toBe(true)
+    expect(runtime.runtimeModePrompt).toBeUndefined()
   })
 })

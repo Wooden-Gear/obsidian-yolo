@@ -535,6 +535,7 @@ export function useChatStreamManager({
           conversationId: currentConversationId,
           compaction: manualCompaction,
           contextualInjections: manualContextualInjections,
+          runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
           // Reuse the frozen snapshot; never create one outside the real request.
           systemPromptSnapshotMode: 'reuse',
         })
@@ -572,6 +573,7 @@ export function useChatStreamManager({
             allowedToolNames: effectiveAllowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
+            runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
             contextualInjections: manualContextualInjections,
           })
       } catch (error) {
@@ -743,6 +745,7 @@ export function useChatStreamManager({
           allowedToolNames: chatModeRuntime.allowedToolNames,
           enableToolDisclosure: settings.mcp.enableToolDisclosure,
           toolPreferences: chatModeRuntime.toolPreferences,
+          runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
           bypassToolApproval: chatModeRuntime.bypassToolApproval,
           blockedCommandPrefixes: settings.mcp.builtinToolOptions[
             TERMINAL_COMMAND_TOOL_NAME
@@ -994,6 +997,7 @@ export function useChatStreamManager({
         allowedToolNames: chatModeRuntime.allowedToolNames,
         enableToolDisclosure: settings.mcp.enableToolDisclosure,
         toolPreferences: chatModeRuntime.toolPreferences,
+        runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
         contextualInjections: buildChatContextualInjections({
           includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
             selectedAssistant,

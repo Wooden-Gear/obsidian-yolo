@@ -71,6 +71,7 @@ export type AgentRuntimeRunInput = {
   }
   allowedSkillPaths?: string[]
   contextualInjections?: ContextualInjection[]
+  runtimeModePrompt?: string
   geminiTools?: {
     useWebSearch?: boolean
     useUrlContext?: boolean

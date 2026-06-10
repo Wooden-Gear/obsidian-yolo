@@ -2099,6 +2099,32 @@ describe('RequestContextBuilder system prompt freezing', () => {
     expect(getSystemContent(b)).toContain('CUSTOM_SP')
   })
 
+  it('injects runtime mode prompt and refreshes when it changes', async () => {
+    const store = new SystemPromptSnapshotStore()
+    memMock.mockResolvedValue({ global: 'MEM', assistant: null })
+
+    const builder = new RequestContextBuilder(makeApp(), baseSettings, {
+      includeSkills: false,
+      systemPromptSnapshotStore: store,
+    })
+    const ask = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      runtimeModePrompt: '<runtime_mode>Ask mode prompt</runtime_mode>',
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(ask)).toContain('Ask mode prompt')
+
+    const agent = await builder.generateRequestMessages({
+      messages: userMessages,
+      model,
+      conversationId: 'conv-1',
+      systemPromptSnapshotMode: 'create',
+    })
+    expect(getSystemContent(agent)).not.toContain('Ask mode prompt')
+  })
+
   it('does NOT refresh the snapshot for a setting that never reaches the system prompt', async () => {
     const store = new SystemPromptSnapshotStore()
     memMock.mockResolvedValue({ global: 'MEM_V1', assistant: null })

@@ -26,6 +26,7 @@ export const estimateContinuationRequestContextTokens = async ({
   enableToolDisclosure,
   toolPreferences,
   contextualInjections,
+  runtimeModePrompt,
 }: {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
@@ -40,6 +41,7 @@ export const estimateContinuationRequestContextTokens = async ({
   enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
   contextualInjections?: ContextualInjection[]
+  runtimeModePrompt?: string
 }): Promise<number> => {
   const availableTools = enableTools
     ? await mcpManager.listAvailableTools({
@@ -66,6 +68,7 @@ export const estimateContinuationRequestContextTokens = async ({
     conversationId,
     compaction,
     contextualInjections,
+    runtimeModePrompt,
     // Token estimate only: never create/freeze the snapshot ahead of the real request.
     systemPromptSnapshotMode: 'reuse',
   })

@@ -29,6 +29,7 @@ export type ChatModeRuntime = {
   allowedToolNames: string[] | undefined
   toolPreferences: Assistant['toolPreferences']
   bypassToolApproval: boolean
+  runtimeModePrompt?: string
 }
 
 export type ChatModeRuntimeInput = {
@@ -64,5 +65,10 @@ export function resolveChatModeRuntime({
     allowedToolNames,
     toolPreferences: isAgentMode ? assistant?.toolPreferences : undefined,
     bypassToolApproval: mode === 'agent-full',
+    runtimeModePrompt: isAgentMode
+      ? undefined
+      : `<runtime_mode>
+You are currently in Ask mode. Some action tools are unavailable in this mode, including file modification, terminal command execution, and task-state writing tools. If the user asks you to use these capabilities, explain that they need to switch to Agent mode.
+</runtime_mode>`,
   }
 }

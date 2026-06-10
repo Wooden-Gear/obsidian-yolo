@@ -137,6 +137,7 @@ export const estimateContextBreakdown = async ({
   enableToolDisclosure,
   toolPreferences,
   contextualInjections,
+  runtimeModePrompt,
 }: {
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager
@@ -151,6 +152,7 @@ export const estimateContextBreakdown = async ({
   enableToolDisclosure?: boolean
   toolPreferences?: Record<string, AssistantToolPreference>
   contextualInjections?: ContextualInjection[]
+  runtimeModePrompt?: string
 }): Promise<ContextBreakdown> => {
   const availableTools = enableTools
     ? await mcpManager.listAvailableTools({
@@ -175,6 +177,7 @@ export const estimateContextBreakdown = async ({
     conversationId,
     compaction,
     contextualInjections,
+    runtimeModePrompt,
     requestTools,
     // Token breakdown only: reuse a frozen snapshot if present, never create one.
     systemPromptSnapshotMode: 'reuse',
