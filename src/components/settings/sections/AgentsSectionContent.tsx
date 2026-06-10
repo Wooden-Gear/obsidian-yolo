@@ -914,6 +914,7 @@ export function AgentsSectionContent({
     // tool list carries. Same bridge selectAllowedTools uses at request time.
     const resolvedTools = applyDynamicToolDescriptions(eligibleTools, {
       jsSandboxSettings: getJsSandboxSettings(settings),
+      settings,
     })
 
     void Promise.all(

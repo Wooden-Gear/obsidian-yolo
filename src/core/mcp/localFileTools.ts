@@ -41,6 +41,7 @@ import {
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import type { PromptSourceWatcher } from '../agent/promptSourceWatcher'
+import { resolveSubagentModelConfig } from '../agent/subagent/model-config'
 import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { TodoItem } from '../agent/todos-from-messages'
 import type { AgentRunContext } from '../agent/types'
@@ -4308,6 +4309,40 @@ export async function callLocalFileTool({
 
         const description = getTextArg(args, 'description').trim()
         const taskPrompt = getTextArg(args, 'prompt').trim()
+        if (!settings) {
+          throw new Error('settings are required for delegate_subagent.')
+        }
+        const requestedModelId =
+          getOptionalTextArg(args, 'modelId')?.trim() ?? ''
+        const subagentModelConfig = resolveSubagentModelConfig(settings)
+        if (subagentModelConfig.allowedModelIds.length === 0) {
+          throw new Error(
+            'No registered chat models are configured for delegate_subagent.',
+          )
+        }
+        if (
+          requestedModelId &&
+          !subagentModelConfig.allowedModelIds.includes(requestedModelId)
+        ) {
+          throw new Error(
+            `Model "${requestedModelId}" is not allowed for delegate_subagent.`,
+          )
+        }
+        const selectedModelId =
+          requestedModelId || subagentModelConfig.preferredModelId
+        if (!selectedModelId) {
+          throw new Error(
+            'No preferred chat model is configured for delegate_subagent.',
+          )
+        }
+        const { getChatModelClient } = await import('../llm/manager')
+        const selectedModelClient = getChatModelClient({
+          settings,
+          modelId: selectedModelId,
+        })
+        const selectedProvider = settings.providers.find(
+          (provider) => provider.id === selectedModelClient.model.providerId,
+        )
 
         let assistantMessageId = ''
         if (conversationMessages) {
@@ -4331,6 +4366,11 @@ export async function callLocalFileTool({
             assistantMessageId,
           },
           parent: subagentParentContext,
+          childModel: {
+            providerClient: selectedModelClient.providerClient,
+            model: selectedModelClient.model,
+            apiType: selectedProvider?.apiType ?? null,
+          },
           signal,
         })
 

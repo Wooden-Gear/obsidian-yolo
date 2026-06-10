@@ -1,4 +1,5 @@
 import type { McpTool } from '../../types/mcp.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 
 import { selectAllowedTools } from './tool-selection'
 
@@ -33,6 +34,76 @@ describe('selectAllowedTools', () => {
     expect(result.requestTools?.[0]?.function.parameters).toEqual({
       type: 'object',
       properties: { foo: { type: 'string' } },
+    })
+  })
+
+  it('injects delegate_subagent model pool into the request schema', () => {
+    const availableTools: McpTool[] = [
+      {
+        name: 'yolo_local__delegate_subagent',
+        description: 'Dispatch a subagent.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            prompt: { type: 'string' },
+          },
+          required: ['description', 'prompt'],
+        },
+      },
+    ]
+    const settings = {
+      providers: [{ id: 'openai', apiType: 'openai-compatible' }],
+      chatModelId: 'openai/gpt-5',
+      chatModels: [
+        {
+          id: 'openai/gpt-5',
+          providerId: 'openai',
+          model: 'gpt-5',
+          enable: true,
+        },
+        {
+          id: 'openai/gpt-4.1-mini',
+          providerId: 'openai',
+          model: 'gpt-4.1-mini',
+          enable: true,
+        },
+      ],
+      mcp: {
+        servers: [],
+        enableToolDisclosure: false,
+        builtinToolOptions: {
+          delegate_subagent: {
+            allowedModelIds: ['openai/gpt-4.1-mini'],
+            preferredModelId: 'openai/gpt-4.1-mini',
+          },
+        },
+      },
+    } as unknown as YoloSettings
+
+    const result = selectAllowedTools({
+      availableTools,
+      allowedToolNames: ['yolo_local__delegate_subagent'],
+      toolPreferences: {
+        yolo_local__delegate_subagent: {
+          enabled: true,
+          disclosureMode: 'always',
+        },
+      },
+      settings,
+    })
+
+    const delegateTool = result.requestTools?.[0]
+    expect(delegateTool?.function.description).toContain(
+      'Recommended default: openai/gpt-4.1-mini',
+    )
+    expect(delegateTool?.function.parameters).toMatchObject({
+      properties: {
+        modelId: {
+          type: 'string',
+          enum: ['openai/gpt-4.1-mini'],
+        },
+      },
     })
   })
 

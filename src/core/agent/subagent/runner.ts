@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { TaskSource } from '../../../types/chat'
 import type { ChatMessage, ChatUserMessage } from '../../../types/chat'
+import type { ChatModel } from '../../../types/chat-model.types'
+import type { LLMProvider, LLMProviderApiType } from '../../../types/provider.types'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { collectTotalAssistantUsage } from '../../../utils/chat/llmUsage'
 import { formatErrorMessageWithCauses } from '../../../utils/error-message'
@@ -12,6 +14,7 @@ import { liveTaskStreamBus } from '../live-stream/taskStreamBus'
 import { NativeAgentRuntime } from '../native-runtime'
 import type { AgentConversationState } from '../service'
 import type { AgentRuntimeLoopConfig, AgentRuntimeRunInput } from '../types'
+import type { BaseLLMProvider } from '../../llm/base'
 
 import {
   SUBAGENT_DEFAULT_SYSTEM_PROMPT,
@@ -32,6 +35,11 @@ export type RunSubagentParams = {
   conversationId: string
   source: TaskSource
   parent: SubagentParentContext
+  childModel: {
+    providerClient: BaseLLMProvider<LLMProvider>
+    model: ChatModel
+    apiType?: LLMProviderApiType | null
+  }
   signal?: AbortSignal
 }
 
@@ -136,6 +144,7 @@ function projectSubagentEvent({
 async function runChildAgent(
   record: SubagentTaskRecord,
   parent: SubagentParentContext,
+  childModel: RunSubagentParams['childModel'],
 ): Promise<void> {
   const startedAt = record.createdAt
   const childUserMessage: ChatUserMessage = {
@@ -175,9 +184,9 @@ async function runChildAgent(
   appendActivityLine(activityLines, parentToolCallId, '[state] starting')
 
   const runInput: AgentRuntimeRunInput = {
-    providerClient: parent.providerClient,
-    model: parent.model,
-    apiType: parent.apiType,
+    providerClient: childModel.providerClient,
+    model: childModel.model,
+    apiType: childModel.apiType,
     messages: [childUserMessage],
     requestMessages: [childUserMessage],
     conversationId: record.taskId,
@@ -251,7 +260,7 @@ async function runChildAgent(
       toolUseCount: countToolUses(finalMessages),
       usage: collectTotalAssistantUsage(finalMessages),
       prompt: record.prompt,
-      modelName: parent.model.name ?? parent.model.model,
+      modelName: childModel.model.name ?? childModel.model.model,
       transcript: finalMessages,
     }
 
@@ -288,7 +297,7 @@ async function runChildAgent(
         durationMs: completedAt - startedAt,
         toolUseCount: 0,
         prompt: record.prompt,
-        modelName: parent.model.name ?? parent.model.model,
+        modelName: childModel.model.name ?? childModel.model.model,
       },
     })
   }
@@ -309,7 +318,15 @@ async function runChildAgent(
 export async function runSubagent(
   params: RunSubagentParams,
 ): Promise<SubagentAcceptedResult> {
-  const { description, prompt, conversationId, source, parent, signal } = params
+  const {
+    description,
+    prompt,
+    conversationId,
+    source,
+    parent,
+    childModel,
+    signal,
+  } = params
 
   if (signal?.aborted) {
     throw new Error('Subagent dispatch was aborted before start.')
@@ -345,7 +362,7 @@ export async function runSubagent(
 
   subagentTaskRegistry.register(record)
 
-  void runChildAgent(record, parent).catch(() => {
+  void runChildAgent(record, parent, childModel).catch(() => {
     // Errors are persisted on the record; avoid unhandled rejection.
   })
 
@@ -355,7 +372,7 @@ export async function runSubagent(
     title,
     status: 'running',
     note: 'Subagent started asynchronously. The result will arrive as a follow-up background event when the child run completes.',
-    modelName: parent.model.name ?? parent.model.model,
+    modelName: childModel.model.name ?? childModel.model.model,
   }
 }
 

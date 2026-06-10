@@ -273,6 +273,10 @@ export class McpManager {
     return getJsSandboxSettings(this.settings)
   }
 
+  public getSettingsSnapshot(): YoloSettings {
+    return this.settings
+  }
+
   public subscribeServersChange(callback: (servers: McpServerState[]) => void) {
     this.subscribers.add(callback)
     return () => this.subscribers.delete(callback)

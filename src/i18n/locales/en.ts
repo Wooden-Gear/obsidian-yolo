@@ -644,6 +644,26 @@ export const en: TranslationKeys = {
       addPrefixPlaceholder: 'Command prefix, e.g. rm',
       resetDefaults: 'Reset to defaults',
     },
+    subagent: {
+      openSettings: 'Configure subagent models',
+      modelPool: 'Subagent model pool',
+      modelPoolDesc:
+        'The parent agent can dispatch subagents only with models in this pool.',
+      preferredModelRule:
+        'If the parent agent does not pass modelId explicitly, the preferred model is used.',
+      addModelsTitle: 'Add subagent models',
+      addModelsDesc:
+        'Select registered chat models to add to the subagent model pool.',
+      addModelPlaceholder: 'Select a model',
+      addModel: 'Add model',
+      addSelectedModels: 'Add selected models',
+      searchModels: 'Search models...',
+      setPreferredModel: 'Set as preferred model',
+      defaultModel: 'Default',
+      setDefaultModel: 'Set default',
+      emptyModelPool: 'No subagent models selected.',
+      poolCount: '{count} models',
+    },
     webSearch: {
       modalTitle: 'Web search settings',
       openSettings: 'Configure web search providers',

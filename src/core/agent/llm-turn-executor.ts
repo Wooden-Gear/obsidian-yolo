@@ -123,6 +123,7 @@ export class AgentLlmTurnExecutor {
       apiType: this.input.apiType,
       enableToolDisclosure: this.input.enableToolDisclosure,
       jsSandboxSettings: this.input.mcpManager.getJsSandboxSettings(),
+      settings: this.input.mcpManager.getSettingsSnapshot(),
     })
     const requestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({

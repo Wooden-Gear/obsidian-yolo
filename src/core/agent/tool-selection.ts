@@ -2,6 +2,7 @@ import type { AssistantToolPreference } from '../../types/assistant.types'
 import type { RequestTool } from '../../types/llm/request'
 import type { McpTool } from '../../types/mcp.types'
 import type { LLMProviderApiType } from '../../types/provider.types'
+import type { YoloSettings } from '../../settings/schema/setting.types'
 import { type JsSandboxSettings } from '../mcp/jsSandboxSettings'
 import { JS_SANDBOX_TOOL_NAME, getJsSandboxTool } from '../mcp/jsSandboxTool'
 import {
@@ -14,6 +15,10 @@ import {
 import { McpManager } from '../mcp/mcpManager'
 import { parseToolName } from '../mcp/tool-name-utils'
 
+import {
+  formatSubagentModelOption,
+  resolveSubagentModelConfig,
+} from './subagent/model-config'
 import { getAssistantToolDisclosureMode } from './tool-preferences'
 import { buildToolStub } from './tool-stub'
 
@@ -133,18 +138,64 @@ export const buildRequestTools = (
  */
 export function applyDynamicToolDescriptions(
   tools: McpTool[],
-  ctx: { jsSandboxSettings: JsSandboxSettings },
+  ctx: {
+    jsSandboxSettings: JsSandboxSettings
+    settings?: YoloSettings
+  },
 ): McpTool[] {
   const jsSandboxFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
+  const delegateSubagentFqn = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}delegate_subagent`
   return tools.map((tool) => {
-    if (tool.name !== jsSandboxFqn) return tool
-    const live = getJsSandboxTool(ctx.jsSandboxSettings)
-    return {
-      ...tool,
-      description: live.description,
-      inputSchema: live.inputSchema,
+    if (tool.name === jsSandboxFqn) {
+      const live = getJsSandboxTool(ctx.jsSandboxSettings)
+      return {
+        ...tool,
+        description: live.description,
+        inputSchema: live.inputSchema,
+      }
     }
+
+    if (tool.name === delegateSubagentFqn && ctx.settings) {
+      return applySubagentModelSchema(tool, ctx.settings)
+    }
+
+    return tool
   })
+}
+
+function applySubagentModelSchema(
+  tool: McpTool,
+  settings: YoloSettings,
+): McpTool {
+  const config = resolveSubagentModelConfig(settings)
+  const allowedLines = config.allowedModelIds
+    .map((modelId) => `- ${formatSubagentModelOption(settings, modelId)}`)
+    .join('\n')
+  const preferredLine = config.preferredModelId
+    ? formatSubagentModelOption(settings, config.preferredModelId)
+    : 'none'
+  const modelDescription =
+    config.allowedModelIds.length > 0
+      ? `Optional modelId for this sub-agent. Allowed modelIds:\n${allowedLines}\nRecommended default: ${preferredLine}. If the user did not explicitly request a model, omit this field and the host will use the recommended default.`
+      : 'Optional modelId for this sub-agent. No registered chat models are currently configured for sub-agents.'
+
+  return {
+    ...tool,
+    description:
+      `${tool.description}\n\nSub-agent model policy: allowed modelIds are configured by the user. ` +
+      `Recommended default: ${preferredLine}. If the user explicitly asks for a sub-agent model, set modelId to one of the allowed modelIds; otherwise omit modelId.`,
+    inputSchema: {
+      ...tool.inputSchema,
+      properties: {
+        ...(tool.inputSchema.properties ?? {}),
+        modelId: {
+          type: 'string',
+          enum: config.allowedModelIds,
+          description: modelDescription,
+        },
+      },
+    },
+  }
 }
 
 export const selectAllowedTools = ({
@@ -154,6 +205,7 @@ export const selectAllowedTools = ({
   apiType,
   enableToolDisclosure = true,
   jsSandboxSettings = {},
+  settings,
 }: {
   availableTools: McpTool[]
   allowedToolNames?: string[]
@@ -161,6 +213,7 @@ export const selectAllowedTools = ({
   apiType?: LLMProviderApiType | null
   enableToolDisclosure?: boolean
   jsSandboxSettings?: JsSandboxSettings
+  settings?: YoloSettings
 }): {
   filteredTools: McpTool[]
   hasTools: boolean
@@ -176,7 +229,7 @@ export const selectAllowedTools = ({
         allowedToolNames: normalizedAllowedToolNames,
       }),
     ),
-    { jsSandboxSettings },
+    { jsSandboxSettings, settings },
   )
   const assistantLike = {
     toolPreferences,

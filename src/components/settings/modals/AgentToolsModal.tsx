@@ -8,6 +8,7 @@ import {
   useSettings,
 } from '../../../contexts/settings-context'
 import { DEFAULT_BLOCKED_PREFIXES } from '../../../core/agent/bash/command-classifier'
+import { DELEGATE_SUBAGENT_TOOL_SHORT_NAME } from '../../../core/agent/subagent/constants'
 import {
   BUILTIN_TOOL_CATEGORY_I18N,
   BUILTIN_TOOL_CATEGORY_ORDER,
@@ -34,6 +35,7 @@ import { CollapsibleToolDescription } from '../common/CollapsibleToolDescription
 import { McpSection } from '../sections/McpSection'
 
 import { JsSandboxConfigModal } from './JsSandboxConfigModal'
+import { SubagentConfigModal } from './SubagentConfigModal'
 import { TerminalCommandConfigModal } from './TerminalCommandConfigModal'
 import { WebSearchSettingsModal } from './WebSearchSettingsModal'
 
@@ -111,7 +113,8 @@ function AgentToolsModalContent({
           enabled: !(toolOptions[tool.name]?.disabled ?? false),
           hasSettings:
             tool.name === JS_SANDBOX_TOOL_NAME ||
-            tool.name === TERMINAL_COMMAND_TOOL_NAME,
+            tool.name === TERMINAL_COMMAND_TOOL_NAME ||
+            tool.name === DELEGATE_SUBAGENT_TOOL_SHORT_NAME,
         }
       })
 
@@ -273,6 +276,11 @@ function AgentToolsModalContent({
                                   'settings.terminalCommand.openSettings',
                                   'Configure terminal command',
                                 )
+                              : tool.id === DELEGATE_SUBAGENT_TOOL_SHORT_NAME
+                                ? t(
+                                    'settings.subagent.openSettings',
+                                    'Configure subagent models',
+                                  )
                               : t(
                                   'settings.webSearch.openSettings',
                                   'Configure web search providers',
@@ -317,6 +325,36 @@ function AgentToolsModalContent({
                                           TERMINAL_COMMAND_TOOL_NAME
                                         ],
                                         blockedPrefixes: next,
+                                      },
+                                    },
+                                  },
+                                }),
+                            }).open()
+                            return
+                          }
+                          if (tool.id === DELEGATE_SUBAGENT_TOOL_SHORT_NAME) {
+                            new SubagentConfigModal(app, {
+                              title: t(
+                                'settings.subagent.openSettings',
+                                'Configure subagent models',
+                              ),
+                              settings,
+                              value:
+                                settings.mcp.builtinToolOptions[
+                                  DELEGATE_SUBAGENT_TOOL_SHORT_NAME
+                                ] ?? {},
+                              onChange: (next) =>
+                                void setSettings({
+                                  ...settings,
+                                  mcp: {
+                                    ...settings.mcp,
+                                    builtinToolOptions: {
+                                      ...settings.mcp.builtinToolOptions,
+                                      [DELEGATE_SUBAGENT_TOOL_SHORT_NAME]: {
+                                        ...settings.mcp.builtinToolOptions[
+                                          DELEGATE_SUBAGENT_TOOL_SHORT_NAME
+                                        ],
+                                        ...next,
                                       },
                                     },
                                   },

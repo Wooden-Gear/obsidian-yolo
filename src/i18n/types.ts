@@ -490,6 +490,23 @@ export type TranslationKeys = {
       addPrefixPlaceholder?: string
       resetDefaults?: string
     }
+    subagent?: {
+      openSettings?: string
+      modelPool?: string
+      modelPoolDesc?: string
+      preferredModelRule?: string
+      addModelsTitle?: string
+      addModelsDesc?: string
+      addModelPlaceholder?: string
+      addModel?: string
+      addSelectedModels?: string
+      searchModels?: string
+      setPreferredModel?: string
+      defaultModel?: string
+      setDefaultModel?: string
+      emptyModelPool?: string
+      poolCount?: string
+    }
     webSearch?: {
       modalTitle?: string
       openSettings?: string
