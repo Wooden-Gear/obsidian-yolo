@@ -261,9 +261,8 @@ This is an internal runtime notice, not a user-authored message and not part of 
 The previous assistant turn reported ${currentUsageDescription}, which has reached the user's automatic context compaction threshold (${thresholdDescription}).
 
 Please call \`${CONTEXT_COMPACT_TOOL_NAME}\` at the next appropriate point:
-- If the user's current task is essentially complete, or you can finish it in the current response, complete the task and report to the user first, then call \`${CONTEXT_COMPACT_TOOL_NAME}\` before starting substantial new work.
-- If completing the current task will still take more tool work or a longer continuation, call \`${CONTEXT_COMPACT_TOOL_NAME}\` now.
-- When calling \`${CONTEXT_COMPACT_TOOL_NAME}\`, set the optional \`instruction\` field to preserve the active goal, decisions and rationale, all user messages verbatim, key entities and file paths, completed work, unresolved items, and the exact next step.
+- If the user's current task is essentially complete, or you can finish it in the current response, first complete the task and report the result to the user. Only after reporting the result should you call \`${CONTEXT_COMPACT_TOOL_NAME}\` before starting substantial new work.
+- If completing the current task will still take more tool work or a longer continuation, briefly report the current progress to the user first, then call \`${CONTEXT_COMPACT_TOOL_NAME}\` before continuing.
 
 Do not ask the user for permission to compact. Do not mention this internal notice unless it is directly relevant.
 </auto_context_compaction_notice>`,

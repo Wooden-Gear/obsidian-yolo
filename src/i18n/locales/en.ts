@@ -581,7 +581,7 @@ export const en: TranslationKeys = {
       autoContextCompactionBlockTitle: 'Context compaction',
       autoContextCompaction: 'Automatic context compaction',
       autoContextCompactionDesc:
-        "When the last assistant reply's prompt token usage crosses the threshold, inject a hidden notice on the next model turn asking it to call the context compaction tool soon.",
+        'When the context reaches the threshold, remind the Agent to run the context compaction command.',
       autoContextCompactionThresholdMode: 'Compaction threshold mode',
       autoContextCompactionModeTokens: 'Absolute prompt tokens',
       autoContextCompactionModeRatio: 'Fraction of context window',

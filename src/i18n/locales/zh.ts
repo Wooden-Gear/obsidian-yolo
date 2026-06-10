@@ -530,7 +530,7 @@ export const zh: TranslationKeys = {
       autoContextCompactionBlockTitle: '上下文压缩',
       autoContextCompaction: '自动压缩上下文',
       autoContextCompactionDesc:
-        '当上一轮助手回复的 prompt 占用达到阈值时，在下一次模型回合注入隐藏提示，要求模型尽快调用上下文压缩工具。',
+        '当上下文达到阈值时，提醒 Agent 执行上下文压缩命令。',
       autoContextCompactionThresholdMode: '阈值模式',
       autoContextCompactionModeTokens: '绝对 prompt tokens',
       autoContextCompactionModeRatio: '上下文窗口比例',

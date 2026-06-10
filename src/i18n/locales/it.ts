@@ -560,7 +560,7 @@ export const it: TranslationKeys = {
       autoContextCompactionBlockTitle: 'Compattazione contesto',
       autoContextCompaction: 'Compattazione automatica del contesto',
       autoContextCompactionDesc:
-        'Quando l’uso dei token di prompt dell’ultima risposta dell’assistente supera la soglia, inserisce un avviso nascosto nel turno modello successivo chiedendo di chiamare presto lo strumento di compattazione contesto.',
+        'Quando il contesto raggiunge la soglia, ricorda all’Agent di eseguire il comando di compattazione contesto.',
       autoContextCompactionThresholdMode: 'Modalita soglia',
       autoContextCompactionModeTokens: 'Token di prompt assoluti',
       autoContextCompactionModeRatio: 'Quota della finestra di contesto',
