@@ -12,6 +12,7 @@ import { BaseLLMProvider } from '../llm/base'
 import { McpManager } from '../mcp/mcpManager'
 
 import type { CitationRegistry } from './citationRegistry'
+import type { AutoContextCompactionChatOptions } from './compaction'
 
 export type AgentRunContext = {
   citationRegistry: CitationRegistry
@@ -75,6 +76,10 @@ export type AgentRuntimeRunInput = {
   geminiTools?: {
     useWebSearch?: boolean
     useUrlContext?: boolean
+  }
+  autoContextCompaction?: {
+    chatOptions: AutoContextCompactionChatOptions
+    maxContextTokens?: number
   }
   /**
    * Optional hook called at every `llm_request` boundary inside the runtime

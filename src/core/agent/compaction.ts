@@ -99,6 +99,8 @@ export type LatestAssistantContextUsage = {
   ratio: number | null
 }
 
+export type AutoContextCompactionPromptTrigger = LatestAssistantContextUsage
+
 export const getLatestAssistantContextUsage = ({
   messages,
   maxContextTokens,
@@ -138,9 +140,75 @@ export const getLatestAssistantContextUsage = ({
   return null
 }
 
+const isAutoContextCompactionThresholdReached = ({
+  latestContextUsage,
+  chatOptions,
+}: {
+  latestContextUsage: LatestAssistantContextUsage
+  chatOptions: AutoContextCompactionChatOptions
+}): boolean => {
+  if (chatOptions.autoContextCompactionThresholdMode === 'tokens') {
+    return (
+      latestContextUsage.promptTokens >=
+      chatOptions.autoContextCompactionThresholdTokens
+    )
+  }
+
+  if (latestContextUsage.ratio === null) {
+    return false
+  }
+
+  return (
+    latestContextUsage.ratio >= chatOptions.autoContextCompactionThresholdRatio
+  )
+}
+
+export const getAutoContextCompactionPromptTrigger = ({
+  messages,
+  chatOptions,
+  maxContextTokens,
+  compactionState,
+  promptedAssistantMessageIds,
+}: {
+  messages: ChatMessage[]
+  chatOptions: AutoContextCompactionChatOptions
+  maxContextTokens: number | undefined
+  compactionState: ChatConversationCompactionState
+  promptedAssistantMessageIds?: ReadonlySet<string>
+}): AutoContextCompactionPromptTrigger | null => {
+  if (!chatOptions.autoContextCompactionEnabled) {
+    return null
+  }
+
+  const latestContextUsage = getLatestAssistantContextUsage({
+    messages,
+    maxContextTokens,
+  })
+  if (!latestContextUsage) {
+    return null
+  }
+
+  const assistantMessageId = latestContextUsage.assistantMessage.id
+  const latestCompaction = getLatestChatConversationCompaction(compactionState)
+  if (latestCompaction?.anchorMessageId === assistantMessageId) {
+    return null
+  }
+  if (promptedAssistantMessageIds?.has(assistantMessageId)) {
+    return null
+  }
+
+  return isAutoContextCompactionThresholdReached({
+    latestContextUsage,
+    chatOptions,
+  })
+    ? latestContextUsage
+    : null
+}
+
 /**
- * Whether to run automatic compaction before submitting the new user message.
- * `previousMessages` must be the transcript *before* the new user turn (excludes the pending user message).
+ * Whether the latest assistant usage crosses the automatic compaction
+ * threshold. Keeps the submit-time active-run guard for callers that need the
+ * old boolean shape.
  */
 export const shouldTriggerAutoContextCompaction = ({
   previousMessages,
@@ -157,30 +225,49 @@ export const shouldTriggerAutoContextCompaction = ({
     return false
   }
 
-  const latestContextUsage = getLatestAssistantContextUsage({
-    messages: previousMessages,
-    maxContextTokens,
-  })
-  if (!latestContextUsage) {
-    return false
+  return (
+    getAutoContextCompactionPromptTrigger({
+      messages: previousMessages,
+      chatOptions,
+      maxContextTokens,
+      compactionState,
+    }) !== null
+  )
+}
+
+export const buildAutoContextCompactionNoticeMessage = ({
+  trigger,
+  chatOptions,
+}: {
+  trigger: AutoContextCompactionPromptTrigger
+  chatOptions: AutoContextCompactionChatOptions
+}): RequestMessage => {
+  const ratioPercent =
+    trigger.ratio === null ? null : Math.round(trigger.ratio * 1000) / 10
+  const thresholdDescription =
+    chatOptions.autoContextCompactionThresholdMode === 'tokens'
+      ? `${chatOptions.autoContextCompactionThresholdTokens} prompt tokens`
+      : `${Math.round(chatOptions.autoContextCompactionThresholdRatio * 1000) / 10}% of the configured context window`
+  const currentUsageDescription =
+    ratioPercent === null
+      ? `${trigger.promptTokens} prompt tokens`
+      : `${trigger.promptTokens} prompt tokens (${ratioPercent}% of ${trigger.maxContextTokens} max context tokens)`
+
+  return {
+    role: 'user',
+    content: `<auto_context_compaction_notice>
+This is an internal runtime notice, not a user-authored message and not part of the task content.
+
+The previous assistant turn reported ${currentUsageDescription}, which has reached the user's automatic context compaction threshold (${thresholdDescription}).
+
+Please call \`${CONTEXT_COMPACT_TOOL_NAME}\` at the next appropriate point:
+- If the user's current task is essentially complete, or you can finish it in the current response, complete the task and report to the user first, then call \`${CONTEXT_COMPACT_TOOL_NAME}\` before starting substantial new work.
+- If completing the current task will still take more tool work or a longer continuation, call \`${CONTEXT_COMPACT_TOOL_NAME}\` now.
+- When calling \`${CONTEXT_COMPACT_TOOL_NAME}\`, set the optional \`instruction\` field to preserve the active goal, decisions and rationale, all user messages verbatim, key entities and file paths, completed work, unresolved items, and the exact next step.
+
+Do not ask the user for permission to compact. Do not mention this internal notice unless it is directly relevant.
+</auto_context_compaction_notice>`,
   }
-
-  const { assistantMessage, promptTokens, ratio } = latestContextUsage
-
-  const latestCompaction = getLatestChatConversationCompaction(compactionState)
-  if (latestCompaction?.anchorMessageId === assistantMessage.id) {
-    return false
-  }
-
-  if (chatOptions.autoContextCompactionThresholdMode === 'tokens') {
-    return promptTokens >= chatOptions.autoContextCompactionThresholdTokens
-  }
-
-  if (ratio === null) {
-    return false
-  }
-
-  return ratio >= chatOptions.autoContextCompactionThresholdRatio
 }
 
 const parseCompactOperationResult = (

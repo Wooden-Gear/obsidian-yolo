@@ -26,11 +26,7 @@ import {
   resolveAssistantIncludeCurrentFileContent,
   resolveAssistantTimeContextEnabled,
 } from '../../core/agent/assistant-capabilities'
-import {
-  getLatestAssistantContextUsage,
-  resolveAutoContextCompactionChatOptions,
-  shouldTriggerAutoContextCompaction,
-} from '../../core/agent/compaction'
+import { getLatestAssistantContextUsage } from '../../core/agent/compaction'
 import { DEFAULT_ASSISTANT_ID } from '../../core/agent/default-assistant'
 import type { AgentConversationRunSummary } from '../../core/agent/service'
 import { materializeTextEditPlan } from '../../core/edits/textEditEngine'
@@ -2549,10 +2545,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         conversationOverridesRef.current.get(currentConversationId) ??
         conversationOverrides ??
         null
-      const nextChatMode = normalizeChatMode(
-        nextOverrides?.chatMode,
-        chatMode,
-      )
+      const nextChatMode = normalizeChatMode(nextOverrides?.chatMode, chatMode)
 
       const resolvedConversationModelId =
         conversationModelIdRef.current.get(currentConversationId) ??
@@ -2958,39 +2951,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         type: 'idle',
       })
 
-      const previousMessages = inputChatMessages.slice(0, -1)
-      const autoCompactionOptions = resolveAutoContextCompactionChatOptions(
-        settings.chatOptions,
-      )
-      let compactionForSubmit = effectiveCompactionState
-      if (
-        shouldTriggerAutoContextCompaction({
-          previousMessages,
-          chatOptions: autoCompactionOptions,
-          maxContextTokens: effectiveMaxContextTokens,
-          compactionState: effectiveCompactionState,
-          isConversationRunActive:
-            currentConversationRunSummary.isRunning ||
-            currentConversationRunSummary.isWaitingApproval,
-        })
-      ) {
-        setPendingCompactionAnchorMessageId(previousMessages.at(-1)?.id ?? null)
-        try {
-          const nextCompactionState =
-            await compactConversation(previousMessages)
-          setPendingCompactionAnchorMessageId(null)
-          if (nextCompactionState) {
-            compactionForSubmit = [
-              ...effectiveCompactionState,
-              nextCompactionState,
-            ]
-          }
-        } catch (error) {
-          setPendingCompactionAnchorMessageId(null)
-          new Notice(t('chat.compaction.autoFailed'))
-          console.error('Automatic context compaction failed', error)
-        }
-      }
+      const compactionForSubmit = effectiveCompactionState
 
       // Update the chat history to show the new user message
       setChatMessages(inputChatMessages)
@@ -3139,13 +3100,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       reasoningLevel,
       resolveReasoningLevelForMessages,
       serializeMessageModelMap,
-      settings.chatOptions,
-      compactConversation,
       plugin,
-      effectiveMaxContextTokens,
-      currentConversationRunSummary.isRunning,
-      currentConversationRunSummary.isWaitingApproval,
-      t,
     ],
   )
 
@@ -5128,10 +5083,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             'chat.scrollToBottomWhileStreaming',
             '回到底部继续跟随',
           )}
-          emptyStateAskTitle={t(
-            'chat.emptyState.askTitle',
-            '先想清楚，再落笔',
-          )}
+          emptyStateAskTitle={t('chat.emptyState.askTitle', '先想清楚，再落笔')}
           emptyStateAgentTitle={t('chat.emptyState.agentTitle', '让 AI 去执行')}
           emptyStateAgentFullTitle={t(
             'chat.emptyState.agentFullTitle',

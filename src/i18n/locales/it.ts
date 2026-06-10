@@ -560,7 +560,7 @@ export const it: TranslationKeys = {
       autoContextCompactionBlockTitle: 'Compattazione contesto',
       autoContextCompaction: 'Compattazione automatica del contesto',
       autoContextCompactionDesc:
-        'Quando l’uso dei token di prompt dell’ultima risposta dell’assistente supera la soglia, comprimi la cronologia precedente prima che il messaggio utente successivo venga inviato (non durante la generazione).',
+        'Quando l’uso dei token di prompt dell’ultima risposta dell’assistente supera la soglia, inserisce un avviso nascosto nel turno modello successivo chiedendo di chiamare presto lo strumento di compattazione contesto.',
       autoContextCompactionThresholdMode: 'Modalita soglia',
       autoContextCompactionModeTokens: 'Token di prompt assoluti',
       autoContextCompactionModeRatio: 'Quota della finestra di contesto',
@@ -1942,7 +1942,7 @@ export const it: TranslationKeys = {
         "L'accesso completo approva automaticamente tutte le chiamate agli strumenti, incluse modifiche ai file e comandi terminal. Prima di continuare, leggi i seguenti rischi:",
       permission:
         'Gli strumenti vengono eseguiti senza approvazione per chiamata. I prefissi di comandi pericolosi restano bloccati.',
-      cost: "Le esecuzioni autonome possono consumare molte risorse del modello e comportare costi piu elevati.",
+      cost: 'Le esecuzioni autonome possono consumare molte risorse del modello e comportare costi piu elevati.',
       backup:
         'Esegui un backup dei contenuti importanti in anticipo per evitare modifiche indesiderate.',
       checkbox:

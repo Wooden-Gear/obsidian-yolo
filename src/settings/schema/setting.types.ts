@@ -407,7 +407,8 @@ export const yoloSettingsSchema = z.object({
       reasoningLevelByModelId: z
         .record(z.string(), z.enum(REASONING_LEVELS))
         .optional(),
-      // Auto context compaction before next user send (based on last assistant usage)
+      // Auto context compaction prompt injected at runtime LLM boundaries
+      // (based on last assistant usage).
       autoContextCompactionEnabled: z.boolean().optional(),
       autoContextCompactionThresholdMode: z
         .enum(['tokens', 'ratio'])
@@ -549,9 +550,7 @@ export const yoloSettingsSchema = z.object({
       // trigger character for quick ask (default: @)
       quickAskTrigger: z.string().optional(),
       // quick ask mode: support legacy ask/edit values and current chat/agent values
-      quickAskMode: z
-        .enum(['ask', 'edit', 'edit-direct', 'agent'])
-        .optional(),
+      quickAskMode: z.enum(['ask', 'edit', 'edit-direct', 'agent']).optional(),
       // auto dock quick ask to editor top right after sending
       quickAskAutoDockToTopRight: z.boolean().optional(),
       // quick ask context chars before cursor

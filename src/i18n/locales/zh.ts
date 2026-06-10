@@ -530,7 +530,7 @@ export const zh: TranslationKeys = {
       autoContextCompactionBlockTitle: '上下文压缩',
       autoContextCompaction: '自动压缩上下文',
       autoContextCompactionDesc:
-        '当上一轮助手回复的 prompt 占用达到阈值时，在你下次发送用户消息、正式提交模型之前自动压缩更早历史（不会在助手生成过程中打断）。',
+        '当上一轮助手回复的 prompt 占用达到阈值时，在下一次模型回合注入隐藏提示，要求模型尽快调用上下文压缩工具。',
       autoContextCompactionThresholdMode: '阈值模式',
       autoContextCompactionModeTokens: '绝对 prompt tokens',
       autoContextCompactionModeRatio: '上下文窗口比例',
@@ -594,8 +594,7 @@ export const zh: TranslationKeys = {
       openSettings: '配置 Subagent 模型',
       modelPool: '可派遣模型池',
       modelPoolDesc: '主 Agent 只能从这个模型池中派遣子 Agent。',
-      preferredModelRule:
-        '如果主 Agent 没有显式传入 modelId，将使用首选模型。',
+      preferredModelRule: '如果主 Agent 没有显式传入 modelId，将使用首选模型。',
       addModelsTitle: '添加 Subagent 模型',
       addModelsDesc: '从已注册的聊天模型中选择要加入 Subagent 模型池的模型。',
       addModelPlaceholder: '选择一个模型',
@@ -1897,8 +1896,7 @@ export const zh: TranslationKeys = {
       title: '⚠️ 完全放行模式风险提示',
       description:
         '完全放行将自动批准全部工具调用，包括文件编辑与终端命令。请在继续前了解以下风险：',
-      permission:
-        '工具调用不再逐条确认；危险命令前缀黑名单仍会拦截',
+      permission: '工具调用不再逐条确认；危险命令前缀黑名单仍会拦截',
       cost: '自主执行可能消耗较多 Token 并产生更高成本',
       backup: '请提前备份：重要内容建议备份，以防误操作导致意外变更',
       checkbox: '我已了解上述风险，并愿意自行承担相关后果',

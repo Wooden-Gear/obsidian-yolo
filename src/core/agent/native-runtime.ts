@@ -18,10 +18,12 @@ import { runWithLLMDebugTrace } from '../llm/debugCapture'
 
 import { composeAgentInjections } from './agent-injections'
 import {
+  buildAutoContextCompactionNoticeMessage,
   buildCompactedConversationState,
   createConversationCompactionSummary,
   findCompactInstruction,
   findCompactToolCallId,
+  getAutoContextCompactionPromptTrigger,
   getLastAssistantPromptTokens,
 } from './compaction'
 import { AgentLlmTurnExecutor } from './llm-turn-executor'
@@ -132,6 +134,7 @@ export class NativeAgentRuntime implements AgentRuntime {
     let runSettled = false
     let workerTaskQueue = Promise.resolve()
     let abortListener: (() => void) | null = null
+    const promptedAutoCompactionAssistantMessageIds = new Set<string>()
 
     const runCompletion = new Promise<void>((resolve, reject) => {
       const handleWorkerMessage = (message: AgentWorkerOutbound): void => {
@@ -158,13 +161,25 @@ export class NativeAgentRuntime implements AgentRuntime {
                   }
                 }
 
+                const conversationMessages = [
+                  ...requestMessages,
+                  ...this.messages,
+                ]
+                const autoContextCompactionNotice =
+                  this.buildAutoContextCompactionNotice({
+                    input,
+                    messages: conversationMessages,
+                    promptedAssistantMessageIds:
+                      promptedAutoCompactionAssistantMessageIds,
+                  })
+
                 const llmTurnExecutor = new AgentLlmTurnExecutor({
                   providerClient: input.providerClient,
                   model: input.model,
                   requestContextBuilder: input.requestContextBuilder,
                   mcpManager: input.mcpManager,
                   conversationId: input.conversationId,
-                  messages: [...requestMessages, ...this.messages],
+                  messages: conversationMessages,
                   branchId: input.branchId,
                   sourceUserMessageId: input.sourceUserMessageId,
                   branchLabel: input.branchLabel,
@@ -181,9 +196,12 @@ export class NativeAgentRuntime implements AgentRuntime {
                   requestParams: input.requestParams,
                   contextualInjections: composeAgentInjections({
                     baseInjections: input.contextualInjections,
-                    messages: [...requestMessages, ...this.messages],
+                    messages: conversationMessages,
                   }),
                   runtimeModePrompt: input.runtimeModePrompt,
+                  transientRequestMessages: autoContextCompactionNotice
+                    ? [autoContextCompactionNotice]
+                    : undefined,
                   geminiTools: input.geminiTools,
                   systemPromptOverride: input.systemPromptOverride,
                   onAssistantMessage: (assistantMessage) => {
@@ -447,6 +465,37 @@ export class NativeAgentRuntime implements AgentRuntime {
     return (
       !this.loopConfig.enableTools && this.loopConfig.maxAutoIterations <= 1
     )
+  }
+
+  private buildAutoContextCompactionNotice({
+    input,
+    messages,
+    promptedAssistantMessageIds,
+  }: {
+    input: AgentRuntimeRunInput
+    messages: ChatMessage[]
+    promptedAssistantMessageIds: Set<string>
+  }): RequestMessage | null {
+    if (!this.loopConfig.enableTools || !input.autoContextCompaction) {
+      return null
+    }
+
+    const trigger = getAutoContextCompactionPromptTrigger({
+      messages,
+      chatOptions: input.autoContextCompaction.chatOptions,
+      maxContextTokens: input.autoContextCompaction.maxContextTokens,
+      compactionState: this.compactionState,
+      promptedAssistantMessageIds,
+    })
+    if (!trigger) {
+      return null
+    }
+
+    promptedAssistantMessageIds.add(trigger.assistantMessage.id)
+    return buildAutoContextCompactionNoticeMessage({
+      trigger,
+      chatOptions: input.autoContextCompaction.chatOptions,
+    })
   }
 
   private async runSingleTurnFastPath(

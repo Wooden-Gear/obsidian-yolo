@@ -64,6 +64,7 @@ type AgentLlmTurnExecutorInput = {
   }
   contextualInjections?: ContextualInjection[]
   runtimeModePrompt?: string
+  transientRequestMessages?: RequestMessage[]
   geminiTools?: {
     useWebSearch?: boolean
     useUrlContext?: boolean
@@ -125,7 +126,7 @@ export class AgentLlmTurnExecutor {
       jsSandboxSettings: this.input.mcpManager.getJsSandboxSettings(),
       settings: this.input.mcpManager.getSettingsSnapshot(),
     })
-    const requestMessages =
+    const baseRequestMessages =
       await this.input.requestContextBuilder.generateRequestMessages({
         messages: this.input.messages,
         hasTools,
@@ -139,6 +140,11 @@ export class AgentLlmTurnExecutor {
         // Real LLM request: freeze (or reuse) the per-conversation system prompt.
         systemPromptSnapshotMode: 'create',
       })
+    const requestMessages =
+      this.input.transientRequestMessages &&
+      this.input.transientRequestMessages.length > 0
+        ? [...baseRequestMessages, ...this.input.transientRequestMessages]
+        : baseRequestMessages
 
     const responseStart = Date.now()
     const model = this.input.model

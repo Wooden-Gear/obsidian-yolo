@@ -9,9 +9,11 @@ import { useSettings } from '../../contexts/settings-context'
 import { resolveAssistantIncludeCurrentFileContent } from '../../core/agent/assistant-capabilities'
 import { DEFAULT_BLOCKED_PREFIXES } from '../../core/agent/bash/command-classifier'
 import {
+  CONTEXT_COMPACT_TOOL_NAME,
   buildManualCompactionState,
   createConversationCompactionSummary,
   getLastAssistantPromptTokens,
+  resolveAutoContextCompactionChatOptions,
 } from '../../core/agent/compaction'
 import { estimateContinuationRequestContextTokens } from '../../core/agent/requestContextEstimate'
 import type {
@@ -20,6 +22,7 @@ import type {
 } from '../../core/agent/service'
 import { getEnabledAssistantToolNames } from '../../core/agent/tool-preferences'
 import { selectAllowedTools } from '../../core/agent/tool-selection'
+import type { AgentRuntimeRunInput } from '../../core/agent/types'
 import {
   LLMAPIKeyInvalidException,
   LLMAPIKeyNotSetException,
@@ -30,9 +33,14 @@ import { getChatModelClient } from '../../core/llm/manager'
 import type { AutoPromotedTransportMode } from '../../core/llm/requestTransport'
 import { shouldUseStreamingForProvider } from '../../core/llm/streamingPolicy'
 import { promoteProviderTransportModeToObsidian } from '../../core/llm/transportModePromotion'
-import { TERMINAL_COMMAND_TOOL_NAME } from '../../core/mcp/localFileTools'
+import {
+  TERMINAL_COMMAND_TOOL_NAME,
+  getLocalFileToolServerName,
+} from '../../core/mcp/localFileTools'
+import { getToolName } from '../../core/mcp/tool-name-utils'
 import { listLiteSkillEntries } from '../../core/skills/liteSkills'
 import { isSkillEnabledForAssistant } from '../../core/skills/skillPolicy'
+import type { AssistantToolPreference } from '../../types/assistant.types'
 import {
   ChatConversationCompaction,
   ChatConversationCompactionState,
@@ -48,11 +56,15 @@ import {
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
+import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { ErrorModal } from '../modals/ErrorModal'
 
 import { ChatMode } from './chat-input/ChatModeSelect'
 import { resolveWorkspaceScopeForRuntimeInput } from './chat-runtime-inputs'
-import { resolveChatModeRuntime } from './chat-runtime-profiles'
+import {
+  type ChatModeRuntime,
+  resolveChatModeRuntime,
+} from './chat-runtime-profiles'
 import type { ContextBreakdownInputs } from './useContextBreakdown'
 
 type UseChatStreamManagerParams = {
@@ -89,6 +101,53 @@ type BranchRetryTarget = {
   sourceUserMessageId: string
   branchModelId?: string
   branchLabel?: string
+}
+
+const AUTO_CONTEXT_COMPACT_TOOL_FQN = getToolName(
+  getLocalFileToolServerName(),
+  CONTEXT_COMPACT_TOOL_NAME,
+)
+
+const AUTO_CONTEXT_COMPACT_TOOL_PREFERENCE: AssistantToolPreference = {
+  enabled: true,
+  approvalMode: 'full_access',
+  disclosureMode: 'always',
+}
+
+const enableAutoContextCompactionTool = (
+  runtime: ChatModeRuntime,
+  enabled: boolean,
+): ChatModeRuntime => {
+  if (!enabled) {
+    return runtime
+  }
+
+  const allowedToolNames =
+    runtime.allowedToolNames === undefined && runtime.loopConfig.enableTools
+      ? undefined
+      : [
+          ...new Set([
+            ...(runtime.allowedToolNames ?? []),
+            AUTO_CONTEXT_COMPACT_TOOL_FQN,
+          ]),
+        ]
+
+  return {
+    ...runtime,
+    loopConfig: {
+      ...runtime.loopConfig,
+      enableTools: true,
+      includeBuiltinTools: true,
+    },
+    allowedToolNames,
+    toolPreferences: {
+      ...(runtime.toolPreferences ?? {}),
+      [AUTO_CONTEXT_COMPACT_TOOL_FQN]: {
+        ...(runtime.toolPreferences?.[AUTO_CONTEXT_COMPACT_TOOL_FQN] ?? {}),
+        ...AUTO_CONTEXT_COMPACT_TOOL_PREFERENCE,
+      },
+    },
+  }
 }
 
 const buildRunSummary = ({
@@ -470,12 +529,17 @@ export function useChatStreamManager({
       }
 
       const effectiveModel = resolvedClient.model
-      const chatModeRuntime = resolveChatModeRuntime({
-        mode: chatMode,
-        assistant: selectedAssistant,
-        assistantEnabledToolNames:
-          getEnabledAssistantToolNames(selectedAssistant),
-      })
+      const autoContextCompactionOptions =
+        resolveAutoContextCompactionChatOptions(settings.chatOptions)
+      const chatModeRuntime = enableAutoContextCompactionTool(
+        resolveChatModeRuntime({
+          mode: chatMode,
+          assistant: selectedAssistant,
+          assistantEnabledToolNames:
+            getEnabledAssistantToolNames(selectedAssistant),
+        }),
+        autoContextCompactionOptions.autoContextCompactionEnabled,
+      )
       const effectiveEnableTools = chatModeRuntime.loopConfig.enableTools
       const effectiveIncludeBuiltinTools =
         chatModeRuntime.loopConfig.includeBuiltinTools
@@ -713,16 +777,30 @@ export function useChatStreamManager({
           : []
         const allowedSkillPaths = enabledSkillEntries.map((skill) => skill.path)
 
-        const chatModeRuntime = resolveChatModeRuntime({
-          mode: chatMode,
-          assistant: selectedAssistant,
-          assistantEnabledToolNames:
-            getEnabledAssistantToolNames(selectedAssistant),
-        })
+        const autoContextCompactionOptions =
+          resolveAutoContextCompactionChatOptions(settings.chatOptions)
+        const chatModeRuntime = enableAutoContextCompactionTool(
+          resolveChatModeRuntime({
+            mode: chatMode,
+            assistant: selectedAssistant,
+            assistantEnabledToolNames:
+              getEnabledAssistantToolNames(selectedAssistant),
+          }),
+          autoContextCompactionOptions.autoContextCompactionEnabled,
+        )
 
         const mcpManager = await getMcpManager()
 
         const loopConfig = chatModeRuntime.loopConfig
+        const buildAutoContextCompactionInput = (
+          model: AgentRuntimeRunInput['model'],
+        ): AgentRuntimeRunInput['autoContextCompaction'] =>
+          autoContextCompactionOptions.autoContextCompactionEnabled
+            ? {
+                chatOptions: autoContextCompactionOptions,
+                maxContextTokens: resolveEffectiveMaxContextTokens(model),
+              }
+            : undefined
         const requestParams = {
           stream: shouldStreamResponse,
           temperature: conversationOverrides?.temperature ?? modelTemperature,
@@ -792,6 +870,8 @@ export function useChatStreamManager({
               providerClient: resolvedClient.providerClient,
               model: effectiveModel,
               conversationId,
+              autoContextCompaction:
+                buildAutoContextCompactionInput(effectiveModel),
               branchId: branchTarget.branchId,
               sourceUserMessageId: branchTarget.sourceUserMessageId,
               branchLabel:
@@ -815,6 +895,8 @@ export function useChatStreamManager({
               providerClient: resolvedClient.providerClient,
               model: effectiveModel,
               conversationId,
+              autoContextCompaction:
+                buildAutoContextCompactionInput(effectiveModel),
               abortSignal: abortController.signal,
             },
           })
@@ -856,6 +938,8 @@ export function useChatStreamManager({
                 model: branchModel,
                 apiType: branchProvider?.apiType ?? null,
                 conversationId,
+                autoContextCompaction:
+                  buildAutoContextCompactionInput(branchModel),
                 branchId,
                 sourceUserMessageId: lastMessage.id,
                 branchLabel,
