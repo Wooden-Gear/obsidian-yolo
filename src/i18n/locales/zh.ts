@@ -738,13 +738,13 @@ export const zh: TranslationKeys = {
       useObsidianRequestUrl: '使用 Obsidian requestUrl',
       useObsidianRequestUrlDesc:
         '使用 Obsidian requestUrl 绕过 CORS 限制。流式响应将会被缓冲后再返回。',
-      requestTransportMode: '请求传输模式',
+      requestTransportMode: '网络请求方式',
       requestTransportModeDesc:
-        '桌面端自动模式先尝试 Node fetch，再在 CORS/网络错误时回退到浏览器 fetch；移动端先尝试浏览器 fetch，再回退到 Obsidian requestUrl。仅 Obsidian 模式下流式响应会被缓冲；Node 模式使用桌面端 Node fetch 获取真实流式。',
+        '选择此设备上访问该提供商的网络请求方式。桌面端推荐桌面直连；移动端如浏览器请求遇到流式或网络问题，请切换到 Obsidian 内置请求。',
       requestTransportModeAuto: '自动（推荐）',
-      requestTransportModeBrowser: '仅浏览器 fetch',
-      requestTransportModeObsidian: '仅 Obsidian requestUrl',
-      requestTransportModeNode: '仅桌面端 Node fetch',
+      requestTransportModeBrowser: '浏览器请求',
+      requestTransportModeObsidian: 'Obsidian 内置请求',
+      requestTransportModeNode: '桌面直连（推荐）',
       promptCaching: '提示缓存',
       promptCachingDesc:
         '启用 Anthropic 临时提示缓存。在连续对话中复用系统提示、工具列表和历史消息，显著降低输入 token 消耗。写缓存有 25% 溢价，命中读取约为原价 10%。仅当渠道 API 类型为 Anthropic 时生效；是否真正生效取决于上游服务是否支持 cache_control 字段。',

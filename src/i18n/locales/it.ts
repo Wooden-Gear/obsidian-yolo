@@ -701,13 +701,13 @@ export const it: TranslationKeys = {
       useObsidianRequestUrl: 'Usa requestUrl di Obsidian',
       useObsidianRequestUrlDesc:
         'Usa requestUrl di Obsidian per aggirare le restrizioni CORS. Le risposte in streaming verranno bufferizzate.',
-      requestTransportMode: 'Modalita trasporto richieste',
+      requestTransportMode: 'Metodo richiesta di rete',
       requestTransportModeDesc:
-        'Su desktop Auto prova prima il fetch Node, poi il fetch browser in caso di errori CORS/rete; su mobile prova il fetch browser e poi requestUrl di Obsidian. In modalita Obsidian lo streaming viene bufferizzato; la modalita Node usa il fetch Node desktop per uno streaming reale.',
+        'Scegli come questo provider invia le richieste di rete su questo dispositivo. La connessione diretta desktop e consigliata su desktop. Su mobile, passa alla richiesta integrata di Obsidian se le richieste browser hanno problemi di streaming o rete.',
       requestTransportModeAuto: 'Auto (consigliato)',
-      requestTransportModeBrowser: 'Solo fetch browser',
-      requestTransportModeObsidian: 'Solo requestUrl Obsidian',
-      requestTransportModeNode: 'Solo fetch Node desktop',
+      requestTransportModeBrowser: 'Richiesta browser',
+      requestTransportModeObsidian: 'Richiesta integrata Obsidian',
+      requestTransportModeNode: 'Connessione diretta desktop (consigliata)',
       promptCaching: 'Cache del prompt',
       promptCachingDesc:
         "Abilita la cache effimera dei prompt Anthropic. Riutilizza prompt di sistema, strumenti e cronologia tra i turni per ridurre i token di input. Le scritture in cache hanno un sovrapprezzo del 25%; le letture costano circa il 10% del normale. Disponibile quando il tipo API del provider è Anthropic; l'upstream deve supportare il campo cache_control.",

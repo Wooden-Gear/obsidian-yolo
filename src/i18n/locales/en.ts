@@ -800,13 +800,13 @@ export const en: TranslationKeys = {
       useObsidianRequestUrl: 'Use Obsidian requestUrl',
       useObsidianRequestUrlDesc:
         'Use Obsidian requestUrl to bypass cross-origin restrictions. Streaming responses are buffered.',
-      requestTransportMode: 'Request transport mode',
+      requestTransportMode: 'Network request method',
       requestTransportModeDesc:
-        'Auto on desktop tries Node fetch first, then browser fetch on CORS/network errors; on mobile tries browser fetch then Obsidian requestUrl. Obsidian mode buffers streaming responses; Node mode uses desktop Node fetch for real streaming.',
+        'Choose how this provider sends network requests on this device. Desktop direct connection is recommended on desktop. On mobile, switch to Obsidian built-in request if browser requests have streaming or network issues.',
       requestTransportModeAuto: 'Auto (recommended)',
-      requestTransportModeBrowser: 'Browser fetch only',
-      requestTransportModeObsidian: 'Obsidian requestUrl only',
-      requestTransportModeNode: 'Desktop Node fetch only',
+      requestTransportModeBrowser: 'Browser request',
+      requestTransportModeObsidian: 'Obsidian built-in request',
+      requestTransportModeNode: 'Desktop direct connection (recommended)',
       promptCaching: 'Prompt caching',
       promptCachingDesc:
         'Enable Anthropic ephemeral prompt caching. Reuses system prompt, tools, and conversation history across turns to cut input tokens. Cache writes carry a 25% premium; reads cost ~10% of normal input. Available whenever the provider API type is Anthropic; upstream must actually honor the cache_control field.',

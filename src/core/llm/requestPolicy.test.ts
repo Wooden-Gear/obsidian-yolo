@@ -71,7 +71,7 @@ describe('requestPolicy', () => {
         requestPolicy: {
           timeoutMs: DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
         },
-        requestTransportMode: 'auto',
+        requestTransportMode: 'node',
       }),
     ).toBe(0)
     expect(
