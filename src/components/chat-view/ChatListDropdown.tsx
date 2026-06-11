@@ -182,16 +182,15 @@ function ChatListItem({
               </span>
             ) : null}
           </div>
-          {runSummary &&
-          (runSummary.isRunning || runSummary.isWaitingApproval) ? (
+          {runSummary?.isActive ? (
             <span
               className={`yolo-chat-list-dropdown-item-status${
-                runSummary.isRunning ? ' is-running' : ' is-waiting'
+                runSummary.isWaitingApproval ? ' is-waiting' : ' is-running'
               }`}
               aria-label={
-                runSummary.isRunning
-                  ? 'Conversation running'
-                  : 'Waiting approval'
+                runSummary.isWaitingApproval
+                  ? 'Waiting approval'
+                  : 'Conversation running'
               }
             />
           ) : null}

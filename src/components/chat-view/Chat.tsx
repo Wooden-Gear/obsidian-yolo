@@ -1407,9 +1407,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const [queuedUserMessages, setQueuedUserMessages] = useState<
     ChatUserMessage[]
   >(() => agentService.peekPendingUserMessages(currentConversationId))
-  const isCurrentConversationRunActive =
-    currentConversationRunSummary.isRunning ||
-    currentConversationRunSummary.isWaitingApproval
+  const isCurrentConversationRunActive = currentConversationRunSummary.isActive
   const shouldHidePendingAssistantPlaceholders = useMemo(() => {
     if (!isCurrentConversationRunActive) {
       return false
@@ -1982,19 +1980,19 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   )
 
   const handleManualContextCompaction = useCallback(async () => {
-    if (currentConversationRunSummary.isRunning) {
-      new Notice(
-        t('chat.compaction.runActive', '请等待当前回复完成后再压缩上下文。'),
-      )
-      return
-    }
-
     if (currentConversationRunSummary.isWaitingApproval) {
       new Notice(
         t(
           'chat.compaction.waitingApproval',
           '请先处理当前待确认的工具调用，再压缩上下文。',
         ),
+      )
+      return
+    }
+
+    if (currentConversationRunSummary.isActive) {
+      new Notice(
+        t('chat.compaction.runActive', '请等待当前回复完成后再压缩上下文。'),
       )
       return
     }
@@ -2068,7 +2066,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     conversationOverrides,
     createOrUpdateConversationImmediately,
     currentConversationId,
-    currentConversationRunSummary.isRunning,
+    currentConversationRunSummary.isActive,
     currentConversationRunSummary.isWaitingApproval,
     effectiveCompactionState,
     plugin,
@@ -2763,9 +2761,21 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       })
       applyMessages(runningMessages)
 
+      const foregroundToolAbortController = new AbortController()
+      let unregisterForegroundToolAborter: (() => void) | null = null
       try {
         const mcpManager = await getMcpManager()
         const args = getToolCallArgumentsObject(request.arguments)
+        unregisterForegroundToolAborter = plugin
+          .getAgentService()
+          .registerForegroundToolAborter({
+            conversationId,
+            toolCallId: request.id,
+            abort: () => {
+              foregroundToolAbortController.abort()
+              mcpManager.abortToolCall(request.id)
+            },
+          })
 
         if (allowForConversation) {
           mcpManager.allowToolForConversation(
@@ -2773,6 +2783,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             conversationId,
             args,
           )
+        }
+
+        if (foregroundToolAbortController.signal.aborted) {
+          return true
         }
 
         const result = await captureLLMDebugOperation({
@@ -2795,6 +2809,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               name: request.name,
               args,
               id: request.id,
+              signal: foregroundToolAbortController.signal,
               conversationId,
               conversationMessages: runningMessages,
               roundId: toolMessageId,
@@ -2816,6 +2831,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             }),
           getResponseBody: (response) => response,
         })
+
+        if (foregroundToolAbortController.signal.aborted) {
+          return true
+        }
 
         const resolvedMessages = updateToolCallResponseInMessages({
           messages: chatMessagesStateRef.current,
@@ -2849,6 +2868,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
         return true
       } catch (error) {
+        if (foregroundToolAbortController.signal.aborted) {
+          return true
+        }
+
         const errorMessage =
           error instanceof Error ? error.message : 'Tool call failed'
         const failedMessages = updateToolCallResponseInMessages({
@@ -2868,6 +2891,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           error,
         })
         return true
+      } finally {
+        unregisterForegroundToolAborter?.()
       }
     },
     [
@@ -5218,13 +5243,20 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       return
                     }
 
-                    // While a run is active on the default branch, route the
-                    // message through enqueue so the service decides whether
-                    // to queue (mid-run injection), reject (pending approval),
-                    // or fall through (fast-path / idle). Without this, a
-                    // submit during a pending-approval state would abort the
-                    // current run.
-                    if (currentConversationRunSummary.status === 'running') {
+                    if (currentConversationRunSummary.isWaitingApproval) {
+                      new Notice(
+                        t(
+                          'chat.queueMessage.blockedApproval',
+                          '请先批准或拒绝待审批工具，再发送新消息。',
+                        ),
+                      )
+                      return
+                    }
+
+                    // While the live loop is queueable, route the message
+                    // through AgentService so it can be injected at the next
+                    // safe LLM boundary instead of aborting the current run.
+                    if (currentConversationRunSummary.isQueueable) {
                       const enqueueResult = agentService.enqueueUserMessage(
                         currentConversationId,
                         messageForSubmit,
@@ -5249,6 +5281,16 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                         return
                       }
                       // 'idle' → fall through to the normal submit path below.
+                    }
+
+                    if (currentConversationRunSummary.isActive) {
+                      new Notice(
+                        t(
+                          'chat.queueMessage.blockedActiveTool',
+                          '请等待当前工具调用完成后再发送新消息。',
+                        ),
+                      )
+                      return
                     }
 
                     const nextMessageModelMap = new Map(messageModelMap)
@@ -5348,7 +5390,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       void handleManualContextCompaction()
                     }
                   }}
-                  isGenerating={currentConversationRunSummary.isRunning}
+                  isGenerating={currentConversationRunSummary.isAbortable}
+                  canQueueWhileGenerating={
+                    currentConversationRunSummary.isQueueable
+                  }
                   onAbort={() => abortConversationRun(currentConversationId)}
                   submitDisabled={isInputEmpty}
                   contextUsage={

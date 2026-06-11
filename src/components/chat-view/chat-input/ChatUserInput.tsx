@@ -128,6 +128,7 @@ export type ChatUserInputProps = {
   onRunSlashCommand?: (command: SlashCommand) => void
   // 当父级正在执行 conversation run 时，发送按钮切换为停止按钮（圆形 + 方块）
   isGenerating?: boolean
+  canQueueWhileGenerating?: boolean
   onAbort?: () => void
   // 当输入为空、无 mentionable、无 skill 时，发送按钮以淡化态显示，不可点击
   submitDisabled?: boolean
@@ -194,6 +195,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       enableResize = false,
       onRunSlashCommand,
       isGenerating = false,
+      canQueueWhileGenerating = true,
       onAbort,
       submitDisabled = false,
       contextUsage,
@@ -1325,6 +1327,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       <SubmitButton
         onClick={() => handleSubmit()}
         isGenerating={isGenerating}
+        canQueue={canQueueWhileGenerating}
         onAbort={onAbort}
         disabled={submitDisabled}
       />

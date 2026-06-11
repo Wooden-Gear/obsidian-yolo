@@ -158,6 +158,10 @@ const getMessageGroupRunState = ({
     return 'waiting-approval'
   }
 
+  if (conversationRunSummary?.isActive) {
+    return 'streaming'
+  }
+
   switch (conversationRunSummary?.status) {
     case 'running':
       return 'streaming'

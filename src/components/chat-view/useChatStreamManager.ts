@@ -16,9 +16,10 @@ import {
   resolveAutoContextCompactionChatOptions,
 } from '../../core/agent/compaction'
 import { estimateContinuationRequestContextTokens } from '../../core/agent/requestContextEstimate'
-import type {
-  AgentConversationRunSummary,
-  AgentConversationState,
+import {
+  type AgentConversationRunSummary,
+  type AgentConversationState,
+  buildAgentConversationRunSummary,
 } from '../../core/agent/service'
 import { getEnabledAssistantToolNames } from '../../core/agent/tool-preferences'
 import { selectAllowedTools } from '../../core/agent/tool-selection'
@@ -53,7 +54,6 @@ import {
   normalizeStoredReasoningLevel,
   resolveRequestReasoningLevel,
 } from '../../types/reasoning'
-import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import type { ContextualInjection } from '../../utils/chat/contextual-injections'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
@@ -150,38 +150,6 @@ const enableAutoContextCompactionTool = (
   }
 }
 
-const buildRunSummary = ({
-  conversationId,
-  status,
-  messages,
-}: AgentConversationState): AgentConversationRunSummary => {
-  let hasApproval = false
-  let hasAwaitingUser = false
-  for (const message of messages) {
-    if (message.role !== 'tool') continue
-    for (const toolCall of message.toolCalls) {
-      if (toolCall.response.status === ToolCallResponseStatus.PendingApproval) {
-        hasApproval = true
-      } else if (
-        toolCall.response.status === ToolCallResponseStatus.AwaitingUserInput
-      ) {
-        hasAwaitingUser = true
-      }
-      if (hasApproval && hasAwaitingUser) break
-    }
-    if (hasApproval && hasAwaitingUser) break
-  }
-  const isWaitingApproval = hasApproval || hasAwaitingUser
-
-  return {
-    conversationId,
-    status,
-    isRunning: status === 'running' && !isWaitingApproval,
-    isWaitingApproval,
-    isWaitingUserInput: hasAwaitingUser,
-  }
-}
-
 export type UseChatStreamManager = {
   abortConversationRun: (conversationId: string) => void
   compactConversation: (
@@ -207,7 +175,7 @@ export type UseChatStreamManager = {
 }
 
 const isRunSummaryActive = (summary: AgentConversationRunSummary): boolean => {
-  return summary.isRunning || summary.isWaitingApproval
+  return summary.isActive
 }
 
 /**
@@ -241,7 +209,7 @@ const annotateBranchMessages = (
   branch: ActiveBranchRun,
   branchState: AgentConversationState,
 ): ChatMessage[] => {
-  const branchRunSummary = buildRunSummary(branchState)
+  const branchRunSummary = buildAgentConversationRunSummary(branchState)
 
   return messages.map((message) => {
     if (message.role === 'assistant') {
@@ -372,7 +340,7 @@ export function useChatStreamManager({
         activeBranchRunsRef.current.values(),
       ).map((branch) => {
         const state = branchStateMapRef.current.get(branch.branchConversationId)
-        return state ? buildRunSummary(state) : null
+        return state ? buildAgentConversationRunSummary(state) : null
       })
       const activeSummaries = branchSummaries.filter(
         (summary): summary is AgentConversationRunSummary =>
@@ -387,8 +355,11 @@ export function useChatStreamManager({
         )
         setCurrentConversationRunSummary({
           conversationId: currentConversationId,
-          status: hasWaitingApproval ? 'running' : 'running',
+          status: 'running',
           isRunning: activeSummaries.some((summary) => summary.isRunning),
+          isActive: true,
+          isAbortable: activeSummaries.some((summary) => summary.isAbortable),
+          isQueueable: activeSummaries.some((summary) => summary.isQueueable),
           isWaitingApproval: hasWaitingApproval,
           isWaitingUserInput: hasWaitingUserInput,
         })
@@ -415,7 +386,7 @@ export function useChatStreamManager({
     const syncConversationState = (state: AgentConversationState) => {
       baseConversationMessagesRef.current = state.messages
       baseCompactionStateRef.current = state.compaction ?? []
-      const runSummary = buildRunSummary(state)
+      const runSummary = buildAgentConversationRunSummary(state)
       const hasTrackedState =
         state.messages.length > 0 || state.status !== 'idle'
       if (!hasTrackedState) {
@@ -430,10 +401,7 @@ export function useChatStreamManager({
       setPendingCompactionAnchorMessageId(
         state.pendingCompactionAnchorMessageId ?? null,
       )
-      if (
-        !(state.status === 'running' || runSummary.isWaitingApproval) &&
-        activeBranchRunsRef.current.size === 0
-      ) {
+      if (!runSummary.isActive && activeBranchRunsRef.current.size === 0) {
         return
       }
 

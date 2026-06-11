@@ -80,6 +80,20 @@ export type AgentConversationRunSummary = {
   status: AgentRunStatus
   isRunning: boolean
   /**
+   * True while the main agent activity is still user-visible: live runtime,
+   * foreground tool execution, pending approval, or awaiting user input.
+   * Background terminal/subagent result messages are intentionally excluded.
+   */
+  isActive: boolean
+  /**
+   * True when the global input-box Stop control should be available.
+   */
+  isAbortable: boolean
+  /**
+   * True when a new user message can be queued into the running loop.
+   */
+  isQueueable: boolean
+  /**
    * True when the run is blocked on either a pending tool approval OR an
    * `ask_user_question` awaiting the user's answer. Kept as a single field so
    * existing UI gates (stop-button, queue text, etc.) cover both cases.
@@ -407,8 +421,41 @@ const hasAwaitingUserInput = (messages: ChatMessage[]): boolean => {
   )
 }
 
+const hasRunningMainToolCall = (messages: ChatMessage[]): boolean => {
+  return messages.some(
+    (message) =>
+      message.role === 'tool' &&
+      message.toolCalls.some(
+        (toolCall) =>
+          toolCall.response.status === ToolCallResponseStatus.Running,
+      ),
+  )
+}
+
 const hasPendingUserInteraction = (messages: ChatMessage[]): boolean => {
   return hasPendingApproval(messages) || hasAwaitingUserInput(messages)
+}
+
+export const buildAgentConversationRunSummary = (
+  state: AgentConversationState,
+): AgentConversationRunSummary => {
+  const isWaitingUserInput = hasAwaitingUserInput(state.messages)
+  const isWaitingApproval =
+    hasPendingApproval(state.messages) || isWaitingUserInput
+  const hasRunningToolCall = hasRunningMainToolCall(state.messages)
+  const isRuntimeRunning = state.status === 'running'
+  const isActive = isRuntimeRunning || isWaitingApproval || hasRunningToolCall
+
+  return {
+    conversationId: state.conversationId,
+    status: state.status,
+    isRunning: isRuntimeRunning && !isWaitingApproval,
+    isActive,
+    isAbortable: isActive,
+    isQueueable: isRuntimeRunning && !isWaitingApproval,
+    isWaitingApproval,
+    isWaitingUserInput,
+  }
 }
 
 const isTrailingResolvedToolMessage = (
@@ -672,9 +719,15 @@ export type AbortedQueuedMessagesSubscriber = (
   messages: ChatUserMessage[],
 ) => void
 
+type ForegroundToolAborter = () => void
+
 export class AgentService {
   private conversationEntries = new Map<string, ConversationEntry>()
   private runEntriesByKey = new Map<string, AgentRunEntry>()
+  private foregroundToolAbortersByConversation = new Map<
+    string,
+    Map<string, ForegroundToolAborter>
+  >()
   private summarySubscribers = new Set<AgentConversationRunSummarySubscriber>()
   private stateFeedSubscribers = new Set<AgentConversationStateFeedSubscriber>()
   private persistTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -928,7 +981,7 @@ export class AgentService {
     conversationId: string,
   ): AgentConversationRunSummary {
     const state = this.getOrCreateConversationEntry(conversationId).state
-    return this.buildRunSummary(state)
+    return buildAgentConversationRunSummary(state)
   }
 
   getActiveConversationRunSummaries(): Map<
@@ -937,8 +990,8 @@ export class AgentService {
   > {
     const summaries = new Map<string, AgentConversationRunSummary>()
     for (const [conversationId, entry] of this.conversationEntries.entries()) {
-      const summary = this.buildRunSummary(entry.state)
-      if (summary.isRunning || summary.isWaitingApproval) {
+      const summary = buildAgentConversationRunSummary(entry.state)
+      if (summary.isActive) {
         summaries.set(conversationId, summary)
       }
     }
@@ -978,6 +1031,32 @@ export class AgentService {
       this.getOrCreateConversationEntry(conversationId).state.status ===
       'running'
     )
+  }
+
+  registerForegroundToolAborter({
+    conversationId,
+    toolCallId,
+    abort,
+  }: {
+    conversationId: string
+    toolCallId: string
+    abort: ForegroundToolAborter
+  }): () => void {
+    const aborters =
+      this.foregroundToolAbortersByConversation.get(conversationId) ?? new Map()
+    aborters.set(toolCallId, abort)
+    this.foregroundToolAbortersByConversation.set(conversationId, aborters)
+
+    return () => {
+      const current =
+        this.foregroundToolAbortersByConversation.get(conversationId)
+      if (!current) return
+      if (current.get(toolCallId) !== abort) return
+      current.delete(toolCallId)
+      if (current.size === 0) {
+        this.foregroundToolAbortersByConversation.delete(conversationId)
+      }
+    }
   }
 
   replaceConversationMessages(
@@ -1357,18 +1436,88 @@ export class AgentService {
     conversationId: string
     toolCallId: string
   }): boolean {
+    const abortedForegroundTool = this.abortRegisteredForegroundToolCall(
+      conversationId,
+      toolCallId,
+    )
     const located = this.findToolCall(conversationId, toolCallId)
     if (!located) {
-      return false
+      return abortedForegroundTool
     }
     located.runEntry?.lastRunInput?.mcpManager.abortToolCall(toolCallId)
-    return Boolean(
-      this.updateToolCallResponse({
+    return (
+      Boolean(
+        this.updateToolCallResponse({
+          conversationId,
+          toolCallId,
+          response: { status: ToolCallResponseStatus.Aborted },
+        }),
+      ) || abortedForegroundTool
+    )
+  }
+
+  private abortRegisteredForegroundToolCall(
+    conversationId: string,
+    toolCallId: string,
+  ): boolean {
+    const aborters =
+      this.foregroundToolAbortersByConversation.get(conversationId)
+    const abort = aborters?.get(toolCallId)
+    if (!abort || !aborters) {
+      return false
+    }
+
+    aborters.delete(toolCallId)
+    if (aborters.size === 0) {
+      this.foregroundToolAbortersByConversation.delete(conversationId)
+    }
+
+    try {
+      abort()
+    } catch (error) {
+      console.warn('[YOLO] Failed to abort foreground tool call', {
         conversationId,
         toolCallId,
-        response: { status: ToolCallResponseStatus.Aborted },
-      }),
-    )
+        error,
+      })
+    }
+    return true
+  }
+
+  private abortRegisteredForegroundToolCalls(
+    conversationId: string,
+    messages: ChatMessage[],
+  ): boolean {
+    let aborted = false
+    for (const message of messages) {
+      if (message.role !== 'tool') continue
+      for (const toolCall of message.toolCalls) {
+        if (toolCall.response.status !== ToolCallResponseStatus.Running) {
+          continue
+        }
+        aborted =
+          this.abortRegisteredForegroundToolCall(
+            conversationId,
+            toolCall.request.id,
+          ) || aborted
+      }
+    }
+    return aborted
+  }
+
+  private abortRuntimeToolCalls(runEntry: AgentRunEntry): void {
+    const mcpManager = runEntry.lastRunInput?.mcpManager
+    if (!mcpManager) {
+      return
+    }
+    for (const message of runEntry.state.messages) {
+      if (message.role !== 'tool') continue
+      for (const toolCall of message.toolCalls) {
+        if (toolCall.response.status === ToolCallResponseStatus.Running) {
+          mcpManager.abortToolCall(toolCall.request.id)
+        }
+      }
+    }
   }
 
   private buildContinuationInput(
@@ -1677,13 +1826,23 @@ export class AgentService {
   }
 
   abortConversation(conversationId: string): boolean {
-    const runEntries = this.runEntriesForConversation(conversationId)
-    if (runEntries.length === 0) {
-      return false
-    }
+    return this.abortConversationMainActivity(conversationId)
+  }
 
+  abortConversationMainActivity(conversationId: string): boolean {
+    const runEntries = this.runEntriesForConversation(conversationId)
     const droppedQueuedByConversation: ChatUserMessage[] = []
+    let didAbort = false
+
+    const conversationEntry = this.conversationEntries.get(conversationId)
+    didAbort =
+      this.abortRegisteredForegroundToolCalls(
+        conversationId,
+        conversationEntry?.state.messages ?? [],
+      ) || didAbort
+
     runEntries.forEach((runEntry) => {
+      didAbort = true
       const runKey = getRunKey(conversationId, runEntry.branchId)
       const queued = this.pendingUserMessagesByKey.get(runKey)
       if (queued && queued.length > 0) {
@@ -1692,6 +1851,7 @@ export class AgentService {
       this.pendingUserMessagesByKey.delete(runKey)
       this.continuationScheduledByKey.delete(runKey)
 
+      this.abortRuntimeToolCalls(runEntry)
       runEntry.runtime?.abort()
       runEntry.state = {
         ...runEntry.state,
@@ -1700,14 +1860,35 @@ export class AgentService {
         pendingCompactionAnchorMessageId: null,
       }
     })
-    this.recomputeConversationState(conversationId)
+    if (runEntries.length > 0) {
+      this.recomputeConversationState(conversationId)
+    } else if (conversationEntry) {
+      const nextMessages = abortVisibleMessages(
+        conversationEntry.state.messages,
+      )
+      const didPatchMessages = nextMessages.some(
+        (message, index) => message !== conversationEntry.state.messages[index],
+      )
+      if (didPatchMessages) {
+        didAbort = true
+        conversationEntry.baseMessages = nextMessages
+        conversationEntry.state = {
+          ...conversationEntry.state,
+          messages: nextMessages,
+          status: 'aborted',
+          pendingCompactionAnchorMessageId: null,
+        }
+        this.syncPendingApprovalRecoveryContext(conversationId, nextMessages)
+        this.notifyConversationSubscribers(conversationId)
+      }
+    }
 
     if (droppedQueuedByConversation.length > 0) {
       for (const subscriber of this.abortedQueuedMessagesSubscribers) {
         subscriber(conversationId, droppedQueuedByConversation)
       }
     }
-    return true
+    return didAbort
   }
 
   abortAll(): void {
@@ -1919,21 +2100,6 @@ export class AgentService {
         state.pendingCompactionAnchorMessageId ?? null,
       errorMessage: state.errorMessage,
       anchorMessageId: state.anchorMessageId,
-    }
-  }
-
-  private buildRunSummary(
-    state: AgentConversationState,
-  ): AgentConversationRunSummary {
-    const isWaitingUserInput = hasAwaitingUserInput(state.messages)
-    const isWaitingApproval =
-      hasPendingApproval(state.messages) || isWaitingUserInput
-    return {
-      conversationId: state.conversationId,
-      status: state.status,
-      isRunning: state.status === 'running' && !isWaitingApproval,
-      isWaitingApproval,
-      isWaitingUserInput,
     }
   }
 
