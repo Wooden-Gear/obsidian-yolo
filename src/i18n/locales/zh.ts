@@ -1907,6 +1907,9 @@ export const zh: TranslationKeys = {
 
   reasoning: {
     selectReasoning: '选择推理强度',
+    effort: '推理强度',
+    faster: '更快',
+    smarter: '更聪明',
     off: '关闭',
     on: '开启',
     auto: '自动',

@@ -11290,7 +11290,7 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
 }
 
 .yolo-reasoning-popover {
-  padding: 12px 14px;
+  padding: 10px 16px 14px;
   /* Sizing is declared via <YoloDropdownContent> props in ReasoningSelect.tsx. */
 }
 
@@ -11317,122 +11317,204 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
 .yolo-reasoning-popover__header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 16px;
   color: var(--text-normal);
 }
 
-.yolo-reasoning-popover__header-icon {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
 .yolo-reasoning-popover__header-title {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--text-muted) 76%, transparent);
+  line-height: 1.2;
 }
 
 .yolo-reasoning-popover__header-current {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  font-family: var(--font-monospace);
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text-normal) 88%, transparent);
+  line-height: 1.2;
 }
 
-/* Pill variant of the shared segmented control: solid white slider with soft
-   accent ring, paired with an absolutely positioned glider for the slide. */
+.yolo-reasoning-popover__header-current--up {
+  animation: yolo-reasoning-current-slide-up 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-.yolo-segmented.yolo-segmented--pill {
+.yolo-reasoning-popover__header-current--down {
+  animation: yolo-reasoning-current-slide-down 180ms
+    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes yolo-reasoning-current-slide-up {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(7px);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes yolo-reasoning-current-slide-down {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(-7px);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yolo-reasoning-popover__header-current {
+    animation: none;
+  }
+}
+
+.yolo-reasoning-popover__scale-labels {
   display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--text-muted) 76%, transparent);
+}
+
+.yolo-reasoning-slider {
+  --yolo-reasoning-slider-thumb-size: 20px;
+  --yolo-reasoning-slider-track-height: 22px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--yolo-segment-count), minmax(0, 1fr));
   width: 100%;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 3px;
-  gap: 0;
-  position: relative;
-  overflow: visible;
-  isolation: isolate;
+  min-height: var(--yolo-reasoning-slider-track-height);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
 }
 
-.yolo-segmented.yolo-segmented--pill > .yolo-segmented-glider {
+.yolo-reasoning-slider:active {
+  cursor: grabbing;
+}
+
+.yolo-reasoning-slider__track {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: calc((100% - 6px) / var(--yolo-segment-count));
-  height: calc(100% - 6px);
-  background: var(--background-secondary);
-  border: none;
-  border-radius: 5px;
-  box-shadow: 0 0 0 1.5px var(--interactive-accent);
-  transform: translateX(calc(100% * var(--yolo-segment-index)));
-  transition: transform 0.24s cubic-bezier(0.4, 1.1, 0.4, 1);
+  inset: 0;
+  height: var(--yolo-reasoning-slider-track-height);
+  border-radius: 6px;
+  background: var(--background-modifier-border);
+  overflow: visible;
   pointer-events: none;
-  z-index: 1;
 }
 
-.yolo-segmented.yolo-segmented--pill > button {
-  flex: 1 1 0;
+.yolo-reasoning-slider__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(
+    (var(--yolo-reasoning-slider-thumb-size) / 2) +
+      (
+        (100% - var(--yolo-reasoning-slider-thumb-size)) *
+          var(--yolo-reasoning-slider-position) / 100
+      )
+  );
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  transition: width 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.yolo-reasoning-slider__dot {
+  position: absolute;
+  top: 50%;
+  left: calc(
+    (var(--yolo-reasoning-slider-thumb-size) / 2) +
+      (
+        (100% - var(--yolo-reasoning-slider-thumb-size)) *
+          var(--yolo-reasoning-slider-position) / 100
+      )
+  );
+  width: 4px;
+  height: 4px;
+  border-radius: 1.5px;
+  background: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  transform: translate(-50%, -50%);
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.yolo-reasoning-slider__dot.active {
+  opacity: 0;
+}
+
+.yolo-reasoning-slider__thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(
+    (var(--yolo-reasoning-slider-thumb-size) / 2) +
+      (
+        (100% - var(--yolo-reasoning-slider-thumb-size)) *
+          var(--yolo-reasoning-slider-position) / 100
+      )
+  );
+  width: var(--yolo-reasoning-slider-thumb-size);
+  height: var(--yolo-reasoning-slider-thumb-size);
+  border: 1px solid
+    color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
+  border-radius: 7px;
+  background: var(--background-primary);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+  transform: translate(-50%, -50%);
+  transition: left 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.yolo-reasoning-slider:hover .yolo-reasoning-slider__thumb,
+.yolo-reasoning-slider.is-dragging .yolo-reasoning-slider__thumb {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+}
+
+.yolo-reasoning-slider__option {
   position: relative;
-  z-index: 2;
   appearance: none;
   -webkit-appearance: none;
+  z-index: 2;
+  min-width: 0;
+  height: var(--yolo-reasoning-slider-track-height);
+  padding: 0;
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
   border: none !important;
   box-shadow: none !important;
   outline: none;
-  padding: 6px 4px;
-  border-radius: 5px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-muted) !important;
   cursor: pointer;
-  text-align: center;
-  transform: none !important;
-  transition:
-    color 0.15s ease,
-    font-weight 0.15s ease;
-}
-
-.yolo-segmented.yolo-segmented--pill > button:hover {
-  background: transparent !important;
-  color: var(--text-normal) !important;
   transform: none !important;
 }
 
-.yolo-segmented.yolo-segmented--pill > button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--background-modifier-border) !important;
-}
-
-/* When the active segment also has keyboard focus, suppress the neutral focus
-   ring so the glider's accent ring remains the visual indicator. */
-
-.yolo-segmented.yolo-segmented--pill > button.active:focus-visible {
+.yolo-reasoning-slider__option:focus-visible {
   box-shadow: none !important;
-}
-
-.yolo-segmented.yolo-segmented--pill > button.active {
-  background: transparent !important;
-  color: var(--text-normal) !important;
-  font-weight: 600;
-  transform: none !important;
-}
-
-.yolo-reasoning-popover__desc {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  margin-top: 10px;
-  line-height: 1.5;
-}
-
-.yolo-reasoning-popover__desc-label {
-  color: var(--text-normal);
-}
-
-.yolo-reasoning-popover__desc-sep {
-  color: var(--text-faint);
 }
 
 .yolo-chat-user-input-file-badge {

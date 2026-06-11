@@ -2048,6 +2048,9 @@ export const en: TranslationKeys = {
 
   reasoning: {
     selectReasoning: 'Select reasoning',
+    effort: 'Effort',
+    faster: 'Faster',
+    smarter: 'Smarter',
     off: 'Off',
     on: 'On',
     auto: 'Auto',

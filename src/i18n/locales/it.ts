@@ -1954,6 +1954,9 @@ export const it: TranslationKeys = {
 
   reasoning: {
     selectReasoning: 'Seleziona ragionamento',
+    effort: 'Sforzo',
+    faster: 'Più veloce',
+    smarter: 'Più intelligente',
     off: 'Disattivato',
     on: 'Attivato',
     auto: 'Auto',

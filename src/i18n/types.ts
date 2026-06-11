@@ -1758,6 +1758,9 @@ export type TranslationKeys = {
   // Reasoning Select
   reasoning?: {
     selectReasoning?: string
+    effort?: string
+    faster?: string
+    smarter?: string
     off?: string
     on?: string
     auto?: string
