@@ -27,6 +27,7 @@ type SharedConversationSurfaceProps<TItem extends ChatTimelineItem> = {
   onVirtualizationChange?: (isVirtualized: boolean) => void
   onActiveUserMessageChange?: (messageId: string | null) => void
   windowNavigationKey?: number
+  windowNavigationTargetMessageId?: string | null
   onRenderStateChange?: (state: {
     visibleStartIndex: number
     visibleEndIndex: number
@@ -63,6 +64,7 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
   onVirtualizationChange,
   onActiveUserMessageChange,
   windowNavigationKey,
+  windowNavigationTargetMessageId,
   onRenderStateChange,
   hasEarlierMessages,
   hasNewerMessages,
@@ -95,6 +97,7 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
       onVirtualizationChange={onVirtualizationChange}
       onActiveUserMessageChange={onActiveUserMessageChange}
       windowNavigationKey={windowNavigationKey}
+      windowNavigationTargetMessageId={windowNavigationTargetMessageId}
       onRenderStateChange={onRenderStateChange}
       hasEarlierMessages={hasEarlierMessages}
       hasNewerMessages={hasNewerMessages}

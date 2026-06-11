@@ -99,6 +99,35 @@ function getLatestWindow(totalTurns: number): ChatHistoryWindow {
   }
 }
 
+export function getNavigationWindowForTurn(
+  targetTurnIndex: number,
+  totalTurns: number,
+): ChatHistoryWindow {
+  if (totalTurns === 0) {
+    return getLatestWindow(totalTurns)
+  }
+
+  const safeTargetTurnIndex = Math.min(
+    Math.max(targetTurnIndex, 0),
+    totalTurns - 1,
+  )
+  const maxStartTurnIndex = Math.max(0, totalTurns - INITIAL_WINDOW_TURNS)
+  const centeredStartTurnIndex =
+    safeTargetTurnIndex - Math.floor(INITIAL_WINDOW_TURNS / 2)
+  const startTurnIndex = Math.max(
+    0,
+    Math.min(centeredStartTurnIndex, maxStartTurnIndex),
+  )
+
+  return {
+    startTurnIndex,
+    endTurnIndex: Math.min(
+      totalTurns - 1,
+      startTurnIndex + INITIAL_WINDOW_TURNS - 1,
+    ),
+  }
+}
+
 function normalizeWindow(
   window: ChatHistoryWindow,
   totalTurns: number,
@@ -142,6 +171,8 @@ export function useChatHistoryWindow({
     getLatestWindow(totalTurns),
   )
   const [windowNavigationKey, setWindowNavigationKey] = useState(0)
+  const [windowNavigationTargetMessageId, setWindowNavigationTargetMessageId] =
+    useState<string | null>(null)
   const previousConversationIdRef = useRef(conversationId)
   const previousTotalTurnsRef = useRef(totalTurns)
 
@@ -153,6 +184,7 @@ export function useChatHistoryWindow({
 
     if (previousConversationId !== conversationId) {
       setWindow(getLatestWindow(totalTurns))
+      setWindowNavigationTargetMessageId(null)
       return
     }
 
@@ -216,6 +248,7 @@ export function useChatHistoryWindow({
 
   const resetToLatest = useCallback(() => {
     setWindow(getLatestWindow(totalTurns))
+    setWindowNavigationTargetMessageId(null)
   }, [totalTurns])
 
   const jumpToUserMessage = useCallback(
@@ -227,13 +260,8 @@ export function useChatHistoryWindow({
         return false
       }
 
-      setWindow({
-        startTurnIndex: target.turnIndex,
-        endTurnIndex: Math.min(
-          totalTurns - 1,
-          target.turnIndex + INITIAL_WINDOW_TURNS - 1,
-        ),
-      })
+      setWindow(getNavigationWindowForTurn(target.turnIndex, totalTurns))
+      setWindowNavigationTargetMessageId(messageId)
       setWindowNavigationKey((currentKey) => currentKey + 1)
       return true
     },
@@ -258,5 +286,6 @@ export function useChatHistoryWindow({
     resetToLatest,
     jumpToUserMessage,
     windowNavigationKey,
+    windowNavigationTargetMessageId,
   }
 }

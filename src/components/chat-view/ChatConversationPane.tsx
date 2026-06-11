@@ -40,6 +40,7 @@ type ChatConversationPaneProps = {
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
   onActiveUserMessageChange?: (messageId: string | null) => void
   windowNavigationKey?: number
+  windowNavigationTargetMessageId?: string | null
   messageNavigatorContent?: ReactNode
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
@@ -76,6 +77,7 @@ export function ChatConversationPane({
   onTimelineVirtualizationChange,
   onActiveUserMessageChange,
   windowNavigationKey,
+  windowNavigationTargetMessageId,
   messageNavigatorContent,
   hasEarlierMessages,
   hasNewerMessages,
@@ -158,6 +160,7 @@ export function ChatConversationPane({
         onVirtualizationChange={onTimelineVirtualizationChange}
         onActiveUserMessageChange={onActiveUserMessageChange}
         windowNavigationKey={windowNavigationKey}
+        windowNavigationTargetMessageId={windowNavigationTargetMessageId}
         hasEarlierMessages={hasEarlierMessages}
         hasNewerMessages={hasNewerMessages}
         onLoadEarlier={onLoadEarlier}

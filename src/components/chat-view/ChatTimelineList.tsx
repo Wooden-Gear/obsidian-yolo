@@ -133,6 +133,7 @@ type ChatTimelineListProps<TItem extends ChatTimelineItem> = {
   onVirtualizationChange?: (isVirtualized: boolean) => void
   onActiveUserMessageChange?: (messageId: string | null) => void
   windowNavigationKey?: number
+  windowNavigationTargetMessageId?: string | null
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
   onLoadEarlier?: () => void
@@ -261,6 +262,27 @@ const getActiveUserAnchorSnapshot = (
   }
 }
 
+const getUserAnchorElement = (
+  scrollerElement: HTMLElement,
+  messageId: string | null | undefined,
+): HTMLElement | null => {
+  const anchors = Array.from(
+    scrollerElement.querySelectorAll<HTMLElement>('[data-yolo-user-anchor-id]'),
+  )
+  if (anchors.length === 0) {
+    return null
+  }
+
+  if (!messageId) {
+    return anchors[0] ?? null
+  }
+
+  return (
+    anchors.find((anchor) => anchor.dataset.yoloUserAnchorId === messageId) ??
+    null
+  )
+}
+
 export function ChatTimelineList<TItem extends ChatTimelineItem>({
   items,
   conversationId,
@@ -279,6 +301,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   onVirtualizationChange,
   onActiveUserMessageChange,
   windowNavigationKey,
+  windowNavigationTargetMessageId,
   hasEarlierMessages = false,
   hasNewerMessages = false,
   onLoadEarlier,
@@ -299,6 +322,10 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   const loadInFlightRef = useRef(false)
   const lastActiveUserMessageIdRef = useRef<string | null>(null)
   const appliedWindowNavigationKeyRef = useRef<number | undefined>(undefined)
+  const pendingWindowNavigationRef = useRef<{
+    key: number
+    targetMessageId: string | null | undefined
+  } | null>(null)
   const suppressFollowWindowNavigationKeyRef = useRef<number | undefined>(
     undefined,
   )
@@ -398,34 +425,61 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   }, [emitActiveUserMessage, items, scrollerElement])
 
   useLayoutEffect(() => {
-    if (
-      !scrollerElement ||
-      windowNavigationKey === undefined ||
-      appliedWindowNavigationKeyRef.current === windowNavigationKey
-    ) {
+    if (!scrollerElement || windowNavigationKey === undefined) {
       return
     }
 
-    appliedWindowNavigationKeyRef.current = windowNavigationKey
-    suppressFollowWindowNavigationKeyRef.current = windowNavigationKey
-    suppressLoadMoreUntilRef.current = Date.now() + 300
-
-    const firstUserAnchor = scrollerElement.querySelector<HTMLElement>(
-      '[data-yolo-user-anchor-id]',
-    )
-    if (firstUserAnchor) {
-      const scrollerTop = scrollerElement.getBoundingClientRect().top
-      const anchorTop = firstUserAnchor.getBoundingClientRect().top
-      scrollerElement.scrollTop = Math.max(
-        0,
-        scrollerElement.scrollTop + anchorTop - scrollerTop,
-      )
-    } else {
-      scrollerElement.scrollTop = 0
+    if (
+      appliedWindowNavigationKeyRef.current !== windowNavigationKey &&
+      pendingWindowNavigationRef.current?.key !== windowNavigationKey
+    ) {
+      pendingWindowNavigationRef.current = {
+        key: windowNavigationKey,
+        targetMessageId: windowNavigationTargetMessageId,
+      }
+      suppressFollowWindowNavigationKeyRef.current = windowNavigationKey
+      suppressLoadMoreUntilRef.current = Date.now() + 300
     }
 
+    const pendingNavigation = pendingWindowNavigationRef.current
+    if (!pendingNavigation || pendingNavigation.key !== windowNavigationKey) {
+      return
+    }
+
+    const targetAnchor = getUserAnchorElement(
+      scrollerElement,
+      pendingNavigation.targetMessageId,
+    )
+    if (!targetAnchor) {
+      scrollerElement.scrollTop = 0
+      appliedWindowNavigationKeyRef.current = windowNavigationKey
+      pendingWindowNavigationRef.current = null
+      emitActiveUserMessage()
+      return
+    }
+
+    const scrollerTop = scrollerElement.getBoundingClientRect().top
+    const anchorTop = targetAnchor.getBoundingClientRect().top
+    const desiredScrollTop = Math.max(
+      0,
+      scrollerElement.scrollTop + anchorTop - scrollerTop,
+    )
+    const maxScrollTop = Math.max(
+      0,
+      scrollerElement.scrollHeight - scrollerElement.clientHeight,
+    )
+
+    scrollerElement.scrollTop = Math.min(desiredScrollTop, maxScrollTop)
+    appliedWindowNavigationKeyRef.current = windowNavigationKey
+    pendingWindowNavigationRef.current = null
     emitActiveUserMessage()
-  }, [emitActiveUserMessage, items, scrollerElement, windowNavigationKey])
+  }, [
+    emitActiveUserMessage,
+    items,
+    scrollerElement,
+    windowNavigationKey,
+    windowNavigationTargetMessageId,
+  ])
 
   useLayoutEffect(() => {
     if (!scrollerElement || !followOutput) {

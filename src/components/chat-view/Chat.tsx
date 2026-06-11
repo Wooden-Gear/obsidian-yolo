@@ -1161,6 +1161,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     resetToLatest,
     jumpToUserMessage,
     windowNavigationKey,
+    windowNavigationTargetMessageId,
   } = useChatHistoryWindow({
     conversationId: currentConversationId,
     groupedChatMessages,
@@ -5252,6 +5253,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
           onActiveUserMessageChange={setActiveNavigatorMessageId}
           windowNavigationKey={windowNavigationKey || undefined}
+          windowNavigationTargetMessageId={windowNavigationTargetMessageId}
           messageNavigatorContent={messageNavigatorContent}
           bottomSpacerHeight={inputOverlayHeight}
           footerContent={
