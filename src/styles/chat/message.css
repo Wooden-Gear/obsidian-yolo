@@ -1806,11 +1806,13 @@ button.yolo-llm-debug-modal-button:focus-visible {
   min-width: calc(var(--yolo-expanded-width) + 8px);
 }
 
-.yolo-view-toggle--single .yolo-view-toggle-button--roller {
+.yolo-view-toggle--single .yolo-view-toggle-button {
   /* Override the base `flex: 0 0 collapsed`. Single mode has only one
-     button and locks the toggle width via `min-width`, so we want the
-     roller to occupy the full expanded slot (and not flex-grow beyond). */
-  flex: 0 0 var(--yolo-expanded-width);
+     button, so let it fill the toggle content box directly instead of
+     reusing the two-button expanded-slot math. */
+  box-sizing: border-box;
+  flex: 1 1 100%;
+  width: 100%;
   justify-content: center;
   gap: 6px;
 }
