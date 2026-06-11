@@ -28,6 +28,10 @@ import {
 } from './compaction'
 import { AgentLlmTurnExecutor } from './llm-turn-executor'
 import { createAgentLoopWorker } from './loop-worker'
+import {
+  applyRepeatedToolFailureGuard,
+  createRepeatedToolFailureGuardState,
+} from './repeated-tool-failure-guard'
 import { estimateContinuationRequestContextTokens } from './requestContextEstimate'
 import { AgentRuntime } from './runtime'
 import { buildSubagentParentContext } from './subagent/parent-context'
@@ -134,6 +138,7 @@ export class NativeAgentRuntime implements AgentRuntime {
     let runSettled = false
     let workerTaskQueue = Promise.resolve()
     let abortListener: (() => void) | null = null
+    let repeatedToolFailureGuardState = createRepeatedToolFailureGuardState()
     const promptedAutoCompactionAssistantMessageIds = new Set<string>()
 
     const runCompletion = new Promise<void>((resolve, reject) => {
@@ -272,15 +277,20 @@ export class NativeAgentRuntime implements AgentRuntime {
                       debugTraceId: currentDebugTraceId,
                     }),
                 )
+                const guardedToolResult = applyRepeatedToolFailureGuard({
+                  state: repeatedToolFailureGuardState,
+                  toolMessage: completedToolMessage,
+                })
+                repeatedToolFailureGuardState = guardedToolResult.state
+                const guardedToolMessage = guardedToolResult.toolMessage
 
-                this.replaceToolMessage(completedToolMessage)
+                this.replaceToolMessage(guardedToolMessage)
                 this.notifySubscribers()
 
                 const compactToolCallId =
-                  findCompactToolCallId(completedToolMessage)
+                  findCompactToolCallId(guardedToolMessage)
                 if (compactToolCallId) {
-                  this.pendingCompactionAnchorMessageId =
-                    completedToolMessage.id
+                  this.pendingCompactionAnchorMessageId = guardedToolMessage.id
                   this.notifySubscribers()
 
                   const conversationMessages = [
@@ -391,6 +401,7 @@ export class NativeAgentRuntime implements AgentRuntime {
                     type: 'tool_result',
                     runId,
                     hasPendingTools: false,
+                    forceStopReason: guardedToolResult.forceStopReason,
                   })
                   return
                 }
@@ -399,7 +410,8 @@ export class NativeAgentRuntime implements AgentRuntime {
                   type: 'tool_result',
                   runId,
                   hasPendingTools:
-                    toolGateway.hasPendingToolCalls(completedToolMessage),
+                    toolGateway.hasPendingToolCalls(guardedToolMessage),
+                  forceStopReason: guardedToolResult.forceStopReason,
                 })
                 return
               }
