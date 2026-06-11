@@ -162,21 +162,6 @@ const normalizeNavigatorLabel = (text: string, fallback: string): string => {
   return `${normalized.slice(0, MESSAGE_NAVIGATOR_LABEL_MAX_LENGTH - 1)}…`
 }
 
-const findUserMessageAnchorElement = (
-  scroller: HTMLElement,
-  messageId: string,
-): HTMLElement | null => {
-  const anchors = Array.from(
-    scroller.querySelectorAll<HTMLElement>('[data-yolo-user-anchor-id]'),
-  )
-  for (const anchor of anchors) {
-    if (anchor.dataset.yoloUserAnchorId === messageId) {
-      return anchor
-    }
-  }
-  return null
-}
-
 const isDelegateSubagentToolName = (name: string): boolean => {
   try {
     const parsed = parseToolName(name)
@@ -1175,6 +1160,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     loadNewer,
     resetToLatest,
     jumpToUserMessage,
+    windowNavigationKey,
   } = useChatHistoryWindow({
     conversationId: currentConversationId,
     groupedChatMessages,
@@ -1353,7 +1339,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const chatUserInputRefs = useRef<Map<string, ChatUserInputRef>>(new Map())
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const bottomAnchorRef = useRef<HTMLDivElement>(null)
-  const pendingNavigatorMessageIdRef = useRef<string | null>(null)
   // Callback-ref + state for the overlay element. A plain useRef with a
   // mount-once effect would lose its observation when the chat view unmounts
   // (e.g. switching to the composer view and back), since the new overlay
@@ -1382,6 +1367,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     autoScrollToBottom,
     notifyContentFlushed,
     forceScrollToBottom,
+    stopAutoFollow,
     isAutoFollowEnabled,
     followOutput,
     onAtBottomStateChange,
@@ -1397,45 +1383,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       forceScrollToBottom()
     })
   }, [forceScrollToBottom, resetToLatest])
-  const scrollToUserMessageAnchor = useCallback(
-    (messageId: string, behavior: ScrollBehavior = 'smooth') => {
-      const scroller = chatMessagesRef.current
-      if (!scroller) {
-        return false
-      }
-
-      const anchor = findUserMessageAnchorElement(scroller, messageId)
-      if (!anchor) {
-        return false
-      }
-
-      const scrollerTop = scroller.getBoundingClientRect().top
-      const anchorTop = anchor.getBoundingClientRect().top
-      const targetTop = Math.max(
-        0,
-        scroller.scrollTop + anchorTop - scrollerTop,
-      )
-      scroller.scrollTo({ top: targetTop, behavior })
-      return true
-    },
-    [],
-  )
   const handleNavigateToUserMessage = useCallback(
     (messageId: string) => {
-      pendingNavigatorMessageIdRef.current = messageId
-      const didFindMessage = jumpToUserMessage(messageId)
-      if (!didFindMessage) {
-        pendingNavigatorMessageIdRef.current = null
-        return
-      }
-
-      requestAnimationFrame(() => {
-        if (scrollToUserMessageAnchor(messageId, 'smooth')) {
-          pendingNavigatorMessageIdRef.current = null
-        }
-      })
+      setActiveNavigatorMessageId(messageId)
+      stopAutoFollow()
+      jumpToUserMessage(messageId)
     },
-    [jumpToUserMessage, scrollToUserMessageAnchor],
+    [jumpToUserMessage, stopAutoFollow],
   )
 
   // Measure the overlay above the input box so the timeline can reserve
@@ -1608,17 +1562,6 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       windowedGroupedChatMessages,
     ],
   )
-
-  useLayoutEffect(() => {
-    const pendingMessageId = pendingNavigatorMessageIdRef.current
-    if (!pendingMessageId) {
-      return
-    }
-
-    if (scrollToUserMessageAnchor(pendingMessageId, 'auto')) {
-      pendingNavigatorMessageIdRef.current = null
-    }
-  }, [chatTimelineItems, scrollToUserMessageAnchor])
 
   const terminalCommandResultsByToolCallId = useMemo(() => {
     const map = new Map<string, ChatTerminalCommandResultMessage>()
@@ -5308,6 +5251,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
           onActiveUserMessageChange={setActiveNavigatorMessageId}
+          windowNavigationKey={windowNavigationKey || undefined}
           messageNavigatorContent={messageNavigatorContent}
           bottomSpacerHeight={inputOverlayHeight}
           footerContent={

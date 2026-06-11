@@ -52,7 +52,6 @@ function MessageNavigator({
     <nav
       className="yolo-message-navigator"
       onMouseEnter={scrollActiveItemIntoView}
-      onFocusCapture={scrollActiveItemIntoView}
     >
       <div className="yolo-message-navigator__rail">
         {anchors.map((anchor) => (
@@ -63,7 +62,10 @@ function MessageNavigator({
               'yolo-message-navigator__bar',
               anchor.id === activeMessageId && 'is-active',
             )}
-            onClick={() => onSelect(anchor.id)}
+            onPointerDown={(event) => {
+              event.preventDefault()
+              onSelect(anchor.id)
+            }}
           >
             <span className="yolo-sr-only">
               {itemLabel(anchor.index, anchor.label)}
@@ -84,7 +86,10 @@ function MessageNavigator({
                 'yolo-message-navigator__item',
                 anchor.id === activeMessageId && 'is-active',
               )}
-              onClick={() => onSelect(anchor.id)}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                onSelect(anchor.id)
+              }}
               aria-current={anchor.id === activeMessageId ? 'location' : false}
             >
               <span className="yolo-message-navigator__item-label">

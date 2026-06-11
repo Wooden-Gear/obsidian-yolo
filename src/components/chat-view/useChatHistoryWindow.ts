@@ -141,6 +141,7 @@ export function useChatHistoryWindow({
   const [window, setWindow] = useState<ChatHistoryWindow>(() =>
     getLatestWindow(totalTurns),
   )
+  const [windowNavigationKey, setWindowNavigationKey] = useState(0)
   const previousConversationIdRef = useRef(conversationId)
   const previousTotalTurnsRef = useRef(totalTurns)
 
@@ -233,6 +234,7 @@ export function useChatHistoryWindow({
           target.turnIndex + INITIAL_WINDOW_TURNS - 1,
         ),
       })
+      setWindowNavigationKey((currentKey) => currentKey + 1)
       return true
     },
     [totalTurns, userMessageTurnIndices],
@@ -255,5 +257,6 @@ export function useChatHistoryWindow({
     loadNewer,
     resetToLatest,
     jumpToUserMessage,
+    windowNavigationKey,
   }
 }

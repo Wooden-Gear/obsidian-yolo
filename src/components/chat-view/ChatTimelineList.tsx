@@ -132,6 +132,7 @@ type ChatTimelineListProps<TItem extends ChatTimelineItem> = {
   onAtBottomStateChange?: (atBottom: boolean) => void
   onVirtualizationChange?: (isVirtualized: boolean) => void
   onActiveUserMessageChange?: (messageId: string | null) => void
+  windowNavigationKey?: number
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
   onLoadEarlier?: () => void
@@ -277,6 +278,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   onAtBottomStateChange,
   onVirtualizationChange,
   onActiveUserMessageChange,
+  windowNavigationKey,
   hasEarlierMessages = false,
   hasNewerMessages = false,
   onLoadEarlier,
@@ -296,6 +298,11 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   const pendingAnchorSnapshotRef = useRef<AnchorSnapshot | null>(null)
   const loadInFlightRef = useRef(false)
   const lastActiveUserMessageIdRef = useRef<string | null>(null)
+  const appliedWindowNavigationKeyRef = useRef<number | undefined>(undefined)
+  const suppressFollowWindowNavigationKeyRef = useRef<number | undefined>(
+    undefined,
+  )
+  const suppressLoadMoreUntilRef = useRef(0)
 
   useLayoutEffect(() => {
     onVirtualizationChange?.(false)
@@ -391,7 +398,44 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   }, [emitActiveUserMessage, items, scrollerElement])
 
   useLayoutEffect(() => {
+    if (
+      !scrollerElement ||
+      windowNavigationKey === undefined ||
+      appliedWindowNavigationKeyRef.current === windowNavigationKey
+    ) {
+      return
+    }
+
+    appliedWindowNavigationKeyRef.current = windowNavigationKey
+    suppressFollowWindowNavigationKeyRef.current = windowNavigationKey
+    suppressLoadMoreUntilRef.current = Date.now() + 300
+
+    const firstUserAnchor = scrollerElement.querySelector<HTMLElement>(
+      '[data-yolo-user-anchor-id]',
+    )
+    if (firstUserAnchor) {
+      const scrollerTop = scrollerElement.getBoundingClientRect().top
+      const anchorTop = firstUserAnchor.getBoundingClientRect().top
+      scrollerElement.scrollTop = Math.max(
+        0,
+        scrollerElement.scrollTop + anchorTop - scrollerTop,
+      )
+    } else {
+      scrollerElement.scrollTop = 0
+    }
+
+    emitActiveUserMessage()
+  }, [emitActiveUserMessage, items, scrollerElement, windowNavigationKey])
+
+  useLayoutEffect(() => {
     if (!scrollerElement || !followOutput) {
+      return
+    }
+    if (
+      windowNavigationKey !== undefined &&
+      suppressFollowWindowNavigationKeyRef.current === windowNavigationKey
+    ) {
+      suppressFollowWindowNavigationKeyRef.current = undefined
       return
     }
 
@@ -415,6 +459,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     followOutput,
     items,
     scrollerElement,
+    windowNavigationKey,
   ])
 
   useEffect(() => {
@@ -445,6 +490,10 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     const handleScroll = () => {
       emitAtBottomState()
       emitActiveUserMessage()
+      if (Date.now() < suppressLoadMoreUntilRef.current) {
+        return
+      }
+
       const loadMoreThreshold = getLoadMoreThreshold(scrollerElement)
 
       if (

@@ -39,6 +39,7 @@ type ChatConversationPaneProps = {
   footerContent: ReactNode
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
   onActiveUserMessageChange?: (messageId: string | null) => void
+  windowNavigationKey?: number
   messageNavigatorContent?: ReactNode
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
@@ -74,6 +75,7 @@ export function ChatConversationPane({
   footerContent,
   onTimelineVirtualizationChange,
   onActiveUserMessageChange,
+  windowNavigationKey,
   messageNavigatorContent,
   hasEarlierMessages,
   hasNewerMessages,
@@ -155,6 +157,7 @@ export function ChatConversationPane({
         scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
         onActiveUserMessageChange={onActiveUserMessageChange}
+        windowNavigationKey={windowNavigationKey}
         hasEarlierMessages={hasEarlierMessages}
         hasNewerMessages={hasNewerMessages}
         onLoadEarlier={onLoadEarlier}
