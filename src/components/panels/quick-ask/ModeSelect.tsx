@@ -1,10 +1,5 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import {
-  Bot,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-} from 'lucide-react'
+import { Bot, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'

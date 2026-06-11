@@ -1,5 +1,5 @@
-import type { McpTool } from '../../types/mcp.types'
 import type { YoloSettings } from '../../settings/schema/setting.types'
+import type { McpTool } from '../../types/mcp.types'
 
 import { selectAllowedTools } from './tool-selection'
 

@@ -1,5 +1,5 @@
-import { App } from 'obsidian'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { App } from 'obsidian'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
@@ -155,8 +155,10 @@ function UpdateHistoryModalComponent({
   )
   const separator = lang === 'zh' ? '：' : ': '
   const showPagination = page > 0 || hasNext
-  const pageLabel = t('update.historyPage', 'Page {{current}}')
-    .replace('{{current}}', String(page + 1))
+  const pageLabel = t('update.historyPage', 'Page {{current}}').replace(
+    '{{current}}',
+    String(page + 1),
+  )
 
   const openCommunityPluginUpdate = () => {
     const { app } = plugin
@@ -273,9 +275,7 @@ function UpdateHistoryModalComponent({
                   disabled={page <= 0 || loading}
                   aria-label={t('update.historyPrev', 'Previous page')}
                   title={t('update.historyPrev', 'Previous page')}
-                  onClick={() =>
-                    setPage((current) => Math.max(0, current - 1))
-                  }
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
                 >
                   <ChevronLeft size={14} strokeWidth={2} />
                   <span>{t('update.historyPrev', 'Previous page')}</span>

@@ -1,6 +1,7 @@
+import { normalizeSubagentModelOptions } from '../../core/agent/subagent/model-config'
+
 import { SETTINGS_SCHEMA_VERSION, SETTING_MIGRATIONS } from './migrations'
 import { YoloSettings, yoloSettingsSchema } from './setting.types'
-import { normalizeSubagentModelOptions } from '../../core/agent/subagent/model-config'
 
 export function normalizeYoloSettingsReferences(
   settings: YoloSettings,

@@ -7,6 +7,7 @@ import { PluginProvider, usePlugin } from '../contexts/plugin-context'
 import { parseChangelog } from '../core/update/updateChecker'
 import { useUpdateCheck } from '../hooks/useUpdateCheck'
 import type YoloPlugin from '../main'
+
 import { UpdateHistoryModal } from './modals/UpdateHistoryModal'
 import { UpdateChangelogSections } from './update/UpdateChangelogSections'
 import {

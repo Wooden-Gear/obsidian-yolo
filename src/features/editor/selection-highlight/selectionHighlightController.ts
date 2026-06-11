@@ -567,11 +567,10 @@ export class SelectionHighlightController {
     if (pointerTrackingInstalled) return
     pointerTrackingInstalled = true
 
-    const controller = this
     const endPointerSelect = (): void => {
       if (!isPointerSelecting) return
       isPointerSelecting = false
-      controller.refreshNativeSelectionSuppression()
+      this.refreshNativeSelectionSuppression()
     }
 
     document.addEventListener(
@@ -581,9 +580,9 @@ export class SelectionHighlightController {
         const target = event.target
         if (!(target instanceof Element)) return
         if (!target.closest('.cm-editor')) return
-        if (controller.shouldIgnoreTarget(target)) return
+        if (this.shouldIgnoreTarget(target)) return
         isPointerSelecting = true
-        controller.refreshNativeSelectionSuppression()
+        this.refreshNativeSelectionSuppression()
       },
       true,
     )

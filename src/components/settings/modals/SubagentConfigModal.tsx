@@ -463,9 +463,7 @@ function groupModelsByProvider(
 
   const providerIds = Array.from(modelsByProvider.keys())
   const orderedProviderIds = [
-    ...providerOrder.filter((providerId) =>
-      modelsByProvider.has(providerId),
-    ),
+    ...providerOrder.filter((providerId) => modelsByProvider.has(providerId)),
     ...providerIds.filter((providerId) => !providerOrder.includes(providerId)),
   ]
 

@@ -34,7 +34,6 @@ import {
 import type { JSX as ReactJSX } from 'react/jsx-runtime'
 import { createPortal } from 'react-dom'
 
-import { CHAT_MODES, type ChatMode } from '../../ChatModeSelect'
 import { PROVIDER_PRESET_INFO } from '../../../../../constants'
 import { useApp } from '../../../../../contexts/app-context'
 import { useLanguage } from '../../../../../contexts/language-context'
@@ -52,6 +51,7 @@ import {
   serializeMentionable,
 } from '../../../../../utils/chat/mentionable'
 import { SearchableMentionable } from '../../../../../utils/fuzzy-search'
+import { CHAT_MODES, type ChatMode } from '../../ChatModeSelect'
 import { getMentionableIcon } from '../../utils/get-metionable-icon'
 import { MenuOption, MenuTextMatch } from '../shared/LexicalMenu'
 import {

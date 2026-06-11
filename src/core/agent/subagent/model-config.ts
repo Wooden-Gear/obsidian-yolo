@@ -31,7 +31,8 @@ export function resolveSubagentModelConfig(
     allowedModelIds[0] ??
     ''
   const preferredModelId =
-    options?.preferredModelId && allowedModelIds.includes(options.preferredModelId)
+    options?.preferredModelId &&
+    allowedModelIds.includes(options.preferredModelId)
       ? options.preferredModelId
       : fallbackPreferred
 
@@ -76,7 +77,9 @@ export function formatSubagentModelOption(
   settings: YoloSettings,
   modelId: string,
 ): string {
-  const model = settings.chatModels.find((candidate) => candidate.id === modelId)
+  const model = settings.chatModels.find(
+    (candidate) => candidate.id === modelId,
+  )
   if (!model) return modelId
   const displayName = model.name?.trim() || model.model || model.id
   return `${modelId} (${displayName})`

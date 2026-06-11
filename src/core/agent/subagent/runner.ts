@@ -3,10 +3,14 @@ import { v4 as uuidv4 } from 'uuid'
 import type { TaskSource } from '../../../types/chat'
 import type { ChatMessage, ChatUserMessage } from '../../../types/chat'
 import type { ChatModel } from '../../../types/chat-model.types'
-import type { LLMProvider, LLMProviderApiType } from '../../../types/provider.types'
+import type {
+  LLMProvider,
+  LLMProviderApiType,
+} from '../../../types/provider.types'
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import { collectTotalAssistantUsage } from '../../../utils/chat/llmUsage'
 import { formatErrorMessageWithCauses } from '../../../utils/error-message'
+import type { BaseLLMProvider } from '../../llm/base'
 import { type YoloAgentEvent, conversationStateToEvents } from '../agent-api'
 import { backgroundTaskCompletionBus } from '../background-task/completion-bus'
 import { CitationRegistry } from '../citationRegistry'
@@ -14,7 +18,6 @@ import { liveTaskStreamBus } from '../live-stream/taskStreamBus'
 import { NativeAgentRuntime } from '../native-runtime'
 import type { AgentConversationState } from '../service'
 import type { AgentRuntimeLoopConfig, AgentRuntimeRunInput } from '../types'
-import type { BaseLLMProvider } from '../../llm/base'
 
 import {
   SUBAGENT_DEFAULT_SYSTEM_PROMPT,

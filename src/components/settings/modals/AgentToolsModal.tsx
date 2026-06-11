@@ -8,7 +8,6 @@ import {
   useSettings,
 } from '../../../contexts/settings-context'
 import { DEFAULT_BLOCKED_PREFIXES } from '../../../core/agent/bash/command-classifier'
-import { DELEGATE_SUBAGENT_TOOL_SHORT_NAME } from '../../../core/agent/subagent/constants'
 import {
   BUILTIN_TOOL_CATEGORY_I18N,
   BUILTIN_TOOL_CATEGORY_ORDER,
@@ -21,6 +20,7 @@ import {
   getBuiltinToolDisplayIndex,
   getBuiltinToolUiMeta,
 } from '../../../core/agent/builtinToolUiMeta'
+import { DELEGATE_SUBAGENT_TOOL_SHORT_NAME } from '../../../core/agent/subagent/constants'
 import { JS_SANDBOX_TOOL_NAME } from '../../../core/mcp/jsSandboxTool'
 import {
   LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
@@ -281,10 +281,10 @@ function AgentToolsModalContent({
                                     'settings.subagent.openSettings',
                                     'Configure subagent models',
                                   )
-                              : t(
-                                  'settings.webSearch.openSettings',
-                                  'Configure web search providers',
-                                )
+                                : t(
+                                    'settings.webSearch.openSettings',
+                                    'Configure web search providers',
+                                  )
                         }
                         onClick={() => {
                           if (tool.id === JS_SANDBOX_TOOL_NAME) {

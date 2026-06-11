@@ -1313,11 +1313,7 @@
 
 .yolo-message-navigator__items:hover::-webkit-scrollbar-thumb,
 .yolo-message-navigator__items:focus-within::-webkit-scrollbar-thumb {
-  background-color: color-mix(
-    in srgb,
-    var(--text-muted) 35%,
-    transparent
-  );
+  background-color: color-mix(in srgb, var(--text-muted) 35%, transparent);
 }
 
 .yolo-message-navigator__item {

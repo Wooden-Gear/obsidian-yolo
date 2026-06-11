@@ -11,7 +11,7 @@ describe('resolveChatModeRuntime', () => {
     enableTools: true,
     includeBuiltinTools: true,
     toolPreferences: {
-      'yolo_local__fs_write': {
+      yolo_local__fs_write: {
         enabled: true,
         approvalMode: 'require_approval' as const,
       },
