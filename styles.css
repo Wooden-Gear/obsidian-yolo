@@ -9496,6 +9496,7 @@ button.yolo-agent-chip--more:hover {
   flex-direction: column;
   min-height: 0;
   overflow-y: hidden;
+  container: yolo-chat-conversation / inline-size;
 }
 
 .yolo-chat-messages {
@@ -9811,6 +9812,12 @@ button.yolo-agent-chip--more:hover {
 }
 
 @media (max-width: 768px) {
+  .yolo-message-navigator {
+    display: none;
+  }
+}
+
+@container yolo-chat-conversation (max-width: 850px) {
   .yolo-message-navigator {
     display: none;
   }
