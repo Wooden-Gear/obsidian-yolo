@@ -1416,6 +1416,11 @@ export const it: TranslationKeys = {
     continueResponse: 'Continua risposta',
     loadEarlierMessages: 'Caricamento messaggi precedenti',
     loadNewerMessages: 'Caricamento messaggi più recenti',
+    messageNavigator: {
+      title: 'Navigatore messaggi',
+      itemAriaLabel: 'Vai al messaggio {index}: {label}',
+      emptyMessage: 'Messaggio vuoto',
+    },
     stopGeneration: 'Ferma generazione',
     queueMessage: {
       tooltip:

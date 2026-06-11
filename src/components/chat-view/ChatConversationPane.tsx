@@ -38,6 +38,8 @@ type ChatConversationPaneProps = {
   emptyStateAgentFullDescription: string
   footerContent: ReactNode
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
+  onActiveUserMessageChange?: (messageId: string | null) => void
+  messageNavigatorContent?: ReactNode
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
   onLoadEarlier?: () => void
@@ -71,6 +73,8 @@ export function ChatConversationPane({
   emptyStateAgentFullDescription,
   footerContent,
   onTimelineVirtualizationChange,
+  onActiveUserMessageChange,
+  messageNavigatorContent,
   hasEarlierMessages,
   hasNewerMessages,
   onLoadEarlier,
@@ -115,36 +119,42 @@ export function ChatConversationPane({
         }
         containerClassName="yolo-chat-conversation-surface"
         overlaySlot={
-          showEmptyState ? (
-            <div className="yolo-chat-empty-state-overlay">
-              <div className="yolo-chat-empty-state-overlay-inner">
-                <div className="yolo-chat-empty-state">
-                  <div
-                    key={chatMode}
-                    className="yolo-chat-empty-state-icon"
-                    data-mode={chatMode}
-                  >
-                    {chatMode === 'agent-full' ? (
-                      <InfinityIcon size={18} strokeWidth={2} />
-                    ) : isAgentChatMode(chatMode) ? (
-                      <Bot size={18} strokeWidth={2} />
-                    ) : (
-                      <MessageCircle size={18} strokeWidth={2} />
-                    )}
-                  </div>
-                  <div className="yolo-chat-empty-state-title">
-                    {emptyStateTitle}
-                  </div>
-                  <div className="yolo-chat-empty-state-description">
-                    {emptyStateDescription}
+          showEmptyState || messageNavigatorContent ? (
+            <>
+              {showEmptyState ? (
+                <div className="yolo-chat-empty-state-overlay">
+                  <div className="yolo-chat-empty-state-overlay-inner">
+                    <div className="yolo-chat-empty-state">
+                      <div
+                        key={chatMode}
+                        className="yolo-chat-empty-state-icon"
+                        data-mode={chatMode}
+                      >
+                        {chatMode === 'agent-full' ? (
+                          <InfinityIcon size={18} strokeWidth={2} />
+                        ) : isAgentChatMode(chatMode) ? (
+                          <Bot size={18} strokeWidth={2} />
+                        ) : (
+                          <MessageCircle size={18} strokeWidth={2} />
+                        )}
+                      </div>
+                      <div className="yolo-chat-empty-state-title">
+                        {emptyStateTitle}
+                      </div>
+                      <div className="yolo-chat-empty-state-description">
+                        {emptyStateDescription}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              ) : null}
+              {messageNavigatorContent}
+            </>
           ) : undefined
         }
         scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
+        onActiveUserMessageChange={onActiveUserMessageChange}
         hasEarlierMessages={hasEarlierMessages}
         hasNewerMessages={hasNewerMessages}
         onLoadEarlier={onLoadEarlier}

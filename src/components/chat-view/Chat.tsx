@@ -122,6 +122,8 @@ import {
 import Composer from './Composer'
 import { useActiveViewState } from './hooks/useActiveViewState'
 import { syncRenderedLatexSelection } from './latex-copy'
+import MessageNavigator from './MessageNavigator'
+import type { MessageNavigatorAnchor } from './MessageNavigator'
 import QueryProgress from './QueryProgress'
 import type { QueryProgressState } from './QueryProgress'
 import { TodoListPanel } from './TodoListPanel'
@@ -132,6 +134,48 @@ import UserMessageItem from './UserMessageItem'
 import ViewToggle from './ViewToggle'
 
 const WORKSPACE_WIDE_HEADER_MIN_WIDTH = 1200
+const MESSAGE_NAVIGATOR_MIN_ANCHORS = 7
+const MESSAGE_NAVIGATOR_LABEL_MAX_LENGTH = 90
+
+const getPromptContentText = (
+  promptContent: ChatUserMessage['promptContent'],
+): string => {
+  if (!promptContent) {
+    return ''
+  }
+  if (typeof promptContent === 'string') {
+    return promptContent
+  }
+  return promptContent
+    .map((part) => (part.type === 'text' ? part.text : ''))
+    .join(' ')
+}
+
+const normalizeNavigatorLabel = (text: string, fallback: string): string => {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (!normalized) {
+    return fallback
+  }
+  if (normalized.length <= MESSAGE_NAVIGATOR_LABEL_MAX_LENGTH) {
+    return normalized
+  }
+  return `${normalized.slice(0, MESSAGE_NAVIGATOR_LABEL_MAX_LENGTH - 1)}…`
+}
+
+const findUserMessageAnchorElement = (
+  scroller: HTMLElement,
+  messageId: string,
+): HTMLElement | null => {
+  const anchors = Array.from(
+    scroller.querySelectorAll<HTMLElement>('[data-yolo-user-anchor-id]'),
+  )
+  for (const anchor of anchors) {
+    if (anchor.dataset.yoloUserAnchorId === messageId) {
+      return anchor
+    }
+  }
+  return null
+}
 
 const isDelegateSubagentToolName = (name: string): boolean => {
   try {
@@ -1130,10 +1174,33 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     loadEarlier,
     loadNewer,
     resetToLatest,
+    jumpToUserMessage,
   } = useChatHistoryWindow({
     conversationId: currentConversationId,
     groupedChatMessages,
   })
+  const messageNavigatorAnchors = useMemo<MessageNavigatorAnchor[]>(() => {
+    const emptyLabel = t('chat.messageNavigator.emptyMessage', '空消息')
+    let userMessageIndex = 0
+    return groupedChatMessages.flatMap((messageOrGroup) => {
+      if (Array.isArray(messageOrGroup)) {
+        return []
+      }
+
+      userMessageIndex += 1
+      const editorText = messageOrGroup.content
+        ? editorStateToPlainText(messageOrGroup.content)
+        : ''
+      const promptText = getPromptContentText(messageOrGroup.promptContent)
+      return [
+        {
+          id: messageOrGroup.id,
+          index: userMessageIndex,
+          label: normalizeNavigatorLabel(editorText || promptText, emptyLabel),
+        },
+      ]
+    })
+  }, [groupedChatMessages, t])
 
   const displayedChatMessages = useMemo(() => {
     return groupedChatMessages.flatMap((messageOrGroup): ChatMessage[] => {
@@ -1286,6 +1353,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const chatUserInputRefs = useRef<Map<string, ChatUserInputRef>>(new Map())
   const chatMessagesRef = useRef<HTMLDivElement>(null)
   const bottomAnchorRef = useRef<HTMLDivElement>(null)
+  const pendingNavigatorMessageIdRef = useRef<string | null>(null)
   // Callback-ref + state for the overlay element. A plain useRef with a
   // mount-once effect would lose its observation when the chat view unmounts
   // (e.g. switching to the composer view and back), since the new overlay
@@ -1295,6 +1363,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     useState<HTMLDivElement | null>(null)
   const [inputOverlayHeight, setInputOverlayHeight] = useState(0)
   const [timelineIsVirtualized, setTimelineIsVirtualized] = useState(false)
+  const [activeNavigatorMessageId, setActiveNavigatorMessageId] = useState<
+    string | null
+  >(null)
   const latexSelectionSyncFrameRef = useRef<number | null>(null)
   const chatSurfacePreset = getChatSurfacePreset('chat')
   const hasStreamingMessages = useMemo(
@@ -1326,6 +1397,46 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       forceScrollToBottom()
     })
   }, [forceScrollToBottom, resetToLatest])
+  const scrollToUserMessageAnchor = useCallback(
+    (messageId: string, behavior: ScrollBehavior = 'smooth') => {
+      const scroller = chatMessagesRef.current
+      if (!scroller) {
+        return false
+      }
+
+      const anchor = findUserMessageAnchorElement(scroller, messageId)
+      if (!anchor) {
+        return false
+      }
+
+      const scrollerTop = scroller.getBoundingClientRect().top
+      const anchorTop = anchor.getBoundingClientRect().top
+      const targetTop = Math.max(
+        0,
+        scroller.scrollTop + anchorTop - scrollerTop,
+      )
+      scroller.scrollTo({ top: targetTop, behavior })
+      return true
+    },
+    [],
+  )
+  const handleNavigateToUserMessage = useCallback(
+    (messageId: string) => {
+      pendingNavigatorMessageIdRef.current = messageId
+      const didFindMessage = jumpToUserMessage(messageId)
+      if (!didFindMessage) {
+        pendingNavigatorMessageIdRef.current = null
+        return
+      }
+
+      requestAnimationFrame(() => {
+        if (scrollToUserMessageAnchor(messageId, 'smooth')) {
+          pendingNavigatorMessageIdRef.current = null
+        }
+      })
+    },
+    [jumpToUserMessage, scrollToUserMessageAnchor],
+  )
 
   // Measure the overlay above the input box so the timeline can reserve
   // equivalent scrollable space at its bottom — keeps the last assistant
@@ -1497,6 +1608,18 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       windowedGroupedChatMessages,
     ],
   )
+
+  useLayoutEffect(() => {
+    const pendingMessageId = pendingNavigatorMessageIdRef.current
+    if (!pendingMessageId) {
+      return
+    }
+
+    if (scrollToUserMessageAnchor(pendingMessageId, 'auto')) {
+      pendingNavigatorMessageIdRef.current = null
+    }
+  }, [chatTimelineItems, scrollToUserMessageAnchor])
+
   const terminalCommandResultsByToolCallId = useMemo(() => {
     const map = new Map<string, ChatTerminalCommandResultMessage>()
     for (const message of chatMessages) {
@@ -5108,6 +5231,26 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     ],
   )
 
+  const getMessageNavigatorItemLabel = useCallback(
+    (index: number, label: string) =>
+      t(
+        'chat.messageNavigator.itemAriaLabel',
+        '跳转到第 {index} 条消息：{label}',
+      )
+        .replace('{index}', String(index))
+        .replace('{label}', label),
+    [t],
+  )
+  const messageNavigatorContent =
+    messageNavigatorAnchors.length >= MESSAGE_NAVIGATOR_MIN_ANCHORS ? (
+      <MessageNavigator
+        anchors={messageNavigatorAnchors}
+        activeMessageId={activeNavigatorMessageId}
+        itemLabel={getMessageNavigatorItemLabel}
+        onSelect={handleNavigateToUserMessage}
+      />
+    ) : undefined
+
   return (
     <div
       ref={containerRef}
@@ -5164,6 +5307,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             '启用工具链，处理搜索、读写与多步骤任务',
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
+          onActiveUserMessageChange={setActiveNavigatorMessageId}
+          messageNavigatorContent={messageNavigatorContent}
           bottomSpacerHeight={inputOverlayHeight}
           footerContent={
             <>

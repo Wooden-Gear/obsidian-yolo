@@ -131,6 +131,7 @@ type ChatTimelineListProps<TItem extends ChatTimelineItem> = {
   atBottomThreshold?: number
   onAtBottomStateChange?: (atBottom: boolean) => void
   onVirtualizationChange?: (isVirtualized: boolean) => void
+  onActiveUserMessageChange?: (messageId: string | null) => void
   hasEarlierMessages?: boolean
   hasNewerMessages?: boolean
   onLoadEarlier?: () => void
@@ -217,6 +218,48 @@ const getVisibleAnchorSnapshot = (
   }
 }
 
+const getActiveUserAnchorSnapshot = (
+  scrollerElement: HTMLElement,
+): AnchorSnapshot | null => {
+  const anchors = Array.from(
+    scrollerElement.querySelectorAll<HTMLElement>('[data-yolo-user-anchor-id]'),
+  )
+  if (anchors.length === 0) {
+    return null
+  }
+
+  const containerTop = scrollerElement.getBoundingClientRect().top
+  const activationTop = containerTop + 8
+  let activeAnchor: HTMLElement | null = null
+  let nearestUpcomingAnchor: HTMLElement | null = null
+  let nearestUpcomingDistance = Number.POSITIVE_INFINITY
+
+  for (const anchor of anchors) {
+    const anchorTop = anchor.getBoundingClientRect().top
+    if (anchorTop <= activationTop) {
+      activeAnchor = anchor
+      continue
+    }
+
+    const distance = anchorTop - activationTop
+    if (distance < nearestUpcomingDistance) {
+      nearestUpcomingDistance = distance
+      nearestUpcomingAnchor = anchor
+    }
+  }
+
+  const selectedAnchor = activeAnchor ?? nearestUpcomingAnchor
+  const messageId = selectedAnchor?.dataset.yoloUserAnchorId
+  if (!selectedAnchor || !messageId) {
+    return null
+  }
+
+  return {
+    messageId,
+    top: selectedAnchor.getBoundingClientRect().top,
+  }
+}
+
 export function ChatTimelineList<TItem extends ChatTimelineItem>({
   items,
   conversationId,
@@ -233,6 +276,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   atBottomThreshold = DEFAULT_AT_BOTTOM_THRESHOLD,
   onAtBottomStateChange,
   onVirtualizationChange,
+  onActiveUserMessageChange,
   hasEarlierMessages = false,
   hasNewerMessages = false,
   onLoadEarlier,
@@ -251,6 +295,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
   const initialBottomKeyRef = useRef<string | null>(null)
   const pendingAnchorSnapshotRef = useRef<AnchorSnapshot | null>(null)
   const loadInFlightRef = useRef(false)
+  const lastActiveUserMessageIdRef = useRef<string | null>(null)
 
   useLayoutEffect(() => {
     onVirtualizationChange?.(false)
@@ -284,6 +329,21 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     onLoadNewer()
   }, [captureAnchorBeforeWindowChange, onLoadNewer])
 
+  const emitActiveUserMessage = useCallback(() => {
+    if (!onActiveUserMessageChange || !scrollerElement) {
+      return
+    }
+
+    const activeMessageId =
+      getActiveUserAnchorSnapshot(scrollerElement)?.messageId ?? null
+    if (lastActiveUserMessageIdRef.current === activeMessageId) {
+      return
+    }
+
+    lastActiveUserMessageIdRef.current = activeMessageId
+    onActiveUserMessageChange(activeMessageId)
+  }, [onActiveUserMessageChange, scrollerElement])
+
   const handleScrollerRef = useCallback(
     (element: HTMLElement | null) => {
       setScrollContainerRef(scrollContainerRef, element)
@@ -313,6 +373,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     loadInFlightRef.current = false
     const snapshot = pendingAnchorSnapshotRef.current
     if (!snapshot || !scrollerElement) {
+      emitActiveUserMessage()
       return
     }
 
@@ -326,7 +387,8 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
 
     const afterTop = anchor.getBoundingClientRect().top
     scrollerElement.scrollTop += afterTop - snapshot.top
-  }, [items, scrollerElement])
+    emitActiveUserMessage()
+  }, [emitActiveUserMessage, items, scrollerElement])
 
   useLayoutEffect(() => {
     if (!scrollerElement || !followOutput) {
@@ -382,6 +444,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
 
     const handleScroll = () => {
       emitAtBottomState()
+      emitActiveUserMessage()
       const loadMoreThreshold = getLoadMoreThreshold(scrollerElement)
 
       if (
@@ -407,6 +470,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     }
 
     emitAtBottomState()
+    emitActiveUserMessage()
     scrollerElement.addEventListener('scroll', handleScroll, {
       passive: true,
     })
@@ -419,6 +483,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
 
     const observer = new ResizeObserver(() => {
       emitAtBottomState()
+      emitActiveUserMessage()
     })
     observer.observe(scrollerElement)
 
@@ -432,6 +497,7 @@ export function ChatTimelineList<TItem extends ChatTimelineItem>({
     handleLoadNewer,
     hasEarlierMessages,
     hasNewerMessages,
+    emitActiveUserMessage,
     onAtBottomStateChange,
     onLoadEarlier,
     onLoadNewer,

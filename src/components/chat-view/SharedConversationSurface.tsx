@@ -25,6 +25,7 @@ type SharedConversationSurfaceProps<TItem extends ChatTimelineItem> = {
   overscanPx?: number
   atBottomThreshold?: number
   onVirtualizationChange?: (isVirtualized: boolean) => void
+  onActiveUserMessageChange?: (messageId: string | null) => void
   onRenderStateChange?: (state: {
     visibleStartIndex: number
     visibleEndIndex: number
@@ -59,6 +60,7 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
   overscanPx,
   atBottomThreshold,
   onVirtualizationChange,
+  onActiveUserMessageChange,
   onRenderStateChange,
   hasEarlierMessages,
   hasNewerMessages,
@@ -89,6 +91,7 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
       overscanPx={overscanPx}
       atBottomThreshold={atBottomThreshold}
       onVirtualizationChange={onVirtualizationChange}
+      onActiveUserMessageChange={onActiveUserMessageChange}
       onRenderStateChange={onRenderStateChange}
       hasEarlierMessages={hasEarlierMessages}
       hasNewerMessages={hasNewerMessages}

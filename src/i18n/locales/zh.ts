@@ -1434,6 +1434,11 @@ export const zh: TranslationKeys = {
     continueResponse: '继续生成',
     loadEarlierMessages: '正在加载更早消息',
     loadNewerMessages: '正在加载更新消息',
+    messageNavigator: {
+      title: '消息导航',
+      itemAriaLabel: '跳转到第 {index} 条消息：{label}',
+      emptyMessage: '空消息',
+    },
     stopGeneration: '停止生成',
     queueMessage: {
       tooltip: '加入排队，等当前回合完成后继续',

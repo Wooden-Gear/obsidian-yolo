@@ -1533,6 +1533,11 @@ export const en: TranslationKeys = {
     continueResponse: 'Continue response',
     loadEarlierMessages: 'Loading earlier messages',
     loadNewerMessages: 'Loading newer messages',
+    messageNavigator: {
+      title: 'Message navigator',
+      itemAriaLabel: 'Jump to message {index}: {label}',
+      emptyMessage: 'Empty message',
+    },
     stopGeneration: 'Stop generation',
     queueMessage: {
       tooltip: 'Queue this message — it will be sent after the current step',

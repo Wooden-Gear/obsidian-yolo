@@ -1308,6 +1308,11 @@ export type TranslationKeys = {
     continueResponse?: string
     loadEarlierMessages?: string
     loadNewerMessages?: string
+    messageNavigator?: {
+      title?: string
+      itemAriaLabel?: string
+      emptyMessage?: string
+    }
     stopGeneration?: string
     queueMessage?: {
       tooltip?: string

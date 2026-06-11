@@ -21,6 +21,11 @@ type ChatHistoryWindow = {
   endTurnIndex: number
 }
 
+type UserMessageTurnIndex = {
+  messageId: string
+  turnIndex: number
+}
+
 function buildTurnRanges(
   groupedChatMessages: GroupedChatMessage[],
 ): TurnRange[] {
@@ -59,6 +64,25 @@ function buildTurnRanges(
   })
 
   return ranges
+}
+
+function buildUserMessageTurnIndices(
+  groupedChatMessages: GroupedChatMessage[],
+): UserMessageTurnIndex[] {
+  const indices: UserMessageTurnIndex[] = []
+
+  groupedChatMessages.forEach((messageOrGroup) => {
+    if (Array.isArray(messageOrGroup)) {
+      return
+    }
+
+    indices.push({
+      messageId: messageOrGroup.id,
+      turnIndex: indices.length,
+    })
+  })
+
+  return indices
 }
 
 function getLatestWindow(totalTurns: number): ChatHistoryWindow {
@@ -107,6 +131,10 @@ export function useChatHistoryWindow({
 }) {
   const turnRanges = useMemo(
     () => buildTurnRanges(groupedChatMessages),
+    [groupedChatMessages],
+  )
+  const userMessageTurnIndices = useMemo(
+    () => buildUserMessageTurnIndices(groupedChatMessages),
     [groupedChatMessages],
   )
   const totalTurns = turnRanges.length
@@ -189,6 +217,27 @@ export function useChatHistoryWindow({
     setWindow(getLatestWindow(totalTurns))
   }, [totalTurns])
 
+  const jumpToUserMessage = useCallback(
+    (messageId: string) => {
+      const target = userMessageTurnIndices.find(
+        (entry) => entry.messageId === messageId,
+      )
+      if (!target) {
+        return false
+      }
+
+      setWindow({
+        startTurnIndex: target.turnIndex,
+        endTurnIndex: Math.min(
+          totalTurns - 1,
+          target.turnIndex + INITIAL_WINDOW_TURNS - 1,
+        ),
+      })
+      return true
+    },
+    [totalTurns, userMessageTurnIndices],
+  )
+
   const normalizedWindow = normalizeWindow(window, totalTurns)
   const startRange = turnRanges[normalizedWindow.startTurnIndex]
   const endRange = turnRanges[normalizedWindow.endTurnIndex]
@@ -205,5 +254,6 @@ export function useChatHistoryWindow({
     loadEarlier,
     loadNewer,
     resetToLatest,
+    jumpToUserMessage,
   }
 }
