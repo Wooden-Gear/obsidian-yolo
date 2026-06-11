@@ -1531,6 +1531,8 @@ export const en: TranslationKeys = {
     newChat: 'New chat',
     untitledConversation: 'New chat',
     continueResponse: 'Continue response',
+    loadEarlierMessages: 'Loading earlier messages',
+    loadNewerMessages: 'Loading newer messages',
     stopGeneration: 'Stop generation',
     queueMessage: {
       tooltip: 'Queue this message — it will be sent after the current step',

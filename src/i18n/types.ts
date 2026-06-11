@@ -1306,6 +1306,8 @@ export type TranslationKeys = {
     newChat: string
     untitledConversation?: string
     continueResponse?: string
+    loadEarlierMessages?: string
+    loadNewerMessages?: string
     stopGeneration?: string
     queueMessage?: {
       tooltip?: string

@@ -30,6 +30,12 @@ type SharedConversationSurfaceProps<TItem extends ChatTimelineItem> = {
     visibleEndIndex: number
     heightByItemId: Record<string, number>
   }) => void
+  hasEarlierMessages?: boolean
+  hasNewerMessages?: boolean
+  onLoadEarlier?: () => void
+  onLoadNewer?: () => void
+  loadEarlierLabel?: string
+  loadNewerLabel?: string
   scrollContainerClassName?: string
   scrollContainerStyle?: CSSProperties
   containerClassName?: string
@@ -54,6 +60,12 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
   atBottomThreshold,
   onVirtualizationChange,
   onRenderStateChange,
+  hasEarlierMessages,
+  hasNewerMessages,
+  onLoadEarlier,
+  onLoadNewer,
+  loadEarlierLabel,
+  loadNewerLabel,
   scrollContainerClassName,
   scrollContainerStyle,
   containerClassName,
@@ -78,6 +90,12 @@ export function SharedConversationSurface<TItem extends ChatTimelineItem>({
       atBottomThreshold={atBottomThreshold}
       onVirtualizationChange={onVirtualizationChange}
       onRenderStateChange={onRenderStateChange}
+      hasEarlierMessages={hasEarlierMessages}
+      hasNewerMessages={hasNewerMessages}
+      onLoadEarlier={onLoadEarlier}
+      onLoadNewer={onLoadNewer}
+      loadEarlierLabel={loadEarlierLabel}
+      loadNewerLabel={loadNewerLabel}
       scrollContainerClassName={scrollContainerClassName}
       scrollContainerStyle={scrollContainerStyle}
       bottomSpacerHeight={bottomSpacerHeight}

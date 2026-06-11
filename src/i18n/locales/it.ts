@@ -1414,6 +1414,8 @@ export const it: TranslationKeys = {
     newChat: 'Nuova chat',
     untitledConversation: 'Nuova chat',
     continueResponse: 'Continua risposta',
+    loadEarlierMessages: 'Caricamento messaggi precedenti',
+    loadNewerMessages: 'Caricamento messaggi più recenti',
     stopGeneration: 'Ferma generazione',
     queueMessage: {
       tooltip:

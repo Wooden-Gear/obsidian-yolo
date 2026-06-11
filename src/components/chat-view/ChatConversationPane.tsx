@@ -38,6 +38,12 @@ type ChatConversationPaneProps = {
   emptyStateAgentFullDescription: string
   footerContent: ReactNode
   onTimelineVirtualizationChange?: (isVirtualized: boolean) => void
+  hasEarlierMessages?: boolean
+  hasNewerMessages?: boolean
+  onLoadEarlier?: () => void
+  onLoadNewer?: () => void
+  loadEarlierLabel?: string
+  loadNewerLabel?: string
   bottomSpacerHeight?: number
 }
 
@@ -65,12 +71,20 @@ export function ChatConversationPane({
   emptyStateAgentFullDescription,
   footerContent,
   onTimelineVirtualizationChange,
+  hasEarlierMessages,
+  hasNewerMessages,
+  onLoadEarlier,
+  onLoadNewer,
+  loadEarlierLabel,
+  loadNewerLabel,
   bottomSpacerHeight,
 }: ChatConversationPaneProps) {
   const showEmptyState =
     groupedChatMessagesLength === 0 && !isCurrentConversationRunActive
   const showScrollToBottomButton =
-    !showEmptyState && groupedChatMessagesLength > 0 && !isAutoFollowEnabled
+    !showEmptyState &&
+    groupedChatMessagesLength > 0 &&
+    (!isAutoFollowEnabled || hasNewerMessages)
 
   const emptyStateTitle =
     chatMode === 'agent-full'
@@ -131,6 +145,12 @@ export function ChatConversationPane({
         }
         scrollContainerClassName="yolo-chat-messages"
         onVirtualizationChange={onTimelineVirtualizationChange}
+        hasEarlierMessages={hasEarlierMessages}
+        hasNewerMessages={hasNewerMessages}
+        onLoadEarlier={onLoadEarlier}
+        onLoadNewer={onLoadNewer}
+        loadEarlierLabel={loadEarlierLabel}
+        loadNewerLabel={loadNewerLabel}
         bottomSpacerHeight={bottomSpacerHeight}
       />
       <div className="yolo-chat-footer">

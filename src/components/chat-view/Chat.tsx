@@ -126,6 +126,7 @@ import QueryProgress from './QueryProgress'
 import type { QueryProgressState } from './QueryProgress'
 import { TodoListPanel } from './TodoListPanel'
 import { useAutoScroll } from './useAutoScroll'
+import { useChatHistoryWindow } from './useChatHistoryWindow'
 import { useChatStreamManager } from './useChatStreamManager'
 import UserMessageItem from './UserMessageItem'
 import ViewToggle from './ViewToggle'
@@ -1122,6 +1123,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         assistantGroupBoundaryMessageIds,
       )
     }, [assistantGroupBoundaryMessageIds, chatMessages])
+  const {
+    windowedGroupedChatMessages,
+    hasEarlierMessages,
+    hasNewerMessages,
+    loadEarlier,
+    loadNewer,
+    resetToLatest,
+  } = useChatHistoryWindow({
+    conversationId: currentConversationId,
+    groupedChatMessages,
+  })
 
   const displayedChatMessages = useMemo(() => {
     return groupedChatMessages.flatMap((messageOrGroup): ChatMessage[] => {
@@ -1308,6 +1320,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     isStreaming: hasStreamingMessages,
     contentFollowMode: timelineIsVirtualized ? 'explicit' : 'observer',
   })
+  const handleForceScrollToBottom = useCallback(() => {
+    resetToLatest()
+    requestAnimationFrame(() => {
+      forceScrollToBottom()
+    })
+  }, [forceScrollToBottom, resetToLatest])
 
   // Measure the overlay above the input box so the timeline can reserve
   // equivalent scrollable space at its bottom — keeps the last assistant
@@ -1451,7 +1469,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const chatTimelineItems: ChatTimelineItem[] = useMemo(
     () =>
       buildChatTimelineItems({
-        groupedChatMessages,
+        groupedChatMessages: windowedGroupedChatMessages,
         assistantGroupBoundaryMessageIds,
         compactionDividerAnchorMessageIds,
         latestCompaction: latestCompactionState,
@@ -1471,12 +1489,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       assistantGroupBoundaryMessageIds,
       compactionDividerAnchorMessageIds,
       focusedMessageId,
-      groupedChatMessages,
       inputMessage.id,
       latestCompactionState,
       pendingCompactionAnchorMessageId,
       queryProgress,
       showContinueResponseButton,
+      windowedGroupedChatMessages,
     ],
   )
   const terminalCommandResultsByToolCallId = useMemo(() => {
@@ -5114,7 +5132,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           followOutput={followOutput}
           onAtBottomStateChange={onAtBottomStateChange}
           editingAssistantMessageId={editingAssistantMessageId}
-          onForceScrollToBottom={forceScrollToBottom}
+          hasEarlierMessages={hasEarlierMessages}
+          hasNewerMessages={hasNewerMessages}
+          onLoadEarlier={loadEarlier}
+          onLoadNewer={loadNewer}
+          loadEarlierLabel={t('chat.loadEarlierMessages', '正在加载更早消息')}
+          loadNewerLabel={t('chat.loadNewerMessages', '正在加载更新消息')}
+          onForceScrollToBottom={handleForceScrollToBottom}
           hasStreamingMessages={hasStreamingMessages}
           scrollToBottomLabel={t('chat.scrollToBottom', '回到底部')}
           scrollToBottomWhileStreamingLabel={t(
