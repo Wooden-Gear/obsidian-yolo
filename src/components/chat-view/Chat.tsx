@@ -4482,11 +4482,11 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         new AgentModeWarningModal(app, {
           title: t(
             'chatMode.fullAccessWarning.title',
-            'Please confirm before enabling full access',
+            'Please confirm before enabling YOLO Mode',
           ),
           description: t(
             'chatMode.fullAccessWarning.description',
-            'Full access auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
+            'YOLO Mode auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
           ),
           risks: [
             t(
@@ -4509,7 +4509,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           cancelText: t('chatMode.fullAccessWarning.cancel', 'Cancel'),
           confirmText: t(
             'chatMode.fullAccessWarning.confirm',
-            'Continue with Full Access',
+            'Continue with YOLO Mode',
           ),
           onConfirm: () => {
             applyChatModeChange('agent-full')
@@ -5236,7 +5236,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           emptyStateAgentTitle={t('chat.emptyState.agentTitle', '让 AI 去执行')}
           emptyStateAgentFullTitle={t(
             'chat.emptyState.agentFullTitle',
-            '让 AI 去执行 · Full Access',
+            '让 AI 自主执行 · YOLO 模式',
           )}
           emptyStateAskDescription={t(
             'chat.emptyState.askDescription',
@@ -5248,7 +5248,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           )}
           emptyStateAgentFullDescription={t(
             'chat.emptyState.agentFullDescription',
-            '启用工具链，处理搜索、读写与多步骤任务',
+            '自动放行工具调用，处理搜索、读写与多步骤任务',
           )}
           onTimelineVirtualizationChange={setTimelineIsVirtualized}
           onActiveUserMessageChange={setActiveNavigatorMessageId}

@@ -1518,8 +1518,8 @@ export const zh: TranslationKeys = {
       chatDescription: '适合提问、润色与改写，专注表达本身',
       agentTitle: '让 AI 去执行',
       agentDescription: '启用工具链，处理搜索、读写与多步骤任务',
-      agentFullTitle: '让 AI 去执行 · Full Access',
-      agentFullDescription: '启用工具链，处理搜索、读写与多步骤任务',
+      agentFullTitle: '让 AI 自主执行 · YOLO 模式',
+      agentFullDescription: '自动放行工具调用，处理搜索、读写与多步骤任务',
     },
     compaction: {
       pendingTitle: '正在压缩上下文',
@@ -1885,8 +1885,8 @@ export const zh: TranslationKeys = {
     rewriteDesc: '仅修改当前选区',
     agent: 'Agent',
     agentDesc: '启用工具链，处理多步骤任务',
-    agentFull: 'Agent（Full Access）',
-    agentFullDesc: '自动放行全部工具调用',
+    agentFull: 'Agent（YOLO）',
+    agentFullDesc: '自动放行工具调用，适合复杂任务',
     warning: {
       title: '⚠️ Agent 模式风险提示',
       description:
@@ -1900,15 +1900,15 @@ export const zh: TranslationKeys = {
       confirm: '继续并启用 Agent',
     },
     fullAccessWarning: {
-      title: '⚠️ 完全放行模式风险提示',
+      title: '⚠️ YOLO 模式风险提示',
       description:
-        '完全放行将自动批准全部工具调用，包括文件编辑与终端命令。请在继续前了解以下风险：',
+        'YOLO 模式会自动批准全部工具调用，包括文件编辑与终端命令。请在继续前了解以下风险：',
       permission: '工具调用不再逐条确认；危险命令前缀黑名单仍会拦截',
       cost: '自主执行可能消耗较多 Token 并产生更高成本',
       backup: '请提前备份：重要内容建议备份，以防误操作导致意外变更',
       checkbox: '我已了解上述风险，并愿意自行承担相关后果',
       cancel: '取消',
-      confirm: '继续并启用完全放行',
+      confirm: '继续并启用 YOLO 模式',
     },
   },
 

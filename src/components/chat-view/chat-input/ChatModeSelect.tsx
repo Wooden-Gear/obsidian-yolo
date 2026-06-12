@@ -64,9 +64,9 @@ const MODE_OPTIONS: ModeOption[] = [
   {
     value: 'agent-full',
     labelKey: 'chatMode.agentFull',
-    labelFallback: 'Agent (Full Access)',
+    labelFallback: 'Agent (YOLO)',
     descKey: 'chatMode.agentFullDesc',
-    descFallback: 'Auto-approve all tool calls',
+    descFallback: 'Auto-approve tool calls for complex tasks',
     icon: <InfinityIcon size={16} />,
   },
 ]

@@ -620,13 +620,16 @@ export default function NewMentionsPlugin({
           .map((mode) => {
             const label =
               mode === 'agent-full'
-                ? t('chatMode.agentFull', 'Agent (Full Access)')
+                ? t('chatMode.agentFull', 'Agent (YOLO)')
                 : mode === 'agent'
                   ? t('chatMode.agent', 'Agent')
                   : t('chatMode.ask', 'Ask')
             const subtitle =
               mode === 'agent-full'
-                ? t('chatMode.agentFullDesc', 'Auto-approve all tool calls')
+                ? t(
+                    'chatMode.agentFullDesc',
+                    'Auto-approve tool calls for complex tasks',
+                  )
                 : mode === 'agent'
                   ? t('chatMode.agentDesc', 'Enable tool calling capabilities')
                   : t('chatMode.askDesc', 'Ask, refine, create')

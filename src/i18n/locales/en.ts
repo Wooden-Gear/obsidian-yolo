@@ -1624,9 +1624,9 @@ export const en: TranslationKeys = {
       agentTitle: 'Let AI execute',
       agentDescription:
         'Enable tools to handle search, read/write operations, and multi-step tasks.',
-      agentFullTitle: 'Let AI execute · Full Access',
+      agentFullTitle: 'Let AI execute · YOLO Mode',
       agentFullDescription:
-        'Enable tools to handle search, read/write operations, and multi-step tasks.',
+        'Auto-approve tool calls for search, read/write operations, and multi-step tasks.',
     },
     compaction: {
       pendingTitle: 'Compacting context',
@@ -2021,8 +2021,8 @@ export const en: TranslationKeys = {
     rewriteDesc: 'Only modify the current selection',
     agent: 'Agent',
     agentDesc: 'Tools for complex tasks',
-    agentFull: 'Agent (Full Access)',
-    agentFullDesc: 'Auto-approve all tool calls',
+    agentFull: 'Agent (YOLO)',
+    agentFullDesc: 'Auto-approve tool calls for complex tasks',
     warning: {
       title: 'Please confirm before enabling Agent mode',
       description:
@@ -2038,9 +2038,9 @@ export const en: TranslationKeys = {
       confirm: 'Continue and Enable Agent',
     },
     fullAccessWarning: {
-      title: 'Please confirm before enabling full access',
+      title: 'Please confirm before enabling YOLO Mode',
       description:
-        'Full access auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
+        'YOLO Mode auto-approves all tool calls, including file edits and terminal commands. Review the risks before continuing:',
       permission:
         'Tools run without per-call approval. Dangerous command prefixes are still blocked.',
       cost: 'Autonomous runs may consume significant model resources and incur higher costs.',
@@ -2049,7 +2049,7 @@ export const en: TranslationKeys = {
       checkbox:
         'I understand the risks above and accept responsibility for proceeding',
       cancel: 'Cancel',
-      confirm: 'Continue with Full Access',
+      confirm: 'Continue with YOLO Mode',
     },
   },
 
