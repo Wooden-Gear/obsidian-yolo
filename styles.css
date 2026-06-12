@@ -17128,8 +17128,7 @@ button.yolo-subagent-card__main:focus-visible {
   animation: yolo-dotm-square-4-ring var(--yolo-dotm-square-4-cycle) linear
     infinite;
   animation-delay: calc(
-    var(--yolo-dotm-square-4-order) * -0.0625 *
-      var(--yolo-dotm-square-4-cycle)
+    var(--yolo-dotm-square-4-order) * -0.0625 * var(--yolo-dotm-square-4-cycle)
   );
 }
 
@@ -17137,8 +17136,7 @@ button.yolo-subagent-card__main:focus-visible {
   animation: yolo-dotm-square-4-ring var(--yolo-dotm-square-4-cycle) linear
     infinite;
   animation-delay: calc(
-    var(--yolo-dotm-square-4-order) * -0.125 *
-      var(--yolo-dotm-square-4-cycle)
+    var(--yolo-dotm-square-4-order) * -0.125 * var(--yolo-dotm-square-4-cycle)
   );
 }
 
@@ -17241,17 +17239,17 @@ button.yolo-subagent-card__abort-btn:focus-visible {
 
   20% {
     opacity: calc(
-      0.45 * var(--yolo-dotm-square-4-opacity-peak) +
-        0.45 * var(--yolo-dotm-square-4-opacity-mid) +
-        0.1 * var(--yolo-dotm-square-4-opacity-base)
+      0.45 * var(--yolo-dotm-square-4-opacity-peak) + 0.45 *
+        var(--yolo-dotm-square-4-opacity-mid) + 0.1 *
+        var(--yolo-dotm-square-4-opacity-base)
     );
   }
 
   30% {
     opacity: calc(
-      0.2 * var(--yolo-dotm-square-4-opacity-peak) +
-        0.4 * var(--yolo-dotm-square-4-opacity-mid) +
-        0.4 * var(--yolo-dotm-square-4-opacity-base)
+      0.2 * var(--yolo-dotm-square-4-opacity-peak) + 0.4 *
+        var(--yolo-dotm-square-4-opacity-mid) + 0.4 *
+        var(--yolo-dotm-square-4-opacity-base)
     );
   }
 

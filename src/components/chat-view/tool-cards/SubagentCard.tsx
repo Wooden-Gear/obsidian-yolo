@@ -24,13 +24,13 @@ import {
 import { SubagentDetailModal } from './SubagentDetailModal'
 
 const DOTM_SQUARE_4_OUTER_ORDER = [
-  0, 1, 2, 3, 4, 15, -1, -1, -1, 5, 14, -1, -1, -1, 6, 13, -1, -1, -1, 7,
-  12, 11, 10, 9, 8,
+  0, 1, 2, 3, 4, 15, -1, -1, -1, 5, 14, -1, -1, -1, 6, 13, -1, -1, -1, 7, 12,
+  11, 10, 9, 8,
 ] as const
 
 const DOTM_SQUARE_4_MIDDLE_ORDER = [
-  -1, -1, -1, -1, -1, -1, 0, 7, 6, -1, -1, 1, -1, 5, -1, -1, 2, 3, 4, -1,
-  -1, -1, -1, -1, -1,
+  -1, -1, -1, -1, -1, -1, 0, 7, 6, -1, -1, 1, -1, 5, -1, -1, 2, 3, 4, -1, -1,
+  -1, -1, -1, -1,
 ] as const
 
 type SubagentCardProps = {

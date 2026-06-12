@@ -25,7 +25,10 @@ describe('subagent tool-filter', () => {
       getLocalFileToolServerName(),
       'terminal_command',
     )
-    const askUser = getToolName(getLocalFileToolServerName(), 'ask_user_question')
+    const askUser = getToolName(
+      getLocalFileToolServerName(),
+      'ask_user_question',
+    )
     const parent = [
       fsEdit,
       subagent,
@@ -35,11 +38,7 @@ describe('subagent tool-filter', () => {
     ]
 
     const filtered = filterAllowedToolsForSubagent(parent)
-    expect(filtered).toEqual([
-      fsEdit,
-      terminal,
-      'mcp_server__remote_tool',
-    ])
+    expect(filtered).toEqual([fsEdit, terminal, 'mcp_server__remote_tool'])
   })
 
   it('treats a missing parent allowlist as no inherited tools', () => {
