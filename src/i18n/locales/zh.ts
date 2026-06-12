@@ -1471,6 +1471,9 @@ export const zh: TranslationKeys = {
     uploadFile: '添加文件',
     imageUnsupportedByModel:
       '当前模型未声明支持图片输入；请在模型设置里开启「图片」模态后再上传。',
+    unsupportedFileType: '不支持的文件类型：{names}',
+    processImagesFailed: '处理上传图片失败',
+    readPdfFailed: '读取 PDF「{name}」失败：{error}',
     addContext: '添加上下文',
     applyChanges: '应用更改',
     copyMessage: '复制消息',

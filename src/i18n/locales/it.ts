@@ -1459,6 +1459,9 @@ export const it: TranslationKeys = {
     uploadFile: 'Aggiungi file',
     imageUnsupportedByModel:
       'Questo modello non dichiara il supporto alle immagini. Abilita la modalità di input "Vision" nelle impostazioni del modello per allegare immagini.',
+    unsupportedFileType: 'Tipo di file non supportato: {names}',
+    processImagesFailed: 'Impossibile elaborare le immagini caricate',
+    readPdfFailed: 'Impossibile leggere il PDF "{name}": {error}',
     addContext: 'Aggiungi contesto',
     applyChanges: 'Applica modifiche',
     copyMessage: 'Copia messaggio',

@@ -1343,6 +1343,9 @@ export type TranslationKeys = {
     uploadImage: string
     uploadFile?: string
     imageUnsupportedByModel?: string
+    unsupportedFileType?: string
+    processImagesFailed?: string
+    readPdfFailed?: string
     addContext: string
     applyChanges: string
     copyMessage: string

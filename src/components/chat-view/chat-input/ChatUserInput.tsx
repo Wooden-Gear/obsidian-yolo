@@ -952,7 +952,13 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           classifyUploadFiles(files)
         if (unsupportedFiles.length > 0) {
           new Notice(
-            `Unsupported file type: ${unsupportedFiles.map((f) => f.name).join(', ')}`,
+            t(
+              'chat.unsupportedFileType',
+              'Unsupported file type: {names}',
+            ).replace(
+              '{names}',
+              unsupportedFiles.map((file) => file.name).join(', '),
+            ),
           )
         }
         if (imageFiles.length > 0) {
@@ -964,7 +970,12 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             })
             .catch((error) => {
               console.error('Failed to process uploaded images', error)
-              new Notice('Failed to process uploaded images')
+              new Notice(
+                t(
+                  'chat.processImagesFailed',
+                  'Failed to process uploaded images',
+                ),
+              )
             })
         }
         if (pdfFiles.length > 0) {
@@ -981,11 +992,17 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
                 const name = pdfFiles[idx]?.name ?? 'PDF'
                 console.error(`Failed to extract PDF ${name}`, result.reason)
                 new Notice(
-                  `Failed to read PDF "${name}": ${
-                    result.reason instanceof Error
-                      ? result.reason.message
-                      : 'unknown error'
-                  }`,
+                  t(
+                    'chat.readPdfFailed',
+                    'Failed to read PDF "{name}": {error}',
+                  )
+                    .replace('{name}', name)
+                    .replace(
+                      '{error}',
+                      result.reason instanceof Error
+                        ? result.reason.message
+                        : 'unknown error',
+                    ),
                 )
               }
             })

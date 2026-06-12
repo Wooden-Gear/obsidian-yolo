@@ -11665,8 +11665,9 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
 }
 
 .yolo-reasoning-slider {
-  --yolo-reasoning-slider-thumb-size: 20px;
+  --yolo-reasoning-slider-thumb-size: 24px;
   --yolo-reasoning-slider-track-height: 22px;
+  --yolo-reasoning-slider-radius: 6px;
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--yolo-segment-count), minmax(0, 1fr));
@@ -11685,7 +11686,7 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   position: absolute;
   inset: 0;
   height: var(--yolo-reasoning-slider-track-height);
-  border-radius: 6px;
+  border-radius: var(--yolo-reasoning-slider-radius);
   background: var(--background-modifier-border);
   overflow: visible;
   pointer-events: none;
@@ -11746,7 +11747,7 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
   height: var(--yolo-reasoning-slider-thumb-size);
   border: 1px solid
     color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
-  border-radius: 7px;
+  border-radius: var(--yolo-reasoning-slider-radius);
   background: var(--background-primary);
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.12),
