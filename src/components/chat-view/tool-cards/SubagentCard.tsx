@@ -1,5 +1,6 @@
 import cx from 'clsx'
-import { Bot, Check, Loader2, Square, X } from 'lucide-react'
+import { Bot, Check, Square, X } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { useMemo, useRef, useState } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
@@ -22,6 +23,16 @@ import {
 } from './subagentCardUtils'
 import { SubagentDetailModal } from './SubagentDetailModal'
 
+const DOTM_SQUARE_4_OUTER_ORDER = [
+  0, 1, 2, 3, 4, 15, -1, -1, -1, 5, 14, -1, -1, -1, 6, 13, -1, -1, -1, 7,
+  12, 11, 10, 9, 8,
+] as const
+
+const DOTM_SQUARE_4_MIDDLE_ORDER = [
+  -1, -1, -1, -1, -1, -1, 0, 7, 6, -1, -1, 1, -1, 5, -1, -1, 2, 3, 4, -1,
+  -1, -1, -1, -1, -1,
+] as const
+
 type SubagentCardProps = {
   toolCallId: string
   response: ToolCallResponse
@@ -32,10 +43,35 @@ type SubagentCardProps = {
   onAbort?: () => void
 }
 
+function DotmSquare4Loader() {
+  return (
+    <span className="yolo-dotm-square-4" aria-hidden="true">
+      {DOTM_SQUARE_4_OUTER_ORDER.map((outerOrder, index) => {
+        const middleOrder = DOTM_SQUARE_4_MIDDLE_ORDER[index]
+        const order = outerOrder >= 0 ? outerOrder : middleOrder
+        const className = cx(
+          'yolo-dotm-square-4__dot',
+          outerOrder >= 0 && 'yolo-dotm-square-4__dot--outer',
+          middleOrder >= 0 && 'yolo-dotm-square-4__dot--middle',
+          order < 0 && 'yolo-dotm-square-4__dot--inactive',
+        )
+        const style =
+          order >= 0
+            ? ({
+                '--yolo-dotm-square-4-order': order,
+              } as CSSProperties)
+            : undefined
+
+        return <span key={index} className={className} style={style} />
+      })}
+    </span>
+  )
+}
+
 function SubagentStatusIcon({ status }: { status: ToolCallResponseStatus }) {
   switch (status) {
     case ToolCallResponseStatus.Running:
-      return <Loader2 size={14} className="yolo-spinner" />
+      return <DotmSquare4Loader />
     case ToolCallResponseStatus.Success:
       return <Check size={14} />
     case ToolCallResponseStatus.Aborted:

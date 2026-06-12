@@ -17098,6 +17098,56 @@ button.yolo-subagent-card__main:focus-visible {
   height: 14px;
 }
 
+.yolo-dotm-square-4 {
+  --yolo-dotm-square-4-dot-size: 2px;
+  --yolo-dotm-square-4-gap: 1px;
+  --yolo-dotm-square-4-cycle: 1.35s;
+  --yolo-dotm-square-4-opacity-base: 0.16;
+  --yolo-dotm-square-4-opacity-mid: 0.48;
+  --yolo-dotm-square-4-opacity-peak: 0.96;
+  display: inline-grid;
+  grid-template-columns: repeat(5, var(--yolo-dotm-square-4-dot-size));
+  grid-template-rows: repeat(5, var(--yolo-dotm-square-4-dot-size));
+  gap: var(--yolo-dotm-square-4-gap);
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.yolo-dotm-square-4__dot {
+  width: var(--yolo-dotm-square-4-dot-size);
+  height: var(--yolo-dotm-square-4-dot-size);
+  border-radius: 50%;
+  background: currentColor;
+  opacity: var(--yolo-dotm-square-4-opacity-base);
+}
+
+.yolo-dotm-square-4__dot--outer {
+  animation: yolo-dotm-square-4-ring var(--yolo-dotm-square-4-cycle) linear
+    infinite;
+  animation-delay: calc(
+    var(--yolo-dotm-square-4-order) * -0.0625 *
+      var(--yolo-dotm-square-4-cycle)
+  );
+}
+
+.yolo-dotm-square-4__dot--middle {
+  animation: yolo-dotm-square-4-ring var(--yolo-dotm-square-4-cycle) linear
+    infinite;
+  animation-delay: calc(
+    var(--yolo-dotm-square-4-order) * -0.125 *
+      var(--yolo-dotm-square-4-cycle)
+  );
+}
+
+.yolo-dotm-square-4__dot--inactive {
+  visibility: hidden;
+  opacity: 0;
+  animation: none;
+}
+
 .yolo-subagent-card--running .yolo-subagent-card__icon {
   color: var(--text-accent);
 }
@@ -17177,6 +17227,45 @@ button.yolo-subagent-card__abort-btn:focus-visible {
   background-color: var(--background-modifier-hover);
   box-shadow: none;
   color: var(--text-normal);
+}
+
+@keyframes yolo-dotm-square-4-ring {
+  0%,
+  100% {
+    opacity: calc(0.5 * var(--yolo-dotm-square-4-opacity-base));
+  }
+
+  10% {
+    opacity: var(--yolo-dotm-square-4-opacity-peak);
+  }
+
+  20% {
+    opacity: calc(
+      0.45 * var(--yolo-dotm-square-4-opacity-peak) +
+        0.45 * var(--yolo-dotm-square-4-opacity-mid) +
+        0.1 * var(--yolo-dotm-square-4-opacity-base)
+    );
+  }
+
+  30% {
+    opacity: calc(
+      0.2 * var(--yolo-dotm-square-4-opacity-peak) +
+        0.4 * var(--yolo-dotm-square-4-opacity-mid) +
+        0.4 * var(--yolo-dotm-square-4-opacity-base)
+    );
+  }
+
+  40% {
+    opacity: calc(0.875 * var(--yolo-dotm-square-4-opacity-base));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yolo-dotm-square-4__dot--outer,
+  .yolo-dotm-square-4__dot--middle {
+    animation: none;
+    opacity: 0.72;
+  }
 }
 
 /* ── 详情弹窗 ── */
