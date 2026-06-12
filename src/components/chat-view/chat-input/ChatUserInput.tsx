@@ -78,6 +78,7 @@ import type { SlashCommand } from './plugins/mention/SkillSlashPlugin'
 import { NodeMutations } from './plugins/on-mutation/OnMutationPlugin'
 import { ReasoningSelect, supportsReasoning } from './ReasoningSelect'
 import { SubmitButton } from './SubmitButton'
+import { classifyUploadFiles } from './utils/file-upload'
 
 export type ChatUserInputRef = {
   focus: () => void
@@ -947,24 +948,11 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
 
     const handleUploadFiles = useCallback(
       (files: File[]) => {
-        const imageFiles: File[] = []
-        const pdfFiles: File[] = []
-        const unsupported: File[] = []
-        for (const file of files) {
-          if (file.type.startsWith('image/')) {
-            imageFiles.push(file)
-          } else if (
-            file.type === 'application/pdf' ||
-            file.name.toLowerCase().endsWith('.pdf')
-          ) {
-            pdfFiles.push(file)
-          } else {
-            unsupported.push(file)
-          }
-        }
-        if (unsupported.length > 0) {
+        const { imageFiles, pdfFiles, unsupportedFiles } =
+          classifyUploadFiles(files)
+        if (unsupportedFiles.length > 0) {
           new Notice(
-            `Unsupported file type: ${unsupported.map((f) => f.name).join(', ')}`,
+            `Unsupported file type: ${unsupportedFiles.map((f) => f.name).join(', ')}`,
           )
         }
         if (imageFiles.length > 0) {
@@ -1007,7 +995,12 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           })
         }
       },
-      [handleCreateImageMentionables, handleCreatePdfMentionables],
+      [
+        app,
+        handleCreateImageMentionables,
+        handleCreatePdfMentionables,
+        settings,
+      ],
     )
 
     const handleSelectMentionableForBadge = useCallback(
@@ -1480,6 +1473,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               onMentionNodeMutation={handleMentionNodeMutation}
               onSkillNodeMutation={handleSkillNodeMutation}
               onCreateImageMentionables={handleCreateImageMentionables}
+              onPasteFiles={handleUploadFiles}
               mentionDisplayMode={mentionDisplayMode}
               onSelectMentionable={handleSelectMentionableForBadge}
               mentionMenuMode={

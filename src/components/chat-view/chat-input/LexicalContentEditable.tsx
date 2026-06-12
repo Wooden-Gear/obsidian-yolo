@@ -42,6 +42,7 @@ import OnEnterPlugin from './plugins/on-enter/OnEnterPlugin'
 import OnMutationPlugin, {
   NodeMutations,
 } from './plugins/on-mutation/OnMutationPlugin'
+import AttachmentPastePlugin from './plugins/paste/AttachmentPastePlugin'
 import PlainTextPastePlugin from './plugins/paste/PlainTextPastePlugin'
 // templates feature removed
 
@@ -56,6 +57,7 @@ export type LexicalContentEditableProps = {
   onMentionNodeMutation?: (mutations: NodeMutations<MentionNode>) => void
   onSkillNodeMutation?: (mutations: NodeMutations<SkillNode>) => void
   onCreateImageMentionables?: (mentionables: MentionableImage[]) => void
+  onPasteFiles?: (files: File[]) => void
   initialEditorState?: InitialEditorStateType
   autoFocus?: boolean
   contentClassName?: string
@@ -155,6 +157,7 @@ export default function LexicalContentEditable({
   onMentionNodeMutation,
   onSkillNodeMutation,
   onCreateImageMentionables,
+  onPasteFiles,
   initialEditorState,
   autoFocus = false,
   contentClassName,
@@ -336,6 +339,7 @@ export default function LexicalContentEditable({
       <NoFormatPlugin />
       <AutoLinkMentionPlugin />
       <MentionSelectionHighlightPlugin />
+      <AttachmentPastePlugin onPasteFiles={onPasteFiles} />
       <ImagePastePlugin onCreateImageMentionables={onCreateImageMentionables} />
       <PlainTextPastePlugin />
       <ObsidianFileDropPlugin />
