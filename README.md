@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/github/last-commit/Lapis0x0/obsidian-yolo/main?style=flat-square&color=6c5ce7" alt="Last Commit">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/stargazers">
-    <img src="https://img.shields.io/github/stars/Lapis0x0/obsidian-yolo?style=flat-square&logo=github&label=Stars&color=6c5ce7" alt="GitHub Stars">
+    <img src="https://img.shields.io/github/stars/Lapis0x0/obsidian-yolo" alt="GitHub Stars">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/releases/latest">
     <img src="https://img.shields.io/github/v/release/Lapis0x0/obsidian-yolo?style=flat-square&color=00b894" alt="Latest Release">
