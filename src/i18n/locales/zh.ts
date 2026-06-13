@@ -134,8 +134,8 @@ export const zh: TranslationKeys = {
       title: '默认模型策略与提示词',
       defaultChatModel: '默认聊天模型',
       defaultChatModelDesc: '选择你想用于侧边栏聊天的模型。',
-      chatTitleModel: '对话命名与摘要模型',
-      chatTitleModelDesc: '选择用于自动对话命名和 compact 摘要的模型。',
+      chatTitleModel: '对话命名模型',
+      chatTitleModelDesc: '选择用于自动对话命名的模型。',
       streamFallbackRecovery: '启用自动恢复',
       streamFallbackRecoveryDesc:
         '当流式主请求超时或失败时，自动改用非流式再尝试一次。',

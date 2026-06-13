@@ -297,7 +297,7 @@ export const yoloSettingsSchema = z.object({
   embeddingModels: resilientArraySchema(embeddingModelSchema),
 
   chatModelId: z.string().catch(''), // model for default chat feature
-  chatTitleModelId: z.string().catch(''), // model for automatic conversation naming and compact summaries
+  chatTitleModelId: z.string().catch(''), // model for automatic conversation naming
   embeddingModelId: z.string().catch(''), // model for embedding
 
   // System Prompt

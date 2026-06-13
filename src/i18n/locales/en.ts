@@ -159,9 +159,9 @@ export const en: TranslationKeys = {
       defaultChatModel: 'Default chat model',
       defaultChatModelDesc:
         'Choose the model you want to use for sidebar chat.',
-      chatTitleModel: 'Conversation title and summary model',
+      chatTitleModel: 'Conversation title model',
       chatTitleModelDesc:
-        'Choose the model used for automatic conversation naming and compact summaries.',
+        'Choose the model used for automatic conversation naming.',
       streamFallbackRecovery: 'Enable automatic recovery',
       streamFallbackRecoveryDesc:
         'When the streaming primary request times out or fails, retry once with a non-streaming fallback.',

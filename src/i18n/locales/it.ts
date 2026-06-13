@@ -156,9 +156,9 @@ export const it: TranslationKeys = {
       defaultChatModel: 'Modello chat predefinito',
       defaultChatModelDesc:
         'Scegli il modello che vuoi usare per la chat nella barra laterale.',
-      chatTitleModel: 'Modello per titolo e riepilogo conversazione',
+      chatTitleModel: 'Modello per titolo conversazione',
       chatTitleModelDesc:
-        'Scegli il modello usato per assegnare automaticamente un nome alle conversazioni e generare i riepiloghi compact.',
+        'Scegli il modello usato per assegnare automaticamente un nome alle conversazioni.',
       streamFallbackRecovery: 'Abilita recupero automatico',
       streamFallbackRecoveryDesc:
         'Quando la richiesta primaria in streaming scade o fallisce, esegue un secondo tentativo in modalita non streaming.',
