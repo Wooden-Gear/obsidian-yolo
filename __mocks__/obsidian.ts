@@ -1,4 +1,5 @@
 export const App = jest.fn()
+export const apiVersion = '1.8.0'
 export const Editor = jest.fn()
 export const MarkdownView = jest.fn()
 export const Platform = { isDesktop: true, isMobile: false }

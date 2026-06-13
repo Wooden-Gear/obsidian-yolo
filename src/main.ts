@@ -66,8 +66,19 @@ import {
 } from './core/rag/ragIndexService'
 import { migrateVaultSkillFrontmatter } from './core/skills/liteSkills'
 import {
+  applyStagedUpdate,
+  canSelfUpdate,
+  downloadReleaseToStaging,
+  getStagingDir,
+  getStagingStatus,
+  type PluginUpdateState,
+} from './core/update/pluginUpdater'
+import {
+  type ReleaseAssetUrls,
   type UpdateCheckResult,
   checkForUpdate,
+  fetchReleaseByVersion,
+  normalizePluginVersion,
 } from './core/update/updateChecker'
 import { DatabaseManager } from './database/DatabaseManager'
 import { PGLiteAbortedException } from './database/exception'
@@ -140,6 +151,8 @@ export type {
   YoloAgentRunResult,
 } from './core/agent/agent-api'
 
+export type { PluginUpdateState } from './core/update/pluginUpdater'
+
 const STARTUP_GRACE_MS = 30 * 1000
 
 export default class YoloPlugin extends Plugin {
@@ -150,6 +163,9 @@ export default class YoloPlugin extends Plugin {
   updateCheckResult: UpdateCheckResult | null = null
   private hasCheckedForUpdate = false
   private updateCheckListeners: (() => void)[] = []
+  pluginUpdateState: PluginUpdateState = { status: 'idle' }
+  private pluginUpdateListeners: (() => void)[] = []
+  private pluginUpdateDownloadPromise: Promise<void> | null = null
   private updateToastCleanup: (() => void) | null = null
   installationIncompleteDetail: {
     bakedVersion: string
@@ -2647,6 +2663,183 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     }
   }
 
+  addPluginUpdateListener(listener: () => void): () => void {
+    this.pluginUpdateListeners.push(listener)
+    return () => {
+      this.pluginUpdateListeners = this.pluginUpdateListeners.filter(
+        (l) => l !== listener,
+      )
+    }
+  }
+
+  private notifyPluginUpdateListeners(): void {
+    for (const listener of this.pluginUpdateListeners) {
+      listener()
+    }
+  }
+
+  private setPluginUpdateState(state: PluginUpdateState): void {
+    this.pluginUpdateState = state
+    this.notifyPluginUpdateListeners()
+  }
+
+  canSelfUpdatePlugin(): boolean {
+    return canSelfUpdate(this)
+  }
+
+  private async refreshPluginUpdateStaging(version: string): Promise<void> {
+    if (!canSelfUpdate(this) || !this.manifest.dir) {
+      return
+    }
+    const stagingDir = getStagingDir(this.manifest.dir, version)
+    const status = await getStagingStatus(
+      this.app.vault.adapter,
+      stagingDir,
+      version,
+    )
+    if (status.ready) {
+      this.setPluginUpdateState({ status: 'ready', version })
+    }
+  }
+
+  async startPluginUpdateDownload(): Promise<void> {
+    const result = this.updateCheckResult
+    if (
+      !result?.hasUpdate ||
+      !result.assets ||
+      !canSelfUpdate(this) ||
+      !this.manifest.dir
+    ) {
+      return
+    }
+
+    return this.downloadPluginRelease(result.latestVersion, result.assets)
+  }
+
+  private async downloadPluginRelease(
+    version: string,
+    assets: ReleaseAssetUrls,
+  ): Promise<void> {
+    if (!canSelfUpdate(this) || !this.manifest.dir) {
+      return
+    }
+
+    if (this.pluginUpdateDownloadPromise) {
+      return this.pluginUpdateDownloadPromise
+    }
+
+    const normalized = normalizePluginVersion(version)
+    if (
+      this.pluginUpdateState.status === 'ready' &&
+      this.pluginUpdateState.version === normalized
+    ) {
+      return
+    }
+
+    if (this.pluginUpdateState.status === 'downloading') {
+      return
+    }
+
+    const stagingDir = getStagingDir(this.manifest.dir, normalized)
+    const existing = await getStagingStatus(
+      this.app.vault.adapter,
+      stagingDir,
+      normalized,
+    )
+    if (existing.ready) {
+      this.setPluginUpdateState({ status: 'ready', version: normalized })
+      return
+    }
+
+    this.setPluginUpdateState({
+      status: 'downloading',
+      version: normalized,
+      progress: 0,
+    })
+
+    this.pluginUpdateDownloadPromise = (async () => {
+      try {
+        await downloadReleaseToStaging({
+          adapter: this.app.vault.adapter,
+          pluginDir: this.manifest.dir!,
+          version: normalized,
+          assets,
+          onProgress: (progress) => {
+            this.setPluginUpdateState({
+              status: 'downloading',
+              version: normalized,
+              progress,
+            })
+          },
+        })
+        this.setPluginUpdateState({ status: 'ready', version: normalized })
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : String(error)
+        this.setPluginUpdateState({
+          status: 'error',
+          version: normalized,
+          message,
+        })
+      } finally {
+        this.pluginUpdateDownloadPromise = null
+      }
+    })()
+
+    return this.pluginUpdateDownloadPromise
+  }
+
+  async applyPluginUpdate(): Promise<void> {
+    if (this.pluginUpdateState.status !== 'ready') {
+      return
+    }
+
+    const version = this.pluginUpdateState.version
+
+    this.setPluginUpdateState({ status: 'applying', version })
+
+    const applyResult = await applyStagedUpdate(this.app, this, version)
+    if (!applyResult.ok) {
+      if (applyResult.reason === 'min_app_version') {
+        new InstallerUpdateRequiredModal(this.app).open()
+      }
+      this.setPluginUpdateState({
+        status: 'error',
+        version,
+        message: applyResult.reason,
+      })
+      return
+    }
+
+    this.setPluginUpdateState({ status: 'idle' })
+    this.updateCheckResult = null
+    this.notifyUpdateCheckListeners()
+  }
+
+  async repairIncompleteInstallation(): Promise<void> {
+    const detail = this.installationIncompleteDetail
+    if (!detail || !canSelfUpdate(this)) {
+      return
+    }
+
+    const version = normalizePluginVersion(detail.manifestVersion)
+    if (
+      this.pluginUpdateState.status === 'ready' &&
+      this.pluginUpdateState.version === version
+    ) {
+      await this.applyPluginUpdate()
+      return
+    }
+
+    const release = await fetchReleaseByVersion(version)
+    if (!release?.assets) {
+      window.open('https://github.com/Lapis0x0/obsidian-yolo/releases')
+      return
+    }
+
+    await this.downloadPluginRelease(version, release.assets)
+  }
+
   isUpdateVersionMuted(version: string): boolean {
     return this.settings.mutedUpdateVersion === version
   }
@@ -2688,6 +2881,14 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
       ) {
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
+        await this.refreshPluginUpdateStaging(fetched.latestVersion)
+        if (
+          this.settings.pluginUpdateAutoDownloadEnabled &&
+          canSelfUpdate(this) &&
+          fetched.assets
+        ) {
+          void this.startPluginUpdateDownload()
+        }
       }
     })()
   }

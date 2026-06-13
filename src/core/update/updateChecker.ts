@@ -6,6 +6,10 @@ const GITHUB_RELEASE_URL =
 const GITHUB_RELEASES_URL =
   'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases'
 
+function releaseTagUrl(version: string): string {
+  return `${GITHUB_RELEASES_URL}/tags/${encodeURIComponent(version)}`
+}
+
 /** Matches the UI page size and GitHub `per_page` for on-demand loading. */
 export const RELEASE_HISTORY_PAGE_SIZE = 10
 
@@ -26,11 +30,23 @@ export type ReleaseHistoryPageResult = {
   hasNext: boolean
 }
 
+export type ReleaseAssetUrls = {
+  mainJs: string
+  manifestJson: string
+  stylesCss: string
+}
+
 export type UpdateCheckResult = {
   hasUpdate: boolean
   latestVersion: string
   releaseNotes: ReleaseNotesByLanguage
   releaseUrl: string
+  assets: ReleaseAssetUrls | null
+}
+
+type GitHubReleaseAsset = {
+  name?: string
+  browser_download_url?: string
 }
 
 type GitHubReleaseResponse = {
@@ -40,15 +56,16 @@ type GitHubReleaseResponse = {
   draft?: boolean
   prerelease?: boolean
   published_at?: string
+  assets?: GitHubReleaseAsset[]
 }
 
 function stripVersionPrefix(tag: string): string {
-  return tag.replace(/^v/i, '').trim()
+  return (tag ?? '').replace(/^v/i, '').trim()
 }
 
 /** Normalizes manifest/tag versions for equality checks against release entries. */
 export function normalizePluginVersion(version: string): string {
-  return stripVersionPrefix(version.trim())
+  return stripVersionPrefix((version ?? '').trim())
 }
 
 export type ReleaseHistoryLocateResult = {
@@ -111,6 +128,9 @@ export function compareVersions(current: string, latest: string): boolean {
   const b = stripVersionPrefix(latest)
     .split('.')
     .map((s) => parseInt(s, 10) || 0)
+  if (a.length === 0 || b.length === 0) {
+    return false
+  }
   const len = Math.max(a.length, b.length)
   for (let i = 0; i < len; i += 1) {
     const av = a[i] ?? 0
@@ -284,6 +304,90 @@ export function parseChangelog(markdown: string): ParsedChangelog {
   return { subtitle, sections }
 }
 
+const RELEASE_ASSET_NAMES = {
+  mainJs: 'main.js',
+  manifestJson: 'manifest.json',
+  stylesCss: 'styles.css',
+} as const
+
+/**
+ * Extracts download URLs for the three release artifacts from a GitHub release
+ * payload. Returns null when any required asset is missing.
+ */
+export function parseReleaseAssetUrls(
+  assets: GitHubReleaseAsset[] | undefined,
+): ReleaseAssetUrls | null {
+  if (!Array.isArray(assets)) {
+    return null
+  }
+
+  const byName = new Map<string, string>()
+  for (const asset of assets) {
+    const name = typeof asset.name === 'string' ? asset.name : ''
+    const url =
+      typeof asset.browser_download_url === 'string'
+        ? asset.browser_download_url
+        : ''
+    if (name && url) {
+      byName.set(name, url)
+    }
+  }
+
+  const mainJs = byName.get(RELEASE_ASSET_NAMES.mainJs)
+  const manifestJson = byName.get(RELEASE_ASSET_NAMES.manifestJson)
+  const stylesCss = byName.get(RELEASE_ASSET_NAMES.stylesCss)
+  if (!mainJs || !manifestJson || !stylesCss) {
+    return null
+  }
+
+  return { mainJs, manifestJson, stylesCss }
+}
+
+/**
+ * Fetches a specific GitHub release by tag/version. Returns null on failure.
+ */
+export async function fetchReleaseByVersion(
+  version: string,
+): Promise<{
+  version: string
+  releaseUrl: string
+  assets: ReleaseAssetUrls | null
+} | null> {
+  const normalized = normalizePluginVersion(version)
+  if (!normalized) {
+    return null
+  }
+
+  try {
+    const response = await requestUrl({
+      url: releaseTagUrl(normalized),
+      method: 'GET',
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+    })
+
+    if (response.status < 200 || response.status >= 300) {
+      return null
+    }
+
+    const data = JSON.parse(response.text) as GitHubReleaseResponse
+    const tag = typeof data.tag_name === 'string' ? data.tag_name : ''
+    const releaseVersion = stripVersionPrefix(tag)
+    if (!releaseVersion) {
+      return null
+    }
+
+    return {
+      version: releaseVersion,
+      releaseUrl: typeof data.html_url === 'string' ? data.html_url : '',
+      assets: parseReleaseAssetUrls(data.assets),
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Fetches latest GitHub release and compares to `currentVersion`.
  * Returns null on network/parse failure (caller should stay silent).
@@ -323,6 +427,7 @@ export async function checkForUpdate(
       latestVersion,
       releaseNotes,
       releaseUrl,
+      assets: parseReleaseAssetUrls(data.assets),
     }
   } catch {
     return null

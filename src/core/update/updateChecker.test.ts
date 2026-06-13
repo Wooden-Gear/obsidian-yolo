@@ -2,8 +2,48 @@ import {
   compareVersions,
   normalizePluginVersion,
   parseChangelog,
+  parseReleaseAssetUrls,
   splitReleaseNotesByLanguage,
 } from './updateChecker'
+
+describe('parseReleaseAssetUrls', () => {
+  it('returns URLs when all three release assets are present', () => {
+    const result = parseReleaseAssetUrls([
+      {
+        name: 'main.js',
+        browser_download_url: 'https://github.com/example/main.js',
+      },
+      {
+        name: 'manifest.json',
+        browser_download_url: 'https://github.com/example/manifest.json',
+      },
+      {
+        name: 'styles.css',
+        browser_download_url: 'https://github.com/example/styles.css',
+      },
+    ])
+    expect(result).toEqual({
+      mainJs: 'https://github.com/example/main.js',
+      manifestJson: 'https://github.com/example/manifest.json',
+      stylesCss: 'https://github.com/example/styles.css',
+    })
+  })
+
+  it('returns null when a required asset is missing', () => {
+    expect(
+      parseReleaseAssetUrls([
+        {
+          name: 'main.js',
+          browser_download_url: 'https://github.com/example/main.js',
+        },
+      ]),
+    ).toBeNull()
+  })
+
+  it('returns null for non-array input', () => {
+    expect(parseReleaseAssetUrls(undefined)).toBeNull()
+  })
+})
 
 describe('normalizePluginVersion', () => {
   it('strips v prefix and trims whitespace', () => {

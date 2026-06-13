@@ -1076,6 +1076,12 @@ export type TranslationKeys = {
       tabCompletionTriggerDescription: string
       tabCompletionTriggerRemove: string
     }
+    pluginUpdate: {
+      sectionTitle: string
+      autoDownload: string
+      autoDownloadDesc: string
+      autoDownloadDescUnavailable: string
+    }
     etc: {
       title: string
       exportConfig?: string
@@ -1892,5 +1898,14 @@ export type TranslationKeys = {
     installationIncompleteTitle: string
     installationIncompleteMeta: string
     installationIncompleteNotes: string
+    downloadUpdate: string
+    downloading: string
+    installAndReload: string
+    applying: string
+    downloadFailed: string
+    installFailed: string
+    viewOnGitHub: string
+    updateInCommunityPlugins: string
+    manualInstallOnGitHub: string
   }
 }

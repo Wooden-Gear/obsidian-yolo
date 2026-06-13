@@ -5,6 +5,8 @@ import { Root, createRoot } from 'react-dom/client'
 import { LanguageProvider, useLanguage } from '../contexts/language-context'
 import { PluginProvider, usePlugin } from '../contexts/plugin-context'
 import { parseChangelog } from '../core/update/updateChecker'
+import { openCommunityPluginsSettings } from '../core/update/openCommunityPluginsSettings'
+import { usePluginUpdate } from '../hooks/usePluginUpdate'
 import { useUpdateCheck } from '../hooks/useUpdateCheck'
 import type YoloPlugin from '../main'
 
@@ -21,6 +23,8 @@ function UpdateToast() {
   const plugin = usePlugin()
   const { app } = plugin
   const { result, dismissVersion } = useUpdateCheck()
+  const { state: updateState, canSelfUpdate, startDownload, applyUpdate } =
+    usePluginUpdate()
 
   const [exiting, setExiting] = useState(false)
   const [hiddenForSession, setHiddenForSession] = useState(false)
@@ -75,6 +79,88 @@ function UpdateToast() {
 
   const hasBilingual = hasBilingualReleaseNotes(releaseNotes)
   const separator = lang === 'zh' ? '：' : ': '
+
+  const hasSelfUpdate =
+    canSelfUpdate && Boolean(result?.assets) && Boolean(result?.hasUpdate)
+
+  const resolvePrimaryCta = (): {
+    label: string
+    disabled: boolean
+    onClick: () => void
+  } => {
+    if (!hasSelfUpdate) {
+      return {
+        label: t('update.updateInCommunityPlugins', 'Update in community plugins'),
+        disabled: false,
+        onClick: () => {
+          openCommunityPluginsSettings(app)
+          setHiddenForSession(true)
+        },
+      }
+    }
+
+    const version = result!.latestVersion
+    const isSameVersion =
+      updateState.status !== 'idle' && updateState.version === version
+
+    if (updateState.status === 'ready' && isSameVersion) {
+      return {
+        label: t('update.installAndReload', 'Install and reload'),
+        disabled: false,
+        onClick: () => {
+          applyUpdate()
+        },
+      }
+    }
+
+    if (updateState.status === 'downloading' && isSameVersion) {
+      return {
+        label: t('update.downloading', 'Downloading {{progress}}%').replace(
+          '{{progress}}',
+          String(Math.round(updateState.progress)),
+        ),
+        disabled: true,
+        onClick: () => {},
+      }
+    }
+
+    if (updateState.status === 'applying' && isSameVersion) {
+      return {
+        label: t('update.applying', 'Installing…'),
+        disabled: true,
+        onClick: () => {},
+      }
+    }
+
+    if (updateState.status === 'error' && isSameVersion) {
+      return {
+        label: t('update.downloadUpdate', 'Download update'),
+        disabled: false,
+        onClick: () => {
+          startDownload()
+        },
+      }
+    }
+
+    return {
+      label: t('update.downloadUpdate', 'Download update'),
+      disabled: false,
+      onClick: () => {
+        startDownload()
+      },
+    }
+  }
+
+  const primaryCta = resolvePrimaryCta()
+  const isSelfUpdateError =
+    hasSelfUpdate &&
+    updateState.status === 'error' &&
+    updateState.version === result.latestVersion
+  const showCommunityPluginsFallback = !hasSelfUpdate || isSelfUpdateError
+  const showDownloadProgress =
+    hasSelfUpdate &&
+    updateState.status === 'downloading' &&
+    updateState.version === result.latestVersion
 
   const closeLabel = plugin.isUpdateVersionSoftDismissed(result.latestVersion)
     ? t('update.muteThisVersion', "Don't notify for this version")
@@ -139,6 +225,15 @@ function UpdateToast() {
         <UpdateChangelogSections sections={sections} separator={separator} />
       </div>
 
+      {showDownloadProgress ? (
+        <div className="yolo-update-toast-progress" aria-hidden="true">
+          <div
+            className="yolo-update-toast-progress-fill"
+            style={{ width: `${updateState.progress}%` }}
+          />
+        </div>
+      ) : null}
+
       <div className="yolo-update-toast-footer">
         <button
           type="button"
@@ -155,23 +250,46 @@ function UpdateToast() {
         >
           {t('update.viewHistory', 'View release history')}
         </button>
+        {showCommunityPluginsFallback && hasSelfUpdate ? (
+          <button
+            type="button"
+            className="yolo-update-toast-secondary-btn"
+            title={t(
+              'update.updateInCommunityPlugins',
+              'Update in community plugins',
+            )}
+            onClick={() => {
+              openCommunityPluginsSettings(app)
+              setHiddenForSession(true)
+            }}
+          >
+            {t('update.updateInCommunityPlugins', 'Update in community plugins')}
+          </button>
+        ) : null}
         <button
           type="button"
-          className="yolo-update-toast-cta"
-          title={t('update.viewDetails', 'Check for updates')}
-          onClick={() => {
-            // @ts-expect-error: setting property exists in Obsidian's App but is not typed
-            app.setting.open()
-            // @ts-expect-error: setting property exists in Obsidian's App but is not typed
-            app.setting.openTabById('community-plugins')
-            // Opening Obsidian's update flow is only an attempt to update; it
-            // may fail or require another try, so do not mute this version.
-            setHiddenForSession(true)
-          }}
+          className={`yolo-update-toast-cta${primaryCta.disabled ? ' is-disabled' : ''}`}
+          title={primaryCta.label}
+          disabled={primaryCta.disabled}
+          onClick={primaryCta.onClick}
         >
-          {t('update.goUpdate', 'Update')}
+          {primaryCta.label}
         </button>
       </div>
+      {isSelfUpdateError && result.releaseUrl ? (
+        <button
+          type="button"
+          className="yolo-update-toast-manual-link"
+          onClick={() => {
+            window.open(result.releaseUrl)
+          }}
+        >
+          {t(
+            'update.manualInstallOnGitHub',
+            "Can't update? Install manually from GitHub",
+          )}
+        </button>
+      ) : null}
     </div>
   )
 }

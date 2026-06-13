@@ -1262,6 +1262,14 @@ export const zh: TranslationKeys = {
       tabCompletionTriggerDescription: '描述',
       tabCompletionTriggerRemove: '移除',
     },
+    pluginUpdate: {
+      sectionTitle: '插件更新',
+      autoDownload: '自动下载更新',
+      autoDownloadDesc:
+        '检测到新版本时在后台下载 release 文件；安装仍需你手动确认。',
+      autoDownloadDescUnavailable:
+        '一键安装仅在桌面端且插件目录可写时可用。当前设备请前往 GitHub Release 页面手动更新。',
+    },
     etc: {
       title: '其他',
       exportConfig: '导出配置',
@@ -2054,5 +2062,14 @@ export const zh: TranslationKeys = {
       '主程序 {bakedVersion} · manifest {manifestVersion}',
     installationIncompleteNotes:
       '这通常是更新时 main.js 未能完整下载所致。建议备份 data.json 后，删除插件并重新安装。',
+    downloadUpdate: '下载更新',
+    downloading: '下载中 {{progress}}%',
+    installAndReload: '安装并重启',
+    applying: '正在安装…',
+    downloadFailed: '下载失败',
+    installFailed: '安装失败',
+    viewOnGitHub: '在 GitHub 查看',
+    updateInCommunityPlugins: '在社区插件中更新',
+    manualInstallOnGitHub: '无法更新？前往 GitHub 手动安装',
   },
 }

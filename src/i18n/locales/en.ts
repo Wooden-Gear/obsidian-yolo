@@ -1368,6 +1368,14 @@ export const en: TranslationKeys = {
       tabCompletionTriggerDescription: 'Description',
       tabCompletionTriggerRemove: 'Remove',
     },
+    pluginUpdate: {
+      sectionTitle: 'Plugin updates',
+      autoDownload: 'Auto-download updates',
+      autoDownloadDesc:
+        'When a new version is detected, download release files in the background. Installing still requires your confirmation.',
+      autoDownloadDescUnavailable:
+        'One-click install is only available on desktop with a local plugin folder. On this device, use the GitHub release page to update manually.',
+    },
     etc: {
       title: 'Other',
       exportConfig: 'Export settings',
@@ -2203,5 +2211,14 @@ export const en: TranslationKeys = {
       'main.js {bakedVersion} · manifest {manifestVersion}',
     installationIncompleteNotes:
       'This usually means main.js did not finish downloading during an update. Back up data.json, remove the plugin, and reinstall.',
+    downloadUpdate: 'Download update',
+    downloading: 'Downloading {{progress}}%',
+    installAndReload: 'Install and reload',
+    applying: 'Installing…',
+    downloadFailed: 'Download failed',
+    installFailed: 'Install failed',
+    viewOnGitHub: 'View on GitHub',
+    updateInCommunityPlugins: 'Update in community plugins',
+    manualInstallOnGitHub: "Can't update? Install manually from GitHub",
   },
 }

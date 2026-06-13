@@ -1258,6 +1258,14 @@ export const it: TranslationKeys = {
       tabCompletionTriggerDescription: 'Descrizione',
       tabCompletionTriggerRemove: 'Rimuovi',
     },
+    pluginUpdate: {
+      sectionTitle: 'Aggiornamenti plugin',
+      autoDownload: 'Scarica aggiornamenti automaticamente',
+      autoDownloadDesc:
+        'Quando viene rilevata una nuova versione, scarica i file di release in background. L’installazione richiede comunque la tua conferma.',
+      autoDownloadDescUnavailable:
+        'L’installazione con un clic è disponibile solo su desktop con cartella plugin locale. Su questo dispositivo usa la pagina GitHub Release.',
+    },
     etc: {
       title: 'Altro',
       resetSettings: 'Ripristina impostazioni',
@@ -2008,5 +2016,14 @@ export const it: TranslationKeys = {
       'main.js {bakedVersion} · manifest {manifestVersion}',
     installationIncompleteNotes:
       'Di solito main.js non è stato scaricato completamente durante l’aggiornamento. Esegui il backup di data.json, rimuovi il plugin e reinstallalo.',
+    downloadUpdate: 'Scarica aggiornamento',
+    downloading: 'Download {{progress}}%',
+    installAndReload: 'Installa e ricarica',
+    applying: 'Installazione…',
+    downloadFailed: 'Download non riuscito',
+    installFailed: 'Installazione non riuscita',
+    viewOnGitHub: 'Vedi su GitHub',
+    updateInCommunityPlugins: 'Aggiorna dai plugin community',
+    manualInstallOnGitHub: 'Non riesci ad aggiornare? Installa manualmente da GitHub',
   },
 }

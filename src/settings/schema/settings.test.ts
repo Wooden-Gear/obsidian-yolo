@@ -24,6 +24,7 @@ describe('parseYoloSettings', () => {
     expect(result.systemPrompt).toBe('')
     expect(result.softDismissedUpdateVersion).toBe('')
     expect(result.mutedUpdateVersion).toBe('')
+    expect(result.pluginUpdateAutoDownloadEnabled).toBe(true)
 
     expect(result.ragOptions).toMatchObject({
       enabled: true,
