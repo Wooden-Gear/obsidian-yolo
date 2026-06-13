@@ -149,6 +149,14 @@ async function removeStagingDir(
   }
 }
 
+/** Removes the entire update staging tree so only one release is kept at a time. */
+export async function clearStagingRoot(
+  adapter: DataAdapter,
+  pluginDir: string,
+): Promise<void> {
+  await removeStagingDir(adapter, getStagingRoot(pluginDir))
+}
+
 async function downloadBinary(
   url: string,
 ): Promise<ArrayBuffer> {
@@ -176,10 +184,8 @@ export async function downloadReleaseToStaging(params: {
 }): Promise<void> {
   const { adapter, pluginDir, version, assets, onProgress } = params
   const stagingDir = getStagingDir(pluginDir, version)
-  const stagingRoot = getStagingRoot(pluginDir)
 
-  await ensureDir(adapter, stagingRoot)
-  await removeStagingDir(adapter, stagingDir)
+  await clearStagingRoot(adapter, pluginDir)
   await ensureDir(adapter, stagingDir)
 
   try {
@@ -210,7 +216,7 @@ export async function downloadReleaseToStaging(params: {
       throw new Error('Staged release failed integrity check')
     }
   } catch (error) {
-    await removeStagingDir(adapter, stagingDir)
+    await clearStagingRoot(adapter, pluginDir)
     throw error
   }
 }
@@ -283,7 +289,7 @@ export async function applyStagedUpdate(
     return { ok: false, reason: 'write_failed' }
   }
 
-  await removeStagingDir(adapter, stagingDir)
+  await clearStagingRoot(adapter, pluginDir)
 
   // Reload the whole app so Obsidian loads the newly written plugin files.
   // Do not disable/enable from inside the plugin being replaced: disablePlugin

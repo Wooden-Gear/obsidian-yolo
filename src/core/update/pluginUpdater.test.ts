@@ -2,7 +2,9 @@ import { Stat, type DataAdapter } from 'obsidian'
 
 import {
   applyStagedUpdate,
+  clearStagingRoot,
   getStagingDir,
+  getStagingRoot,
   getStagingStatus,
   meetsMinAppVersion,
 } from './pluginUpdater'
@@ -168,6 +170,24 @@ describe('getStagingStatus', () => {
       '1.5.12.2',
     )
     expect(status).toEqual({ ready: false })
+  })
+})
+
+describe('clearStagingRoot', () => {
+  it('removes all staged version directories', async () => {
+    const adapter = new MockAdapter()
+    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const oldDir = getStagingDir(pluginDir, '1.5.12.1')
+    const newerDir = getStagingDir(pluginDir, '1.5.12.2')
+
+    await adapter.write(`${oldDir}/manifest.json`, '{}')
+    await adapter.write(`${newerDir}/manifest.json`, '{}')
+
+    await clearStagingRoot(adapter as unknown as DataAdapter, pluginDir)
+
+    expect(await adapter.exists(oldDir)).toBe(false)
+    expect(await adapter.exists(newerDir)).toBe(false)
+    expect(await adapter.exists(getStagingRoot(pluginDir))).toBe(false)
   })
 })
 
