@@ -405,6 +405,50 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.slice(0, maxLength - 1)}...`
 }
 
+const FS_READ_BROWSER_DISPLAY_MAX_CHARS = 12000
+
+const shouldTruncateToolResultDisplay = (
+  request: ToolRequestLike,
+  text: string,
+): boolean => {
+  try {
+    const { serverName, toolName } = parseToolName(request.name)
+    return (
+      serverName === getLocalFileToolServerName() &&
+      toolName === 'fs_read' &&
+      text.includes('browser://')
+    )
+  } catch {
+    return false
+  }
+}
+
+const getToolResultDisplayText = ({
+  request,
+  response,
+}: {
+  request: ToolRequestLike
+  response: ToolCallResponse
+}): string => {
+  if (response.status !== ToolCallResponseStatus.Success) {
+    return ''
+  }
+
+  const text = response.data.text
+  if (
+    !shouldTruncateToolResultDisplay(request, text) ||
+    text.length <= FS_READ_BROWSER_DISPLAY_MAX_CHARS
+  ) {
+    return text
+  }
+
+  const hiddenChars = text.length - FS_READ_BROWSER_DISPLAY_MAX_CHARS
+  return `${text.slice(
+    0,
+    FS_READ_BROWSER_DISPLAY_MAX_CHARS,
+  )}\n\n[Display shortened by ${hiddenChars} characters. The assistant received the full tool result.]`
+}
+
 const SHELL_COMMAND_SUMMARY_MAX_CHARS = 80
 const SHELL_COMMAND_SUMMARY_SIMPLE_MAX_CHARS = 48
 const SHELL_COMMAND_SUMMARY_MAX_NAMES = 5
@@ -1314,6 +1358,13 @@ function ToolCallItem({
   const shouldShowParameters =
     !isCompactLiveTaskRequest ||
     effectiveStatus === ToolCallResponseStatus.PendingApproval
+  const resultDisplayText = useMemo(
+    () =>
+      response.status === ToolCallResponseStatus.Success
+        ? getToolResultDisplayText({ request, response })
+        : '',
+    [request, response],
+  )
 
   useEffect(() => {
     const shouldShowCompactionPendingHint =
@@ -1479,7 +1530,7 @@ function ToolCallItem({
               {response.status === ToolCallResponseStatus.Success && (
                 <div className="yolo-toolcall-content-section">
                   <div>{toolLabels.result}:</div>
-                  <ObsidianCodeBlock content={response.data.text} />
+                  <ObsidianCodeBlock content={resultDisplayText} />
                 </div>
               )}
               {response.status === ToolCallResponseStatus.Error && (

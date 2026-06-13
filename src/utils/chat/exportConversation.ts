@@ -130,6 +130,9 @@ function mentionablesToMarkdownLines(
       case 'url':
         lines.push(`<${m.url}>`)
         break
+      case 'web-selection':
+        lines.push(`Web selection: [${m.title || m.url}](${m.url})`)
+        break
       case 'assistant-quote':
         lines.push('Assistant quote')
         break

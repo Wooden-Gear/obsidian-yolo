@@ -154,6 +154,7 @@ const INLINE_MENTIONABLE_TYPES = [
   'folder',
   'block',
   'assistant-quote',
+  'web-selection',
   'model',
   'image',
 ]

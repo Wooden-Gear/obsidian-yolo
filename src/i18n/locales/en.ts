@@ -431,7 +431,8 @@ export const en: TranslationKeys = {
       builtinFsSearchLabel: 'Search Vault',
       builtinFsSearchDesc: 'Search vault files and content',
       builtinFsReadLabel: 'Read',
-      builtinFsReadDesc: 'Read vault files',
+      builtinFsReadDesc:
+        'Read vault files, skills, or open web pages (browser://)',
       builtinContextPruneToolResultsLabel: 'Prune Tool Results',
       builtinContextPruneToolResultsDesc:
         'Exclude past tool results from future context. Note: this tool may break the prompt cache and increase request cost.',
@@ -561,7 +562,7 @@ export const en: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Agent capabilities',
       focusSyncTitle: 'Focus sync',
       focusSyncDesc:
-        'When enabled, the AI can sense which file you are reading and where you are in it.',
+        'When enabled, the AI can sense where you are in the note, PDF, or web page you are viewing. Full web page content is read via fs_read with a browser:// path.',
       timeContextTitle: 'Current time awareness',
       timeContextDesc:
         'Lets the model know the current time when each message is sent.',

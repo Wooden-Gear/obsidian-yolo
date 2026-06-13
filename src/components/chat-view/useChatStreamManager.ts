@@ -1,5 +1,5 @@
 import { UseMutationResult, useMutation } from '@tanstack/react-query'
-import { TFile } from 'obsidian'
+import { Platform, TFile } from 'obsidian'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useApp } from '../../contexts/app-context'
@@ -179,29 +179,41 @@ const isRunSummaryActive = (summary: AgentConversationRunSummary): boolean => {
 }
 
 /**
- * Sidebar Chat focus sync → current-file-pointer injection.
- * Returns an empty array when the user has disabled focus sync or no file
- * is active.
+ * Sidebar Chat contextual injections.
  */
 const buildChatContextualInjections = ({
-  includeCurrentFileContent,
+  app,
+  includeFocusSync,
   currentFile,
   currentFileViewState,
 }: {
-  includeCurrentFileContent: boolean
+  app: import('obsidian').App
+  includeFocusSync: boolean
   currentFile: TFile | null | undefined
   currentFileViewState?: import('../../types/mentionable').CurrentFileViewState
 }): ContextualInjection[] => {
-  if (!includeCurrentFileContent || !currentFile) {
-    return []
+  const injections: ContextualInjection[] = []
+
+  if (!includeFocusSync) {
+    return injections
   }
-  return [
-    {
+
+  if (currentFile) {
+    injections.push({
       type: 'current-file-pointer',
       file: currentFile,
       viewState: currentFileViewState,
-    },
-  ]
+    })
+  }
+
+  if (!Platform.isMobile) {
+    injections.push({
+      type: 'browser-context',
+      app,
+    })
+  }
+
+  return injections
 }
 
 const annotateBranchMessages = (
@@ -517,7 +529,8 @@ export function useChatStreamManager({
       )
       const manualApiType = manualProvider?.apiType ?? null
       const manualContextualInjections = buildChatContextualInjections({
-        includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+        app,
+        includeFocusSync: resolveAssistantIncludeCurrentFileContent(
           selectedAssistant,
           settings,
         ),
@@ -801,11 +814,11 @@ export function useChatStreamManager({
           allowedSkillPaths,
           requestParams,
           contextualInjections: buildChatContextualInjections({
-            includeCurrentFileContent:
-              resolveAssistantIncludeCurrentFileContent(
-                selectedAssistant,
-                settings,
-              ),
+            app,
+            includeFocusSync: resolveAssistantIncludeCurrentFileContent(
+              selectedAssistant,
+              settings,
+            ),
             currentFile: currentFileOverride,
             currentFileViewState,
           }),
@@ -1051,7 +1064,8 @@ export function useChatStreamManager({
         toolPreferences: chatModeRuntime.toolPreferences,
         runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
         contextualInjections: buildChatContextualInjections({
-          includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+          app,
+          includeFocusSync: resolveAssistantIncludeCurrentFileContent(
             selectedAssistant,
             settings,
           ),

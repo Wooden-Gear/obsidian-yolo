@@ -1,6 +1,7 @@
 import {
   App,
   FileSystemAdapter,
+  Platform,
   TFile,
   TFolder,
   normalizePath,
@@ -46,12 +47,22 @@ import type { SubagentParentContext } from '../agent/subagent/parent-context'
 import type { TodoItem } from '../agent/todos-from-messages'
 import type { AgentRunContext } from '../agent/types'
 import {
+  BROWSER_READ_PATH_PREFIX,
   BUILTIN_SKILL_PATH_PREFIX,
   buildAllowedSkillPathSet,
   findPathOutsideScope,
   isPathAllowedByScope,
   normalizeSkillPathForExemption,
 } from '../agent/workspaceScope'
+import {
+  BROWSER_PAGE_ID_PATTERN,
+  findWebviewHandleByPageId,
+} from '../browser/activeWebviewProbe'
+import {
+  BrowserReadFailure,
+  type BrowserReadFormat,
+  readActiveWebviewPage,
+} from '../browser/activeWebviewReader'
 import {
   type TextEditOperation,
   type TextEditPlan,
@@ -209,6 +220,7 @@ type FsReadOperation =
   | {
       type: 'full'
       modality?: FsReadModality
+      format?: BrowserReadFormat
     }
   | {
       type: 'lines'
@@ -216,6 +228,7 @@ type FsReadOperation =
       endLine?: number
       maxLines: number
       modality?: FsReadModality
+      format?: BrowserReadFormat
     }
 type ContextPruneMode = 'selected' | 'all'
 type FsFileOpAction = 'write' | 'delete' | 'create_dir' | 'move'
@@ -453,7 +466,80 @@ const normalizeFsReadPath = (path: string): string => {
   if (trimmed.startsWith(BUILTIN_SKILL_PATH_PREFIX)) {
     return trimmed
   }
+  if (trimmed.startsWith(BROWSER_READ_PATH_PREFIX)) {
+    parseBrowserReadPageId(trimmed)
+    return trimmed
+  }
   return validateVaultPath(trimmed)
+}
+
+export const isBrowserReadPath = (path: string): boolean =>
+  path.trim().startsWith(BROWSER_READ_PATH_PREFIX)
+
+export const parseBrowserReadPageId = (path: string): string => {
+  const trimmed = path.trim()
+  if (!trimmed.startsWith(BROWSER_READ_PATH_PREFIX)) {
+    throw new Error('Not a browser read path.')
+  }
+  const pageId = trimmed.slice(BROWSER_READ_PATH_PREFIX.length).trim()
+  if (!BROWSER_PAGE_ID_PATTERN.test(pageId)) {
+    throw new Error(
+      'browser:// path must use a page_id copied from <browser_context> (page_<8 lowercase base36>_<8 lowercase base36>).',
+    )
+  }
+  return pageId
+}
+
+type FsReadLineSliceResult = {
+  outputContent: string
+  rawSelected: string
+  totalLines: number
+  returnedStartLine: number | null
+  returnedEndLine: number | null
+  hasMoreBelow: boolean
+  nextStartLine: number | null
+}
+
+const sliceLinesForFsReadOperation = (
+  lines: string[],
+  operation: FsReadOperation,
+): FsReadLineSliceResult => {
+  const totalLines = lines.length
+  if (operation.type === 'full') {
+    const outputContent = lines
+      .map((line, index) => `${index + 1}|${line}`)
+      .join('\n')
+    return {
+      outputContent,
+      rawSelected: lines.join('\n'),
+      totalLines,
+      returnedStartLine: totalLines > 0 ? 1 : null,
+      returnedEndLine: totalLines > 0 ? totalLines : null,
+      hasMoreBelow: false,
+      nextStartLine: null,
+    }
+  }
+
+  const startIndex = Math.min(Math.max(operation.startLine - 1, 0), totalLines)
+  const endExclusive = Math.min(
+    totalLines,
+    operation.endLine ?? startIndex + operation.maxLines,
+  )
+  const selectedLines = lines.slice(startIndex, endExclusive)
+  const outputContent = selectedLines
+    .map((line, index) => `${startIndex + index + 1}|${line}`)
+    .join('\n')
+  const returnedCount = selectedLines.length
+  const hasMoreBelow = endExclusive < totalLines
+  return {
+    outputContent,
+    rawSelected: selectedLines.join('\n'),
+    totalLines,
+    returnedStartLine: returnedCount > 0 ? startIndex + 1 : null,
+    returnedEndLine: returnedCount > 0 ? startIndex + returnedCount : null,
+    hasMoreBelow,
+    nextStartLine: hasMoreBelow ? endExclusive + 1 : null,
+  }
 }
 
 export function getLocalFileToolServerName(): string {
@@ -633,7 +719,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        'Read vault files and skill instructions. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes.',
+        'Read vault files, skill instructions, or open Obsidian web pages. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes. Open web pages use browser://<page_id> copied from <browser_context>. Do not call browser:// paths when <browser_context> is absent.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -642,12 +728,12 @@ export function getLocalFileTools(options?: {
             items: {
               type: 'string',
             },
-            description: `Vault-relative file paths or skill paths (including builtin://). Max ${MAX_BATCH_READ_FILES} items.`,
+            description: `Vault-relative file paths, skill paths (builtin://), or browser://<page_id> from <browser_context>. Max ${MAX_BATCH_READ_FILES} items.`,
           },
           operation: {
             type: 'object',
             description:
-              'Read strategy. full: whole file. lines: targeted range (PDFs use page numbers).',
+              'Read strategy. full: whole file/page. lines: targeted range (PDFs use page numbers). format applies only to browser:// paths.',
             properties: {
               type: {
                 type: 'string',
@@ -657,14 +743,21 @@ export function getLocalFileTools(options?: {
                 type: 'integer',
                 description: `Start line/page (1-based). Defaults to ${DEFAULT_READ_START_LINE}.`,
               },
-              maxLines: {
-                type: 'integer',
-                description: `Max lines when endLine unset. Defaults to ${DEFAULT_READ_MAX_LINES} for text files (range 1-${MAX_READ_MAX_LINES}). Ignored for PDFs — PDFs default to a single page (startLine) when endLine is unset.`,
-              },
               endLine: {
                 type: 'integer',
                 description:
                   'Inclusive end line/page. If set, maxLines is ignored.',
+              },
+              maxLines: {
+                type: 'integer',
+                description:
+                  'Max lines/pages in the range when endLine is unset.',
+              },
+              format: {
+                type: 'string',
+                enum: ['readable', 'key_visible_info'],
+                description:
+                  'Browser pages only. key_visible_info (default): compact visible headings, text blocks, tables, code, and formulas — prefer for long pages. readable: fuller Markdown-like text.',
               },
               ...(modalitySchema ? { modality: modalitySchema } : {}),
             },
@@ -1946,8 +2039,31 @@ const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
     }
   }
 
+  let format: BrowserReadFormat | undefined
+  const rawFormatValue = parsedOperation.format
+  if (rawFormatValue !== undefined && rawFormatValue !== null) {
+    if (typeof rawFormatValue !== 'string') {
+      throw new Error(
+        "operation.format must be 'readable' or 'key_visible_info' (or omitted).",
+      )
+    }
+    const normalizedFormat = rawFormatValue.trim().toLowerCase()
+    if (normalizedFormat === '') {
+      // Empty string is treated as "not provided".
+    } else if (
+      normalizedFormat === 'readable' ||
+      normalizedFormat === 'key_visible_info'
+    ) {
+      format = normalizedFormat
+    } else {
+      throw new Error(
+        "operation.format must be 'readable' or 'key_visible_info' (or omitted).",
+      )
+    }
+  }
+
   if (type === 'full') {
-    return { type: 'full', modality }
+    return { type: 'full', modality, format }
   }
 
   if (type === 'lines') {
@@ -1992,6 +2108,7 @@ const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
       endLine,
       maxLines,
       modality,
+      format,
     }
   }
 
@@ -2845,6 +2962,11 @@ export async function callLocalFileTool({
               wikilinks?: Array<{ link: string; path: string }>
               effectiveModality?: 'text' | 'image' | 'pdf'
               warning?: string
+              url?: string
+              title?: string
+              loading?: boolean
+              redactions?: Array<{ kind: string; count: number }>
+              partial?: { reason: string; message: string }
             }
           | {
               path: string
@@ -2896,55 +3018,99 @@ export async function callLocalFileTool({
 
             const content = skillDocument.content
             const lines = content.length === 0 ? [] : content.split('\n')
-            const totalLines = lines.length
-            let outputContent = ''
-            let returnedStartLine: number | null = null
-            let returnedEndLine: number | null = null
-            let hasMoreBelow = false
-            let nextStartLine: number | null = null
-
-            if (operation.type === 'full') {
-              outputContent = lines
-                .map((line, index) => `${index + 1}|${line}`)
-                .join('\n')
-              returnedStartLine = totalLines > 0 ? 1 : null
-              returnedEndLine = totalLines > 0 ? totalLines : null
-            } else {
-              const startIndex = Math.min(
-                Math.max(operation.startLine - 1, 0),
-                totalLines,
-              )
-              const endExclusive = Math.min(
-                totalLines,
-                operation.endLine ?? startIndex + operation.maxLines,
-              )
-              const selectedLines = lines.slice(startIndex, endExclusive)
-              outputContent = selectedLines
-                .map((line, index) => `${startIndex + index + 1}|${line}`)
-                .join('\n')
-              const returnedCount = selectedLines.length
-              returnedStartLine = returnedCount > 0 ? startIndex + 1 : null
-              returnedEndLine =
-                returnedCount > 0 ? startIndex + returnedCount : null
-              hasMoreBelow = endExclusive < totalLines
-              nextStartLine = hasMoreBelow ? endExclusive + 1 : null
-            }
+            const sliced = sliceLinesForFsReadOperation(lines, operation)
 
             results.push({
               path,
               ok: true,
-              totalLines,
+              totalLines: sliced.totalLines,
               returnedRange:
                 operation.type === 'lines'
                   ? {
-                      startLine: returnedStartLine,
-                      endLine: returnedEndLine,
+                      startLine: sliced.returnedStartLine,
+                      endLine: sliced.returnedEndLine,
                     }
                   : undefined,
-              hasMoreBelow,
-              nextStartLine,
-              content: outputContent,
+              hasMoreBelow: sliced.hasMoreBelow,
+              nextStartLine: sliced.nextStartLine,
+              content: sliced.outputContent,
             })
+            continue
+          }
+
+          if (isBrowserReadPath(path)) {
+            if (Platform.isMobile) {
+              results.push({
+                path,
+                ok: false,
+                error: 'Reading open web pages via fs_read is desktop-only.',
+              })
+              continue
+            }
+
+            const pageId = parseBrowserReadPageId(path)
+            const handle = findWebviewHandleByPageId(app, pageId)
+            if (!handle) {
+              results.push({
+                path,
+                ok: false,
+                error: `No open web page with page_id "${pageId}" was found. The tab may have been closed or replaced.`,
+              })
+              continue
+            }
+
+            const format = operation.format ?? 'key_visible_info'
+            try {
+              const browserResult = await readActiveWebviewPage(handle, {
+                format,
+                signal,
+              })
+              if (!browserResult) {
+                results.push({
+                  path,
+                  ok: false,
+                  error:
+                    'Webview is present but has no loaded page (URL empty or about:blank). Navigate to a URL first.',
+                })
+                continue
+              }
+
+              const text = browserResult.text ?? ''
+              const lines = text.length === 0 ? [] : text.split('\n')
+              const sliced = sliceLinesForFsReadOperation(lines, operation)
+              results.push({
+                path,
+                ok: true,
+                totalLines: sliced.totalLines,
+                returnedRange:
+                  operation.type === 'lines'
+                    ? {
+                        startLine: sliced.returnedStartLine,
+                        endLine: sliced.returnedEndLine,
+                      }
+                    : undefined,
+                hasMoreBelow: sliced.hasMoreBelow,
+                nextStartLine: sliced.nextStartLine,
+                content: sliced.outputContent,
+                url: browserResult.url,
+                title: browserResult.title,
+                loading: browserResult.loading,
+                redactions: browserResult.redactions,
+                ...(browserResult.partial
+                  ? { partial: browserResult.partial }
+                  : {}),
+              })
+            } catch (error) {
+              if (error instanceof BrowserReadFailure) {
+                results.push({
+                  path,
+                  ok: false,
+                  error: `${error.code}: ${error.message}`,
+                })
+                continue
+              }
+              throw error
+            }
             continue
           }
 
@@ -3411,45 +3577,9 @@ export async function callLocalFileTool({
           const rawContent = await app.vault.read(file)
           const content = rawContent
           const lines = content.length === 0 ? [] : content.split('\n')
-          const totalLines = lines.length
-
-          let outputContent = ''
-          let rawSelected = ''
-          let returnedStartLine: number | null = null
-          let returnedEndLine: number | null = null
-          let returnedCount = 0
-          let hasMoreBelow = false
-          let nextStartLine: number | null = null
-
-          if (operation.type === 'full') {
-            outputContent = lines
-              .map((line, index) => `${index + 1}|${line}`)
-              .join('\n')
-            rawSelected = content
-            returnedCount = totalLines
-            returnedStartLine = totalLines > 0 ? 1 : null
-            returnedEndLine = totalLines > 0 ? totalLines : null
-          } else {
-            const startIndex = Math.min(
-              Math.max(operation.startLine - 1, 0),
-              totalLines,
-            )
-            const endExclusive = Math.min(
-              totalLines,
-              operation.endLine ?? startIndex + operation.maxLines,
-            )
-            const selectedLines = lines.slice(startIndex, endExclusive)
-            outputContent = selectedLines
-              .map((line, index) => `${startIndex + index + 1}|${line}`)
-              .join('\n')
-            rawSelected = selectedLines.join('\n')
-            returnedCount = selectedLines.length
-            returnedStartLine = returnedCount > 0 ? startIndex + 1 : null
-            returnedEndLine =
-              returnedCount > 0 ? startIndex + returnedCount : null
-            hasMoreBelow = endExclusive < totalLines
-            nextStartLine = hasMoreBelow ? endExclusive + 1 : null
-          }
+          const sliced = sliceLinesForFsReadOperation(lines, operation)
+          const outputContent = sliced.outputContent
+          const rawSelected = sliced.rawSelected
 
           const wikilinks =
             path.endsWith('.md') && rawSelected.length > 0
@@ -3459,16 +3589,16 @@ export async function callLocalFileTool({
           results.push({
             path,
             ok: true,
-            totalLines,
+            totalLines: sliced.totalLines,
             returnedRange:
               operation.type === 'lines'
                 ? {
-                    startLine: returnedStartLine,
-                    endLine: returnedEndLine,
+                    startLine: sliced.returnedStartLine,
+                    endLine: sliced.returnedEndLine,
                   }
                 : undefined,
-            hasMoreBelow,
-            nextStartLine,
+            hasMoreBelow: sliced.hasMoreBelow,
+            nextStartLine: sliced.nextStartLine,
             content: outputContent,
             ...(wikilinks.length > 0 ? { wikilinks } : {}),
           })

@@ -52,6 +52,23 @@ jest.mock('../agent/subagent/runner', () => ({
   }),
 }))
 
+jest.mock('../browser/activeWebviewProbe', () => ({
+  BROWSER_PAGE_ID_PATTERN: /^page_[a-z0-9]{8}_[a-z0-9]{8}$/,
+  findWebviewHandleByPageId: jest.fn(),
+}))
+
+jest.mock('../browser/activeWebviewReader', () => ({
+  BrowserReadFailure: class BrowserReadFailure extends Error {
+    code: string
+    constructor(code: string, message: string) {
+      super(message)
+      this.code = code
+      this.name = 'BrowserReadFailure'
+    }
+  },
+  readActiveWebviewPage: jest.fn(),
+}))
+
 import { App, TFile, TFolder } from 'obsidian'
 import { PDFDocument } from 'pdf-lib'
 
@@ -66,6 +83,8 @@ import { extractPdfText } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import { runSubagent } from '../agent/subagent/runner'
+import { findWebviewHandleByPageId } from '../browser/activeWebviewProbe'
+import { readActiveWebviewPage } from '../browser/activeWebviewReader'
 import type { RAGEngine } from '../rag/ragEngine'
 
 import {
@@ -683,6 +702,183 @@ describe('local fs tool action helpers', () => {
       totalLines: 3,
     })
     expect(payload.results[0].returnedRange).toBeUndefined()
+  })
+
+  describe('fs_read browser:// paths', () => {
+    const pagePath = 'browser://page_ab12cd34_ef56gh78'
+    const mockHandle = {
+      pageId: 'page_ab12cd34_ef56gh78',
+      webview: {},
+    }
+
+    beforeEach(() => {
+      jest.mocked(findWebviewHandleByPageId).mockReset()
+      jest.mocked(readActiveWebviewPage).mockReset()
+    })
+
+    it('reads an open web page with readable format and line pagination', async () => {
+      jest
+        .mocked(findWebviewHandleByPageId)
+        .mockReturnValue(mockHandle as never)
+      jest.mocked(readActiveWebviewPage).mockResolvedValue({
+        source: 'core_webviewer',
+        sourceViewType: 'webviewer',
+        url: 'https://example.com/article',
+        title: 'Article',
+        format: 'readable',
+        loading: false,
+        capturedAt: Date.now(),
+        text: ['Intro', 'Body line', 'Tail'].join('\n'),
+        redactions: [],
+      })
+
+      const result = await callLocalFileTool({
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
+        toolName: 'fs_read',
+        args: {
+          paths: [pagePath],
+          operation: {
+            type: 'lines',
+            startLine: 2,
+            maxLines: 1,
+            format: 'readable',
+          },
+        },
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Success)
+      if (result.status !== ToolCallResponseStatus.Success) {
+        throw new Error('expected success')
+      }
+      const payload = JSON.parse(result.text) as {
+        results: Array<{
+          ok: boolean
+          path: string
+          content: string
+          url?: string
+          title?: string
+          returnedRange?: { startLine: number; endLine: number }
+          hasMoreBelow: boolean
+          nextStartLine: number | null
+        }>
+      }
+      expect(readActiveWebviewPage).toHaveBeenCalledWith(
+        mockHandle,
+        expect.objectContaining({ format: 'readable' }),
+      )
+      expect(payload.results[0]).toMatchObject({
+        ok: true,
+        path: pagePath,
+        content: '2|Body line',
+        url: 'https://example.com/article',
+        title: 'Article',
+        returnedRange: { startLine: 2, endLine: 2 },
+        hasMoreBelow: true,
+        nextStartLine: 3,
+      })
+    })
+
+    it('defaults browser reads to key_visible_info format', async () => {
+      jest
+        .mocked(findWebviewHandleByPageId)
+        .mockReturnValue(mockHandle as never)
+      jest.mocked(readActiveWebviewPage).mockResolvedValue({
+        source: 'core_webviewer',
+        sourceViewType: 'webviewer',
+        url: 'https://example.com',
+        title: 'X',
+        format: 'key_visible_info',
+        loading: false,
+        capturedAt: Date.now(),
+        text: 'Visible summary',
+        redactions: [],
+      })
+
+      const result = await callLocalFileTool({
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
+        toolName: 'fs_read',
+        args: {
+          paths: [pagePath],
+          operation: {
+            type: 'full',
+          },
+        },
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Success)
+      expect(readActiveWebviewPage).toHaveBeenCalledWith(
+        mockHandle,
+        expect.objectContaining({ format: 'key_visible_info' }),
+      )
+    })
+
+    it('supports key_visible_info format for browser paths', async () => {
+      jest
+        .mocked(findWebviewHandleByPageId)
+        .mockReturnValue(mockHandle as never)
+      jest.mocked(readActiveWebviewPage).mockResolvedValue({
+        source: 'core_webviewer',
+        sourceViewType: 'webviewer',
+        url: 'https://example.com',
+        title: 'X',
+        format: 'key_visible_info',
+        loading: false,
+        capturedAt: Date.now(),
+        text: 'Formula: E = mc^2',
+        redactions: [],
+      })
+
+      const result = await callLocalFileTool({
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
+        toolName: 'fs_read',
+        args: {
+          paths: [pagePath],
+          operation: {
+            type: 'full',
+            format: 'key_visible_info',
+          },
+        },
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Success)
+      expect(readActiveWebviewPage).toHaveBeenCalledWith(
+        mockHandle,
+        expect.objectContaining({ format: 'key_visible_info' }),
+      )
+    })
+
+    it('returns an error when the target web page tab is missing', async () => {
+      jest.mocked(findWebviewHandleByPageId).mockReturnValue(null)
+
+      const result = await callLocalFileTool({
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
+        toolName: 'fs_read',
+        args: {
+          paths: [pagePath],
+          operation: { type: 'full' },
+        },
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Success)
+      if (result.status !== ToolCallResponseStatus.Success) {
+        throw new Error('expected success')
+      }
+      const payload = JSON.parse(result.text) as {
+        results: Array<{ ok: boolean; error?: string }>
+      }
+      expect(payload.results[0]).toMatchObject({
+        ok: false,
+        error: expect.stringContaining('No open web page'),
+      })
+    })
   })
 
   it('reads allowed hidden-directory skills through the skill registry', async () => {

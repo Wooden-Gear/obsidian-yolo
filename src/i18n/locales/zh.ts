@@ -389,7 +389,7 @@ export const zh: TranslationKeys = {
       builtinFsSearchLabel: '搜索',
       builtinFsSearchDesc: '搜索库内文件与内容',
       builtinFsReadLabel: '读取',
-      builtinFsReadDesc: '读取库内文件',
+      builtinFsReadDesc: '读取库内文件、技能或已打开网页（browser://）',
       builtinContextPruneToolResultsLabel: '裁剪工具调用结果',
       builtinContextPruneToolResultsDesc:
         '从后续上下文中排除历史工具结果；注意，该工具可能会破坏上下文缓存，增加请求开销',
@@ -511,7 +511,8 @@ export const zh: TranslationKeys = {
       skillDisabledGlobally: '已全局禁用',
       agentCapabilitiesBlockTitle: 'Agent 能力',
       focusSyncTitle: '焦点同步',
-      focusSyncDesc: '启用后，AI 可以感知到你正在阅读的内容和位置。',
+      focusSyncDesc:
+        '启用后，AI 可以感知你正在阅读的笔记、PDF 或网页的位置。完整网页正文通过 fs_read 的 browser:// 路径读取。',
       timeContextTitle: '当前时间感知',
       timeContextDesc: '让模型知道每条消息发送时的当前时间。',
       imageReadingBlockTitle: '图片读取',

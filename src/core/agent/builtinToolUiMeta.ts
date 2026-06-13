@@ -34,7 +34,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descKey: 'settings.agent.builtinFsReadDesc',
     labelFallback: 'Read File',
     descFallback:
-      'Read vault files by path with either full-file or targeted line-range operations.',
+      'Read vault files, skills, or open web pages by path with full-file or line-range operations.',
   },
   context_prune_tool_results: {
     labelKey: 'settings.agent.builtinContextPruneToolResultsLabel',

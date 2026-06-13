@@ -3,6 +3,7 @@ import {
   FileIcon,
   FileText,
   FolderClosedIcon,
+  Globe,
   ImageIcon,
   LinkIcon,
   Quote,
@@ -23,6 +24,8 @@ export const getMentionableIcon = (mentionable: Mentionable) => {
       return Quote
     case 'url':
       return LinkIcon
+    case 'web-selection':
+      return Globe
     case 'image':
       return ImageIcon
     case 'pdf':
