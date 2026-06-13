@@ -201,15 +201,13 @@ describe('readActiveWebviewSnapshot', () => {
     })
   })
 
-  it('includes page length and viewport metadata when available', async () => {
+  it('includes scroll and viewport metadata when available', async () => {
     const handle = buildHandle({
       getURL: () => 'https://example.com/article',
       getTitle: () => 'Example Article',
       executeJavaScript: (code) => {
-        if (code.includes('visibleTextChars')) {
+        if (code.includes('documentHeight')) {
           return Promise.resolve({
-            visibleTextChars: 12345,
-            renderedHtmlChars: 54321,
             scrollY: 800,
             viewportHeight: 700,
             documentHeight: 5000,
@@ -222,8 +220,6 @@ describe('readActiveWebviewSnapshot', () => {
       maxSelectionChars: 2000,
     })
     expect(snapshot?.meta).toEqual({
-      visibleTextChars: 12345,
-      renderedHtmlChars: 54321,
       scrollY: 800,
       viewportHeight: 700,
       documentHeight: 5000,
@@ -296,7 +292,7 @@ describe('readActiveWebviewSnapshot', () => {
     expect(snapshot?.selectionTruncated).toBe(true)
   })
 
-  it('skips selection when maxSelectionChars is 0 but still reads page metadata', async () => {
+  it('skips selection when maxSelectionChars is 0 but still reads scroll metadata', async () => {
     const exec = jest.fn((_code?: string) => Promise.resolve('something'))
     const handle = buildHandle({
       getURL: () => 'https://example.com/article',
@@ -308,7 +304,7 @@ describe('readActiveWebviewSnapshot', () => {
     })
     expect(snapshot?.selection).toBeUndefined()
     expect(exec).toHaveBeenCalledTimes(1)
-    expect(exec.mock.calls[0]?.[0]).toContain('visibleTextChars')
+    expect(exec.mock.calls[0]?.[0]).toContain('documentHeight')
   })
 
   it('omits selection when executeJavaScript exceeds the timeout', async () => {

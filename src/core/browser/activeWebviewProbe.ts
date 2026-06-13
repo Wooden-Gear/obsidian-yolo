@@ -173,9 +173,8 @@ export type ActiveWebviewSnapshot = {
    * current focus is on a note/log/canvas and this page is a background tab.
    */
   userFocused: boolean
+  /** Scroll position and layout from a lightweight in-webview script (no DOM serialization). */
   meta?: {
-    visibleTextChars: number
-    renderedHtmlChars: number
     scrollY: number
     viewportHeight: number
     documentHeight: number
@@ -267,12 +266,10 @@ const readSelectionFromWebview = async (
   }
 }
 
-const PAGE_META_SCRIPT = `(() => {
+const PAGE_SCROLL_SCRIPT = `(() => {
   const doc = document;
   const body = doc.body;
   const root = doc.documentElement;
-  const text = (body ? body.textContent : root ? root.textContent : '') || '';
-  const html = (root ? root.outerHTML : body ? body.outerHTML : '') || '';
   const viewportHeight = window.innerHeight || (root ? root.clientHeight : 0) || 0;
   const documentHeight = Math.max(
     body ? body.scrollHeight : 0,
@@ -282,38 +279,34 @@ const PAGE_META_SCRIPT = `(() => {
     root ? root.offsetHeight : 0
   );
   return {
-    visibleTextChars: text.trim().length,
-    renderedHtmlChars: html.length,
     scrollY: Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0)),
     viewportHeight: Math.max(0, Math.round(viewportHeight)),
     documentHeight: Math.max(0, Math.round(documentHeight)),
   };
 })()`
 
-const isPageMeta = (
+const isPageScrollMeta = (
   value: unknown,
 ): value is NonNullable<ActiveWebviewSnapshot['meta']> => {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
   return (
-    typeof v.visibleTextChars === 'number' &&
-    typeof v.renderedHtmlChars === 'number' &&
     typeof v.scrollY === 'number' &&
     typeof v.viewportHeight === 'number' &&
     typeof v.documentHeight === 'number'
   )
 }
 
-const readPageMetaFromWebview = async (
+const readPageScrollFromWebview = async (
   webview: WebviewLike,
   timeoutMs: number,
 ): Promise<ActiveWebviewSnapshot['meta'] | undefined> => {
   try {
     const raw = await withTimeout(
-      webview.executeJavaScript(PAGE_META_SCRIPT),
+      webview.executeJavaScript(PAGE_SCROLL_SCRIPT),
       timeoutMs,
     )
-    return isPageMeta(raw) ? raw : undefined
+    return isPageScrollMeta(raw) ? raw : undefined
   } catch {
     return undefined
   }
@@ -325,7 +318,7 @@ const readPageMetaFromWebview = async (
  * resulting handle.
  *
  * URL/title/loading come from sync Electron `<webview>` APIs. Selection and
- * page metadata are read via `executeJavaScript` only after the webview stops
+ * scroll layout are read via `executeJavaScript` only after the webview stops
  * loading, and are bounded by short timeouts.
  *
  * Returns null when the page hasn't finished loading (URL empty) — that's the
@@ -361,7 +354,7 @@ export async function readActiveWebviewSnapshot(
       options.maxSelectionChars,
       options.selectionTimeoutMs ?? DEFAULT_SELECTION_TIMEOUT_MS,
     ),
-    readPageMetaFromWebview(
+    readPageScrollFromWebview(
       handle.webview,
       options.metaTimeoutMs ?? DEFAULT_META_TIMEOUT_MS,
     ),

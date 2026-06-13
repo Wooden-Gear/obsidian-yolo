@@ -58,8 +58,6 @@ describe('renderBrowserContextInjection', () => {
       url: 'https://example.com/article',
       title: 'Example Article',
       meta: {
-        visibleTextChars: 12345,
-        renderedHtmlChars: 54321,
         scrollY: 800,
         viewportHeight: 700,
         documentHeight: 5000,
