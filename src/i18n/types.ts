@@ -902,14 +902,6 @@ export type TranslationKeys = {
       waitingRetry?: string
       cancelIndex?: string
     }
-    browser?: {
-      title?: string
-      injectActiveTitle?: string
-      injectActiveDesc?: string
-      retainLastViewedTitle?: string
-      retainLastViewedDesc?: string
-      fullPageToolHint?: string
-    }
     mcp: {
       title: string
       desc: string

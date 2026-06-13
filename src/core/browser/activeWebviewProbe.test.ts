@@ -1,4 +1,4 @@
-import type { App, WorkspaceLeaf } from 'obsidian'
+import type { App } from 'obsidian'
 
 import {
   type ActiveWebviewHandle,
@@ -100,7 +100,7 @@ describe('findActiveWebviewHandle', () => {
     expect(handle?.viewType).toBe('url-webview')
   })
 
-  it('does NOT fall back to another open webview by default when the most recent leaf is not supported', () => {
+  it('returns null when the most recent leaf is not a supported webview', () => {
     const app = {
       workspace: {
         rootSplit: {},
@@ -108,44 +108,6 @@ describe('findActiveWebviewHandle', () => {
       },
     } as unknown as App
     expect(findActiveWebviewHandle(app)).toBeNull()
-  })
-
-  it('falls back to the externally tracked last-viewed webview leaf when provided', () => {
-    const lastViewed = buildLeaf(
-      'url-webview',
-      stubWebview(),
-    ) as unknown as WorkspaceLeaf
-    const app = {
-      workspace: {
-        rootSplit: {},
-        getMostRecentLeaf: () => buildLeaf('markdown', null),
-      },
-    } as unknown as App
-    const handle = findActiveWebviewHandle(app, {
-      recentlyFocusedWebviewLeaf: lastViewed,
-    })
-    expect(handle?.leaf).toBe(lastViewed)
-    expect(handle?.source).toBe('url_webview_opener')
-    expect(handle?.userFocused).toBe(false)
-  })
-
-  it('ignores recentlyFocusedWebviewLeaf when the most-recent leaf is itself a supported webview', () => {
-    const focused = buildLeaf('webviewer', stubWebview())
-    const otherWebview = buildLeaf(
-      'url-webview',
-      stubWebview(),
-    ) as unknown as WorkspaceLeaf
-    const app = {
-      workspace: {
-        rootSplit: {},
-        getMostRecentLeaf: () => focused,
-      },
-    } as unknown as App
-    const handle = findActiveWebviewHandle(app, {
-      recentlyFocusedWebviewLeaf: otherWebview,
-    })
-    expect(handle?.leaf).toBe(focused)
-    expect(handle?.userFocused).toBe(true)
   })
 
   it('finds a specific open webview by opaque page id, not URL', () => {

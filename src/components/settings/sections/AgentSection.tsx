@@ -37,7 +37,6 @@ import { AssistantsModal } from '../modals/AssistantsModal'
 
 import { AgentAutoContextCompactionSection } from './AgentAutoContextCompactionSection'
 import { AgentImageReadingSection } from './AgentImageReadingSection'
-import { BrowserIntegrationSection } from './BrowserIntegrationSection'
 import { NotificationSettingsSection } from './NotificationSettingsSection'
 
 type AgentSectionProps = {
@@ -607,7 +606,6 @@ export function AgentSection({ app }: AgentSectionProps) {
             {t('settings.agent.agentCapabilitiesBlockTitle')}
           </div>
         </div>
-        <BrowserIntegrationSection />
         <div className="yolo-agent-sub-card">
           <div className="yolo-agent-sub-card-head">
             {t('settings.agent.imageReadingBlockTitle')}

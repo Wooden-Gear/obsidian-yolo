@@ -12,23 +12,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
- * v69→v70: introduce the `browser` settings group for browser integration
- * (passive `<browser_context>` injection + `browser_read_page` tool against
- * the user's active webview).
+ * v69→v70: register default `browser_read_page` tool preferences on assistants.
+ * Web page context is injected via per-agent focus sync, not a global setting.
  */
 export const migrateFrom69To70: SettingMigration['migrate'] = (data) => {
   const next: Record<string, unknown> = { ...data, version: 70 }
-  const browser = isRecord(next.browser) ? { ...next.browser } : {}
-
-  if (typeof browser.injectActivePageContext !== 'boolean') {
-    browser.injectActivePageContext = false
-  }
-  delete browser.injectSelectionMaxChars
-  if (typeof browser.retainLastViewedPage !== 'boolean') {
-    browser.retainLastViewedPage = false
-  }
-
-  next.browser = browser
+  delete next.browser
 
   if (Array.isArray(next.assistants)) {
     next.assistants = next.assistants.map((assistant: unknown) => {

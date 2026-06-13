@@ -564,7 +564,7 @@ export const en: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Agent capabilities',
       focusSyncTitle: 'Focus sync',
       focusSyncDesc:
-        'When enabled, the AI can sense which file you are reading and where you are in it.',
+        'When enabled, the AI can sense where you are in the note, PDF, or web page you are viewing. Full web page content requires the browser_read_page tool.',
       timeContextTitle: 'Current time awareness',
       timeContextDesc:
         'Lets the model know the current time when each message is sent.',
@@ -1151,17 +1151,6 @@ export const en: TranslationKeys = {
       retryNow: 'Retry now',
       waitingRetry: 'Waiting to retry...',
       cancelIndex: 'Cancel',
-    },
-    browser: {
-      title: 'Web integration',
-      injectActiveTitle: 'Active page context',
-      injectActiveDesc:
-        'When you send a message, include brief information about the current web page, such as its address, title, page length, and scroll position.',
-      retainLastViewedTitle: 'Keep recent page context',
-      retainLastViewedDesc:
-        'When the current tab is not a web page, still include brief context from the most recent open page.',
-      fullPageToolHint:
-        'To let the assistant read the full page content, enable the page reading tool for the agent.',
     },
     mcp: {
       title: 'Custom tools (MCP)',

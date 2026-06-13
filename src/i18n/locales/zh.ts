@@ -513,7 +513,8 @@ export const zh: TranslationKeys = {
       skillDisabledGlobally: '已全局禁用',
       agentCapabilitiesBlockTitle: 'Agent 能力',
       focusSyncTitle: '焦点同步',
-      focusSyncDesc: '启用后，AI 可以感知到你正在阅读的内容和位置。',
+      focusSyncDesc:
+        '启用后，AI 可以感知你正在阅读的笔记、PDF 或网页的位置。完整网页正文需启用 browser_read_page 工具。',
       timeContextTitle: '当前时间感知',
       timeContextDesc: '让模型知道每条消息发送时的当前时间。',
       imageReadingBlockTitle: '图片读取',
@@ -1061,17 +1062,6 @@ export const zh: TranslationKeys = {
       retryNow: '立即重试',
       waitingRetry: '等待重试中...',
       cancelIndex: '取消',
-    },
-    browser: {
-      title: '网页集成',
-      injectActiveTitle: '当前网页上下文',
-      injectActiveDesc:
-        '发送消息时，附带当前网页的简要信息，例如网址、标题、页面长度和滚动位置。',
-      retainLastViewedTitle: '保留最近网页上下文',
-      retainLastViewedDesc:
-        '当前标签页不是网页时，仍附带最近打开网页的简要上下文。',
-      fullPageToolHint:
-        '如需让助手读取完整网页内容，请在 Agent 中启用网页读取工具。',
     },
     mcp: {
       title: '自定义工具 (MCP)',

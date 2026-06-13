@@ -543,7 +543,7 @@ export const it: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Capacità Agent',
       focusSyncTitle: 'Sincronizzazione del focus',
       focusSyncDesc:
-        "Se abilitato, l'AI percepisce quale file stai leggendo e dove ti trovi.",
+        "Se abilitato, l'AI percepisce dove ti trovi nella nota, nel PDF o nella pagina web che stai visualizzando. Il contenuto completo della pagina web richiede lo strumento browser_read_page.",
       timeContextTitle: 'Consapevolezza dell ora corrente',
       timeContextDesc:
         'Indica al modello l ora corrente all invio di ogni messaggio.',
@@ -1040,17 +1040,6 @@ export const it: TranslationKeys = {
       retryNow: 'Riprova ora',
       waitingRetry: 'In attesa di un nuovo tentativo...',
       cancelIndex: 'Annulla',
-    },
-    browser: {
-      title: 'Integrazione web',
-      injectActiveTitle: 'Contesto della pagina attiva',
-      injectActiveDesc:
-        'Quando invii un messaggio, include brevi informazioni sulla pagina web corrente, ad esempio indirizzo, titolo, lunghezza della pagina e posizione di scorrimento.',
-      retainLastViewedTitle: 'Mantieni il contesto della pagina recente',
-      retainLastViewedDesc:
-        'Quando la scheda corrente non è una pagina web, includi comunque un breve contesto dalla pagina aperta più recente.',
-      fullPageToolHint:
-        "Per consentire all'assistente di leggere l'intera pagina, abilita lo strumento di lettura pagina per l'agente.",
     },
     mcp: {
       title: 'Strumenti personalizzati (MCP)',

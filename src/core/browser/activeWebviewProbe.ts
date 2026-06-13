@@ -68,13 +68,7 @@ export type ActiveWebviewHandle = {
   webview: WebviewLike
   viewType: SupportedViewType
   source: BrowserContextSource
-  /**
-   * True when the handle came from the workspace's most-recent leaf (the user
-   * was last interacting with this webview). False when it came from the
-   * `recentlyFocusedWebviewLeaf` scan — i.e. the user's current focus is on
-   * something else (note, log tab, canvas) and this webview is only still
-   * open in the background.
-   */
+  /** Always true for handles returned by `findActiveWebviewHandle`. */
   userFocused: boolean
 }
 
@@ -115,19 +109,6 @@ const handleFromLeaf = (
   }
 }
 
-export type FindActiveWebviewOptions = {
-  /**
-   * Fallback leaf, tracked externally via `BrowserFocusTracker`. When the
-   * user's current focus is not itself a webview, this leaf is used so the
-   * model can still see the page they were last viewing. Pass null to
-   * disable the fallback entirely.
-   *
-   * Caller is responsible for ensuring the leaf is still alive; the probe
-   * additionally rejects it if `view`/`containerEl`/`<webview>` checks fail.
-   */
-  recentlyFocusedWebviewLeaf?: WorkspaceLeaf | null
-}
-
 /**
  * Synchronously find the user's active webview leaf if it belongs to a
  * supported source. Returns null when:
@@ -142,26 +123,13 @@ export type FindActiveWebviewOptions = {
  * picks up the page the user was just interacting with even if they refocused
  * the chat sidebar to send a message.
  */
-export function findActiveWebviewHandle(
-  app: App,
-  options: FindActiveWebviewOptions = {},
-): ActiveWebviewHandle | null {
+export function findActiveWebviewHandle(app: App): ActiveWebviewHandle | null {
   const workspace = app.workspace
   const leaf =
     workspace.getMostRecentLeaf(workspace.rootSplit) ??
     workspace.getMostRecentLeaf()
-  if (leaf) {
-    const handle = handleFromLeaf(leaf, true)
-    if (handle) return handle
-  }
-
-  const recent = options.recentlyFocusedWebviewLeaf
-  if (recent) {
-    const fallback = handleFromLeaf(recent, false)
-    if (fallback) return fallback
-  }
-
-  return null
+  if (!leaf) return null
+  return handleFromLeaf(leaf, true)
 }
 
 /**

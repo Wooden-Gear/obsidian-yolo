@@ -183,22 +183,22 @@ const isRunSummaryActive = (summary: AgentConversationRunSummary): boolean => {
  */
 const buildChatContextualInjections = ({
   app,
-  includeCurrentFileContent,
+  includeFocusSync,
   currentFile,
   currentFileViewState,
-  injectActivePageContext,
-  recentlyFocusedWebviewLeaf,
 }: {
   app: import('obsidian').App
-  includeCurrentFileContent: boolean
+  includeFocusSync: boolean
   currentFile: TFile | null | undefined
   currentFileViewState?: import('../../types/mentionable').CurrentFileViewState
-  injectActivePageContext: boolean
-  recentlyFocusedWebviewLeaf: import('obsidian').WorkspaceLeaf | null
 }): ContextualInjection[] => {
   const injections: ContextualInjection[] = []
 
-  if (includeCurrentFileContent && currentFile) {
+  if (!includeFocusSync) {
+    return injections
+  }
+
+  if (currentFile) {
     injections.push({
       type: 'current-file-pointer',
       file: currentFile,
@@ -206,11 +206,10 @@ const buildChatContextualInjections = ({
     })
   }
 
-  if (injectActivePageContext && !Platform.isMobile) {
+  if (!Platform.isMobile) {
     injections.push({
       type: 'browser-context',
       app,
-      recentlyFocusedWebviewLeaf,
     })
   }
 
@@ -531,16 +530,12 @@ export function useChatStreamManager({
       const manualApiType = manualProvider?.apiType ?? null
       const manualContextualInjections = buildChatContextualInjections({
         app,
-        includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+        includeFocusSync: resolveAssistantIncludeCurrentFileContent(
           selectedAssistant,
           settings,
         ),
         currentFile: currentFileOverride,
         currentFileViewState,
-        injectActivePageContext: settings.browser.injectActivePageContext,
-        recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
-          ? plugin.getRecentlyFocusedWebviewLeaf()
-          : null,
       })
       const manualCompaction = baseCompactionStateRef.current
       // Paths 2/3 mirror the main line: reasoning comes from the last user
@@ -820,17 +815,12 @@ export function useChatStreamManager({
           requestParams,
           contextualInjections: buildChatContextualInjections({
             app,
-            includeCurrentFileContent:
-              resolveAssistantIncludeCurrentFileContent(
-                selectedAssistant,
-                settings,
-              ),
+            includeFocusSync: resolveAssistantIncludeCurrentFileContent(
+              selectedAssistant,
+              settings,
+            ),
             currentFile: currentFileOverride,
             currentFileViewState,
-            injectActivePageContext: settings.browser.injectActivePageContext,
-            recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
-              ? plugin.getRecentlyFocusedWebviewLeaf()
-              : null,
           }),
           geminiTools: {
             useWebSearch: conversationOverrides?.useWebSearch ?? false,
@@ -1075,16 +1065,12 @@ export function useChatStreamManager({
         runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
         contextualInjections: buildChatContextualInjections({
           app,
-          includeCurrentFileContent: resolveAssistantIncludeCurrentFileContent(
+          includeFocusSync: resolveAssistantIncludeCurrentFileContent(
             selectedAssistant,
             settings,
           ),
           currentFile: currentFileOverride,
           currentFileViewState,
-          injectActivePageContext: settings.browser.injectActivePageContext,
-          recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
-            ? plugin.getRecentlyFocusedWebviewLeaf()
-            : null,
         }),
       }
     },
