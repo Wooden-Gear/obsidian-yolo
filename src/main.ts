@@ -41,6 +41,7 @@ import {
   BackgroundActivityRegistry,
 } from './core/background/backgroundActivityRegistry'
 import { BrowserFocusTracker } from './core/browser/browserFocusTracker'
+import { WebviewSelectionBridge } from './core/browser/webviewSelectionBridge'
 import { setLLMDebugCaptureEnabled } from './core/llm/debugCapture'
 import { clearRequestTransportMemory } from './core/llm/requestTransport'
 import { McpCoordinator } from './core/mcp/mcpCoordinator'
@@ -182,6 +183,7 @@ export default class YoloPlugin extends Plugin {
   private ragIndexService: RagIndexService | null = null
   private mcpCoordinator: McpCoordinator | null = null
   private browserFocusTracker = new BrowserFocusTracker()
+  private webviewSelectionBridge: WebviewSelectionBridge | null = null
   private writeAssistController: WriteAssistController | null = null
   // Model list cache for provider model fetching
   private modelListCache: Map<string, { models: string[]; timestamp: number }> =
@@ -783,6 +785,27 @@ export default class YoloPlugin extends Plugin {
    */
   getRecentlyFocusedWebviewLeaf(): import('obsidian').WorkspaceLeaf | null {
     return this.browserFocusTracker.getLastViewedWebviewLeaf(this.app)
+  }
+
+  private startWebviewSelectionBridge(): void {
+    this.webviewSelectionBridge?.destroy()
+    this.webviewSelectionBridge = new WebviewSelectionBridge(this.app, {
+      isEnabled: () =>
+        this.settings.continuationOptions?.enableSelectionChat ?? true,
+      onSelection: (selection) => {
+        const targetLeaf = this.getChatLeafSessionManager().resolveTargetLeaf()
+        if (targetLeaf?.view instanceof ChatView) {
+          targetLeaf.view.syncWebSelectionToInput(selection)
+        }
+      },
+      onClear: () => {
+        const targetLeaf = this.getChatLeafSessionManager().resolveTargetLeaf()
+        if (targetLeaf?.view instanceof ChatView) {
+          targetLeaf.view.clearSelectionFromChat()
+        }
+      },
+    })
+    this.webviewSelectionBridge.start()
   }
 
   private createSmartSpaceTriggerExtension(): Extension {
@@ -1744,6 +1767,7 @@ export default class YoloPlugin extends Plugin {
     })
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this))
+    this.startWebviewSelectionBridge()
 
     this.newTabEmptyStateEnhancer = new NewTabEmptyStateEnhancer(this)
     this.newTabEmptyStateEnhancer.enable()
@@ -2068,6 +2092,7 @@ export default class YoloPlugin extends Plugin {
             this.getChatLeafSessionManager().touchLeafActive(leaf)
           }
           this.browserFocusTracker.noteActiveLeaf(leaf ?? null)
+          this.webviewSelectionBridge?.noteWorkspaceChange()
           const view = this.app.workspace.getActiveViewOfType(MarkdownView)
           const editor = view?.editor
           if (editor) {
@@ -2106,6 +2131,8 @@ export default class YoloPlugin extends Plugin {
     this.closeSmartSpace()
 
     // Selection chat cleanup
+    this.webviewSelectionBridge?.destroy()
+    this.webviewSelectionBridge = null
     this.selectionChatController?.destroy()
     this.selectionChatController = null
     this.chatViewNavigator = null

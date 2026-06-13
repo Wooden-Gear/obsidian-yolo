@@ -187,7 +187,6 @@ const buildChatContextualInjections = ({
   currentFile,
   currentFileViewState,
   injectActivePageContext,
-  injectSelectionMaxChars,
   recentlyFocusedWebviewLeaf,
 }: {
   app: import('obsidian').App
@@ -195,7 +194,6 @@ const buildChatContextualInjections = ({
   currentFile: TFile | null | undefined
   currentFileViewState?: import('../../types/mentionable').CurrentFileViewState
   injectActivePageContext: boolean
-  injectSelectionMaxChars: number
   recentlyFocusedWebviewLeaf: import('obsidian').WorkspaceLeaf | null
 }): ContextualInjection[] => {
   const injections: ContextualInjection[] = []
@@ -212,7 +210,6 @@ const buildChatContextualInjections = ({
     injections.push({
       type: 'browser-context',
       app,
-      maxSelectionChars: injectSelectionMaxChars,
       recentlyFocusedWebviewLeaf,
     })
   }
@@ -541,7 +538,6 @@ export function useChatStreamManager({
         currentFile: currentFileOverride,
         currentFileViewState,
         injectActivePageContext: settings.browser.injectActivePageContext,
-        injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
         recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
           ? plugin.getRecentlyFocusedWebviewLeaf()
           : null,
@@ -832,7 +828,6 @@ export function useChatStreamManager({
             currentFile: currentFileOverride,
             currentFileViewState,
             injectActivePageContext: settings.browser.injectActivePageContext,
-            injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
             recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
               ? plugin.getRecentlyFocusedWebviewLeaf()
               : null,
@@ -1087,7 +1082,6 @@ export function useChatStreamManager({
           currentFile: currentFileOverride,
           currentFileViewState,
           injectActivePageContext: settings.browser.injectActivePageContext,
-          injectSelectionMaxChars: settings.browser.injectSelectionMaxChars,
           recentlyFocusedWebviewLeaf: settings.browser.retainLastViewedPage
             ? plugin.getRecentlyFocusedWebviewLeaf()
             : null,

@@ -248,7 +248,6 @@ describe('readActiveWebviewSnapshot', () => {
           return Promise.resolve({
             visibleTextChars: 12345,
             renderedHtmlChars: 54321,
-            selectionChars: 9,
             scrollY: 800,
             viewportHeight: 700,
             documentHeight: 5000,
@@ -263,7 +262,6 @@ describe('readActiveWebviewSnapshot', () => {
     expect(snapshot?.meta).toEqual({
       visibleTextChars: 12345,
       renderedHtmlChars: 54321,
-      selectionChars: 9,
       scrollY: 800,
       viewportHeight: 700,
       documentHeight: 5000,

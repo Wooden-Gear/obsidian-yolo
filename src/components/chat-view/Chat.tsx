@@ -63,6 +63,7 @@ import type {
   MentionableBlock,
   MentionableBlockData,
   MentionableImage,
+  MentionableWebSelection,
 } from '../../types/mentionable'
 import {
   REASONING_LEVELS,
@@ -509,8 +510,14 @@ const isSyncSelectionSource = (source: MentionableBlock['source']): boolean => {
   return source === 'selection' || source === 'selection-sync'
 }
 
-const isSyncSelectionMentionable = (mentionable: MentionableBlock): boolean => {
-  return isSyncSelectionSource(mentionable.source)
+const isSyncSelectionMentionable = (mentionable: Mentionable): boolean => {
+  if (mentionable.type === 'block') {
+    return isSyncSelectionSource(mentionable.source)
+  }
+  return (
+    mentionable.type === 'web-selection' &&
+    mentionable.source === 'web-selection-sync'
+  )
 }
 
 const isSelectionBlockMentionable = (
@@ -587,6 +594,7 @@ export type ChatRef = {
   ) => void
   syncSelectionToChat: (selectedBlock: MentionableBlockData) => void
   syncSelectionToInput: (selectedBlock: MentionableBlockData) => void
+  syncWebSelectionToInput: (selection: MentionableWebSelection) => void
   clearSelectionFromChat: () => void
   addFileToChat: (file: TFile) => void
   addFolderToChat: (folder: TFolder) => void
@@ -3888,11 +3896,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const removeSelectionMentionable = useCallback(
     (mentionables: ChatUserMessage['mentionables']) =>
       mentionables.filter(
-        (mentionable) =>
-          !(
-            mentionable.type === 'block' &&
-            isSyncSelectionMentionable(mentionable)
-          ),
+        (mentionable) => !isSyncSelectionMentionable(mentionable),
       ),
     [],
   )
@@ -3908,8 +3912,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
       if (focusedMessageId === inputMessage.id) {
         setInputMessage((prevInputMessage) => {
-          const existingSelection = prevInputMessage.mentionables.find(
-            (m) => m.type === 'block' && isSyncSelectionMentionable(m),
+          const existingSelection = prevInputMessage.mentionables.find((m) =>
+            isSyncSelectionMentionable(m),
           )
           if (existingSelection) {
             const existingKey = getMentionableKey(
@@ -3935,8 +3939,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       setChatMessages((prevChatHistory) =>
         prevChatHistory.map((message) => {
           if (message.id === focusedMessageId && message.role === 'user') {
-            const existingSelection = message.mentionables.find(
-              (m) => m.type === 'block' && isSyncSelectionMentionable(m),
+            const existingSelection = message.mentionables.find((m) =>
+              isSyncSelectionMentionable(m),
             )
             if (existingSelection) {
               const existingKey = getMentionableKey(
@@ -3976,8 +3980,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
       flushSync(() => {
         setInputMessage((prevInputMessage) => {
-          const existingSelection = prevInputMessage.mentionables.find(
-            (m) => m.type === 'block' && isSyncSelectionMentionable(m),
+          const existingSelection = prevInputMessage.mentionables.find((m) =>
+            isSyncSelectionMentionable(m),
           )
           if (existingSelection) {
             const existingKey = getMentionableKey(
@@ -4000,6 +4004,46 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       })
     },
     [buildSelectionMentionable, removeSelectionMentionable],
+  )
+
+  const syncWebSelectionMentionableToInput = useCallback(
+    (selection: MentionableWebSelection) => {
+      const mentionable: MentionableWebSelection = {
+        ...selection,
+        source: selection.source ?? 'web-selection-sync',
+        contentHash:
+          selection.contentHash ?? getBlockContentHash(selection.content),
+      }
+      const mentionableKey = getMentionableKey(
+        serializeMentionable(mentionable),
+      )
+
+      flushSync(() => {
+        setInputMessage((prevInputMessage) => {
+          const existingSelection = prevInputMessage.mentionables.find((m) =>
+            isSyncSelectionMentionable(m),
+          )
+          if (existingSelection) {
+            const existingKey = getMentionableKey(
+              serializeMentionable(existingSelection),
+            )
+            if (existingKey === mentionableKey) {
+              return prevInputMessage
+            }
+          }
+
+          return {
+            ...prevInputMessage,
+            mentionables: [
+              ...removeSelectionMentionable(prevInputMessage.mentionables),
+              mentionable,
+            ],
+            promptContent: null,
+          }
+        })
+      })
+    },
+    [removeSelectionMentionable],
   )
 
   const upsertSelectionMentionableInMainInput = useCallback(
@@ -4409,6 +4453,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     },
     syncSelectionToInput: (selectedBlock: MentionableBlockData) => {
       syncSelectionMentionableToInput(selectedBlock)
+    },
+    syncWebSelectionToInput: (selection: MentionableWebSelection) => {
+      syncWebSelectionMentionableToInput(selection)
     },
     clearSelectionFromChat: () => {
       clearSelectionMentionable()

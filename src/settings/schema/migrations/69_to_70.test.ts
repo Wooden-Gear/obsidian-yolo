@@ -7,8 +7,8 @@ describe('migrateFrom69To70', () => {
     expect(result.version).toBe(70)
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
-    expect(browser.injectSelectionMaxChars).toBe(2000)
     expect(browser.retainLastViewedPage).toBe(false)
+    expect(browser.injectSelectionMaxChars).toBeUndefined()
   })
 
   it('preserves existing browser values', () => {
@@ -16,35 +16,24 @@ describe('migrateFrom69To70', () => {
       version: 69,
       browser: {
         injectActivePageContext: false,
-        injectSelectionMaxChars: 500,
         retainLastViewedPage: true,
       },
     })
 
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
-    expect(browser.injectSelectionMaxChars).toBe(500)
     expect(browser.retainLastViewedPage).toBe(true)
+    expect(browser.injectSelectionMaxChars).toBeUndefined()
   })
 
-  it('repairs bogus injectSelectionMaxChars values', () => {
+  it('drops legacy injectSelectionMaxChars values', () => {
     const result = migrateFrom69To70({
       version: 69,
       browser: { injectSelectionMaxChars: -5 },
     })
 
     const browser = result.browser as Record<string, unknown>
-    expect(browser.injectSelectionMaxChars).toBe(2000)
-  })
-
-  it('repairs non-numeric injectSelectionMaxChars', () => {
-    const result = migrateFrom69To70({
-      version: 69,
-      browser: { injectSelectionMaxChars: 'lots' },
-    })
-
-    const browser = result.browser as Record<string, unknown>
-    expect(browser.injectSelectionMaxChars).toBe(2000)
+    expect(browser.injectSelectionMaxChars).toBeUndefined()
   })
 
   it('repairs non-boolean injectActivePageContext', () => {
@@ -65,8 +54,8 @@ describe('migrateFrom69To70', () => {
 
     const browser = result.browser as Record<string, unknown>
     expect(browser.injectActivePageContext).toBe(false)
-    expect(browser.injectSelectionMaxChars).toBe(2000)
     expect(browser.retainLastViewedPage).toBe(false)
+    expect(browser.injectSelectionMaxChars).toBeUndefined()
   })
 
   it('repairs non-boolean retainLastViewedPage', () => {

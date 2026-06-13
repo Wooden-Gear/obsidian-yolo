@@ -208,7 +208,6 @@ export type ActiveWebviewSnapshot = {
   meta?: {
     visibleTextChars: number
     renderedHtmlChars: number
-    selectionChars: number
     scrollY: number
     viewportHeight: number
     documentHeight: number
@@ -306,7 +305,6 @@ const PAGE_META_SCRIPT = `(() => {
   const root = doc.documentElement;
   const text = (body ? body.textContent : root ? root.textContent : '') || '';
   const html = (root ? root.outerHTML : body ? body.outerHTML : '') || '';
-  const selection = window.getSelection ? String(window.getSelection().toString() || '') : '';
   const viewportHeight = window.innerHeight || (root ? root.clientHeight : 0) || 0;
   const documentHeight = Math.max(
     body ? body.scrollHeight : 0,
@@ -318,7 +316,6 @@ const PAGE_META_SCRIPT = `(() => {
   return {
     visibleTextChars: text.trim().length,
     renderedHtmlChars: html.length,
-    selectionChars: selection.trim().length,
     scrollY: Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0)),
     viewportHeight: Math.max(0, Math.round(viewportHeight)),
     documentHeight: Math.max(0, Math.round(documentHeight)),
@@ -333,7 +330,6 @@ const isPageMeta = (
   return (
     typeof v.visibleTextChars === 'number' &&
     typeof v.renderedHtmlChars === 'number' &&
-    typeof v.selectionChars === 'number' &&
     typeof v.scrollY === 'number' &&
     typeof v.viewportHeight === 'number' &&
     typeof v.documentHeight === 'number'

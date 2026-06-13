@@ -58,7 +58,6 @@ export type TodoListInjection = {
 export type BrowserContextInjection = {
   type: 'browser-context'
   app: App
-  maxSelectionChars: number
   recentlyFocusedWebviewLeaf: WorkspaceLeaf | null
 }
 

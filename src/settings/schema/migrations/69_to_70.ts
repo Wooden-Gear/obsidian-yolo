@@ -1,10 +1,10 @@
-import type { SettingMigration } from '../setting.types'
 import {
   getDefaultApprovalModeForTool,
   getDefaultDisclosureModeForTool,
 } from '../../../core/agent/tool-preferences'
 import { getLocalFileToolServerName } from '../../../core/mcp/localFileTools'
 import { McpManager } from '../../../core/mcp/mcpManager'
+import type { SettingMigration } from '../setting.types'
 
 const BROWSER_READ_PAGE_TOOL_FQN = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}browser_read_page`
 
@@ -23,13 +23,7 @@ export const migrateFrom69To70: SettingMigration['migrate'] = (data) => {
   if (typeof browser.injectActivePageContext !== 'boolean') {
     browser.injectActivePageContext = false
   }
-  if (
-    typeof browser.injectSelectionMaxChars !== 'number' ||
-    !Number.isFinite(browser.injectSelectionMaxChars) ||
-    browser.injectSelectionMaxChars < 0
-  ) {
-    browser.injectSelectionMaxChars = 2000
-  }
+  delete browser.injectSelectionMaxChars
   if (typeof browser.retainLastViewedPage !== 'boolean') {
     browser.retainLastViewedPage = false
   }

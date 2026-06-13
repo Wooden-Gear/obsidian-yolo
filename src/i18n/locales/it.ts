@@ -1045,10 +1045,7 @@ export const it: TranslationKeys = {
       title: 'Integrazione web',
       injectActiveTitle: 'Contesto della pagina attiva',
       injectActiveDesc:
-        "Quando invii un messaggio, include brevi informazioni sulla pagina web corrente, ad esempio indirizzo, titolo, lunghezza della pagina, posizione di scorrimento e l'eventuale testo selezionato nella pagina.",
-      selectionMaxTitle: 'Limite testo selezionato',
-      selectionMaxDesc:
-        'Quantita massima di testo selezionato da includere dalla pagina. Imposta 0 per non includerlo mai.',
+        'Quando invii un messaggio, include brevi informazioni sulla pagina web corrente, ad esempio indirizzo, titolo, lunghezza della pagina e posizione di scorrimento.',
       retainLastViewedTitle: 'Mantieni il contesto della pagina recente',
       retainLastViewedDesc:
         'Quando la scheda corrente non è una pagina web, includi comunque un breve contesto dalla pagina aperta più recente.',

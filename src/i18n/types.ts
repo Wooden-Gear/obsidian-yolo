@@ -906,8 +906,6 @@ export type TranslationKeys = {
       title?: string
       injectActiveTitle?: string
       injectActiveDesc?: string
-      selectionMaxTitle?: string
-      selectionMaxDesc?: string
       retainLastViewedTitle?: string
       retainLastViewedDesc?: string
       fullPageToolHint?: string

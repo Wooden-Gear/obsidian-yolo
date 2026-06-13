@@ -4,10 +4,10 @@
  * Mirrors how `<ide_selection>` / `<editor-snapshot>` work for vault notes:
  * when the user's active leaf is a supported webview (core Web Viewer or
  * .url WebView Opener) and they send a chat message, the model is told the
- * page's URL/title/loading state and (when present) the user's selection —
+ * page's URL/title/loading state and lightweight page metadata —
  * without the model having to call any browser_* tool.
  *
- * Body is constructed at render time so the URL/title/selection reflect the
+ * Body is constructed at render time so the URL/title/metadata reflect the
  * webview's state at request build time, not at chat-input submit time.
  */
 
@@ -31,7 +31,7 @@ export async function renderBrowserContextInjection(
   if (!handle) return null
 
   const snapshot = await readActiveWebviewSnapshot(handle, {
-    maxSelectionChars: injection.maxSelectionChars,
+    maxSelectionChars: 0,
   })
   if (!snapshot) return null
 
@@ -63,14 +63,8 @@ export async function renderBrowserContextInjection(
       `    <viewport_height_px>${snapshot.meta.viewportHeight}</viewport_height_px>`,
     )
     lines.push(`    <scroll_y_px>${snapshot.meta.scrollY}</scroll_y_px>`)
-    lines.push(
-      `    <selection_chars>${snapshot.meta.selectionChars}</selection_chars>`,
-    )
   }
   lines.push('  </active_page>')
-  if (snapshot.selection) {
-    lines.push(`  <selection>${escapeXml(snapshot.selection)}</selection>`)
-  }
   lines.push('</browser_context>')
 
   return {

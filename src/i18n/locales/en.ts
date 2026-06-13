@@ -1156,10 +1156,7 @@ export const en: TranslationKeys = {
       title: 'Web integration',
       injectActiveTitle: 'Active page context',
       injectActiveDesc:
-        'When you send a message, include brief information about the current web page, such as its address, title, page length, scroll position, and any text selected on the page.',
-      selectionMaxTitle: 'Selected text limit',
-      selectionMaxDesc:
-        'Maximum selected text to include from the page. Set to 0 to never include selected text.',
+        'When you send a message, include brief information about the current web page, such as its address, title, page length, and scroll position.',
       retainLastViewedTitle: 'Keep recent page context',
       retainLastViewedDesc:
         'When the current tab is not a web page, still include brief context from the most recent open page.',

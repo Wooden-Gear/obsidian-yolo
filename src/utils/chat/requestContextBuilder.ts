@@ -51,6 +51,7 @@ import type {
   MentionableFolder,
   MentionableImage,
   MentionablePDF,
+  MentionableWebSelection,
 } from '../../types/mentionable'
 import type { ToolCallRequest } from '../../types/tool-call.types'
 import {
@@ -99,6 +100,16 @@ const USER_SELECTED_SKILLS_BLOCK_RE =
 
 const stripUserSelectedSkillsFromString = (text: string): string =>
   text.replace(USER_SELECTED_SKILLS_BLOCK_RE, '')
+
+const escapeXmlAttr = (raw: string): string =>
+  raw
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+const escapeXmlText = (raw: string): string =>
+  raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 /** Stable signature for the `<previously-loaded-tools>` compaction disclosure
  * message. The disclosure is built by `buildCompactionDisclosureInjection` and
@@ -1016,6 +1027,9 @@ export class RequestContextBuilder {
     const pdfs = message.mentionables.filter(
       (m): m is MentionablePDF => m.type === 'pdf',
     )
+    const webSelections = message.mentionables.filter(
+      (m): m is MentionableWebSelection => m.type === 'web-selection',
+    )
     const blockPrompt = blocks
       .map(({ file, content, startLine, pageNumber }) => {
         const pageTag = pageNumber !== undefined ? ` (page ${pageNumber})` : ''
@@ -1032,6 +1046,7 @@ export class RequestContextBuilder {
       })
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
+    const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1040,7 +1055,7 @@ export class RequestContextBuilder {
     const selectedSkillsPrompt = await this.buildSelectedSkillsPrompt(
       message.selectedSkills,
     )
-    const textContent = `${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
+    const textContent = `${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
     if (imageParts.length === 0 && pdfDocumentParts.length === 0) {
       return withTimeContext(textContent)
     }
@@ -1063,6 +1078,7 @@ export class RequestContextBuilder {
           mentionable.type === 'file' ||
           mentionable.type === 'folder' ||
           mentionable.type === 'url' ||
+          mentionable.type === 'web-selection' ||
           mentionable.type === 'assistant-quote',
       )
     )
@@ -1406,6 +1422,9 @@ ${message.annotations
     const pdfs = mentionables.filter(
       (m): m is MentionablePDF => m.type === 'pdf',
     )
+    const webSelections = mentionables.filter(
+      (m): m is MentionableWebSelection => m.type === 'web-selection',
+    )
     const blockPrompt = blocks
       .map(({ file, content, startLine, pageNumber }) => {
         const pageTag = pageNumber !== undefined ? ` (page ${pageNumber})` : ''
@@ -1422,6 +1441,7 @@ ${message.annotations
       })
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
+    const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1468,9 +1488,25 @@ ${message.annotations
       ...pdfDocumentParts,
       {
         type: 'text',
-        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
+        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
       },
     ]
+  }
+
+  private buildWebSelectionPrompt(
+    selections: MentionableWebSelection[],
+  ): string {
+    if (selections.length === 0) {
+      return ''
+    }
+
+    return `## Selected web page snippets
+${selections
+  .map((selection) => {
+    const title = selection.title.trim() || selection.url
+    return `<web_selection url="${escapeXmlAttr(selection.url)}" title="${escapeXmlAttr(title)}">\n${escapeXmlText(selection.content)}\n</web_selection>`
+  })
+  .join('\n\n')}\n\n`
   }
 
   private buildAssistantQuotePrompt(

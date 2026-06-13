@@ -24,7 +24,11 @@ import type { PendingChatOpenPayload } from './features/chat/chatLeafSessionMana
 import { getConversationDisplayTitle } from './hooks/useChatHistory'
 import YoloPlugin from './main'
 import { ConversationOverrideSettings } from './types/conversation-settings.types'
-import { MentionableBlockData, MentionableImage } from './types/mentionable'
+import {
+  MentionableBlockData,
+  MentionableImage,
+  MentionableWebSelection,
+} from './types/mentionable'
 
 export class ChatView extends ItemView {
   private displayTitle = 'Yolo chat'
@@ -298,6 +302,11 @@ export class ChatView extends ItemView {
   syncSelectionToInput(selectedBlock: MentionableBlockData) {
     this.plugin.getChatLeafSessionManager().touchLeafInteracted(this.leaf)
     this.chatRef.current?.syncSelectionToInput(selectedBlock)
+  }
+
+  syncWebSelectionToInput(selection: MentionableWebSelection) {
+    this.plugin.getChatLeafSessionManager().touchLeafInteracted(this.leaf)
+    this.chatRef.current?.syncWebSelectionToInput(selection)
   }
 
   clearSelectionFromChat() {

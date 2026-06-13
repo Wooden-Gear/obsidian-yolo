@@ -9,7 +9,6 @@ import { useCallback } from 'react'
 import { useLanguage } from '../../../contexts/language-context'
 import { useSettings } from '../../../contexts/settings-context'
 import { ObsidianSetting } from '../../common/ObsidianSetting'
-import { ObsidianTextInput } from '../../common/ObsidianTextInput'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 
 export function BrowserIntegrationSection() {
@@ -29,32 +28,6 @@ export function BrowserIntegrationSection() {
           })
         } catch (error) {
           console.error('Failed to update browser inject toggle', error)
-        }
-      })()
-    },
-    [settings, setSettings],
-  )
-
-  const handleMaxCharsChange = useCallback(
-    (raw: string) => {
-      const parsed = Number.parseInt(raw, 10)
-      if (!Number.isFinite(parsed) || parsed < 0) return
-      const clamped = Math.min(parsed, 20000)
-      if (clamped === settings.browser.injectSelectionMaxChars) return
-      void (async () => {
-        try {
-          await setSettings({
-            ...settings,
-            browser: {
-              ...settings.browser,
-              injectSelectionMaxChars: clamped,
-            },
-          })
-        } catch (error) {
-          console.error(
-            'Failed to update browser injectSelectionMaxChars',
-            error,
-          )
         }
       })()
     },
@@ -99,21 +72,6 @@ export function BrowserIntegrationSection() {
         <ObsidianToggle
           value={settings.browser.injectActivePageContext}
           onChange={handleInjectToggle}
-        />
-      </ObsidianSetting>
-
-      <ObsidianSetting
-        name={t('settings.browser.selectionMaxTitle', 'Selected text limit')}
-        desc={t(
-          'settings.browser.selectionMaxDesc',
-          'Maximum selected text to include from the page. Set to 0 to never include selected text.',
-        )}
-      >
-        <ObsidianTextInput
-          type="number"
-          value={String(settings.browser.injectSelectionMaxChars)}
-          onChange={handleMaxCharsChange}
-          disabled={!settings.browser.injectActivePageContext}
         />
       </ObsidianSetting>
 

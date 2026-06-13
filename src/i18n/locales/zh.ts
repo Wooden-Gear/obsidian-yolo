@@ -422,8 +422,7 @@ export const zh: TranslationKeys = {
       builtinWebScrapeLabel: '抓取网页',
       builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文',
       builtinBrowserReadPageLabel: '读取打开的网页',
-      builtinBrowserReadPageDesc:
-        '读取 Obsidian 中已打开网页的渲染后内容',
+      builtinBrowserReadPageDesc: '读取 Obsidian 中已打开网页的渲染后内容',
       builtinWebOpsLabel: '联网搜索工具集',
       builtinWebOpsDesc: '网页搜索与正文抓取',
       builtinJsEvalLabel: 'JavaScript 执行',
@@ -1067,10 +1066,7 @@ export const zh: TranslationKeys = {
       title: '网页集成',
       injectActiveTitle: '当前网页上下文',
       injectActiveDesc:
-        '发送消息时，附带当前网页的简要信息，例如网址、标题、页面长度、滚动位置，以及页面里的选中文字。',
-      selectionMaxTitle: '选中文字上限',
-      selectionMaxDesc:
-        '从网页中附带的选中文字最大长度。设为 0 表示不附带选中文字。',
+        '发送消息时，附带当前网页的简要信息，例如网址、标题、页面长度和滚动位置。',
       retainLastViewedTitle: '保留最近网页上下文',
       retainLastViewedDesc:
         '当前标签页不是网页时，仍附带最近打开网页的简要上下文。',
