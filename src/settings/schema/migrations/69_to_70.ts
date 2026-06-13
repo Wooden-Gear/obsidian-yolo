@@ -20,9 +20,12 @@ export const migrateFrom69To70: SettingMigration['migrate'] = (data) => {
       if (!isRecord(assistant)) return assistant
 
       const toolPreferences = isRecord(assistant.toolPreferences)
-        ? { ...assistant.toolPreferences }
+        ? Object.fromEntries(
+            Object.entries(assistant.toolPreferences).filter(
+              ([key]) => key !== BROWSER_READ_PAGE_TOOL_FQN,
+            ),
+          )
         : {}
-      delete toolPreferences[BROWSER_READ_PAGE_TOOL_FQN]
 
       return {
         ...assistant,

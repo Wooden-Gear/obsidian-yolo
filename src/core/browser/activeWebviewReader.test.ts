@@ -1,5 +1,8 @@
 import type { ActiveWebviewHandle, WebviewLike } from './activeWebviewProbe'
-import { BrowserReadFailure, readActiveWebviewPage } from './activeWebviewReader'
+import {
+  BrowserReadFailure,
+  readActiveWebviewPage,
+} from './activeWebviewReader'
 
 const buildHandle = (webview: Partial<WebviewLike>): ActiveWebviewHandle => ({
   pageId: 'page_abcdefgh_1234abcd',

@@ -520,10 +520,7 @@ const sliceLinesForFsReadOperation = (
     }
   }
 
-  const startIndex = Math.min(
-    Math.max(operation.startLine - 1, 0),
-    totalLines,
-  )
+  const startIndex = Math.min(Math.max(operation.startLine - 1, 0), totalLines)
   const endExclusive = Math.min(
     totalLines,
     operation.endLine ?? startIndex + operation.maxLines,

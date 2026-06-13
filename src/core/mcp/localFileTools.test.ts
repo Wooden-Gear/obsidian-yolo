@@ -83,9 +83,7 @@ import { extractPdfText } from '../../utils/pdf/extractPdfText'
 import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import { runSubagent } from '../agent/subagent/runner'
-import {
-  findWebviewHandleByPageId,
-} from '../browser/activeWebviewProbe'
+import { findWebviewHandleByPageId } from '../browser/activeWebviewProbe'
 import { readActiveWebviewPage } from '../browser/activeWebviewReader'
 import type { RAGEngine } from '../rag/ragEngine'
 
@@ -735,7 +733,9 @@ describe('local fs tool action helpers', () => {
       })
 
       const result = await callLocalFileTool({
-        app: { vault: { getFileByPath: jest.fn().mockReturnValue(null) } } as unknown as App,
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
         toolName: 'fs_read',
         args: {
           paths: [pagePath],
@@ -797,7 +797,9 @@ describe('local fs tool action helpers', () => {
       })
 
       const result = await callLocalFileTool({
-        app: { vault: { getFileByPath: jest.fn().mockReturnValue(null) } } as unknown as App,
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
         toolName: 'fs_read',
         args: {
           paths: [pagePath],
@@ -831,7 +833,9 @@ describe('local fs tool action helpers', () => {
       })
 
       const result = await callLocalFileTool({
-        app: { vault: { getFileByPath: jest.fn().mockReturnValue(null) } } as unknown as App,
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
         toolName: 'fs_read',
         args: {
           paths: [pagePath],
@@ -853,7 +857,9 @@ describe('local fs tool action helpers', () => {
       jest.mocked(findWebviewHandleByPageId).mockReturnValue(null)
 
       const result = await callLocalFileTool({
-        app: { vault: { getFileByPath: jest.fn().mockReturnValue(null) } } as unknown as App,
+        app: {
+          vault: { getFileByPath: jest.fn().mockReturnValue(null) },
+        } as unknown as App,
         toolName: 'fs_read',
         args: {
           paths: [pagePath],
