@@ -405,15 +405,18 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.slice(0, maxLength - 1)}...`
 }
 
-const BROWSER_READ_PAGE_DISPLAY_MAX_CHARS = 12000
-const LARGE_OUTPUT_RISK_LOCAL_TOOLS = new Set(['browser_read_page'])
+const FS_READ_BROWSER_DISPLAY_MAX_CHARS = 12000
 
-const isLargeOutputRiskToolRequest = (request: ToolRequestLike): boolean => {
+const shouldTruncateToolResultDisplay = (
+  request: ToolRequestLike,
+  text: string,
+): boolean => {
   try {
     const { serverName, toolName } = parseToolName(request.name)
     return (
       serverName === getLocalFileToolServerName() &&
-      LARGE_OUTPUT_RISK_LOCAL_TOOLS.has(toolName)
+      toolName === 'fs_read' &&
+      text.includes('browser://')
     )
   } catch {
     return false
@@ -433,16 +436,16 @@ const getToolResultDisplayText = ({
 
   const text = response.data.text
   if (
-    !isLargeOutputRiskToolRequest(request) ||
-    text.length <= BROWSER_READ_PAGE_DISPLAY_MAX_CHARS
+    !shouldTruncateToolResultDisplay(request, text) ||
+    text.length <= FS_READ_BROWSER_DISPLAY_MAX_CHARS
   ) {
     return text
   }
 
-  const hiddenChars = text.length - BROWSER_READ_PAGE_DISPLAY_MAX_CHARS
+  const hiddenChars = text.length - FS_READ_BROWSER_DISPLAY_MAX_CHARS
   return `${text.slice(
     0,
-    BROWSER_READ_PAGE_DISPLAY_MAX_CHARS,
+    FS_READ_BROWSER_DISPLAY_MAX_CHARS,
   )}\n\n[Display shortened by ${hiddenChars} characters. The assistant received the full tool result.]`
 }
 

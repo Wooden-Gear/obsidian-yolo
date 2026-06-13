@@ -33,7 +33,6 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 
 /**
  * local tool 中需要 require_approval 的工具名集合。
- * browser_read_page 默认要求审批：可能读取用户登录态网页（隐私敏感）。
  * JS 隔离执行默认 full_access：未开启任何扩展能力时只能读已注入的 $content / $note
  * 等快照、无网络、无 $db、无外部脚本，与其他只读工具风险相当。一旦在 Agent 配置中
  * 打开 allowFetch / allowVaultRead / allowDbQuery / allowExternalScripts，
@@ -43,7 +42,6 @@ const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   'terminal_command',
-  'browser_read_page',
 ])
 
 const JS_SANDBOX_TOOL_FQN = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`

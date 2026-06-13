@@ -1,13 +1,13 @@
 /**
- * Read the rendered contents of the user's active webview.
+ * Read the rendered contents of an open Obsidian webview.
  *
- * Used by the `browser_read_page` tool after it resolves a required
- * `<page_id>` from the passive `<browser_context>` injection.
+ * Used by `fs_read` when the path uses the `browser://` prefix after
+ * resolving a `<page_id>` from the passive `<browser_context>` injection.
  *
  * Implementation notes:
  *   - We run an extraction script inside the webview via `executeJavaScript`.
- *     The script clones a region of the DOM, strips sensitive form inputs,
- *     and returns HTML + headings/links + redaction counts.
+ *     The script clones the document body, strips sensitive form inputs,
+ *     and returns HTML + key visible info + redaction counts.
  *   - HTML→markdown happens on the host via Obsidian's `htmlToMarkdown` to
  *     match `web_scrape`'s output format.
  *   - Cookies / localStorage / sessionStorage are NEVER read — they only live
@@ -23,12 +23,7 @@ import type {
 } from './activeWebviewProbe'
 import { isWebviewLoading } from './activeWebviewProbe'
 
-export type BrowserReadScope = 'viewport' | 'document' | 'selection'
-export type BrowserReadFormat =
-  | 'readable'
-  | 'raw_html'
-  | 'links_and_headings'
-  | 'key_visible_info'
+export type BrowserReadFormat = 'readable' | 'key_visible_info'
 
 export type BrowserReadRedaction = {
   kind: 'password' | 'hidden_input' | 'file_input'
@@ -43,20 +38,12 @@ export type BrowserReadResult = {
   sourceViewType: SupportedViewType
   url: string
   title: string
-  scope: BrowserReadScope
   format: BrowserReadFormat
   loading: boolean
   capturedAt: number
   text?: string
   headings?: BrowserReadHeading[]
   links?: BrowserReadLink[]
-  range?: {
-    startChar: number
-    endChar: number
-    totalChars: number
-    nextStartChar?: number
-  }
-  truncated?: { totalChars: number; returnedChars: number }
   partial?: { reason: 'page_loading'; message: string }
   redactions: BrowserReadRedaction[]
 }
@@ -77,8 +64,6 @@ export class BrowserReadFailure extends Error {
   }
 }
 
-export const DEFAULT_BROWSER_READ_MAX_CHARS = 20000
-export const MAX_BROWSER_READ_MAX_CHARS = 500000
 const DEFAULT_EXTRACTION_TIMEOUT_MS = 5000
 const LOADING_EXTRACTION_TIMEOUT_MS = 750
 
@@ -116,60 +101,12 @@ const isRawExtractionResult = (
 // Note: the script body is embedded as a string template. Keep it
 // self-contained and JSON-safe — it must serialize and run inside the
 // remote Electron context.
-const EXTRACTION_SCRIPT = `((scope) => {
+const EXTRACTION_SCRIPT = `(() => {
   const doc = document;
   const counts = { password: 0, hidden_input: 0, file_input: 0 };
 
-  const intersectsViewport = (el) => {
-    const rect = el.getBoundingClientRect();
-    const vh = window.innerHeight || doc.documentElement.clientHeight || 0;
-    const vw = window.innerWidth || doc.documentElement.clientWidth || 0;
-    return rect.bottom >= 0 && rect.top <= vh && rect.right >= 0 && rect.left <= vw;
-  };
-
-  const isContentElement = (el) => {
-    const tag = el.tagName;
-    return /^(ARTICLE|SECTION|MAIN|P|LI|PRE|CODE|BLOCKQUOTE|TD|TH|CAPTION|H[1-6]|FIGCAPTION|SUMMARY|DT|DD|A|BUTTON|LABEL|TEXTAREA|INPUT)$/.test(tag);
-  };
-
-  const buildViewportWrapper = () => {
-    const wrapper = doc.createElement('div');
-    const root = doc.body || doc.documentElement;
-    if (!root) return wrapper;
-    const visibleNodes = [];
-    const walk = (el) => {
-      if (!el || el.nodeType !== 1) return false;
-      if (/^(SCRIPT|STYLE|NOSCRIPT|META|LINK)$/.test(el.tagName)) return false;
-      if (!intersectsViewport(el)) return false;
-      let childIncluded = false;
-      Array.from(el.children || []).forEach((child) => {
-        childIncluded = walk(child) || childIncluded;
-      });
-      const text = (el.innerText || el.textContent || '').trim();
-      const includeSelf = !childIncluded && text && isContentElement(el);
-      if (includeSelf) visibleNodes.push(el.cloneNode(true));
-      return childIncluded || includeSelf;
-    };
-    Array.from(root.children || []).forEach((child) => walk(child));
-    visibleNodes.forEach((node) => wrapper.appendChild(node));
-    return wrapper;
-  };
-
-  const buildWrapper = () => {
-    const sel = window.getSelection ? window.getSelection() : null;
-    if (scope === 'selection') {
-      const wrapper = doc.createElement('div');
-      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-        wrapper.appendChild(sel.getRangeAt(0).cloneContents());
-      }
-      return wrapper;
-    }
-    if (scope === 'viewport') return buildViewportWrapper();
-    const root = doc.body || doc.documentElement;
-    return root ? root.cloneNode(true) : doc.createElement('div');
-  };
-
-  const cloned = buildWrapper();
+  const root = doc.body || doc.documentElement;
+  const cloned = root ? root.cloneNode(true) : doc.createElement('div');
 
   const removeMatching = (selector, key) => {
     cloned.querySelectorAll(selector).forEach((el) => {
@@ -202,12 +139,8 @@ const EXTRACTION_SCRIPT = `((scope) => {
     .join(' ')
     .replace(/\\s+/g, ' ')
     .trim();
-  const keyRoot = scope === 'document'
-    ? (doc.body || doc.documentElement || cloned)
-    : cloned;
-  const shouldCheckLiveVisibility = keyRoot !== cloned;
+  const keyRoot = doc.body || doc.documentElement || cloned;
   const isVisibleForKeyInfo = (el) => {
-    if (!shouldCheckLiveVisibility) return true;
     if (!el || el.nodeType !== 1) return false;
     if (el.closest('[hidden],[aria-hidden="true"]')) return false;
     const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
@@ -337,20 +270,7 @@ const EXTRACTION_SCRIPT = `((scope) => {
     links: links,
     counts: counts,
   };
-})`
-
-const assertBrowserReadScope = (scope: string): BrowserReadScope => {
-  if (scope === 'viewport' || scope === 'document' || scope === 'selection') {
-    return scope
-  }
-  throw new BrowserReadFailure(
-    'extraction_failed',
-    `Invalid browser read scope: ${scope}`,
-  )
-}
-
-const buildScript = (scope: BrowserReadScope): string =>
-  `(${EXTRACTION_SCRIPT})(${JSON.stringify(assertBrowserReadScope(scope))})`
+})()`
 
 const withTimeout = <T>(
   promise: Promise<T>,
@@ -400,33 +320,6 @@ const withTimeout = <T>(
   })
 }
 
-const truncate = (
-  text: string,
-  maxChars: number,
-  startChar: number,
-): {
-  value: string
-  range: BrowserReadResult['range']
-  truncated?: { totalChars: number; returnedChars: number }
-} => {
-  const totalChars = text.length
-  const start = Math.max(0, Math.min(startChar, totalChars))
-  const end = Math.min(start + maxChars, totalChars)
-  const sliced = text.slice(start, end)
-  const range = {
-    startChar: start,
-    endChar: end,
-    totalChars,
-    nextStartChar: end < totalChars ? end : undefined,
-  }
-  if (end >= totalChars && start === 0) return { value: sliced, range }
-  return {
-    value: sliced,
-    range,
-    truncated: { totalChars, returnedChars: sliced.length },
-  }
-}
-
 const buildRedactions = (
   counts: RawExtractionResult['counts'],
 ): BrowserReadRedaction[] => {
@@ -441,21 +334,16 @@ const buildRedactions = (
 }
 
 /**
- * Read the active webview's rendered page contents. Always reads via
- * `executeJavaScript` against a supported webview leaf (caller is
- * responsible for resolving the handle first via
- * `findActiveWebviewHandle`).
+ * Read an open webview's rendered page contents. Always reads the full
+ * document body via `executeJavaScript` (caller resolves the handle first).
  *
  * Throws `BrowserReadFailure` on timeout / extraction error. Returns null
- * only when the active view has no usable URL and no rendered content yet.
+ * only when the view has no usable URL and no rendered content yet.
  */
 export async function readActiveWebviewPage(
   handle: ActiveWebviewHandle,
   options: {
-    scope: BrowserReadScope
     format: BrowserReadFormat
-    maxChars: number
-    startChar?: number
     signal?: AbortSignal
     executionTimeoutMs?: number
   },
@@ -464,7 +352,7 @@ export async function readActiveWebviewPage(
   let raw: unknown
   try {
     raw = await withTimeout(
-      handle.webview.executeJavaScript(buildScript(options.scope)),
+      handle.webview.executeJavaScript(EXTRACTION_SCRIPT),
       options.executionTimeoutMs ??
         (loading
           ? LOADING_EXTRACTION_TIMEOUT_MS
@@ -485,7 +373,6 @@ export async function readActiveWebviewPage(
         sourceViewType: handle.viewType,
         url,
         title,
-        scope: options.scope,
         format: options.format,
         loading,
         capturedAt: Date.now(),
@@ -526,69 +413,29 @@ export async function readActiveWebviewPage(
     return null
   }
 
-  const maxChars = Math.max(
-    1,
-    Math.min(options.maxChars, MAX_BROWSER_READ_MAX_CHARS),
-  )
-  const startChar = Math.max(0, Math.floor(options.startChar ?? 0))
-
   const baseResult: BrowserReadResult = {
     source: handle.source,
     sourceViewType: handle.viewType,
     url: raw.url,
     title: raw.title,
-    scope: options.scope,
     format: options.format,
     loading,
     capturedAt: Date.now(),
     redactions: buildRedactions(raw.counts),
-  }
-
-  if (options.format === 'links_and_headings') {
-    return {
-      ...baseResult,
-      headings: raw.headings,
-      links: raw.links,
-    }
+    headings: raw.headings,
+    links: raw.links,
   }
 
   if (options.format === 'key_visible_info') {
-    const { value, range, truncated } = truncate(
-      raw.keyInfo,
-      maxChars,
-      startChar,
-    )
     return {
       ...baseResult,
-      text: value,
-      headings: raw.headings,
-      links: raw.links,
-      range,
-      truncated,
+      text: raw.keyInfo,
     }
   }
 
-  if (options.format === 'raw_html') {
-    const { value, range, truncated } = truncate(raw.html, maxChars, startChar)
-    return {
-      ...baseResult,
-      text: value,
-      headings: raw.headings,
-      links: raw.links,
-      range,
-      truncated,
-    }
-  }
-
-  // 'readable' (default): markdownify then truncate
-  const markdown = htmlToMarkdown(raw.html)
-  const { value, range, truncated } = truncate(markdown, maxChars, startChar)
+  // 'readable' (default): markdownify full page
   return {
     ...baseResult,
-    text: value,
-    headings: raw.headings,
-    links: raw.links,
-    range,
-    truncated,
+    text: htmlToMarkdown(raw.html),
   }
 }

@@ -34,7 +34,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descKey: 'settings.agent.builtinFsReadDesc',
     labelFallback: 'Read File',
     descFallback:
-      'Read vault files by path with either full-file or targeted line-range operations.',
+      'Read vault files, skills, or open web pages by path with full-file or line-range operations.',
   },
   context_prune_tool_results: {
     labelKey: 'settings.agent.builtinContextPruneToolResultsLabel',
@@ -116,13 +116,6 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descFallback:
       'Fetch the full content of a single URL through a configured search provider.',
   },
-  browser_read_page: {
-    labelKey: 'settings.agent.builtinBrowserReadPageLabel',
-    descKey: 'settings.agent.builtinBrowserReadPageDesc',
-    labelFallback: 'Read Open Web Page',
-    descFallback:
-      'Read rendered content from a supported Obsidian web page that is already open.',
-  },
   js_eval: {
     labelKey: 'settings.agent.builtinJsEvalLabel',
     descKey: 'settings.agent.builtinJsEvalDesc',
@@ -185,7 +178,6 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   ask_user_question: 'context',
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
-  browser_read_page: 'external',
   js_eval: 'external',
   terminal_command: 'external',
   delegate_subagent: 'external',
@@ -205,7 +197,6 @@ const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
   context: [],
   external: [
     WEB_OPS_GROUP_TOOL_NAME,
-    'browser_read_page',
     'js_eval',
     'terminal_command',
     'delegate_subagent',

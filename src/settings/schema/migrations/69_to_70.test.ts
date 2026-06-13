@@ -15,30 +15,7 @@ describe('migrateFrom69To70', () => {
     expect(result.browser).toBeUndefined()
   })
 
-  it('adds the browser read page tool preference to existing assistants', () => {
-    const result = migrateFrom69To70({
-      version: 69,
-      assistants: [
-        {
-          id: 'agent-1',
-          toolPreferences: {},
-        },
-      ],
-    })
-
-    const assistants = result.assistants as Array<Record<string, unknown>>
-    const preferences = assistants[0].toolPreferences as Record<
-      string,
-      Record<string, unknown>
-    >
-    expect(preferences['yolo_local__browser_read_page']).toEqual({
-      enabled: true,
-      approvalMode: 'require_approval',
-      disclosureMode: 'always',
-    })
-  })
-
-  it('preserves existing browser read page tool preferences', () => {
+  it('removes stale browser_read_page tool preferences from assistants', () => {
     const result = migrateFrom69To70({
       version: 69,
       assistants: [
@@ -46,9 +23,14 @@ describe('migrateFrom69To70', () => {
           id: 'agent-1',
           toolPreferences: {
             yolo_local__browser_read_page: {
-              enabled: false,
+              enabled: true,
+              approvalMode: 'require_approval',
+              disclosureMode: 'always',
+            },
+            yolo_local__fs_read: {
+              enabled: true,
               approvalMode: 'full_access',
-              disclosureMode: 'on_demand',
+              disclosureMode: 'always',
             },
           },
         },
@@ -60,10 +42,11 @@ describe('migrateFrom69To70', () => {
       string,
       Record<string, unknown>
     >
-    expect(preferences['yolo_local__browser_read_page']).toEqual({
-      enabled: false,
+    expect(preferences['yolo_local__browser_read_page']).toBeUndefined()
+    expect(preferences['yolo_local__fs_read']).toEqual({
+      enabled: true,
       approvalMode: 'full_access',
-      disclosureMode: 'on_demand',
+      disclosureMode: 'always',
     })
   })
 })

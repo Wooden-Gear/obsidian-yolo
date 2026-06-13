@@ -336,8 +336,6 @@ export type TranslationKeys = {
       builtinWebSearchDesc?: string
       builtinWebScrapeLabel?: string
       builtinWebScrapeDesc?: string
-      builtinBrowserReadPageLabel?: string
-      builtinBrowserReadPageDesc?: string
       builtinWebOpsLabel?: string
       builtinWebOpsDesc?: string
       builtinJsEvalLabel?: string

@@ -419,7 +419,8 @@ export const it: TranslationKeys = {
       builtinFsSearchLabel: 'Cerca nel vault',
       builtinFsSearchDesc: 'Cerca file e contenuti nel vault',
       builtinFsReadLabel: 'Leggi',
-      builtinFsReadDesc: 'Leggi file del vault',
+      builtinFsReadDesc:
+        'Leggi file del vault, skill o pagine web aperte (browser://)',
       builtinContextPruneToolResultsLabel: 'Pota risultati strumenti',
       builtinContextPruneToolResultsDesc:
         'Escludi i risultati storici degli strumenti dal contesto futuro. Nota: questo strumento può invalidare la cache del prompt e aumentare il costo delle richieste.',
@@ -456,9 +457,6 @@ export const it: TranslationKeys = {
       builtinWebScrapeLabel: 'Scrape web',
       builtinWebScrapeDesc:
         'Recupera il contenuto completo di un singolo URL tramite il provider configurato.',
-      builtinBrowserReadPageLabel: 'Leggi webview aperta',
-      builtinBrowserReadPageDesc:
-        'Legge contenuti renderizzati da una pagina web gia aperta in Obsidian.',
       builtinWebOpsLabel: 'Set strumenti ricerca web',
       builtinWebOpsDesc: 'Ricerca web e scraping di pagine',
       builtinJsEvalLabel: 'Esecuzione JavaScript',
@@ -543,7 +541,7 @@ export const it: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Capacità Agent',
       focusSyncTitle: 'Sincronizzazione del focus',
       focusSyncDesc:
-        "Se abilitato, l'AI percepisce dove ti trovi nella nota, nel PDF o nella pagina web che stai visualizzando. Il contenuto completo della pagina web richiede lo strumento browser_read_page.",
+        "Se abilitato, l'AI percepisce dove ti trovi nella nota, nel PDF o nella pagina web che stai visualizzando. Il contenuto completo della pagina web si legge con fs_read tramite un percorso browser://.",
       timeContextTitle: 'Consapevolezza dell ora corrente',
       timeContextDesc:
         'Indica al modello l ora corrente all invio di ogni messaggio.',

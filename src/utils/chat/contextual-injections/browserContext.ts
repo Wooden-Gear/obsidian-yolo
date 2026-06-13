@@ -4,8 +4,8 @@
  * Mirrors how `<ide_selection>` / `<editor-snapshot>` work for vault notes:
  * when the user's active leaf is a supported webview (core Web Viewer or
  * .url WebView Opener) and they send a chat message, the model is told the
- * page's URL/title and scroll position — without the model having to call any
- * browser_* tool.
+ * page's URL/title and scroll position — without the model having to call
+ * fs_read.
  *
  * Body is constructed at render time so the URL/title/metadata reflect the
  * webview's state at request build time, not at chat-input submit time.
