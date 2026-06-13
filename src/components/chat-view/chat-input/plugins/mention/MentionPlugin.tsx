@@ -51,6 +51,7 @@ import {
   serializeMentionable,
 } from '../../../../../utils/chat/mentionable'
 import { SearchableMentionable } from '../../../../../utils/fuzzy-search'
+import { CHAT_MODES, type ChatMode } from '../../ChatModeSelect'
 import { getMentionableIcon } from '../../utils/get-metionable-icon'
 import { MenuOption, MenuTextMatch } from '../shared/LexicalMenu'
 import {
@@ -131,7 +132,7 @@ type MentionEntryOptionType =
   | 'folder'
   | 'mode'
   | 'model'
-type MentionChatMode = 'chat' | 'agent'
+type MentionChatMode = ChatMode
 type MentionMenuTransitionDirection = 'none' | 'forward' | 'back'
 
 type MentionTypeaheadOptionPayload =
@@ -320,11 +321,13 @@ function MentionsTypeaheadMenuItem({
     )
   } else if (option.payload.kind === 'mode') {
     iconNode =
-      option.payload.mode === 'agent' ? (
+      option.payload.mode === 'agent-full' ? (
         <InfinityIcon
           size={14}
           className="yolo-smart-space-mention-option-icon"
         />
+      ) : option.payload.mode === 'agent' ? (
+        <Bot size={14} className="yolo-smart-space-mention-option-icon" />
       ) : (
         <MessageSquare
           size={14}
@@ -485,8 +488,12 @@ export default function NewMentionsPlugin({
   // 'right' = 默认右侧；'left' = 空间不够时翻到左侧；'hidden' = 两侧都不够，不渲染。
   const [subSide, setSubSide] = useState<'right' | 'left' | 'hidden'>('right')
   const { t } = useLanguage()
-  const mentionableUnitLabel = useMemo(
-    () => t('common.characters', 'chars'),
+  const mentionableUnitLabels = useMemo(
+    () => ({
+      characters: t('common.characters', 'chars'),
+      words: t('common.words', 'words'),
+      wordsCharacters: t('common.wordsCharacters', 'words/chars'),
+    }),
     [t],
   )
 
@@ -607,18 +614,25 @@ export default function NewMentionsPlugin({
 
       if (entryType === 'mode') {
         const modeOptions: MentionChatMode[] = allowAgentModeOption
-          ? ['chat', 'agent']
-          : ['chat']
+          ? [...CHAT_MODES]
+          : ['ask']
         return modeOptions
           .map((mode) => {
             const label =
-              mode === 'agent'
-                ? t('chatMode.agent', 'Agent')
-                : t('chatMode.chat', 'Chat')
+              mode === 'agent-full'
+                ? t('chatMode.agentFull', 'Agent (YOLO)')
+                : mode === 'agent'
+                  ? t('chatMode.agent', 'Agent')
+                  : t('chatMode.ask', 'Ask')
             const subtitle =
-              mode === 'agent'
-                ? t('chatMode.agentDesc', 'Enable tool calling capabilities')
-                : t('chatMode.chatDesc', 'Normal conversation mode')
+              mode === 'agent-full'
+                ? t(
+                    'chatMode.agentFullDesc',
+                    'Auto-approve tool calls for complex tasks',
+                  )
+                : mode === 'agent'
+                  ? t('chatMode.agentDesc', 'Enable tool calling capabilities')
+                  : t('chatMode.askDesc', 'Ask, refine, create')
             return { mode, label, subtitle }
           })
           .filter((option) => {
@@ -635,7 +649,7 @@ export default function NewMentionsPlugin({
                 mode: option.mode,
                 label: option.label,
                 subtitle: option.subtitle,
-                isCurrent: option.mode === (currentChatMode ?? 'chat'),
+                isCurrent: option.mode === (currentChatMode ?? 'ask'),
               }),
           )
       }
@@ -940,7 +954,7 @@ export default function NewMentionsPlugin({
 
           const mentionNode = $createMentionNode(
             getMentionableName(currentFileMentionable, {
-              unitLabel: mentionableUnitLabel,
+              unitLabels: mentionableUnitLabels,
               currentFileLabel: t(
                 'chat.mentionMenu.entryCurrentFile',
                 '当前文件',
@@ -1015,7 +1029,7 @@ export default function NewMentionsPlugin({
 
       const mentionNode = $createMentionNode(
         getMentionableName(selectedOption.payload.mentionable, {
-          unitLabel: mentionableUnitLabel,
+          unitLabels: mentionableUnitLabels,
         }),
         serializeMentionable(selectedOption.payload.mentionable),
       )
@@ -1033,7 +1047,7 @@ export default function NewMentionsPlugin({
       animateMenuContent,
       app,
       mentionDisplayMode,
-      mentionableUnitLabel,
+      mentionableUnitLabels,
       onSelectAssistant,
       onSelectChatMode,
       onSelectMentionable,

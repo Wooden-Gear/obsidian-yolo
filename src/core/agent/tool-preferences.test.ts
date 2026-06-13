@@ -1,16 +1,28 @@
 import {
+  getAssistantToolApprovalMode,
   getDefaultEnabledForTool,
   getEnabledAssistantToolNames,
   getExplicitlyEnabledAssistantToolNames,
   isAssistantToolEnabled,
+  pruneOrphanedAssistantToolPreferences,
+  renameAssistantToolPreferencesServer,
 } from './tool-preferences'
+
+const JS_SANDBOX_FQN = 'yolo_local__js_eval'
 
 describe('tool-preferences defaults', () => {
   describe('getDefaultEnabledForTool', () => {
-    it('returns true for built-in tools not in the deny-list', () => {
+    it('returns true for user-facing built-in tools not in the deny-list', () => {
       expect(getDefaultEnabledForTool('yolo_local__fs_read')).toBe(true)
+      expect(getDefaultEnabledForTool('yolo_local__fs_edit')).toBe(true)
+    })
+
+    it('returns false for the protocol-only schema loader', () => {
+      // load_tool_schemas is no longer user-configurable; it's injected by
+      // the runtime when on-demand disclosure is active. Treat it as never
+      // a default for per-agent preferences.
       expect(getDefaultEnabledForTool('yolo_local__load_tool_schemas')).toBe(
-        true,
+        false,
       )
     })
 
@@ -21,6 +33,10 @@ describe('tool-preferences defaults', () => {
       expect(getDefaultEnabledForTool('yolo_local__context_compact')).toBe(
         false,
       )
+      expect(getDefaultEnabledForTool('yolo_local__delegate_subagent')).toBe(
+        false,
+      )
+      expect(getDefaultEnabledForTool('yolo_local__js_eval')).toBe(false)
     })
 
     it('returns false for third-party MCP tools', () => {
@@ -44,10 +60,13 @@ describe('tool-preferences defaults', () => {
   })
 
   describe('isAssistantToolEnabled', () => {
-    it('falls back to defaults for tools with no explicit preference', () => {
+    it('treats missing entries as disabled (single source of truth)', () => {
+      // toolPreferences is now the only signal — the v60→v61 migration is
+      // responsible for materializing every default-on built-in into the
+      // map, so reads do not silently fill in.
       const assistant = { toolPreferences: {}, enabledToolNames: [] }
       expect(isAssistantToolEnabled(assistant, 'yolo_local__fs_read')).toBe(
-        true,
+        false,
       )
       expect(
         isAssistantToolEnabled(assistant, 'yolo_local__context_compact'),
@@ -57,7 +76,7 @@ describe('tool-preferences defaults', () => {
       )
     })
 
-    it('explicit preferences override defaults', () => {
+    it('explicit preferences are honored', () => {
       expect(
         isAssistantToolEnabled(
           {
@@ -103,68 +122,46 @@ describe('tool-preferences defaults', () => {
       )
     })
 
-    it('handles null / undefined assistant', () => {
-      expect(isAssistantToolEnabled(null, 'yolo_local__fs_read')).toBe(true)
+    it('handles null / undefined assistant as disabled', () => {
+      expect(isAssistantToolEnabled(null, 'yolo_local__fs_read')).toBe(false)
       expect(isAssistantToolEnabled(undefined, 'yolo_local__fs_read')).toBe(
-        true,
-      )
-      expect(isAssistantToolEnabled(null, 'yolo_local__context_compact')).toBe(
         false,
       )
     })
   })
 
   describe('getEnabledAssistantToolNames', () => {
-    it('returns all default-on built-ins for a fresh assistant', () => {
-      const result = getEnabledAssistantToolNames({
-        toolPreferences: {},
-        enabledToolNames: [],
-      })
-      expect(result).toContain('yolo_local__fs_read')
-      expect(result).toContain('yolo_local__fs_edit')
-      expect(result).toContain('yolo_local__load_tool_schemas')
-      expect(result).not.toContain('yolo_local__context_prune_tool_results')
-      expect(result).not.toContain('yolo_local__context_compact')
-    })
-
-    it('explicit disable removes a tool from the result', () => {
+    it('returns only tools with explicit enabled:true (no fill-in)', () => {
       const result = getEnabledAssistantToolNames({
         toolPreferences: {
+          yolo_local__fs_read: { enabled: true },
           yolo_local__fs_edit: { enabled: false },
         },
         enabledToolNames: [],
       })
-      expect(result).toContain('yolo_local__fs_read')
-      expect(result).not.toContain('yolo_local__fs_edit')
+      expect(result).toEqual(['yolo_local__fs_read'])
     })
 
-    it('explicit enable for a deny-listed tool brings it back', () => {
-      const result = getEnabledAssistantToolNames({
-        toolPreferences: {
-          yolo_local__context_compact: { enabled: true },
-        },
-        enabledToolNames: [],
-      })
-      expect(result).toContain('yolo_local__context_compact')
+    it('returns empty for a fresh assistant with no preferences', () => {
+      // The migration is responsible for seeding entries; reads do not
+      // invent enablement.
+      expect(
+        getEnabledAssistantToolNames({
+          toolPreferences: {},
+          enabledToolNames: [],
+        }),
+      ).toEqual([])
     })
 
-    it('includes explicitly-enabled third-party tools alongside defaults', () => {
+    it('legacy enabledToolNames is promoted via the preferences merge', () => {
       const result = getEnabledAssistantToolNames({
-        toolPreferences: {
-          Gemini__get_all_tabs: { enabled: true },
-          Gemini__close_tab: { enabled: false },
-        },
-        enabledToolNames: [],
+        toolPreferences: {},
+        enabledToolNames: ['Gemini__get_all_tabs'],
       })
       expect(result).toContain('Gemini__get_all_tabs')
-      expect(result).not.toContain('Gemini__close_tab')
-      expect(result).toContain('yolo_local__fs_read')
     })
 
-    it('excludes all built-in tools when includeBuiltinTools is false', () => {
-      // Finding 1: the helper feeds persistence + display badges. Honoring
-      // `includeBuiltinTools` keeps the saved snapshot and "N tools" count in
-      // sync with what the runtime will actually expose.
+    it('excludes built-in tools when includeBuiltinTools is false', () => {
       const result = getEnabledAssistantToolNames({
         toolPreferences: {
           yolo_local__fs_read: { enabled: true },
@@ -174,22 +171,76 @@ describe('tool-preferences defaults', () => {
         includeBuiltinTools: false,
       })
       expect(result).not.toContain('yolo_local__fs_read')
-      expect(result).not.toContain('yolo_local__fs_edit')
       expect(result).toContain('Gemini__get_all_tabs')
     })
+  })
 
-    it('includes built-ins when includeBuiltinTools is true or undefined', () => {
-      const withFlag = getEnabledAssistantToolNames({
-        toolPreferences: {},
+  describe('getAssistantToolApprovalMode (js_eval global cap override)', () => {
+    const assistant = {
+      toolPreferences: {
+        [JS_SANDBOX_FQN]: {
+          enabled: true,
+          approvalMode: 'full_access' as const,
+        },
+      },
+      enabledToolNames: [],
+    }
+
+    it('keeps the saved full_access mode when no extension capability is on', () => {
+      expect(
+        getAssistantToolApprovalMode(assistant, JS_SANDBOX_FQN, {
+          jsSandboxSettings: {},
+        }),
+      ).toBe('full_access')
+    })
+
+    it('forces require_approval when any extension capability is on globally', () => {
+      for (const cap of [
+        'allowFetch',
+        'allowVaultRead',
+        'allowDbQuery',
+        'allowExternalScripts',
+      ] as const) {
+        expect(
+          getAssistantToolApprovalMode(assistant, JS_SANDBOX_FQN, {
+            jsSandboxSettings: { [cap]: true },
+          }),
+        ).toBe('require_approval')
+      }
+    })
+
+    it('does not override approval mode for other tools', () => {
+      const withFsRead = {
+        toolPreferences: {
+          ...assistant.toolPreferences,
+          yolo_local__fs_read: {
+            enabled: true,
+            approvalMode: 'full_access' as const,
+          },
+        },
         enabledToolNames: [],
-        includeBuiltinTools: true,
-      })
-      const withoutFlag = getEnabledAssistantToolNames({
-        toolPreferences: {},
-        enabledToolNames: [],
-      })
-      expect(withFlag).toContain('yolo_local__fs_read')
-      expect(withoutFlag).toContain('yolo_local__fs_read')
+      }
+      expect(
+        getAssistantToolApprovalMode(withFsRead, 'yolo_local__fs_read', {
+          jsSandboxSettings: { allowFetch: true },
+        }),
+      ).toBe('full_access')
+    })
+  })
+
+  describe('getAssistantToolApprovalMode defaults', () => {
+    it('allows subagent delegation to use the default full-access approval mode', () => {
+      expect(
+        getAssistantToolApprovalMode(
+          {
+            toolPreferences: {
+              yolo_local__delegate_subagent: { enabled: true },
+            },
+            enabledToolNames: [],
+          },
+          'yolo_local__delegate_subagent',
+        ),
+      ).toBe('full_access')
     })
   })
 
@@ -221,6 +272,115 @@ describe('tool-preferences defaults', () => {
       })
       expect(result).toContain('yolo_local__fs_read')
       expect(result).toContain('Gemini__get_all_tabs')
+    })
+  })
+
+  describe('pruneOrphanedAssistantToolPreferences', () => {
+    it('drops keys whose server is not in the known set', () => {
+      const result = pruneOrphanedAssistantToolPreferences(
+        {
+          toolPreferences: {
+            yolo_local__fs_read: {
+              enabled: true,
+              approvalMode: 'full_access' as const,
+            },
+            Gemini__click: {
+              enabled: true,
+              approvalMode: 'require_approval' as const,
+            },
+            github__list: {
+              enabled: true,
+              approvalMode: 'require_approval' as const,
+            },
+          },
+          enabledToolNames: [
+            'yolo_local__fs_read',
+            'Gemini__click',
+            'github__list',
+          ],
+        },
+        new Set(['yolo_local', 'github']),
+      )
+      expect(Object.keys(result.toolPreferences ?? {})).toEqual([
+        'yolo_local__fs_read',
+        'github__list',
+      ])
+      expect(result.enabledToolNames).toEqual([
+        'yolo_local__fs_read',
+        'github__list',
+      ])
+    })
+
+    it('returns the same reference when nothing changes', () => {
+      const input = {
+        toolPreferences: {
+          yolo_local__fs_read: {
+            enabled: true,
+            approvalMode: 'full_access' as const,
+          },
+        },
+        enabledToolNames: ['yolo_local__fs_read'],
+      }
+      expect(
+        pruneOrphanedAssistantToolPreferences(input, new Set(['yolo_local'])),
+      ).toBe(input)
+    })
+  })
+
+  describe('renameAssistantToolPreferencesServer', () => {
+    it('rewrites prefixes in both toolPreferences and enabledToolNames', () => {
+      const result = renameAssistantToolPreferencesServer(
+        {
+          toolPreferences: {
+            old__a: { enabled: true, approvalMode: 'full_access' as const },
+            old__b: {
+              enabled: false,
+              approvalMode: 'require_approval' as const,
+            },
+            yolo_local__fs_read: {
+              enabled: true,
+              approvalMode: 'full_access',
+            },
+          },
+          enabledToolNames: ['old__a', 'yolo_local__fs_read'],
+        },
+        'old',
+        'new',
+      )
+      expect(result.toolPreferences).toEqual({
+        new__a: { enabled: true, approvalMode: 'full_access' as const },
+        new__b: { enabled: false, approvalMode: 'require_approval' as const },
+        yolo_local__fs_read: {
+          enabled: true,
+          approvalMode: 'full_access' as const,
+        },
+      })
+      expect(result.enabledToolNames).toEqual(['new__a', 'yolo_local__fs_read'])
+    })
+
+    it('dedupes enabledToolNames when the rename collides with an existing entry', () => {
+      const result = renameAssistantToolPreferencesServer(
+        {
+          toolPreferences: {
+            old__a: { enabled: true, approvalMode: 'full_access' as const },
+            new__a: { enabled: false, approvalMode: 'full_access' as const },
+          },
+          enabledToolNames: ['old__a', 'new__a'],
+        },
+        'old',
+        'new',
+      )
+      expect(result.enabledToolNames).toEqual(['new__a'])
+    })
+
+    it('returns the same reference when oldName === newName', () => {
+      const input = {
+        toolPreferences: {
+          x__t: { enabled: true, approvalMode: 'full_access' as const },
+        },
+        enabledToolNames: ['x__t'],
+      }
+      expect(renameAssistantToolPreferencesServer(input, 'x', 'x')).toBe(input)
     })
   })
 })

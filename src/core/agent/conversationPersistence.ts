@@ -1,5 +1,6 @@
 import { App } from 'obsidian'
 
+import { DEFAULT_UNTITLED_CONVERSATION_TITLE } from '../../constants'
 import { ChatManager } from '../../database/json/chat/ChatManager'
 import { compactConversationMessagesForStorage } from '../../database/json/chat/promptSnapshotStore'
 import type { YoloSettings } from '../../settings/schema/setting.types'
@@ -12,7 +13,6 @@ import { normalizeChatConversationCompactionState } from '../../types/chat'
 import { ToolCallResponseStatus } from '../../types/tool-call.types'
 import { serializeMentionable } from '../../utils/chat/mentionable'
 
-const DEFAULT_UNTITLED_CONVERSATION_TITLE = '新对话'
 const CHAT_HISTORY_UPDATED_EVENT = 'yolo:chat-history-updated'
 
 const serializeChatMessage = (message: ChatMessage): SerializedChatMessage => {
@@ -28,6 +28,7 @@ const serializeChatMessage = (message: ChatMessage): SerializedChatMessage => {
         selectedSkills: message.selectedSkills ?? [],
         selectedModelIds: message.selectedModelIds ?? [],
         reasoningLevel: message.reasoningLevel,
+        timeContext: message.timeContext,
       }
     case 'assistant':
       return {
@@ -71,6 +72,8 @@ const serializeChatMessage = (message: ChatMessage): SerializedChatMessage => {
         metadata: message.metadata,
       }
     case 'external_agent_result':
+    case 'subagent_result':
+    case 'terminal_command_result':
       return message
   }
 }

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '../../contexts/language-context'
 import type { AgentConversationRunSummary } from '../../core/agent/service'
 import type { ChatConversationMetadata } from '../../database/json/chat/types'
+import { getConversationDisplayTitle } from '../../hooks/useChatHistory'
 import { useChatManager } from '../../hooks/useJsonManagers'
 import type { SerializedChatMessage } from '../../types/chat'
 import type { ContentPart } from '../../types/llm/request'
@@ -21,6 +22,9 @@ import { getNodeWindow } from '../../utils/dom/window-context'
 import { YoloPopoverContent } from '../common/popover'
 
 import { editorStateToPlainText } from './chat-input/utils/editor-state-to-plain-text'
+
+/** Non-pinned conversations beyond this count collapse into the archive group. */
+const RECENT_CHAT_LIMIT = 50
 
 function TitleInput({
   value,
@@ -65,7 +69,9 @@ function TitleInput({
 
 function ChatListItem({
   title,
+  displayTitle,
   runSummary,
+  isCurrent,
   isFocused,
   shouldScrollIntoView,
   isEditing,
@@ -86,7 +92,9 @@ function ChatListItem({
   onCloseMoreMenu,
 }: {
   title: string
+  displayTitle?: string
   runSummary?: AgentConversationRunSummary
+  isCurrent: boolean
   isFocused: boolean
   shouldScrollIntoView: boolean
   isEditing: boolean
@@ -164,24 +172,25 @@ function ChatListItem({
             isRetrying ? ' is-retrying' : ''
           }`}
         >
-          <span className="yolo-chat-list-dropdown-item-title-text">
-            {title}
-          </span>
-          {runSummary &&
-          (runSummary.isRunning || runSummary.isWaitingApproval) ? (
+          <div className="yolo-chat-list-dropdown-item-title-group">
+            <span className="yolo-chat-list-dropdown-item-title-text">
+              {displayTitle ?? title}
+            </span>
+            {isCurrent ? (
+              <span className="yolo-chat-list-dropdown-item-current-badge">
+                {t('sidebar.chatList.current', 'Current')}
+              </span>
+            ) : null}
+          </div>
+          {runSummary?.isActive ? (
             <span
               className={`yolo-chat-list-dropdown-item-status${
-                runSummary.isRunning ? ' is-running' : ' is-waiting'
+                runSummary.isWaitingApproval ? ' is-waiting' : ' is-running'
               }`}
               aria-label={
-                runSummary.isRunning
-                  ? 'Conversation running'
-                  : 'Waiting approval'
-              }
-              title={
-                runSummary.isRunning
-                  ? 'Conversation running'
-                  : 'Waiting approval'
+                runSummary.isWaitingApproval
+                  ? 'Waiting approval'
+                  : 'Conversation running'
               }
             />
           ) : null}
@@ -211,7 +220,6 @@ function ChatListItem({
             className="clickable-icon yolo-chat-list-dropdown-item-icon"
             disabled={isUpdatingTitle}
             aria-label={t('common.save', 'Save')}
-            title={t('common.save', 'Save')}
           >
             <Check />
           </button>
@@ -257,7 +265,6 @@ function ChatListItem({
                 }}
                 className="clickable-icon yolo-chat-list-dropdown-item-icon"
                 aria-label={t('common.edit', 'Edit')}
-                title={t('common.edit', 'Edit')}
                 tabIndex={isMoreMenuOpen ? undefined : -1}
               >
                 <Pencil size={16} />
@@ -274,7 +281,6 @@ function ChatListItem({
                   isRetrying ? ' is-pending' : ''
                 }`}
                 aria-label={t('sidebar.chatList.retryTitle', 'Retry title')}
-                title={t('sidebar.chatList.retryTitle', 'Retry title')}
                 aria-busy={isRetrying ? 'true' : undefined}
                 tabIndex={isMoreMenuOpen ? undefined : -1}
               >
@@ -291,10 +297,6 @@ function ChatListItem({
                 }}
                 className="clickable-icon yolo-chat-list-dropdown-item-icon"
                 aria-label={t(
-                  'sidebar.chatList.exportConversation',
-                  'Export conversation to vault',
-                )}
-                title={t(
                   'sidebar.chatList.exportConversation',
                   'Export conversation to vault',
                 )}
@@ -363,8 +365,6 @@ export function ChatListDropdown({
   chatList,
   currentConversationId,
   runSummariesByConversationId,
-  archiveEnabled,
-  archiveThreshold,
   onSelect,
   onDelete,
   onUpdateTitle,
@@ -376,8 +376,6 @@ export function ChatListDropdown({
   chatList: ChatConversationMetadata[]
   currentConversationId: string
   runSummariesByConversationId: Map<string, AgentConversationRunSummary>
-  archiveEnabled: boolean
-  archiveThreshold: number
   onSelect: (conversationId: string) => void | Promise<void>
   onDelete: (conversationId: string) => void | Promise<void>
   onUpdateTitle: (
@@ -423,16 +421,23 @@ export function ChatListDropdown({
     [searchQuery],
   )
 
+  const untitledFallback = t('chat.untitledConversation', 'New chat')
+  const getDisplayTitle = useCallback(
+    (chat: ChatConversationMetadata) =>
+      getConversationDisplayTitle(chat.title, untitledFallback),
+    [untitledFallback],
+  )
+
   const titleMatches = useMemo(() => {
     if (!normalizedQuery) return new Set<string>()
     const matches = new Set<string>()
     chatList.forEach((chat) => {
-      if (chat.title.toLowerCase().includes(normalizedQuery)) {
+      if (getDisplayTitle(chat).toLowerCase().includes(normalizedQuery)) {
         matches.add(chat.id)
       }
     })
     return matches
-  }, [chatList, normalizedQuery])
+  }, [chatList, normalizedQuery, getDisplayTitle])
 
   const pinnedSortedChatList = useMemo(() => {
     if (chatList.length === 0) return chatList
@@ -465,15 +470,7 @@ export function ChatListDropdown({
     return pinnedSortedChatList
   }, [filteredChatList, normalizedQuery, pinnedSortedChatList])
 
-  const normalizedArchiveThreshold = useMemo(
-    () => Math.max(20, Math.min(500, Math.trunc(archiveThreshold || 50))),
-    [archiveThreshold],
-  )
-
-  const shouldUseArchive =
-    archiveEnabled &&
-    normalizedQuery.length === 0 &&
-    normalizedArchiveThreshold > 0
+  const shouldUseArchive = normalizedQuery.length === 0
 
   const { activeChatList, archivedChatList } = useMemo(() => {
     if (!shouldUseArchive) {
@@ -493,13 +490,8 @@ export function ChatListDropdown({
       }
     })
 
-    const activeNonPinnedChats = nonPinnedChats.slice(
-      0,
-      normalizedArchiveThreshold,
-    )
-    const archivedNonPinnedChats = nonPinnedChats.slice(
-      normalizedArchiveThreshold,
-    )
+    const activeNonPinnedChats = nonPinnedChats.slice(0, RECENT_CHAT_LIMIT)
+    const archivedNonPinnedChats = nonPinnedChats.slice(RECENT_CHAT_LIMIT)
     const currentArchivedIndex = archivedNonPinnedChats.findIndex(
       (chat) => chat.id === currentConversationId,
     )
@@ -517,12 +509,7 @@ export function ChatListDropdown({
       activeChatList: [...pinnedChats, ...activeNonPinnedChats],
       archivedChatList: archivedNonPinnedChats,
     }
-  }, [
-    baseDisplayChatList,
-    currentConversationId,
-    normalizedArchiveThreshold,
-    shouldUseArchive,
-  ])
+  }, [baseDisplayChatList, currentConversationId, shouldUseArchive])
 
   const renderedChatList = useMemo(() => {
     if (!shouldUseArchive) return activeChatList
@@ -804,7 +791,9 @@ export function ChatListDropdown({
                 <ChatListItem
                   key={chat.id}
                   title={chat.title}
+                  displayTitle={getDisplayTitle(chat)}
                   runSummary={runSummariesByConversationId.get(chat.id)}
+                  isCurrent={chat.id === currentConversationId}
                   isFocused={
                     focusedConversationId === chat.id && !isHoveringArchiveRow
                   }

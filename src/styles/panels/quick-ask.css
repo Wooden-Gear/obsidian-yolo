@@ -300,18 +300,6 @@
   outline: none;
 }
 
-.yolo-mode-select__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-}
-
-.yolo-mode-select__icon svg {
-  width: 14px;
-  height: 14px;
-}
-
 .yolo-quick-ask-mode-popover {
   min-width: 140px;
   max-width: 200px;
@@ -360,20 +348,6 @@
   color: var(--text-normal);
 }
 
-/* Assistant Dropdown */
-.yolo-quick-ask-assistant-dropdown {
-  min-width: 200px;
-  width: clamp(200px, 34vw, 300px);
-  background: color-mix(in srgb, var(--background-primary) 96%, transparent);
-  border: 1px solid
-    color-mix(in srgb, var(--background-modifier-border) 84%, transparent);
-  border-radius: 8px;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.24),
-    0 1px 0 color-mix(in srgb, white 2%, transparent);
-  animation: yolo-quick-ask-fade-in 0.12s ease forwards;
-}
-
 /* Assistant Menu */
 .yolo-quick-ask-assistant-menu {
   display: flex;
@@ -394,7 +368,6 @@
 }
 
 .yolo-quick-ask-assistant-list {
-  list-style: none;
   margin: 0;
   padding: 0;
   outline: none;
@@ -854,7 +827,7 @@
   align-items: flex-start;
 }
 
-.yolo-quick-ask-user-message--editing .yolo-chat-user-input-controls {
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-send-row {
   height: auto;
   min-height: 28px;
   gap: var(--size-2-3);
@@ -862,30 +835,37 @@
   cursor: default;
 }
 
-.yolo-quick-ask-user-message--editing .yolo-chat-user-input-controls__left {
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-toolbar {
+  gap: var(--size-2-3);
+  padding-inline: calc(var(--size-2-3) + 1px);
+}
+
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-toolbar__left,
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-toolbar__right {
   gap: var(--size-2-3);
 }
 
 .yolo-quick-ask-user-message--editing
-  .yolo-chat-user-input-controls__left
+  .yolo-chat-user-input-toolbar__right
   .yolo-chat-input-model-select {
   max-width: 170px;
 }
 
 .yolo-quick-ask-user-message--editing
-  .yolo-chat-user-input-controls__left
+  .yolo-chat-user-input-toolbar__right
   .yolo-chat-input-model-select__model-name {
   max-width: 128px;
 }
 
 .yolo-quick-ask-user-message--editing
-  .yolo-chat-user-input-controls
+  .yolo-chat-user-input-toolbar
   .yolo-chat-input-model-select,
 .yolo-quick-ask-user-message--editing
-  .yolo-chat-user-input-controls
+  .yolo-chat-user-input-toolbar
   .yolo-chat-input-model-select
   *,
-.yolo-quick-ask-user-message--editing .yolo-chat-user-input-controls button {
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-toolbar button,
+.yolo-quick-ask-user-message--editing .yolo-chat-user-input-send-row button {
   cursor: pointer;
 }
 

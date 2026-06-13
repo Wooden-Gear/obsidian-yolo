@@ -6,9 +6,14 @@ import { useObsidianSetting } from './ObsidianSetting'
 type ObsidianToggleProps = {
   value: boolean
   onChange: (value: boolean) => void
+  disabled?: boolean
 }
 
-export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
+export function ObsidianToggle({
+  value,
+  onChange,
+  disabled,
+}: ObsidianToggleProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { setting } = useObsidianSetting()
   const [toggleComponent, setToggleComponent] =
@@ -53,14 +58,30 @@ export function ObsidianToggle({ value, onChange }: ObsidianToggleProps) {
     })
   }, [toggleComponent])
 
+  // Re-sync the underlying Obsidian ToggleComponent on every render. This
+  // matters when the user toggles, the parent receives `onChange(v)` but
+  // chooses NOT to commit the change (e.g., gates it behind a confirmation
+  // modal). The React `value` prop stays the same, so a dependency-checked
+  // effect would skip — leaving the DOM toggle visually drifted from the
+  // source of truth. Checking `getValue()` first keeps this cheap when in sync.
   useEffect(() => {
     if (!toggleComponent) return
+    if (toggleComponent.getValue() === value) return
     isSyncingRef.current = true
     toggleComponent.setValue(value)
     queueMicrotask(() => {
       isSyncingRef.current = false
     })
-  }, [toggleComponent, value])
+  })
+
+  useEffect(() => {
+    if (!toggleComponent) return
+    toggleComponent.setDisabled(!!disabled)
+    // setDisabled only sets the flag; visually nothing changes unless the
+    // theme has a rule. Toggle .is-disabled so styles/chat/input.css
+    // (.yolo-checkbox-container.is-disabled) can dim and block clicks.
+    toggleComponent.toggleEl.toggleClass('is-disabled', !!disabled)
+  }, [toggleComponent, disabled])
 
   return <div ref={containerRef} className="yolo-display-contents" />
 }

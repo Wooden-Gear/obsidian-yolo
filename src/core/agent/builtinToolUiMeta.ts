@@ -61,7 +61,7 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     descKey: 'settings.agent.builtinFsEditDesc',
     labelFallback: 'Text Editing',
     descFallback:
-      'Apply exactly one text edit operation within a single existing file, including replace, replace_lines, insert_after, and append.',
+      'Apply exactly one text edit within a single existing file, by exact text (oldText) or by line range (startLine/endLine).',
   },
   [FILE_OPS_GROUP_TOOL_NAME]: {
     labelKey: 'settings.agent.builtinFsFileOpsLabel',
@@ -95,12 +95,6 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
     labelFallback: 'Delete Memory',
     descFallback: 'Delete an existing memory item by id.',
   },
-  open_skill: {
-    labelKey: 'settings.agent.builtinOpenSkillLabel',
-    descKey: 'settings.agent.builtinOpenSkillDesc',
-    labelFallback: 'Open Skill',
-    descFallback: 'Load a skill markdown file by id or name.',
-  },
   [WEB_OPS_GROUP_TOOL_NAME]: {
     labelKey: 'settings.agent.builtinWebOpsLabel',
     descKey: 'settings.agent.builtinWebOpsDesc',
@@ -125,16 +119,28 @@ export const BUILTIN_TOOL_UI_META: Record<string, BuiltinToolUiMeta> = {
   browser_read_page: {
     labelKey: 'settings.agent.builtinBrowserReadPageLabel',
     descKey: 'settings.agent.builtinBrowserReadPageDesc',
-    labelFallback: 'Read Open Webview',
+    labelFallback: 'Read Open Web Page',
     descFallback:
-      'Read rendered contents from a web page already open in Obsidian.',
+      'Read rendered content from a supported Obsidian web page that is already open.',
   },
-  delegate_external_agent: {
-    labelKey: 'settings.agent.builtinDelegateExternalAgentLabel',
-    descKey: 'settings.agent.builtinDelegateExternalAgentDesc',
-    labelFallback: 'Delegate to External Agent',
+  js_eval: {
+    labelKey: 'settings.agent.builtinJsEvalLabel',
+    descKey: 'settings.agent.builtinJsEvalDesc',
+    labelFallback: 'JavaScript Execution',
+    descFallback: 'Run JavaScript in an isolated environment.',
+  },
+  terminal_command: {
+    labelKey: 'settings.agent.builtinTerminalCommandLabel',
+    descKey: 'settings.agent.builtinTerminalCommandDesc',
+    labelFallback: 'Terminal Commands',
+    descFallback: 'Run commands in the local terminal. Desktop-only.',
+  },
+  delegate_subagent: {
+    labelKey: 'settings.agent.builtinDelegateSubagentLabel',
+    descKey: 'settings.agent.builtinDelegateSubagentDesc',
+    labelFallback: 'Delegate Subagent',
     descFallback:
-      'Spawn a local CLI agent (codex exec or claude -p) as a subprocess, stream its output back into the chat, and feed the result to the LLM. Desktop-only. Requires manual approval every time.',
+      'Dispatch an isolated temporary sub-agent to complete a self-contained task asynchronously.',
   },
   todo_write: {
     labelKey: 'settings.agent.builtinTodoWriteLabel',
@@ -180,14 +186,38 @@ const BUILTIN_TOOL_CATEGORY_MAP: Record<string, BuiltinToolCategory> = {
   [MEMORY_OPS_GROUP_TOOL_NAME]: 'context',
   [WEB_OPS_GROUP_TOOL_NAME]: 'external',
   browser_read_page: 'external',
-  open_skill: 'external',
-  delegate_external_agent: 'external',
+  js_eval: 'external',
+  terminal_command: 'external',
+  delegate_subagent: 'external',
 }
 
 export const getBuiltinToolCategory = (
   toolName: string,
 ): BuiltinToolCategory | null => {
   return BUILTIN_TOOL_CATEGORY_MAP[toolName] ?? null
+}
+
+// Explicit display order within each category. Tools not listed here fall
+// back to the natural order from tool registration. Used by the agent tools
+// modal so the UI stays stable when registration order changes.
+const BUILTIN_TOOL_DISPLAY_ORDER: Record<BuiltinToolCategory, string[]> = {
+  vault: [],
+  context: [],
+  external: [
+    WEB_OPS_GROUP_TOOL_NAME,
+    'browser_read_page',
+    'js_eval',
+    'terminal_command',
+    'delegate_subagent',
+  ],
+}
+
+export const getBuiltinToolDisplayIndex = (
+  category: BuiltinToolCategory,
+  toolName: string,
+): number => {
+  const idx = BUILTIN_TOOL_DISPLAY_ORDER[category].indexOf(toolName)
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx
 }
 
 export const BUILTIN_TOOL_CATEGORY_I18N: Record<

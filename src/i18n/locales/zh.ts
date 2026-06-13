@@ -54,6 +54,7 @@ export const zh: TranslationKeys = {
     on: '开',
     off: '关',
     noResults: '未找到匹配项',
+    configure: '配置',
   },
 
   sidebar: {
@@ -65,6 +66,7 @@ export const zh: TranslationKeys = {
     chatList: {
       searchPlaceholder: '搜索聊天记录',
       empty: '暂无聊天记录',
+      current: '当前',
       retryTitle: '重试命名',
       archived: '已归档',
       hideArchived: '收起归档',
@@ -132,8 +134,8 @@ export const zh: TranslationKeys = {
       title: '默认模型策略与提示词',
       defaultChatModel: '默认聊天模型',
       defaultChatModelDesc: '选择你想用于侧边栏聊天的模型。',
-      chatTitleModel: '对话命名与摘要模型',
-      chatTitleModelDesc: '选择用于自动对话命名和 compact 摘要的模型。',
+      chatTitleModel: '对话命名模型',
+      chatTitleModelDesc: '选择用于自动对话命名的模型。',
       streamFallbackRecovery: '启用自动恢复',
       streamFallbackRecoveryDesc:
         '当流式主请求超时或失败时，自动改用非流式再尝试一次。',
@@ -141,8 +143,7 @@ export const zh: TranslationKeys = {
       primaryRequestTimeoutDesc:
         '流式主请求等待多久后判定为超时。无论是否启用自动恢复，此超时都会生效；若已启用自动恢复，超时后会自动改用非流式再尝试一次。默认 60 秒。',
       globalSystemPrompt: '全局系统提示词',
-      globalSystemPromptDesc:
-        '该提示将追加到每次聊天的最前面。支持变量：日期 {{current_date}}、日期+当前小时 {{current_hour}}、日期+当前时分 {{current_minute}}、星期 {{current_weekday}}。',
+      globalSystemPromptDesc: '该提示将追加到每次聊天的最前面。',
       continuationSystemPrompt: '默认续写系统提示词',
       continuationSystemPromptDesc:
         '用于续写功能的系统消息。留空将使用内置默认值。',
@@ -231,16 +232,14 @@ export const zh: TranslationKeys = {
       duplicate: '复制',
       copySuffix: '（副本）',
       dragHandleAria: '拖拽排序',
+      fixedActionHint: '内置指令',
+      hideFixedAction: '在 Cursor Chat 中隐藏',
+      showFixedAction: '在 Cursor Chat 中显示',
     },
     chatPreferences: {
       title: '聊天偏好',
       chatFontScale: '聊天界面缩放',
       chatFontScaleDesc: '调整聊天界面的整体缩放比例（默认 100%）。',
-      historyArchiveEnabled: '启用历史归档分组',
-      historyArchiveEnabledDesc: '将较旧的未置顶会话折叠到归档分组中。',
-      historyArchiveThreshold: '近期会话数量',
-      historyArchiveThresholdDesc:
-        '超过该数量的未置顶会话会进入归档（20-500）。',
     },
     assistants: {
       title: '助手',
@@ -254,8 +253,7 @@ export const zh: TranslationKeys = {
       descriptionDesc: '简要描述此助手的用途',
       descriptionPlaceholder: '输入描述',
       systemPrompt: '系统提示词',
-      systemPromptDesc:
-        '该提示将添加到每次聊天的开头。支持 {{current_date}}、{{current_hour}}、{{current_minute}} 和 {{current_weekday}}。',
+      systemPromptDesc: '该提示将添加到每次聊天的开头。',
       systemPromptPlaceholder: '输入系统提示词，用于定义助手的行为与能力',
       namePlaceholder: '输入助手名称',
       defaultAssistantName: '新建助手',
@@ -278,7 +276,7 @@ export const zh: TranslationKeys = {
     },
     agent: {
       title: 'Agent',
-      desc: '管理全局能力并配置你的 Agent。',
+      desc: '管理工具的全局可用性。启用后，工具才可被各 Agent 选择；是否实际使用，仍需在对应 Agent 中开启。',
       globalCapabilities: '全局能力',
       mcpServerCount: '已连接 {count} 个自定义工具服务器（MCP）',
       tools: '工具',
@@ -393,7 +391,8 @@ export const zh: TranslationKeys = {
       builtinFsReadLabel: '读取',
       builtinFsReadDesc: '读取库内文件',
       builtinContextPruneToolResultsLabel: '裁剪工具调用结果',
-      builtinContextPruneToolResultsDesc: '从后续上下文中排除历史工具结果',
+      builtinContextPruneToolResultsDesc:
+        '从后续上下文中排除历史工具结果；注意，该工具可能会破坏上下文缓存，增加请求开销',
       builtinContextCompactLabel: '压缩上下文',
       builtinContextCompactDesc: '将较早对话压缩为摘要',
       builtinToolSearchLabel: '加载工具',
@@ -406,35 +405,39 @@ export const zh: TranslationKeys = {
       fsEditReviewToggleDesc:
         '开启后，Agent 的 fs_edit 会先进入 inline/apply 审阅，再写入文件。',
       builtinFsFileOpsLabel: '文件操作集',
-      builtinFsFileOpsDesc: '创建、删除、移动文件与文件夹',
+      builtinFsFileOpsDesc: '写入、删除、移动文件与文件夹',
       builtinMemoryOpsLabel: '记忆工具集',
       builtinMemoryOpsDesc: '新增、更新、删除记忆',
       builtinMemoryAddLabel: '新增记忆',
-      builtinMemoryAddDesc: '向全局或助手记忆新增一条内容，并自动分配编号。',
+      builtinMemoryAddDesc: '向全局或助手记忆新增一条内容，并自动分配编号',
       builtinMemoryUpdateLabel: '更新记忆',
-      builtinMemoryUpdateDesc: '根据编号更新已有记忆内容。',
+      builtinMemoryUpdateDesc: '根据编号更新已有记忆内容',
       builtinMemoryDeleteLabel: '删除记忆',
-      builtinMemoryDeleteDesc: '根据编号删除已有记忆内容。',
+      builtinMemoryDeleteDesc: '根据编号删除已有记忆内容',
       builtinOpenSkillLabel: '加载技能',
       builtinOpenSkillDesc: '加载技能 Markdown',
       builtinWebSearchLabel: '联网搜索',
       builtinWebSearchDesc:
-        '通过配置的搜索服务进行网页搜索，返回带摘要的结果列表。',
+        '通过配置的搜索服务进行网页搜索，返回带摘要的结果列表',
       builtinWebScrapeLabel: '抓取网页',
-      builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文。',
-      builtinBrowserReadPageLabel: '读取已打开网页',
-      builtinBrowserReadPageDesc: '读取已在 Obsidian 中打开的渲染后网页内容。',
+      builtinWebScrapeDesc: '通过配置的搜索服务抓取单个 URL 的完整正文',
+      builtinBrowserReadPageLabel: '读取打开的网页',
+      builtinBrowserReadPageDesc:
+        '读取 Obsidian 中已打开网页的渲染后内容',
       builtinWebOpsLabel: '联网搜索工具集',
       builtinWebOpsDesc: '网页搜索与正文抓取',
-      builtinDelegateExternalAgentLabel: '派遣外部 Agent',
-      builtinDelegateExternalAgentDesc:
-        '将复杂任务派遣给本机已安装的 CLI Agent（Codex / Claude Code）。',
+      builtinJsEvalLabel: 'JavaScript 执行',
+      builtinJsEvalDesc: '在隔离环境中执行 JavaScript 代码',
+      builtinTerminalCommandLabel: '终端命令',
+      builtinTerminalCommandDesc: '在本机终端中运行命令。仅桌面端可用。',
+      builtinDelegateSubagentLabel: '派遣子 Agent',
+      builtinDelegateSubagentDesc:
+        '异步派遣一个隔离的临时子 Agent，完成自包含任务',
       builtinTodoWriteLabel: '任务清单',
       builtinTodoWriteDesc:
-        '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）。',
+        '让 Agent 自己拆分并跟踪多步任务的进度（仅 Agent 模式）',
       builtinAskUserQuestionLabel: '向用户提问',
-      builtinAskUserQuestionDesc:
-        '在缺少必要信息时向用户提问，等待回答后继续。',
+      builtinAskUserQuestionDesc: '在缺少必要信息时向用户提问，等待回答后继续',
       editorDefaultName: '新建 Agent',
       editorIntro: '配置此 Agent 的能力、模型与行为。',
       editorTabProfile: '资料',
@@ -463,8 +466,9 @@ export const zh: TranslationKeys = {
       editorIconDesc: '为该 Agent 选择图标',
       editorChooseIcon: '选择图标',
       editorSystemPrompt: 'System prompt',
-      editorSystemPromptDesc:
-        '该 Agent 的主行为指令。支持变量：日期 {{current_date}}、日期+当前小时 {{current_hour}}、日期+当前时分 {{current_minute}}、星期 {{current_weekday}}。',
+      editorSystemPromptDesc: '该 Agent 的主行为指令。',
+      editorSystemPromptExpand: '放大编辑',
+      editorSystemPromptCollapse: '关闭放大视图',
       editorEnableProjectInstructions: '读取项目指令文件',
       editorEnableProjectInstructionsDesc:
         '为该 Agent 自动加载 vault 根目录的 AGENTS.md 与 CLAUDE.md 作为项目指令，与 Codex / Claude Code / Cursor 等工具兼容。',
@@ -475,6 +479,7 @@ export const zh: TranslationKeys = {
       toolApproval: '审批',
       toolApprovalFullAccess: '完全放行',
       toolApprovalRequire: '需要审批',
+      toolApprovalForced: '强制审批',
       toolDisclosureAlways: '常驻上下文',
       toolDisclosureOnDemand: '按需披露',
       editorEnabled: '已启用',
@@ -510,6 +515,8 @@ export const zh: TranslationKeys = {
       agentCapabilitiesBlockTitle: 'Agent 能力',
       focusSyncTitle: '焦点同步',
       focusSyncDesc: '启用后，AI 可以感知到你正在阅读的内容和位置。',
+      timeContextTitle: '当前时间感知',
+      timeContextDesc: '让模型知道每条消息发送时的当前时间。',
       imageReadingBlockTitle: '图片读取',
       imageReadingEnabled: '图片读取',
       imageReadingEnabledDesc:
@@ -526,7 +533,7 @@ export const zh: TranslationKeys = {
       autoContextCompactionBlockTitle: '上下文压缩',
       autoContextCompaction: '自动压缩上下文',
       autoContextCompactionDesc:
-        '当上一轮助手回复的 prompt 占用达到阈值时，在你下次发送用户消息、正式提交模型之前自动压缩更早历史（不会在助手生成过程中打断）。',
+        '当上下文达到阈值时，提醒 Agent 执行上下文压缩命令。',
       autoContextCompactionThresholdMode: '阈值模式',
       autoContextCompactionModeTokens: '绝对 prompt tokens',
       autoContextCompactionModeRatio: '上下文窗口比例',
@@ -536,6 +543,72 @@ export const zh: TranslationKeys = {
       autoContextCompactionThresholdRatioPercent: '上下文窗口占用（%）',
       autoContextCompactionThresholdRatioPercentDesc:
         '当 prompt_tokens 除以当前聊天模型配置的最大上下文窗口达到该比例时触发（需在模型中填写 max context）。',
+      jsSandboxExtTitle: '扩展能力',
+      jsSandboxAllowFetch: '允许网络请求',
+      jsSandboxAllowFetchDesc:
+        '允许脚本发起浏览器网络请求；遇到浏览器跨域限制时，可使用单独的 $fetch 宿主请求。开启外部脚本时会自动启用此能力。',
+      jsSandboxAllowFetchRisk:
+        '风险：脚本可访问浏览器能到达的任何 URL —— 公开 API、你的本地网络、内网服务，乃至 LLM 服务本身。脚本中持有的任何数据（包括你传进来的 vault 内容）都可能被外发。仅在你完全信任此 Agent 时开启。',
+      jsSandboxAllowFetchConfirm:
+        '开启后，脚本可以请求浏览器允许访问的网络地址；遇到浏览器跨域限制时，也可以使用单独的 YOLO 宿主请求。仅在你信任此 Agent 时继续。是否继续？',
+      jsSandboxAllowVaultRead: '允许读取库文件',
+      jsSandboxAllowVaultReadDesc:
+        '允许脚本按路径读取任意库文件。此能力不受 Agent 目录限制约束。风险：脚本可能将笔记内容传递给外部服务。',
+      jsSandboxAllowVaultReadConfirm:
+        '开启后，AI 生成的脚本可按路径读取 vault 中任意文件，内容将进入 LLM 上下文。请确认您信任此 Agent 生成的脚本后再继续。',
+      jsSandboxAllowDbQuery: '允许知识库查询',
+      jsSandboxAllowDbQueryDesc:
+        '允许脚本查询向量数据库（语义搜索、关键词搜索、路径查找）。此能力不受 Agent 目录限制约束。',
+      jsSandboxAllowDbQueryConfirm:
+        '开启后，AI 生成的脚本可搜索 vault 索引并获取文件内容。是否继续？',
+      jsSandboxAllowExternalScripts: '允许加载外部脚本',
+      jsSandboxAllowExternalScriptsDesc:
+        '允许脚本加载并运行远程 JavaScript，同时打开这些脚本常用的浏览器能力。',
+      jsSandboxAllowExternalScriptsRisk:
+        '极高风险：Agent 可以以浏览器标签页同等权限拉取并执行任意远程 JavaScript，等同于在你的 Obsidian 进程内运行陌生人写的代码。脚本接触到的 vault 内容都可能被外发。仅在完全信任此 Agent 和代码来源时开启。',
+      jsSandboxAllowExternalScriptsConfirm:
+        '开启后，Agent 可以在 Obsidian 内加载并运行远程 JavaScript。这个能力很强也很危险；仅在你完全信任此 Agent 和代码来源时继续。是否继续？',
+      jsSandboxConfirmEnableTitle: '开启扩展能力',
+      jsExecApprovalForced: '启用后强制审批',
+      jsSandboxTimeoutMs: '执行超时（毫秒）',
+      jsSandboxTimeoutMsDesc: '单次脚本调用的最大运行时间。范围 {min}–{max}。',
+      jsSandboxOutputMaxKb: '工具结果大小上限（KB）',
+      jsSandboxOutputMaxKbDesc:
+        '返回给模型的 JSON 结果上限。超过部分会被截断并附带提示。过大的响应会消耗模型上下文 token，可能超出上下文窗口并增加成本。范围 {min}–{max} KB。',
+      jsSandboxVaultReadMaxKb: '读取大小上限（KB）',
+      jsSandboxVaultReadMaxKbDesc:
+        '单次读取的返回上限。文本超出会被截断并附带提示；较大的二进制文件会直接拒绝。范围 {min}–{max} KB。',
+      jsSandboxDbMaxLimit: '单次查询最大行数',
+      jsSandboxDbMaxLimitDesc: '知识库查询单次返回行数的上限。范围 1–100。',
+    },
+    jsSandbox: {
+      openSettings: '配置 JavaScript 执行',
+    },
+    terminalCommand: {
+      openSettings: '配置终端命令',
+      blockedPrefixes: '禁止命令前缀',
+      blockedPrefixesDesc: '命中以下前缀的命令将在执行前被直接拒绝。',
+      matchingRule:
+        '前缀按首个命令词匹配：rm 会拦截 rm -rf /，但不会拦截 npm run build。',
+      addPrefixPlaceholder: '命令前缀，例如 rm',
+      resetDefaults: '恢复默认',
+    },
+    subagent: {
+      openSettings: '配置 Subagent 模型',
+      modelPool: '可派遣模型池',
+      modelPoolDesc: '主 Agent 只能从这个模型池中派遣子 Agent。',
+      preferredModelRule: '如果主 Agent 没有显式传入 modelId，将使用首选模型。',
+      addModelsTitle: '添加 Subagent 模型',
+      addModelsDesc: '从已注册的聊天模型中选择要加入 Subagent 模型池的模型。',
+      addModelPlaceholder: '选择一个模型',
+      addModel: '添加模型',
+      addSelectedModels: '添加选中模型',
+      searchModels: '搜索模型...',
+      setPreferredModel: '设为首选模型',
+      defaultModel: '默认',
+      setDefaultModel: '设为默认',
+      emptyModelPool: '尚未选择任何 Subagent 模型。',
+      poolCount: '{count} 个模型',
     },
     webSearch: {
       modalTitle: '联网搜索设置',
@@ -581,6 +654,9 @@ export const zh: TranslationKeys = {
       fieldDepth: '搜索深度',
       fieldSearchUrl: '搜索 URL',
       fieldScrapeUrl: '抓取 URL',
+      fieldUseProviderScrapeApi: '启用 Provider 抓取 API',
+      fieldUseProviderScrapeApiDesc:
+        '开启后，web_scrape 使用该 Provider 的抓取接口；关闭后统一走内置通用抓取（静态 HTML，不消耗 Provider 抓取额度）。',
       fieldBaseUrl: 'Base URL',
       fieldLanguage: '语言',
       fieldEngines: '搜索引擎（逗号分隔）',
@@ -665,13 +741,13 @@ export const zh: TranslationKeys = {
       useObsidianRequestUrl: '使用 Obsidian requestUrl',
       useObsidianRequestUrlDesc:
         '使用 Obsidian requestUrl 绕过 CORS 限制。流式响应将会被缓冲后再返回。',
-      requestTransportMode: '请求传输模式',
+      requestTransportMode: '网络请求方式',
       requestTransportModeDesc:
-        '自动模式会先尝试浏览器 fetch，再尝试桌面端 Node fetch，最后在 CORS/网络错误时回退到 Obsidian requestUrl。仅 Obsidian 模式下流式响应会被缓冲；Node 模式使用桌面端 Node fetch 获取真实流式。',
+        '选择此设备上访问该提供商的网络请求方式。桌面端推荐桌面直连；移动端如浏览器请求遇到流式或网络问题，请切换到 Obsidian 内置请求。',
       requestTransportModeAuto: '自动（推荐）',
-      requestTransportModeBrowser: '仅浏览器 fetch',
-      requestTransportModeObsidian: '仅 Obsidian requestUrl',
-      requestTransportModeNode: '仅桌面端 Node fetch',
+      requestTransportModeBrowser: '浏览器请求',
+      requestTransportModeObsidian: 'Obsidian 内置请求',
+      requestTransportModeNode: '桌面直连（推荐）',
       promptCaching: '提示缓存',
       promptCachingDesc:
         '启用 Anthropic 临时提示缓存。在连续对话中复用系统提示、工具列表和历史消息，显著降低输入 token 消耗。写缓存有 25% 溢价，命中读取约为原价 10%。仅当渠道 API 类型为 Anthropic 时生效；是否真正生效取决于上游服务是否支持 cache_control 字段。',
@@ -733,8 +809,40 @@ export const zh: TranslationKeys = {
       modelIdPlaceholder: 'gpt-4o-mini',
       modelName: '展示名称',
       modelNamePlaceholder: '输入用于展示的名称',
+      connectivityTest: {
+        button: '连通性测试',
+        title: '连通性测试',
+        testAll: '测试全部',
+        retest: '重新测试',
+        stop: '停止',
+        test: '测试',
+        passed: '通过',
+        statusTesting: '检测中',
+        statusOk: '正常',
+        statusFail: '失败',
+        statusTimeout: '超时',
+        statusIdle: '待测',
+        normalCount: '个正常',
+        abnormalCount: '个异常',
+        notTested: '尚未检测',
+        noResponse: '无响应',
+        firstToken: '首字',
+        dims: '维',
+        noModels: '该提供商下暂无已配置的模型',
+        deleteModel: '删除模型',
+        deleteChatModelBlocked: '无法删除当前选中的聊天或标题模型',
+        deleteEmbeddingModelBlocked: '无法删除当前选中的嵌入模型',
+        deleteEmbeddingModelInProgress: '正在删除嵌入模型…',
+      },
       availableModelsAuto: '可用模型（自动获取）',
       searchModels: '搜索模型...',
+      modeSingle: '单个',
+      modeBatch: '批量',
+      batchSelectAll: '全选',
+      batchSelected: '已选',
+      batchAlreadyAdded: '已添加',
+      batchAdd: '添加选中模型',
+      batchHint: '批量添加使用默认参数，可在添加后单独调整',
       fetchModelsFailed: '获取模型失败',
       embeddingModelsFirst: '嵌入模型优先显示',
       reasoningType: '模型类型',
@@ -814,6 +922,7 @@ export const zh: TranslationKeys = {
       desc: '管理知识库索引，当 Agent 使用「搜索」工具并选择混合 & RAG 模式时，会自动调用 RAG 能力。',
       enableRag: '启用知识库索引',
       enableRagDesc: '开启后会为所选范围内的文档建立索引。',
+      partialFailureSummary: '完成 · {{count}} 个文件无法索引',
       embeddingModel: '嵌入模型',
       embeddingModelDesc: '选择你想用于嵌入的模型',
       chunkSize: '分块大小',
@@ -956,17 +1065,17 @@ export const zh: TranslationKeys = {
     },
     browser: {
       title: '网页集成',
-      injectActiveTitle: '当前页上下文',
+      injectActiveTitle: '当前网页上下文',
       injectActiveDesc:
         '发送消息时，附带当前网页的简要信息，例如网址、标题、页面长度、滚动位置，以及页面里的选中文字。',
-      selectionMaxTitle: '选中文本上限',
+      selectionMaxTitle: '选中文字上限',
       selectionMaxDesc:
-        '最多附带多少页面选中文字。设为 0 表示永不附带选中文字。',
+        '从网页中附带的选中文字最大长度。设为 0 表示不附带选中文字。',
       retainLastViewedTitle: '保留最近网页上下文',
       retainLastViewedDesc:
-        '当前标签页不是网页时，仍提供最近打开网页的简要上下文。',
+        '当前标签页不是网页时，仍附带最近打开网页的简要上下文。',
       fullPageToolHint:
-        '如果希望助手读取完整网页内容，请在 Agent 工具设置中启用网页读取工具。',
+        '如需让助手读取完整网页内容，请在 Agent 中启用网页读取工具。',
     },
     mcp: {
       title: '自定义工具 (MCP)',
@@ -1241,6 +1350,13 @@ export const zh: TranslationKeys = {
       persistSelectionHighlight: '保留选区块高亮',
       persistSelectionHighlightDesc:
         '在侧边栏 Chat 或 Quick Ask 交互时，持续显示编辑器中已选内容的块级高亮。',
+      chatExportSubsectionTitle: '聊天记录导出',
+      chatExportIncludeThinking: '导出思考过程',
+      chatExportIncludeThinkingDesc:
+        '在导出的 Markdown 中包含 assistant 的 reasoning 块。',
+      chatExportIncludeToolCalls: '导出工具调用',
+      chatExportIncludeToolCallsDesc:
+        '在导出的 Markdown 中包含工具调用的参数与结果。',
       notifications: '通知提醒',
       notificationsDesc:
         '配置 Agent 的提醒方式。若当前环境不支持系统通知，会自动降级，不影响主流程。',
@@ -1292,11 +1408,13 @@ export const zh: TranslationKeys = {
     placeholderMention: '添加引用或模型',
     placeholderSkill: '选择技能或命令',
     contextUsage: '上下文窗口占用',
+    contextUsageUnknownMaxSuffix: '（未设置上下文窗口上限）',
     contextBreakdown: {
       title: '上下文',
       fullLabel: '已占用 {{percent}}',
       tokensSuffix: 'Tokens',
       localEstimateCaption: '本地估算，可能与服务端计费存在偏差',
+      unknownMaxHint: '可在模型设置中配置上下文窗口 token，以显示占用比例',
       error: '估算失败',
       bucket: {
         system: '系统提示',
@@ -1305,6 +1423,7 @@ export const zh: TranslationKeys = {
         skills: '技能',
         memory: '记忆',
         conversation: '会话',
+        reasoning: '思考过程',
       },
     },
     inlineInfo: {
@@ -1328,7 +1447,15 @@ export const zh: TranslationKeys = {
     },
     sendMessage: '发送消息',
     newChat: '新建聊天',
+    untitledConversation: '新对话',
     continueResponse: '继续生成',
+    loadEarlierMessages: '正在加载更早消息',
+    loadNewerMessages: '正在加载更新消息',
+    messageNavigator: {
+      title: '消息导航',
+      itemAriaLabel: '跳转到第 {index} 条消息：{label}',
+      emptyMessage: '空消息',
+    },
     stopGeneration: '停止生成',
     queueMessage: {
       tooltip: '加入排队，等当前回合完成后继续',
@@ -1361,6 +1488,9 @@ export const zh: TranslationKeys = {
     uploadFile: '添加文件',
     imageUnsupportedByModel:
       '当前模型未声明支持图片输入；请在模型设置里开启「图片」模态后再上传。',
+    unsupportedFileType: '不支持的文件类型：{names}',
+    processImagesFailed: '处理上传图片失败',
+    readPdfFailed: '读取 PDF「{name}」失败：{error}',
     addContext: '添加上下文',
     applyChanges: '应用更改',
     copyMessage: '复制消息',
@@ -1374,6 +1504,7 @@ export const zh: TranslationKeys = {
     regenerate: '重新生成',
     reasoning: '推理过程',
     annotations: '注释',
+    vaultSources: '笔记引用（{count}）',
     pdfReferenceNoPreview: '（PDF：点击标题打开对应页）',
     assistantQuote: {
       add: '引用',
@@ -1401,10 +1532,14 @@ export const zh: TranslationKeys = {
       createSnippetsFile: '点击创建 snippets.md',
     },
     emptyState: {
+      askTitle: '先想清楚，再落笔',
+      askDescription: '适合提问、润色与改写，专注表达本身',
       chatTitle: '先想清楚，再落笔',
       chatDescription: '适合提问、润色与改写，专注表达本身',
       agentTitle: '让 AI 去执行',
       agentDescription: '启用工具链，处理搜索、读写与多步骤任务',
+      agentFullTitle: '让 AI 自主执行 · YOLO 模式',
+      agentFullDescription: '自动放行工具调用，处理搜索、读写与多步骤任务',
     },
     compaction: {
       pendingTitle: '正在压缩上下文',
@@ -1546,11 +1681,14 @@ export const zh: TranslationKeys = {
         open_skill: '加载技能',
       },
       writeAction: {
+        write: '写入文件',
+        delete: '删除',
+        create_dir: '创建文件夹',
+        move: '移动路径',
+        // 旧键，保留用于显示历史会话。
         create_file: '创建文件',
         delete_file: '删除文件',
-        create_dir: '创建文件夹',
         delete_dir: '删除文件夹',
-        move: '移动路径',
       },
       readMode: {
         full: '全文',
@@ -1572,7 +1710,7 @@ export const zh: TranslationKeys = {
       reject: '拒绝',
       abort: '停止执行',
       alwaysAllowThisTool: '始终允许此工具',
-      allowForThisChat: '仅本次对话允许',
+      allowForThisChat: '本对话内允许',
     },
     toolSummary: {
       todoWrite: {
@@ -1581,24 +1719,34 @@ export const zh: TranslationKeys = {
         created: '新建 {count} 项任务',
         progress: '进度 {done}/{total}',
       },
+      terminalCommand: {
+        sessionPoll: '会话 {id} · 轮询',
+        sessionKill: '会话 {id} · 终止',
+        sessionInput: '会话 {id} · 输入: {preview}',
+      },
     },
-    externalAgent: {
+    liveTask: {
       statusRunning: '执行中',
       statusDone: '已完成',
       statusAborted: '已中止',
       statusError: '错误',
       progress: '进度',
       output: '输出',
+      activity: '活动',
       abortedBeforeOutput: '已中止，未产生任何输出。',
+      noActivity: '暂无活动。',
+      progressTruncated: '进度输出已截断。',
+      truncated: '输出已截断。',
     },
-    externalAgentResult: {
+    subagent: {
+      openDetails: '查看 Subagent 详情',
+      planningNextMoves: '正在规划下一步',
+      noActivity: '暂无活动。',
       statusCompleted: '已完成',
+      statusAborted: '已中止',
       statusFailed: '失败',
-      statusCancelled: '已取消',
-      statusTimedOut: '已超时',
-      statusKilledByShutdown: '已停止',
-      showOutput: '查看输出',
-      jumpToDelegate: '跳转到原派遣消息',
+      toolUseCount: '{count} 个工具',
+      tokenCount: '{count} tokens',
     },
     conversationSettings: {
       openAria: '对话设置',
@@ -1625,6 +1773,7 @@ export const zh: TranslationKeys = {
     rebuildingIndex: '正在重建库索引...',
     rebuildComplete: '重建库索引完成',
     rebuildFailed: '重建库索引失败',
+    indexedWithSkipped: '索引完成 · {{count}} 个文件无法索引',
     continueComplete: '继续索引完成',
     continueFailed: '继续索引失败',
     openYoloNewChatFailed: '打开 YOLO 聊天窗口失败，请先用命令面板尝试',
@@ -1748,12 +1897,16 @@ export const zh: TranslationKeys = {
   },
 
   chatMode: {
+    ask: 'Ask',
+    askDesc: '适合提问、润色与改写',
     chat: '对话',
     chatDesc: '适合提问、润色与改写',
     rewrite: '改写',
     rewriteDesc: '仅修改当前选区',
     agent: 'Agent',
     agentDesc: '启用工具链，处理多步骤任务',
+    agentFull: 'Agent（YOLO）',
+    agentFullDesc: '自动放行工具调用，适合复杂任务',
     warning: {
       title: '⚠️ Agent 模式风险提示',
       description:
@@ -1766,10 +1919,24 @@ export const zh: TranslationKeys = {
       cancel: '取消',
       confirm: '继续并启用 Agent',
     },
+    fullAccessWarning: {
+      title: '⚠️ YOLO 模式风险提示',
+      description:
+        'YOLO 模式会自动批准全部工具调用，包括文件编辑与终端命令。请在继续前了解以下风险：',
+      permission: '工具调用不再逐条确认；危险命令前缀黑名单仍会拦截',
+      cost: '自主执行可能消耗较多 Token 并产生更高成本',
+      backup: '请提前备份：重要内容建议备份，以防误操作导致意外变更',
+      checkbox: '我已了解上述风险，并愿意自行承担相关后果',
+      cancel: '取消',
+      confirm: '继续并启用 YOLO 模式',
+    },
   },
 
   reasoning: {
     selectReasoning: '选择推理强度',
+    effort: '推理强度',
+    faster: '更快',
+    smarter: '更聪明',
     off: '关闭',
     on: '开启',
     auto: '自动',
@@ -1882,9 +2049,22 @@ export const zh: TranslationKeys = {
 
   update: {
     newVersionAvailable: '新版本 {version} 已发布',
+    toastTitle: 'YOLO 有新版本',
     currentVersion: '当前版本',
-    viewDetails: '前往检查更新',
+    viewDetails: '前往更新',
+    goUpdate: '更新',
     dismiss: '关闭',
+    languageEnglish: 'EN',
+    languageChinese: '中文',
+    muteThisVersion: '当前版本不提示',
+    viewHistory: '查看历史更新',
+    historyTitle: '历史更新日志',
+    historyLoading: '正在加载更新日志…',
+    historyError: '加载更新日志失败，请稍后重试。',
+    historyEmpty: '暂无历史更新日志。',
+    historyPage: '第 {{current}} 页',
+    historyPrev: '上一页',
+    historyNext: '下一页',
     installationIncompleteTitle: '插件安装不完整',
     installationIncompleteMeta:
       '主程序 {bakedVersion} · manifest {manifestVersion}',
