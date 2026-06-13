@@ -513,6 +513,63 @@ const isSyncSelectionMentionable = (mentionable: MentionableBlock): boolean => {
   return isSyncSelectionSource(mentionable.source)
 }
 
+const isSelectionBlockMentionable = (
+  mentionable: Mentionable,
+): mentionable is MentionableBlock => {
+  return (
+    mentionable.type === 'block' &&
+    (mentionable.source === 'selection' ||
+      mentionable.source === 'selection-sync' ||
+      mentionable.source === 'selection-pinned')
+  )
+}
+
+const collectSelectionHighlightIds = (
+  mentionables: Mentionable[],
+): string[] => {
+  const ids = new Set<string>()
+  for (const mentionable of mentionables) {
+    if (!isSelectionBlockMentionable(mentionable)) continue
+    if (mentionable.highlightId) ids.add(mentionable.highlightId)
+  }
+  return Array.from(ids)
+}
+
+const collectSelectionHighlightIdsFromMessages = (
+  messages: ChatMessage[],
+): string[] => {
+  const ids = new Set<string>()
+  for (const message of messages) {
+    if (message.role !== 'user') continue
+    for (const id of collectSelectionHighlightIds(message.mentionables)) {
+      ids.add(id)
+    }
+  }
+  return Array.from(ids)
+}
+
+const collectRemovedSelectionHighlightIds = (
+  previousMentionables: Mentionable[],
+  nextMentionables: Mentionable[],
+): string[] => {
+  const nextIds = new Set(collectSelectionHighlightIds(nextMentionables))
+  return collectSelectionHighlightIds(previousMentionables).filter(
+    (id) => !nextIds.has(id),
+  )
+}
+
+const collectSelectionHighlightIdsByMentionableKey = (
+  mentionables: Mentionable[],
+  mentionableKey: string,
+): string[] => {
+  return collectSelectionHighlightIds(
+    mentionables.filter(
+      (mentionable) =>
+        getMentionableKey(serializeMentionable(mentionable)) === mentionableKey,
+    ),
+  )
+}
+
 const REASONING_LEVEL_CANDIDATES: ReasoningLevel[] = [...REASONING_LEVELS]
 
 export type ChatRef = {
@@ -1229,8 +1286,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }, [chatMessages])
 
   // Selection-highlight lifecycle — see useChatHighlightSession for the full
-  // contract.  In-input mentions reconcile immediately on delete; pinned ids
-  // commit to sticky only on send, then drop on the next editor interaction.
+  // contract. In-input mentions reconcile immediately on delete; sent
+  // selection mentions commit to sticky on submit, then drop on the next
+  // editor interaction.
   const focusedHistoricalMentionables = useMemo<Mentionable[] | null>(() => {
     if (!focusedMessageId || focusedMessageId === inputMessage.id) return null
     const focused = chatMessages.find(
@@ -1239,7 +1297,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return focused?.role === 'user' ? focused.mentionables : null
   }, [chatMessages, focusedMessageId, inputMessage.id])
 
-  const { commitSentPinnedHighlights, releaseHighlightIds } =
+  const { commitSentSelectionHighlights, releaseHighlightIds } =
     useChatHighlightSession({
       conversationId: currentConversationId,
       containerRef,
@@ -1687,6 +1745,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         if (conversationId !== currentConversationId) return
         if (messages.length === 0) return
         const latest = messages[messages.length - 1]
+        releaseHighlightIds(
+          collectSelectionHighlightIdsFromMessages(messages.slice(0, -1)),
+        )
         setInputMessage((prev) => ({
           ...prev,
           content: latest.content,
@@ -1719,7 +1780,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     return () => {
       unsubscribe()
     }
-  }, [agentService, currentConversationId, t])
+  }, [agentService, currentConversationId, releaseHighlightIds, t])
 
   // Auto-run when external agent results arrive for the current conversation
   useEffect(() => {
@@ -1958,6 +2019,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   const removeHistoricalUserMessage = useCallback(
     (messageId: string) => {
       const sourceMessages = chatMessagesStateRef.current
+      const removedMessages = sourceMessages.filter(
+        (message) => message.role === 'user' && message.id === messageId,
+      )
+      releaseHighlightIds(
+        collectSelectionHighlightIdsFromMessages(removedMessages),
+      )
       const nextMessages = sourceMessages.filter(
         (message) => !(message.role === 'user' && message.id === messageId),
       )
@@ -2012,6 +2079,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       deleteConversation,
       inputMessage.id,
       persistConversation,
+      releaseHighlightIds,
     ],
   )
 
@@ -2550,6 +2618,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       const removedIds = new Set(
         sourceMessages.slice(startIdx, endIdx).map((m) => m.id),
       )
+      const removedMessages = sourceMessages.slice(startIdx, endIdx)
+      releaseHighlightIds(
+        collectSelectionHighlightIdsFromMessages(removedMessages),
+      )
       const nextMessages = sourceMessages.filter((m) => !removedIds.has(m.id))
       const nextAssistantGroupBoundaryMessageIds =
         normalizeAssistantGroupBoundaryMessageIds(
@@ -2601,6 +2673,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       isCurrentConversationRunActive,
       normalizeAssistantGroupBoundaryMessageIds,
       persistConversation,
+      releaseHighlightIds,
     ],
   )
 
@@ -3977,6 +4050,15 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     if (!focusedMessageId) return
 
     if (focusedMessageId === inputMessage.id) {
+      const nextMentionables = removeSelectionMentionable(
+        inputMessageRef.current.mentionables,
+      )
+      releaseHighlightIds(
+        collectRemovedSelectionHighlightIds(
+          inputMessageRef.current.mentionables,
+          nextMentionables,
+        ),
+      )
       setInputMessage((prevInputMessage) => {
         const nextMentionables = removeSelectionMentionable(
           prevInputMessage.mentionables,
@@ -3991,6 +4073,22 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         }
       })
       return
+    }
+
+    const focusedMessage = chatMessagesStateRef.current.find(
+      (message): message is ChatUserMessage =>
+        message.role === 'user' && message.id === focusedMessageId,
+    )
+    if (focusedMessage) {
+      const nextMentionables = removeSelectionMentionable(
+        focusedMessage.mentionables,
+      )
+      releaseHighlightIds(
+        collectRemovedSelectionHighlightIds(
+          focusedMessage.mentionables,
+          nextMentionables,
+        ),
+      )
     }
 
     updateHistoricalUserMessage(focusedMessageId, (message) => {
@@ -4009,6 +4107,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     focusedMessageId,
     inputMessage.id,
     removeSelectionMentionable,
+    releaseHighlightIds,
     updateHistoricalUserMessage,
   ])
 
@@ -4019,12 +4118,26 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
         serializeMentionable(mentionable),
       )
 
-      if (mentionable.type === 'block' && mentionable.highlightId) {
-        releaseHighlightIds([mentionable.highlightId])
-      }
-
       // 从所有历史消息中删除
       const sourceMessages = chatMessagesStateRef.current
+      const idsToRelease = new Set<string>()
+      for (const message of sourceMessages) {
+        if (message.role !== 'user') continue
+        for (const id of collectSelectionHighlightIdsByMentionableKey(
+          message.mentionables,
+          mentionableKey,
+        )) {
+          idsToRelease.add(id)
+        }
+      }
+      for (const id of collectSelectionHighlightIdsByMentionableKey(
+        inputMessageRef.current.mentionables,
+        mentionableKey,
+      )) {
+        idsToRelease.add(id)
+      }
+      releaseHighlightIds(idsToRelease)
+
       let didChangeHistory = false
       const nextMessages = sourceMessages.flatMap((message): ChatMessage[] => {
         if (message.role !== 'user') {
@@ -5013,6 +5126,18 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
               setFocusedMessageId(messageOrGroup.id)
             }}
             onMentionablesChange={(mentionables) => {
+              const currentMessage = chatMessagesStateRef.current.find(
+                (message): message is ChatUserMessage =>
+                  message.role === 'user' && message.id === messageOrGroup.id,
+              )
+              if (currentMessage) {
+                releaseHighlightIds(
+                  collectRemovedSelectionHighlightIds(
+                    currentMessage.mentionables,
+                    mentionables,
+                  ),
+                )
+              }
               updateHistoricalUserMessage(messageOrGroup.id, (message) => {
                 const prevKeys = message.mentionables.map((m) =>
                   getMentionableKey(serializeMentionable(m)),
@@ -5382,7 +5507,9 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                           next.set(inputMessage.id, reasoningLevel)
                           return next
                         })
-                        commitSentPinnedHighlights()
+                        commitSentSelectionHighlights(
+                          messageForSubmit.mentionables,
+                        )
                         setInputMessage(getNewInputMessage(reasoningLevel))
                         return
                       }
@@ -5427,7 +5554,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       next.set(inputMessage.id, reasoningLevel)
                       return next
                     })
-                    commitSentPinnedHighlights()
+                    commitSentSelectionHighlights(messageForSubmit.mentionables)
                     setInputMessage(getNewInputMessage(reasoningLevel))
                   }}
                   onFocus={() => {
@@ -5435,6 +5562,12 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                   }}
                   mentionables={inputMessage.mentionables}
                   setMentionables={(mentionables) => {
+                    releaseHighlightIds(
+                      collectRemovedSelectionHighlightIds(
+                        inputMessageRef.current.mentionables,
+                        mentionables,
+                      ),
+                    )
                     setInputMessage((prevInputMessage) => {
                       return {
                         ...prevInputMessage,
