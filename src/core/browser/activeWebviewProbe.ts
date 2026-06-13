@@ -14,6 +14,8 @@
 
 import type { App, WorkspaceLeaf } from 'obsidian'
 
+import { CHAT_VIEW_TYPE } from '../../constants'
+
 export const SUPPORTED_WEBVIEW_VIEW_TYPES = [
   'webviewer',
   'url-webview',
@@ -68,7 +70,7 @@ export type ActiveWebviewHandle = {
   webview: WebviewLike
   viewType: SupportedViewType
   source: BrowserContextSource
-  /** Always true for handles returned by `findActiveWebviewHandle`. */
+  /** False when recovered from the last webview after focus moved to Chat. */
   userFocused: boolean
 }
 
@@ -109,6 +111,27 @@ const handleFromLeaf = (
   }
 }
 
+const recentlyFocusedWebviewLeaves = new WeakMap<App, WorkspaceLeaf>()
+
+const getLeafViewType = (leaf: WorkspaceLeaf | null | undefined): string => {
+  try {
+    return typeof leaf?.view?.getViewType === 'function'
+      ? leaf.view.getViewType()
+      : ''
+  } catch {
+    return ''
+  }
+}
+
+export function noteWebviewLeafFocus(
+  app: App,
+  leaf: WorkspaceLeaf | null | undefined,
+): void {
+  if (leaf && handleFromLeaf(leaf, false)) {
+    recentlyFocusedWebviewLeaves.set(app, leaf)
+  }
+}
+
 /**
  * Synchronously find the user's active webview leaf if it belongs to a
  * supported source. Returns null when:
@@ -129,7 +152,21 @@ export function findActiveWebviewHandle(app: App): ActiveWebviewHandle | null {
     workspace.getMostRecentLeaf(workspace.rootSplit) ??
     workspace.getMostRecentLeaf()
   if (!leaf) return null
-  return handleFromLeaf(leaf, true)
+
+  const activeHandle = handleFromLeaf(leaf, true)
+  if (activeHandle) {
+    recentlyFocusedWebviewLeaves.set(app, leaf)
+    return activeHandle
+  }
+
+  if (getLeafViewType(leaf) !== CHAT_VIEW_TYPE) {
+    return null
+  }
+
+  const recentWebviewLeaf = recentlyFocusedWebviewLeaves.get(app)
+  return recentWebviewLeaf
+    ? handleFromLeaf(recentWebviewLeaf, false)
+    : null
 }
 
 /**

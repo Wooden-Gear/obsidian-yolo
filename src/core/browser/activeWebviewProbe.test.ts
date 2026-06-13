@@ -1,10 +1,13 @@
-import type { App } from 'obsidian'
+import type { App, WorkspaceLeaf } from 'obsidian'
+
+import { CHAT_VIEW_TYPE } from '../../constants'
 
 import {
   type ActiveWebviewHandle,
   type WebviewLike,
   findActiveWebviewHandle,
   findWebviewHandleByPageId,
+  noteWebviewLeafFocus,
   readActiveWebviewSnapshot,
 } from './activeWebviewProbe'
 
@@ -107,6 +110,40 @@ describe('findActiveWebviewHandle', () => {
         getMostRecentLeaf: () => buildLeaf('markdown', null),
       },
     } as unknown as App
+    expect(findActiveWebviewHandle(app)).toBeNull()
+  })
+
+  it('falls back to the last focused webview when Chat has focus', () => {
+    const webviewLeaf = buildLeaf('webviewer', stubWebview())
+    const chatLeaf = buildLeaf(CHAT_VIEW_TYPE, null)
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => chatLeaf,
+        iterateAllLeaves: () => undefined,
+      },
+    } as unknown as App
+
+    noteWebviewLeafFocus(app, webviewLeaf as unknown as WorkspaceLeaf)
+    const handle = findActiveWebviewHandle(app)
+
+    expect(handle?.leaf).toBe(webviewLeaf)
+    expect(handle?.userFocused).toBe(false)
+  })
+
+  it('does not fall back to a stale webview when a non-chat leaf has focus', () => {
+    const webviewLeaf = buildLeaf('webviewer', stubWebview())
+    const markdownLeaf = buildLeaf('markdown', null)
+    const app = {
+      workspace: {
+        rootSplit: {},
+        getMostRecentLeaf: () => markdownLeaf,
+        iterateAllLeaves: () => undefined,
+      },
+    } as unknown as App
+
+    noteWebviewLeafFocus(app, webviewLeaf as unknown as WorkspaceLeaf)
+
     expect(findActiveWebviewHandle(app)).toBeNull()
   })
 

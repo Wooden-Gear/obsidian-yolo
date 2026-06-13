@@ -40,6 +40,7 @@ import {
   BackgroundActivityAction,
   BackgroundActivityRegistry,
 } from './core/background/backgroundActivityRegistry'
+import { noteWebviewLeafFocus } from './core/browser/activeWebviewProbe'
 import { WebviewSelectionBridge } from './core/browser/webviewSelectionBridge'
 import { setLLMDebugCaptureEnabled } from './core/llm/debugCapture'
 import { clearRequestTransportMemory } from './core/llm/requestTransport'
@@ -2080,6 +2081,7 @@ export default class YoloPlugin extends Plugin {
           if (leaf?.view instanceof ChatView) {
             this.getChatLeafSessionManager().touchLeafActive(leaf)
           }
+          noteWebviewLeafFocus(this.app, leaf)
           this.webviewSelectionBridge?.noteWorkspaceChange()
           const view = this.app.workspace.getActiveViewOfType(MarkdownView)
           const editor = view?.editor
