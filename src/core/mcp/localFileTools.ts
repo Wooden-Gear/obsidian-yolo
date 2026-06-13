@@ -760,7 +760,7 @@ export function getLocalFileTools(options?: {
                 type: 'string',
                 enum: ['readable', 'key_visible_info'],
                 description:
-                  'key_visible_info: compact visible headings, text blocks, tables, code, and formulas — prefer for long pages. readable (default): fuller Markdown-like text.',
+                  'Browser pages only. key_visible_info (default): compact visible headings, text blocks, tables, code, and formulas — prefer for long pages. readable: fuller Markdown-like text.',
               },
               ...(modalitySchema ? { modality: modalitySchema } : {}),
             },
@@ -3062,7 +3062,7 @@ export async function callLocalFileTool({
               continue
             }
 
-            const format = operation.format ?? 'readable'
+            const format = operation.format ?? 'key_visible_info'
             try {
               const browserResult = await readActiveWebviewPage(handle, {
                 format,

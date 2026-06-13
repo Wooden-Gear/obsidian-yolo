@@ -6,10 +6,10 @@
  *
  * Implementation notes:
  *   - We run an extraction script inside the webview via `executeJavaScript`.
- *     The script clones the document body, strips sensitive form inputs,
- *     and returns HTML + key visible info + redaction counts.
+ *     The script branches by format so each path only computes the payload it
+ *     actually returns.
  *   - HTML→markdown happens on the host via Obsidian's `htmlToMarkdown` to
- *     match `web_scrape`'s output format.
+ *     match `web_scrape`'s output format for `readable`.
  *   - Cookies / localStorage / sessionStorage are NEVER read — they only live
  *     in JS state and our extraction script never touches them.
  */
@@ -67,70 +67,114 @@ export class BrowserReadFailure extends Error {
 const DEFAULT_EXTRACTION_TIMEOUT_MS = 5000
 const LOADING_EXTRACTION_TIMEOUT_MS = 750
 
-type RawExtractionResult = {
+type RawRedactionCounts = {
+  password: number
+  hidden_input: number
+  file_input: number
+}
+
+type RawReadableExtractionResult = {
+  kind: 'readable'
   url: string
   title: string
   html: string
-  keyInfo: string
   headings: BrowserReadHeading[]
   links: BrowserReadLink[]
-  counts: {
-    password: number
-    hidden_input: number
-    file_input: number
-  }
+  counts: RawRedactionCounts
 }
+
+type RawKeyVisibleInfoExtractionResult = {
+  kind: 'key_visible_info'
+  url: string
+  title: string
+  keyInfo: string
+  counts: RawRedactionCounts
+}
+
+type RawExtractionResult =
+  | RawReadableExtractionResult
+  | RawKeyVisibleInfoExtractionResult
 
 const isRawExtractionResult = (
   value: unknown,
 ): value is RawExtractionResult => {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
-  return (
-    typeof v.url === 'string' &&
-    typeof v.title === 'string' &&
-    typeof v.html === 'string' &&
-    typeof v.keyInfo === 'string' &&
-    Array.isArray(v.headings) &&
-    Array.isArray(v.links) &&
-    typeof v.counts === 'object' &&
-    v.counts !== null
-  )
+  if (
+    typeof v.kind !== 'string' ||
+    typeof v.url !== 'string' ||
+    typeof v.title !== 'string' ||
+    typeof v.counts !== 'object' ||
+    v.counts === null
+  ) {
+    return false
+  }
+  if (v.kind === 'readable') {
+    return (
+      typeof v.html === 'string' &&
+      Array.isArray(v.headings) &&
+      Array.isArray(v.links)
+    )
+  }
+  if (v.kind === 'key_visible_info') {
+    return typeof v.keyInfo === 'string'
+  }
+  return false
 }
 
 // Note: the script body is embedded as a string template. Keep it
 // self-contained and JSON-safe — it must serialize and run inside the
 // remote Electron context.
-const EXTRACTION_SCRIPT = `(() => {
+const EXTRACTION_SCRIPT = `((format) => {
   const doc = document;
-  const counts = { password: 0, hidden_input: 0, file_input: 0 };
+  const getCounts = (root) => ({
+    password: root ? root.querySelectorAll('input[type="password"]').length : 0,
+    hidden_input: root ? root.querySelectorAll('input[type="hidden"]').length : 0,
+    file_input: root ? root.querySelectorAll('input[type="file"]').length : 0,
+  });
+  const basePayload = () => ({
+    url: location.href,
+    title: doc.title || '',
+  });
 
-  const root = doc.body || doc.documentElement;
-  const cloned = root ? root.cloneNode(true) : doc.createElement('div');
+  if (format === 'readable') {
+    const root = doc.body || doc.documentElement;
+    const cloned = root ? root.cloneNode(true) : doc.createElement('div');
+    const counts = { password: 0, hidden_input: 0, file_input: 0 };
 
-  const removeMatching = (selector, key) => {
-    cloned.querySelectorAll(selector).forEach((el) => {
-      counts[key]++;
-      el.remove();
+    const removeMatching = (selector, key) => {
+      cloned.querySelectorAll(selector).forEach((el) => {
+        counts[key]++;
+        el.remove();
+      });
+    };
+    removeMatching('input[type="password"]', 'password');
+    removeMatching('input[type="hidden"]', 'hidden_input');
+    removeMatching('input[type="file"]', 'file_input');
+    cloned.querySelectorAll('script,style,noscript,[hidden],[aria-hidden="true"]').forEach((el) => el.remove());
+
+    const headings = [];
+    cloned.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((el) => {
+      const level = parseInt(el.tagName.slice(1), 10);
+      const text = (el.textContent || '').trim();
+      if (text) headings.push({ level: level, text: text });
     });
-  };
-  removeMatching('input[type="password"]', 'password');
-  removeMatching('input[type="hidden"]', 'hidden_input');
-  removeMatching('input[type="file"]', 'file_input');
-  cloned.querySelectorAll('script,style,noscript,[hidden],[aria-hidden="true"]').forEach((el) => el.remove());
+    const links = [];
+    cloned.querySelectorAll('a[href]').forEach((el) => {
+      const href = el.getAttribute('href');
+      const text = (el.textContent || '').trim();
+      if (href && text) links.push({ text: text, href: href });
+    });
 
-  const headings = [];
-  cloned.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((el) => {
-    const level = parseInt(el.tagName.slice(1), 10);
-    const text = (el.textContent || '').trim();
-    if (text) headings.push({ level: level, text: text });
-  });
-  const links = [];
-  cloned.querySelectorAll('a[href]').forEach((el) => {
-    const href = el.getAttribute('href');
-    const text = (el.textContent || '').trim();
-    if (href && text) links.push({ text: text, href: href });
-  });
+    return {
+      kind: 'readable',
+      ...basePayload(),
+      html: cloned.innerHTML,
+      headings: headings,
+      links: links,
+      counts: counts,
+    };
+  }
 
   const textOf = (el) => (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
   const directTextOf = (el) => Array.from(el.childNodes || [])
@@ -139,7 +183,7 @@ const EXTRACTION_SCRIPT = `(() => {
     .join(' ')
     .replace(/\\s+/g, ' ')
     .trim();
-  const keyRoot = doc.body || doc.documentElement || cloned;
+  const keyRoot = doc.body || doc.documentElement || doc.createElement('div');
   const isVisibleForKeyInfo = (el) => {
     if (!el || el.nodeType !== 1) return false;
     if (el.closest('[hidden],[aria-hidden="true"]')) return false;
@@ -262,15 +306,15 @@ const EXTRACTION_SCRIPT = `(() => {
   });
 
   return {
-    url: location.href,
-    title: doc.title || '',
-    html: cloned.innerHTML,
+    kind: 'key_visible_info',
+    ...basePayload(),
     keyInfo: keyLines.join('\\n'),
-    headings: headings,
-    links: links,
-    counts: counts,
+    counts: getCounts(keyRoot),
   };
-})()`
+})`
+
+const buildExtractionScript = (format: BrowserReadFormat): string =>
+  `(${EXTRACTION_SCRIPT})(${JSON.stringify(format)})`
 
 const withTimeout = <T>(
   promise: Promise<T>,
@@ -334,8 +378,8 @@ const buildRedactions = (
 }
 
 /**
- * Read an open webview's rendered page contents. Always reads the full
- * document body via `executeJavaScript` (caller resolves the handle first).
+ * Read an open webview's rendered page contents via `executeJavaScript`
+ * (caller resolves the handle first).
  *
  * Throws `BrowserReadFailure` on timeout / extraction error. Returns null
  * only when the view has no usable URL and no rendered content yet.
@@ -352,7 +396,7 @@ export async function readActiveWebviewPage(
   let raw: unknown
   try {
     raw = await withTimeout(
-      handle.webview.executeJavaScript(EXTRACTION_SCRIPT),
+      handle.webview.executeJavaScript(buildExtractionScript(options.format)),
       options.executionTimeoutMs ??
         (loading
           ? LOADING_EXTRACTION_TIMEOUT_MS
@@ -403,12 +447,19 @@ export async function readActiveWebviewPage(
       'Extraction script returned an unexpected payload',
     )
   }
+  if (raw.kind !== options.format) {
+    throw new BrowserReadFailure(
+      'extraction_failed',
+      'Extraction script returned a payload for the wrong format',
+    )
+  }
 
   const hasRenderedContent =
-    raw.html.trim().length > 0 ||
-    raw.keyInfo.trim().length > 0 ||
-    raw.headings.length > 0 ||
-    raw.links.length > 0
+    raw.kind === 'readable'
+      ? raw.html.trim().length > 0 ||
+        raw.headings.length > 0 ||
+        raw.links.length > 0
+      : raw.keyInfo.trim().length > 0
   if ((!raw.url || raw.url === 'about:blank') && !hasRenderedContent) {
     return null
   }
@@ -422,20 +473,20 @@ export async function readActiveWebviewPage(
     loading,
     capturedAt: Date.now(),
     redactions: buildRedactions(raw.counts),
-    headings: raw.headings,
-    links: raw.links,
   }
 
-  if (options.format === 'key_visible_info') {
+  if (raw.kind === 'key_visible_info') {
     return {
       ...baseResult,
       text: raw.keyInfo,
     }
   }
 
-  // 'readable' (default): markdownify full page
+  // 'readable': markdownify full page
   return {
     ...baseResult,
+    headings: raw.headings,
+    links: raw.links,
     text: htmlToMarkdown(raw.html),
   }
 }

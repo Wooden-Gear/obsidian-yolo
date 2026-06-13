@@ -21,10 +21,10 @@ describe('readActiveWebviewPage', () => {
       getURL: () => '',
       executeJavaScript: () =>
         Promise.resolve({
+          kind: 'readable',
           url: '',
           title: 'Partial',
           html: '<p>Partial body</p>',
-          keyInfo: 'Partial body',
           headings: [],
           links: [],
           counts: { password: 0, hidden_input: 0, file_input: 0 },
@@ -43,10 +43,10 @@ describe('readActiveWebviewPage', () => {
       getURL: () => 'about:blank',
       executeJavaScript: () =>
         Promise.resolve({
+          kind: 'readable',
           url: 'about:blank',
           title: '',
           html: '',
-          keyInfo: '',
           headings: [],
           links: [],
           counts: { password: 0, hidden_input: 0, file_input: 0 },
@@ -62,10 +62,10 @@ describe('readActiveWebviewPage', () => {
     const handle = buildHandle({
       executeJavaScript: () =>
         Promise.resolve({
+          kind: 'readable',
           url: 'https://example.com/article',
           title: 'Article',
           html: '<h1>Hi</h1><p>Body text</p>',
-          keyInfo: 'Hi\nBody text',
           headings: [{ level: 1, text: 'Hi' }],
           links: [],
           counts: { password: 0, hidden_input: 0, file_input: 0 },
@@ -82,24 +82,28 @@ describe('readActiveWebviewPage', () => {
   })
 
   it('returns compact key visible information including formulas', async () => {
+    const executeJavaScript = jest.fn(() =>
+      Promise.resolve({
+        kind: 'key_visible_info',
+        url: 'https://example.com',
+        title: 'X',
+        keyInfo: '## Main result\nFormula: E = mc^2\n- Important point',
+        counts: { password: 0, hidden_input: 0, file_input: 0 },
+      }),
+    )
     const handle = buildHandle({
-      executeJavaScript: () =>
-        Promise.resolve({
-          url: 'https://example.com',
-          title: 'X',
-          html: '<article><h1>Paper</h1><p>Long body</p></article>',
-          keyInfo: '## Main result\nFormula: E = mc^2\n- Important point',
-          headings: [{ level: 2, text: 'Main result' }],
-          links: [],
-          counts: { password: 0, hidden_input: 0, file_input: 0 },
-        }),
+      executeJavaScript,
     })
     const result = await readActiveWebviewPage(handle, {
       format: 'key_visible_info',
     })
+    expect(executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('"key_visible_info"'),
+    )
     expect(result?.text).toContain('Formula: E = mc^2')
     expect(result?.text).toContain('Important point')
-    expect(result?.headings).toEqual([{ level: 2, text: 'Main result' }])
+    expect(result?.headings).toBeUndefined()
+    expect(result?.links).toBeUndefined()
   })
 
   it('returns full text without internal truncation', async () => {
@@ -107,10 +111,10 @@ describe('readActiveWebviewPage', () => {
     const handle = buildHandle({
       executeJavaScript: () =>
         Promise.resolve({
+          kind: 'readable',
           url: 'https://example.com',
           title: 'X',
           html,
-          keyInfo: html,
           headings: [],
           links: [],
           counts: { password: 0, hidden_input: 0, file_input: 0 },
@@ -126,10 +130,10 @@ describe('readActiveWebviewPage', () => {
     const handle = buildHandle({
       executeJavaScript: () =>
         Promise.resolve({
+          kind: 'readable',
           url: 'https://example.com',
           title: 'X',
           html: '',
-          keyInfo: '',
           headings: [],
           links: [],
           counts: { password: 1, hidden_input: 3, file_input: 0 },

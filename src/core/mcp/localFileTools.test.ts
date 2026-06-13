@@ -743,6 +743,7 @@ describe('local fs tool action helpers', () => {
             type: 'lines',
             startLine: 2,
             maxLines: 1,
+            format: 'readable',
           },
         },
       })
@@ -777,6 +778,40 @@ describe('local fs tool action helpers', () => {
         hasMoreBelow: true,
         nextStartLine: 3,
       })
+    })
+
+    it('defaults browser reads to key_visible_info format', async () => {
+      jest
+        .mocked(findWebviewHandleByPageId)
+        .mockReturnValue(mockHandle as never)
+      jest.mocked(readActiveWebviewPage).mockResolvedValue({
+        source: 'core_webviewer',
+        sourceViewType: 'webviewer',
+        url: 'https://example.com',
+        title: 'X',
+        format: 'key_visible_info',
+        loading: false,
+        capturedAt: Date.now(),
+        text: 'Visible summary',
+        redactions: [],
+      })
+
+      const result = await callLocalFileTool({
+        app: { vault: { getFileByPath: jest.fn().mockReturnValue(null) } } as unknown as App,
+        toolName: 'fs_read',
+        args: {
+          paths: [pagePath],
+          operation: {
+            type: 'full',
+          },
+        },
+      })
+
+      expect(result.status).toBe(ToolCallResponseStatus.Success)
+      expect(readActiveWebviewPage).toHaveBeenCalledWith(
+        mockHandle,
+        expect.objectContaining({ format: 'key_visible_info' }),
+      )
     })
 
     it('supports key_visible_info format for browser paths', async () => {
