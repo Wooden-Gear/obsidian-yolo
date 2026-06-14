@@ -10441,6 +10441,71 @@ button.yolo-agent-chip--more:hover {
   background: var(--interactive-accent-hover) !important;
 }
 
+.yolo-update-toast-cta.is-disabled,
+.yolo-update-toast-cta:disabled {
+  opacity: 0.65;
+  cursor: default;
+  pointer-events: none;
+}
+
+.yolo-update-toast-github-btn,
+.yolo-update-toast-secondary-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: none !important;
+  border-radius: var(--radius-s);
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  cursor: var(--cursor);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.yolo-update-toast-github-btn:hover,
+.yolo-update-toast-secondary-btn:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+.yolo-update-toast-manual-link {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0 2px 4px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-faint);
+  font-size: 11px;
+  text-align: center;
+  text-decoration: underline;
+  cursor: var(--cursor);
+}
+
+.yolo-update-toast-manual-link:hover {
+  color: var(--text-muted);
+}
+
+.yolo-update-toast-progress {
+  height: 3px;
+  margin: 0 2px;
+  border-radius: 999px;
+  background: var(--background-modifier-hover);
+  overflow: hidden;
+}
+
+.yolo-update-toast-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--interactive-accent);
+  transition: width 0.2s ease;
+}
+
 /* Release history modal — custom header row (title · lang · close), same
  * pattern as the update toast; native modal-header and close button hidden. */
 
@@ -10621,10 +10686,18 @@ button.yolo-agent-chip--more:hover {
 }
 
 .yolo-update-history-update-btn {
+  flex-shrink: 0;
+}
+
+.yolo-update-history-footer-actions {
   position: absolute;
   right: 0;
   top: 50%;
   translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(52%, 360px);
 }
 
 .yolo-update-history-page-label {

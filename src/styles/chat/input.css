@@ -2296,10 +2296,18 @@
 }
 
 .yolo-update-history-update-btn {
+  flex-shrink: 0;
+}
+
+.yolo-update-history-footer-actions {
   position: absolute;
   right: 0;
   top: 50%;
   translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(52%, 360px);
 }
 
 .yolo-update-history-page-label {
