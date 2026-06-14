@@ -1262,16 +1262,12 @@ export const zh: TranslationKeys = {
       tabCompletionTriggerDescription: '描述',
       tabCompletionTriggerRemove: '移除',
     },
-    pluginUpdate: {
-      sectionTitle: '插件更新',
-      autoDownload: '自动下载更新',
-      autoDownloadDesc:
-        '检测到新版本时在后台下载 release 文件；安装仍需你手动确认。',
-      autoDownloadDescUnavailable:
-        '一键安装仅在桌面端且插件目录可写时可用。当前设备请前往 GitHub Release 页面手动更新。',
-    },
     etc: {
       title: '其他',
+      pluginAutoUpdate: '自动下载更新',
+      pluginAutoUpdateDesc: '开启后检测到新版本会自动在后台加载。',
+      pluginAutoUpdateDescUnavailable:
+        '一键安装仅在桌面端且插件目录可写时可用；当前设备请通过社区插件或 GitHub 手动更新。',
       exportConfig: '导出配置',
       exportConfigDesc:
         '将当前插件配置导出为 JSON 文件，方便在其他笔记库中导入使用。',

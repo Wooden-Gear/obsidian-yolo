@@ -1,4 +1,4 @@
-import { App, Notice, normalizePath } from 'obsidian'
+import { App, Notice, Platform, normalizePath } from 'obsidian'
 import { useCallback, useEffect, useState } from 'react'
 
 import {
@@ -164,6 +164,7 @@ const StorageBadge = ({ value }: { value: number | null }) => {
 export function EtcSection({ app, plugin, className }: EtcSectionProps) {
   const { settings, setSettings } = useSettings()
   const { t } = useLanguage()
+  const canSelfUpdate = plugin.canSelfUpdatePlugin()
   const yoloBaseDir = settings.yolo?.baseDir ?? 'YOLO'
   const [storageUsage, setStorageUsage] = useState<StorageUsage>({
     chatHistoryBytes: null,
@@ -250,6 +251,19 @@ export function EtcSection({ app, plugin, className }: EtcSectionProps) {
         DEBUG_LOGS_DIR,
       ),
     )
+  }
+
+  const handlePluginAutoUpdateChange = (value: boolean) => {
+    void (async () => {
+      try {
+        await setSettings({
+          ...settings,
+          pluginUpdateAutoDownloadEnabled: value,
+        })
+      } catch (error: unknown) {
+        console.error('Failed to update plugin auto-update setting', error)
+      }
+    })()
   }
 
   const handleCaptureRawRequestDebugChange = (value: boolean) => {
@@ -433,6 +447,28 @@ export function EtcSection({ app, plugin, className }: EtcSectionProps) {
         </div>
 
         <div className="yolo-settings-block-content">
+          <ObsidianSetting
+            name={t('settings.etc.pluginAutoUpdate', '自动下载更新')}
+            desc={
+              Platform.isDesktop && canSelfUpdate
+                ? t(
+                    'settings.etc.pluginAutoUpdateDesc',
+                    '开启后检测到新版本会自动在后台加载。',
+                  )
+                : t(
+                    'settings.etc.pluginAutoUpdateDescUnavailable',
+                    '一键安装仅在桌面端且插件目录可写时可用；当前设备请通过社区插件或 GitHub 手动更新。',
+                  )
+            }
+            className="yolo-settings-card"
+          >
+            <ObsidianToggle
+              value={settings.pluginUpdateAutoDownloadEnabled ?? true}
+              onChange={handlePluginAutoUpdateChange}
+              disabled={!Platform.isDesktop || !canSelfUpdate}
+            />
+          </ObsidianSetting>
+
           <ObsidianSetting
             name={t('settings.etc.exportConfig', '导出配置')}
             desc={t(

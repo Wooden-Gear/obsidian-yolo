@@ -1076,14 +1076,11 @@ export type TranslationKeys = {
       tabCompletionTriggerDescription: string
       tabCompletionTriggerRemove: string
     }
-    pluginUpdate: {
-      sectionTitle: string
-      autoDownload: string
-      autoDownloadDesc: string
-      autoDownloadDescUnavailable: string
-    }
     etc: {
       title: string
+      pluginAutoUpdate?: string
+      pluginAutoUpdateDesc?: string
+      pluginAutoUpdateDescUnavailable?: string
       exportConfig?: string
       exportConfigDesc?: string
       export?: string

@@ -10,7 +10,6 @@ import { ObsidianSetting } from '../../common/ObsidianSetting'
 import { ObsidianToggle } from '../../common/ObsidianToggle'
 import { ChatPreferencesSection } from '../sections/ChatPreferencesSection'
 import { EtcSection } from '../sections/EtcSection'
-import { PluginUpdateSection } from '../sections/PluginUpdateSection'
 
 type OthersTabProps = {
   app: App
@@ -342,11 +341,6 @@ export function OthersTab({ app, plugin }: OthersTabProps) {
           </div>
         </section>
       </div>
-
-      <PluginUpdateSection
-        plugin={plugin}
-        className="yolo-settings-section--tight"
-      />
 
       <EtcSection
         app={app}

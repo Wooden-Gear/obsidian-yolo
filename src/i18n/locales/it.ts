@@ -1258,16 +1258,13 @@ export const it: TranslationKeys = {
       tabCompletionTriggerDescription: 'Descrizione',
       tabCompletionTriggerRemove: 'Rimuovi',
     },
-    pluginUpdate: {
-      sectionTitle: 'Aggiornamenti plugin',
-      autoDownload: 'Scarica aggiornamenti automaticamente',
-      autoDownloadDesc:
-        'Quando viene rilevata una nuova versione, scarica i file di release in background. L’installazione richiede comunque la tua conferma.',
-      autoDownloadDescUnavailable:
-        'L’installazione con un clic è disponibile solo su desktop con cartella plugin locale. Su questo dispositivo usa la pagina GitHub Release.',
-    },
     etc: {
       title: 'Altro',
+      pluginAutoUpdate: 'Scarica aggiornamenti automaticamente',
+      pluginAutoUpdateDesc:
+        'Se attivo, le nuove versioni rilevate vengono scaricate automaticamente in background.',
+      pluginAutoUpdateDescUnavailable:
+        'L’installazione con un clic è disponibile solo su desktop con cartella plugin scrivibile. Su questo dispositivo aggiorna tramite Community plugins o GitHub.',
       resetSettings: 'Ripristina impostazioni',
       resetSettingsDesc:
         'Ripristina tutte le impostazioni ai valori predefiniti.',

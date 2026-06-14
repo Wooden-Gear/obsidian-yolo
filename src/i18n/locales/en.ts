@@ -1368,16 +1368,13 @@ export const en: TranslationKeys = {
       tabCompletionTriggerDescription: 'Description',
       tabCompletionTriggerRemove: 'Remove',
     },
-    pluginUpdate: {
-      sectionTitle: 'Plugin updates',
-      autoDownload: 'Auto-download updates',
-      autoDownloadDesc:
-        'When a new version is detected, download release files in the background. Installing still requires your confirmation.',
-      autoDownloadDescUnavailable:
-        'One-click install is only available on desktop with a local plugin folder. On this device, use the GitHub release page to update manually.',
-    },
     etc: {
       title: 'Other',
+      pluginAutoUpdate: 'Auto-download updates',
+      pluginAutoUpdateDesc:
+        'When enabled, new versions are downloaded automatically in the background when detected.',
+      pluginAutoUpdateDescUnavailable:
+        'One-click install is only available on desktop with a writable plugin folder. On this device, update via Community plugins or GitHub.',
       exportConfig: 'Export settings',
       exportConfigDesc:
         'Export current plugin settings to a JSON file for use in other vaults.',

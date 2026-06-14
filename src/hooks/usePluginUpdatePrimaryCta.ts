@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useLanguage } from '../contexts/language-context'
 import { usePlugin } from '../contexts/plugin-context'
 import { openCommunityPluginsSettings } from '../core/update/openCommunityPluginsSettings'
+import type { YoloSettings } from '../settings/schema/setting.types'
 
 import { usePluginUpdate } from './usePluginUpdate'
 import { useUpdateCheck } from './useUpdateCheck'
@@ -36,12 +37,23 @@ export function usePluginUpdatePrimaryCta(
   const { t } = useLanguage()
   const plugin = usePlugin()
   const { app } = plugin
+  const [settings, setSettings] = useState<YoloSettings>(() => plugin.settings)
   const { result } = useUpdateCheck()
   const { state: updateState, canSelfUpdate, startDownload, applyUpdate } =
     usePluginUpdate()
 
+  useEffect(() => {
+    return plugin.addSettingsChangeListener((newSettings) => {
+      setSettings(newSettings)
+    })
+  }, [plugin])
+
+  const autoUpdateEnabled = settings.pluginUpdateAutoDownloadEnabled ?? true
   const hasSelfUpdate =
-    canSelfUpdate && Boolean(result?.assets) && Boolean(result?.hasUpdate)
+    autoUpdateEnabled &&
+    canSelfUpdate &&
+    Boolean(result?.assets) &&
+    Boolean(result?.hasUpdate)
 
   const latestVersion = result?.latestVersion ?? null
   const releaseUrl = result?.releaseUrl ?? null
@@ -54,10 +66,7 @@ export function usePluginUpdatePrimaryCta(
   const primaryCta = useMemo((): PluginUpdatePrimaryCta => {
     if (!hasSelfUpdate) {
       return {
-        label: t(
-          'update.updateInCommunityPlugins',
-          'Update in community plugins',
-        ),
+        label: t('update.goUpdate', 'Update'),
         disabled: false,
         onClick: openCommunityPlugins,
       }
