@@ -91,6 +91,7 @@ import {
   callLocalFileTool,
   getLocalFileTools,
   isLocalFsWriteToolName,
+  parseBrowserReadPageId,
   parseLocalFsActionFromToolArgs,
   recoverLikelyEscapedBackslashSequences,
 } from './localFileTools'
@@ -878,6 +879,21 @@ describe('local fs tool action helpers', () => {
         ok: false,
         error: expect.stringContaining('No open web page'),
       })
+    })
+
+    it('rejects browser:// internet URLs with tool guidance', () => {
+      expect(() =>
+        parseBrowserReadPageId('browser://https://example.com/article'),
+      ).toThrow(/browser:\/\/ paths only read open Obsidian web pages/)
+      expect(() =>
+        parseBrowserReadPageId('browser://https://example.com/article'),
+      ).toThrow(/use web_search or web_scrape/)
+    })
+
+    it('rejects page_id paths with appended URL segments', () => {
+      expect(() =>
+        parseBrowserReadPageId('browser://page_ab12cd34_ef56gh78/abcd'),
+      ).toThrow(/Do not append URL paths to a page_id/)
     })
   })
 

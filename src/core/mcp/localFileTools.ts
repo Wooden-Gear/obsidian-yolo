@@ -130,6 +130,8 @@ const MAX_READ_MAX_LINES = 2000
 const MAX_READ_LINE_INDEX = 1_000_000
 const MAX_RAG_SNIPPET_CHARS = 500
 const RAG_FETCH_LIMIT_MAX = 300
+const BROWSER_READ_PATH_USAGE =
+  'browser:// paths only read open Obsidian web pages by page_id copied exactly from <browser_context> (browser://page_<8 lowercase base36>_<8 lowercase base36>). Do not append URL paths to a page_id and do not use browser:// to open or fetch internet URLs. For internet access, use web_search or web_scrape when available; if those tools are unavailable, tell the user.'
 
 const getContextPrunableToolCallIds = (
   messages: ChatMessage[] | undefined,
@@ -483,9 +485,7 @@ export const parseBrowserReadPageId = (path: string): string => {
   }
   const pageId = trimmed.slice(BROWSER_READ_PATH_PREFIX.length).trim()
   if (!BROWSER_PAGE_ID_PATTERN.test(pageId)) {
-    throw new Error(
-      'browser:// path must use a page_id copied from <browser_context> (page_<8 lowercase base36>_<8 lowercase base36>).',
-    )
+    throw new Error(BROWSER_READ_PATH_USAGE)
   }
   return pageId
 }
@@ -719,7 +719,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        'Read vault files, skill instructions, or open Obsidian web pages. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes. Open web pages use browser://<page_id> copied from <browser_context>. Do not call browser:// paths when <browser_context> is absent.',
+        'Read vault files, skill instructions, or open Obsidian web pages. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes. Open web pages use browser://<page_id> copied exactly from <browser_context>. browser:// does not open URLs or fetch internet content; use web_search or web_scrape when available, and tell the user if those tools are unavailable. Do not call browser:// paths when <browser_context> is absent.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -728,7 +728,7 @@ export function getLocalFileTools(options?: {
             items: {
               type: 'string',
             },
-            description: `Vault-relative file paths, skill paths (builtin://), or browser://<page_id> from <browser_context>. Max ${MAX_BATCH_READ_FILES} items.`,
+            description: `Vault-relative file paths, skill paths (builtin://), or browser://<page_id> copied exactly from <browser_context>. Max ${MAX_BATCH_READ_FILES} items. Do not pass browser://https://... or browser://domain/path.`,
           },
           operation: {
             type: 'object',
