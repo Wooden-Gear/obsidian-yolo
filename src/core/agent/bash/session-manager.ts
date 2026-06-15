@@ -336,6 +336,23 @@ const createKillProcess = (child: ChildProcessWithoutNullStreams) => {
   return { killProcess, cancelPendingKill }
 }
 
+const getOneShotSpawnArgs = (
+  provider: ShellProvider,
+  command: string,
+): string[] => {
+  if (provider.flavor === 'powershell') {
+    return [
+      ...provider.spawnArgs,
+      '-Command',
+      `${command}${provider.lineEnding}` +
+        '$__yolo_exit = if ($LASTEXITCODE -ne $null) { $LASTEXITCODE } elseif ($?) { 0 } else { 1 }' +
+        `${provider.lineEnding}exit $__yolo_exit`,
+    ]
+  }
+
+  return [...provider.spawnArgs, '-c', command]
+}
+
 const notifyWaiters = (session: BashSession): void => {
   for (const waiter of session.waiters) waiter()
   session.waiters.clear()
@@ -944,6 +961,151 @@ const resolveOutputSnapshotOptions = (
   return {}
 }
 
+const buildOneShotResult = (
+  active: ActiveCommand,
+  state: RunBashResult['state'],
+  options: OutputSnapshotOptions,
+): RunBashResult => {
+  const stdout = options.tail
+    ? active.stdoutCollector.tail('', options.tail)
+    : active.stdoutCollector.finalize()
+  const stderr = options.tail
+    ? active.stderrCollector.tail('', options.tail)
+    : active.stderrCollector.finalize()
+  const truncated = mergeTruncation(stdout.truncated, stderr.truncated)
+
+  return {
+    state,
+    stdout: stdout.text,
+    stderr: stderr.text,
+    ...(active.exitCode !== undefined ? { exit_code: active.exitCode } : {}),
+    ...(truncated ? { truncated } : {}),
+  }
+}
+
+const runOneShotCommand = async ({
+  command,
+  cwd,
+  timeoutMs,
+  signal,
+  source,
+  outputSnapshotOptions,
+}: {
+  command: string
+  cwd?: string
+  timeoutMs: number
+  signal?: AbortSignal
+  source?: TaskSource
+  outputSnapshotOptions: OutputSnapshotOptions
+}): Promise<RunBashResult> => {
+  const provider = await resolveShellProvider()
+  const spawnOptions: SpawnOptions =
+    process.platform === 'win32'
+      ? {
+          cwd,
+          env: provider.env,
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      : {
+          cwd,
+          env: provider.env,
+          detached: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+  const spawnFn = process.platform === 'win32' ? crossSpawn : spawn
+  const child = spawnFn(
+    provider.binary,
+    getOneShotSpawnArgs(provider, command),
+    spawnOptions,
+  ) as ChildProcessWithoutNullStreams
+  const { killProcess, cancelPendingKill } = createKillProcess(child)
+  const stdoutDecoder = new StringDecoder('utf8')
+  const stderrDecoder = new StringDecoder('utf8')
+  const active: ActiveCommand = {
+    token: '',
+    source,
+    stdoutCollector: new CappedOutputCollector(),
+    stderrCollector: new CappedOutputCollector(),
+    stdoutLineBuffer: '',
+    lastOutputAt: Date.now(),
+    backgroundIdleTimer: null,
+    backgroundCompletionTimer: null,
+    lastWaitingStdoutBytes: 0,
+    lastWaitingStderrBytes: 0,
+  }
+
+  pushLiveCommandStatus(active, 'running')
+
+  return new Promise((resolve) => {
+    let resolved = false
+    let forcedState: RunBashResult['state'] | null = null
+    let timeout: ReturnType<typeof setTimeout> | null = null
+
+    const cleanup = () => {
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      signal?.removeEventListener('abort', handleAbort)
+      cancelPendingKill()
+    }
+
+    const finish = (
+      state: RunBashResult['state'],
+      exitCode: number | null,
+    ) => {
+      if (resolved) return
+      resolved = true
+      active.stdoutCollector.pushText(stdoutDecoder.end())
+      active.stderrCollector.pushText(stderrDecoder.end())
+      active.exitCode = exitCode
+      active.doneAt = Date.now()
+      cleanup()
+      pushLiveCommandStatus(active, 'done')
+      resolve(buildOneShotResult(active, state, outputSnapshotOptions))
+    }
+
+    const handleAbort = () => {
+      forcedState = 'killed'
+      killProcess()
+    }
+
+    child.stdout.on('data', (chunk: Buffer) => {
+      const text = stdoutDecoder.write(chunk)
+      if (!text) return
+      active.lastOutputAt = Date.now()
+      active.stdoutCollector.pushText(text)
+      pushLiveCommandChunk(active, 'stdout', text)
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      const text = stderrDecoder.write(chunk)
+      if (!text) return
+      active.lastOutputAt = Date.now()
+      active.stderrCollector.pushText(text)
+      pushLiveCommandChunk(active, 'stderr', text)
+    })
+    child.once('error', (error) => {
+      active.stderrCollector.pushText(`\nShell process error: ${error.message}`)
+      finish(forcedState ?? 'completed', null)
+    })
+    child.once('close', (code) => {
+      finish(forcedState ?? 'completed', code)
+    })
+
+    signal?.addEventListener('abort', handleAbort, { once: true })
+    timeout = setTimeout(() => {
+      forcedState = 'timeout'
+      killProcess()
+    }, timeoutMs)
+    timeout.unref?.()
+
+    if (signal?.aborted) {
+      handleAbort()
+    }
+  })
+}
+
 export async function runBash(params: RunBashParams): Promise<RunBashResult> {
   cleanupIdleSessions()
 
@@ -961,6 +1123,25 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
 
   const timeoutMs = resolveTimeoutMs(params.timeoutSeconds)
   const outputSnapshotOptions = resolveOutputSnapshotOptions(params)
+  const command = params.command?.trim()
+  const shouldRunOneShot =
+    !!command &&
+    params.sessionId === undefined &&
+    params.input === undefined &&
+    params.kill !== true &&
+    params.background !== true
+
+  if (shouldRunOneShot) {
+    return runOneShotCommand({
+      command,
+      cwd: params.cwd,
+      timeoutMs,
+      signal: params.signal,
+      source: params.source,
+      outputSnapshotOptions,
+    })
+  }
+
   const session =
     params.sessionId !== undefined
       ? sessions.get(params.sessionId)
@@ -989,7 +1170,6 @@ export async function runBash(params: RunBashParams): Promise<RunBashResult> {
     writeToSession(session, params.input)
   }
 
-  const command = params.command?.trim()
   const isPollOnly = params.sessionId !== undefined && !command && !params.input
   if (command) {
     if (session.activeCommand && session.activeCommand.exitCode === undefined) {

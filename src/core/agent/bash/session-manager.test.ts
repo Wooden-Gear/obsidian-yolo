@@ -98,10 +98,29 @@ describe('terminal command session-manager', () => {
     expect(polled.stdout).toBe('line-18\nline-19\nline-20\n')
   })
 
-  it('keeps the final session snapshot available for later tail polling', async () => {
+  it('runs consecutive one-shot commands without sharing a busy session', async () => {
+    const first = await runBash({
+      command: `sh -c 'printf ready; sleep 0.2'`,
+      cwd: '/tmp',
+      timeoutSeconds: 2,
+    })
+    const second = await runBash({
+      command: 'printf next',
+      cwd: '/tmp',
+      timeoutSeconds: 2,
+    })
+
+    expect(first.state).toBe('completed')
+    expect(first.stdout).toBe('ready')
+    expect(second.state).toBe('completed')
+    expect(second.stdout).toBe('next')
+  })
+
+  it('keeps the final session snapshot available for later tail polling in explicit session mode', async () => {
     const completed = await runBash({
       command: `printf 'one\\ntwo\\nthree\\n'`,
       cwd: '/tmp',
+      background: true,
       timeoutSeconds: 2,
     })
     expect(completed.state).toBe('completed')
@@ -116,7 +135,7 @@ describe('terminal command session-manager', () => {
     expect(polled.stdout).toBe('two\nthree\n')
   })
 
-  it('keeps shell state across shared foreground commands', async () => {
+  it('does not keep shell state across default one-shot commands', async () => {
     await runBash({
       command: 'cd /tmp',
       cwd: '/tmp',
@@ -124,6 +143,26 @@ describe('terminal command session-manager', () => {
     })
     const result = await runBash({
       command: 'pwd',
+      cwd: '/',
+      timeoutSeconds: 2,
+    })
+
+    expect(result.state).toBe('completed')
+    expect(result.stdout.trim()).toBe('/')
+  })
+
+  it('keeps shell state when explicitly reusing a session', async () => {
+    const started = await runBash({
+      command: 'cd /tmp',
+      cwd: '/',
+      background: true,
+      timeoutSeconds: 2,
+    })
+    expect(started.session_id).toBeDefined()
+
+    const result = await runBash({
+      command: 'pwd',
+      sessionId: started.session_id,
       timeoutSeconds: 2,
     })
 

@@ -1064,9 +1064,11 @@ export function getLocalFileTools(options?: {
       description:
         'Run a command in the local OS shell. Desktop-only. ' +
         'Uses PowerShell on Windows and a POSIX shell on macOS/Linux. ' +
-        'Use for terminal-style inspection or local commands. ' +
-        'Arguments: command starts a command; background=true returns a session_id ' +
-        'when the command keeps running; session_id polls or continues an existing ' +
+        'Use for terminal-style inspection or local CLI commands. ' +
+        'By default, command runs as a one-shot process and completes when that process exits; ' +
+        'it does not keep shell state between calls. ' +
+        'Use background=true to create a persistent session for long-running or interactive commands; ' +
+        'session_id polls or continues an existing ' +
         'session; input sends stdin to that session; kill=true terminates it. ' +
         'Results separate stdout and stderr. ' +
         'Use tail_lines or tail_bytes when polling verbose sessions to inspect recent logs only. ' +

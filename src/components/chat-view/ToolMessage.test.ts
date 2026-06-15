@@ -491,6 +491,26 @@ describe('ToolMessage headline helpers', () => {
     })
   })
 
+  it('uses basename plus arguments for long single terminal_command headlines', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__terminal_command',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              command:
+                '/Applications/Obsidian.app/Contents/MacOS/obsidian-cli plugin:reload id=yolo',
+            },
+          }),
+        },
+        labels,
+      }),
+    ).toEqual({
+      displayName: 'Terminal command',
+      summaryText: 'obsidian-cli plugin:reload id=yolo',
+    })
+  })
+
   it('uses command-name summary for long streaming terminal_command headlines', () => {
     expect(
       getHeadlineDisplayInfo({

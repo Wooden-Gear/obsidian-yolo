@@ -504,6 +504,11 @@ const summarizeShellCommand = (
     return preview
   }
 
+  const simplePreview = summarizeSimpleShellCommand(command)
+  if (!options.streaming && simplePreview) {
+    return simplePreview
+  }
+
   const commandNames = extractShellCommandNames(command)
   if (commandNames.length === 0) {
     return truncateText(preview, SHELL_COMMAND_SUMMARY_MAX_CHARS)
@@ -519,6 +524,41 @@ const summarizeShellCommand = (
     : SHELL_COMMAND_LONG_PREFIX
 
   return `${prefix} ${commandList}`
+}
+
+const summarizeSimpleShellCommand = (command: string): string | undefined => {
+  const preview = command.trim().replace(/\s+/g, ' ')
+  if (!preview || /[;&|<>(){}\n]/.test(command)) {
+    return undefined
+  }
+
+  const rawWords = preview
+    .split(/\s+/)
+    .map((word) => word.replace(/^['"]+|['",]+$/g, ''))
+    .filter(Boolean)
+
+  let commandIndex = -1
+  for (let i = 0; i < rawWords.length; i++) {
+    const word = rawWords[i]
+    if (SHELL_COMMAND_KEYWORDS.has(word)) continue
+    if (SHELL_COMMAND_WRAPPERS.has(word)) continue
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(word)) continue
+    if (word.startsWith('-') || word.startsWith('$')) continue
+    if (!/^[A-Za-z0-9_.:/-]+$/.test(word)) continue
+    commandIndex = i
+    break
+  }
+
+  if (commandIndex < 0) {
+    return undefined
+  }
+
+  const words = [...rawWords]
+  words[commandIndex] = words[commandIndex].split('/').pop() ?? words[commandIndex]
+  return truncateText(
+    words.slice(commandIndex).join(' '),
+    SHELL_COMMAND_SUMMARY_MAX_CHARS,
+  )
 }
 
 const extractShellCommandNames = (command: string): string[] => {
