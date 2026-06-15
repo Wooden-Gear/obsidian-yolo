@@ -705,6 +705,54 @@ describe('local fs tool action helpers', () => {
     expect(payload.results[0].returnedRange).toBeUndefined()
   })
 
+  it('defaults fs_read to full operation when operation is omitted', async () => {
+    const file = Object.assign(new TFile(), {
+      path: 'note.md',
+      stat: { size: 20 },
+    })
+    const read = jest.fn().mockResolvedValue(['one', 'two'].join('\n'))
+
+    const result = await callLocalFileTool({
+      app: {
+        vault: {
+          getFileByPath: jest.fn().mockReturnValue(file),
+          read,
+        },
+      } as unknown as App,
+      toolCallId: 'read-call-default-full',
+      toolName: 'fs_read',
+      args: {
+        paths: ['note.md'],
+      },
+    })
+
+    expect(result.status).toBe(ToolCallResponseStatus.Success)
+    if (result.status !== ToolCallResponseStatus.Success) {
+      throw new Error('expected success')
+    }
+    const payload = JSON.parse(result.text) as {
+      toolCallId: string | null
+      requestedOperation: { type: string; modality: string }
+      results: Array<{
+        ok: boolean
+        content: string
+        totalLines: number
+        returnedRange?: { startLine: number | null; endLine: number | null }
+      }>
+    }
+    expect(payload.toolCallId).toBe('read-call-default-full')
+    expect(payload.requestedOperation).toMatchObject({
+      type: 'full',
+    })
+    expect(payload.requestedOperation.modality).toBeUndefined()
+    expect(payload.results[0]).toMatchObject({
+      ok: true,
+      content: ['1|one', '2|two'].join('\n'),
+      totalLines: 2,
+    })
+    expect(payload.results[0].returnedRange).toBeUndefined()
+  })
+
   describe('fs_read browser:// paths', () => {
     const pagePath = 'browser://page_ab12cd34_ef56gh78'
     const mockHandle = {

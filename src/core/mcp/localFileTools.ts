@@ -733,7 +733,7 @@ export function getLocalFileTools(options?: {
           operation: {
             type: 'object',
             description:
-              'Read strategy. full: whole file/page. lines: targeted range (PDFs use page numbers). format applies only to browser:// paths.',
+              'Read strategy. Omit for full. full: whole file/page. lines: targeted range (PDFs use page numbers). format applies only to browser:// paths.',
             properties: {
               type: {
                 type: 'string',
@@ -764,7 +764,7 @@ export function getLocalFileTools(options?: {
             required: ['type'],
           },
         },
-        required: ['paths', 'operation'],
+        required: ['paths'],
       },
     },
     {
@@ -2000,6 +2000,25 @@ const getFsEditPlan = (args: Record<string, unknown>): TextEditPlan => {
 }
 
 const getFsReadOperation = (args: Record<string, unknown>): FsReadOperation => {
+  const topLevelOperationKeys = [
+    'type',
+    'startLine',
+    'endLine',
+    'maxLines',
+    'format',
+    'modality',
+  ]
+  const hasTopLevelOperationKey = topLevelOperationKeys.some(
+    (key) => args[key] !== undefined,
+  )
+
+  if (
+    (args.operation === undefined || args.operation === null) &&
+    !hasTopLevelOperationKey
+  ) {
+    return { type: 'full' }
+  }
+
   const parsedOperation = coerceOperationObject(args.operation)
   const type = asOptionalString(parsedOperation.type).trim().toLowerCase()
 
