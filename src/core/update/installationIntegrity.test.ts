@@ -1,4 +1,7 @@
-import { RELEASE_FILE_NAMES, parseStylesBakedVersion } from './installationIntegrity'
+import {
+  RELEASE_FILE_NAMES,
+  parseStylesBakedVersion,
+} from './installationIntegrity'
 
 describe('parseStylesBakedVersion', () => {
   it('parses the version banner from the first line', () => {

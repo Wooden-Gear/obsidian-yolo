@@ -66,6 +66,12 @@ import {
 } from './core/rag/ragIndexService'
 import { migrateVaultSkillFrontmatter } from './core/skills/liteSkills'
 import {
+  type InstallationIncompleteDetail,
+  type ReleaseFileName,
+  checkInstallationIntegrityLayer1And2,
+} from './core/update/installationIntegrity'
+import {
+  type PluginUpdateState,
   applyRepairFiles,
   applyStagedUpdate,
   canSelfUpdate,
@@ -74,13 +80,7 @@ import {
   getRepairStagingStatus,
   getStagingDir,
   getStagingStatus,
-  type PluginUpdateState,
 } from './core/update/pluginUpdater'
-import {
-  checkInstallationIntegrityLayer1And2,
-  type InstallationIncompleteDetail,
-  type ReleaseFileName,
-} from './core/update/installationIntegrity'
 import {
   type ReleaseAssets,
   type UpdateCheckResult,

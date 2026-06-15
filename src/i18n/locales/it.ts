@@ -2025,6 +2025,7 @@ export const it: TranslationKeys = {
     installFailed: 'Installazione non riuscita',
     viewOnGitHub: 'Vedi su GitHub',
     updateInCommunityPlugins: 'Aggiorna dai plugin community',
-    manualInstallOnGitHub: 'Non riesci ad aggiornare? Installa manualmente da GitHub',
+    manualInstallOnGitHub:
+      'Non riesci ad aggiornare? Installa manualmente da GitHub',
   },
 }

@@ -1,10 +1,8 @@
-import { normalizePath, type DataAdapter } from 'obsidian'
+import { type DataAdapter, normalizePath } from 'obsidian'
 
 import type YoloPlugin from '../../main'
 
-import {
-  normalizePluginVersion,
-} from './updateChecker'
+import { normalizePluginVersion } from './updateChecker'
 
 export const RELEASE_FILE_NAMES = {
   mainJs: 'main.js',
@@ -149,7 +147,9 @@ export async function checkInstallationIntegrityLayer1And2(
   const manifestPath = normalizePath(
     `${pluginDir}/${RELEASE_FILE_NAMES.manifestJson}`,
   )
-  const stylesPath = normalizePath(`${pluginDir}/${RELEASE_FILE_NAMES.stylesCss}`)
+  const stylesPath = normalizePath(
+    `${pluginDir}/${RELEASE_FILE_NAMES.stylesCss}`,
+  )
 
   const mainExists = await adapter.exists(mainPath)
   if (!mainExists) {

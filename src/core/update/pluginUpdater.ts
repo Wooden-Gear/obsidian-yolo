@@ -1,24 +1,24 @@
 import {
   App,
+  type DataAdapter,
   FileSystemAdapter,
   Platform,
   apiVersion,
   normalizePath,
   requestUrl,
-  type DataAdapter,
 } from 'obsidian'
 
 import type YoloPlugin from '../../main'
 
 import {
-  compareVersions,
-  normalizePluginVersion,
-  type ReleaseAssets,
-} from './updateChecker'
-import {
   RELEASE_FILE_NAMES,
   type ReleaseFileName,
 } from './installationIntegrity'
+import {
+  type ReleaseAssets,
+  compareVersions,
+  normalizePluginVersion,
+} from './updateChecker'
 
 const STAGING_ROOT = '.yolo-update-staging'
 const REPAIR_META_FILE = 'repair-meta.json'
@@ -237,7 +237,10 @@ export async function getStagingStatus(
   }
 
   const normalized = normalizePluginVersion(manifest.version)
-  if (expectedVersion && normalized !== normalizePluginVersion(expectedVersion)) {
+  if (
+    expectedVersion &&
+    normalized !== normalizePluginVersion(expectedVersion)
+  ) {
     return { ready: false }
   }
 
@@ -271,9 +274,7 @@ export async function clearStagingRoot(
   await removeStagingDir(adapter, getStagingRoot(pluginDir))
 }
 
-async function downloadBinary(
-  url: string,
-): Promise<ArrayBuffer> {
+async function downloadBinary(url: string): Promise<ArrayBuffer> {
   const response = await requestUrl({ url, method: 'GET' })
   if (response.status < 200 || response.status >= 300) {
     throw new Error(`Download failed (${response.status})`)

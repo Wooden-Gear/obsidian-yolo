@@ -187,7 +187,10 @@ function UpdateToast() {
             )}
             onClick={openCommunityPlugins}
           >
-            {t('update.updateInCommunityPlugins', 'Update in community plugins')}
+            {t(
+              'update.updateInCommunityPlugins',
+              'Update in community plugins',
+            )}
           </button>
         ) : null}
         <button

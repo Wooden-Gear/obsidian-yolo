@@ -4,8 +4,8 @@ import type { ReactNode } from 'react'
 
 import { useLanguage } from '../../contexts/language-context'
 import { usePlugin } from '../../contexts/plugin-context'
-import { normalizePluginVersion } from '../../core/update/updateChecker'
 import { openCommunityPluginsSettings } from '../../core/update/openCommunityPluginsSettings'
+import { normalizePluginVersion } from '../../core/update/updateChecker'
 import { useInstallationIncompleteBanner } from '../../hooks/useInstallationIncompleteBanner'
 import { usePluginUpdate } from '../../hooks/usePluginUpdate'
 
@@ -26,8 +26,7 @@ export function InstallationIncompleteBanner(): ReactNode {
   const plugin = usePlugin()
   const { app } = plugin
   const { detail, dismissed, dismiss } = useInstallationIncompleteBanner()
-  const { state: updateState, canSelfUpdate, applyUpdate } =
-    usePluginUpdate()
+  const { state: updateState, canSelfUpdate, applyUpdate } = usePluginUpdate()
 
   if (!detail || dismissed) {
     return null
@@ -79,10 +78,7 @@ export function InstallationIncompleteBanner(): ReactNode {
 
   const resolveCtaLabel = (): string => {
     if (!hasSelfUpdate) {
-      return t(
-        'update.updateInCommunityPlugins',
-        'Update in community plugins',
-      )
+      return t('update.updateInCommunityPlugins', 'Update in community plugins')
     }
     if (isReadyForTarget) {
       return t('update.repairAndReload', 'Repair and reload')

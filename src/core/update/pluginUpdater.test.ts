@@ -1,5 +1,6 @@
-import { Stat, type DataAdapter } from 'obsidian'
+import { type DataAdapter, Stat } from 'obsidian'
 
+import { RELEASE_FILE_NAMES } from './installationIntegrity'
 import {
   applyRepairFiles,
   applyStagedUpdate,
@@ -11,7 +12,9 @@ import {
   getStagingStatus,
   meetsMinAppVersion,
 } from './pluginUpdater'
-import { RELEASE_FILE_NAMES } from './installationIntegrity'
+
+// eslint-disable-next-line obsidianmd/hardcoded-config-path -- mock Vault#configDir for adapter paths
+const MOCK_PLUGIN_DIR = 'vault/.obsidian/plugins/yolo'
 
 class MockAdapter {
   private readonly files = new Map<string, string | ArrayBuffer>()
@@ -117,7 +120,7 @@ describe('meetsMinAppVersion', () => {
 describe('getStagingStatus', () => {
   it('returns ready when all staged files exist and manifest version matches', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
 
     await adapter.writeBinary(`${stagingDir}/main.js`, new ArrayBuffer(8))
@@ -141,7 +144,7 @@ describe('getStagingStatus', () => {
 
   it('returns not ready when manifest version mismatches expected version', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
 
     await adapter.writeBinary(`${stagingDir}/main.js`, new ArrayBuffer(8))
@@ -161,7 +164,7 @@ describe('getStagingStatus', () => {
 
   it('returns not ready when a staged file is missing', async () => {
     const adapter = new MockAdapter()
-    const stagingDir = getStagingDir('vault/.obsidian/plugins/yolo', '1.5.12.2')
+    const stagingDir = getStagingDir(MOCK_PLUGIN_DIR, '1.5.12.2')
 
     await adapter.write(
       `${stagingDir}/manifest.json`,
@@ -180,7 +183,7 @@ describe('getStagingStatus', () => {
 describe('clearStagingRoot', () => {
   it('removes all staged version directories', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const oldDir = getStagingDir(pluginDir, '1.5.12.1')
     const newerDir = getStagingDir(pluginDir, '1.5.12.2')
 
@@ -218,7 +221,7 @@ describe('applyStagedUpdate', () => {
 
   it('writes main.js before manifest.json and reloads the app', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
 
     await adapter.writeBinary(`${stagingDir}/main.js`, new ArrayBuffer(4))
@@ -253,7 +256,7 @@ describe('applyStagedUpdate', () => {
 
   it('rejects install when minAppVersion is not met', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '2.0.0')
 
     await adapter.writeBinary(`${stagingDir}/main.js`, new ArrayBuffer(4))
@@ -284,7 +287,7 @@ describe('applyStagedUpdate', () => {
 describe('getRepairStagingStatus', () => {
   it('returns ready when repair meta and requested files exist', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
 
     await adapter.write(
@@ -336,7 +339,7 @@ describe('applyRepairFiles', () => {
 
   it('writes only staged repair files and reloads the app', async () => {
     const adapter = new MockAdapter()
-    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const pluginDir = MOCK_PLUGIN_DIR
     const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
 
     await adapter.write(

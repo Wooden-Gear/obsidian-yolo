@@ -1051,10 +1051,7 @@ const runOneShotCommand = async ({
       cancelPendingKill()
     }
 
-    const finish = (
-      state: RunBashResult['state'],
-      exitCode: number | null,
-    ) => {
+    const finish = (state: RunBashResult['state'], exitCode: number | null) => {
       if (resolved) return
       resolved = true
       active.stdoutCollector.pushText(stdoutDecoder.end())

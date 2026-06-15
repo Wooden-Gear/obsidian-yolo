@@ -554,7 +554,8 @@ const summarizeSimpleShellCommand = (command: string): string | undefined => {
   }
 
   const words = [...rawWords]
-  words[commandIndex] = words[commandIndex].split('/').pop() ?? words[commandIndex]
+  words[commandIndex] =
+    words[commandIndex].split('/').pop() ?? words[commandIndex]
   return truncateText(
     words.slice(commandIndex).join(' '),
     SHELL_COMMAND_SUMMARY_MAX_CHARS,
