@@ -2055,9 +2055,13 @@ export const zh: TranslationKeys = {
     historyNext: '下一页',
     installationIncompleteTitle: '插件安装不完整',
     installationIncompleteMeta:
-      '主程序 {bakedVersion} · manifest {manifestVersion}',
+      '主程序 {mainVersion} · manifest {manifestVersion} · 样式 {stylesVersion}',
+    installationIncompleteSuspects: '待修复：{files}',
     installationIncompleteNotes:
-      '这通常是更新时 main.js 未能完整下载所致。建议备份 data.json 后，删除插件并重新安装。',
+      '插件文件可能未完整下载。将自动尝试修复；你也可以点击下方按钮手动重试。',
+    tryRepair: '尝试修复',
+    repairing: '修复中 {{progress}}%',
+    repairAndReload: '修复并重启',
     downloadUpdate: '下载更新',
     downloading: '下载中 {{progress}}%',
     installAndReload: '安装并重启',

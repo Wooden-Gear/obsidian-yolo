@@ -6,6 +6,9 @@ const GITHUB_RELEASE_URL =
 const GITHUB_RELEASES_URL =
   'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases'
 
+const GITHUB_RELEASE_DOWNLOAD_BASE =
+  'https://github.com/Lapis0x0/obsidian-yolo/releases/download'
+
 function releaseTagUrl(version: string): string {
   return `${GITHUB_RELEASES_URL}/tags/${encodeURIComponent(version)}`
 }
@@ -30,23 +33,32 @@ export type ReleaseHistoryPageResult = {
   hasNext: boolean
 }
 
-export type ReleaseAssetUrls = {
-  mainJs: string
-  manifestJson: string
-  stylesCss: string
+export type ReleaseAssetMeta = {
+  url: string
+  size: number
 }
+
+export type ReleaseAssets = {
+  mainJs: ReleaseAssetMeta
+  manifestJson: ReleaseAssetMeta
+  stylesCss: ReleaseAssetMeta
+}
+
+/** @deprecated Use ReleaseAssets */
+export type ReleaseAssetUrls = ReleaseAssets
 
 export type UpdateCheckResult = {
   hasUpdate: boolean
   latestVersion: string
   releaseNotes: ReleaseNotesByLanguage
   releaseUrl: string
-  assets: ReleaseAssetUrls | null
+  assets: ReleaseAssets | null
 }
 
 type GitHubReleaseAsset = {
   name?: string
   browser_download_url?: string
+  size?: number
 }
 
 type GitHubReleaseResponse = {
@@ -310,32 +322,75 @@ const RELEASE_ASSET_NAMES = {
   stylesCss: 'styles.css',
 } as const
 
-/**
- * Extracts download URLs for the three release artifacts from a GitHub release
- * payload. Returns null when any required asset is missing.
- */
-export function parseReleaseAssetUrls(
+function releaseAssetDownloadUrl(version: string, fileName: string): string {
+  return `${GITHUB_RELEASE_DOWNLOAD_BASE}/${encodeURIComponent(version)}/${encodeURIComponent(fileName)}`
+}
+
+export function buildReleaseAssets(version: string): ReleaseAssets | null {
+  const normalized = normalizePluginVersion(version)
+  if (!normalized) {
+    return null
+  }
+
+  return {
+    mainJs: {
+      url: releaseAssetDownloadUrl(normalized, RELEASE_ASSET_NAMES.mainJs),
+      size: 0,
+    },
+    manifestJson: {
+      url: releaseAssetDownloadUrl(
+        normalized,
+        RELEASE_ASSET_NAMES.manifestJson,
+      ),
+      size: 0,
+    },
+    stylesCss: {
+      url: releaseAssetDownloadUrl(normalized, RELEASE_ASSET_NAMES.stylesCss),
+      size: 0,
+    },
+  }
+}
+
+function parseReleaseAssetMeta(
   assets: GitHubReleaseAsset[] | undefined,
-): ReleaseAssetUrls | null {
+  fileName: string,
+): ReleaseAssetMeta | null {
   if (!Array.isArray(assets)) {
     return null
   }
 
-  const byName = new Map<string, string>()
   for (const asset of assets) {
     const name = typeof asset.name === 'string' ? asset.name : ''
+    if (name !== fileName) {
+      continue
+    }
     const url =
       typeof asset.browser_download_url === 'string'
         ? asset.browser_download_url
         : ''
-    if (name && url) {
-      byName.set(name, url)
+    if (!url) {
+      return null
     }
+    const size = typeof asset.size === 'number' ? asset.size : 0
+    return { url, size }
   }
 
-  const mainJs = byName.get(RELEASE_ASSET_NAMES.mainJs)
-  const manifestJson = byName.get(RELEASE_ASSET_NAMES.manifestJson)
-  const stylesCss = byName.get(RELEASE_ASSET_NAMES.stylesCss)
+  return null
+}
+
+/**
+ * Extracts download URLs and sizes for the three release artifacts from a
+ * GitHub release payload. Returns null when any required asset is missing.
+ */
+export function parseReleaseAssets(
+  assets: GitHubReleaseAsset[] | undefined,
+): ReleaseAssets | null {
+  const mainJs = parseReleaseAssetMeta(assets, RELEASE_ASSET_NAMES.mainJs)
+  const manifestJson = parseReleaseAssetMeta(
+    assets,
+    RELEASE_ASSET_NAMES.manifestJson,
+  )
+  const stylesCss = parseReleaseAssetMeta(assets, RELEASE_ASSET_NAMES.stylesCss)
   if (!mainJs || !manifestJson || !stylesCss) {
     return null
   }
@@ -343,15 +398,20 @@ export function parseReleaseAssetUrls(
   return { mainJs, manifestJson, stylesCss }
 }
 
+/** @deprecated Use parseReleaseAssets */
+export function parseReleaseAssetUrls(
+  assets: GitHubReleaseAsset[] | undefined,
+): ReleaseAssets | null {
+  return parseReleaseAssets(assets)
+}
+
 /**
  * Fetches a specific GitHub release by tag/version. Returns null on failure.
  */
-export async function fetchReleaseByVersion(
-  version: string,
-): Promise<{
+export async function fetchReleaseByVersion(version: string): Promise<{
   version: string
   releaseUrl: string
-  assets: ReleaseAssetUrls | null
+  assets: ReleaseAssets | null
 } | null> {
   const normalized = normalizePluginVersion(version)
   if (!normalized) {
@@ -381,7 +441,7 @@ export async function fetchReleaseByVersion(
     return {
       version: releaseVersion,
       releaseUrl: typeof data.html_url === 'string' ? data.html_url : '',
-      assets: parseReleaseAssetUrls(data.assets),
+      assets: parseReleaseAssets(data.assets),
     }
   } catch {
     return null
@@ -427,7 +487,7 @@ export async function checkForUpdate(
       latestVersion,
       releaseNotes,
       releaseUrl,
-      assets: parseReleaseAssetUrls(data.assets),
+      assets: parseReleaseAssets(data.assets),
     }
   } catch {
     return null

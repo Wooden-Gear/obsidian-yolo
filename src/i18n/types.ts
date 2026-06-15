@@ -1894,7 +1894,11 @@ export type TranslationKeys = {
     historyNext?: string
     installationIncompleteTitle: string
     installationIncompleteMeta: string
+    installationIncompleteSuspects: string
     installationIncompleteNotes: string
+    tryRepair: string
+    repairing: string
+    repairAndReload: string
     downloadUpdate: string
     downloading: string
     installAndReload: string

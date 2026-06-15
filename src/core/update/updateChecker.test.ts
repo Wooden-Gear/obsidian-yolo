@@ -1,14 +1,43 @@
 import {
+  buildReleaseAssets,
   compareVersions,
   normalizePluginVersion,
   parseChangelog,
-  parseReleaseAssetUrls,
+  parseReleaseAssets,
   splitReleaseNotesByLanguage,
 } from './updateChecker'
 
-describe('parseReleaseAssetUrls', () => {
-  it('returns URLs when all three release assets are present', () => {
-    const result = parseReleaseAssetUrls([
+describe('parseReleaseAssets', () => {
+  it('returns URLs and sizes when all three release assets are present', () => {
+    const result = parseReleaseAssets([
+      {
+        name: 'main.js',
+        browser_download_url: 'https://github.com/example/main.js',
+        size: 12345,
+      },
+      {
+        name: 'manifest.json',
+        browser_download_url: 'https://github.com/example/manifest.json',
+        size: 256,
+      },
+      {
+        name: 'styles.css',
+        browser_download_url: 'https://github.com/example/styles.css',
+        size: 4096,
+      },
+    ])
+    expect(result).toEqual({
+      mainJs: { url: 'https://github.com/example/main.js', size: 12345 },
+      manifestJson: {
+        url: 'https://github.com/example/manifest.json',
+        size: 256,
+      },
+      stylesCss: { url: 'https://github.com/example/styles.css', size: 4096 },
+    })
+  })
+
+  it('defaults missing size to 0', () => {
+    const result = parseReleaseAssets([
       {
         name: 'main.js',
         browser_download_url: 'https://github.com/example/main.js',
@@ -22,16 +51,12 @@ describe('parseReleaseAssetUrls', () => {
         browser_download_url: 'https://github.com/example/styles.css',
       },
     ])
-    expect(result).toEqual({
-      mainJs: 'https://github.com/example/main.js',
-      manifestJson: 'https://github.com/example/manifest.json',
-      stylesCss: 'https://github.com/example/styles.css',
-    })
+    expect(result?.mainJs.size).toBe(0)
   })
 
   it('returns null when a required asset is missing', () => {
     expect(
-      parseReleaseAssetUrls([
+      parseReleaseAssets([
         {
           name: 'main.js',
           browser_download_url: 'https://github.com/example/main.js',
@@ -41,7 +66,30 @@ describe('parseReleaseAssetUrls', () => {
   })
 
   it('returns null for non-array input', () => {
-    expect(parseReleaseAssetUrls(undefined)).toBeNull()
+    expect(parseReleaseAssets(undefined)).toBeNull()
+  })
+})
+
+describe('buildReleaseAssets', () => {
+  it('builds deterministic release asset URLs for a version', () => {
+    expect(buildReleaseAssets('v1.5.12.2')).toEqual({
+      mainJs: {
+        url: 'https://github.com/Lapis0x0/obsidian-yolo/releases/download/1.5.12.2/main.js',
+        size: 0,
+      },
+      manifestJson: {
+        url: 'https://github.com/Lapis0x0/obsidian-yolo/releases/download/1.5.12.2/manifest.json',
+        size: 0,
+      },
+      stylesCss: {
+        url: 'https://github.com/Lapis0x0/obsidian-yolo/releases/download/1.5.12.2/styles.css',
+        size: 0,
+      },
+    })
+  })
+
+  it('returns null for an empty version', () => {
+    expect(buildReleaseAssets('')).toBeNull()
   })
 })
 

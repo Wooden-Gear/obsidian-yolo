@@ -2010,9 +2010,13 @@ export const it: TranslationKeys = {
     historyNext: 'Successiva',
     installationIncompleteTitle: 'Installazione del plugin incompleta',
     installationIncompleteMeta:
-      'main.js {bakedVersion} · manifest {manifestVersion}',
+      'main.js {mainVersion} · manifest {manifestVersion} · styles {stylesVersion}',
+    installationIncompleteSuspects: 'File da riparare: {files}',
     installationIncompleteNotes:
-      'Di solito main.js non è stato scaricato completamente durante l’aggiornamento. Esegui il backup di data.json, rimuovi il plugin e reinstallalo.',
+      'I file del plugin potrebbero non essere stati scaricati completamente. La riparazione parte automaticamente; puoi anche riprovare qui sotto.',
+    tryRepair: 'Prova a riparare',
+    repairing: 'Riparazione {{progress}}%',
+    repairAndReload: 'Ripara e ricarica',
     downloadUpdate: 'Scarica aggiornamento',
     downloading: 'Download {{progress}}%',
     installAndReload: 'Installa e ricarica',

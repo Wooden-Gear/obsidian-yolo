@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n app,styles -c blue,magenta \"npm:dev:app\" \"npm:styles:watch\"",
     "dev:app": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build": "tsc -noEmit -skipLibCheck && npm run styles:build && node esbuild.config.mjs production",
     "styles:build": "postcss src/styles/index.css -o styles.css",
     "styles:watch": "postcss src/styles/index.css -o styles.css -w",
     "seed:long-chat": "node generate-long-chat.mjs",

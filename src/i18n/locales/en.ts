@@ -2205,9 +2205,13 @@ export const en: TranslationKeys = {
     historyNext: 'Next',
     installationIncompleteTitle: 'Plugin installation incomplete',
     installationIncompleteMeta:
-      'main.js {bakedVersion} · manifest {manifestVersion}',
+      'main.js {mainVersion} · manifest {manifestVersion} · styles {stylesVersion}',
+    installationIncompleteSuspects: 'Files to repair: {files}',
     installationIncompleteNotes:
-      'This usually means main.js did not finish downloading during an update. Back up data.json, remove the plugin, and reinstall.',
+      'Plugin files may not have downloaded completely. A repair download will start automatically; you can also retry below.',
+    tryRepair: 'Try repair',
+    repairing: 'Repairing {{progress}}%',
+    repairAndReload: 'Repair and reload',
     downloadUpdate: 'Download update',
     downloading: 'Downloading {{progress}}%',
     installAndReload: 'Install and reload',

@@ -1,13 +1,17 @@
 import { Stat, type DataAdapter } from 'obsidian'
 
 import {
+  applyRepairFiles,
   applyStagedUpdate,
   clearStagingRoot,
+  getRepairMetaPath,
+  getRepairStagingStatus,
   getStagingDir,
   getStagingRoot,
   getStagingStatus,
   meetsMinAppVersion,
 } from './pluginUpdater'
+import { RELEASE_FILE_NAMES } from './installationIntegrity'
 
 class MockAdapter {
   private readonly files = new Map<string, string | ArrayBuffer>()
@@ -274,5 +278,94 @@ describe('applyStagedUpdate', () => {
     const result = await applyStagedUpdate(app, plugin, '2.0.0')
     expect(result).toEqual({ ok: false, reason: 'min_app_version' })
     expect(reloadSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('getRepairStagingStatus', () => {
+  it('returns ready when repair meta and requested files exist', async () => {
+    const adapter = new MockAdapter()
+    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
+
+    await adapter.write(
+      `${stagingDir}/styles.css`,
+      '/* @yolo-version: 1.5.12.2 */\nbody {}',
+    )
+    await adapter.write(
+      getRepairMetaPath(stagingDir),
+      JSON.stringify({
+        version: '1.5.12.2',
+        files: [RELEASE_FILE_NAMES.stylesCss],
+      }),
+    )
+
+    const status = await getRepairStagingStatus(
+      adapter as unknown as DataAdapter,
+      stagingDir,
+      '1.5.12.2',
+    )
+    expect(status).toEqual({
+      ready: true,
+      version: '1.5.12.2',
+      files: [RELEASE_FILE_NAMES.stylesCss],
+      minAppVersion: '',
+    })
+  })
+})
+
+describe('applyRepairFiles', () => {
+  let reloadSpy: jest.Mock
+  let previousWindow: typeof globalThis.window | undefined
+
+  beforeEach(() => {
+    reloadSpy = jest.fn()
+    previousWindow = globalThis.window
+    globalThis.window = {
+      location: { reload: reloadSpy },
+    } as unknown as Window & typeof globalThis
+  })
+
+  afterEach(() => {
+    if (previousWindow === undefined) {
+      // @ts-expect-error restore node test environment without window
+      delete globalThis.window
+    } else {
+      globalThis.window = previousWindow
+    }
+  })
+
+  it('writes only staged repair files and reloads the app', async () => {
+    const adapter = new MockAdapter()
+    const pluginDir = 'vault/.obsidian/plugins/yolo'
+    const stagingDir = getStagingDir(pluginDir, '1.5.12.2')
+
+    await adapter.write(
+      `${stagingDir}/styles.css`,
+      '/* @yolo-version: 1.5.12.2 */\nbody { color: red; }',
+    )
+    await adapter.write(
+      getRepairMetaPath(stagingDir),
+      JSON.stringify({
+        version: '1.5.12.2',
+        files: [RELEASE_FILE_NAMES.stylesCss],
+      }),
+    )
+
+    const plugin = {
+      manifest: {
+        id: 'yolo',
+        dir: pluginDir,
+        version: '1.5.12.2',
+      },
+    } as Parameters<typeof applyRepairFiles>[1]
+
+    const app = {
+      vault: { adapter: adapter as unknown as DataAdapter },
+    } as unknown as Parameters<typeof applyRepairFiles>[0]
+
+    const result = await applyRepairFiles(app, plugin, '1.5.12.2')
+    expect(result).toEqual({ ok: true })
+    expect(reloadSpy).toHaveBeenCalled()
+    expect(adapter.getWriteOrder()).toContain(`${pluginDir}/styles.css`)
   })
 })
