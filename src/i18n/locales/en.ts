@@ -153,6 +153,8 @@ export const en: TranslationKeys = {
       name: 'Support the project',
       desc: 'If you find this plugin valuable, consider supporting its development!',
       buyMeACoffee: 'Buy me a coffee',
+      reportBug: 'Report Bug',
+      featureRequest: 'Feature Request',
     },
     defaults: {
       title: 'Default model policies & prompts',

@@ -129,6 +129,8 @@ export const zh: TranslationKeys = {
       name: '支持 YOLO',
       desc: '如果你觉得 YOLO 有价值，请考虑支持它的开发！',
       buyMeACoffee: '爱发电',
+      reportBug: '报 Bug',
+      featureRequest: '提需求',
     },
     defaults: {
       title: '默认模型策略与提示词',
