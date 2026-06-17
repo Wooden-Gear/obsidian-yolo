@@ -5,6 +5,7 @@ import { minimatch } from 'minimatch'
 import { App, TFile } from 'obsidian'
 
 import { IndexProgress } from '../../../components/chat-view/QueryProgress'
+import { getYoloBaseDir } from '../../../core/paths/yoloPaths'
 import {
   RagIndexFailureKind,
   RagIndexIncompleteError,
@@ -47,6 +48,13 @@ export type ReconcileConfig = {
   chunkSize: number
   includePatterns: string[]
   excludePatterns: string[]
+  /**
+   * When true, files under the plugin's YOLO base directory (resolved from
+   * `settings.yolo.baseDir`) are excluded from indexing in addition to
+   * `excludePatterns`. Path resolution is dynamic per call; toggling
+   * `yolo.baseDir` updates the filter without any settings migration.
+   */
+  excludeYoloBaseDir?: boolean
   /** When false, PDFs are excluded from the desired set (and existing PDF rows are removed). */
   indexPdf: boolean
   /**
@@ -452,6 +460,13 @@ export class VectorManager {
       if (config.indexPdf && ext === 'pdf') return true
       return false
     })
+    if (config.excludeYoloBaseDir) {
+      const yoloBaseDir = getYoloBaseDir(config.settings)
+      const prefix = `${yoloBaseDir}/`
+      files = files.filter(
+        (file) => file.path !== yoloBaseDir && !file.path.startsWith(prefix),
+      )
+    }
     files = files.filter(
       (file) =>
         !config.excludePatterns.some((pattern) =>

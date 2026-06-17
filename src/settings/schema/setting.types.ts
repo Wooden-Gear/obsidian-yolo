@@ -41,6 +41,13 @@ const ragOptionsSchema = z.object({
    */
   embeddingConcurrency: z.number().catch(10),
   excludePatterns: z.array(z.string()).catch([]),
+  /**
+   * When true, the plugin's YOLO base directory (resolved dynamically from
+   * `yolo.baseDir`) is excluded from indexing on top of `excludePatterns`.
+   * The UI surfaces this as a removable chip in the exclude folder list;
+   * deleting that chip flips this flag to false and persists the choice.
+   */
+  excludeYoloBaseDir: z.boolean().catch(true),
   includePatterns: z.array(z.string()).catch([]),
   /** When true, index `.pdf` files for RAG (text extraction). */
   indexPdf: z.boolean().catch(true),
@@ -325,6 +332,7 @@ export const yoloSettingsSchema = z.object({
     limit: 10,
     embeddingConcurrency: 10,
     excludePatterns: [],
+    excludeYoloBaseDir: true,
     includePatterns: [],
     indexPdf: true,
     autoUpdateEnabled: true,
