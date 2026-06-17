@@ -97,6 +97,23 @@ export class VectorManager {
     }
   }
 
+  /**
+   * Best-effort persist for paths where the caller is about to throw a
+   * higher-priority error (user abort, etc.) and a save failure must NOT
+   * mask it. Save errors are logged and swallowed; on the success path use
+   * {@link requestSave} so dumpDataDir OOM (#408) propagates as failure.
+   */
+  private async tryFlush(reason: string): Promise<void> {
+    try {
+      await this.requestSave()
+    } catch (error) {
+      console.warn(
+        `[YOLO] Vector DB save failed (${reason}); preserving caller's error.`,
+        error,
+      )
+    }
+  }
+
   private async requestVacuum() {
     if (this.vacuumCallback) {
       await this.vacuumCallback()
@@ -279,7 +296,7 @@ export class VectorManager {
     const maybeYield = createYieldController(10)
     for (const file of filesToChunkify) {
       if (signal?.aborted) {
-        await this.requestSave()
+        await this.tryFlush('chunkify abort')
         throw new DOMException('Indexing cancelled by user', 'AbortError')
       }
       await maybeYield()
@@ -315,7 +332,7 @@ export class VectorManager {
         completedFilesCount += 1
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-          await this.requestSave()
+          await this.tryFlush('chunkify abort (caught)')
           throw error
         }
         failedFiles.push({
@@ -717,6 +734,7 @@ export class VectorManager {
     // can never index fully and are not retried). Surfaced to the caller via the
     // return value — never thrown, never popped as a modal.
     const softPermanentFailedPaths: string[] = []
+    let inFlightError: unknown = null
     try {
       for (
         let batchStart = 0;
@@ -725,7 +743,7 @@ export class VectorManager {
       ) {
         const batch = toEmbed.slice(batchStart, batchStart + currentBatchSize)
         if (signal?.aborted) {
-          await this.requestSave()
+          await this.tryFlush('embed-loop abort')
           throw new DOMException('Indexing cancelled by user', 'AbortError')
         }
         await yieldToMain()
@@ -773,7 +791,7 @@ export class VectorManager {
           if (validRows.length > 0) {
             await this.repository.insertVectors(validRows)
           }
-          await this.requestSave()
+          await this.tryFlush('post-batch abort')
           throw new DOMException('Indexing cancelled by user', 'AbortError')
         }
 
@@ -889,11 +907,33 @@ export class VectorManager {
           'Embedding halted: an entire batch failed to embed and indexing was stopped before completing all chunks.',
         )
       }
+    } catch (error) {
+      inFlightError = error
+      throw error
     } finally {
       // Always persist whatever made it into the DB, on both the success path
       // and any throw (AbortError, RagIndexIncompleteError, wholeBatchFailed
       // halt, etc.) — those errors propagate unchanged to the caller.
-      await this.requestSave()
+      //
+      // If save() itself throws (e.g. dumpDataDir OOM in #408), surface it
+      // ONLY on the success path — otherwise we would mask the original
+      // failure (user abort, API key error, transient rollback) with a save
+      // error, which is both wrong (the user did not "save-fail") and
+      // mis-classified for retry policy. On failure paths we log it so it's
+      // still diagnosable and the next reconcile will hit it again cleanly.
+      try {
+        await this.requestSave()
+      } catch (saveError) {
+        if (inFlightError !== null) {
+          console.warn(
+            '[YOLO] Vector DB save failed during failure path; preserving original error.',
+            saveError,
+          )
+        } else {
+          // eslint-disable-next-line no-unsafe-finally -- intentional: success path must surface save failure
+          throw saveError
+        }
+      }
     }
 
     return { permanentFailedPaths: softPermanentFailedPaths }
