@@ -206,7 +206,7 @@ export async function testChatModelHealth(
       return {
         status: 'fail',
         message:
-          'No content received — the stream completed without producing any tokens.',
+          'No content received from the model — verify the API base URL (e.g. the `/v1` suffix) and that the endpoint returns a non-empty SSE stream.',
       }
     }
 

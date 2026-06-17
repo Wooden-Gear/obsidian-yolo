@@ -509,10 +509,10 @@ export async function executeSingleTurn({
       !reasoning &&
       finalToolCalls.length === 0 &&
       !finalFinishReason &&
-      !(signal?.aborted)
+      !signal?.aborted
     ) {
       throw new Error(
-        'No content received — the stream completed without producing any tokens.',
+        'No content received from the model — verify the API base URL (e.g. the `/v1` suffix) and that the endpoint returns a non-empty SSE stream.',
       )
     }
 
