@@ -577,7 +577,10 @@ describe('AgentToolGateway', () => {
     })
   })
 
-  it('does not leave approval-required subagent child calls pending', () => {
+  it('routes approval-required subagent child calls to PendingApproval (parent UI)', () => {
+    // Subagent approval requests bubble up to the SubagentCard's inline
+    // approval block in the parent conversation. See
+    // `docs/plans/2026-06-18-subagent-tool-approval-routing.md`.
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(false),
       getJsSandboxSettings: jest.fn().mockReturnValue({}),
@@ -601,11 +604,9 @@ describe('AgentToolGateway', () => {
       conversationId: 'subagent-task',
     })
 
-    const response = message.toolCalls[0]?.response
-    expect(response?.status).toBe(ToolCallResponseStatus.Error)
-    if (response?.status === ToolCallResponseStatus.Error) {
-      expect(response.error).toContain('Subagents cannot pause')
-    }
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.PendingApproval,
+    )
   })
 
   it('runs fs_edit immediately when approval mode requires review', async () => {
@@ -660,7 +661,10 @@ describe('AgentToolGateway', () => {
     )
   })
 
-  it('does not open fs_edit review in subagent child runs without automatic permission', () => {
+  it('opens fs_edit review for subagent child runs (same as parent flow)', () => {
+    // After the approval-routing refactor, subagent fs_edit calls go through
+    // the same review (inline diff) path as parent calls when the tool is in
+    // require_approval mode. The user's approval target is the SubagentCard.
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(false),
       getJsSandboxSettings: jest.fn().mockReturnValue({}),
@@ -685,7 +689,7 @@ describe('AgentToolGateway', () => {
     })
 
     expect(message.toolCalls[0]?.response.status).toBe(
-      ToolCallResponseStatus.Error,
+      ToolCallResponseStatus.Running,
     )
   })
 

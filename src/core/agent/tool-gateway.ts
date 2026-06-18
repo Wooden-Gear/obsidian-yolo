@@ -435,14 +435,6 @@ export class AgentToolGateway {
       return { status: ToolCallResponseStatus.Running }
     }
 
-    if (this.isSubagentChildRun) {
-      return {
-        status: ToolCallResponseStatus.Error,
-        error:
-          'Subagents cannot pause for interactive tool approval. This tool can run inside a subagent only when the parent agent already has permission to execute it automatically.',
-      }
-    }
-
     return this.shouldUseFsEditReview(request.name)
       ? { status: ToolCallResponseStatus.Running }
       : { status: ToolCallResponseStatus.PendingApproval }
@@ -1179,9 +1171,7 @@ export class AgentToolGateway {
     }
     if (
       this.isSubagentChildRun &&
-      isSubagentBlockedToolName(toolName, {
-        jsSandboxSettings: this.mcpManager.getJsSandboxSettings(),
-      })
+      isSubagentBlockedToolName(toolName)
     ) {
       return false
     }
