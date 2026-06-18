@@ -34,7 +34,7 @@ jobs:
         !contains(github.event.pull_request.body || '', 'claude-routine:obsidian-yolo-triage:v1')
       ) ||
       (
-        github.event.sender.login == 'Lapis0x0' &&
+        github.event.sender.login != 'Lapis0x1' &&
         (
           contains(github.event.comment.body, '@Lapis0x1') ||
           contains(github.event.review.body, '@Lapis0x1')
