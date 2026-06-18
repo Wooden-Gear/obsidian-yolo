@@ -4,10 +4,6 @@ import {
   AssistantToolDisclosureMode,
   AssistantToolPreference,
 } from '../../types/assistant.types'
-import {
-  type JsSandboxSettings,
-  hasAnyJsSandboxCapEnabled,
-} from '../mcp/jsSandboxSettings'
 import { JS_SANDBOX_TOOL_NAME } from '../mcp/jsSandboxTool'
 import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -33,19 +29,13 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
 
 /**
  * local tool 中需要 require_approval 的工具名集合。
- * JS 隔离执行默认 full_access：未开启任何扩展能力时只能读已注入的 $content / $note
- * 等快照、无网络、无 $db、无外部脚本，与其他只读工具风险相当。一旦在 Agent 配置中
- * 打开 allowFetch / allowVaultRead / allowDbQuery / allowExternalScripts /
- * allowBrowserRead，`getAssistantToolApprovalMode` 会强制升级为
- * require_approval（见下方实现）。
+ * JS 隔离执行不在此集合中；它和终端命令一样服从 Agent 保存的审批模式。
  */
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
   ...LOCAL_FS_SPLIT_ACTION_TOOL_NAMES,
   'terminal_command',
 ])
-
-const JS_SANDBOX_TOOL_FQN = `${getLocalFileToolServerName()}${McpManager.TOOL_NAME_DELIMITER}${JS_SANDBOX_TOOL_NAME}`
 
 const FULL_ACCESS_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
@@ -413,22 +403,7 @@ export const getAssistantToolApprovalMode = (
     | null
     | undefined,
   toolName: string,
-  options?: { jsSandboxSettings?: JsSandboxSettings | null },
 ): AssistantToolApprovalMode => {
-  // Hard override: when JS isolated execution has any extension capability
-  // enabled in the global settings, force approval regardless of the agent's
-  // saved preference. The default-on capabilities (current note snapshot,
-  // $utils, time/locale/GPU info) keep the same risk surface as other
-  // read-only tools, but turning on fetch / vault read / $db / external
-  // scripts crosses into territory that requires explicit consent every run.
-  if (
-    toolName === JS_SANDBOX_TOOL_FQN &&
-    options?.jsSandboxSettings &&
-    hasAnyJsSandboxCapEnabled(options.jsSandboxSettings)
-  ) {
-    return 'require_approval'
-  }
-
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.approvalMode ??

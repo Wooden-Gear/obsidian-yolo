@@ -175,58 +175,23 @@ describe('tool-preferences defaults', () => {
     })
   })
 
-  describe('getAssistantToolApprovalMode (js_eval global cap override)', () => {
-    const assistant = {
-      toolPreferences: {
-        [JS_SANDBOX_FQN]: {
-          enabled: true,
-          approvalMode: 'full_access' as const,
-        },
-      },
-      enabledToolNames: [],
-    }
-
-    it('keeps the saved full_access mode when no extension capability is on', () => {
-      expect(
-        getAssistantToolApprovalMode(assistant, JS_SANDBOX_FQN, {
-          jsSandboxSettings: {},
-        }),
-      ).toBe('full_access')
-    })
-
-    it('forces require_approval when any extension capability is on globally', () => {
-      for (const cap of [
-        'allowFetch',
-        'allowVaultRead',
-        'allowDbQuery',
-        'allowExternalScripts',
-        'allowBrowserRead',
-      ] as const) {
+  describe('getAssistantToolApprovalMode (js_eval)', () => {
+    it.each(['full_access', 'require_approval'] as const)(
+      'honors the saved %s mode',
+      (approvalMode) => {
         expect(
-          getAssistantToolApprovalMode(assistant, JS_SANDBOX_FQN, {
-            jsSandboxSettings: { [cap]: true },
-          }),
-        ).toBe('require_approval')
-      }
-    })
-
-    it('does not override approval mode for other tools', () => {
-      const withFsRead = {
-        toolPreferences: {
-          ...assistant.toolPreferences,
-          yolo_local__fs_read: {
-            enabled: true,
-            approvalMode: 'full_access' as const,
-          },
-        },
-        enabledToolNames: [],
-      }
-      expect(
-        getAssistantToolApprovalMode(withFsRead, 'yolo_local__fs_read', {
-          jsSandboxSettings: { allowFetch: true },
-        }),
-      ).toBe('full_access')
-    })
+          getAssistantToolApprovalMode(
+            {
+              toolPreferences: {
+                [JS_SANDBOX_FQN]: { enabled: true, approvalMode },
+              },
+              enabledToolNames: [],
+            },
+            JS_SANDBOX_FQN,
+          ),
+        ).toBe(approvalMode)
+      },
+    )
   })
 
   describe('getAssistantToolApprovalMode defaults', () => {

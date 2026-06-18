@@ -478,7 +478,6 @@ export const zh: TranslationKeys = {
       toolApproval: '审批',
       toolApprovalFullAccess: '完全放行',
       toolApprovalRequire: '需要审批',
-      toolApprovalForced: '强制审批',
       toolDisclosureAlways: '常驻上下文',
       toolDisclosureOnDemand: '按需披露',
       editorEnabled: '已启用',
@@ -560,7 +559,7 @@ export const zh: TranslationKeys = {
       jsSandboxAllowBrowserReadDesc:
         '允许脚本按页面 ID 读取 Obsidian 中已打开网页的完整 HTML。网页可能包含登录态或私有内容。',
       jsSandboxAllowBrowserReadRisk:
-        '风险：脚本可读取你在 Obsidian 中已打开网页的完整渲染后 HTML，包括页面 DOM 中可见的私有或登录态内容。仅在你完全信任此 Agent 时开启。',
+        '风险：脚本可读取你在 Obsidian 中已打开网页的完整 DOM，包括隐藏字段、内嵌状态以及私有或登录态内容。仅在你完全信任此 Agent 时开启。',
       jsSandboxAllowBrowserReadConfirm:
         '开启后，AI 生成的脚本可按页面 ID 读取 Obsidian 中已打开网页的完整 HTML，内容将进入 LLM 上下文。是否继续？',
       jsSandboxBrowserReadMaxKb: '网页 HTML 大小上限（KB）',
@@ -579,7 +578,6 @@ export const zh: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         '开启后，Agent 可以在 Obsidian 内加载并运行远程 JavaScript。这个能力很强也很危险；仅在你完全信任此 Agent 和代码来源时继续。是否继续？',
       jsSandboxConfirmEnableTitle: '开启扩展能力',
-      jsExecApprovalForced: '启用后强制审批',
       jsSandboxTimeoutMs: '执行超时（毫秒）',
       jsSandboxTimeoutMsDesc: '单次脚本调用的最大运行时间。范围 {min}–{max}。',
       jsSandboxOutputMaxKb: '工具结果大小上限（KB）',
@@ -1748,6 +1746,15 @@ export const zh: TranslationKeys = {
       statusFailed: '失败',
       toolUseCount: '{count} 个工具',
       tokenCount: '{count} tokens',
+      approval: {
+        heading: '等待审批',
+        headingMulti: '等待审批 · {count} 项',
+        approve: '同意',
+        reject: '拒绝',
+        approveAll: '全部同意',
+        rejectAll: '全部拒绝',
+        viewDetails: '查看参数',
+      },
     },
     conversationSettings: {
       openAria: '对话设置',

@@ -4735,19 +4735,6 @@ button.yolo-assistant-selector-footer-btn:hover {
   gap: 4px;
 }
 
-.yolo-agent-tool-forced-approval {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 3px 8px;
-  border-radius: var(--radius-s);
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted);
-  background: var(--background-primary);
-  font-size: var(--font-ui-smaller);
-  white-space: nowrap;
-}
-
 .yolo-agent-tool-select .yolo-simple-select__trigger {
   width: auto;
   min-width: 0;
@@ -6514,30 +6501,6 @@ button.yolo-agent-chip--more:hover {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-}
-
-.yolo-js-exec-risk-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--size-2-1);
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: 999px;
-  color: var(--text-warning, var(--text-normal));
-  background: color-mix(
-    in srgb,
-    var(--color-yellow, #d6a100) 12%,
-    var(--background-primary)
-  );
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--color-yellow, #d6a100) 24%,
-      var(--background-modifier-border)
-    );
-  font-size: var(--font-ui-smaller);
-  font-weight: var(--font-medium);
-  white-space: nowrap;
 }
 
 .yolo-js-exec-cap-list {
@@ -17127,8 +17090,9 @@ button.yolo-external-agent-card__compact-abort-btn:focus-visible {
 
 .yolo-subagent-card {
   display: flex;
-  align-items: flex-start;
-  gap: var(--size-4-2);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--size-2-2);
   margin: var(--size-4-2) 0 var(--size-4-4);
   border: 0;
   border-radius: 0;
@@ -17136,7 +17100,16 @@ button.yolo-external-agent-card__compact-abort-btn:focus-visible {
   overflow: visible;
 }
 
+.yolo-subagent-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  min-width: 0;
+}
+
 button.yolo-subagent-card__main {
+  all: unset;
+  box-sizing: border-box;
   appearance: none;
   display: flex;
   align-items: flex-start;
@@ -17458,6 +17431,144 @@ button.yolo-subagent-card__abort-btn:focus-visible {
 
 .yolo-subagent-detail-body .yolo-assistant-tool-message-group {
   margin: 0;
+}
+
+/* ── 紧凑审批列表（沿用 SubagentCard 的行式视觉） ── */
+
+.yolo-subagent-approval {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  margin-left: calc(var(--size-2-3) + 16px);
+  min-width: 0;
+}
+
+.yolo-subagent-approval__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.yolo-subagent-approval__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  min-height: 24px;
+  min-width: 0;
+}
+
+.yolo-subagent-approval__item-text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-2-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.yolo-subagent-approval__item-label {
+  flex-shrink: 0;
+  font-size: var(--font-ui-smaller);
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+}
+
+.yolo-subagent-approval__item-detail {
+  min-width: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yolo-subagent-approval__item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  flex-shrink: 0;
+}
+
+button.yolo-subagent-approval__btn,
+button.yolo-subagent-approval__bulk-btn {
+  all: unset;
+  box-sizing: border-box;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 var(--size-2-3);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+button.yolo-subagent-approval__btn {
+  color: var(--text-muted);
+}
+
+button.yolo-subagent-approval__btn:hover,
+button.yolo-subagent-approval__btn:focus-visible {
+  background: var(--background-modifier-hover);
+}
+
+button.yolo-subagent-approval__btn:focus-visible,
+button.yolo-subagent-approval__bulk-btn:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+  outline-offset: -2px;
+}
+
+button.yolo-subagent-approval__btn--primary {
+  color: var(--text-accent);
+}
+
+button.yolo-subagent-approval__btn--primary:hover,
+button.yolo-subagent-approval__btn--primary:focus-visible {
+  background: var(--background-modifier-hover);
+  color: var(--text-accent-hover);
+}
+
+button.yolo-subagent-approval__btn--ghost {
+  color: var(--text-muted);
+}
+
+button.yolo-subagent-approval__btn--ghost:hover,
+button.yolo-subagent-approval__btn--ghost:focus-visible {
+  color: var(--text-normal);
+}
+
+.yolo-subagent-approval__bulk {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--size-2-2);
+  padding-top: var(--size-2-1);
+}
+
+button.yolo-subagent-approval__bulk-btn {
+  color: var(--text-muted);
+}
+
+button.yolo-subagent-approval__bulk-btn--primary {
+  color: var(--text-accent);
+}
+
+button.yolo-subagent-approval__bulk-btn--primary:hover,
+button.yolo-subagent-approval__bulk-btn--primary:focus-visible {
+  background: var(--background-modifier-hover);
+  color: var(--text-accent-hover);
+}
+
+button.yolo-subagent-approval__bulk-btn--ghost {
+  color: var(--text-muted);
+}
+
+button.yolo-subagent-approval__bulk-btn--ghost:hover,
+button.yolo-subagent-approval__bulk-btn--ghost:focus-visible {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 /* 任务清单面板：作为 .yolo-chat-input-overlay 的子项，浮在输入框上方，可折叠。

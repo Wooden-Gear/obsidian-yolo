@@ -389,7 +389,6 @@ export type TranslationKeys = {
       toolApproval?: string
       toolApprovalFullAccess?: string
       toolApprovalRequire?: string
-      toolApprovalForced?: string
       toolDisclosureAlways?: string
       toolDisclosureOnDemand?: string
       editorEnabled?: string
@@ -473,7 +472,6 @@ export type TranslationKeys = {
       jsSandboxAllowExternalScriptsRisk?: string
       jsSandboxAllowExternalScriptsConfirm?: string
       jsSandboxConfirmEnableTitle?: string
-      jsExecApprovalForced?: string
       jsSandboxTimeoutMs?: string
       jsSandboxTimeoutMsDesc?: string
       jsSandboxOutputMaxKb?: string
@@ -1590,6 +1588,15 @@ export type TranslationKeys = {
       statusFailed?: string
       toolUseCount?: string
       tokenCount?: string
+      approval?: {
+        heading?: string
+        headingMulti?: string
+        approve?: string
+        reject?: string
+        approveAll?: string
+        rejectAll?: string
+        viewDetails?: string
+      }
     }
     // conversation settings popover
     conversationSettings?: {

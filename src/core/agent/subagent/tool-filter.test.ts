@@ -1,4 +1,3 @@
-import { JS_SANDBOX_TOOL_NAME } from '../../mcp/jsSandboxTool'
 import { getLocalFileToolServerName } from '../../mcp/localFileTools'
 import { getToolName } from '../../mcp/tool-name-utils'
 
@@ -16,7 +15,6 @@ describe('subagent tool-filter', () => {
   )
   const terminal = getToolName(getLocalFileToolServerName(), 'terminal_command')
   const askUser = getToolName(getLocalFileToolServerName(), 'ask_user_question')
-  const jsEval = getToolName(getLocalFileToolServerName(), JS_SANDBOX_TOOL_NAME)
 
   it('blocks recursive and interactive delegation tools by FQN', () => {
     for (const shortName of SUBAGENT_BLOCKED_TOOL_SHORT_NAMES) {
@@ -42,57 +40,16 @@ describe('subagent tool-filter', () => {
     expect(filterAllowedToolsForSubagent(undefined)).toEqual([])
   })
 
-  describe('js sandbox high-risk capability gating', () => {
-    it('does not block js_eval when no extension capability is enabled', () => {
-      expect(isSubagentBlockedToolName(jsEval, { jsSandboxSettings: {} })).toBe(
-        false,
-      )
-
-      const filtered = filterAllowedToolsForSubagent(
-        [fsEdit, jsEval, delegate],
-        { jsSandboxSettings: {} },
-      )
-      expect(filtered).toEqual([fsEdit, jsEval])
-    })
-
-    it.each([
-      ['allowFetch'],
-      ['allowVaultRead'],
-      ['allowDbQuery'],
-      ['allowExternalScripts'],
-      ['allowBrowserRead'],
-    ] as const)(
-      'blocks js_eval for subagents when %s is enabled',
-      (capability) => {
-        const settings = { [capability]: true }
-
-        expect(
-          isSubagentBlockedToolName(jsEval, { jsSandboxSettings: settings }),
-        ).toBe(true)
-
-        const filtered = filterAllowedToolsForSubagent(
-          [fsEdit, jsEval, delegate],
-          { jsSandboxSettings: settings },
-        )
-        expect(filtered).toEqual([fsEdit])
-      },
-    )
-
-    it('treats missing jsSandboxSettings as no extension capability', () => {
-      // Defensive default — runtime callers always pass settings, but the
-      // helper must not silently grant js_eval if a future caller forgets.
-      expect(isSubagentBlockedToolName(jsEval)).toBe(false)
-      expect(filterAllowedToolsForSubagent([jsEval])).toEqual([jsEval])
-    })
-
-    it('still blocks baseline tools regardless of js sandbox settings', () => {
-      const settings = { allowFetch: true }
-      expect(
-        isSubagentBlockedToolName(delegate, { jsSandboxSettings: settings }),
-      ).toBe(true)
-      expect(
-        isSubagentBlockedToolName(askUser, { jsSandboxSettings: settings }),
-      ).toBe(true)
-    })
+  it('does not filter approval-gated tools — those route to the parent UI', () => {
+    // Tools that merely require approval (js_eval with caps, fs_edit in
+    // review mode, etc.) are intentionally NOT in the deny-list. Their
+    // approval requests bubble up to the SubagentCard's inline approval
+    // block. See `docs/plans/2026-06-18-subagent-tool-approval-routing.md`.
+    const jsEval = getToolName(getLocalFileToolServerName(), 'js_eval')
+    expect(isSubagentBlockedToolName(jsEval)).toBe(false)
+    expect(filterAllowedToolsForSubagent([fsEdit, jsEval])).toEqual([
+      fsEdit,
+      jsEval,
+    ])
   })
 })

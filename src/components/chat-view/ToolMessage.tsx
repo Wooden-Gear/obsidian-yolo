@@ -1441,6 +1441,7 @@ function ToolCallItem({
       <SubagentCard
         toolCallId={request.id}
         response={response}
+        conversationId={conversationId}
         args={extractSubagentArgs(request.arguments)}
         subagentResult={subagentResult}
         initialStdout={extractSyntheticLiveTaskOutput(request.arguments).stdout}

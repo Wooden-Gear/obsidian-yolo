@@ -435,14 +435,6 @@ export class AgentToolGateway {
       return { status: ToolCallResponseStatus.Running }
     }
 
-    if (this.isSubagentChildRun) {
-      return {
-        status: ToolCallResponseStatus.Error,
-        error:
-          'Subagents cannot pause for interactive tool approval. This tool can run inside a subagent only when the parent agent already has permission to execute it automatically.',
-      }
-    }
-
     return this.shouldUseFsEditReview(request.name)
       ? { status: ToolCallResponseStatus.Running }
       : { status: ToolCallResponseStatus.PendingApproval }
@@ -1079,7 +1071,6 @@ export class AgentToolGateway {
           : undefined,
       },
       request.name,
-      { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
     )
     const requireAutoExecution =
       approvalMode === 'full_access' ||
@@ -1165,7 +1156,6 @@ export class AgentToolGateway {
               : undefined,
           },
           toolName,
-          { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
         ) === 'require_approval'
       )
     } catch {
@@ -1177,12 +1167,7 @@ export class AgentToolGateway {
     if (!this.toolsEnabled) {
       return false
     }
-    if (
-      this.isSubagentChildRun &&
-      isSubagentBlockedToolName(toolName, {
-        jsSandboxSettings: this.mcpManager.getJsSandboxSettings(),
-      })
-    ) {
+    if (this.isSubagentChildRun && isSubagentBlockedToolName(toolName)) {
       return false
     }
     if (isLoadToolSchemasToolName(toolName)) {

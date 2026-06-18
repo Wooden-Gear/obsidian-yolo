@@ -1,8 +1,3 @@
-import {
-  type JsSandboxSettings,
-  hasAnyJsSandboxCapEnabled,
-} from '../../mcp/jsSandboxSettings'
-import { JS_SANDBOX_TOOL_NAME } from '../../mcp/jsSandboxTool'
 import { getLocalFileToolServerName } from '../../mcp/localFileTools'
 import { getToolName } from '../../mcp/tool-name-utils'
 
@@ -26,44 +21,18 @@ Guidelines:
  * Baseline tools blocked for every child subagent run regardless of settings:
  * `delegate_subagent` (no recursive subagent dispatch) and `ask_user_question`
  * (no UI surface to render the prompt). These are runtime-enforced.
+ *
+ * Tools that merely require approval (`js_eval` with high-risk caps, `fs_edit`
+ * in review mode, etc.) are NOT blocked here — their approval requests are
+ * routed to the parent conversation's UI (the SubagentCard renders an inline
+ * approval block). See `docs/plans/2026-06-18-subagent-tool-approval-routing.md`.
  */
 export const SUBAGENT_BLOCKED_TOOL_SHORT_NAMES: readonly string[] = [
   DELEGATE_SUBAGENT_TOOL_SHORT_NAME,
   'ask_user_question',
 ]
 
-const BASELINE_BLOCKED_TOOL_NAMES: readonly string[] =
+export const SUBAGENT_BLOCKED_TOOL_NAMES: readonly string[] =
   SUBAGENT_BLOCKED_TOOL_SHORT_NAMES.map((shortName) =>
     getToolName(getLocalFileToolServerName(), shortName),
   )
-
-const JS_SANDBOX_TOOL_FQN = getToolName(
-  getLocalFileToolServerName(),
-  JS_SANDBOX_TOOL_NAME,
-)
-
-/**
- * Resolve the runtime block list for a subagent run.
- *
- * The baseline ({@link SUBAGENT_BLOCKED_TOOL_SHORT_NAMES}) is always denied.
- * On top of that, when JS sandbox has any extension capability enabled
- * (`allowFetch` / `allowVaultRead` / `allowDbQuery` / `allowExternalScripts` /
- * `allowBrowserRead`), the parent agent forces `require_approval` for
- * `js_eval` — but subagents have no approval UI, so calling it would fail at
- * execution time. We deny it upfront so the model never sees an unusable tool.
- *
- * `jsSandboxSettings` defaults to `{}` for safety: a missing argument means
- * "no extension capability claimed", same as a fresh install. Callers that
- * have access to `McpManager` should still pass `getJsSandboxSettings()`
- * explicitly so future capability flags propagate without code changes here.
- */
-export function buildSubagentBlockedToolNames(options?: {
-  jsSandboxSettings?: JsSandboxSettings | null
-}): string[] {
-  const blocked = [...BASELINE_BLOCKED_TOOL_NAMES]
-  const jsSandboxSettings = options?.jsSandboxSettings ?? {}
-  if (hasAnyJsSandboxCapEnabled(jsSandboxSettings)) {
-    blocked.push(JS_SANDBOX_TOOL_FQN)
-  }
-  return blocked
-}

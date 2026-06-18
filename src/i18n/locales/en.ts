@@ -528,7 +528,6 @@ export const en: TranslationKeys = {
       toolApproval: 'Approval',
       toolApprovalFullAccess: 'Full access',
       toolApprovalRequire: 'Require approval',
-      toolApprovalForced: 'Approval required',
       toolDisclosureAlways: 'In context',
       toolDisclosureOnDemand: 'On demand',
       editorEnabled: 'Enabled',
@@ -611,7 +610,7 @@ export const en: TranslationKeys = {
       jsSandboxAllowBrowserReadDesc:
         'Let scripts read the full HTML of web pages already open in Obsidian by page ID. This can include logged-in or private page content.',
       jsSandboxAllowBrowserReadRisk:
-        'Risk: scripts can read full rendered page HTML from pages you have opened in Obsidian, including private or logged-in content visible in the page DOM. Only enable for agents you fully trust.',
+        'Risk: scripts can read the full page DOM from pages you have opened in Obsidian, including hidden fields, embedded state, and private or logged-in content. Only enable for agents you fully trust.',
       jsSandboxAllowBrowserReadConfirm:
         'Enabling open web page read lets AI-generated scripts read full HTML from web pages already open in Obsidian by page ID. This content passes through the LLM context. Continue?',
       jsSandboxBrowserReadMaxKb: 'Max page HTML size (KB)',
@@ -630,7 +629,6 @@ export const en: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         'Enabling external scripts lets the agent load and run remote JavaScript inside Obsidian. This is powerful and risky: only continue if you fully trust this agent and the code source.',
       jsSandboxConfirmEnableTitle: 'Enable extension capability',
-      jsExecApprovalForced: 'Forced approval when enabled',
       jsSandboxTimeoutMs: 'Execution timeout (ms)',
       jsSandboxTimeoutMsDesc:
         'Maximum runtime for a single script call. Range {min}–{max}.',
@@ -1871,6 +1869,15 @@ export const en: TranslationKeys = {
       statusFailed: 'Failed',
       toolUseCount: '{count} tools',
       tokenCount: '{count} tokens',
+      approval: {
+        heading: 'Awaiting approval',
+        headingMulti: 'Awaiting approval · {count}',
+        approve: 'Approve',
+        reject: 'Reject',
+        approveAll: 'Approve all',
+        rejectAll: 'Reject all',
+        viewDetails: 'View parameters',
+      },
     },
     conversationSettings: {
       openAria: 'Conversation settings',

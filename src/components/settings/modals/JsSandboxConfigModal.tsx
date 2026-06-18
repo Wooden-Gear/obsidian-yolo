@@ -124,13 +124,6 @@ function JsSandboxConfigModalContent({
               {t('settings.agent.jsSandboxExtTitle', 'Extension capabilities')}
             </h3>
           </div>
-          <span className="yolo-js-exec-risk-pill">
-            <TriangleAlert size={13} />
-            {t(
-              'settings.agent.jsExecApprovalForced',
-              'Forced approval when enabled',
-            )}
-          </span>
         </div>
 
         <div className="yolo-js-exec-cap-list">
@@ -259,7 +252,7 @@ function JsSandboxConfigModalContent({
             )}
             riskWarning={t(
               'settings.agent.jsSandboxAllowBrowserReadRisk',
-              'Risk: scripts can read full rendered page HTML from pages you have opened in Obsidian, including private or logged-in content visible in the page DOM. Only enable for agents you fully trust.',
+              'Risk: scripts can read the full page DOM from pages you have opened in Obsidian, including hidden fields, embedded state, and private or logged-in content. Only enable for agents you fully trust.',
             )}
             enabled={Boolean(config.allowBrowserRead)}
             onToggle={(v) =>
