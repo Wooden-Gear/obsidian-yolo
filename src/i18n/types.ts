@@ -458,6 +458,12 @@ export type TranslationKeys = {
       jsSandboxAllowVaultRead?: string
       jsSandboxAllowVaultReadDesc?: string
       jsSandboxAllowVaultReadConfirm?: string
+      jsSandboxAllowBrowserRead?: string
+      jsSandboxAllowBrowserReadDesc?: string
+      jsSandboxAllowBrowserReadRisk?: string
+      jsSandboxAllowBrowserReadConfirm?: string
+      jsSandboxBrowserReadMaxKb?: string
+      jsSandboxBrowserReadMaxKbDesc?: string
       jsSandboxAllowDbQuery?: string
       jsSandboxAllowDbQueryDesc?: string
       jsSandboxAllowDbQueryConfirm?: string

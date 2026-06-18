@@ -67,6 +67,7 @@ jest.mock('../browser/activeWebviewReader', () => ({
     }
   },
   readActiveWebviewPage: jest.fn(),
+  readActiveWebviewHtml: jest.fn(),
 }))
 
 import { App, TFile, TFolder } from 'obsidian'
@@ -84,11 +85,15 @@ import { renderPdfPagesToImages } from '../../utils/pdf/renderPdfPagesToImages'
 import { PdfSliceError, slicePdfPages } from '../../utils/pdf/slicePdfPages'
 import { runSubagent } from '../agent/subagent/runner'
 import { findWebviewHandleByPageId } from '../browser/activeWebviewProbe'
-import { readActiveWebviewPage } from '../browser/activeWebviewReader'
+import {
+  readActiveWebviewHtml,
+  readActiveWebviewPage,
+} from '../browser/activeWebviewReader'
 import type { RAGEngine } from '../rag/ragEngine'
 
 import { buildJsSandboxToolDescription } from './jsSandboxSettings'
 import {
+  JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB,
   JS_SANDBOX_DB_QUERY_DEFAULT_MAX_LIMIT,
   JS_SANDBOX_VAULT_LIST_MAX_ENTRIES,
   formatJsSandboxToolText,
@@ -267,6 +272,71 @@ describe('js sandbox vault list handler', () => {
   })
 })
 
+describe('js sandbox browser page HTML handler', () => {
+  const pageId = 'page_abcdefgh_12345678'
+  const app = {} as App
+  const handle = { pageId, webview: {} }
+
+  beforeEach(() => {
+    jest.mocked(findWebviewHandleByPageId).mockReset()
+    jest.mocked(readActiveWebviewHtml).mockReset()
+  })
+
+  it('does not expose the handler when browser read is disabled', () => {
+    const handlers = buildJsSandboxProxyHandlers(app, {})
+
+    expect(handlers.browserReadHtml).toBeUndefined()
+  })
+
+  it('reads full HTML from an open page by page id', async () => {
+    jest.mocked(findWebviewHandleByPageId).mockReturnValue(handle as never)
+    jest.mocked(readActiveWebviewHtml).mockResolvedValue({
+      url: 'https://example.com',
+      title: 'Example',
+      html: '<html><body>ok</body></html>',
+      byteLength: 28,
+    })
+    const handlers = buildJsSandboxProxyHandlers(app, {
+      allowBrowserRead: true,
+    })
+
+    await expect(handlers.browserReadHtml?.(pageId)).resolves.toEqual(
+      expect.objectContaining({
+        title: 'Example',
+        html: '<html><body>ok</body></html>',
+      }),
+    )
+    expect(findWebviewHandleByPageId).toHaveBeenCalledWith(app, pageId)
+    expect(readActiveWebviewHtml).toHaveBeenCalledWith(handle, {
+      maxBytes: JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB * 1024,
+    })
+  })
+
+  it('accepts fs_read-style browser:// page paths', async () => {
+    jest.mocked(findWebviewHandleByPageId).mockReturnValue(handle as never)
+    jest.mocked(readActiveWebviewHtml).mockResolvedValue(null)
+    const handlers = buildJsSandboxProxyHandlers(app, {
+      allowBrowserRead: true,
+    })
+
+    await expect(
+      handlers.browserReadHtml?.(`browser://${pageId}`),
+    ).resolves.toBeNull()
+    expect(findWebviewHandleByPageId).toHaveBeenCalledWith(app, pageId)
+  })
+
+  it('rejects URLs instead of treating them as browser pages', async () => {
+    const handlers = buildJsSandboxProxyHandlers(app, {
+      allowBrowserRead: true,
+    })
+
+    await expect(
+      handlers.browserReadHtml?.('browser://https://example.com/article'),
+    ).rejects.toThrow('browser:// paths only read open Obsidian web pages')
+    expect(findWebviewHandleByPageId).not.toHaveBeenCalled()
+  })
+})
+
 describe('js sandbox tool description', () => {
   it('mentions vault list only when vault read is enabled', () => {
     expect(buildJsSandboxToolDescription({})).not.toContain('$vault.list')
@@ -290,6 +360,29 @@ describe('js sandbox tool description', () => {
     )
     expect(description).not.toContain('$db.get')
     expect(description).not.toContain('$db.find')
+  })
+
+  it('mentions browser HTML reads only when browser read is enabled', () => {
+    expect(buildJsSandboxToolDescription({})).not.toContain('$browser.readHtml')
+
+    const description = buildJsSandboxToolDescription({
+      allowBrowserRead: true,
+    })
+    expect(description).toContain('$browser.readHtml')
+    expect(description).toContain('document.documentElement.outerHTML')
+    expect(description).toContain('$utils.html.extract')
+    expect(description).toContain('$utils.html.select')
+  })
+
+  it('describes HTML parsing only once when fetch and browser read are both enabled', () => {
+    const description = buildJsSandboxToolDescription({
+      allowFetch: true,
+      allowBrowserRead: true,
+    })
+
+    const htmlExtractMentions =
+      description.match(/\$utils\.html\.extract/g) ?? []
+    expect(htmlExtractMentions).toHaveLength(1)
   })
 
   it('does not duplicate vault readText guidance when db query and vault read are both enabled', () => {

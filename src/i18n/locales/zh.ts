@@ -555,6 +555,16 @@ export const zh: TranslationKeys = {
         '允许脚本列出库内路径，并按路径读取任意库文件。此能力不受 Agent 目录限制约束。风险：脚本可能将笔记内容传递给外部服务。',
       jsSandboxAllowVaultReadConfirm:
         '开启后，AI 生成的脚本可列出 vault 路径，并按路径读取 vault 中任意文件，内容将进入 LLM 上下文。请确认您信任此 Agent 生成的脚本后再继续。',
+      jsSandboxAllowBrowserRead: '允许读取已打开网页',
+      jsSandboxAllowBrowserReadDesc:
+        '允许脚本按页面 ID 读取 Obsidian 中已打开网页的完整 HTML。网页可能包含登录态或私有内容。',
+      jsSandboxAllowBrowserReadRisk:
+        '风险：脚本可读取你在 Obsidian 中已打开网页的完整 DOM，包括隐藏字段、内嵌状态以及私有或登录态内容。仅在你完全信任此 Agent 时开启。',
+      jsSandboxAllowBrowserReadConfirm:
+        '开启后，AI 生成的脚本可按页面 ID 读取 Obsidian 中已打开网页的完整 HTML，内容将进入 LLM 上下文。是否继续？',
+      jsSandboxBrowserReadMaxKb: '网页 HTML 大小上限（KB）',
+      jsSandboxBrowserReadMaxKbDesc:
+        '单次完整 HTML 读取上限。超过上限的网页会被拒绝，而不是截短。范围 1–1048576 KB。留空使用默认值。',
       jsSandboxAllowDbQuery: '允许知识库查询',
       jsSandboxAllowDbQueryDesc:
         '允许脚本使用语义搜索查询已索引的库内容，并按已知路径读取 Markdown / 文本内容。此能力不受 Agent 目录限制约束。',

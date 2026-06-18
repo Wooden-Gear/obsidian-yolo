@@ -128,7 +128,7 @@ export const buildRequestTools = (
  * Rewrite tools whose schema depends on global settings. Currently only
  * `js_eval`, whose description and `timeoutMs` input bound both name the
  * exact `settings.jsSandbox` values in effect (network / vault read / $db /
- * external scripts + per-call timeout cap).
+ * external scripts / browser page reads + per-call timeout cap).
  *
  * The tool list from `listAvailableTools` is cached and settings-agnostic —
  * this is the single bridge that rebuilds the live tool spec. Every consumer

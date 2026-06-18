@@ -257,6 +257,10 @@ export const jsSandboxSettingsSchema = z.object({
   // Maximum size (in KB) returned by $vault.readText / $vault.readBinary.
   // Files exceeding this are truncated (text) or refused (binary).
   vaultReadMaxKb: z.number().optional(),
+  allowBrowserRead: z.boolean().optional(),
+  // Maximum size (in KB) returned by $browser.readHtml. Pages exceeding
+  // this are refused so callers do not silently receive partial HTML.
+  browserReadMaxKb: z.number().optional(),
   allowExternalScripts: z.boolean().optional(),
   // Execution timeout cap, in milliseconds. The LLM may pass a smaller
   // timeoutMs in its tool args, but the host clamps the effective value

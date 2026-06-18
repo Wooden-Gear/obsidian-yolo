@@ -606,6 +606,16 @@ export const en: TranslationKeys = {
         'Let scripts list vault paths and read any vault file by path. This capability is not constrained by the agent directory scope. Risk: scripts could pass note contents to external services.',
       jsSandboxAllowVaultReadConfirm:
         "Enabling vault read lets AI-generated scripts list vault paths and read any file in the vault by path. This data passes through the LLM context. Only enable if you trust this agent's scripts. Continue?",
+      jsSandboxAllowBrowserRead: 'Allow Open Web Page Read',
+      jsSandboxAllowBrowserReadDesc:
+        'Let scripts read the full HTML of web pages already open in Obsidian by page ID. This can include logged-in or private page content.',
+      jsSandboxAllowBrowserReadRisk:
+        'Risk: scripts can read the full page DOM from pages you have opened in Obsidian, including hidden fields, embedded state, and private or logged-in content. Only enable for agents you fully trust.',
+      jsSandboxAllowBrowserReadConfirm:
+        'Enabling open web page read lets AI-generated scripts read full HTML from web pages already open in Obsidian by page ID. This content passes through the LLM context. Continue?',
+      jsSandboxBrowserReadMaxKb: 'Max page HTML size (KB)',
+      jsSandboxBrowserReadMaxKbDesc:
+        'Per-call full HTML limit. Larger pages are refused instead of shortened. Range 1–1048576 KB. Leave blank to use the default.',
       jsSandboxAllowDbQuery: 'Allow Knowledge Base Query',
       jsSandboxAllowDbQueryDesc:
         'Let scripts query indexed vault content with semantic search and read Markdown/text content by known path. This capability is not constrained by the agent directory scope.',
