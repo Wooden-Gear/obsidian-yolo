@@ -1852,7 +1852,6 @@ export type TranslationKeys = {
       errorInvalidFormatVersion: string
       errorInvalidSettingsVersion: string
       errorFileFromNewerVersion: string
-      errorFileFromOlderVersion: string
       errorEmptyKeys: string
       errorMissingData: string
       errorTampered: string
@@ -1860,7 +1859,6 @@ export type TranslationKeys = {
       errorVaultParseFailed: string
       errorVaultMissingVersion: string
       errorVaultFromNewerVersion: string
-      errorVaultFromOlderVersion: string
       errorVaultEmpty: string
       errorApplyVersionMismatch: string
       errorApplySchema: string

@@ -2013,8 +2013,6 @@ export const zh: TranslationKeys = {
       errorInvalidSettingsVersion: '配置文件中的设置版本号不合法，可能已损坏。',
       errorFileFromNewerVersion:
         '配置文件来自更高版本的插件（版本 {fileVersion}），当前插件版本为 {currentVersion}，请先升级当前插件后再导入。',
-      errorFileFromOlderVersion:
-        '配置文件来自旧版本的插件（版本 {fileVersion}），当前插件版本为 {currentVersion}。请在源端升级 YOLO 插件后重新导出。',
       errorEmptyKeys: '配置文件中没有包含任何配置项。',
       errorMissingData: '配置文件中的数据字段缺失或不合法。',
       errorTampered:
@@ -2025,11 +2023,9 @@ export const zh: TranslationKeys = {
         '目标笔记库的配置数据缺少 version 字段，无法判断版本兼容性。',
       errorVaultFromNewerVersion:
         '目标笔记库使用更高版本的插件（版本 {vaultVersion}），当前插件版本为 {currentVersion}，请先升级当前插件后再导入。',
-      errorVaultFromOlderVersion:
-        '目标笔记库使用旧版本的插件（版本 {vaultVersion}），当前插件版本为 {currentVersion}。请先在目标笔记库升级 YOLO 插件后再导入。',
       errorVaultEmpty: '目标笔记库的配置数据为空',
       errorApplyVersionMismatch:
-        '导入数据版本（{importVersion}）与当前插件版本（{currentVersion}）不一致，无法导入。',
+        '导入数据版本（{importVersion}）高于当前插件版本（{currentVersion}），无法导入。',
       errorApplySchema: '导入的配置未通过校验，可能存在字段缺失或格式错误。',
     },
     keyLabels: {

@@ -2158,8 +2158,6 @@ export const en: TranslationKeys = {
         'Invalid settings version in the export file — it may be corrupted.',
       errorFileFromNewerVersion:
         'This file was exported by a newer plugin version ({fileVersion}); current plugin schema is {currentVersion}. Please upgrade this plugin before importing.',
-      errorFileFromOlderVersion:
-        'This file was exported by an older plugin version ({fileVersion}); current plugin schema is {currentVersion}. Please upgrade YOLO on the source vault and re-export.',
       errorEmptyKeys: 'The export file contains no settings to import.',
       errorMissingData:
         'The data field is missing or invalid in the export file.',
@@ -2173,11 +2171,9 @@ export const en: TranslationKeys = {
         'Target vault settings are missing the version field — cannot check compatibility.',
       errorVaultFromNewerVersion:
         'Target vault uses a newer plugin version ({vaultVersion}); current is {currentVersion}. Please upgrade this plugin before importing.',
-      errorVaultFromOlderVersion:
-        'Target vault uses an older plugin version ({vaultVersion}); current is {currentVersion}. Please upgrade YOLO in the target vault before importing.',
       errorVaultEmpty: 'Target vault contains no exportable settings.',
       errorApplyVersionMismatch:
-        'Import data version ({importVersion}) does not match current plugin schema ({currentVersion}).',
+        'Import data version ({importVersion}) is newer than the current plugin schema ({currentVersion}).',
       errorApplySchema:
         'The imported settings failed validation — fields may be missing or malformed.',
     },
