@@ -1,5 +1,7 @@
 <!-- Thanks for contributing! Please fill this out so review can move quickly. -->
 
+> 👋 Before opening this PR, please confirm you've read [CONTRIBUTING.md](../CONTRIBUTING.md) — it covers what we welcome, the AI-assisted PR policy, and PR size guidelines. PRs that ignore those guidelines may be closed without detailed review.
+
 ## Summary
 
 <!-- What does this PR do, in 1–3 sentences? Avoid "see commits" / "self-explanatory". -->

@@ -175,8 +175,7 @@ In the Obsidian developer console:
 ## Review expectations
 
 - The maintainer reviews PRs as time allows. Expect anywhere from a day to a couple of weeks for a first response, longer for large changes.
-- Review feedback is usually direct. If something is unclear, ask — short questions are welcome, long defensive replies are not.
-- A PR sitting idle without author response for more than two weeks may be closed. Reopen it whenever you're ready to continue.
+- You can summon the review bot by mentioning `@Lapis0x1` in a comment — its replies count as Lapis0x0's.
 
 ---
 
