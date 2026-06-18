@@ -47,10 +47,10 @@ const JS_SANDBOX_TOOL_FQN = getToolName(
  *
  * The baseline ({@link SUBAGENT_BLOCKED_TOOL_SHORT_NAMES}) is always denied.
  * On top of that, when JS sandbox has any extension capability enabled
- * (`allowFetch` / `allowVaultRead` / `allowDbQuery` / `allowExternalScripts`),
- * the parent agent forces `require_approval` for `js_eval` — but subagents
- * have no approval UI, so calling it would fail at execution time. We deny it
- * upfront so the model never sees an unusable tool.
+ * (`allowFetch` / `allowVaultRead` / `allowDbQuery` / `allowExternalScripts` /
+ * `allowBrowserRead`), the parent agent forces `require_approval` for
+ * `js_eval` — but subagents have no approval UI, so calling it would fail at
+ * execution time. We deny it upfront so the model never sees an unusable tool.
  *
  * `jsSandboxSettings` defaults to `{}` for safety: a missing argument means
  * "no extension capability claimed", same as a fresh install. Callers that

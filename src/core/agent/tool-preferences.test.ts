@@ -200,6 +200,7 @@ describe('tool-preferences defaults', () => {
         'allowVaultRead',
         'allowDbQuery',
         'allowExternalScripts',
+        'allowBrowserRead',
       ] as const) {
         expect(
           getAssistantToolApprovalMode(assistant, JS_SANDBOX_FQN, {

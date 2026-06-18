@@ -48,6 +48,12 @@ export const JS_SANDBOX_VAULT_READ_DEFAULT_MAX_KB = 10 * 1024
 export const JS_SANDBOX_VAULT_READ_HARD_MAX_KB = 1024 * 1024
 export const JS_SANDBOX_VAULT_READ_MIN_KB = 1
 export const JS_SANDBOX_VAULT_LIST_MAX_ENTRIES = 100_000
+// Full rendered page HTML can be as large as fetched response bodies. Keep the
+// same default and hard cap family so one browser page cannot dominate memory
+// or the model context by accident.
+export const JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB = 10 * 1024
+export const JS_SANDBOX_BROWSER_READ_HARD_MAX_KB = 1024 * 1024
+export const JS_SANDBOX_BROWSER_READ_MIN_KB = 1
 export const JS_SANDBOX_DB_QUERY_DEFAULT_MAX_LIMIT = 20
 export const JS_SANDBOX_DB_QUERY_HARD_MAX_LIMIT = 100
 export const JS_SANDBOX_DB_QUERY_DEFAULT_REQUEST_LIMIT = 10
@@ -83,6 +89,13 @@ export type JsSandboxFetchResponse = {
   byteLength: number
 }
 
+export type JsSandboxBrowserReadHtmlResult = {
+  url: string
+  title: string
+  html: string
+  byteLength: number
+}
+
 export type JsSandboxProxyHandlers = {
   vaultList?: (
     path?: string,
@@ -105,6 +118,10 @@ export type JsSandboxProxyHandlers = {
     method: 'search',
     params: Record<string, unknown>,
   ) => Promise<unknown>
+  browserReadHtml?: (
+    pageId: string,
+  ) => Promise<JsSandboxBrowserReadHtmlResult | null>
+  browserReadConfig?: { maxKb: number }
 }
 
 type JsSandboxCaps = {
@@ -112,6 +129,7 @@ type JsSandboxCaps = {
   allowVaultRead: boolean
   allowDbQuery: boolean
   allowExternalScripts: boolean
+  allowBrowserRead: boolean
 }
 
 type JsSandboxVariables = {
@@ -517,9 +535,9 @@ function createSandboxUtils(options) {
 
   const utils = { json, text, stats, matrix, date }
   if (options && options.includeHtml) {
-    // HTML parsing is coupled to network/fetch mode: it is mainly for fetched
-    // web pages, and keeping it conditional avoids advertising extra surface
-    // to agents that cannot retrieve remote HTML in the first place.
+    // HTML parsing is exposed only when another capability can provide HTML
+    // (network fetch or open-browser-page reads). Keeping it conditional avoids
+    // advertising parser surface to agents that only have note snapshots.
     utils.html = createSandboxHtmlUtils()
   }
 
@@ -640,6 +658,8 @@ function buildScope(rawVars) {
   const caps = rawVars && rawVars._caps ? rawVars._caps : {}
   const vaultBase = rawVars ? rawVars.$vault ?? null : null
   const hostFetchAllowed = Boolean(caps.allowFetch || caps.allowExternalScripts)
+  const browserReadAllowed = Boolean(caps.allowBrowserRead)
+  const htmlUtilsAllowed = hostFetchAllowed || browserReadAllowed
 
   const scope = {
     $now: rawVars && typeof rawVars.$now === 'string'
@@ -665,9 +685,12 @@ function buildScope(rawVars) {
     } : null,
     $links: Array.isArray(rawVars && rawVars.$links) ? rawVars.$links : [],
     $tags: Array.isArray(rawVars && rawVars.$tags) ? rawVars.$tags : [],
-    $utils: hostFetchAllowed ? SANDBOX_UTILS_WITH_HTML : SANDBOX_UTILS,
+    $utils: htmlUtilsAllowed ? SANDBOX_UTILS_WITH_HTML : SANDBOX_UTILS,
     $db: caps.allowDbQuery ? {
       search: (query, limit) => proxyCall('db_query', { method: 'search', query, limit })
+    } : undefined,
+    $browser: browserReadAllowed ? {
+      readHtml: (pageId) => proxyCall('browser_read_html', { pageId })
     } : undefined,
     $fetch: hostFetchAllowed ? hostFetch : undefined
   }
@@ -1285,7 +1308,9 @@ function startRun(data) {
   workers.set(data.reqId, {
     worker,
     token,
-    allowHtml: Boolean(caps.allowFetch || caps.allowExternalScripts)
+    allowHtml: Boolean(
+      caps.allowFetch || caps.allowExternalScripts || caps.allowBrowserRead
+    )
   })
 
   worker.onmessage = (event) => {
@@ -1573,6 +1598,7 @@ async function buildJsSandboxVariables(
     allowVaultRead: config?.allowVaultRead ?? false,
     allowDbQuery: config?.allowDbQuery ?? false,
     allowExternalScripts: config?.allowExternalScripts ?? false,
+    allowBrowserRead: config?.allowBrowserRead ?? false,
   }
 
   return deepCloneJson({
@@ -2044,6 +2070,22 @@ class JsSandboxRunner {
         }
         const method = payload.method as 'search'
         const result = await handlers.dbQuery(method, payload)
+        this.sendProxyResponse(reqId, proxyId, result)
+        return
+      }
+
+      if (cap === 'browser_read_html') {
+        if (!handlers?.browserReadHtml) {
+          this.sendProxyResponse(
+            reqId,
+            proxyId,
+            undefined,
+            '$browser.readHtml is not enabled',
+          )
+          return
+        }
+        const pageId = typeof payload.pageId === 'string' ? payload.pageId : ''
+        const result = await handlers.browserReadHtml(pageId)
         this.sendProxyResponse(reqId, proxyId, result)
         return
       }

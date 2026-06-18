@@ -1,5 +1,5 @@
-import { getLocalFileToolServerName } from '../../mcp/localFileTools'
 import { JS_SANDBOX_TOOL_NAME } from '../../mcp/jsSandboxTool'
+import { getLocalFileToolServerName } from '../../mcp/localFileTools'
 import { getToolName } from '../../mcp/tool-name-utils'
 
 import { SUBAGENT_BLOCKED_TOOL_SHORT_NAMES } from './constants'
@@ -14,10 +14,7 @@ describe('subagent tool-filter', () => {
     getLocalFileToolServerName(),
     'delegate_subagent',
   )
-  const terminal = getToolName(
-    getLocalFileToolServerName(),
-    'terminal_command',
-  )
+  const terminal = getToolName(getLocalFileToolServerName(), 'terminal_command')
   const askUser = getToolName(getLocalFileToolServerName(), 'ask_user_question')
   const jsEval = getToolName(getLocalFileToolServerName(), JS_SANDBOX_TOOL_NAME)
 
@@ -47,9 +44,9 @@ describe('subagent tool-filter', () => {
 
   describe('js sandbox high-risk capability gating', () => {
     it('does not block js_eval when no extension capability is enabled', () => {
-      expect(
-        isSubagentBlockedToolName(jsEval, { jsSandboxSettings: {} }),
-      ).toBe(false)
+      expect(isSubagentBlockedToolName(jsEval, { jsSandboxSettings: {} })).toBe(
+        false,
+      )
 
       const filtered = filterAllowedToolsForSubagent(
         [fsEdit, jsEval, delegate],
@@ -63,6 +60,7 @@ describe('subagent tool-filter', () => {
       ['allowVaultRead'],
       ['allowDbQuery'],
       ['allowExternalScripts'],
+      ['allowBrowserRead'],
     ] as const)(
       'blocks js_eval for subagents when %s is enabled',
       (capability) => {

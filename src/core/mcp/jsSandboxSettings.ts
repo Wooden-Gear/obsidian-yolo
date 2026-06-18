@@ -4,6 +4,7 @@ import type {
 } from '../../settings/schema/setting.types'
 
 import {
+  JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB,
   JS_SANDBOX_DB_QUERY_DEFAULT_MAX_LIMIT,
   JS_SANDBOX_DB_QUERY_DEFAULT_REQUEST_LIMIT,
   JS_SANDBOX_DB_QUERY_HARD_MAX_LIMIT,
@@ -59,15 +60,16 @@ export function normalizeJsSandboxConfig(
 
 /**
  * Whether any extension capability (network / vault read / $db / external
- * scripts) is enabled. When true the host forces `require_approval` for
- * every agent that has `js_eval` enabled.
+ * scripts / open browser page reads) is enabled. When true the host forces
+ * `require_approval` for every agent that has `js_eval` enabled.
  */
 export function hasAnyJsSandboxCapEnabled(s: JsSandboxSettings): boolean {
   return Boolean(
     s.allowFetch ||
       s.allowVaultRead ||
       s.allowDbQuery ||
-      s.allowExternalScripts,
+      s.allowExternalScripts ||
+      s.allowBrowserRead,
   )
 }
 
@@ -81,6 +83,10 @@ function describeVaultReadText(vaultCapKb: number): string {
   return `await $vault.readText(path) -> string|null (path is vault-relative, NOT absolute under $vault.adapter.basePath; null only if the file is missing; folder paths and read failures throw; text above ${vaultCapKb} KB is truncated)`
 }
 
+function describeHtmlParsingUtils(): string {
+  return 'HTML parsing: await $utils.html.extract(html,{baseUrl?,maxTextChars?,maxItems?})->{title,lang,text,meta,headings:[{level,text}],links:[{text,href}],images:[{alt,src}]} (baseUrl resolves relative href/src); await $utils.html.select(html,cssSelector,{baseUrl?,limit?,includeHtml?})->[{tag,text,attrs,html?}]'
+}
+
 /**
  * Build the LLM-facing description. The base section only describes what's
  * always available; every conditional API (vault read, network, $db,
@@ -91,6 +97,8 @@ function describeVaultReadText(vaultCapKb: number): string {
  */
 export function buildJsSandboxToolDescription(s: JsSandboxSettings): string {
   const enabled: string[] = []
+  const htmlParsingEnabled =
+    s.allowFetch || s.allowExternalScripts || s.allowBrowserRead
 
   if (s.allowVaultRead) {
     const vaultCapKb = resolveVaultReadDescriptionMaxKb(s)
@@ -116,9 +124,20 @@ export function buildJsSandboxToolDescription(s: JsSandboxSettings): string {
     enabled.push(
       `Network: fetch/XMLHttpRequest/WebSocket are browser-native (CORS/CSP apply). For cross-origin reads: \`const data = await (await $fetch(url, {method?,headers?,body?,contentType?})).text()\`. Host-routed, ${fetchCapKb} KB cap, max ${fetchMaxConcurrent} concurrent calls per execution (excess throw)`,
     )
+  }
+
+  if (s.allowBrowserRead) {
+    const browserCapKb =
+      typeof s.browserReadMaxKb === 'number' && s.browserReadMaxKb > 0
+        ? s.browserReadMaxKb
+        : JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB
     enabled.push(
-      'HTML parsing: await $utils.html.extract(html,{baseUrl?,maxTextChars?,maxItems?})->{title,lang,text,meta,headings:[{level,text}],links:[{text,href}],images:[{alt,src}]} (baseUrl resolves relative href/src); await $utils.html.select(html,cssSelector,{baseUrl?,limit?,includeHtml?})->[{tag,text,attrs,html?}]',
+      `Browser page HTML: await $browser.readHtml(pageId) -> {url,title,html,byteLength}|null (pageId must be copied exactly from <browser_context>; reads document.documentElement.outerHTML from an already-open Obsidian web page; does not open or fetch URLs; returns null if the page is no longer open; pages above ${browserCapKb} KB are refused; return aggregates or small excerpts unless the user explicitly needs raw HTML).`,
     )
+  }
+
+  if (htmlParsingEnabled) {
+    enabled.push(describeHtmlParsingUtils())
   }
 
   if (s.allowDbQuery) {

@@ -62,6 +62,7 @@ import {
 import {
   BrowserReadFailure,
   type BrowserReadFormat,
+  readActiveWebviewHtml,
   readActiveWebviewPage,
 } from '../browser/activeWebviewReader'
 import {
@@ -100,6 +101,9 @@ import {
   getJsSandboxSettings,
 } from './jsSandboxSettings'
 import {
+  JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB,
+  JS_SANDBOX_BROWSER_READ_HARD_MAX_KB,
+  JS_SANDBOX_BROWSER_READ_MIN_KB,
   JS_SANDBOX_DB_QUERY_DEFAULT_MAX_LIMIT,
   JS_SANDBOX_DB_QUERY_DEFAULT_REQUEST_LIMIT,
   JS_SANDBOX_DB_QUERY_HARD_MAX_LIMIT,
@@ -114,6 +118,7 @@ import {
   JS_SANDBOX_VAULT_READ_DEFAULT_MAX_KB,
   JS_SANDBOX_VAULT_READ_HARD_MAX_KB,
   JS_SANDBOX_VAULT_READ_MIN_KB,
+  type JsSandboxBrowserReadHtmlResult,
   type JsSandboxProxyHandlers,
   type JsSandboxVaultListEntry,
   callJsSandboxTool,
@@ -494,6 +499,17 @@ export const parseBrowserReadPageId = (path: string): string => {
     throw new Error(BROWSER_READ_PATH_USAGE)
   }
   return pageId
+}
+
+const normalizeBrowserReadPageId = (value: string): string => {
+  const trimmed = value.trim()
+  if (trimmed.startsWith(BROWSER_READ_PATH_PREFIX)) {
+    return parseBrowserReadPageId(trimmed)
+  }
+  if (!BROWSER_PAGE_ID_PATTERN.test(trimmed)) {
+    throw new Error(BROWSER_READ_PATH_USAGE)
+  }
+  return trimmed
 }
 
 type FsReadLineSliceResult = {
@@ -5034,6 +5050,43 @@ export function buildJsSandboxProxyHandlers(
           mimeType: inferMimeType(path),
           byteLength: bytes.length,
         }
+      }
+    }
+  }
+
+  if (config.allowBrowserRead) {
+    const configuredBrowserKb =
+      typeof config.browserReadMaxKb === 'number' &&
+      Number.isFinite(config.browserReadMaxKb)
+        ? Math.floor(config.browserReadMaxKb)
+        : JS_SANDBOX_BROWSER_READ_DEFAULT_MAX_KB
+    const browserReadMaxKb = Math.min(
+      JS_SANDBOX_BROWSER_READ_HARD_MAX_KB,
+      Math.max(JS_SANDBOX_BROWSER_READ_MIN_KB, configuredBrowserKb),
+    )
+    const browserReadMaxBytes = browserReadMaxKb * 1024
+    handlers.browserReadConfig = { maxKb: browserReadMaxKb }
+    handlers.browserReadHtml = async (
+      rawPageId: string,
+    ): Promise<JsSandboxBrowserReadHtmlResult | null> => {
+      if (Platform.isMobile) {
+        throw new Error('browser.readHtml is desktop-only.')
+      }
+      const pageId = normalizeBrowserReadPageId(rawPageId)
+      const handle = findWebviewHandleByPageId(app, pageId)
+      if (!handle) {
+        return null
+      }
+      try {
+        return await readActiveWebviewHtml(handle, {
+          maxBytes: browserReadMaxBytes,
+        })
+      } catch (error) {
+        if (error instanceof BrowserReadFailure) {
+          throw new Error(`browser.readHtml: ${error.message}`)
+        }
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(`browser.readHtml: ${reason}`)
       }
     }
   }

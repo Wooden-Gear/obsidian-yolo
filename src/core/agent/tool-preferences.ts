@@ -35,8 +35,9 @@ export const ALWAYS_ALLOW_DISABLED_TOOL_NAMES: readonly string[] = [
  * local tool 中需要 require_approval 的工具名集合。
  * JS 隔离执行默认 full_access：未开启任何扩展能力时只能读已注入的 $content / $note
  * 等快照、无网络、无 $db、无外部脚本，与其他只读工具风险相当。一旦在 Agent 配置中
- * 打开 allowFetch / allowVaultRead / allowDbQuery / allowExternalScripts，
- * `getAssistantToolApprovalMode` 会强制升级为 require_approval（见下方实现）。
+ * 打开 allowFetch / allowVaultRead / allowDbQuery / allowExternalScripts /
+ * allowBrowserRead，`getAssistantToolApprovalMode` 会强制升级为
+ * require_approval（见下方实现）。
  */
 const REQUIRE_APPROVAL_LOCAL_TOOLS: ReadonlySet<string> = new Set([
   'fs_file_ops',
