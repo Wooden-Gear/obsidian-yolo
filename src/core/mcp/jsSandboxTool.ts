@@ -103,7 +103,6 @@ export type JsSandboxProxyHandlers = {
   ) => Promise<JsSandboxVaultListEntry[]>
   vaultReadText?: (path: string) => Promise<string | null>
   vaultReadBinary?: (path: string) => Promise<JsSandboxBinaryReadResult | null>
-  vaultReadConfig?: { maxKb: number }
   hostFetch?: (
     url: string,
     init?: Record<string, unknown>,
@@ -121,7 +120,6 @@ export type JsSandboxProxyHandlers = {
   browserReadHtml?: (
     pageId: string,
   ) => Promise<JsSandboxBrowserReadHtmlResult | null>
-  browserReadConfig?: { maxKb: number }
 }
 
 type JsSandboxCaps = {

@@ -4952,7 +4952,6 @@ export function buildJsSandboxProxyHandlers(
       Math.max(JS_SANDBOX_VAULT_READ_MIN_KB, configuredVaultKb),
     )
     const vaultReadMaxBytes = vaultReadMaxKb * 1024
-    handlers.vaultReadConfig = { maxKb: vaultReadMaxKb }
 
     if (config.allowVaultRead) {
       handlers.vaultList = async (
@@ -5065,7 +5064,6 @@ export function buildJsSandboxProxyHandlers(
       Math.max(JS_SANDBOX_BROWSER_READ_MIN_KB, configuredBrowserKb),
     )
     const browserReadMaxBytes = browserReadMaxKb * 1024
-    handlers.browserReadConfig = { maxKb: browserReadMaxKb }
     handlers.browserReadHtml = async (
       rawPageId: string,
     ): Promise<JsSandboxBrowserReadHtmlResult | null> => {
