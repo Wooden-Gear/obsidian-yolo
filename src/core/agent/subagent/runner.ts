@@ -24,6 +24,7 @@ import {
   SUBAGENT_MAX_AUTO_ITERATIONS,
 } from './constants'
 import type { SubagentParentContext } from './parent-context'
+import { subagentRuntimeRegistry } from './runtime-registry'
 import { subagentTaskRegistry } from './task-registry'
 import { filterAllowedToolsForSubagent } from './tool-filter'
 import type {
@@ -59,6 +60,24 @@ function countToolUses(messages: ChatMessage[]): number {
       ).length
     )
   }, 0)
+}
+
+/**
+ * True when the subagent's last `tool` message still has a tool call awaiting
+ * user approval (or the equivalent `ask_user_question` paused state). The
+ * runtime returns from `run()` in this case (loop-worker emits `done` when
+ * `hasPendingTools=true`), but the work is NOT actually complete — we should
+ * wait for `approveToolCall` / `rejectToolCall` to resolve it and then
+ * continue, instead of pushing a (false) completion to the parent.
+ */
+function hasUnresolvedApproval(messages: ChatMessage[]): boolean {
+  const last = messages.at(-1)
+  if (!last || last.role !== 'tool') return false
+  return last.toolCalls.some(
+    (toolCall) =>
+      toolCall.response.status === ToolCallResponseStatus.PendingApproval ||
+      toolCall.response.status === ToolCallResponseStatus.AwaitingUserInput,
+  )
 }
 
 function extractLastAssistantText(messages: ChatMessage[]): string {
@@ -238,8 +257,68 @@ async function runChildAgent(
     }
   })
 
+  // While the runtime is paused on a PendingApproval tool call, this promise
+  // gates the next loop iteration. Resolved by `resumeRun` (called from
+  // `AgentService.approveToolCall` / `rejectToolCall` after they patch the
+  // runtime's tool call response). Recreated for each pause so multiple
+  // sequential approvals work.
+  let approvalResolver: (() => void) | null = null
+  const wakeApprovalGate = (): void => {
+    if (approvalResolver) {
+      approvalResolver()
+      approvalResolver = null
+    }
+  }
+  const resumeRun = async (): Promise<void> => {
+    wakeApprovalGate()
+  }
+
+  // If the user aborts the whole subagent while it's paused on approval, wake
+  // the loop so it can exit promptly.
+  const abortListener = () => {
+    wakeApprovalGate()
+  }
+  abortController.signal.addEventListener('abort', abortListener, {
+    once: true,
+  })
+
+  subagentRuntimeRegistry.register({
+    taskId: record.taskId,
+    runtime,
+    mcpManager: parent.mcpManager,
+    parentConversationId: record.conversationId,
+    parentToolCallId,
+    resumeRun,
+  })
+
   try {
-    await runtime.run(runInput)
+    let nextRunInput: AgentRuntimeRunInput = runInput
+    while (true) {
+      await runtime.run(nextRunInput)
+      const snapshotAfterRun = runtime.getSnapshot()
+      if (
+        abortController.signal.aborted ||
+        !hasUnresolvedApproval(snapshotAfterRun.messages)
+      ) {
+        break
+      }
+      // Subagent paused on a tool that needs the user's approval. Wait for
+      // the SubagentCard's approval block to resolve it, then resume with
+      // the patched messages as the continuation input.
+      await new Promise<void>((resolve) => {
+        approvalResolver = resolve
+      })
+      if (abortController.signal.aborted) {
+        break
+      }
+      const snapshotAfterApproval = runtime.getSnapshot()
+      nextRunInput = {
+        ...runInput,
+        messages: snapshotAfterApproval.messages,
+        requestMessages: undefined,
+      }
+    }
+
     const snapshot = runtime.getSnapshot()
     const finalMessages = snapshot.messages
     const content = extractLastAssistantText(finalMessages)
@@ -303,6 +382,13 @@ async function runChildAgent(
         modelName: childModel.model.name ?? childModel.model.model,
       },
     })
+  } finally {
+    subagentRuntimeRegistry.unregister(record.taskId)
+    abortController.signal.removeEventListener('abort', abortListener)
+    // Defensive: if the loop is still sleeping in `await new Promise(...)`,
+    // ensure the gate is resolved so we don't leak the promise on the
+    // exception path either.
+    wakeApprovalGate()
   }
 
   unsubscribe()

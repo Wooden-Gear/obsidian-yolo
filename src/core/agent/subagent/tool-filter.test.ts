@@ -13,10 +13,7 @@ describe('subagent tool-filter', () => {
     getLocalFileToolServerName(),
     'delegate_subagent',
   )
-  const terminal = getToolName(
-    getLocalFileToolServerName(),
-    'terminal_command',
-  )
+  const terminal = getToolName(getLocalFileToolServerName(), 'terminal_command')
   const askUser = getToolName(getLocalFileToolServerName(), 'ask_user_question')
 
   it('blocks recursive and interactive delegation tools by FQN', () => {

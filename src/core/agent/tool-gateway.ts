@@ -1169,10 +1169,7 @@ export class AgentToolGateway {
     if (!this.toolsEnabled) {
       return false
     }
-    if (
-      this.isSubagentChildRun &&
-      isSubagentBlockedToolName(toolName)
-    ) {
+    if (this.isSubagentChildRun && isSubagentBlockedToolName(toolName)) {
       return false
     }
     if (isLoadToolSchemasToolName(toolName)) {
