@@ -80,6 +80,34 @@ function hasUnresolvedApproval(messages: ChatMessage[]): boolean {
   )
 }
 
+/**
+ * Auto-reject every still-pending tool call on the runtime's last tool
+ * message. Used as the 5-minute timeout fallback so a paused subagent does
+ * not stall forever if the user never gets around to approving. The error
+ * text is intentionally explicit so the model has enough context to decide
+ * whether to retry differently or surface the situation to the user.
+ *
+ * Exported for unit tests; production callers should let the runner's
+ * approval gate trigger this on its `setTimeout`.
+ */
+export function autoRejectPendingApprovals(runtime: NativeAgentRuntime): void {
+  const snapshot = runtime.getSnapshot()
+  const last = snapshot.messages.at(-1)
+  if (!last || last.role !== 'tool') return
+  for (const toolCall of last.toolCalls) {
+    if (toolCall.response.status === ToolCallResponseStatus.PendingApproval) {
+      runtime.setToolCallResponse(toolCall.request.id, {
+        status: ToolCallResponseStatus.Error,
+        error:
+          'Tool approval timed out: the user did not respond within 5 minutes, so this call was auto-rejected. Try a different approach or summarise the situation in your final reply so the user can take over.',
+      })
+    }
+  }
+}
+
+/** Auto-reject window for paused subagent tool calls. */
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
+
 function extractLastAssistantText(messages: ChatMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i]
@@ -305,9 +333,23 @@ async function runChildAgent(
       // Subagent paused on a tool that needs the user's approval. Wait for
       // the SubagentCard's approval block to resolve it, then resume with
       // the patched messages as the continuation input.
-      await new Promise<void>((resolve) => {
-        approvalResolver = resolve
-      })
+      const timeoutHandle = setTimeout(() => {
+        // 5-minute fallback: if the user has not approved/rejected, mark every
+        // still-pending tool call as Error with a structured message so the
+        // model can read "why it failed" and try a different approach. We
+        // reject the whole batch (rather than just one) because we cannot
+        // know which call the user was on the fence about, and the model's
+        // best move is usually to abandon the batch and re-plan.
+        autoRejectPendingApprovals(runtime)
+        wakeApprovalGate()
+      }, APPROVAL_TIMEOUT_MS)
+      try {
+        await new Promise<void>((resolve) => {
+          approvalResolver = resolve
+        })
+      } finally {
+        clearTimeout(timeoutHandle)
+      }
       if (abortController.signal.aborted) {
         break
       }
