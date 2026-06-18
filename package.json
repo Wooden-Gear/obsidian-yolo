@@ -20,6 +20,7 @@
     "test": "jest --maxWorkers=50%",
     "test:watch": "jest --watch",
     "test:changed": "jest -o",
+    "models:update:openrouter": "node scripts/update-openrouter-model-capabilities.mjs",
     "migrate:compile": "node compile-migration.js"
   },
   "keywords": [],
