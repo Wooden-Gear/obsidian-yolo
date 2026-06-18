@@ -8,16 +8,16 @@ Thanks for your interest in contributing! This document covers what we welcome, 
 
 ## TL;DR
 
-- **Open an issue first** for anything beyond a small fix. We'd rather discuss the direction than reject finished code.
-- **You can use AI to help write code.** You just need to understand what you changed, why, and what could break — enough to defend the PR yourself.
-- **PRs over ~2,000 lines of net change must have a linked issue.** No exceptions, even for AI-generated work.
+- **Open an issue first** for changes identified below as needing prior discussion. We'd rather discuss the direction than reject finished code.
+- **You can use AI to help write code.** You just need to understand what you changed, why, and where things could go wrong — enough to defend the PR yourself.
+- **PRs over ~2,000 lines of net change that are highly disruptive must have a linked issue.** This applies to AI-generated work too.
 - Run `npm run type:check && npm run lint:check && npm test` before opening the PR.
 
 ---
 
 ## What we welcome (and what we don't)
 
-YOLO is a small project with limited review bandwidth, so contributions land faster when they fit the project's direction. The categories below are a rough guide, not a hard rulebook.
+Review bandwidth is limited, so contributions land faster when they fit the project's direction. The categories below are a rough guide, not a hard rulebook.
 
 ### 🟢 Welcome — go ahead, no prior discussion needed
 
@@ -63,9 +63,9 @@ The bar is simple:
 
 The PR template asks you to disclose AI usage. **This is informational, not gatekeeping** — be honest about it. PRs marked as AI-assisted aren't reviewed differently; PRs that fail the "can the author defend it?" test get closed regardless of who wrote them.
 
-### What gets PRs closed quickly
+### What might get PRs closed quickly
 
-- Net change > 2,000 lines without a linked issue (regardless of AI usage)
+- Net change > 2,000 lines that is highly disruptive and hasn't been discussed in a linked issue
 - Author can't explain a non-trivial part of the diff during review
 - "I asked the AI to fix it again" iteration loops with no human reasoning visible
 - Sweeping refactors, file moves, or stylistic rewrites mixed into a feature PR
@@ -81,9 +81,7 @@ Smaller PRs land faster. Use this as a self-check:
 | **S** | < 100 lines | Quick fixes, docs, small polish. Usually merged same-day if green. |
 | **M** | 100–500 lines | Most feature work. Should be focused on one thing. |
 | **L** | 500–2,000 lines | Needs a clear scope and ideally a linked issue. |
-| **XL** | > 2,000 lines | **Must** have a linked issue with the design discussed and agreed. |
-
-If you find yourself crossing 2,000 lines, consider whether the work can be split into a stack of smaller PRs.
+| **XL** | > 2,000 lines | Highly disruptive changes must have a linked issue with the design discussed and agreed. |
 
 ---
 
