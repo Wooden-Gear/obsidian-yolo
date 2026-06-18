@@ -1584,6 +1584,15 @@ export type TranslationKeys = {
       statusFailed?: string
       toolUseCount?: string
       tokenCount?: string
+      approval?: {
+        heading?: string
+        headingMulti?: string
+        approve?: string
+        reject?: string
+        approveAll?: string
+        rejectAll?: string
+        viewDetails?: string
+      }
     }
     // conversation settings popover
     conversationSettings?: {

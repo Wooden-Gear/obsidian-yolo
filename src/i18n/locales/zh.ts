@@ -1738,6 +1738,15 @@ export const zh: TranslationKeys = {
       statusFailed: '失败',
       toolUseCount: '{count} 个工具',
       tokenCount: '{count} tokens',
+      approval: {
+        heading: '等待审批',
+        headingMulti: '等待审批（{count} 项）',
+        approve: '同意',
+        reject: '拒绝',
+        approveAll: '全部同意',
+        rejectAll: '全部拒绝',
+        viewDetails: '查看参数',
+      },
     },
     conversationSettings: {
       openAria: '对话设置',

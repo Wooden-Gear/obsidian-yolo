@@ -1861,6 +1861,15 @@ export const en: TranslationKeys = {
       statusFailed: 'Failed',
       toolUseCount: '{count} tools',
       tokenCount: '{count} tokens',
+      approval: {
+        heading: 'Awaiting approval',
+        headingMulti: 'Awaiting approval ({count})',
+        approve: 'Approve',
+        reject: 'Reject',
+        approveAll: 'Approve all',
+        rejectAll: 'Reject all',
+        viewDetails: 'View parameters',
+      },
     },
     conversationSettings: {
       openAria: 'Conversation settings',
