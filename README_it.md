@@ -97,11 +97,13 @@ Se usi YOLO su mobile, potresti comunque incontrare funzionalità non disponibil
 ## Roadmap
 
 - [x] Ricerca Vault AI migliore e più forte
-- [ ] Agent in Background (automazione task lunghi)
-- [ ] Task programmati Cron
-- [ ] Orchestrazione Multi-Agent
-- [ ] Learning Mode
+- [x] Agent in Background (automazione task lunghi)
+- [x] Orchestrazione Multi-Agent (tramite subagent)
+- [ ] Learning Mode — una vista di studio dedicata
+- [ ] Annotation Mode — annotazioni e suggerimenti AI in tempo reale sulle note
+- [ ] Assistente integrato — helper fissato nell'angolo per config/agent, con compattazione automatica e task programmati
 - [ ] Lavagna AI migliore
+- [ ] Input vocale e note riunione
 
 ## Contribuire
 

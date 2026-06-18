@@ -43,7 +43,7 @@ These need alignment before you write code, otherwise the PR is likely to get re
 
 These are areas where the maintainer has a specific direction in mind, and unsolicited PRs are usually closed:
 
-- Items on the README Roadmap (Background Agent, Cron tasks, multi-agent orchestration, Learning Mode, AI whiteboard)
+- Items on the README Roadmap (Learning Mode, Annotation Mode, the built-in assistant, the AI whiteboard, voice input / meeting notes)
 - Renames or refactors of core architecture (`src/core/agent/`, `src/core/ai/`, `src/core/llm/`)
 - Anything described as "experimental" in the codebase
 

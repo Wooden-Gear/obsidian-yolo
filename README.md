@@ -97,11 +97,13 @@ If you use YOLO on mobile, you may still encounter unavailable features, inconsi
 ## Roadmap
 
 - [x] Better and stronger Vault AI search
-- [ ] Background Agent (long-running task automation)
-- [ ] Cron scheduled tasks
-- [ ] Multi-Agent orchestration
-- [ ] Learning Mode
+- [x] Background Agent (long-running task automation)
+- [x] Multi-Agent orchestration (via subagents)
+- [ ] Learning Mode — a dedicated study view
+- [ ] Annotation Mode — real-time AI annotations and suggestions on notes
+- [ ] Built-in assistant — a corner-pinned helper for config/agents, with auto-compaction and scheduled tasks
 - [ ] Better AI whiteboard
+- [ ] Voice input & meeting notes
 
 ## Contributing
 
