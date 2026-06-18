@@ -81,6 +81,39 @@ function hasUnresolvedApproval(messages: ChatMessage[]): boolean {
 }
 
 /**
+ * A paused parallel tool batch may contain a mixture of calls that are still
+ * awaiting a decision and calls that the user already approved but are still
+ * executing. The subagent must not continue until every call in that batch
+ * has reached a terminal response.
+ */
+export function hasUnsettledApprovalBatch(messages: ChatMessage[]): boolean {
+  const last = messages.at(-1)
+  if (!last || last.role !== 'tool') return false
+  return last.toolCalls.some(
+    (toolCall) =>
+      toolCall.response.status === ToolCallResponseStatus.PendingApproval ||
+      toolCall.response.status === ToolCallResponseStatus.AwaitingUserInput ||
+      toolCall.response.status === ToolCallResponseStatus.Running,
+  )
+}
+
+/**
+ * NativeAgentRuntime keeps assistant/tool messages in its own transcript
+ * across repeated `run()` calls. A continuation must therefore reuse only
+ * the original request-message prefix; feeding the runtime snapshot back as
+ * `input.messages` would append the same transcript twice on the next LLM
+ * request and produce an invalid assistant/tool sequence.
+ */
+export function buildSubagentContinuationInput(
+  input: AgentRuntimeRunInput,
+): AgentRuntimeRunInput {
+  return {
+    ...input,
+    requestMessages: input.requestMessages ?? input.messages,
+  }
+}
+
+/**
  * Auto-reject every still-pending tool call on the runtime's last tool
  * message. Used as the 5-minute timeout fallback so a paused subagent does
  * not stall forever if the user never gets around to approving. The error
@@ -298,7 +331,9 @@ async function runChildAgent(
     }
   }
   const resumeRun = async (): Promise<void> => {
-    wakeApprovalGate()
+    if (!hasUnsettledApprovalBatch(runtime.getSnapshot().messages)) {
+      wakeApprovalGate()
+    }
   }
 
   // If the user aborts the whole subagent while it's paused on approval, wake
@@ -341,7 +376,7 @@ async function runChildAgent(
         // know which call the user was on the fence about, and the model's
         // best move is usually to abandon the batch and re-plan.
         autoRejectPendingApprovals(runtime)
-        wakeApprovalGate()
+        void resumeRun()
       }, APPROVAL_TIMEOUT_MS)
       try {
         await new Promise<void>((resolve) => {
@@ -353,12 +388,7 @@ async function runChildAgent(
       if (abortController.signal.aborted) {
         break
       }
-      const snapshotAfterApproval = runtime.getSnapshot()
-      nextRunInput = {
-        ...runInput,
-        messages: snapshotAfterApproval.messages,
-        requestMessages: undefined,
-      }
+      nextRunInput = buildSubagentContinuationInput(runInput)
     }
 
     const snapshot = runtime.getSnapshot()

@@ -4735,19 +4735,6 @@ button.yolo-assistant-selector-footer-btn:hover {
   gap: 4px;
 }
 
-.yolo-agent-tool-forced-approval {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 3px 8px;
-  border-radius: var(--radius-s);
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted);
-  background: var(--background-primary);
-  font-size: var(--font-ui-smaller);
-  white-space: nowrap;
-}
-
 .yolo-agent-tool-select .yolo-simple-select__trigger {
   width: auto;
   min-width: 0;
@@ -6514,30 +6501,6 @@ button.yolo-agent-chip--more:hover {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-}
-
-.yolo-js-exec-risk-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--size-2-1);
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: 999px;
-  color: var(--text-warning, var(--text-normal));
-  background: color-mix(
-    in srgb,
-    var(--color-yellow, #d6a100) 12%,
-    var(--background-primary)
-  );
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--color-yellow, #d6a100) 24%,
-      var(--background-modifier-border)
-    );
-  font-size: var(--font-ui-smaller);
-  font-weight: var(--font-medium);
-  white-space: nowrap;
 }
 
 .yolo-js-exec-cap-list {
@@ -17145,6 +17108,8 @@ button.yolo-external-agent-card__compact-abort-btn:focus-visible {
 }
 
 button.yolo-subagent-card__main {
+  all: unset;
+  box-sizing: border-box;
   appearance: none;
   display: flex;
   align-items: flex-start;
@@ -17468,45 +17433,20 @@ button.yolo-subagent-card__abort-btn:focus-visible {
   margin: 0;
 }
 
-/* ── 审批块（卡片底部） ── */
-
-/* awaiting 状态下，主行视觉降权（淡化），让审批块视觉更突出 */
-
-.yolo-subagent-card--awaiting-approval .yolo-subagent-card__row {
-  opacity: 0.78;
-}
-
-.yolo-subagent-card__pause-indicator {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  margin-left: var(--size-2-2);
-  color: var(--text-muted);
-}
+/* ── 紧凑审批列表（沿用 SubagentCard 的行式视觉） ── */
 
 .yolo-subagent-approval {
   display: flex;
   flex-direction: column;
-  gap: var(--size-2-2);
-  padding: var(--size-2-3) var(--size-4-3);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  background: var(--background-secondary);
-  /* leave room so the block aligns with the card icon column */
+  gap: var(--size-2-1);
   margin-left: calc(var(--size-2-3) + 16px);
-}
-
-.yolo-subagent-approval__heading {
-  font-size: var(--font-ui-smaller);
-  font-weight: var(--font-medium);
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  min-width: 0;
 }
 
 .yolo-subagent-approval__items {
   display: flex;
   flex-direction: column;
-  gap: var(--size-2-1);
+  gap: 0;
 }
 
 .yolo-subagent-approval__item {
@@ -17514,25 +17454,27 @@ button.yolo-subagent-card__abort-btn:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: var(--size-4-2);
-  padding: var(--size-2-2) 0;
+  min-height: 24px;
   min-width: 0;
 }
 
 .yolo-subagent-approval__item-text {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: var(--size-2-3);
   min-width: 0;
   flex: 1;
-  gap: 2px;
 }
 
 .yolo-subagent-approval__item-label {
-  font-size: var(--font-ui-small);
+  flex-shrink: 0;
+  font-size: var(--font-ui-smaller);
   font-family: var(--font-monospace);
   color: var(--text-normal);
 }
 
 .yolo-subagent-approval__item-detail {
+  min-width: 0;
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
   overflow: hidden;
@@ -17549,22 +17491,22 @@ button.yolo-subagent-card__abort-btn:focus-visible {
 
 button.yolo-subagent-approval__btn,
 button.yolo-subagent-approval__bulk-btn {
+  all: unset;
+  box-sizing: border-box;
   appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--background-modifier-border);
-  background: var(--background-primary);
-  color: var(--text-normal);
+  height: 24px;
+  padding: 0 var(--size-2-3);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
   cursor: pointer;
-  outline: 0;
 }
 
 button.yolo-subagent-approval__btn {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border-radius: 999px;
+  color: var(--text-muted);
 }
 
 button.yolo-subagent-approval__btn:hover,
@@ -17572,16 +17514,21 @@ button.yolo-subagent-approval__btn:focus-visible {
   background: var(--background-modifier-hover);
 }
 
+button.yolo-subagent-approval__btn:focus-visible,
+button.yolo-subagent-approval__bulk-btn:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+  outline-offset: -2px;
+}
+
 button.yolo-subagent-approval__btn--primary {
-  border-color: transparent;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  color: var(--text-accent);
 }
 
 button.yolo-subagent-approval__btn--primary:hover,
 button.yolo-subagent-approval__btn--primary:focus-visible {
-  background: var(--interactive-accent-hover);
-  color: var(--text-on-accent);
+  background: var(--background-modifier-hover);
+  color: var(--text-accent-hover);
 }
 
 button.yolo-subagent-approval__btn--ghost {
@@ -17597,31 +17544,24 @@ button.yolo-subagent-approval__btn--ghost:focus-visible {
   display: flex;
   justify-content: flex-end;
   gap: var(--size-2-2);
-  padding-top: var(--size-2-2);
-  border-top: 1px solid var(--background-modifier-border);
+  padding-top: var(--size-2-1);
 }
 
 button.yolo-subagent-approval__bulk-btn {
-  height: 26px;
-  padding: 0 var(--size-4-2);
-  border-radius: var(--radius-s);
-  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
 }
 
 button.yolo-subagent-approval__bulk-btn--primary {
-  border-color: transparent;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  color: var(--text-accent);
 }
 
 button.yolo-subagent-approval__bulk-btn--primary:hover,
 button.yolo-subagent-approval__bulk-btn--primary:focus-visible {
-  background: var(--interactive-accent-hover);
-  color: var(--text-on-accent);
+  background: var(--background-modifier-hover);
+  color: var(--text-accent-hover);
 }
 
 button.yolo-subagent-approval__bulk-btn--ghost {
-  background: transparent;
   color: var(--text-muted);
 }
 

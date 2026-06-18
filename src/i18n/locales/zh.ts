@@ -478,7 +478,6 @@ export const zh: TranslationKeys = {
       toolApproval: '审批',
       toolApprovalFullAccess: '完全放行',
       toolApprovalRequire: '需要审批',
-      toolApprovalForced: '强制审批',
       toolDisclosureAlways: '常驻上下文',
       toolDisclosureOnDemand: '按需披露',
       editorEnabled: '已启用',
@@ -569,7 +568,6 @@ export const zh: TranslationKeys = {
       jsSandboxAllowExternalScriptsConfirm:
         '开启后，Agent 可以在 Obsidian 内加载并运行远程 JavaScript。这个能力很强也很危险；仅在你完全信任此 Agent 和代码来源时继续。是否继续？',
       jsSandboxConfirmEnableTitle: '开启扩展能力',
-      jsExecApprovalForced: '启用后强制审批',
       jsSandboxTimeoutMs: '执行超时（毫秒）',
       jsSandboxTimeoutMsDesc: '单次脚本调用的最大运行时间。范围 {min}–{max}。',
       jsSandboxOutputMaxKb: '工具结果大小上限（KB）',
@@ -1740,7 +1738,7 @@ export const zh: TranslationKeys = {
       tokenCount: '{count} tokens',
       approval: {
         heading: '等待审批',
-        headingMulti: '等待审批（{count} 项）',
+        headingMulti: '等待审批 · {count} 项',
         approve: '同意',
         reject: '拒绝',
         approveAll: '全部同意',

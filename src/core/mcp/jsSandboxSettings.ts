@@ -25,9 +25,9 @@ export type { JsSandboxSettings } from '../../settings/schema/setting.types'
 
 /**
  * Single source of truth for the global JS sandbox configuration. Every
- * consumer (LLM-facing description, capability gate, proxy handler, approval
- * mode resolver) reads through this helper so the model's view of `js_eval`
- * cannot drift from what the host actually executes.
+ * consumer (LLM-facing description, capability gate, proxy handler) reads
+ * through this helper so the model's view of `js_eval` cannot drift from what
+ * the host actually executes.
  *
  * Always returns a normalized view (see normalizeJsSandboxConfig) so any
  * legacy persisted state — e.g. `allowExternalScripts=true` saved before
@@ -55,20 +55,6 @@ export function normalizeJsSandboxConfig(
     return config
   }
   return { ...config, allowFetch: true }
-}
-
-/**
- * Whether any extension capability (network / vault read / $db / external
- * scripts) is enabled. When true the host forces `require_approval` for
- * every agent that has `js_eval` enabled.
- */
-export function hasAnyJsSandboxCapEnabled(s: JsSandboxSettings): boolean {
-  return Boolean(
-    s.allowFetch ||
-      s.allowVaultRead ||
-      s.allowDbQuery ||
-      s.allowExternalScripts,
-  )
 }
 
 function resolveVaultReadDescriptionMaxKb(s: JsSandboxSettings): number {

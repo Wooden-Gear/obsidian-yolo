@@ -538,7 +538,7 @@ function disableAmbientCapabilities(allowScripts, allowFetch) {
   // libraries depend on them. This pairs with skipping
   // freezeBuiltinPrototypes() below: external-script mode is the explicit
   // high-risk compatibility tradeoff, not partial isolation. The host
-  // already forces approval for any agent that enables this flag.
+  // surfaces this risk explicitly when the capability is enabled.
   if (allowScripts) {
     return
   }

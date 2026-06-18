@@ -30,9 +30,9 @@ export type SubagentRuntimeEntry = {
   /** Parent toolCallId hosting this subagent's SubagentCard, for back-refs. */
   parentToolCallId: string
   /**
-   * Continue running the subagent loop after a tool call is resolved (approve
-   * or reject). Idempotent: safe to call repeatedly; the child runner is
-   * responsible for noop-ing if a continuation is already in flight.
+   * Continue running the subagent loop once every call in the paused parallel
+   * batch is settled. Safe to call after each individual decision; the child
+   * runner no-ops while another call is pending or running.
    */
   resumeRun: () => Promise<void>
 }

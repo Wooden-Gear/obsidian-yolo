@@ -389,7 +389,6 @@ export type TranslationKeys = {
       toolApproval?: string
       toolApprovalFullAccess?: string
       toolApprovalRequire?: string
-      toolApprovalForced?: string
       toolDisclosureAlways?: string
       toolDisclosureOnDemand?: string
       editorEnabled?: string
@@ -467,7 +466,6 @@ export type TranslationKeys = {
       jsSandboxAllowExternalScriptsRisk?: string
       jsSandboxAllowExternalScriptsConfirm?: string
       jsSandboxConfirmEnableTitle?: string
-      jsExecApprovalForced?: string
       jsSandboxTimeoutMs?: string
       jsSandboxTimeoutMsDesc?: string
       jsSandboxOutputMaxKb?: string

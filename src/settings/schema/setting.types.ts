@@ -351,10 +351,8 @@ export const yoloSettingsSchema = z.object({
       enableToolDisclosure: false,
     }),
 
-  // JS sandbox (js_eval) configuration. Global because the capability surface
-  // (network / vault read / $db / external scripts) is sensitive enough that
-  // we don't want it implicitly varying per agent — toggling any extension
-  // capability forces approval for every agent that has js_eval enabled.
+  // JS sandbox (js_eval) capability configuration is global; execution
+  // approval remains a per-agent tool preference.
   jsSandbox: jsSandboxSettingsSchema.catch({}),
 
   // Web search configuration (built-in agent tool)

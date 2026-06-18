@@ -521,7 +521,6 @@ export const it: TranslationKeys = {
       toolApproval: 'Approvazione',
       toolApprovalFullAccess: 'Accesso completo',
       toolApprovalRequire: 'Richiedi approvazione',
-      toolApprovalForced: 'Approvazione richiesta',
       toolDisclosureAlways: 'In contesto',
       toolDisclosureOnDemand: 'Su richiesta',
       editorEnabled: 'Abilitato',
@@ -1767,7 +1766,7 @@ export const it: TranslationKeys = {
       tokenCount: '{count} token',
       approval: {
         heading: 'In attesa di approvazione',
-        headingMulti: 'In attesa di approvazione ({count})',
+        headingMulti: 'In attesa di approvazione · {count}',
         approve: 'Approva',
         reject: 'Rifiuta',
         approveAll: 'Approva tutto',

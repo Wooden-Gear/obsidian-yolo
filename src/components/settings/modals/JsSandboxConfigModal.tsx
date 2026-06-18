@@ -120,13 +120,6 @@ function JsSandboxConfigModalContent({
               {t('settings.agent.jsSandboxExtTitle', 'Extension capabilities')}
             </h3>
           </div>
-          <span className="yolo-js-exec-risk-pill">
-            <TriangleAlert size={13} />
-            {t(
-              'settings.agent.jsExecApprovalForced',
-              'Forced approval when enabled',
-            )}
-          </span>
         </div>
 
         <div className="yolo-js-exec-cap-list">

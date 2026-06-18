@@ -1071,7 +1071,6 @@ export class AgentToolGateway {
           : undefined,
       },
       request.name,
-      { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
     )
     const requireAutoExecution =
       approvalMode === 'full_access' ||
@@ -1157,7 +1156,6 @@ export class AgentToolGateway {
               : undefined,
           },
           toolName,
-          { jsSandboxSettings: this.mcpManager.getJsSandboxSettings() },
         ) === 'require_approval'
       )
     } catch {

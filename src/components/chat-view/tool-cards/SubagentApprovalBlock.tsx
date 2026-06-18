@@ -1,4 +1,3 @@
-import { Check, X } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { useLanguage } from '../../../contexts/language-context'
@@ -31,12 +30,11 @@ export function SubagentApprovalBlock({
   const { t } = useLanguage()
 
   const handleApprove = useCallback(
-    (toolCallId: string) => {
-      void plugin.getAgentService().approveToolCall({
+    (toolCallId: string) =>
+      plugin.getAgentService().approveToolCall({
         conversationId: parentConversationId,
         toolCallId,
-      })
-    },
+      }),
     [plugin, parentConversationId],
   )
 
@@ -51,9 +49,9 @@ export function SubagentApprovalBlock({
   )
 
   const handleApproveAll = useCallback(() => {
-    for (const approval of pendingApprovals) {
-      handleApprove(approval.toolCallId)
-    }
+    void Promise.all(
+      pendingApprovals.map((approval) => handleApprove(approval.toolCallId)),
+    )
   }, [pendingApprovals, handleApprove])
 
   const handleRejectAll = useCallback(() => {
@@ -66,7 +64,7 @@ export function SubagentApprovalBlock({
     pendingApprovals.length > 1
       ? t(
           'chat.subagent.approval.headingMulti',
-          'Awaiting approval ({count})',
+          'Awaiting approval · {count}',
         ).replace('{count}', String(pendingApprovals.length))
       : t('chat.subagent.approval.heading', 'Awaiting approval')
 
@@ -77,8 +75,6 @@ export function SubagentApprovalBlock({
       aria-label={heading}
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="yolo-subagent-approval__heading">{heading}</div>
-
       <div className="yolo-subagent-approval__items">
         {pendingApprovals.map(({ toolCallId, request }) => {
           const summary = buildSubagentApprovalSummary(request)
@@ -105,16 +101,16 @@ export function SubagentApprovalBlock({
                   title={t('chat.subagent.approval.reject', 'Reject')}
                   aria-label={t('chat.subagent.approval.reject', 'Reject')}
                 >
-                  <X size={14} />
+                  {t('chat.subagent.approval.reject', 'Reject')}
                 </button>
                 <button
                   type="button"
                   className="yolo-subagent-approval__btn yolo-subagent-approval__btn--primary"
-                  onClick={() => handleApprove(toolCallId)}
+                  onClick={() => void handleApprove(toolCallId)}
                   title={t('chat.subagent.approval.approve', 'Approve')}
                   aria-label={t('chat.subagent.approval.approve', 'Approve')}
                 >
-                  <Check size={14} />
+                  {t('chat.subagent.approval.approve', 'Approve')}
                 </button>
               </div>
             </div>

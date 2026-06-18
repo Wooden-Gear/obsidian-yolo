@@ -1,7 +1,11 @@
 import { ToolCallResponseStatus } from '../../../types/tool-call.types'
 import type { NativeAgentRuntime } from '../native-runtime'
 
-import { autoRejectPendingApprovals } from './runner'
+import {
+  autoRejectPendingApprovals,
+  buildSubagentContinuationInput,
+  hasUnsettledApprovalBatch,
+} from './runner'
 
 const makeRuntime = (
   toolMessage: {
@@ -85,5 +89,71 @@ describe('autoRejectPendingApprovals', () => {
     })
     autoRejectPendingApprovals(runtime)
     expect(setToolCallResponse).not.toHaveBeenCalled()
+  })
+})
+
+describe('hasUnsettledApprovalBatch', () => {
+  const messagesWithStatuses = (statuses: ToolCallResponseStatus[]) =>
+    [
+      {
+        role: 'tool' as const,
+        id: 'tool-message',
+        toolCalls: statuses.map((status, index) => ({
+          request: { id: `call-${index}`, name: 'tool' },
+          response: { status },
+        })),
+      },
+    ] as Parameters<typeof hasUnsettledApprovalBatch>[0]
+
+  it.each([
+    ToolCallResponseStatus.PendingApproval,
+    ToolCallResponseStatus.AwaitingUserInput,
+    ToolCallResponseStatus.Running,
+  ])('keeps the batch paused while a call is %s', (status) => {
+    expect(
+      hasUnsettledApprovalBatch(
+        messagesWithStatuses([ToolCallResponseStatus.Success, status]),
+      ),
+    ).toBe(true)
+  })
+
+  it('allows the batch to resume after every call is terminal', () => {
+    expect(
+      hasUnsettledApprovalBatch(
+        messagesWithStatuses([
+          ToolCallResponseStatus.Success,
+          ToolCallResponseStatus.Rejected,
+          ToolCallResponseStatus.Error,
+        ]),
+      ),
+    ).toBe(false)
+  })
+})
+
+describe('buildSubagentContinuationInput', () => {
+  it('keeps the original request prefix instead of replaying runtime messages', () => {
+    const requestMessages = [{ role: 'user', content: 'original prompt' }]
+    const input = {
+      messages: requestMessages,
+      requestMessages,
+      conversationId: 'sub-test',
+    } as unknown as Parameters<typeof buildSubagentContinuationInput>[0]
+
+    const continuation = buildSubagentContinuationInput(input)
+
+    expect(continuation.messages).toBe(requestMessages)
+    expect(continuation.requestMessages).toBe(requestMessages)
+  })
+
+  it('freezes messages as the request prefix when no explicit prefix exists', () => {
+    const messages = [{ role: 'user', content: 'original prompt' }]
+    const input = {
+      messages,
+      conversationId: 'sub-test',
+    } as unknown as Parameters<typeof buildSubagentContinuationInput>[0]
+
+    const continuation = buildSubagentContinuationInput(input)
+
+    expect(continuation.requestMessages).toBe(messages)
   })
 })

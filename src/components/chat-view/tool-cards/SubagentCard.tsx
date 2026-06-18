@@ -1,5 +1,5 @@
 import cx from 'clsx'
-import { Bot, Check, Pause, Square, X } from 'lucide-react'
+import { Bot, Check, Square, X } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useMemo, useRef, useState } from 'react'
 
@@ -161,7 +161,7 @@ export function SubagentCard({
     return undefined
   }, [liveTask?.liveTranscript])
 
-  const subtitle = subagentResult
+  const activitySubtitle = subagentResult
     ? buildSubagentCompletionSummary({ subagentResult, t })
     : liveAssistantSummary ||
       getLatestActivityLine(activityLines) ||
@@ -195,6 +195,14 @@ export function SubagentCard({
     return result
   }, [liveTask?.liveTranscript])
   const isAwaitingApproval = pendingApprovals.length > 0
+  const subtitle = isAwaitingApproval
+    ? pendingApprovals.length > 1
+      ? t(
+          'chat.subagent.approval.headingMulti',
+          'Awaiting approval · {count}',
+        ).replace('{count}', String(pendingApprovals.length))
+      : t('chat.subagent.approval.heading', 'Awaiting approval')
+    : activitySubtitle
 
   return (
     <>
@@ -209,7 +217,6 @@ export function SubagentCard({
             'yolo-subagent-card--error',
           effectiveStatus === ToolCallResponseStatus.Aborted &&
             'yolo-subagent-card--aborted',
-          isAwaitingApproval && 'yolo-subagent-card--awaiting-approval',
         )}
       >
         <div className="yolo-subagent-card__row">
@@ -234,14 +241,6 @@ export function SubagentCard({
                 <span className="yolo-subagent-card__title">{title}</span>
                 {modelName && (
                   <span className="yolo-subagent-card__model">{modelName}</span>
-                )}
-                {isAwaitingApproval && (
-                  <span
-                    className="yolo-subagent-card__pause-indicator"
-                    aria-hidden="true"
-                  >
-                    <Pause size={11} />
-                  </span>
                 )}
               </span>
               <span className="yolo-subagent-card__summary">{subtitle}</span>
