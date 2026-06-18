@@ -117,6 +117,8 @@ YOLO 的 Agent 模式让大模型不再只是"问答机器"——它可以真正
 
 **重大功能请先开 issue 讨论可行性和实现方案。**
 
+详细规则请看 [CONTRIBUTING_zh-CN.md](./CONTRIBUTING_zh-CN.md)：什么样的贡献会被欢迎、AI 辅助 PR 的要求、PR 体量参考、开发环境搭建。
+
 
 ## Acknowledgments
 

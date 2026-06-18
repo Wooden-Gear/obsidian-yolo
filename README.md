@@ -109,6 +109,8 @@ All forms of contribution are welcome — bug reports, documentation improvement
 
 **Please open an issue first to discuss feasibility and implementation for major features.**
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide: what we welcome, AI-assisted PR policy, size guidelines, and dev setup.
+
 ## Acknowledgments
 
 Thanks to [Smart Composer](https://github.com/glowingjade/obsidian-smart-composer) for the original work — without them, there would be no YOLO.
