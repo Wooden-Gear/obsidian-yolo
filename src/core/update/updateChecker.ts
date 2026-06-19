@@ -450,7 +450,7 @@ export async function fetchReleaseByVersion(version: string): Promise<{
 
 /**
  * Fetches latest GitHub release and compares to `currentVersion`.
- * Returns null on network/parse failure (caller should stay silent).
+ * Returns null on network/parse failure.
  */
 export async function checkForUpdate(
   currentVersion: string,
@@ -465,6 +465,9 @@ export async function checkForUpdate(
     })
 
     if (response.status < 200 || response.status >= 300) {
+      console.error(
+        `[YOLO] Plugin update check failed: GitHub latest release returned HTTP ${response.status}.`,
+      )
       return null
     }
 
@@ -472,6 +475,9 @@ export async function checkForUpdate(
     const tag = typeof data.tag_name === 'string' ? data.tag_name : ''
     const latestVersion = stripVersionPrefix(tag)
     if (!latestVersion) {
+      console.error(
+        '[YOLO] Plugin update check failed: latest release payload is missing tag_name.',
+      )
       return null
     }
 
@@ -489,7 +495,9 @@ export async function checkForUpdate(
       releaseUrl,
       assets: parseReleaseAssets(data.assets),
     }
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[YOLO] Plugin update check failed: ${message}`)
     return null
   }
 }

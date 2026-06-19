@@ -2060,7 +2060,6 @@ export const zh: TranslationKeys = {
     dismiss: '关闭',
     languageEnglish: 'EN',
     languageChinese: '中文',
-    muteThisVersion: '当前版本不提示',
     viewHistory: '查看历史更新',
     historyTitle: '历史更新日志',
     historyLoading: '正在加载更新日志…',

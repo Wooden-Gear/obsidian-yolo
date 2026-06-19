@@ -89,9 +89,7 @@ function UpdateToast() {
   const hasBilingual = hasBilingualReleaseNotes(releaseNotes)
   const separator = lang === 'zh' ? '：' : ': '
 
-  const closeLabel = plugin.isUpdateVersionSoftDismissed(result.latestVersion)
-    ? t('update.muteThisVersion', "Don't notify for this version")
-    : t('update.dismiss', 'Dismiss')
+  const closeLabel = t('update.dismiss', 'Dismiss')
 
   const langToggle = hasBilingual ? (
     <div

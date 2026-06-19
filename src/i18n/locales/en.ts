@@ -2209,7 +2209,6 @@ export const en: TranslationKeys = {
     dismiss: 'Dismiss',
     languageEnglish: 'EN',
     languageChinese: '中文',
-    muteThisVersion: "Don't notify for this version",
     viewHistory: 'View update history',
     historyTitle: 'Release history',
     historyLoading: 'Loading release history...',

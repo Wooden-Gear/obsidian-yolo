@@ -2008,7 +2008,6 @@ export const it: TranslationKeys = {
     dismiss: 'Chiudi',
     languageEnglish: 'EN',
     languageChinese: '中文',
-    muteThisVersion: 'Non notificare per questa versione',
     viewHistory: 'Visualizza cronologia aggiornamenti',
     historyTitle: 'Cronologia aggiornamenti',
     historyLoading: 'Caricamento cronologia aggiornamenti...',

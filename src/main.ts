@@ -3009,28 +3009,18 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     await this.downloadPluginRepair(version, assets, files)
   }
 
-  isUpdateVersionMuted(version: string): boolean {
-    return this.settings.mutedUpdateVersion === version
-  }
-
   isUpdateVersionSoftDismissed(version: string): boolean {
     return this.settings.softDismissedUpdateVersion === version
   }
 
   async dismissUpdateVersion(version: string): Promise<void> {
-    const shouldMute = this.isUpdateVersionSoftDismissed(version)
     await this.setSettings({
       ...this.settings,
       softDismissedUpdateVersion: version,
-      mutedUpdateVersion: shouldMute
-        ? version
-        : this.settings.mutedUpdateVersion,
     })
     // setSettings can no-op (e.g. external settings conflict). Only hide the
     // toast when the dismissal state actually persisted, so the user can retry.
-    const persisted = shouldMute
-      ? this.isUpdateVersionMuted(version)
-      : this.isUpdateVersionSoftDismissed(version)
+    const persisted = this.isUpdateVersionSoftDismissed(version)
     if (persisted) {
       this.updateCheckResult = null
       this.notifyUpdateCheckListeners()
@@ -3044,10 +3034,7 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     this.hasCheckedForUpdate = true
     void (async () => {
       const fetched = await checkForUpdate(this.manifest.version)
-      if (
-        fetched?.hasUpdate &&
-        !this.isUpdateVersionMuted(fetched.latestVersion)
-      ) {
+      if (fetched?.hasUpdate) {
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
         await this.refreshPluginUpdateStaging(fetched.latestVersion)

@@ -1896,7 +1896,6 @@ export type TranslationKeys = {
     dismiss: string
     languageEnglish: string
     languageChinese: string
-    muteThisVersion: string
     viewHistory?: string
     historyTitle?: string
     historyLoading?: string
