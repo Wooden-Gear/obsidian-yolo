@@ -11,6 +11,21 @@ export type ToolCallArguments =
       rawText?: string
     }
 
+export type ToolCallArgumentDiagnostics = {
+  streamState?: 'open' | 'sealed' | 'aborted'
+  parseState?: 'not_attempted' | 'valid' | 'invalid' | 'repaired'
+  sealReason?: 'explicit_done' | 'stream_end' | 'turn_handoff'
+  rawArgsLength?: number
+  rawArgsHead?: string
+  finishReason?: string | null
+  timedOut?: boolean
+  aborted?: boolean
+  deliveryMode?: string
+  parseError?: string
+  repairApplied?: boolean
+  repairActions?: string[]
+}
+
 export const isToolCallArgumentsRecord = (
   value: unknown,
 ): value is Record<string, unknown> => {
@@ -91,6 +106,7 @@ export type ToolCallRequest = {
   arguments?: ToolCallArguments
   metadata?: {
     thoughtSignature?: string
+    argumentDiagnostics?: ToolCallArgumentDiagnostics
   }
 }
 

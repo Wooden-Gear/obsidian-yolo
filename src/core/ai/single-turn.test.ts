@@ -584,6 +584,95 @@ describe('executeSingleTurn', () => {
     )
   })
 
+  it('falls back once with a system hint when streamed tool arguments are empty placeholders', async () => {
+    const provider = new MockProvider()
+    provider.streamResponseMock.mockResolvedValue(
+      toAsyncIterable([
+        {
+          id: 'stream-empty-tool-args',
+          model: TEST_MODEL.model,
+          object: 'chat.completion.chunk',
+          choices: [
+            {
+              finish_reason: 'stop',
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'tool-empty',
+                    type: 'function',
+                    function: {
+                      name: 'yolo_local__fs_read',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ]),
+    )
+    provider.generateResponseMock.mockResolvedValue({
+      id: 'non-stream-empty-retry',
+      model: TEST_MODEL.model,
+      object: 'chat.completion',
+      choices: [
+        {
+          finish_reason: 'tool_calls',
+          message: {
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                id: 'tool-valid',
+                type: 'function',
+                function: {
+                  name: 'yolo_local__fs_read',
+                  arguments: '{"paths":["note.md"]}',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    const result = await executeSingleTurn({
+      providerClient: provider,
+      model: TEST_MODEL,
+      request: TEST_REQUEST,
+      deliveryMode: 'incremental',
+    })
+
+    expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
+    const retryRequest = provider.generateResponseMock.mock.calls[0]?.[1]
+    expect(retryRequest?.messages[0]).toMatchObject({
+      role: 'system',
+      content: expect.stringContaining('empty or placeholder tool-call'),
+    })
+    expect(result.toolCalls).toEqual([
+      {
+        id: 'tool-valid',
+        name: 'yolo_local__fs_read',
+        arguments: completeArgs(
+          {
+            paths: ['note.md'],
+          },
+          '{"paths":["note.md"]}',
+        ),
+        metadata: undefined,
+      },
+    ])
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      '[YOLO] Streaming tool-call recovery triggered.',
+      expect.objectContaining({
+        reason: 'empty_tool_args',
+        finishReason: 'stop',
+        toolNames: ['yolo_local__fs_read'],
+      }),
+    )
+  })
+
   it('keeps invalid streamed write arguments when automatic recovery is disabled', async () => {
     const provider = new MockProvider()
     provider.streamResponseMock.mockResolvedValue(

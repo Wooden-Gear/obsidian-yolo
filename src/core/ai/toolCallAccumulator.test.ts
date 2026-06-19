@@ -135,4 +135,38 @@ describe('ToolCallAccumulator', () => {
       '{"path":"a.md","content":',
     )
   })
+
+  it('repairs sealed arguments with missing closing delimiters before handoff', () => {
+    const accumulator = new ToolCallAccumulator('turn-repair')
+
+    accumulator.applyAll(
+      createCanonicalToolEventsFromDeltas({
+        turnKey: 'turn-repair',
+        provider: 'openai-chat',
+        receivedAt: 1,
+        deltas: [
+          {
+            index: 0,
+            id: 'tool-repair',
+            function: {
+              name: 'yolo_local__fs_write',
+              arguments: '{"path":"a.md","content":"hello"',
+            },
+          },
+        ],
+      }),
+    )
+    accumulator.sealOpenCalls('stream_end', 2)
+    accumulator.handoff('stream_end', 3)
+
+    const snapshot = accumulator.getSnapshots()[0]
+
+    expect(snapshot?.parseState).toBe('repaired')
+    expect(snapshot?.handoffReady).toBe(true)
+    expect(snapshot?.diagnostics.repairApplied).toBe(true)
+    expect(getToolCallArgumentsObject(snapshot?.function?.arguments)).toEqual({
+      path: 'a.md',
+      content: 'hello',
+    })
+  })
 })

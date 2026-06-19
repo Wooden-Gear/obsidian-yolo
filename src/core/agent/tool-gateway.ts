@@ -21,17 +21,22 @@ import {
   ToolCallResponse,
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
+  createPartialToolCallArguments,
   getToolCallArgumentsObject,
   getToolCallArgumentsText,
 } from '../../types/tool-call.types'
+import {
+  parseAndRepairToolArguments,
+  parseAndRepairToolArgumentsText,
+} from '../../utils/chat/tool-argument-parser'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 import {
   ASK_USER_QUESTION_TOOL_NAME,
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   TERMINAL_COMMAND_TOOL_NAME,
   getLocalFileToolServerName,
-  isLocalFsWriteToolName,
   isAskUserQuestionToolName,
+  isLocalFsWriteToolName,
   validateAskUserQuestionArgs,
 } from '../mcp/localFileTools'
 import { McpManager } from '../mcp/mcpManager'
@@ -144,6 +149,95 @@ const validateLocalWriteArgs = ({
   }
 
   return errors
+}
+
+const getRequiredLocalWriteArgumentNames = (toolName: string): string[] => {
+  switch (toolName) {
+    case 'fs_write':
+      return ['path', 'content']
+    case 'fs_edit':
+      return ['path', 'newText', 'oldText or startLine/endLine']
+    case 'fs_delete':
+    case 'fs_create_dir':
+      return ['path']
+    case 'fs_move':
+      return ['oldPath', 'newPath']
+    default:
+      return []
+  }
+}
+
+const getToolCallDiagnostics = (request: ToolCallRequest) =>
+  request.metadata?.argumentDiagnostics
+
+const getLocalWriteToolShortName = (toolCallName: string): string | null => {
+  try {
+    const parsed = parseToolName(toolCallName)
+    if (parsed.serverName !== getLocalFileToolServerName()) return null
+    return isLocalFsWriteToolName(parsed.toolName) ? parsed.toolName : null
+  } catch {
+    return null
+  }
+}
+
+const hasUnsafeStringCompletionRepair = (repairActions: string[]): boolean => {
+  return repairActions.includes('closed unterminated string')
+}
+
+const formatToolArgumentDiagnostics = ({
+  request,
+  title,
+  parseError,
+  providedParameterNames,
+  requiredParameterNames,
+  validationErrors,
+  repairActions,
+}: {
+  request: ToolCallRequest
+  title: string
+  parseError?: string
+  providedParameterNames?: string[]
+  requiredParameterNames?: string[]
+  validationErrors?: string[]
+  repairActions?: string[]
+}): string => {
+  const diagnostics = getToolCallDiagnostics(request)
+  const rawArguments = getToolCallArgumentsText(request.arguments) ?? ''
+  const rawArgsLength = diagnostics?.rawArgsLength ?? rawArguments.length
+  const rawArgsHead =
+    (diagnostics?.rawArgsHead ?? rawArguments.slice(0, 240)) || '<empty>'
+  const providedNames =
+    providedParameterNames && providedParameterNames.length > 0
+      ? providedParameterNames
+      : getToolCallArgumentsObject(request.arguments)
+        ? Object.keys(
+            getToolCallArgumentsObject(request.arguments) ?? {},
+          ).sort()
+        : []
+  const requiredNames = requiredParameterNames ?? []
+  const repairSummary = repairActions?.length
+    ? repairActions.join('; ')
+    : diagnostics?.repairActions?.length
+      ? diagnostics.repairActions.join('; ')
+      : diagnostics?.repairApplied
+        ? 'repair applied'
+        : 'none'
+
+  return [
+    `${title}: "${request.name}" arguments are not executable.`,
+    ...(parseError ? [`Parse error: ${parseError}`] : []),
+    ...(validationErrors?.length
+      ? ['Validation errors:', ...validationErrors.map((error) => `- ${error}`)]
+      : []),
+    `Provided parameter names: ${providedNames.length > 0 ? providedNames.join(', ') : '<none>'}.`,
+    `Required parameter names: ${requiredNames.length > 0 ? requiredNames.join(', ') : '<unknown>'}.`,
+    `Raw args length: ${rawArgsLength}.`,
+    `Raw args head: ${rawArgsHead}`,
+    `finishReason: ${diagnostics?.finishReason ?? '<unknown>'}.`,
+    `streamState: ${diagnostics?.streamState ?? '<unknown>'}; parseState: ${diagnostics?.parseState ?? '<unknown>'}; sealReason: ${diagnostics?.sealReason ?? '<unknown>'}.`,
+    `repair: ${repairSummary}.`,
+    'Retry by calling the tool again with a smaller, complete JSON object. Do not include huge file contents in one tool call when a narrower edit is possible.',
+  ].join('\n')
 }
 
 export class AgentToolGateway {
@@ -403,27 +497,118 @@ export class AgentToolGateway {
     }
   }
 
-  private getLocalWriteArgumentError(request: ToolCallRequest): string | null {
-    let toolName: string
-    try {
-      const parsed = parseToolName(request.name)
-      if (parsed.serverName !== getLocalFileToolServerName()) return null
-      toolName = parsed.toolName
-    } catch {
-      return null
+  private prepareFinalToolCallRequest(
+    request: ToolCallRequest,
+  ):
+    | { ok: true; request: ToolCallRequest }
+    | { ok: false; request: ToolCallRequest; response: ToolCallResponse } {
+    if (!request.arguments || request.arguments.kind === 'complete') {
+      return { ok: true, request }
     }
 
-    if (!isLocalFsWriteToolName(toolName)) return null
+    const parsed = parseAndRepairToolArguments(request.arguments)
+    const localWriteToolName = getLocalWriteToolShortName(request.name)
+    if (!parsed.ok) {
+      return {
+        ok: false,
+        request,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error: formatToolArgumentDiagnostics({
+            request,
+            title: 'Tool argument parsing failed',
+            parseError: parsed.error,
+            providedParameterNames: parsed.providedParameterNames,
+            requiredParameterNames: localWriteToolName
+              ? getRequiredLocalWriteArgumentNames(localWriteToolName)
+              : undefined,
+            repairActions: parsed.repairActions,
+          }),
+        },
+      }
+    }
+
+    if (
+      localWriteToolName &&
+      parsed.repairApplied &&
+      hasUnsafeStringCompletionRepair(parsed.repairActions)
+    ) {
+      return {
+        ok: false,
+        request,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error: formatToolArgumentDiagnostics({
+            request,
+            title: 'Tool argument parsing failed',
+            parseError:
+              'Repair would close an unterminated string in a local write tool. This likely means file content was truncated, so the tool was not executed.',
+            providedParameterNames: Object.keys(parsed.value).sort(),
+            requiredParameterNames:
+              getRequiredLocalWriteArgumentNames(localWriteToolName),
+            repairActions: parsed.repairActions,
+          }),
+        },
+      }
+    }
+
+    return {
+      ok: true,
+      request: {
+        ...request,
+        arguments: parsed.arguments,
+        metadata: {
+          ...request.metadata,
+          argumentDiagnostics: {
+            ...request.metadata?.argumentDiagnostics,
+            parseState: parsed.repairApplied ? 'repaired' : 'valid',
+            rawArgsLength:
+              request.metadata?.argumentDiagnostics?.rawArgsLength ??
+              getToolCallArgumentsText(request.arguments)?.length ??
+              0,
+            rawArgsHead:
+              request.metadata?.argumentDiagnostics?.rawArgsHead ??
+              getToolCallArgumentsText(request.arguments)?.slice(0, 240) ??
+              '',
+            repairApplied: parsed.repairApplied,
+            repairActions: parsed.repairActions,
+          },
+        },
+      },
+    }
+  }
+
+  private getLocalWriteArgumentError(request: ToolCallRequest): string | null {
+    const localWriteToolName = getLocalWriteToolShortName(request.name)
+    if (!localWriteToolName) return null
+    const toolName = localWriteToolName
 
     if (!request.arguments) {
-      return `Arguments for "${request.name}" are missing. Expected a JSON object for local write tool "${toolName}".`
+      return formatToolArgumentDiagnostics({
+        request: {
+          ...request,
+          arguments: createPartialToolCallArguments(''),
+        },
+        title: 'Tool argument parsing failed',
+        parseError: 'Missing arguments. Expected a JSON object.',
+        requiredParameterNames: getRequiredLocalWriteArgumentNames(toolName),
+      })
     }
 
     if (request.arguments.kind === 'partial') {
-      return (
-        `Arguments for "${request.name}" are not a complete valid JSON object, so the tool was not executed. ` +
-        `The raw arguments are preserved in the Parameters section for debugging.`
-      )
+      const parsed = parseAndRepairToolArgumentsText(request.arguments.rawText)
+      return formatToolArgumentDiagnostics({
+        request,
+        title: 'Tool argument parsing failed',
+        parseError: parsed.ok
+          ? 'Arguments were still marked partial after parsing.'
+          : parsed.error,
+        providedParameterNames: parsed.ok
+          ? Object.keys(parsed.value).sort()
+          : parsed.providedParameterNames,
+        requiredParameterNames: getRequiredLocalWriteArgumentNames(toolName),
+        repairActions: parsed.repairActions,
+      })
     }
 
     const validationErrors = validateLocalWriteArgs({
@@ -434,12 +619,13 @@ export class AgentToolGateway {
       return null
     }
 
-    const rawArguments = getToolCallArgumentsText(request.arguments)
-    return [
-      `Arguments for "${request.name}" failed local write validation:`,
-      ...validationErrors.map((error) => `- ${error}`),
-      ...(rawArguments ? [`Raw arguments: ${rawArguments}`] : []),
-    ].join('\n')
+    return formatToolArgumentDiagnostics({
+      request,
+      title: 'Tool argument validation failed',
+      providedParameterNames: Object.keys(request.arguments.value).sort(),
+      requiredParameterNames: getRequiredLocalWriteArgumentNames(toolName),
+      validationErrors,
+    })
   }
 
   createToolMessage({
@@ -457,11 +643,17 @@ export class AgentToolGateway {
     branchModelId?: string
     branchLabel?: string
   }): ChatToolMessage {
+    const preparedRequests = toolCallRequests.map((request) =>
+      this.prepareFinalToolCallRequest(request),
+    )
+    const normalizedToolCallRequests = preparedRequests.map(
+      (prepared) => prepared.request,
+    )
     // ask_user_question is exclusive within a single LLM turn. Detect this
     // up-front so we can force all sibling outcomes accordingly before falling
     // back to the per-tool routing for non-ask cases.
     const askIndices: number[] = []
-    toolCallRequests.forEach((request, index) => {
+    normalizedToolCallRequests.forEach((request, index) => {
       if (isAskUserQuestionToolName(request.name)) {
         askIndices.push(index)
       }
@@ -479,21 +671,27 @@ export class AgentToolGateway {
         branchModelId,
         branchLabel,
       },
-      toolCalls: toolCallRequests.map((request, index) => ({
-        request,
-        response: this.resolveInitialResponse({
+      toolCalls: preparedRequests.map((prepared, index) => {
+        const request = prepared.request
+        return {
           request,
-          conversationId,
-          isAskRequest:
-            hasAsk && index === firstAskIndex
-              ? 'primary-ask'
-              : hasAsk && askIndices.includes(index)
-                ? 'duplicate-ask'
-                : hasAsk
-                  ? 'ask-sibling'
-                  : 'normal',
-        }),
-      })),
+          response:
+            prepared.ok === false
+              ? prepared.response
+              : this.resolveInitialResponse({
+                  request,
+                  conversationId,
+                  isAskRequest:
+                    hasAsk && index === firstAskIndex
+                      ? 'primary-ask'
+                      : hasAsk && askIndices.includes(index)
+                        ? 'duplicate-ask'
+                        : hasAsk
+                          ? 'ask-sibling'
+                          : 'normal',
+                }),
+        }
+      }),
     }
   }
 

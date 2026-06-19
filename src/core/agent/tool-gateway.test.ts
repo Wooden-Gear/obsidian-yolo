@@ -155,9 +155,10 @@ describe('AgentToolGateway', () => {
   })
 
   it('rejects malformed local write arguments before execution', async () => {
+    const callTool = jest.fn()
     const mcpManager = {
       isToolExecutionAllowed: jest.fn().mockReturnValue(true),
-      callTool: jest.fn(),
+      callTool,
       getJsSandboxSettings: jest.fn().mockReturnValue({}),
     } as unknown as McpManager
 
@@ -186,8 +187,16 @@ describe('AgentToolGateway', () => {
 
     expect(message.toolCalls[0]?.response).toEqual({
       status: ToolCallResponseStatus.Error,
-      error: expect.stringContaining('not a complete valid JSON object'),
+      error: expect.stringContaining('Tool argument parsing failed'),
     })
+    const response = message.toolCalls[0]?.response
+    if (response?.status !== ToolCallResponseStatus.Error) {
+      throw new Error('expected error')
+    }
+    expect(response.error).toContain('Provided parameter names: content, path')
+    expect(response.error).toContain('Required parameter names: path, content')
+    expect(response.error).toContain('Raw args length:')
+    expect(response.error).toContain('finishReason:')
 
     const executed = await gateway.executeAutoToolCalls({
       toolMessage: message,
@@ -197,7 +206,112 @@ describe('AgentToolGateway', () => {
     expect(executed.toolCalls[0]?.response.status).toBe(
       ToolCallResponseStatus.Error,
     )
-    expect(mcpManager.callTool).not.toHaveBeenCalled()
+    expect(callTool).not.toHaveBeenCalled()
+  })
+
+  it('repairs incomplete local write JSON before execution', async () => {
+    const callTool = jest.fn().mockResolvedValue({
+      status: ToolCallResponseStatus.Success,
+      data: { type: 'text', text: 'ok' },
+    })
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      callTool,
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__fs_write'],
+      toolPreferences: {
+        yolo_local__fs_write: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_write',
+          arguments: createPartialToolCallArguments(
+            '{"path":"note.md","content":"hello"',
+          ),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Running,
+    )
+    expect(message.toolCalls[0]?.request.arguments?.kind).toBe('complete')
+
+    const executed = await gateway.executeAutoToolCalls({
+      toolMessage: message,
+      conversationId: 'conv-1',
+    })
+
+    expect(executed.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Success,
+    )
+    expect(callTool).toHaveBeenCalledTimes(1)
+    expect(callTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: { path: 'note.md', content: 'hello' },
+      }),
+    )
+  })
+
+  it('rejects local write repair that would close an unterminated content string', async () => {
+    const callTool = jest.fn()
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      callTool,
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__fs_write'],
+      toolPreferences: {
+        yolo_local__fs_write: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_write',
+          arguments: createPartialToolCallArguments(
+            '{"path":"note.md","content":"half written',
+          ),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    const response = message.toolCalls[0]?.response
+    expect(response?.status).toBe(ToolCallResponseStatus.Error)
+    if (response?.status !== ToolCallResponseStatus.Error) {
+      throw new Error('expected error')
+    }
+    expect(response.error).toContain('unterminated string')
+    expect(response.error).toContain('file content was truncated')
+
+    const executed = await gateway.executeAutoToolCalls({
+      toolMessage: message,
+      conversationId: 'conv-1',
+    })
+
+    expect(executed.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Error,
+    )
+    expect(callTool).not.toHaveBeenCalled()
   })
 
   it('reports missing fs_edit locator fields before execution', () => {
