@@ -1,16 +1,23 @@
 import { requestUrl } from 'obsidian'
 
-const GITHUB_RELEASE_URL =
-  'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases/latest'
-
 const GITHUB_RELEASES_URL =
   'https://api.github.com/repos/Lapis0x0/obsidian-yolo/releases'
 
 const GITHUB_RELEASE_DOWNLOAD_BASE =
   'https://github.com/Lapis0x0/obsidian-yolo/releases/download'
 
+const GITHUB_RELEASE_PAGE_BASE =
+  'https://github.com/Lapis0x0/obsidian-yolo/releases/tag'
+
+const GITHUB_VERSIONS_URL =
+  'https://raw.githubusercontent.com/Lapis0x0/obsidian-yolo/main/versions.json'
+
 function releaseTagUrl(version: string): string {
   return `${GITHUB_RELEASES_URL}/tags/${encodeURIComponent(version)}`
+}
+
+function releasePageUrl(version: string): string {
+  return `${GITHUB_RELEASE_PAGE_BASE}/${encodeURIComponent(version)}`
 }
 
 /** Matches the UI page size and GitHub `per_page` for on-demand loading. */
@@ -151,6 +158,33 @@ export function compareVersions(current: string, latest: string): boolean {
     if (bv < av) return false
   }
   return false
+}
+
+function isPluginVersion(version: string): boolean {
+  return /^v?\d+(?:\.\d+)*$/i.test(version.trim())
+}
+
+export function parseLatestVersionFromVersionsJson(raw: string): string | null {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null
+    }
+
+    let latestVersion: string | null = null
+    for (const version of Object.keys(parsed)) {
+      if (!isPluginVersion(version)) {
+        continue
+      }
+      const normalized = normalizePluginVersion(version)
+      if (!latestVersion || compareVersions(latestVersion, normalized)) {
+        latestVersion = normalized
+      }
+    }
+    return latestVersion
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -449,7 +483,8 @@ export async function fetchReleaseByVersion(version: string): Promise<{
 }
 
 /**
- * Fetches latest GitHub release and compares to `currentVersion`.
+ * Fetches the latest published version from the repo's static Obsidian
+ * `versions.json` file and compares it to `currentVersion`.
  * Returns null on network/parse failure.
  */
 export async function checkForUpdate(
@@ -457,47 +492,37 @@ export async function checkForUpdate(
 ): Promise<UpdateCheckResult | null> {
   try {
     const response = await requestUrl({
-      url: GITHUB_RELEASE_URL,
+      url: GITHUB_VERSIONS_URL,
       method: 'GET',
-      headers: {
-        Accept: 'application/vnd.github+json',
-      },
     })
 
     if (response.status < 200 || response.status >= 300) {
-      console.error(
-        `[YOLO] Plugin update check failed: GitHub latest release returned HTTP ${response.status}.`,
+      console.warn(
+        `[YOLO] Plugin update check failed: versions.json returned HTTP ${response.status}.`,
       )
       return null
     }
 
-    const data = JSON.parse(response.text) as GitHubReleaseResponse
-    const tag = typeof data.tag_name === 'string' ? data.tag_name : ''
-    const latestVersion = stripVersionPrefix(tag)
+    const latestVersion = parseLatestVersionFromVersionsJson(response.text)
     if (!latestVersion) {
-      console.error(
-        '[YOLO] Plugin update check failed: latest release payload is missing tag_name.',
+      console.warn(
+        '[YOLO] Plugin update check failed: versions.json does not contain a valid version.',
       )
       return null
     }
 
     const hasUpdate = compareVersions(currentVersion, latestVersion)
-    const releaseNotes =
-      typeof data.body === 'string'
-        ? splitReleaseNotesByLanguage(data.body)
-        : { en: null, zh: null }
-    const releaseUrl = typeof data.html_url === 'string' ? data.html_url : ''
 
     return {
       hasUpdate,
       latestVersion,
-      releaseNotes,
-      releaseUrl,
-      assets: parseReleaseAssets(data.assets),
+      releaseNotes: { en: null, zh: null },
+      releaseUrl: releasePageUrl(latestVersion),
+      assets: buildReleaseAssets(latestVersion),
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error(`[YOLO] Plugin update check failed: ${message}`)
+    console.warn(`[YOLO] Plugin update check failed: ${message}`)
     return null
   }
 }

@@ -12,6 +12,7 @@ export class FileSystemAdapter {
   }
 }
 export const normalizePath = jest.fn((path: string) => path)
+export const requestUrl = jest.fn()
 export const htmlToMarkdown = jest.fn((html: string) => html)
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Jest mock: 复用 js-yaml 与生产环境(Obsidian 内嵌)行为一致
 const yaml = require('js-yaml') as { load: (input: string) => unknown }

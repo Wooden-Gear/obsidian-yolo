@@ -1,11 +1,92 @@
+import { type RequestUrlResponse, requestUrl } from 'obsidian'
+
 import {
   buildReleaseAssets,
+  checkForUpdate,
   compareVersions,
   normalizePluginVersion,
   parseChangelog,
+  parseLatestVersionFromVersionsJson,
   parseReleaseAssets,
   splitReleaseNotesByLanguage,
 } from './updateChecker'
+
+const mockedRequestUrl = requestUrl as jest.MockedFunction<typeof requestUrl>
+
+function createRequestUrlResponse(text: string): RequestUrlResponse {
+  return {
+    status: 200,
+    headers: {},
+    arrayBuffer: new ArrayBuffer(0),
+    json: JSON.parse(text) as unknown,
+    text,
+  }
+}
+
+describe('parseLatestVersionFromVersionsJson', () => {
+  it('returns the highest normalized version key', () => {
+    expect(
+      parseLatestVersionFromVersionsJson(
+        JSON.stringify({
+          '1.5.9': '1.8.0',
+          '1.5.12.4': '1.8.0',
+          v1: 'ignored',
+          '1.5.12.5': '1.8.0',
+          next: 'ignored',
+        }),
+      ),
+    ).toBe('1.5.12.5')
+  })
+
+  it('returns null for invalid JSON or non-object payloads', () => {
+    expect(parseLatestVersionFromVersionsJson('not-json')).toBeNull()
+    expect(parseLatestVersionFromVersionsJson('[]')).toBeNull()
+  })
+})
+
+describe('checkForUpdate', () => {
+  beforeEach(() => {
+    mockedRequestUrl.mockReset()
+    jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('checks the static versions.json file and builds deterministic release metadata', async () => {
+    mockedRequestUrl.mockResolvedValue(
+      createRequestUrlResponse(
+        JSON.stringify({
+          '1.5.12.4': '1.8.0',
+          '1.5.12.5': '1.8.0',
+        }),
+      ),
+    )
+
+    await expect(checkForUpdate('1.5.12.4')).resolves.toEqual({
+      hasUpdate: true,
+      latestVersion: '1.5.12.5',
+      releaseNotes: { en: null, zh: null },
+      releaseUrl:
+        'https://github.com/Lapis0x0/obsidian-yolo/releases/tag/1.5.12.5',
+      assets: buildReleaseAssets('1.5.12.5'),
+    })
+    expect(mockedRequestUrl).toHaveBeenCalledWith({
+      url: 'https://raw.githubusercontent.com/Lapis0x0/obsidian-yolo/main/versions.json',
+      method: 'GET',
+    })
+  })
+
+  it('returns null when versions.json cannot be fetched', async () => {
+    mockedRequestUrl.mockRejectedValue(new Error('Request failed, status 403'))
+
+    await expect(checkForUpdate('1.5.12.4')).resolves.toBeNull()
+    expect(console.warn).toHaveBeenCalledWith(
+      '[YOLO] Plugin update check failed: Request failed, status 403',
+    )
+  })
+})
 
 describe('parseReleaseAssets', () => {
   it('returns URLs and sizes when all three release assets are present', () => {
