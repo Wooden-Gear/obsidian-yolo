@@ -13,6 +13,7 @@ import { LLMProvider } from '../../types/provider.types'
 import { createCompleteToolCallArguments } from '../../types/tool-call.types'
 import { BaseLLMProvider } from '../llm/base'
 
+import { isRequestErrorNonRetryable } from './requestRetry'
 import { executeSingleTurn } from './single-turn'
 
 class MockProvider extends BaseLLMProvider<LLMProvider> {
@@ -25,11 +26,12 @@ class MockProvider extends BaseLLMProvider<LLMProvider> {
     [ChatModel, LLMRequestStreaming, LLMOptions?]
   >()
 
-  constructor() {
+  constructor(provider: Partial<LLMProvider> = {}) {
     super({
       presetType: 'openai',
       apiType: 'openai-responses',
       id: 'provider-1',
+      ...provider,
     })
   }
 
@@ -120,7 +122,7 @@ describe('executeSingleTurn', () => {
         ...TEST_REQUEST,
         reasoningLevel: 'off',
       },
-      stream: false,
+      deliveryMode: 'buffered',
       purpose: 'lightweight',
       geminiTools: { useWebSearch: true, useUrlContext: true },
     })
@@ -210,7 +212,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
@@ -273,7 +275,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
@@ -355,7 +357,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
@@ -401,7 +403,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -425,7 +427,7 @@ describe('executeSingleTurn', () => {
         providerClient: provider,
         model: TEST_MODEL,
         request: TEST_REQUEST,
-        stream: true,
+        deliveryMode: 'incremental',
         streamFallbackRecoveryEnabled: false,
       }),
     ).rejects.toThrow('unexpected EOF')
@@ -504,7 +506,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -578,7 +580,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
       streamFallbackRecoveryEnabled: false,
     })
 
@@ -670,7 +672,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -762,7 +764,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -829,7 +831,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -920,7 +922,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).toHaveBeenCalledTimes(1)
@@ -987,7 +989,7 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
@@ -1021,7 +1023,7 @@ describe('executeSingleTurn', () => {
         providerClient: provider,
         model: TEST_MODEL,
         request: TEST_REQUEST,
-        stream: true,
+        deliveryMode: 'incremental',
       }),
     ).rejects.toThrow(/No content received from the model/)
 
@@ -1055,11 +1057,167 @@ describe('executeSingleTurn', () => {
       providerClient: provider,
       model: TEST_MODEL,
       request: TEST_REQUEST,
-      stream: true,
+      deliveryMode: 'incremental',
     })
 
     expect(result.content).toBe('')
     expect(result.finishReason).toBe('stop')
     expect(result.toolCalls).toEqual([])
+  })
+
+  it('uses one buffered SSE request for Obsidian transport and publishes only the final result', async () => {
+    const provider = new MockProvider({
+      additionalSettings: { requestTransportMode: 'obsidian' },
+    })
+    const onStreamDelta = jest.fn()
+    provider.streamResponseMock.mockResolvedValue(
+      toAsyncIterable([
+        {
+          id: 'buffered-1',
+          model: TEST_MODEL.model,
+          object: 'chat.completion.chunk',
+          choices: [
+            {
+              finish_reason: null,
+              delta: { content: 'hello ', reasoning: 'think ' },
+            },
+          ],
+        },
+        {
+          id: 'buffered-2',
+          model: TEST_MODEL.model,
+          object: 'chat.completion.chunk',
+          choices: [
+            {
+              finish_reason: 'stop',
+              delta: { content: 'world', reasoning: 'done' },
+            },
+          ],
+          usage: {
+            prompt_tokens: 1,
+            completion_tokens: 2,
+            total_tokens: 3,
+          },
+        },
+      ]),
+    )
+
+    const result = await executeSingleTurn({
+      providerClient: provider,
+      model: TEST_MODEL,
+      request: TEST_REQUEST,
+      deliveryMode: 'incremental',
+      onStreamDelta,
+    })
+
+    expect(provider.streamResponseMock).toHaveBeenCalledTimes(1)
+    expect(provider.streamResponseMock.mock.calls[0][1].stream).toBe(true)
+    expect(provider.generateResponseMock).not.toHaveBeenCalled()
+    expect(onStreamDelta).not.toHaveBeenCalled()
+    expect(result).toMatchObject({
+      content: 'hello world',
+      reasoning: 'think done',
+      finishReason: 'stop',
+      usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+    })
+  })
+
+  it('does not replay a failed Obsidian buffered request with non-streaming', async () => {
+    const provider = new MockProvider({
+      additionalSettings: { requestTransportMode: 'obsidian' },
+    })
+    provider.streamResponseMock.mockRejectedValue(new Error('unexpected EOF'))
+
+    let caught: unknown
+    try {
+      await executeSingleTurn({
+        providerClient: provider,
+        model: TEST_MODEL,
+        request: TEST_REQUEST,
+        deliveryMode: 'incremental',
+      })
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(Error)
+    expect((caught as Error).message).toBe('unexpected EOF')
+    expect(isRequestErrorNonRetryable(caught)).toBe(true)
+    expect(provider.streamResponseMock).toHaveBeenCalledTimes(1)
+    expect(provider.generateResponseMock).not.toHaveBeenCalled()
+  })
+
+  it('does not replay invalid write-tool arguments from an Obsidian buffered request', async () => {
+    const provider = new MockProvider({
+      additionalSettings: { requestTransportMode: 'obsidian' },
+    })
+    provider.streamResponseMock.mockResolvedValue(
+      toAsyncIterable([
+        {
+          id: 'buffered-tool',
+          model: TEST_MODEL.model,
+          object: 'chat.completion.chunk',
+          choices: [
+            {
+              finish_reason: 'tool_calls',
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'write-1',
+                    type: 'function',
+                    function: {
+                      name: 'yolo_local__fs_write',
+                      arguments: '{"path":"note.md"}',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ]),
+    )
+
+    const result = await executeSingleTurn({
+      providerClient: provider,
+      model: TEST_MODEL,
+      request: TEST_REQUEST,
+      deliveryMode: 'incremental',
+    })
+
+    expect(result.toolCalls).toHaveLength(1)
+    expect(provider.streamResponseMock).toHaveBeenCalledTimes(1)
+    expect(provider.generateResponseMock).not.toHaveBeenCalled()
+  })
+
+  it('times out an Obsidian buffered request without replaying it', async () => {
+    jest.useFakeTimers()
+    try {
+      const provider = new MockProvider({
+        additionalSettings: { requestTransportMode: 'obsidian' },
+      })
+      provider.streamResponseMock.mockImplementation(
+        () => new Promise<AsyncIterable<LLMResponseStreaming>>(() => undefined),
+      )
+
+      const requestPromise = executeSingleTurn({
+        providerClient: provider,
+        model: TEST_MODEL,
+        request: TEST_REQUEST,
+        deliveryMode: 'incremental',
+        primaryRequestTimeoutMs: 25,
+      }).catch((error: unknown) => error)
+      await jest.advanceTimersByTimeAsync(25)
+
+      const caught = await requestPromise
+      expect(caught).toBeInstanceOf(Error)
+      expect((caught as Error).name).toBe('ModelRequestTimeoutError')
+      expect(isRequestErrorNonRetryable(caught)).toBe(true)
+      expect(provider.streamResponseMock).toHaveBeenCalledTimes(1)
+      expect(provider.generateResponseMock).not.toHaveBeenCalled()
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })

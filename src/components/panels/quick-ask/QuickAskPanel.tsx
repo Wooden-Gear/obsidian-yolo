@@ -1142,7 +1142,7 @@ export function QuickAskPanel({
               ? [editorSnapshotInjection]
               : [],
             requestParams: {
-              stream: true,
+              deliveryMode: 'incremental',
               primaryRequestTimeoutMs:
                 settings.continuationOptions.primaryRequestTimeoutMs,
               streamFallbackRecoveryEnabled:

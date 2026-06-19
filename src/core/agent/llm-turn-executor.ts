@@ -25,6 +25,7 @@ import {
   registerLLMDebugTraceForTurn,
   updateLLMDebugTrace,
 } from '../llm/debugCapture'
+import type { ResponseDeliveryMode } from '../llm/responseDeliveryMode'
 import {
   LOCAL_FILE_TOOL_SHORT_NAMES,
   getLocalFileToolServerName,
@@ -55,7 +56,7 @@ type AgentLlmTurnExecutorInput = {
   abortSignal?: AbortSignal
   reasoningLevel?: ReasoningLevel
   requestParams?: {
-    stream?: boolean
+    deliveryMode?: ResponseDeliveryMode
     temperature?: number
     top_p?: number
     max_tokens?: number
@@ -148,15 +149,16 @@ export class AgentLlmTurnExecutor {
 
     const responseStart = Date.now()
     const model = this.input.model
+    const deliveryMode = this.input.requestParams?.deliveryMode ?? 'incremental'
+    const executionMode =
+      this.input.providerClient.resolveResponseExecutionMode(deliveryMode)
     const assistantMessageId = uuidv4()
     const debugTrace = isLLMDebugCaptureEnabled()
       ? createLLMDebugTrace({
           assistantMessageId,
           model,
           requestKind:
-            this.input.requestParams?.stream === false
-              ? 'non-streaming'
-              : 'streaming',
+            executionMode === 'non-streaming' ? 'non-streaming' : 'streaming',
         })
       : null
     if (debugTrace && this.input.sourceUserMessageId) {
@@ -206,7 +208,7 @@ export class AgentLlmTurnExecutor {
         },
         tools,
         signal: this.input.abortSignal,
-        stream: this.input.requestParams?.stream ?? true,
+        deliveryMode,
         primaryRequestTimeoutMs:
           this.input.requestParams?.primaryRequestTimeoutMs,
         streamFallbackRecoveryEnabled:
@@ -286,11 +288,11 @@ export class AgentLlmTurnExecutor {
       throw error
     }
 
-    if (!this.input.requestParams?.stream) {
+    if (!assistantMessage.content && turnResult.content) {
       assistantMessage.content = turnResult.content
+    }
+    if (!assistantMessage.reasoning && turnResult.reasoning) {
       assistantMessage.reasoning = turnResult.reasoning
-    } else if (!assistantMessage.content && turnResult.content) {
-      assistantMessage.content = turnResult.content
     }
 
     assistantMessage.annotations = turnResult.annotations

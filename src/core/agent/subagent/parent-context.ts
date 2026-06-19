@@ -24,14 +24,7 @@ export type SubagentParentContext = {
   allowedSkillPaths?: string[]
   enableToolDisclosure?: boolean
   reasoningLevel?: ReasoningLevel
-  requestParams?: {
-    stream?: boolean
-    temperature?: number
-    top_p?: number
-    max_tokens?: number
-    primaryRequestTimeoutMs?: number
-    streamFallbackRecoveryEnabled?: boolean
-  }
+  requestParams?: AgentRuntimeRunInput['requestParams']
   loopConfig: AgentRuntimeLoopConfig
   requestContextBuilder: RequestContextBuilder
   mcpManager: McpManager

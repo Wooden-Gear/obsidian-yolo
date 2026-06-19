@@ -379,7 +379,7 @@ export async function resolveAgentApiRunInput({
       workspaceScope: resolveWorkspaceScopeForRuntimeInput(assistant),
       allowedSkillPaths,
       requestParams: {
-        stream: true,
+        deliveryMode: 'incremental',
         primaryRequestTimeoutMs:
           settings.continuationOptions.primaryRequestTimeoutMs,
         streamFallbackRecoveryEnabled:

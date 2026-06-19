@@ -23,8 +23,11 @@ import {
   runWithLLMDebugTrace,
 } from '../llm/debugCapture'
 import { applyLightweightRequestPolicy } from '../llm/lightweight-request-policy'
+import { ModelRequestTimeoutError } from '../llm/requestPolicy'
+import { ResponseDeliveryMode } from '../llm/responseDeliveryMode'
 import { isLocalFsWriteToolName } from '../mcp/localFileTools'
 
+import { markRequestErrorNonRetryable } from './requestRetry'
 import {
   ToolCallAccumulator,
   createCanonicalToolEventsFromDeltas,
@@ -72,7 +75,7 @@ type SingleTurnExecutionInput = {
    */
   tool_choice?: RequestToolChoice
   signal?: AbortSignal
-  stream?: boolean
+  deliveryMode?: ResponseDeliveryMode
   primaryRequestTimeoutMs?: number
   streamFallbackRecoveryEnabled?: boolean
   geminiTools?: {
@@ -239,7 +242,7 @@ export async function executeSingleTurn({
   tools,
   tool_choice,
   signal,
-  stream = true,
+  deliveryMode = 'incremental',
   primaryRequestTimeoutMs = DEFAULT_PRIMARY_REQUEST_TIMEOUT_MS,
   streamFallbackRecoveryEnabled = true,
   geminiTools,
@@ -259,6 +262,8 @@ export async function executeSingleTurn({
     : { model, options: baseProviderOptions }
   const effectiveModel = effectivePolicy.model
   const effectiveProviderOptions = effectivePolicy.options
+  const executionMode =
+    providerClient.resolveResponseExecutionMode(deliveryMode)
   const withDebugTrace = <T>(run: () => Promise<T>): Promise<T> =>
     runWithLLMDebugTrace(debugTraceId, run)
   const runNonStreaming = async (): Promise<SingleTurnExecutionResult> => {
@@ -321,15 +326,30 @@ export async function executeSingleTurn({
     }
   }
 
-  if (!stream) {
+  if (executionMode === 'non-streaming') {
     return runNonStreaming()
   }
 
+  const isBufferedStreaming = executionMode === 'buffered-streaming'
   const streamController = new AbortController()
   bindLLMDebugTraceToSignal(debugTraceId, streamController.signal)
-  const handleAbort = () => streamController.abort()
-  if (signal?.aborted) {
+  let rejectBufferedInterruption: ((error: Error) => void) | undefined
+  const bufferedInterruption = new Promise<never>((_, reject) => {
+    rejectBufferedInterruption = reject
+  })
+  const createAbortError = (): Error => {
+    const error = new Error('Aborted')
+    error.name = 'AbortError'
+    return error
+  }
+  const handleAbort = () => {
     streamController.abort()
+    if (isBufferedStreaming) {
+      rejectBufferedInterruption?.(createAbortError())
+    }
+  }
+  if (signal?.aborted) {
+    handleAbort()
   } else {
     signal?.addEventListener('abort', handleAbort, { once: true })
   }
@@ -357,9 +377,14 @@ export async function executeSingleTurn({
     timeoutId = setTimeout(() => {
       timedOut = true
       streamController.abort()
+      if (isBufferedStreaming) {
+        rejectBufferedInterruption?.(
+          new ModelRequestTimeoutError(primaryRequestTimeoutMs),
+        )
+      }
     }, primaryRequestTimeoutMs)
 
-    await withDebugTrace(async () => {
+    const consumeStream = withDebugTrace(async () => {
       const streamIterator = await providerClient.streamResponse(
         effectiveModel,
         {
@@ -378,7 +403,9 @@ export async function executeSingleTurn({
       for await (const chunk of streamIterator) {
         if (!hasReceivedFirstChunk) {
           hasReceivedFirstChunk = true
-          clearTimeoutId()
+          if (!isBufferedStreaming) {
+            clearTimeoutId()
+          }
         }
         if (signal?.aborted) {
           break
@@ -432,17 +459,22 @@ export async function executeSingleTurn({
 
         const streamedToolCallList = toolCallAccumulator.getSnapshots()
 
-        onStreamDelta?.({
-          contentDelta,
-          reasoningDelta,
-          chunk,
-          toolCalls:
-            streamedToolCallList.length > 0
-              ? streamedToolCallList.sort((a, b) => a.index - b.index)
-              : undefined,
-        })
+        if (!isBufferedStreaming) {
+          onStreamDelta?.({
+            contentDelta,
+            reasoningDelta,
+            chunk,
+            toolCalls:
+              streamedToolCallList.length > 0
+                ? streamedToolCallList.sort((a, b) => a.index - b.index)
+                : undefined,
+          })
+        }
       }
     })
+    await (isBufferedStreaming
+      ? Promise.race([consumeStream, bufferedInterruption])
+      : consumeStream)
 
     const streamEndedAt = Date.now()
     toolCallAccumulator.sealOpenCalls('stream_end', streamEndedAt)
@@ -476,6 +508,7 @@ export async function executeSingleTurn({
     let finalProviderMetadata: ProviderMetadata | undefined = providerMetadata
 
     if (
+      !isBufferedStreaming &&
       streamFallbackRecoveryEnabled &&
       hasInvalidWriteToolArguments(streamedToolCallList)
     ) {
@@ -526,6 +559,9 @@ export async function executeSingleTurn({
       toolCalls: finalToolCalls,
     }
   } catch (error) {
+    if (isBufferedStreaming) {
+      throw markRequestErrorNonRetryable(error)
+    }
     const message =
       error instanceof Error ? error.message : String(error ?? 'Unknown error')
     const shouldFallback =

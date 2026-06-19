@@ -32,7 +32,7 @@ import {
 } from '../../core/llm/exception'
 import { getChatModelClient } from '../../core/llm/manager'
 import type { AutoPromotedTransportMode } from '../../core/llm/requestTransport'
-import { shouldUseStreamingForProvider } from '../../core/llm/streamingPolicy'
+import type { ResponseDeliveryMode } from '../../core/llm/responseDeliveryMode'
 import { promoteProviderTransportModeToObsidian } from '../../core/llm/transportModePromotion'
 import {
   TERMINAL_COMMAND_TOOL_NAME,
@@ -737,10 +737,8 @@ export function useChatStreamManager({
         const currentProvider = settings.providers.find(
           (provider) => provider.id === resolvedClient.model.providerId,
         )
-        const shouldStreamResponse = shouldUseStreamingForProvider({
-          requestedStream: conversationOverrides?.stream ?? true,
-          provider: currentProvider,
-        })
+        const deliveryMode: ResponseDeliveryMode =
+          conversationOverrides?.stream === false ? 'buffered' : 'incremental'
 
         const modelTemperature = resolvedClient.model.temperature
         const modelTopP = resolvedClient.model.topP
@@ -783,7 +781,7 @@ export function useChatStreamManager({
               }
             : undefined
         const requestParams = {
-          stream: shouldStreamResponse,
+          deliveryMode,
           temperature: conversationOverrides?.temperature ?? modelTemperature,
           top_p: conversationOverrides?.top_p ?? modelTopP,
           max_tokens: modelMaxTokens,
@@ -898,10 +896,6 @@ export function useChatStreamManager({
               (provider) =>
                 provider.id === branchResolvedClient.model.providerId,
             )
-            const branchShouldStream = shouldUseStreamingForProvider({
-              requestedStream: conversationOverrides?.stream ?? true,
-              provider: branchProvider,
-            })
             const branchAbortController = new AbortController()
             const branchModel = branchResolvedClient.model
             const branchLabel =
@@ -927,7 +921,6 @@ export function useChatStreamManager({
                 abortSignal: branchAbortController.signal,
                 requestParams: {
                   ...requestParams,
-                  stream: branchShouldStream,
                   temperature:
                     conversationOverrides?.temperature ??
                     branchResolvedClient.model.temperature,
