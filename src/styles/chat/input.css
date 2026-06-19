@@ -3120,10 +3120,67 @@ button.yolo-chat-user-input-submit-button-circle.is-stop:hover:not(:disabled) {
 }
 
 .yolo-chat-queued-messages__item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  min-width: 0;
+}
+
+.yolo-chat-queued-messages__preview {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0.85;
+}
+
+.yolo-chat-queued-messages__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--size-2-1);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.yolo-chat-queued-messages__item:hover .yolo-chat-queued-messages__actions,
+.yolo-chat-queued-messages__item:focus-within
+  .yolo-chat-queued-messages__actions {
+  opacity: 1;
+}
+
+.yolo-chat-queued-messages__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: var(--radius-s);
+  background: transparent !important;
+  color: var(--text-muted);
+  box-shadow: none !important;
+}
+
+.yolo-chat-queued-messages__action:hover:not(:disabled) {
+  background: transparent !important;
+  color: var(--interactive-accent-hover, var(--interactive-accent));
+  box-shadow: none !important;
+}
+
+.yolo-chat-queued-messages__action.is-delete:hover:not(:disabled) {
+  color: var(--text-error);
+}
+
+.yolo-chat-queued-messages__action:disabled {
+  opacity: 0.4;
+}
+
+@media (hover: none) {
+  .yolo-chat-queued-messages__actions {
+    opacity: 1;
+  }
 }
 
 /* Chat Mode Select */

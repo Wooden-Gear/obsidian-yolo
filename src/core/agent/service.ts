@@ -848,6 +848,31 @@ export class AgentService {
   }
 
   /**
+   * Atomically remove one message while it is still waiting in the mid-run
+   * queue. Returns the removed message, or null when the runtime has already
+   * drained it at an LLM request boundary.
+   */
+  removePendingUserMessage(
+    conversationId: string,
+    messageId: string,
+    branchId?: string,
+  ): ChatUserMessage | null {
+    const runKey = getRunKey(conversationId, branchId ?? DEFAULT_BRANCH_ID)
+    const queue = this.pendingUserMessagesByKey.get(runKey)
+    if (!queue) return null
+
+    const index = queue.findIndex((message) => message.id === messageId)
+    if (index === -1) return null
+
+    const [removed] = queue.splice(index, 1)
+    if (queue.length === 0) {
+      this.pendingUserMessagesByKey.delete(runKey)
+    }
+    this.notifyConversationSubscribers(conversationId)
+    return removed ?? null
+  }
+
+  /**
    * Subscribe to abort events that carry the queued user messages dropped at
    * abort time, so the UI can restore them into the input box.
    */

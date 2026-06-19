@@ -880,6 +880,63 @@ describe('AgentService mid-run user message queue', () => {
     await runPromise
   })
 
+  it('atomically removes a message while it is still queued', async () => {
+    const service = new AgentService()
+    const runPromise = service.run({
+      conversationId: 'conv-remove',
+      loopConfig: {
+        enableTools: true,
+        maxAutoIterations: 100,
+        includeBuiltinTools: true,
+      },
+      input: buildBaseRunInput('conv-remove', [makeUserMessage('u1', 'hi')]),
+    })
+    const runtime = runtimeInstances[0]
+    const first = makeUserMessage('u2', 'first')
+    const second = makeUserMessage('u3', 'second')
+
+    expect(service.enqueueUserMessage('conv-remove', first)).toBe('enqueued')
+    expect(service.enqueueUserMessage('conv-remove', second)).toBe('enqueued')
+
+    expect(service.removePendingUserMessage('conv-remove', 'u2')).toEqual(first)
+    expect(service.peekPendingUserMessages('conv-remove')).toEqual([second])
+    expect(
+      service.removePendingUserMessage('conv-remove', 'missing'),
+    ).toBeNull()
+
+    runtime.resolveRun()
+    await runPromise
+  })
+
+  it('cannot remove a message after the runtime has drained it', async () => {
+    const service = new AgentService()
+    const runPromise = service.run({
+      conversationId: 'conv-remove-drained',
+      loopConfig: {
+        enableTools: true,
+        maxAutoIterations: 100,
+        includeBuiltinTools: true,
+      },
+      input: buildBaseRunInput('conv-remove-drained', [
+        makeUserMessage('u1', 'hi'),
+      ]),
+    })
+    const runtime = runtimeInstances[0]
+    const queued = makeUserMessage('u2', 'queued')
+    expect(service.enqueueUserMessage('conv-remove-drained', queued)).toBe(
+      'enqueued',
+    )
+
+    runtime.getRunInput()?.drainPendingUserMessages?.()
+
+    expect(
+      service.removePendingUserMessage('conv-remove-drained', 'u2'),
+    ).toBeNull()
+
+    runtime.resolveRun()
+    await runPromise
+  })
+
   it('refuses enqueue for non-default branches', async () => {
     const service = new AgentService()
     const runPromise = service.run({

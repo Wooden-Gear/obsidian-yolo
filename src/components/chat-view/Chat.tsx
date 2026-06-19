@@ -1,7 +1,7 @@
 import { EditorView } from '@codemirror/view'
 import { useMutation } from '@tanstack/react-query'
 import cx from 'clsx'
-import { Download, History, Plus } from 'lucide-react'
+import { Download, History, Pencil, Plus, Trash2 } from 'lucide-react'
 import { MarkdownView, Notice, TFile, TFolder, normalizePath } from 'obsidian'
 import {
   forwardRef,
@@ -737,6 +737,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     }
     return newMessage
   })
+  const [queuedMessageEditState, setQueuedMessageEditState] = useState<{
+    preservedInputMessage: ChatUserMessage
+    preservedReasoningLevel: ReasoningLevel
+  } | null>(null)
   const inputMessageRef = useRef(inputMessage)
   // 主输入框「是否为空」——发送按钮根据它切换淡化态/激活态。判断口径与
   // 下方 onSubmit 里的早返回一致：纯文本 trim 后为空、且无 mentionable、
@@ -1292,6 +1296,10 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   useEffect(() => {
     inputMessageRef.current = inputMessage
   }, [inputMessage])
+
+  useEffect(() => {
+    setQueuedMessageEditState(null)
+  }, [currentConversationId])
 
   useEffect(() => {
     chatMessagesStateRef.current = chatMessages
@@ -5467,7 +5475,76 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                             className="yolo-chat-queued-messages__item"
                             title={preview}
                           >
-                            {preview || ' '}
+                            <span className="yolo-chat-queued-messages__preview">
+                              {preview || ' '}
+                            </span>
+                            <span className="yolo-chat-queued-messages__actions">
+                              <button
+                                type="button"
+                                className="yolo-chat-queued-messages__action"
+                                aria-label={t('common.edit', '编辑')}
+                                title={t('common.edit', '编辑')}
+                                disabled={queuedMessageEditState !== null}
+                                onClick={() => {
+                                  const removed =
+                                    agentService.removePendingUserMessage(
+                                      currentConversationId,
+                                      queued.id,
+                                    )
+                                  if (!removed) return
+
+                                  const preservedReasoningLevel = reasoningLevel
+                                  const editingReasoningLevel =
+                                    normalizeReasoningLevel(
+                                      removed.reasoningLevel,
+                                    ) ?? reasoningLevel
+                                  setQueuedMessageEditState({
+                                    preservedInputMessage:
+                                      inputMessageRef.current,
+                                    preservedReasoningLevel,
+                                  })
+                                  setReasoningLevel(editingReasoningLevel)
+                                  setInputMessage({
+                                    ...removed,
+                                    timeContext: undefined,
+                                  })
+                                  requestAnimationFrame(() => {
+                                    chatUserInputRefs.current
+                                      .get(removed.id)
+                                      ?.focus()
+                                  })
+                                }}
+                              >
+                                <Pencil size={13} strokeWidth={2.5} />
+                              </button>
+                              <button
+                                type="button"
+                                className="yolo-chat-queued-messages__action is-delete"
+                                aria-label={t('common.delete', '删除')}
+                                title={t('common.delete', '删除')}
+                                onClick={() => {
+                                  const removed =
+                                    agentService.removePendingUserMessage(
+                                      currentConversationId,
+                                      queued.id,
+                                    )
+                                  if (!removed) return
+                                  releaseHighlightIds(
+                                    collectSelectionHighlightIds(
+                                      removed.mentionables,
+                                    ),
+                                  )
+                                  setMessageReasoningMap((prev) => {
+                                    if (!prev.has(removed.id)) return prev
+                                    const next = new Map(prev)
+                                    next.delete(removed.id)
+                                    return next
+                                  })
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </span>
                           </div>
                         )
                       })}
@@ -5550,7 +5627,21 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                         commitSentSelectionHighlights(
                           messageForSubmit.mentionables,
                         )
-                        setInputMessage(getNewInputMessage(reasoningLevel))
+                        if (queuedMessageEditState) {
+                          setReasoningLevel(
+                            queuedMessageEditState.preservedReasoningLevel,
+                          )
+                          conversationReasoningLevelRef.current.set(
+                            currentConversationId,
+                            queuedMessageEditState.preservedReasoningLevel,
+                          )
+                          setInputMessage(
+                            queuedMessageEditState.preservedInputMessage,
+                          )
+                          setQueuedMessageEditState(null)
+                        } else {
+                          setInputMessage(getNewInputMessage(reasoningLevel))
+                        }
                         return
                       }
                       if (enqueueResult === 'blocked_awaiting_approval') {
@@ -5595,7 +5686,21 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
                       return next
                     })
                     commitSentSelectionHighlights(messageForSubmit.mentionables)
-                    setInputMessage(getNewInputMessage(reasoningLevel))
+                    if (queuedMessageEditState) {
+                      setReasoningLevel(
+                        queuedMessageEditState.preservedReasoningLevel,
+                      )
+                      conversationReasoningLevelRef.current.set(
+                        currentConversationId,
+                        queuedMessageEditState.preservedReasoningLevel,
+                      )
+                      setInputMessage(
+                        queuedMessageEditState.preservedInputMessage,
+                      )
+                      setQueuedMessageEditState(null)
+                    } else {
+                      setInputMessage(getNewInputMessage(reasoningLevel))
+                    }
                   }}
                   onFocus={() => {
                     setFocusedMessageId(inputMessage.id)
