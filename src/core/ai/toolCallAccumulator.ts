@@ -271,7 +271,9 @@ export class ToolCallAccumulator {
   ): ToolCallArguments | undefined {
     if (record.streamState === 'sealed') {
       if (record.parseState !== 'valid' || !isRecord(record.parsedArgs)) {
-        return undefined
+        return record.rawArgsText.length > 0
+          ? createPartialToolCallArguments(record.rawArgsText)
+          : undefined
       }
       return createCompleteToolCallArguments({
         value: record.parsedArgs,

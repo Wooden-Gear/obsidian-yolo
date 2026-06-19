@@ -313,6 +313,7 @@ export async function executeSingleTurn({
                 name,
                 arguments: createToolCallArguments(
                   toolCall.function?.arguments,
+                  { allowPartial: true },
                 ),
                 metadata: toolCall.metadata,
               }
@@ -490,10 +491,7 @@ export async function executeSingleTurn({
         return {
           id: toolCall.id,
           name,
-          arguments:
-            toolCall.function?.arguments?.kind === 'complete'
-              ? toolCall.function.arguments
-              : undefined,
+          arguments: toolCall.function?.arguments,
           metadata: toolCall.metadata,
         }
       })

@@ -1,6 +1,7 @@
 import {
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
+  createPartialToolCallArguments,
 } from '../../types/tool-call.types'
 import { McpManager } from '../mcp/mcpManager'
 
@@ -151,6 +152,91 @@ describe('AgentToolGateway', () => {
       requestArgs: {},
       requireAutoExecution: false,
     })
+  })
+
+  it('rejects malformed local write arguments before execution', async () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      callTool: jest.fn(),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__fs_write'],
+      toolPreferences: {
+        yolo_local__fs_write: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_write',
+          arguments: createPartialToolCallArguments(
+            '{"path":"note.md","content":',
+          ),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response).toEqual({
+      status: ToolCallResponseStatus.Error,
+      error: expect.stringContaining('not a complete valid JSON object'),
+    })
+
+    const executed = await gateway.executeAutoToolCalls({
+      toolMessage: message,
+      conversationId: 'conv-1',
+    })
+
+    expect(executed.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.Error,
+    )
+    expect(mcpManager.callTool).not.toHaveBeenCalled()
+  })
+
+  it('reports missing fs_edit locator fields before execution', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(true),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['yolo_local__fs_edit'],
+      toolPreferences: {
+        yolo_local__fs_edit: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_edit',
+          arguments: createCompleteToolCallArguments({
+            value: { path: 'note.md', newText: 'x' },
+          }),
+        },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    const response = message.toolCalls[0]?.response
+    expect(response?.status).toBe(ToolCallResponseStatus.Error)
+    if (response?.status !== ToolCallResponseStatus.Error) {
+      throw new Error('expected error')
+    }
+    expect(response.error).toContain('startLine must be an integer')
+    expect(response.error).toContain('endLine must be an integer')
+    expect(response.error).toContain('"path":"note.md"')
   })
 
   it('auto executes read-only terminal commands even when terminal_command requires approval', () => {
@@ -631,7 +717,17 @@ describe('AgentToolGateway', () => {
 
     const message = gateway.createToolMessage({
       toolCallRequests: [
-        { id: 'tool-1', name: 'yolo_local__fs_edit', arguments: emptyArgs },
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_edit',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              path: 'note.md',
+              oldText: 'before',
+              newText: 'after',
+            },
+          }),
+        },
       ],
       conversationId: 'conv-1',
     })
@@ -650,7 +746,11 @@ describe('AgentToolGateway', () => {
     expect(callToolMock).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'yolo_local__fs_edit',
-        args: {},
+        args: {
+          path: 'note.md',
+          oldText: 'before',
+          newText: 'after',
+        },
         id: 'tool-1',
         conversationId: 'conv-1',
         conversationMessages: undefined,
@@ -683,7 +783,17 @@ describe('AgentToolGateway', () => {
 
     const message = gateway.createToolMessage({
       toolCallRequests: [
-        { id: 'tool-1', name: 'yolo_local__fs_edit', arguments: emptyArgs },
+        {
+          id: 'tool-1',
+          name: 'yolo_local__fs_edit',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              path: 'note.md',
+              oldText: 'before',
+              newText: 'after',
+            },
+          }),
+        },
       ],
       conversationId: 'subagent-task',
     })

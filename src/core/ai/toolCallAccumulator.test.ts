@@ -1,4 +1,7 @@
-import { getToolCallArgumentsObject } from '../../types/tool-call.types'
+import {
+  getToolCallArgumentsObject,
+  getToolCallArgumentsText,
+} from '../../types/tool-call.types'
 
 import {
   ToolCallAccumulator,
@@ -94,5 +97,42 @@ describe('ToolCallAccumulator', () => {
       kind: 'partial',
       rawText: '{"path":"a.md"}',
     })
+  })
+
+  it('preserves sealed invalid argument text for debugging', () => {
+    const accumulator = new ToolCallAccumulator('turn-invalid')
+
+    accumulator.applyAll(
+      createCanonicalToolEventsFromDeltas({
+        turnKey: 'turn-invalid',
+        provider: 'openai-chat',
+        receivedAt: 1,
+        deltas: [
+          {
+            index: 0,
+            id: 'tool-invalid',
+            function: {
+              name: 'yolo_local__fs_write',
+              arguments: '{"path":"a.md","content":',
+            },
+          },
+        ],
+      }),
+    )
+    accumulator.sealOpenCalls('stream_end', 2)
+
+    const snapshot = accumulator.getSnapshots()[0]
+
+    expect(snapshot?.parseState).toBe('invalid')
+    expect(snapshot?.function?.arguments).toMatchObject({
+      kind: 'partial',
+      rawText: '{"path":"a.md","content":',
+    })
+    expect(getToolCallArgumentsObject(snapshot?.function?.arguments)).toBe(
+      undefined,
+    )
+    expect(getToolCallArgumentsText(snapshot?.function?.arguments)).toBe(
+      '{"path":"a.md","content":',
+    )
   })
 })

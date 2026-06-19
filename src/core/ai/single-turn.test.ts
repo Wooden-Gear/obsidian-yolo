@@ -10,7 +10,10 @@ import {
   LLMResponseStreaming,
 } from '../../types/llm/response'
 import { LLMProvider } from '../../types/provider.types'
-import { createCompleteToolCallArguments } from '../../types/tool-call.types'
+import {
+  createCompleteToolCallArguments,
+  createPartialToolCallArguments,
+} from '../../types/tool-call.types'
 import { BaseLLMProvider } from '../llm/base'
 
 import { isRequestErrorNonRetryable } from './requestRetry'
@@ -434,6 +437,52 @@ describe('executeSingleTurn', () => {
 
     expect(provider.generateResponseMock).not.toHaveBeenCalled()
     expect(consoleWarnSpy).not.toHaveBeenCalled()
+  })
+
+  it('preserves malformed non-streaming tool arguments as raw text', async () => {
+    const provider = new MockProvider()
+    provider.generateResponseMock.mockResolvedValue({
+      id: 'non-stream-malformed',
+      model: TEST_MODEL.model,
+      object: 'chat.completion',
+      choices: [
+        {
+          finish_reason: 'tool_calls',
+          message: {
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                id: 'tool-malformed',
+                type: 'function',
+                function: {
+                  name: 'yolo_local__fs_write',
+                  arguments: '{"path":"note.md","content":',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    const result = await executeSingleTurn({
+      providerClient: provider,
+      model: TEST_MODEL,
+      request: TEST_REQUEST,
+      deliveryMode: 'buffered',
+    })
+
+    expect(result.toolCalls).toEqual([
+      {
+        id: 'tool-malformed',
+        name: 'yolo_local__fs_write',
+        arguments: createPartialToolCallArguments(
+          '{"path":"note.md","content":',
+        ),
+        metadata: undefined,
+      },
+    ])
   })
 
   it('falls back to non-stream when streamed local write arguments are invalid', async () => {

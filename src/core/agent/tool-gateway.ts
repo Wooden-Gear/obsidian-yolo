@@ -22,6 +22,7 @@ import {
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
   getToolCallArgumentsObject,
+  getToolCallArgumentsText,
 } from '../../types/tool-call.types'
 import { captureLLMDebugOperation } from '../llm/debugCapture'
 import {
@@ -29,6 +30,7 @@ import {
   LOAD_TOOL_SCHEMAS_LOCAL_TOOL_NAME,
   TERMINAL_COMMAND_TOOL_NAME,
   getLocalFileToolServerName,
+  isLocalFsWriteToolName,
   isAskUserQuestionToolName,
   validateAskUserQuestionArgs,
 } from '../mcp/localFileTools'
@@ -62,6 +64,86 @@ import {
 type McpToolCallParams = Parameters<McpManager['callTool']>[0]
 type McpToolCallParamsWithDebug = McpToolCallParams & {
   debugTraceId?: string
+}
+
+const getTypeName = (value: unknown): string => {
+  if (Array.isArray(value)) return 'array'
+  return typeof value
+}
+
+const requireStringField = ({
+  args,
+  field,
+  errors,
+}: {
+  args: Record<string, unknown>
+  field: string
+  errors: string[]
+}): void => {
+  if (typeof args[field] !== 'string') {
+    errors.push(
+      `${field} must be a string; received ${getTypeName(args[field])}.`,
+    )
+  }
+}
+
+const requireIntegerField = ({
+  args,
+  field,
+  errors,
+}: {
+  args: Record<string, unknown>
+  field: string
+  errors: string[]
+}): void => {
+  if (typeof args[field] !== 'number' || !Number.isInteger(args[field])) {
+    errors.push(
+      `${field} must be an integer; received ${getTypeName(args[field])}.`,
+    )
+  }
+}
+
+const validateLocalWriteArgs = ({
+  toolName,
+  args,
+}: {
+  toolName: string
+  args: Record<string, unknown>
+}): string[] => {
+  const errors: string[] = []
+
+  switch (toolName) {
+    case 'fs_write':
+      requireStringField({ args, field: 'path', errors })
+      requireStringField({ args, field: 'content', errors })
+      break
+    case 'fs_edit': {
+      requireStringField({ args, field: 'path', errors })
+      requireStringField({ args, field: 'newText', errors })
+      const hasOldText = typeof args.oldText === 'string'
+      const hasStartLine = args.startLine !== undefined
+      const hasEndLine = args.endLine !== undefined
+      if (hasOldText && (hasStartLine || hasEndLine)) {
+        errors.push(
+          'Use exactly one edit locator: oldText, or startLine with endLine; do not combine them.',
+        )
+      } else if (!hasOldText) {
+        requireIntegerField({ args, field: 'startLine', errors })
+        requireIntegerField({ args, field: 'endLine', errors })
+      }
+      break
+    }
+    case 'fs_delete':
+    case 'fs_create_dir':
+      requireStringField({ args, field: 'path', errors })
+      break
+    case 'fs_move':
+      requireStringField({ args, field: 'oldPath', errors })
+      requireStringField({ args, field: 'newPath', errors })
+      break
+  }
+
+  return errors
 }
 
 export class AgentToolGateway {
@@ -321,6 +403,45 @@ export class AgentToolGateway {
     }
   }
 
+  private getLocalWriteArgumentError(request: ToolCallRequest): string | null {
+    let toolName: string
+    try {
+      const parsed = parseToolName(request.name)
+      if (parsed.serverName !== getLocalFileToolServerName()) return null
+      toolName = parsed.toolName
+    } catch {
+      return null
+    }
+
+    if (!isLocalFsWriteToolName(toolName)) return null
+
+    if (!request.arguments) {
+      return `Arguments for "${request.name}" are missing. Expected a JSON object for local write tool "${toolName}".`
+    }
+
+    if (request.arguments.kind === 'partial') {
+      return (
+        `Arguments for "${request.name}" are not a complete valid JSON object, so the tool was not executed. ` +
+        `The raw arguments are preserved in the Parameters section for debugging.`
+      )
+    }
+
+    const validationErrors = validateLocalWriteArgs({
+      toolName,
+      args: request.arguments.value,
+    })
+    if (validationErrors.length === 0) {
+      return null
+    }
+
+    const rawArguments = getToolCallArgumentsText(request.arguments)
+    return [
+      `Arguments for "${request.name}" failed local write validation:`,
+      ...validationErrors.map((error) => `- ${error}`),
+      ...(rawArguments ? [`Raw arguments: ${rawArguments}`] : []),
+    ].join('\n')
+  }
+
   createToolMessage({
     toolCallRequests,
     conversationId,
@@ -403,6 +524,14 @@ export class AgentToolGateway {
       !this.isRequestPathAllowed(request)
     ) {
       return { status: ToolCallResponseStatus.Rejected }
+    }
+
+    const localWriteArgumentError = this.getLocalWriteArgumentError(request)
+    if (localWriteArgumentError) {
+      return {
+        status: ToolCallResponseStatus.Error,
+        error: localWriteArgumentError,
+      }
     }
 
     if (
