@@ -20,6 +20,7 @@ type ChatConversationPaneProps = {
   isCurrentConversationRunActive: boolean
   isAutoFollowEnabled: boolean
   currentConversationId: string
+  isRestoringConversation?: boolean
   chatTimelineItems: ChatTimelineItem[]
   chatMessagesRef: RefObject<HTMLDivElement>
   renderChatTimelineItem: (timelineItem: ChatTimelineItem) => ReactNode
@@ -57,6 +58,7 @@ export function ChatConversationPane({
   isCurrentConversationRunActive,
   isAutoFollowEnabled,
   currentConversationId,
+  isRestoringConversation = false,
   chatTimelineItems,
   chatMessagesRef,
   renderChatTimelineItem,
@@ -88,7 +90,9 @@ export function ChatConversationPane({
   bottomSpacerHeight,
 }: ChatConversationPaneProps) {
   const showEmptyState =
-    groupedChatMessagesLength === 0 && !isCurrentConversationRunActive
+    groupedChatMessagesLength === 0 &&
+    !isCurrentConversationRunActive &&
+    !isRestoringConversation
   const showScrollToBottomButton =
     !showEmptyState &&
     groupedChatMessagesLength > 0 &&

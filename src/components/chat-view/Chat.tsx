@@ -645,6 +645,7 @@ export type ChatProps = {
   onRuntimeSnapshotChange?: (snapshot: ChatRuntimeSnapshot) => void
   onConversationContextChange?: (context: {
     currentConversationId?: string
+    currentConversationPersisted?: boolean
     currentConversationTitle?: string
     currentModelId?: string
     currentOverrides?: ConversationOverrideSettings
@@ -779,9 +780,22 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     string | null
   >(null)
   const [currentConversationId, setCurrentConversationId] = useState<string>(
-    () => seededRuntimeSnapshot?.currentConversationId ?? uuidv4(),
+    () =>
+      seededRuntimeSnapshot?.currentConversationId ??
+      props.initialConversationId ??
+      uuidv4(),
+  )
+  const [isLoadingConversation, setIsLoadingConversation] = useState(() =>
+    Boolean(props.initialConversationId),
   )
   const untitledFallback = t('chat.untitledConversation', 'New chat')
+  const currentConversationPersisted = useMemo(
+    () =>
+      chatList.some(
+        (conversation) => conversation.id === currentConversationId,
+      ),
+    [chatList, currentConversationId],
+  )
   const currentConversationTitle = useMemo(() => {
     const rawTitle = currentConversationId
       ? chatList.find(
@@ -2305,6 +2319,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
 
   const handleLoadConversation = useCallback(
     async (conversationId: string) => {
+      setIsLoadingConversation(true)
       try {
         const conversation = await getConversationById(conversationId)
         if (!conversation) {
@@ -2367,6 +2382,17 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           settings.chatModelId
         setConversationModelId(modelFromRef)
         conversationModelIdRef.current.set(conversationId, modelFromRef)
+        const loadedConversationTitle = getConversationDisplayTitle(
+          chatList.find((chat) => chat.id === conversationId)?.title,
+          untitledFallback,
+        )
+        props.onConversationContextChange?.({
+          currentConversationId: conversationId,
+          currentConversationPersisted: true,
+          currentConversationTitle: loadedConversationTitle,
+          currentModelId: modelFromRef,
+          currentOverrides: conversation.overrides ?? undefined,
+        })
         const storedReasoningLevel = normalizeReasoningLevel(
           conversation.reasoningLevel,
         )
@@ -2425,10 +2451,13 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       } catch (error) {
         new Notice('Failed to load conversation')
         console.error('Failed to load conversation', error)
+      } finally {
+        setIsLoadingConversation(false)
       }
     },
     [
       getConversationById,
+      chatList,
       createOrUpdateConversationImmediately,
       plugin,
       settings.chatModelId,
@@ -2438,6 +2467,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       getReasoningLevelForModelId,
       normalizeAssistantGroupBoundaryMessageIds,
       normalizeReasoningLevel,
+      props.onConversationContextChange,
+      untitledFallback,
     ],
   )
 
@@ -2450,6 +2481,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   useEffect(() => {
     props.onConversationContextChange?.({
       currentConversationId,
+      currentConversationPersisted,
       currentConversationTitle,
       currentModelId:
         conversationModelId ??
@@ -2466,6 +2498,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     })
   }, [
     currentConversationTitle,
+    currentConversationPersisted,
     conversationModelId,
     conversationOverrides,
     currentConversationId,
@@ -5386,6 +5419,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           isCurrentConversationRunActive={isCurrentConversationRunActive}
           isAutoFollowEnabled={isAutoFollowEnabled}
           currentConversationId={currentConversationId}
+          isRestoringConversation={isLoadingConversation}
           chatTimelineItems={chatTimelineItems}
           chatMessagesRef={chatMessagesRef}
           renderChatTimelineItem={renderChatTimelineItem}
