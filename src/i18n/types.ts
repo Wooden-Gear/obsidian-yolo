@@ -1494,6 +1494,20 @@ export type TranslationKeys = {
     }
     errorCard?: {
       title?: string
+      responseFormat?: {
+        responseNotObject?: string
+        missingChoices?: string
+        invalidChoices?: string
+        stage?: string
+        expected?: string
+        expectedChoicesArray?: string
+        responseFields?: string
+        upstreamError?: string
+        errorType?: string
+        errorCode?: string
+        upstreamMessage?: string
+        responsePreview?: string
+      }
     }
     showMore?: string
     showLess?: string

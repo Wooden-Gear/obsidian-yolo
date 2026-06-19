@@ -1654,6 +1654,21 @@ export const zh: TranslationKeys = {
     },
     errorCard: {
       title: '本次回复生成失败',
+      responseFormat: {
+        responseNotObject: '模型服务返回的响应不是对象（实际为 {{actual}}）。',
+        missingChoices: '模型服务返回了无法解析的响应格式：缺少 choices 数组。',
+        invalidChoices:
+          '模型服务返回了无法解析的响应格式：choices 不是数组（实际为 {{actual}}）。',
+        stage: '阶段：{{stage}}',
+        expected: '期望字段：{{field}}',
+        expectedChoicesArray: 'choices 数组',
+        responseFields: '响应字段：{{fields}}',
+        upstreamError: '上游错误：{{message}}',
+        errorType: '错误类型：{{type}}',
+        errorCode: '错误代码：{{code}}',
+        upstreamMessage: '上游消息：{{message}}',
+        responsePreview: '响应片段：{{preview}}',
+      },
     },
     customRewritePromptPlaceholder:
       '输入你的改写指令，例如：“语气更简洁、采用主动语态，保留 Markdown 结构”。按 Shift+回车 确认，回车换行，Esc 关闭。',

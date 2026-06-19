@@ -1777,6 +1777,23 @@ export const en: TranslationKeys = {
     },
     errorCard: {
       title: 'This response failed to generate',
+      responseFormat: {
+        responseNotObject:
+          'The model service returned a response that is not an object (actual: {{actual}}).',
+        missingChoices:
+          'The model service returned a response that cannot be parsed: missing choices array.',
+        invalidChoices:
+          'The model service returned a response that cannot be parsed: choices is not an array (actual: {{actual}}).',
+        stage: 'Stage: {{stage}}',
+        expected: 'Expected field: {{field}}',
+        expectedChoicesArray: 'choices array',
+        responseFields: 'Response fields: {{fields}}',
+        upstreamError: 'Upstream error: {{message}}',
+        errorType: 'Error type: {{type}}',
+        errorCode: 'Error code: {{code}}',
+        upstreamMessage: 'Upstream message: {{message}}',
+        responsePreview: 'Response preview: {{preview}}',
+      },
     },
     customRewritePromptPlaceholder:
       'Describe how to rewrite the selected text, for example: "make it concise and active voice; keep markdown structure"; press Shift+Enter to confirm, Enter for a new line, and Escape to close.',

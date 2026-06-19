@@ -1672,6 +1672,23 @@ export const it: TranslationKeys = {
     },
     errorCard: {
       title: 'Questa risposta non e stata generata',
+      responseFormat: {
+        responseNotObject:
+          'Il servizio modello ha restituito una risposta che non e un oggetto (valore effettivo: {{actual}}).',
+        missingChoices:
+          'Il servizio modello ha restituito un formato non analizzabile: array choices mancante.',
+        invalidChoices:
+          'Il servizio modello ha restituito un formato non analizzabile: choices non e un array (valore effettivo: {{actual}}).',
+        stage: 'Fase: {{stage}}',
+        expected: 'Campo atteso: {{field}}',
+        expectedChoicesArray: 'array choices',
+        responseFields: 'Campi risposta: {{fields}}',
+        upstreamError: 'Errore upstream: {{message}}',
+        errorType: 'Tipo errore: {{type}}',
+        errorCode: 'Codice errore: {{code}}',
+        upstreamMessage: 'Messaggio upstream: {{message}}',
+        responsePreview: 'Anteprima risposta: {{preview}}',
+      },
     },
     showMore: 'Mostra altro',
     showLess: 'Mostra meno',
