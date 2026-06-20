@@ -12,8 +12,8 @@
   <a href="https://github.com/Lapis0x0/obsidian-yolo/releases/latest">
     <img src="https://badgen.net/github/release/Lapis0x0/obsidian-yolo?color=00b894" alt="Latest Release">
   </a>
-  <a href="https://github.com/Lapis0x0/obsidian-yolo/releases/latest">
-    <img src="https://badgen.net/github/assets-dl/Lapis0x0/obsidian-yolo?label=latest%20downloads&color=0984e3" alt="Latest Release Downloads">
+  <a href="https://github.com/Lapis0x0/obsidian-yolo/releases">
+    <img src="https://badgen.net/github/assets-dl/Lapis0x0/obsidian-yolo?color=0984e3" alt="Downloads">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/blob/main/LICENSE">
     <img src="https://badgen.net/github/license/Lapis0x0/obsidian-yolo?color=636e72" alt="License">
