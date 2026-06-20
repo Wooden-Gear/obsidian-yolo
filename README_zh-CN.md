@@ -4,19 +4,19 @@
 </p>
 
 <p align="center"><a href="https://github.com/Lapis0x0/obsidian-yolo/commits/main">
-    <img src="https://badgen.net/github/last-commit/Lapis0x0/obsidian-yolo/main?color=6c5ce7" alt="Last Commit">
+    <img src="https://img.shields.io/github/last-commit/Lapis0x0/obsidian-yolo/main?style=flat-square&color=6c5ce7" alt="Last Commit">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/stargazers">
-    <img src="https://badgen.net/github/stars/Lapis0x0/obsidian-yolo?color=6c5ce7" alt="GitHub Stars">
+    <img src="https://img.shields.io/github/stars/Lapis0x0/obsidian-yolo?style=flat-square&color=6c5ce7" alt="GitHub Stars">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/releases/latest">
-    <img src="https://badgen.net/github/release/Lapis0x0/obsidian-yolo?color=00b894" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/release/Lapis0x0/obsidian-yolo?style=flat-square&color=00b894" alt="Latest Release">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/releases">
-    <img src="https://badgen.net/github/assets-dl/Lapis0x0/obsidian-yolo?color=0984e3" alt="Downloads">
+    <img src="https://img.shields.io/github/downloads/Lapis0x0/obsidian-yolo/total?style=flat-square&color=0984e3" alt="Downloads">
   </a>
   <a href="https://github.com/Lapis0x0/obsidian-yolo/blob/main/LICENSE">
-    <img src="https://badgen.net/github/license/Lapis0x0/obsidian-yolo?color=636e72" alt="License">
+    <img src="https://img.shields.io/github/license/Lapis0x0/obsidian-yolo?style=flat-square&color=636e72" alt="License">
   </a>
 </p>
 
