@@ -162,9 +162,11 @@ export function resolveProviderPrimaryRequestUrl(
       const baseUrl =
         provider.presetType === 'deepseek'
           ? resolveDeepSeekAnthropicBaseUrl(provider.baseUrl)
-          : (provider.baseUrl?.trim() ||
+          : (
+              provider.baseUrl?.trim() ||
               getDefaultBaseUrlForPreset(provider.presetType) ||
-              'https://api.anthropic.com')
+              'https://api.anthropic.com'
+            )
               .replace(/\/+$/, '')
               .replace(/\/v1$/, '')
       return joinEndpoint(baseUrl, 'v1/messages')

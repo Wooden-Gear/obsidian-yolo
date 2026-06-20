@@ -349,9 +349,7 @@ function ProviderFormComponent({
             <div className="yolo-provider-field-header">
               <div
                 className={`setting-item-name ${
-                  providerTypeInfo.requireApiKey
-                    ? 'yolo-settings-required'
-                    : ''
+                  providerTypeInfo.requireApiKey ? 'yolo-settings-required' : ''
                 }`}
               >
                 {t('settings.providers.apiKey')}

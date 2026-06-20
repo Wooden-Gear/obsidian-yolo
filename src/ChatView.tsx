@@ -77,9 +77,9 @@ export class ChatView extends ItemView {
 
   getState(): Record<string, unknown> {
     const state = { ...super.getState() }
-    const summary = this.plugin.getChatLeafSessionManager().getLeafSummary(
-      this.leaf,
-    )
+    const summary = this.plugin
+      .getChatLeafSessionManager()
+      .getLeafSummary(this.leaf)
     const currentConversationId = this.resolvePersistableConversationId(summary)
     const currentConversationTitle =
       summary?.currentConversationTitle ?? this.restoredConversationTitle
@@ -99,10 +99,7 @@ export class ChatView extends ItemView {
     return state
   }
 
-  async setState(
-    state: unknown,
-    result: ViewStateResult,
-  ): Promise<void> {
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
     await super.setState(state, result)
 
     this.restoredConversationId = this.readStringStateValue(
@@ -522,7 +519,9 @@ export class ChatView extends ItemView {
     this.restoredConversationLoadPromise = loadPromise
   }
 
-  private async loadRestoredConversation(conversationId: string): Promise<void> {
+  private async loadRestoredConversation(
+    conversationId: string,
+  ): Promise<void> {
     const chatRef = await this.waitForChatRef()
     if (!chatRef || this.isClosed) {
       return
@@ -536,8 +535,7 @@ export class ChatView extends ItemView {
     currentConversationPersisted?: boolean
     currentConversationTitle?: string
   }): Promise<void> {
-    const currentConversationId =
-      this.resolvePersistableConversationId(context)
+    const currentConversationId = this.resolvePersistableConversationId(context)
     const currentViewState = this.leaf.getViewState()
     const currentState = currentViewState.state ?? {}
     const nextState = { ...currentState }
@@ -556,7 +554,8 @@ export class ChatView extends ItemView {
 
     const alreadySynced =
       currentState.currentConversationId === nextState.currentConversationId &&
-      currentState.currentConversationTitle === nextState.currentConversationTitle
+      currentState.currentConversationTitle ===
+        nextState.currentConversationTitle
 
     if (alreadySynced) {
       this.plugin.app.workspace.requestSaveLayout()

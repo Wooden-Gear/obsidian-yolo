@@ -202,11 +202,12 @@ describe('ChatViewNavigator', () => {
   })
 
   it('stores the initial conversation id in view state when creating a chat leaf', async () => {
+    const setViewState = jest.fn().mockImplementation(function setViewState() {
+      this.view = new (MockChatView as unknown as new () => object)()
+      return Promise.resolve()
+    })
     const newLeaf = {
-      setViewState: jest.fn().mockImplementation(function setViewState() {
-        this.view = new (MockChatView as unknown as new () => object)()
-        return Promise.resolve()
-      }),
+      setViewState,
     } as unknown as WorkspaceLeaf
     const plugin = createPlugin({
       resolveTargetLeaf: () => null,
@@ -221,7 +222,7 @@ describe('ChatViewNavigator', () => {
       initialConversationId: 'conversation-1',
     })
 
-    expect(newLeaf.setViewState).toHaveBeenCalledWith({
+    expect(setViewState).toHaveBeenCalledWith({
       type: CHAT_VIEW_TYPE,
       active: true,
       state: {
