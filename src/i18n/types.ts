@@ -614,6 +614,7 @@ export type TranslationKeys = {
       baseUrl: string
       baseUrlDesc: string
       baseUrlPlaceholder: string
+      apiUrlPreviewLabel: string
       noStainlessHeaders: string
       noStainlessHeadersDesc: string
       useObsidianRequestUrl: string

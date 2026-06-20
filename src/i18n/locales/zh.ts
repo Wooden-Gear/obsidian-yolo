@@ -744,6 +744,7 @@ export const zh: TranslationKeys = {
       baseUrlDesc:
         '第三方服务的 API 端点地址，例如：https://api.example.com/v1 或 https://your-proxy.com/openai（使用默认值可留空）',
       baseUrlPlaceholder: 'https://api.example.com/v1',
+      apiUrlPreviewLabel: '预览：',
       noStainlessHeaders: '无 Stainless 请求头',
       noStainlessHeadersDesc:
         '如果你遇到与 Stainless 请求头相关的 CORS 错误（x-stainless-os 等），请启用此选项',

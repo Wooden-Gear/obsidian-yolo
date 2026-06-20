@@ -17,7 +17,10 @@ import {
   getSupportedApiTypesForPresetType,
   llmProviderSchema,
 } from '../../../types/provider.types'
-import { getDefaultBaseUrlForPreset } from '../../../utils/llm/provider-base-url'
+import {
+  getDefaultBaseUrlForPreset,
+  resolveProviderPrimaryRequestUrl,
+} from '../../../utils/llm/provider-base-url'
 import {
   getRequestTransportModeValue,
   providerSupportsTransportModeSelection,
@@ -274,16 +277,12 @@ function ProviderFormComponent({
     formData.presetType === 'amazon-bedrock'
       ? 'Enter your Amazon Bedrock API key'
       : t('settings.providers.apiKeyPlaceholder')
-  const baseUrlDesc =
-    formData.presetType === 'amazon-bedrock' &&
-    formData.apiType === 'openai-compatible'
-      ? 'Optional override. Leave empty to use the region-derived Bedrock Mantle endpoint.'
-      : t('settings.providers.baseUrlDesc')
   const baseUrlPlaceholder =
     formData.presetType === 'amazon-bedrock' &&
     formData.apiType === 'openai-compatible'
       ? 'https://bedrock-mantle.us-east-1.api.aws'
       : t('settings.providers.baseUrlPlaceholder')
+  const primaryRequestUrlPreview = resolveProviderPrimaryRequestUrl(formData)
 
   return (
     <div className="yolo-provider-form">
@@ -346,34 +345,70 @@ function ProviderFormComponent({
 
       {!shouldHideCredentialFields && (
         <>
-          <ObsidianSetting
-            name={t('settings.providers.apiKey')}
-            desc={apiKeyDesc}
-            required={providerTypeInfo.requireApiKey}
-          >
-            <ObsidianTextInput
-              value={formData.apiKey ?? ''}
-              placeholder={apiKeyPlaceholder}
-              onChange={(value: string) =>
-                setFormData((prev) => ({ ...prev, apiKey: value }))
-              }
-            />
-          </ObsidianSetting>
+          <div className="setting-item yolo-provider-field-block yolo-provider-api-key-setting">
+            <div className="yolo-provider-field-header">
+              <div
+                className={`setting-item-name ${
+                  providerTypeInfo.requireApiKey
+                    ? 'yolo-settings-required'
+                    : ''
+                }`}
+              >
+                {t('settings.providers.apiKey')}
+              </div>
+            </div>
+            <div className="yolo-provider-field-body">
+              <input
+                className="yolo-provider-field-input"
+                type="text"
+                value={formData.apiKey ?? ''}
+                placeholder={apiKeyPlaceholder}
+                onChange={(event) => {
+                  const value = event.currentTarget.value
+                  setFormData((prev) => ({ ...prev, apiKey: value }))
+                }}
+              />
+              <div className="yolo-provider-field-help">{apiKeyDesc}</div>
+            </div>
+          </div>
 
           {shouldShowBaseUrlField && (
-            <ObsidianSetting
-              name={t('settings.providers.baseUrl')}
-              desc={baseUrlDesc}
-              required={providerTypeInfo.requireBaseUrl}
-            >
-              <ObsidianTextInput
-                value={formData.baseUrl ?? ''}
-                placeholder={baseUrlPlaceholder}
-                onChange={(value: string) =>
-                  setFormData((prev) => ({ ...prev, baseUrl: value }))
-                }
-              />
-            </ObsidianSetting>
+            <div className="setting-item yolo-provider-field-block yolo-provider-base-url-setting">
+              <div className="yolo-provider-field-header">
+                <div
+                  className={`setting-item-name ${
+                    providerTypeInfo.requireBaseUrl
+                      ? 'yolo-settings-required'
+                      : ''
+                  }`}
+                >
+                  {t('settings.providers.baseUrl')}
+                </div>
+              </div>
+              <div className="yolo-provider-field-body">
+                <input
+                  className="yolo-provider-field-input"
+                  type="text"
+                  value={formData.baseUrl ?? ''}
+                  placeholder={baseUrlPlaceholder}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value
+                    setFormData((prev) => ({
+                      ...prev,
+                      baseUrl: value,
+                    }))
+                  }}
+                />
+                <div className="yolo-provider-api-url-preview">
+                  <span className="yolo-provider-api-url-preview-label">
+                    {t('settings.providers.apiUrlPreviewLabel', 'Preview')}
+                  </span>
+                  <span className="yolo-provider-api-url-preview-url">
+                    {primaryRequestUrlPreview}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}

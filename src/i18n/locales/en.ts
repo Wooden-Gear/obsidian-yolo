@@ -805,6 +805,7 @@ export const en: TranslationKeys = {
       baseUrlDesc:
         'API endpoint for third-party services, e.g.: https://api.example.com/v1 or https://your-proxy.com/openai (Leave empty to use default)',
       baseUrlPlaceholder: 'https://api.example.com/v1',
+      apiUrlPreviewLabel: 'Preview:',
       noStainlessHeaders: 'No stainless headers',
       noStainlessHeadersDesc:
         'Enable this if you encounter cross-origin errors related to stainless headers.',

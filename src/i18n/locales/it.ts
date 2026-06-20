@@ -697,6 +697,7 @@ export const it: TranslationKeys = {
       baseUrl: 'URL base',
       baseUrlDesc: 'URL endpoint API personalizzato (facoltativo).',
       baseUrlPlaceholder: 'Ad esempio, https://api.openai.com/v1',
+      apiUrlPreviewLabel: 'Anteprima:',
       noStainlessHeaders: 'Nessun header stainless',
       noStainlessHeadersDesc:
         'Disabilita gli header SDK stainless (richiesto per alcuni provider compatibili).',
