@@ -713,7 +713,7 @@ export const it: TranslationKeys = {
       requestTransportModeNode: 'Connessione diretta desktop (consigliata)',
       responseStreamingMode: 'Modalita streaming risposta',
       responseStreamingModeDesc:
-        'Controlla se questo provider usa risposte streaming o non streaming. Auto mantiene il comportamento predefinito. Non streaming aiuta con gateway che restituiscono campi di utilizzo come i cache hit solo nelle risposte non streaming, ad esempio newapi che inoltra DeepSeek.',
+        'Controlla se questo provider usa risposte streaming o non streaming.',
       responseStreamingModeAuto: 'Auto (predefinito)',
       responseStreamingModeStreaming: 'Streaming',
       responseStreamingModeNonStreaming: 'Non streaming',

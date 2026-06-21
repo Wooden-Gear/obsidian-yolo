@@ -759,8 +759,7 @@ export const zh: TranslationKeys = {
       requestTransportModeObsidian: 'Obsidian 内置请求',
       requestTransportModeNode: '桌面直连（推荐）',
       responseStreamingMode: '响应流式模式',
-      responseStreamingModeDesc:
-        '控制此提供商使用流式还是非流式响应。自动会沿用默认行为。非流式适用于部分网关仅在非流式响应里返回缓存命中等 usage 字段的场景，例如 newapi 代理 DeepSeek。',
+      responseStreamingModeDesc: '控制此提供商使用流式还是非流式响应。',
       responseStreamingModeAuto: '自动（默认）',
       responseStreamingModeStreaming: '流式',
       responseStreamingModeNonStreaming: '非流式',

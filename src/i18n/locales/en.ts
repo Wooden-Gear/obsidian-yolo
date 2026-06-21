@@ -821,7 +821,7 @@ export const en: TranslationKeys = {
       requestTransportModeNode: 'Desktop direct connection (recommended)',
       responseStreamingMode: 'Response streaming mode',
       responseStreamingModeDesc:
-        'Control whether this provider uses streaming or non-streaming responses. Auto keeps the default behavior. Non-streaming helps with gateways that only return usage fields such as cache hits in non-streaming responses, for example newapi proxying DeepSeek.',
+        'Control whether this provider uses streaming or non-streaming responses.',
       responseStreamingModeAuto: 'Auto (default)',
       responseStreamingModeStreaming: 'Streaming',
       responseStreamingModeNonStreaming: 'Non-streaming',

@@ -59,7 +59,7 @@ export const RESPONSE_STREAMING_MODE_SETTING = {
     'non-streaming': 'Non-streaming',
   },
   description:
-    'Choose whether this provider uses streaming responses. Auto preserves the default behavior.',
+    'Control whether this provider uses streaming or non-streaming responses.',
 }
 
 // Surfaced dynamically when a provider's apiType is 'anthropic'
