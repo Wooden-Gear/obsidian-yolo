@@ -625,6 +625,11 @@ export type TranslationKeys = {
       requestTransportModeBrowser: string
       requestTransportModeObsidian: string
       requestTransportModeNode: string
+      responseStreamingMode: string
+      responseStreamingModeDesc: string
+      responseStreamingModeAuto: string
+      responseStreamingModeStreaming: string
+      responseStreamingModeNonStreaming: string
       promptCaching: string
       promptCachingDesc: string
       customHeaders: string

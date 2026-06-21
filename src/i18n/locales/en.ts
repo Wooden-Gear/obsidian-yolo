@@ -819,6 +819,12 @@ export const en: TranslationKeys = {
       requestTransportModeBrowser: 'Browser request',
       requestTransportModeObsidian: 'Obsidian built-in request',
       requestTransportModeNode: 'Desktop direct connection (recommended)',
+      responseStreamingMode: 'Response streaming mode',
+      responseStreamingModeDesc:
+        'Control whether this provider uses streaming or non-streaming responses. Auto keeps the default behavior. Non-streaming helps with gateways that only return usage fields such as cache hits in non-streaming responses, for example newapi proxying DeepSeek.',
+      responseStreamingModeAuto: 'Auto (default)',
+      responseStreamingModeStreaming: 'Streaming',
+      responseStreamingModeNonStreaming: 'Non-streaming',
       promptCaching: 'Prompt caching',
       promptCachingDesc:
         'Enable Anthropic ephemeral prompt caching. Reuses system prompt, tools, and conversation history across turns to cut input tokens. Cache writes carry a 25% premium; reads cost ~10% of normal input. Available whenever the provider API type is Anthropic; upstream must actually honor the cache_control field.',

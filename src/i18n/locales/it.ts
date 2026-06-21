@@ -711,6 +711,12 @@ export const it: TranslationKeys = {
       requestTransportModeBrowser: 'Richiesta browser',
       requestTransportModeObsidian: 'Richiesta integrata Obsidian',
       requestTransportModeNode: 'Connessione diretta desktop (consigliata)',
+      responseStreamingMode: 'Modalita streaming risposta',
+      responseStreamingModeDesc:
+        'Controlla se questo provider usa risposte streaming o non streaming. Auto mantiene il comportamento predefinito. Non streaming aiuta con gateway che restituiscono campi di utilizzo come i cache hit solo nelle risposte non streaming, ad esempio newapi che inoltra DeepSeek.',
+      responseStreamingModeAuto: 'Auto (predefinito)',
+      responseStreamingModeStreaming: 'Streaming',
+      responseStreamingModeNonStreaming: 'Non streaming',
       promptCaching: 'Cache del prompt',
       promptCachingDesc:
         "Abilita la cache effimera dei prompt Anthropic. Riutilizza prompt di sistema, strumenti e cronologia tra i turni per ridurre i token di input. Le scritture in cache hanno un sovrapprezzo del 25%; le letture costano circa il 10% del normale. Disponibile quando il tipo API del provider è Anthropic; l'upstream deve supportare il campo cache_control.",

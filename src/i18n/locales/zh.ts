@@ -758,6 +758,12 @@ export const zh: TranslationKeys = {
       requestTransportModeBrowser: '浏览器请求',
       requestTransportModeObsidian: 'Obsidian 内置请求',
       requestTransportModeNode: '桌面直连（推荐）',
+      responseStreamingMode: '响应流式模式',
+      responseStreamingModeDesc:
+        '控制此提供商使用流式还是非流式响应。自动会沿用默认行为。非流式适用于部分网关仅在非流式响应里返回缓存命中等 usage 字段的场景，例如 newapi 代理 DeepSeek。',
+      responseStreamingModeAuto: '自动（默认）',
+      responseStreamingModeStreaming: '流式',
+      responseStreamingModeNonStreaming: '非流式',
       promptCaching: '提示缓存',
       promptCachingDesc:
         '启用 Anthropic 临时提示缓存。在连续对话中复用系统提示、工具列表和历史消息，显著降低输入 token 消耗。写缓存有 25% 溢价，命中读取约为原价 10%。仅当渠道 API 类型为 Anthropic 时生效；是否真正生效取决于上游服务是否支持 cache_control 字段。',
