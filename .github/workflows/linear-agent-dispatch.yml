@@ -119,3 +119,33 @@ jobs:
             -H "Content-Type: application/json" \
             --data @/tmp/linear-agent-callback.json \
             https://yolo-linear-agent.shizhiyun.workers.dev/linear/agent/callback
+          touch /tmp/linear-agent-response-posted
+
+      - name: Post Linear failure notice
+        if: ${{ failure() }}
+        env:
+          CALLBACK_TOKEN: ${{ secrets.LINEAR_AGENT_CALLBACK_TOKEN }}
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ -f /tmp/linear-agent-response-posted ]]; then
+            echo "Linear response was already posted; skipping failure callback."
+            exit 0
+          fi
+
+          agent_session_id="$(jq -r '.agentSessionId // empty' <<<"$PAYLOAD")"
+          test -n "$agent_session_id"
+
+          jq -n \
+            --arg mode "public" \
+            --arg agent_session_id "$agent_session_id" \
+            --arg body "执行失败了。GitHub Actions run: $RUN_URL" \
+            '{mode: $mode, agentSessionId: $agent_session_id, body: $body}' \
+            > /tmp/linear-agent-failure-callback.json
+
+          curl -fsS \
+            -H "Authorization: Bearer $CALLBACK_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/linear-agent-failure-callback.json \
+            https://yolo-linear-agent.shizhiyun.workers.dev/linear/agent/callback
