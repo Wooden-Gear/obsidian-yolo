@@ -315,6 +315,8 @@ export const en: TranslationKeys = {
       tools: 'Tools',
       toolsCount: '{count} tools',
       toolsCountWithEnabled: '{count} tools (enabled {enabled})',
+      mcpLoadingStatus: 'Loading {count} MCP…',
+      mcpErrorStatus: '{count} MCP failed to connect',
       skills: 'Skills',
       skillsCount: '{count} skills',
       skillsCountWithEnabled: '{count} skills (enabled {enabled})',

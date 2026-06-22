@@ -210,6 +210,8 @@ export type TranslationKeys = {
       tools?: string
       toolsCount?: string
       toolsCountWithEnabled?: string
+      mcpLoadingStatus?: string
+      mcpErrorStatus?: string
       skills?: string
       skillsCount?: string
       skillsCountWithEnabled?: string

@@ -284,6 +284,8 @@ export const zh: TranslationKeys = {
       tools: '工具',
       toolsCount: '{count} 个工具',
       toolsCountWithEnabled: '{count} 个工具（已启用 {enabled} 个）',
+      mcpLoadingStatus: '正在加载 {count} 个 MCP…',
+      mcpErrorStatus: '{count} 个 MCP 连接失败',
       skills: '技能',
       skillsCount: '{count} 个技能',
       skillsCountWithEnabled: '{count} 个技能（已启用 {enabled} 个）',

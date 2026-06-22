@@ -317,6 +317,8 @@ export const it: TranslationKeys = {
       tools: 'Strumenti',
       toolsCount: '{count} strumenti',
       toolsCountWithEnabled: '{count} strumenti (abilitati {enabled})',
+      mcpLoadingStatus: 'Caricamento di {count} MCP…',
+      mcpErrorStatus: '{count} MCP non connessi',
       skills: 'Competenze',
       skillsCount: '{count} competenze',
       skillsCountWithEnabled: '{count} competenze (abilitate {enabled})',

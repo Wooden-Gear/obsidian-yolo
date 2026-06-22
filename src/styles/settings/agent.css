@@ -87,6 +87,14 @@
   font-size: var(--font-ui-smaller);
 }
 
+.yolo-agent-cap-status {
+  color: var(--text-faint);
+}
+
+.yolo-agent-cap-status::before {
+  content: ' · ';
+}
+
 .yolo-agent-cap-tags {
   margin-top: var(--size-4-2);
   display: flex;
