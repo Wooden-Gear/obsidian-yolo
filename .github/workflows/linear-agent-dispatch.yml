@@ -1,0 +1,17 @@
+name: Linear Public Agent Dispatch
+
+on:
+  repository_dispatch:
+    types: [linear-public-agent]
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print dispatch payload
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          set -euo pipefail
+          echo "$PAYLOAD"
