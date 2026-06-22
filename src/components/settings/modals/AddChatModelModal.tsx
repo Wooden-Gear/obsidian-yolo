@@ -161,6 +161,7 @@ const CHATGPT_OAUTH_DEFAULT_MODELS = Array.from(
     'gpt-5.1-codex-mini',
     'gpt-5.2',
     'gpt-5.2-codex',
+    'gpt-5.5',
   ]),
 )
 

@@ -461,7 +461,7 @@ export const yoloSettingsSchema = z.object({
       reasoningLevelByModelId: {},
       autoContextCompactionEnabled: false,
       autoContextCompactionThresholdMode: 'tokens',
-      autoContextCompactionThresholdTokens: 24000,
+      autoContextCompactionThresholdTokens: 100000,
       autoContextCompactionThresholdRatio: 0.8,
       chatFontScale: undefined,
       imageReadingEnabled: true,
