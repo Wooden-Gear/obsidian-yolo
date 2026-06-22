@@ -804,6 +804,7 @@ export function useChatStreamManager({
           allowedToolNames: chatModeRuntime.allowedToolNames,
           enableToolDisclosure: settings.mcp.enableToolDisclosure,
           toolPreferences: chatModeRuntime.toolPreferences,
+          toolServerPreferences: chatModeRuntime.toolServerPreferences,
           runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
           bypassToolApproval: chatModeRuntime.bypassToolApproval,
           blockedCommandPrefixes: settings.mcp.builtinToolOptions[

@@ -330,7 +330,10 @@ export const getExplicitlyEnabledAssistantToolNames = (
  * preference is dead weight that only bloats data.json and confuses UI counts.
  */
 export const pruneOrphanedAssistantToolPreferences = <
-  T extends Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>,
+  T extends Pick<
+    Assistant,
+    'toolPreferences' | 'enabledToolNames' | 'toolServerPreferences'
+  >,
 >(
   assistant: T,
   knownServerNames: ReadonlySet<string>,
@@ -365,11 +368,31 @@ export const pruneOrphanedAssistantToolPreferences = <
     if (filtered.length !== names.length) nextNames = filtered
   }
 
-  if (nextPrefs === prefs && nextNames === names) return assistant
+  const serverPrefs = assistant.toolServerPreferences
+  let nextServerPrefs = serverPrefs
+  if (serverPrefs && typeof serverPrefs === 'object') {
+    const filtered = Object.fromEntries(
+      Object.entries(serverPrefs).filter(([serverName]) =>
+        knownServerNames.has(serverName),
+      ),
+    )
+    if (Object.keys(filtered).length !== Object.keys(serverPrefs).length) {
+      nextServerPrefs = filtered
+    }
+  }
+
+  if (
+    nextPrefs === prefs &&
+    nextNames === names &&
+    nextServerPrefs === serverPrefs
+  ) {
+    return assistant
+  }
   return {
     ...assistant,
     toolPreferences: nextPrefs,
     enabledToolNames: nextNames,
+    toolServerPreferences: nextServerPrefs,
   }
 }
 
@@ -381,7 +404,10 @@ export const pruneOrphanedAssistantToolPreferences = <
  * `pruneOrphanedAssistantToolPreferences` would silently drop them.
  */
 export const renameAssistantToolPreferencesServer = <
-  T extends Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>,
+  T extends Pick<
+    Assistant,
+    'toolPreferences' | 'enabledToolNames' | 'toolServerPreferences'
+  >,
 >(
   assistant: T,
   oldServerName: string,
@@ -431,11 +457,31 @@ export const renameAssistantToolPreferencesServer = <
     if (changed) nextNames = rebuilt
   }
 
-  if (nextPrefs === prefs && nextNames === names) return assistant
+  const serverPrefs = assistant.toolServerPreferences
+  let nextServerPrefs = serverPrefs
+  if (serverPrefs && typeof serverPrefs === 'object') {
+    const existing = serverPrefs[oldServerName]
+    if (existing) {
+      const { [oldServerName]: _old, ...rest } = serverPrefs
+      nextServerPrefs = {
+        ...rest,
+        [newServerName]: existing,
+      }
+    }
+  }
+
+  if (
+    nextPrefs === prefs &&
+    nextNames === names &&
+    nextServerPrefs === serverPrefs
+  ) {
+    return assistant
+  }
   return {
     ...assistant,
     toolPreferences: nextPrefs,
     enabledToolNames: nextNames,
+    toolServerPreferences: nextServerPrefs,
   }
 }
 
@@ -452,11 +498,26 @@ export const isAssistantToolEnabled = (
 
 export const getAssistantToolApprovalMode = (
   assistant:
-    | Pick<Assistant, 'toolPreferences' | 'enabledToolNames'>
+    | Pick<
+        Assistant,
+        'toolPreferences' | 'enabledToolNames' | 'toolServerPreferences'
+      >
     | null
     | undefined,
   toolName: string,
 ): AssistantToolApprovalMode => {
+  try {
+    const { serverName } = parseToolName(toolName)
+    if (serverName !== getLocalFileToolServerName()) {
+      return (
+        assistant?.toolServerPreferences?.[serverName]?.approvalMode ??
+        'require_approval'
+      )
+    }
+  } catch {
+    // Fall through to legacy per-tool/default handling.
+  }
+
   const toolPreferences = getAssistantToolPreferences(assistant)
   return (
     toolPreferences[toolName]?.approvalMode ??

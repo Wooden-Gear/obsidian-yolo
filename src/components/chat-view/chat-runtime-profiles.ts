@@ -8,7 +8,10 @@ import { isAgentChatMode } from './chat-input/ChatModeSelect'
 
 type AssistantRuntimeOptions = Pick<
   Assistant,
-  'enableTools' | 'includeBuiltinTools' | 'toolPreferences'
+  | 'enableTools'
+  | 'includeBuiltinTools'
+  | 'toolPreferences'
+  | 'toolServerPreferences'
 >
 
 export const DEFAULT_AGENT_MAX_AUTO_ITERATIONS = 100
@@ -28,6 +31,7 @@ export type ChatModeRuntime = {
   loopConfig: AgentRuntimeLoopConfig
   allowedToolNames: string[] | undefined
   toolPreferences: Assistant['toolPreferences']
+  toolServerPreferences: Assistant['toolServerPreferences']
   bypassToolApproval: boolean
   runtimeModePrompt?: string
 }
@@ -64,6 +68,9 @@ export function resolveChatModeRuntime({
     },
     allowedToolNames,
     toolPreferences: isAgentMode ? assistant?.toolPreferences : undefined,
+    toolServerPreferences: isAgentMode
+      ? assistant?.toolServerPreferences
+      : undefined,
     bypassToolApproval: mode === 'agent-full',
     runtimeModePrompt: isAgentMode
       ? undefined

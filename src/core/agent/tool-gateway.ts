@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import {
   AssistantToolPreference,
+  AssistantToolServerPreference,
   AssistantWorkspaceScope,
 } from '../../types/assistant.types'
 import {
@@ -249,6 +250,10 @@ export class AgentToolGateway {
   private readonly toolsEnabled: boolean
   private readonly allowedToolNames?: Set<string>
   private readonly toolPreferences?: Record<string, AssistantToolPreference>
+  private readonly toolServerPreferences?: Record<
+    string,
+    AssistantToolServerPreference
+  >
   private readonly enableToolDisclosure: boolean
   private readonly workspaceScope?: AssistantWorkspaceScope
   private readonly allowedSkillPaths?: readonly string[]
@@ -275,6 +280,7 @@ export class AgentToolGateway {
       toolsEnabled?: boolean
       allowedToolNames?: string[]
       toolPreferences?: Record<string, AssistantToolPreference>
+      toolServerPreferences?: Record<string, AssistantToolServerPreference>
       enableToolDisclosure?: boolean
       workspaceScope?: AssistantWorkspaceScope
       allowedSkillPaths?: string[]
@@ -292,6 +298,7 @@ export class AgentToolGateway {
       ? expandAllowedToolNames(options.allowedToolNames)
       : undefined
     this.toolPreferences = options?.toolPreferences
+    this.toolServerPreferences = options?.toolServerPreferences
     this.enableToolDisclosure = options?.enableToolDisclosure ?? true
     this.workspaceScope = options?.workspaceScope
     this.allowedSkillPaths = options?.allowedSkillPaths
@@ -1449,6 +1456,7 @@ export class AgentToolGateway {
     const approvalMode = getAssistantToolApprovalMode(
       {
         toolPreferences: this.toolPreferences,
+        toolServerPreferences: this.toolServerPreferences,
         enabledToolNames: this.allowedToolNames
           ? [...this.allowedToolNames]
           : undefined,
@@ -1534,6 +1542,7 @@ export class AgentToolGateway {
         getAssistantToolApprovalMode(
           {
             toolPreferences: this.toolPreferences,
+            toolServerPreferences: this.toolServerPreferences,
             enabledToolNames: this.allowedToolNames
               ? [...this.allowedToolNames]
               : undefined,

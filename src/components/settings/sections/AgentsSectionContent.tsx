@@ -284,6 +284,7 @@ function createNewAgent(defaultModelId: string): Assistant {
     includeBuiltinTools: true,
     enabledToolNames: [],
     toolPreferences: buildDefaultBuiltinToolPreferences(),
+    toolServerPreferences: {},
     enabledSkills: [],
     skillPreferences: {},
     includeCurrentFileContent: true,
@@ -303,6 +304,7 @@ function toDraftAgent(
     modelId: assistant.modelId ?? fallbackModelId,
     enabledToolNames: getExplicitlyEnabledAssistantToolNames(assistant),
     toolPreferences: getAssistantToolPreferences(assistant),
+    toolServerPreferences: assistant.toolServerPreferences ?? {},
     enabledSkills: assistant.enabledSkills ?? [],
     skillPreferences: assistant.skillPreferences ?? {},
     enableTools: assistant.enableTools ?? true,
@@ -522,6 +524,7 @@ export function AgentsSectionContent({
         draftAgent.toolPreferences,
         availableTools,
       ),
+      toolServerPreferences: draftAgent.toolServerPreferences ?? {},
       enabledToolNames: normalizeToolSelectionForPersistence(
         getExplicitlyEnabledAssistantToolNames(draftAgent),
         availableTools,
@@ -593,6 +596,25 @@ export function AgentsSectionContent({
         }
         return next
       })
+    })
+  }
+
+  const setServerApprovalMode = (
+    serverName: string,
+    approvalMode: AssistantToolApprovalMode,
+  ) => {
+    setDraftAgent((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        toolServerPreferences: {
+          ...(prev.toolServerPreferences ?? {}),
+          [serverName]: { approvalMode },
+        },
+      }
     })
   }
 
@@ -1621,6 +1643,10 @@ export function AgentsSectionContent({
                       : disclosureSelectionValue === 'mixed'
                         ? t('settings.agent.toolDisclosureMixed', 'Mixed')
                         : disclosureModeLabel(disclosureSelectionValue)
+                  const showServerApproval = !group.isBuiltin
+                  const serverApprovalMode: AssistantToolApprovalMode =
+                    draftAgent.toolServerPreferences?.[group.key]
+                      ?.approvalMode ?? 'require_approval'
                   const groupFullyDisabled =
                     !group.isBuiltin &&
                     group.tools.length > 0 &&
@@ -1739,6 +1765,75 @@ export function AgentsSectionContent({
                           )}
                         </span>
                         <span className="yolo-agent-tool-group-meta">
+                          {showServerApproval && (
+                            <DropdownMenu.Root>
+                              <DropdownMenu.Trigger asChild>
+                                <button
+                                  type="button"
+                                  className="yolo-agent-tool-group-disclosure yolo-agent-tool-group-approval-trigger"
+                                >
+                                  <span>
+                                    {serverApprovalMode === 'full_access'
+                                      ? t(
+                                          'settings.agent.toolApprovalFullAccess',
+                                          'Full access',
+                                        )
+                                      : t(
+                                          'settings.agent.toolApprovalRequire',
+                                          'Require approval',
+                                        )}
+                                  </span>
+                                  <ChevronDown size={12} aria-hidden="true" />
+                                </button>
+                              </DropdownMenu.Trigger>
+                              <DropdownMenu.Portal>
+                                <DropdownMenu.Content
+                                  className="yolo-simple-select__content"
+                                  side="bottom"
+                                  align="center"
+                                  sideOffset={6}
+                                  collisionPadding={10}
+                                  loop
+                                  onCloseAutoFocus={(event) => {
+                                    event.preventDefault()
+                                  }}
+                                >
+                                  <DropdownMenu.RadioGroup
+                                    className="yolo-simple-select__list"
+                                    value={serverApprovalMode}
+                                    onValueChange={(nextValue) => {
+                                      if (
+                                        nextValue === 'full_access' ||
+                                        nextValue === 'require_approval'
+                                      ) {
+                                        setServerApprovalMode(
+                                          group.key,
+                                          nextValue,
+                                        )
+                                      }
+                                    }}
+                                  >
+                                    {toolApprovalOptions.map((option) => (
+                                      <DropdownMenu.RadioItem
+                                        key={option.value}
+                                        className="yolo-simple-select__item"
+                                        value={option.value}
+                                      >
+                                        <div className="yolo-simple-select__item-text">
+                                          <div className="yolo-simple-select__item-label">
+                                            {option.label}
+                                          </div>
+                                        </div>
+                                        <DropdownMenu.ItemIndicator className="yolo-simple-select__item-indicator">
+                                          <Check size={12} />
+                                        </DropdownMenu.ItemIndicator>
+                                      </DropdownMenu.RadioItem>
+                                    ))}
+                                  </DropdownMenu.RadioGroup>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Portal>
+                            </DropdownMenu.Root>
+                          )}
                           <span className="yolo-agent-tool-group-count">
                             {`${groupEnabledCount} / ${group.tools.length} ${t(
                               'settings.agent.toolsActive',
@@ -1776,15 +1871,17 @@ export function AgentsSectionContent({
                               (target) =>
                                 isAssistantToolEnabled(draftAgent, target),
                             )
-                            const approvalMode = tool.toggleTargets.every(
-                              (target) =>
-                                getAssistantToolApprovalMode(
-                                  draftAgent,
-                                  target,
-                                ) === 'full_access',
-                            )
-                              ? 'full_access'
-                              : 'require_approval'
+                            const approvalMode =
+                              group.isBuiltin &&
+                              tool.toggleTargets.every(
+                                (target) =>
+                                  getAssistantToolApprovalMode(
+                                    draftAgent,
+                                    target,
+                                  ) === 'full_access',
+                              )
+                                ? 'full_access'
+                                : 'require_approval'
                             return (
                               <div
                                 key={tool.fullName}
@@ -1799,7 +1896,7 @@ export function AgentsSectionContent({
                                   </div>
                                 </div>
                                 <div className="yolo-agent-tool-controls">
-                                  {selected && (
+                                  {group.isBuiltin && selected && (
                                     <>
                                       <div className="yolo-agent-tool-select">
                                         <SimpleSelect

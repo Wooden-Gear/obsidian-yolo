@@ -21,8 +21,10 @@ describe('AgentToolGateway', () => {
       toolPreferences: {
         server__tool_a: {
           enabled: true,
-          approvalMode: 'full_access',
         },
+      },
+      toolServerPreferences: {
+        server: { approvalMode: 'full_access' },
       },
     })
 
@@ -43,6 +45,42 @@ describe('AgentToolGateway', () => {
       conversationId: 'conv-1',
       requestArgs: {},
       requireAutoExecution: true,
+    })
+  })
+
+  it('ignores per-tool full access for third-party MCP tools without server approval', () => {
+    const mcpManager = {
+      isToolExecutionAllowed: jest.fn().mockReturnValue(false),
+      getJsSandboxSettings: jest.fn().mockReturnValue({}),
+    } as unknown as McpManager
+
+    const gateway = new AgentToolGateway(mcpManager, {
+      allowedToolNames: ['server__tool_a'],
+      toolPreferences: {
+        server__tool_a: {
+          enabled: true,
+          approvalMode: 'full_access',
+        },
+      },
+    })
+
+    const message = gateway.createToolMessage({
+      toolCallRequests: [
+        { id: 'tool-1', name: 'server__tool_a', arguments: emptyArgs },
+      ],
+      conversationId: 'conv-1',
+    })
+
+    expect(message.toolCalls[0]?.response.status).toBe(
+      ToolCallResponseStatus.PendingApproval,
+    )
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Jest mock function accessed for assertion
+    const isToolExecutionAllowedMock = mcpManager.isToolExecutionAllowed
+    expect(isToolExecutionAllowedMock).toHaveBeenCalledWith({
+      requestToolName: 'server__tool_a',
+      conversationId: 'conv-1',
+      requestArgs: {},
+      requireAutoExecution: false,
     })
   })
 

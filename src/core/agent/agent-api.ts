@@ -374,6 +374,7 @@ export async function resolveAgentApiRunInput({
       allowedToolNames,
       enableToolDisclosure: settings.mcp.enableToolDisclosure,
       toolPreferences: chatModeRuntime.toolPreferences,
+      toolServerPreferences: chatModeRuntime.toolServerPreferences,
       runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
       bypassToolApproval: chatModeRuntime.bypassToolApproval,
       workspaceScope: resolveWorkspaceScopeForRuntimeInput(assistant),

@@ -1136,6 +1136,7 @@ export function QuickAskPanel({
             allowedToolNames: chatModeRuntime.allowedToolNames,
             enableToolDisclosure: settings.mcp.enableToolDisclosure,
             toolPreferences: chatModeRuntime.toolPreferences,
+            toolServerPreferences: chatModeRuntime.toolServerPreferences,
             allowedSkillPaths,
             runtimeModePrompt: chatModeRuntime.runtimeModePrompt,
             contextualInjections: editorSnapshotInjection
