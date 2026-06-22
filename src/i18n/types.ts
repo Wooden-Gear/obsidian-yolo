@@ -389,7 +389,10 @@ export type TranslationKeys = {
       toolApproval?: string
       toolApprovalFullAccess?: string
       toolApprovalRequire?: string
+      toolDisclosureAuto?: string
+      toolDisclosureAutoSelect?: string
       toolDisclosureAlways?: string
+      toolDisclosureMixed?: string
       toolDisclosureOnDemand?: string
       editorEnabled?: string
       editorDisabled?: string

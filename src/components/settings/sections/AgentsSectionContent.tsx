@@ -1,4 +1,14 @@
-import { BookOpen, FolderOpen, Maximize2, User, Wrench, X } from 'lucide-react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  FolderOpen,
+  Maximize2,
+  User,
+  Wrench,
+  X,
+} from 'lucide-react'
 import { App, TFile } from 'obsidian'
 import {
   useCallback,
@@ -27,6 +37,7 @@ import {
 } from '../../../core/agent/builtinToolUiMeta'
 import {
   buildDefaultBuiltinToolPreferences,
+  buildServerToolTokenBudgets,
   getAssistantToolApprovalMode,
   getAssistantToolDisclosureMode,
   getAssistantToolPreferences,
@@ -34,6 +45,7 @@ import {
   getEnabledAssistantToolNames,
   getExplicitlyEnabledAssistantToolNames,
   isAssistantToolEnabled,
+  resolveDefaultDisclosureModeForServer,
 } from '../../../core/agent/tool-preferences'
 import { applyDynamicToolDescriptions } from '../../../core/agent/tool-selection'
 import { getJsSandboxSettings } from '../../../core/mcp/jsSandboxSettings'
@@ -184,6 +196,22 @@ function estimateToolDefaultContextTokens(tool: McpTool): Promise<number> {
   })
   toolDefaultContextTokenCache.set(cacheKey, pending)
   return pending
+}
+
+function groupToolsByServer(tools: readonly McpTool[]): Map<string, McpTool[]> {
+  const serverTools = new Map<string, McpTool[]>()
+  for (const tool of tools) {
+    let serverName: string
+    try {
+      serverName = parseToolName(tool.name).serverName
+    } catch {
+      continue
+    }
+    const bucket = serverTools.get(serverName) ?? []
+    bucket.push(tool)
+    serverTools.set(serverName, bucket)
+  }
+  return serverTools
 }
 
 function buildSkillMetadataPrompt(skill: LiteSkillEntry): string {
@@ -598,6 +626,33 @@ export function AgentsSectionContent({
     })
   }
 
+  const clearToolDisclosureMode = (toolNames: string[]) => {
+    setDraftAgent((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      return updateDraftToolPreferences(prev, (current) => {
+        let next = { ...current }
+        for (const toolName of toolNames) {
+          const currentPreference = next[toolName]
+          if (!currentPreference) {
+            continue
+          }
+          const { disclosureMode: _disclosureMode, ...rest } = currentPreference
+          if (Object.keys(rest).length === 0) {
+            next = Object.fromEntries(
+              Object.entries(next).filter(([name]) => name !== toolName),
+            )
+          } else {
+            next[toolName] = rest
+          }
+        }
+        return next
+      })
+    })
+  }
+
   const setWorkspaceScope = (next: AssistantWorkspaceScope) => {
     setDraftAgent((prev) => {
       if (!prev) return prev
@@ -855,7 +910,13 @@ export function AgentsSectionContent({
     agentId: string | null
     value: number | null
     perTool: Map<string, number>
-  }>({ agentId: null, value: null, perTool: new Map() })
+    serverToolTokenBudgets: Map<string, number>
+  }>({
+    agentId: null,
+    value: null,
+    perTool: new Map(),
+    serverToolTokenBudgets: new Map(),
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -866,6 +927,7 @@ export function AgentsSectionContent({
         agentId: currentAgentId,
         value: 0,
         perTool: new Map(),
+        serverToolTokenBudgets: new Map(),
       })
       return
     }
@@ -891,6 +953,7 @@ export function AgentsSectionContent({
         agentId: currentAgentId,
         value: 0,
         perTool: new Map(),
+        serverToolTokenBudgets: new Map(),
       })
       return
     }
@@ -900,7 +963,12 @@ export function AgentsSectionContent({
     setEstimatedToolContextTokens((prev) =>
       prev.agentId === currentAgentId
         ? prev
-        : { agentId: currentAgentId, value: null, perTool: new Map() },
+        : {
+            agentId: currentAgentId,
+            value: null,
+            perTool: new Map(),
+            serverToolTokenBudgets: new Map(),
+          },
     )
 
     // Resolve per-agent dynamic descriptions (js_eval's varies with the
@@ -912,30 +980,35 @@ export function AgentsSectionContent({
       settings,
     })
 
-    void Promise.all(
-      resolvedTools.map((tool) =>
-        estimateToolDefaultContextTokens(tool).then(async (count) => {
-          const disclosureMode = getAssistantToolDisclosureMode(
-            draftAgent,
-            tool.name,
-            { enableToolDisclosure },
-          )
-          if (disclosureMode !== 'on_demand') {
-            return [tool.name, count] as const
-          }
-          const stubCount = await estimateJsonTokens(
-            buildDeferredToolStubTokenPayload(tool),
-          )
-          return [tool.name, stubCount] as const
-        }),
-      ),
-    ).then((entries) => {
+    void buildServerToolTokenBudgets(
+      groupToolsByServer(resolvedTools),
+      estimateJsonTokens,
+    ).then(async (serverToolTokenBudgets) => {
+      const entries = await Promise.all(
+        resolvedTools.map((tool) =>
+          estimateToolDefaultContextTokens(tool).then(async (count) => {
+            const disclosureMode = getAssistantToolDisclosureMode(
+              draftAgent,
+              tool.name,
+              { enableToolDisclosure, serverToolTokenBudgets },
+            )
+            if (disclosureMode !== 'on_demand') {
+              return [tool.name, count] as const
+            }
+            const stubCount = await estimateJsonTokens(
+              buildDeferredToolStubTokenPayload(tool),
+            )
+            return [tool.name, stubCount] as const
+          }),
+        ),
+      )
       if (cancelled) return
       const perTool = new Map(entries)
       setEstimatedToolContextTokens({
         agentId: currentAgentId,
         value: entries.reduce((sum, [, count]) => sum + count, 0),
         perTool,
+        serverToolTokenBudgets,
       })
     })
 
@@ -1481,16 +1554,73 @@ export function AgentsSectionContent({
                     !group.isBuiltin &&
                     enableToolDisclosure &&
                     group.tools.length > 0
-                  const serverDisclosureMode = showServerDisclosure
-                    ? groupToggleTargets.every(
-                        (target) =>
-                          getAssistantToolDisclosureMode(draftAgent, target, {
-                            enableToolDisclosure,
-                          }) === 'on_demand',
-                      )
-                      ? 'on_demand'
-                      : 'always'
-                    : 'on_demand'
+                  const explicitDisclosureModes = showServerDisclosure
+                    ? groupToggleTargets
+                        .map(
+                          (target) =>
+                            draftAgent.toolPreferences?.[target]
+                              ?.disclosureMode,
+                        )
+                        .filter(
+                          (mode): mode is AssistantToolDisclosureMode =>
+                            mode !== undefined,
+                        )
+                    : []
+                  const explicitDisclosureMode =
+                    explicitDisclosureModes.length ===
+                      groupToggleTargets.length &&
+                    explicitDisclosureModes.every(
+                      (mode) => mode === explicitDisclosureModes[0],
+                    )
+                      ? explicitDisclosureModes[0]
+                      : null
+                  const disclosureSelectionValue =
+                    explicitDisclosureModes.length === 0
+                      ? 'auto'
+                      : (explicitDisclosureMode ?? 'mixed')
+                  const autoDisclosureMode = (() => {
+                    const firstTarget = groupToggleTargets[0]
+                    if (!firstTarget) return null
+                    try {
+                      const { serverName } = parseToolName(firstTarget)
+                      const tokenBudget =
+                        estimatedToolContextTokens.serverToolTokenBudgets.get(
+                          serverName,
+                        )
+                      return tokenBudget === undefined
+                        ? null
+                        : resolveDefaultDisclosureModeForServer(tokenBudget)
+                    } catch {
+                      return null
+                    }
+                  })()
+                  const disclosureModeLabel = (
+                    mode: AssistantToolDisclosureMode,
+                  ) =>
+                    mode === 'on_demand'
+                      ? t('settings.agent.toolDisclosureOnDemand', 'On demand')
+                      : t(
+                          'settings.agent.toolDisclosureAlways',
+                          'Always loaded',
+                        )
+                  const autoDisclosureLabel = `${t(
+                    'settings.agent.toolDisclosureAuto',
+                    'Auto',
+                  )}${
+                    autoDisclosureMode
+                      ? `: ${disclosureModeLabel(autoDisclosureMode)}`
+                      : ''
+                  }`
+                  const autoDisclosureOptionLabel = t(
+                    'settings.agent.toolDisclosureAutoSelect',
+                    'Auto select',
+                  )
+                  const serverDisclosureLabel =
+                    disclosureSelectionValue === 'auto'
+                      ? autoDisclosureLabel
+                      : disclosureSelectionValue === 'mixed'
+                        ? t('settings.agent.toolDisclosureMixed', 'Mixed')
+                        : disclosureModeLabel(disclosureSelectionValue)
                   const groupFullyDisabled =
                     !group.isBuiltin &&
                     group.tools.length > 0 &&
@@ -1520,28 +1650,92 @@ export function AgentsSectionContent({
                             </span>
                           )}
                           {showServerDisclosure && (
-                            <button
-                              type="button"
-                              className="yolo-agent-tool-group-disclosure"
-                              onClick={() =>
-                                setToolDisclosureMode(
-                                  groupToggleTargets,
-                                  serverDisclosureMode === 'on_demand'
-                                    ? 'always'
-                                    : 'on_demand',
-                                )
-                              }
-                            >
-                              {serverDisclosureMode === 'on_demand'
-                                ? t(
-                                    'settings.agent.toolDisclosureOnDemand',
-                                    'On demand',
-                                  )
-                                : t(
-                                    'settings.agent.toolDisclosureAlways',
-                                    'Always loaded',
-                                  )}
-                            </button>
+                            <DropdownMenu.Root>
+                              <DropdownMenu.Trigger asChild>
+                                <button
+                                  type="button"
+                                  className="yolo-agent-tool-group-disclosure"
+                                >
+                                  <span>{serverDisclosureLabel}</span>
+                                  <ChevronDown size={12} aria-hidden="true" />
+                                </button>
+                              </DropdownMenu.Trigger>
+                              <DropdownMenu.Portal>
+                                <DropdownMenu.Content
+                                  className="yolo-simple-select__content"
+                                  side="bottom"
+                                  align="center"
+                                  sideOffset={6}
+                                  collisionPadding={10}
+                                  loop
+                                  onCloseAutoFocus={(event) => {
+                                    event.preventDefault()
+                                  }}
+                                >
+                                  <DropdownMenu.RadioGroup
+                                    className="yolo-simple-select__list"
+                                    value={disclosureSelectionValue}
+                                    onValueChange={(nextValue) => {
+                                      if (nextValue === 'auto') {
+                                        clearToolDisclosureMode(
+                                          groupToggleTargets,
+                                        )
+                                        return
+                                      }
+                                      if (
+                                        nextValue === 'always' ||
+                                        nextValue === 'on_demand'
+                                      ) {
+                                        setToolDisclosureMode(
+                                          groupToggleTargets,
+                                          nextValue,
+                                        )
+                                      }
+                                    }}
+                                  >
+                                    <DropdownMenu.RadioItem
+                                      className="yolo-simple-select__item"
+                                      value="auto"
+                                    >
+                                      <div className="yolo-simple-select__item-text">
+                                        <div className="yolo-simple-select__item-label">
+                                          {autoDisclosureOptionLabel}
+                                        </div>
+                                      </div>
+                                      <DropdownMenu.ItemIndicator className="yolo-simple-select__item-indicator">
+                                        <Check size={12} />
+                                      </DropdownMenu.ItemIndicator>
+                                    </DropdownMenu.RadioItem>
+                                    <DropdownMenu.RadioItem
+                                      className="yolo-simple-select__item"
+                                      value="always"
+                                    >
+                                      <div className="yolo-simple-select__item-text">
+                                        <div className="yolo-simple-select__item-label">
+                                          {disclosureModeLabel('always')}
+                                        </div>
+                                      </div>
+                                      <DropdownMenu.ItemIndicator className="yolo-simple-select__item-indicator">
+                                        <Check size={12} />
+                                      </DropdownMenu.ItemIndicator>
+                                    </DropdownMenu.RadioItem>
+                                    <DropdownMenu.RadioItem
+                                      className="yolo-simple-select__item"
+                                      value="on_demand"
+                                    >
+                                      <div className="yolo-simple-select__item-text">
+                                        <div className="yolo-simple-select__item-label">
+                                          {disclosureModeLabel('on_demand')}
+                                        </div>
+                                      </div>
+                                      <DropdownMenu.ItemIndicator className="yolo-simple-select__item-indicator">
+                                        <Check size={12} />
+                                      </DropdownMenu.ItemIndicator>
+                                    </DropdownMenu.RadioItem>
+                                  </DropdownMenu.RadioGroup>
+                                </DropdownMenu.Content>
+                              </DropdownMenu.Portal>
+                            </DropdownMenu.Root>
                           )}
                         </span>
                         <span className="yolo-agent-tool-group-meta">

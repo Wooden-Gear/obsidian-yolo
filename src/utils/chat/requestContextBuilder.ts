@@ -534,6 +534,7 @@ export class RequestContextBuilder {
     messages: ChatMessage[]
     hasTools?: boolean
     hasMemoryTools?: boolean
+    hasOnDemandTools?: boolean
     model: ChatModel
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
@@ -557,6 +558,7 @@ export class RequestContextBuilder {
     messages,
     hasTools = false,
     hasMemoryTools = false,
+    hasOnDemandTools = false,
     model: _model,
     conversationId,
     compaction,
@@ -568,6 +570,7 @@ export class RequestContextBuilder {
     messages: ChatMessage[]
     hasTools?: boolean
     hasMemoryTools?: boolean
+    hasOnDemandTools?: boolean
     model: ChatModel
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
@@ -663,6 +666,7 @@ export class RequestContextBuilder {
           conversationId,
           hasTools,
           hasMemoryTools,
+          hasOnDemandTools,
           compaction,
           runtimeModePrompt,
           mode: systemPromptSnapshotMode,
@@ -716,6 +720,7 @@ export class RequestContextBuilder {
     messages: ChatMessage[]
     hasTools?: boolean
     hasMemoryTools?: boolean
+    hasOnDemandTools?: boolean
     model: ChatModel
     conversationId: string
     compaction?: ChatConversationCompactionLike | null
@@ -1634,6 +1639,7 @@ ${entries}
     conversationId,
     hasTools,
     hasMemoryTools,
+    hasOnDemandTools,
     compaction,
     runtimeModePrompt,
     mode,
@@ -1641,6 +1647,7 @@ ${entries}
     conversationId: string
     hasTools: boolean
     hasMemoryTools: boolean
+    hasOnDemandTools: boolean
     compaction?: ChatConversationCompactionLike | null
     runtimeModePrompt?: string
     mode: SystemPromptSnapshotMode
@@ -1649,6 +1656,7 @@ ${entries}
       const systemSections = await this.buildSystemPromptSections(
         hasTools,
         hasMemoryTools,
+        hasOnDemandTools,
         runtimeModePrompt,
       )
       const systemContent = systemSections
@@ -1668,6 +1676,7 @@ ${entries}
     const fingerprint = this.computeSystemPromptFingerprint(
       hasTools,
       hasMemoryTools,
+      hasOnDemandTools,
       compaction,
       runtimeModePrompt,
     )
@@ -1687,6 +1696,7 @@ ${entries}
   private computeSystemPromptFingerprint(
     hasTools: boolean,
     hasMemoryTools: boolean,
+    hasOnDemandTools: boolean,
     compaction?: ChatConversationCompactionLike | null,
     runtimeModePrompt?: string,
   ): string {
@@ -1716,6 +1726,7 @@ ${entries}
     return stableStringify({
       hasTools,
       hasMemoryTools,
+      hasOnDemandTools,
       runtimeModePrompt: runtimeModePrompt?.trim() ?? '',
       includeSkills: this.includeSkills,
       systemPrompt: this.settings.systemPrompt ?? '',
@@ -1764,6 +1775,7 @@ ${entries}
   private async buildSystemPromptSections(
     hasTools: boolean,
     hasMemoryTools: boolean,
+    hasOnDemandTools: boolean,
     runtimeModePrompt?: string,
   ): Promise<SystemPromptSections> {
     const sections: SystemPromptSections = []
@@ -1776,7 +1788,10 @@ ${entries}
       await this.buildCustomInstructionsSubsections(hasMemoryTools)
     sections.push(...customInstructionSubsections)
 
-    const baseBehaviorContent = this.buildDefaultBehaviorSection(hasTools)
+    const baseBehaviorContent = this.buildDefaultBehaviorSection(
+      hasTools,
+      hasOnDemandTools,
+    )
     if (baseBehaviorContent) {
       sections.push({
         bucket: 'system',
@@ -1980,7 +1995,10 @@ ${customInstruction}
     return sections
   }
 
-  private buildDefaultBehaviorSection(hasTools: boolean): string {
+  private buildDefaultBehaviorSection(
+    hasTools: boolean,
+    hasOnDemandTools: boolean,
+  ): string {
     let section = `- Format your responses in Markdown.
 - Always reply in the same language as the user's message.`
 
@@ -1991,6 +2009,12 @@ ${customInstruction}
 - Prefer using content already provided in the current message. Only call file tools when the current message is insufficient, you need another file, or you need to verify the latest contents. Avoid repeatedly reading the same window.
 - If available skills are listed, use yolo_local__fs_read on the listed path to load the full skill only when it is relevant to the current task.
 - If the current user message already includes <user_selected_skills>, treat them as user-selected context and avoid reloading the same skill again unless you need to verify something.`
+      if (hasOnDemandTools) {
+        section += `
+- Some tools are ON-DEMAND stubs. Do not call an ON-DEMAND tool until its full schema has been disclosed.
+- Before calling one, call yolo_local__load_tool_schemas with {"servers":["<server-name>"]}, where "<server-name>" is the prefix before "__" in the tool name.
+- After yolo_local__load_tool_schemas returns, call the target tool using the returned schema. If a <previously-loaded-tools> block lists the tool, treat it as already disclosed.`
+      }
     }
 
     return section

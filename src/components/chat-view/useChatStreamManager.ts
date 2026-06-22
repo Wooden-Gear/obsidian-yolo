@@ -563,19 +563,21 @@ export function useChatStreamManager({
             chatModelModalities: effectiveModel.modalities,
           })
         : []
-      const { hasTools, hasMemoryTools, requestTools } = selectAllowedTools({
-        availableTools,
-        allowedToolNames: effectiveAllowedToolNames,
-        toolPreferences: chatModeRuntime.toolPreferences,
-        apiType: manualApiType,
-        enableToolDisclosure: settings.mcp.enableToolDisclosure,
-        jsSandboxSettings: mcpManager.getJsSandboxSettings(),
-      })
+      const { hasTools, hasMemoryTools, hasOnDemandTools, requestTools } =
+        await selectAllowedTools({
+          availableTools,
+          allowedToolNames: effectiveAllowedToolNames,
+          toolPreferences: chatModeRuntime.toolPreferences,
+          apiType: manualApiType,
+          enableToolDisclosure: settings.mcp.enableToolDisclosure,
+          jsSandboxSettings: mcpManager.getJsSandboxSettings(),
+        })
       const compactionPrefix =
         await requestContextBuilder.generateRequestMessages({
           messages,
           hasTools,
           hasMemoryTools,
+          hasOnDemandTools,
           model: effectiveModel,
           conversationId: currentConversationId,
           compaction: manualCompaction,

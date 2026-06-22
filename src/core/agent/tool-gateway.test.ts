@@ -1131,6 +1131,38 @@ describe('AgentToolGateway', () => {
       }
     })
 
+    it('does not require disclosure for lightweight servers in auto mode', async () => {
+      const mcpManager = mcpManagerWithRealTool()
+      const gateway = new AgentToolGateway(mcpManager, {
+        allowedToolNames: ['server__tool_a'],
+        toolPreferences: {
+          server__tool_a: {
+            enabled: true,
+            approvalMode: 'full_access',
+          },
+        },
+      })
+      const toolMessage = gateway.createToolMessage({
+        toolCallRequests: [
+          {
+            id: 'tool-1',
+            name: 'server__tool_a',
+            arguments: createCompleteToolCallArguments({
+              value: { value: 'hello' },
+            }),
+          },
+        ],
+        conversationId: 'conv-1',
+      })
+      const result = await gateway.executeAutoToolCalls({
+        toolMessage,
+        conversationId: 'conv-1',
+        conversationMessages: [],
+      })
+      const response = result.toolCalls[0]?.response
+      expect(response?.status).toBe(ToolCallResponseStatus.Success)
+    })
+
     it('rejects on-demand tool calls with arguments that violate the real schema', async () => {
       const mcpManager = mcpManagerWithRealTool()
       const gateway = buildGateway(mcpManager)
