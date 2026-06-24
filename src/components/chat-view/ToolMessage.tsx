@@ -670,6 +670,18 @@ const asInteger = (value: unknown): number | undefined => {
   return Number.isInteger(value) ? (value as number) : undefined
 }
 
+const FS_READ_VISIBLE_PATH_LIMIT_BEFORE_OMISSION = 4
+
+const summarizeFsReadPaths = (paths: string[]): string => {
+  if (paths.length <= FS_READ_VISIBLE_PATH_LIMIT_BEFORE_OMISSION) {
+    return paths.join(', ')
+  }
+
+  const visiblePaths = paths.slice(0, FS_READ_VISIBLE_PATH_LIMIT_BEFORE_OMISSION)
+  const hiddenCount = paths.length - visiblePaths.length
+  return `${visiblePaths.join(', ')} +${hiddenCount}`
+}
+
 const getFsReadOperationSummary = ({
   response,
 }: {
@@ -914,10 +926,7 @@ const getLocalToolSummaryText = ({
     if (!paths || paths.length === 0) {
       return undefined
     }
-    if (paths.length === 1) {
-      return paths[0]
-    }
-    return `${paths.length} ${labels.paths}`
+    return summarizeFsReadPaths(paths)
   }
 
   if (toolName === 'fs_edit') {

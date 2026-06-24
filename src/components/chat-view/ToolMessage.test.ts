@@ -467,6 +467,66 @@ describe('ToolMessage headline helpers', () => {
     ).toBe('docs/plan.md | 全文')
   })
 
+  it('shows concrete paths for multi-path fs_read headlines', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__fs_read',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              paths: ['docs/one.md', 'docs/two.md'],
+              operation: { type: 'full' },
+            },
+          }),
+        },
+        response: {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: '',
+            metadata: {
+              fsReadOperation: { type: 'full', isPdf: false },
+            },
+          },
+        },
+        labels,
+      }).summaryText,
+    ).toBe('docs/one.md, docs/two.md | 全文')
+  })
+
+  it('omits extra paths only when fs_read has five or more paths', () => {
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__fs_read',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              paths: [
+                'docs/one.md',
+                'docs/two.md',
+                'docs/three.md',
+                'docs/four.md',
+                'docs/five.md',
+              ],
+              operation: { type: 'full' },
+            },
+          }),
+        },
+        response: {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: '',
+            metadata: {
+              fsReadOperation: { type: 'full', isPdf: false },
+            },
+          },
+        },
+        labels,
+      }).summaryText,
+    ).toBe('docs/one.md, docs/two.md, docs/three.md, docs/four.md +1 | 全文')
+  })
+
   it('adds line-range mode to successful fs_read headlines (markdown)', () => {
     expect(
       getHeadlineDisplayInfo({
