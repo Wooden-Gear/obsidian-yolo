@@ -13,8 +13,9 @@ jest.mock('../../contexts/plugin-context', () => ({
   usePlugin: () => ({}),
 }))
 
+const mockedObsidianCodeBlock = jest.fn((_: unknown) => null)
 jest.mock('./ObsidianMarkdown', () => ({
-  ObsidianCodeBlock: () => null,
+  ObsidianCodeBlock: (props: unknown) => mockedObsidianCodeBlock(props),
 }))
 
 const mockedLiveTaskCard = jest.fn((_: unknown) => null)
@@ -44,6 +45,7 @@ import ToolMessage, {
 
 describe('ToolMessage rendering', () => {
   beforeEach(() => {
+    mockedObsidianCodeBlock.mockClear()
     mockedLiveTaskCard.mockClear()
     mockedSubagentCard.mockClear()
   })
@@ -142,6 +144,101 @@ describe('ToolMessage rendering', () => {
     expect(mockedSubagentCard).not.toHaveBeenCalled()
     expect(markup).toContain('Allow')
     expect(markup).toContain('Reject')
+  })
+
+  it('does not render hidden parameters or result content while collapsed', () => {
+    renderToStaticMarkup(
+      React.createElement(ToolMessage, {
+        message: {
+          role: 'tool',
+          id: 'tool-message-1',
+          toolCalls: [
+            {
+              request: {
+                id: 'tool-1',
+                name: 'yolo_local__fs_read',
+                arguments: createCompleteToolCallArguments({
+                  value: {
+                    paths: ['docs/large.md'],
+                    operation: { type: 'lines', startLine: 1 },
+                    padding: 'x'.repeat(100_000),
+                  },
+                }),
+              },
+              response: {
+                status: ToolCallResponseStatus.Success,
+                data: {
+                  type: 'text',
+                  text: 'x'.repeat(100_000),
+                  metadata: {
+                    fsReadOperation: {
+                      type: 'lines',
+                      startLine: 1,
+                      endLine: 10,
+                      isPdf: false,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        conversationId: 'conversation-1',
+        onMessageUpdate: () => {},
+      }),
+    )
+
+    expect(mockedObsidianCodeBlock).not.toHaveBeenCalled()
+  })
+
+  it('does not hydrate persisted terminal output while collapsed', () => {
+    const terminalResult: ChatTerminalCommandResultMessage = {
+      role: 'terminal_command_result',
+      id: 'result-1',
+      taskId: 'task-1',
+      source: {
+        type: 'llm_tool_call',
+        assistantMessageId: 'assistant-1',
+        toolCallId: 'tool-1',
+      },
+      title: 'npm test',
+      status: 'completed',
+      exitCode: 0,
+      stdout: 'x'.repeat(100_000),
+      stderr: '',
+      durationMs: 1000,
+      delegateAssistantMessageId: 'assistant-1',
+      delegateToolCallId: 'tool-1',
+    }
+
+    renderToStaticMarkup(
+      React.createElement(ToolMessage, {
+        message: {
+          role: 'tool',
+          id: 'tool-message-1',
+          toolCalls: [
+            {
+              request: {
+                id: 'tool-1',
+                name: 'yolo_local__terminal_command',
+                arguments: createCompleteToolCallArguments({
+                  value: { command: 'npm test', background: true },
+                }),
+              },
+              response: {
+                status: ToolCallResponseStatus.Success,
+                data: { type: 'text', text: '' },
+              },
+            },
+          ],
+        },
+        conversationId: 'conversation-1',
+        terminalCommandResultsByToolCallId: new Map([['tool-1', terminalResult]]),
+        onMessageUpdate: () => {},
+      }),
+    )
+
+    expect(mockedLiveTaskCard).not.toHaveBeenCalled()
   })
 })
 
@@ -290,6 +387,9 @@ describe('ToolMessage headline helpers', () => {
               requestedOperation: { type: 'full', modality: 'text' },
               results: [],
             }),
+            metadata: {
+              fsReadOperation: { type: 'full', isPdf: false },
+            },
           },
         },
         labels,
@@ -330,6 +430,14 @@ describe('ToolMessage headline helpers', () => {
                 },
               ],
             }),
+            metadata: {
+              fsReadOperation: {
+                type: 'lines',
+                startLine: 12,
+                endLine: 61,
+                isPdf: false,
+              },
+            },
           },
         },
         labels,
@@ -370,11 +478,57 @@ describe('ToolMessage headline helpers', () => {
                 },
               ],
             }),
+            metadata: {
+              fsReadOperation: {
+                type: 'lines',
+                startLine: 1,
+                endLine: 1,
+                isPdf: true,
+              },
+            },
           },
         },
         labels,
       }).summaryText,
     ).toBe('docs/paper.pdf | 1-1页')
+  })
+
+  it('does not parse fs_read response text for legacy headlines without metadata', () => {
+    const parseSpy = jest.spyOn(JSON, 'parse')
+
+    expect(
+      getHeadlineDisplayInfo({
+        request: {
+          name: 'yolo_local__fs_read',
+          arguments: createCompleteToolCallArguments({
+            value: {
+              paths: ['docs/large.md'],
+              operation: { type: 'lines', startLine: 1 },
+            },
+          }),
+        },
+        response: {
+          status: ToolCallResponseStatus.Success,
+          data: {
+            type: 'text',
+            text: JSON.stringify({
+              requestedOperation: { type: 'lines', modality: 'text' },
+              results: [
+                {
+                  path: 'docs/large.md',
+                  ok: true,
+                  returnedRange: { startLine: 1, endLine: 1000 },
+                },
+              ],
+            }),
+          },
+        },
+        labels,
+      }).summaryText,
+    ).toBe('docs/large.md')
+    expect(parseSpy).not.toHaveBeenCalled()
+
+    parseSpy.mockRestore()
   })
 
   it('omits range while fs_read response is pending', () => {

@@ -21,6 +21,7 @@ import { McpTool } from '../../types/mcp.types'
 import {
   ToolCallResponseStatus,
   type ToolEditSummary,
+  type ToolFsReadOperationSummary,
 } from '../../types/tool-call.types'
 import { uint8ArrayToBase64 } from '../../utils/base64'
 import {
@@ -248,6 +249,7 @@ type FsFileOpAction = 'write' | 'delete' | 'create_dir' | 'move'
 
 type LocalToolCallResultMetadata = {
   editSummary?: ToolEditSummary
+  fsReadOperation?: ToolFsReadOperationSummary
   appliedAt?: number
   truncated?: { totalBytes: number; omittedBytes: number }
 }
@@ -3790,10 +3792,37 @@ export async function callLocalFileTool({
             ? perFileAttachmentParts.flatMap((p) => p.parts)
             : undefined
 
+        const firstReadableResult = results[0]?.ok ? results[0] : undefined
+        const isPdf =
+          typeof firstReadableResult?.path === 'string' &&
+          firstReadableResult.path.toLowerCase().endsWith('.pdf')
+        const fsReadOperation: ToolFsReadOperationSummary | undefined = (() => {
+          if (!firstReadableResult) {
+            return undefined
+          }
+          if (operation.type === 'full') {
+            return { type: 'full', isPdf }
+          }
+          const returnedRange = firstReadableResult.returnedRange
+          if (
+            typeof returnedRange?.startLine !== 'number' ||
+            typeof returnedRange.endLine !== 'number'
+          ) {
+            return undefined
+          }
+          return {
+            type: 'lines',
+            startLine: returnedRange.startLine,
+            endLine: returnedRange.endLine,
+            isPdf,
+          }
+        })()
+
         return {
           status: ToolCallResponseStatus.Success,
           text: textResult,
           contentParts,
+          metadata: fsReadOperation ? { fsReadOperation } : undefined,
         }
       }
 

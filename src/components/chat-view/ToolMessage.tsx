@@ -29,6 +29,7 @@ import {
   ToolCallRequest,
   ToolCallResponse,
   ToolCallResponseStatus,
+  type ToolFsReadOperationSummary,
   getToolCallArgumentsObject,
   getToolCallArgumentsText,
 } from '../../types/tool-call.types'
@@ -92,18 +93,6 @@ type ToolRequestLike = {
   name: string
   arguments?: ToolCallRequest['arguments']
 }
-
-type FsReadOperationSummary =
-  | {
-      type: 'full'
-      isPdf: boolean
-    }
-  | {
-      type: 'lines'
-      startLine: number
-      endLine: number
-      isPdf: boolean
-    }
 
 const DEFAULT_LOCAL_FILE_TOOL_DISPLAY_NAMES: Record<string, string> = {
   fs_write: 'Write file',
@@ -674,6 +663,20 @@ const parseToolArguments = (
   return getToolCallArgumentsObject(rawArguments) ?? null
 }
 
+const getToolCallParametersText = (
+  rawArguments: ToolCallRequest['arguments'] | undefined,
+  noParametersLabel: string,
+): string => {
+  if (!rawArguments) {
+    return noParametersLabel
+  }
+  const parsed = getToolCallArgumentsObject(rawArguments)
+  if (parsed) {
+    return JSON.stringify(parsed, null, 2)
+  }
+  return getToolCallArgumentsText(rawArguments) ?? noParametersLabel
+}
+
 const asStringArray = (value: unknown): string[] | null => {
   if (!Array.isArray(value)) {
     return null
@@ -684,80 +687,23 @@ const asStringArray = (value: unknown): string[] | null => {
   return value
 }
 
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null
-  }
-  return value as Record<string, unknown>
-}
-
 const asInteger = (value: unknown): number | undefined => {
   return Number.isInteger(value) ? (value as number) : undefined
 }
 
 const getFsReadOperationSummary = ({
-  request,
   response,
 }: {
-  request: ToolRequestLike
   response?: ToolCallResponse
-}): FsReadOperationSummary | undefined => {
-  // Single source of truth: the backend response. Pre-response we omit the
-  // range entirely — better to render no range for half a second than to
-  // guess from request defaults that the backend may override (e.g. PDFs
-  // ignore `maxLines`, image mode forces single page).
+}): ToolFsReadOperationSummary | undefined => {
   if (response?.status !== ToolCallResponseStatus.Success) {
     return undefined
   }
-
-  // Determine isPdf from the first request path (used purely for the label
-  // suffix — "页" vs "行"). Mixed batches use the first path's extension; the
-  // headline only renders a single batch summary anyway, not per-file ranges.
-  const requestArguments = parseToolArguments(request.arguments)
-  const rawPaths = requestArguments?.paths
-  const firstPath =
-    Array.isArray(rawPaths) && typeof rawPaths[0] === 'string'
-      ? rawPaths[0]
-      : null
-  const isPdf =
-    typeof firstPath === 'string' && firstPath.toLowerCase().endsWith('.pdf')
-
-  try {
-    const payload = JSON.parse(response.data.text) as unknown
-    const payloadRecord = asRecord(payload)
-    const requestedOperation = asRecord(payloadRecord?.requestedOperation)
-    const type = requestedOperation?.type
-
-    if (type === 'full') {
-      return { type: 'full', isPdf }
-    }
-
-    if (type === 'lines') {
-      // The truth about what was read lives in `results[0].returnedRange` —
-      // not in `requestedOperation`, which echoes resolved defaults that may
-      // not reflect actual behavior (PDF ignores maxLines, image mode forces
-      // single page, etc.).
-      const results = payloadRecord?.results
-      if (!Array.isArray(results) || results.length === 0) {
-        return undefined
-      }
-      const firstResult = asRecord(results[0])
-      const returnedRange = asRecord(firstResult?.returnedRange)
-      const startLine = asInteger(returnedRange?.startLine)
-      const endLine = asInteger(returnedRange?.endLine)
-      if (typeof startLine === 'number' && typeof endLine === 'number') {
-        return { type: 'lines', startLine, endLine, isPdf }
-      }
-    }
-  } catch {
-    // Malformed payload — drop the range silently.
-  }
-
-  return undefined
+  return response.data.metadata?.fsReadOperation
 }
 
 const formatFsReadHeadlineMode = (
-  operation: FsReadOperationSummary | undefined,
+  operation: ToolFsReadOperationSummary | undefined,
   labels: ToolLabels,
 ): string | undefined => {
   if (!operation) {
@@ -802,7 +748,7 @@ export const getHeadlineDisplayInfo = ({
 
   if (toolName === 'fs_read') {
     const modeText = formatFsReadHeadlineMode(
-      getFsReadOperationSummary({ request, response }),
+      getFsReadOperationSummary({ response }),
       labels,
     )
     if (!modeText) {
@@ -819,7 +765,7 @@ export const getHeadlineDisplayInfo = ({
   if (toolName === 'delegate_subagent') {
     return {
       ...displayInfo,
-      summaryText: getDelegateSubagentSummary({ request, response }),
+      summaryText: getDelegateSubagentSummary({ request }),
     }
   }
 
@@ -830,34 +776,16 @@ const DELEGATE_SUMMARY_MAX_CHARS = 80
 
 const getDelegateSubagentSummary = ({
   request,
-  response,
 }: {
   request: ToolRequestLike
-  response?: ToolCallResponse
 }): string | undefined => {
   const argsObject = parseToolArguments(request.arguments)
   const title =
     typeof argsObject?.description === 'string'
       ? argsObject.description.trim()
       : ''
-
-  let mainText = ''
-  if (response?.status === ToolCallResponseStatus.Success) {
-    mainText = response.data.text?.trim() ?? ''
-  } else if (response?.status === ToolCallResponseStatus.Error) {
-    mainText = response.error?.trim() ?? ''
-  } else if (
-    response?.status === ToolCallResponseStatus.Aborted &&
-    response.data
-  ) {
-    mainText = response.data.text?.trim() ?? ''
-  }
-
-  if (!mainText) {
-    const prompt =
-      typeof argsObject?.prompt === 'string' ? argsObject.prompt.trim() : ''
-    mainText = prompt
-  }
+  const mainText =
+    typeof argsObject?.prompt === 'string' ? argsObject.prompt.trim() : ''
 
   const collapsedMain = mainText
     ? truncateText(mainText.replace(/\s+/g, ' '), DELEGATE_SUMMARY_MAX_CHARS)
@@ -1331,23 +1259,10 @@ function ToolCallItem({
     headlineParts.summaryText && isTerminalCommandRequest(request)
       ? splitTerminalCommandSummary(headlineParts.summaryText)
       : null
-  const effectiveTerminalResponse =
+  const effectiveStatus =
     terminalCommandResult && isTerminalCommandRequest(request)
-      ? buildHydratedTerminalCommandResponse(terminalCommandResult, response)
-      : response
-  const effectiveStatus = effectiveTerminalResponse.status
-  const parameters = useMemo(() => {
-    if (!request.arguments) {
-      return toolLabels.noParameters
-    }
-    const parsed = getToolCallArgumentsObject(request.arguments)
-    if (parsed) {
-      return JSON.stringify(parsed, null, 2)
-    }
-    return (
-      getToolCallArgumentsText(request.arguments) ?? toolLabels.noParameters
-    )
-  }, [request.arguments, toolLabels.noParameters])
+      ? mapTerminalCommandResultStatus(terminalCommandResult.status)
+      : response.status
   // 是否禁用"始终允许"按钮（某些高危工具每次必须人审）
   const isAlwaysAllowDisabled = useMemo(() => {
     try {
@@ -1399,14 +1314,6 @@ function ToolCallItem({
   const shouldShowParameters =
     !isCompactLiveTaskRequest ||
     effectiveStatus === ToolCallResponseStatus.PendingApproval
-  const resultDisplayText = useMemo(
-    () =>
-      response.status === ToolCallResponseStatus.Success
-        ? getToolResultDisplayText({ request, response })
-        : '',
-    [request, response],
-  )
-
   useEffect(() => {
     const shouldShowCompactionPendingHint =
       showCompactionPendingHint &&
@@ -1437,6 +1344,9 @@ function ToolCallItem({
     isDelegateSubagentRequest(request) &&
     effectiveStatus !== ToolCallResponseStatus.PendingApproval
   ) {
+    const syntheticLiveTaskOutput = extractSyntheticLiveTaskOutput(
+      request.arguments,
+    )
     return (
       <SubagentCard
         toolCallId={request.id}
@@ -1444,8 +1354,8 @@ function ToolCallItem({
         conversationId={conversationId}
         args={extractSubagentArgs(request.arguments)}
         subagentResult={subagentResult}
-        initialStdout={extractSyntheticLiveTaskOutput(request.arguments).stdout}
-        initialStderr={extractSyntheticLiveTaskOutput(request.arguments).stderr}
+        initialStdout={syntheticLiveTaskOutput.stdout}
+        initialStderr={syntheticLiveTaskOutput.stderr}
         onAbort={() => {
           const taskId = extractAcceptedTaskId(response)
           if (taskId) subagentTaskRegistry.abort(taskId)
@@ -1536,55 +1446,78 @@ function ToolCallItem({
           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
       </button>
-      {isOpen && (
-        <div
-          id={`yolo-toolcall-content-${request.id}`}
-          className="yolo-toolcall-content"
-        >
-          {shouldShowParameters && (
-            <div className="yolo-toolcall-content-section">
-              <div>{toolLabels.parameters}:</div>
-              <ObsidianCodeBlock language="json" content={parameters} />
+      {isOpen &&
+        (() => {
+          const parameters = getToolCallParametersText(
+            request.arguments,
+            toolLabels.noParameters,
+          )
+          const isTerminalLikeRequest =
+            isTerminalCommandRequest(request) ||
+            isLegacyDelegateExternalAgentRequest(request)
+          const effectiveTerminalResponse =
+            terminalCommandResult && isTerminalCommandRequest(request)
+              ? buildHydratedTerminalCommandResponse(
+                  terminalCommandResult,
+                  response,
+                )
+              : response
+          const syntheticLiveTaskOutput =
+            isTerminalLikeRequest && !terminalCommandResult
+              ? extractSyntheticLiveTaskOutput(request.arguments)
+              : {}
+          const resultDisplayText =
+            response.status === ToolCallResponseStatus.Success
+              ? getToolResultDisplayText({ request, response })
+              : ''
+
+          return (
+            <div
+              id={`yolo-toolcall-content-${request.id}`}
+              className="yolo-toolcall-content"
+            >
+              {shouldShowParameters && (
+                <div className="yolo-toolcall-content-section">
+                  <div>{toolLabels.parameters}:</div>
+                  <ObsidianCodeBlock language="json" content={parameters} />
+                </div>
+              )}
+              {isTerminalLikeRequest ? (
+                <LiveTaskCard
+                  toolCallId={request.id}
+                  response={effectiveTerminalResponse}
+                  args={
+                    isLegacyDelegateExternalAgentRequest(request)
+                      ? extractLegacyExternalAgentArgs(request.arguments)
+                      : extractTerminalCommandArgs(request.arguments)
+                  }
+                  initialStdout={
+                    terminalCommandResult?.stdout ?? syntheticLiveTaskOutput.stdout
+                  }
+                  initialStderr={
+                    terminalCommandResult?.stderr ?? syntheticLiveTaskOutput.stderr
+                  }
+                  onAbort={handleAbort}
+                />
+              ) : (
+                <>
+                  {response.status === ToolCallResponseStatus.Success && (
+                    <div className="yolo-toolcall-content-section">
+                      <div>{toolLabels.result}:</div>
+                      <ObsidianCodeBlock content={resultDisplayText} />
+                    </div>
+                  )}
+                  {response.status === ToolCallResponseStatus.Error && (
+                    <div className="yolo-toolcall-content-section">
+                      <div>{toolLabels.error}:</div>
+                      <ObsidianCodeBlock content={response.error} />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
-          {isTerminalCommandRequest(request) ||
-          isLegacyDelegateExternalAgentRequest(request) ? (
-            <LiveTaskCard
-              toolCallId={request.id}
-              response={effectiveTerminalResponse}
-              args={
-                isLegacyDelegateExternalAgentRequest(request)
-                  ? extractLegacyExternalAgentArgs(request.arguments)
-                  : extractTerminalCommandArgs(request.arguments)
-              }
-              initialStdout={
-                terminalCommandResult?.stdout ??
-                extractSyntheticLiveTaskOutput(request.arguments).stdout
-              }
-              initialStderr={
-                terminalCommandResult?.stderr ??
-                extractSyntheticLiveTaskOutput(request.arguments).stderr
-              }
-              onAbort={handleAbort}
-            />
-          ) : (
-            <>
-              {response.status === ToolCallResponseStatus.Success && (
-                <div className="yolo-toolcall-content-section">
-                  <div>{toolLabels.result}:</div>
-                  <ObsidianCodeBlock content={resultDisplayText} />
-                </div>
-              )}
-              {response.status === ToolCallResponseStatus.Error && (
-                <div className="yolo-toolcall-content-section">
-                  <div>{toolLabels.error}:</div>
-                  <ObsidianCodeBlock content={response.error} />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
+          )
+        })()}
       {renderCompactionPendingHint && (
         <div
           className={cx(
