@@ -1072,6 +1072,7 @@ const ToolMessage = memo(function ToolMessage({
   terminalCommandResultsByToolCallId,
   subagentResultsByToolCallId,
   onMessageUpdate,
+  onToolCallResponseUpdate,
   onRecoverToolCall,
   onRecoverAnswerUserQuestion,
 }: {
@@ -1085,6 +1086,11 @@ const ToolMessage = memo(function ToolMessage({
   >
   subagentResultsByToolCallId?: ReadonlyMap<string, ChatSubagentResultMessage>
   onMessageUpdate: (message: ChatToolMessage) => void
+  onToolCallResponseUpdate?: (
+    toolMessageId: string,
+    toolCallId: string,
+    response: ToolCallResponse,
+  ) => void
   onRecoverToolCall?: (payload: {
     conversationId: string
     toolMessageId: string
@@ -1096,6 +1102,33 @@ const ToolMessage = memo(function ToolMessage({
     toolCallId: string
   }) => void
 }) {
+  const handleParentToolCallResponseUpdate = useCallback(
+    (toolCallId: string, response: ToolCallResponse) => {
+      onToolCallResponseUpdate?.(message.id, toolCallId, response)
+    },
+    [message.id, onToolCallResponseUpdate],
+  )
+  const handleFallbackToolCallResponseUpdate = useCallback(
+    (toolCallId: string, response: ToolCallResponse) => {
+      // Fallback is for read-only/legacy hosts that have not adopted
+      // onToolCallResponseUpdate; performance-sensitive chat surfaces should
+      // use the parent-owned id update path above.
+      onMessageUpdate({
+        ...message,
+        toolCalls: message.toolCalls.map((toolCall) =>
+          toolCall.request.id === toolCallId
+            ? { ...toolCall, response }
+            : toolCall,
+        ),
+      })
+    },
+    [message, onMessageUpdate],
+  )
+  const handleToolCallResponseUpdate =
+    onToolCallResponseUpdate !== undefined
+      ? handleParentToolCallResponseUpdate
+      : handleFallbackToolCallResponseUpdate
+
   return (
     <div className="yolo-toolcall-container">
       <AnimatePresence initial={false}>
@@ -1108,7 +1141,7 @@ const ToolMessage = memo(function ToolMessage({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ToolCallItem
+            <MemoizedToolCallItem
               request={toolCall.request}
               response={toolCall.response}
               conversationId={conversationId}
@@ -1125,16 +1158,7 @@ const ToolMessage = memo(function ToolMessage({
               )}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
-              onResponseUpdate={(response) =>
-                onMessageUpdate({
-                  ...message,
-                  toolCalls: message.toolCalls.map((t) =>
-                    t.request.id === toolCall.request.id
-                      ? { ...t, response }
-                      : t,
-                  ),
-                })
-              }
+              onResponseUpdate={handleToolCallResponseUpdate}
             />
           </motion.div>
         ))}
@@ -1143,19 +1167,7 @@ const ToolMessage = memo(function ToolMessage({
   )
 })
 
-function ToolCallItem({
-  request,
-  response,
-  conversationId,
-  toolMessageId,
-  showCompactionPendingHint = false,
-  showRunningFooter = true,
-  terminalCommandResult,
-  subagentResult,
-  onRecoverToolCall,
-  onRecoverAnswerUserQuestion,
-  onResponseUpdate,
-}: {
+type ToolCallItemProps = {
   request: ToolCallRequest
   response: ToolCallResponse
   conversationId: string
@@ -1174,8 +1186,22 @@ function ToolCallItem({
     resolvedMessages: ChatMessage[]
     toolCallId: string
   }) => void
-  onResponseUpdate: (response: ToolCallResponse) => void
-}) {
+  onResponseUpdate: (toolCallId: string, response: ToolCallResponse) => void
+}
+
+function ToolCallItem({
+  request,
+  response,
+  conversationId,
+  toolMessageId,
+  showCompactionPendingHint = false,
+  showRunningFooter = true,
+  terminalCommandResult,
+  subagentResult,
+  onRecoverToolCall,
+  onRecoverAnswerUserQuestion,
+  onResponseUpdate,
+}: ToolCallItemProps) {
   const isAskUserQuestion = useMemo(
     () => isAskUserQuestionToolName(request.name),
     [request.name],
@@ -1221,7 +1247,7 @@ function ToolCallItem({
     request,
     conversationId,
     toolMessageId,
-    onResponseUpdate,
+    (nextResponse) => onResponseUpdate(request.id, nextResponse),
     onRecoverToolCall,
   )
 
@@ -1492,10 +1518,12 @@ function ToolCallItem({
                       : extractTerminalCommandArgs(request.arguments)
                   }
                   initialStdout={
-                    terminalCommandResult?.stdout ?? syntheticLiveTaskOutput.stdout
+                    terminalCommandResult?.stdout ??
+                    syntheticLiveTaskOutput.stdout
                   }
                   initialStderr={
-                    terminalCommandResult?.stderr ?? syntheticLiveTaskOutput.stderr
+                    terminalCommandResult?.stderr ??
+                    syntheticLiveTaskOutput.stderr
                   }
                   onAbort={handleAbort}
                 />
@@ -1613,6 +1641,24 @@ function ToolCallItem({
     </div>
   )
 }
+
+export const areToolCallItemPropsEqual = (
+  prev: ToolCallItemProps,
+  next: ToolCallItemProps,
+): boolean =>
+  prev.request === next.request &&
+  prev.response === next.response &&
+  prev.conversationId === next.conversationId &&
+  prev.toolMessageId === next.toolMessageId &&
+  prev.showCompactionPendingHint === next.showCompactionPendingHint &&
+  prev.showRunningFooter === next.showRunningFooter &&
+  prev.terminalCommandResult === next.terminalCommandResult &&
+  prev.subagentResult === next.subagentResult &&
+  prev.onRecoverToolCall === next.onRecoverToolCall &&
+  prev.onRecoverAnswerUserQuestion === next.onRecoverAnswerUserQuestion &&
+  prev.onResponseUpdate === next.onResponseUpdate
+
+const MemoizedToolCallItem = memo(ToolCallItem, areToolCallItemPropsEqual)
 
 function useToolCall(
   request: ToolCallRequest,

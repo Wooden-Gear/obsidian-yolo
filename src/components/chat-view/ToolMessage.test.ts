@@ -33,13 +33,15 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { ChatTerminalCommandResultMessage } from '../../types/chat'
 import {
+  type ToolCallResponse,
   ToolCallResponseStatus,
   createCompleteToolCallArguments,
 } from '../../types/tool-call.types'
 
 import { getToolHeadlineParts, getToolHeadlineText } from './toolHeadline'
+import type { ToolLabels } from './ToolMessage'
 import ToolMessage, {
-  type ToolLabels,
+  areToolCallItemPropsEqual,
   getHeadlineDisplayInfo,
 } from './ToolMessage'
 
@@ -233,12 +235,49 @@ describe('ToolMessage rendering', () => {
           ],
         },
         conversationId: 'conversation-1',
-        terminalCommandResultsByToolCallId: new Map([['tool-1', terminalResult]]),
+        terminalCommandResultsByToolCallId: new Map([
+          ['tool-1', terminalResult],
+        ]),
         onMessageUpdate: () => {},
       }),
     )
 
     expect(mockedLiveTaskCard).not.toHaveBeenCalled()
+  })
+
+  it('keeps unchanged tool call item props memo-equivalent', () => {
+    const request = {
+      id: 'tool-1',
+      name: 'yolo_local__fs_read',
+      arguments: createCompleteToolCallArguments({
+        value: { paths: ['docs/plan.md'] },
+      }),
+    }
+    const response: ToolCallResponse = {
+      status: ToolCallResponseStatus.Success,
+      data: { type: 'text' as const, text: 'ok' },
+    }
+    const onResponseUpdate = jest.fn()
+    const props = {
+      request,
+      response,
+      conversationId: 'conversation-1',
+      toolMessageId: 'tool-message-1',
+      showCompactionPendingHint: false,
+      showRunningFooter: true,
+      onResponseUpdate,
+    }
+
+    expect(areToolCallItemPropsEqual(props, { ...props })).toBe(true)
+    expect(
+      areToolCallItemPropsEqual(props, {
+        ...props,
+        response: {
+          status: ToolCallResponseStatus.Error,
+          error: 'failed',
+        } satisfies ToolCallResponse,
+      }),
+    ).toBe(false)
   })
 })
 

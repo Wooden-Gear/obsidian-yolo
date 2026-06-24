@@ -202,6 +202,11 @@ export type AssistantToolMessageGroupItemProps = {
     targetFilePath?: string,
   ) => void
   onToolMessageUpdate: (message: ChatToolMessage) => void
+  onToolCallResponseUpdate?: (
+    toolMessageId: string,
+    toolCallId: string,
+    response: ChatToolMessage['toolCalls'][number]['response'],
+  ) => void
   terminalCommandResultsByToolCallId?: ReadonlyMap<
     string,
     ChatTerminalCommandResultMessage
@@ -257,6 +262,7 @@ export default function AssistantToolMessageGroupItem({
   activeApplyRequestKey,
   onApply,
   onToolMessageUpdate,
+  onToolCallResponseUpdate,
   terminalCommandResultsByToolCallId,
   subagentResultsByToolCallId,
   onRecoverToolCall,
@@ -727,6 +733,7 @@ export default function AssistantToolMessageGroupItem({
               }
               subagentResultsByToolCallId={subagentResultsByToolCallId}
               onMessageUpdate={onToolMessageUpdate}
+              onToolCallResponseUpdate={onToolCallResponseUpdate}
               onRecoverToolCall={onRecoverToolCall}
               onRecoverAnswerUserQuestion={onRecoverAnswerUserQuestion}
             />

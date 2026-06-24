@@ -4009,46 +4009,54 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     [app, app.vault, app.workspace, currentConversationId, plugin, settings, t],
   )
 
-  const handleToolMessageUpdate = useCallback(
-    (toolMessage: ChatToolMessage) => {
-      const toolMessageIndex = chatMessages.findIndex(
-        (message) => message.id === toolMessage.id,
-      )
-      if (toolMessageIndex === -1) {
-        // The tool message no longer exists in the chat history.
-        // This likely means a new message was submitted while this stream was running.
-        // Abort the tool calls and keep the current chat history.
-        void (async () => {
-          const mcpManager = await getMcpManager()
-          toolMessage.toolCalls.forEach((toolCall) => {
-            mcpManager.abortToolCall(toolCall.request.id)
-          })
-        })()
-        return
+  const updateToolMessageInChatHistory = useCallback(
+    (
+      update:
+        | ChatToolMessage
+        | ((currentToolMessage: ChatToolMessage) => ChatToolMessage),
+      targetToolMessageId?: string,
+    ): boolean => {
+      const targetId =
+        typeof update === 'function' ? targetToolMessageId : update.id
+      if (!targetId) {
+        return false
       }
 
-      const updatedMessages = chatMessages.map((message) =>
-        message.id === toolMessage.id ? toolMessage : message,
+      const sourceMessages = chatMessagesStateRef.current
+      const toolMessageIndex = sourceMessages.findIndex(
+        (message) => message.id === targetId,
       )
+      const currentToolMessage = sourceMessages[toolMessageIndex]
+      if (toolMessageIndex === -1 || currentToolMessage?.role !== 'tool') {
+        return false
+      }
+
+      const nextToolMessage =
+        typeof update === 'function' ? update(currentToolMessage) : update
+      if (nextToolMessage === currentToolMessage) {
+        return true
+      }
+
+      const updatedMessages = sourceMessages.map((message) =>
+        message.id === targetId ? nextToolMessage : message,
+      )
+      chatMessagesStateRef.current = updatedMessages
       setChatMessages(updatedMessages)
       agentService.replaceConversationMessages(
         currentConversationId,
         updatedMessages,
       )
 
-      // Resume the chat automatically if this tool message is the last message
-      // and all tool calls have completed.
-      if (
-        toolMessageIndex === chatMessages.length - 1 &&
-        toolMessage.toolCalls.every((toolCall) =>
+      const shouldResume =
+        toolMessageIndex === sourceMessages.length - 1 &&
+        nextToolMessage.toolCalls.every((toolCall) =>
           [
             ToolCallResponseStatus.Success,
             ToolCallResponseStatus.Error,
           ].includes(toolCall.response.status),
         )
-      ) {
-        // Using updated toolMessage directly because chatMessages state
-        // still contains the old values
+
+      if (shouldResume) {
         submitChatMutation.mutate({
           chatMessages: updatedMessages,
           conversationId: currentConversationId,
@@ -4059,16 +4067,84 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
           forceScrollToBottom()
         })
       }
+
+      return true
     },
     [
-      chatMessages,
-      currentConversationId,
       agentService,
-      submitChatMutation,
-      getMcpManager,
+      currentConversationId,
       forceScrollToBottom,
       resolveReasoningLevelForMessages,
+      submitChatMutation,
     ],
+  )
+
+  const handleToolMessageUpdate = useCallback(
+    (toolMessage: ChatToolMessage) => {
+      // Normal Chat rendering uses handleToolCallResponseUpdate so unchanged
+      // sibling tool cards can stay memoized. This remains as the legacy whole
+      // message fallback for ToolMessage hosts that still call onMessageUpdate.
+      const didFindToolMessage = updateToolMessageInChatHistory(toolMessage)
+      if (didFindToolMessage) {
+        return
+      }
+
+      // The tool message no longer exists in the chat history.
+      // This likely means a new message was submitted while this stream was running.
+      // Abort the tool calls and keep the current chat history.
+      void (async () => {
+        const mcpManager = await getMcpManager()
+        toolMessage.toolCalls.forEach((toolCall) => {
+          mcpManager.abortToolCall(toolCall.request.id)
+        })
+      })()
+    },
+    [getMcpManager, updateToolMessageInChatHistory],
+  )
+
+  const handleToolCallResponseUpdate = useCallback(
+    (toolMessageId: string, toolCallId: string, response: ToolCallResponse) => {
+      let shouldAbortMissingToolCall = false
+      const didFindToolMessage = updateToolMessageInChatHistory(
+        (currentToolMessage) => {
+          if (currentToolMessage.id !== toolMessageId) {
+            return currentToolMessage
+          }
+          let didUpdate = false
+          let didChange = false
+          const nextToolCalls = currentToolMessage.toolCalls.map((toolCall) => {
+            if (toolCall.request.id !== toolCallId) {
+              return toolCall
+            }
+            didUpdate = true
+            if (toolCall.response === response) {
+              return toolCall
+            }
+            didChange = true
+            return { ...toolCall, response }
+          })
+
+          if (!didUpdate) {
+            shouldAbortMissingToolCall = true
+            return currentToolMessage
+          }
+          if (!didChange) {
+            return currentToolMessage
+          }
+
+          return { ...currentToolMessage, toolCalls: nextToolCalls }
+        },
+        toolMessageId,
+      )
+
+      if (!didFindToolMessage || shouldAbortMissingToolCall) {
+        void (async () => {
+          const mcpManager = await getMcpManager()
+          mcpManager.abortToolCall(toolCallId)
+        })()
+      }
+    },
+    [getMcpManager, updateToolMessageInChatHistory],
   )
 
   const handleContinueResponse = useCallback(() => {
@@ -5229,6 +5305,7 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
             activeApplyRequestKey={activeApplyRequestKey}
             onApply={handleApply}
             onToolMessageUpdate={handleToolMessageUpdate}
+            onToolCallResponseUpdate={handleToolCallResponseUpdate}
             terminalCommandResultsByToolCallId={
               terminalCommandResultsByToolCallId
             }

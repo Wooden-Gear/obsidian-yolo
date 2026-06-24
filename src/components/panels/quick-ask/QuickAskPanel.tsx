@@ -60,6 +60,7 @@ import {
   MentionableBlock,
   SerializedMentionable,
 } from '../../../types/mentionable'
+import type { ToolCallResponse } from '../../../types/tool-call.types'
 import { renderAssistantIcon } from '../../../utils/assistant-icon'
 import type { EditorSnapshotInjection } from '../../../utils/chat/contextual-injections'
 import { generateEditPlan } from '../../../utils/chat/editMode'
@@ -1214,6 +1215,33 @@ export function QuickAskPanel({
     [],
   )
 
+  const handleToolCallResponseUpdate = useCallback(
+    (toolMessageId: string, toolCallId: string, response: ToolCallResponse) => {
+      setChatMessages((prev) =>
+        prev.map((message) => {
+          if (message.id !== toolMessageId || message.role !== 'tool') {
+            return message
+          }
+
+          let didChange = false
+          const nextToolCalls = message.toolCalls.map((toolCall) => {
+            if (toolCall.request.id !== toolCallId) {
+              return toolCall
+            }
+            if (toolCall.response === response) {
+              return toolCall
+            }
+            didChange = true
+            return { ...toolCall, response }
+          })
+
+          return didChange ? { ...message, toolCalls: nextToolCalls } : message
+        }),
+      )
+    },
+    [],
+  )
+
   const registerChatUserInputRef = useCallback(
     (messageId: string, ref: ChatUserInputRef | null) => {
       if (ref) {
@@ -2086,6 +2114,7 @@ export function QuickAskPanel({
             activeApplyRequestKey={activeApplyRequestKey}
             onApply={handleApply}
             onToolMessageUpdate={handleToolMessageUpdate}
+            onToolCallResponseUpdate={handleToolCallResponseUpdate}
             onEditStart={noop}
             onEditCancel={noop}
             onEditSave={noop}
