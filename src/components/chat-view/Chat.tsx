@@ -103,6 +103,12 @@ import {
 import { groupAssistantAndToolMessages } from '../../utils/chat/message-groups'
 import { RequestContextBuilder } from '../../utils/chat/requestContextBuilder'
 import { buildChatTimelineItems } from '../../utils/chat/timeline'
+import {
+  buildSubagentResultMap,
+  buildTerminalCommandResultMap,
+  collectToolCallIdsFromGroupedMessages,
+  reuseShallowEqualMap,
+} from '../../utils/chat/tool-result-index'
 import { formatTokenCount } from '../../utils/llm/formatTokenCount'
 import { resolveEffectiveMaxContextTokens } from '../../utils/llm/model-capability-registry'
 import { readTFileContent } from '../../utils/obsidian'
@@ -1836,29 +1842,40 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
     ],
   )
 
+  const windowedToolCallIds = useMemo(
+    () => collectToolCallIdsFromGroupedMessages(windowedGroupedChatMessages),
+    [windowedGroupedChatMessages],
+  )
+  const terminalCommandResultsByToolCallIdRef = useRef<ReadonlyMap<
+    string,
+    ChatTerminalCommandResultMessage
+  > | null>(null)
+  const subagentResultsByToolCallIdRef = useRef<ReadonlyMap<
+    string,
+    ChatSubagentResultMessage
+  > | null>(null)
   const terminalCommandResultsByToolCallId = useMemo(() => {
-    const map = new Map<string, ChatTerminalCommandResultMessage>()
-    for (const message of chatMessages) {
-      if (
-        message.role !== 'terminal_command_result' ||
-        !message.delegateToolCallId
-      ) {
-        continue
-      }
-      map.set(message.delegateToolCallId, message)
-    }
-    return map
-  }, [chatMessages])
+    const next = buildTerminalCommandResultMap(
+      chatMessages,
+      windowedToolCallIds,
+    )
+    const stable = terminalCommandResultsByToolCallIdRef.current
+      ? reuseShallowEqualMap(
+          terminalCommandResultsByToolCallIdRef.current,
+          next,
+        )
+      : next
+    terminalCommandResultsByToolCallIdRef.current = stable
+    return stable
+  }, [chatMessages, windowedToolCallIds])
   const subagentResultsByToolCallId = useMemo(() => {
-    const map = new Map<string, ChatSubagentResultMessage>()
-    for (const message of chatMessages) {
-      if (message.role !== 'subagent_result' || !message.delegateToolCallId) {
-        continue
-      }
-      map.set(message.delegateToolCallId, message)
-    }
-    return map
-  }, [chatMessages])
+    const next = buildSubagentResultMap(chatMessages, windowedToolCallIds)
+    const stable = subagentResultsByToolCallIdRef.current
+      ? reuseShallowEqualMap(subagentResultsByToolCallIdRef.current, next)
+      : next
+    subagentResultsByToolCallIdRef.current = stable
+    return stable
+  }, [chatMessages, windowedToolCallIds])
   useEffect(() => {
     const chatMessagesElement = chatMessagesRef.current
     if (!chatMessagesElement) {
