@@ -394,29 +394,11 @@ const truncateText = (text: string, maxLength: number): string => {
   return `${text.slice(0, maxLength - 1)}...`
 }
 
-const FS_READ_BROWSER_DISPLAY_MAX_CHARS = 12000
+const TOOL_RESULT_DISPLAY_MAX_CHARS = 12000
 
-const shouldTruncateToolResultDisplay = (
-  request: ToolRequestLike,
-  text: string,
-): boolean => {
-  try {
-    const { serverName, toolName } = parseToolName(request.name)
-    return (
-      serverName === getLocalFileToolServerName() &&
-      toolName === 'fs_read' &&
-      text.includes('browser://')
-    )
-  } catch {
-    return false
-  }
-}
-
-const getToolResultDisplayText = ({
-  request,
+export const getToolResultDisplayText = ({
   response,
 }: {
-  request: ToolRequestLike
   response: ToolCallResponse
 }): string => {
   if (response.status !== ToolCallResponseStatus.Success) {
@@ -424,17 +406,14 @@ const getToolResultDisplayText = ({
   }
 
   const text = response.data.text
-  if (
-    !shouldTruncateToolResultDisplay(request, text) ||
-    text.length <= FS_READ_BROWSER_DISPLAY_MAX_CHARS
-  ) {
+  if (text.length <= TOOL_RESULT_DISPLAY_MAX_CHARS) {
     return text
   }
 
-  const hiddenChars = text.length - FS_READ_BROWSER_DISPLAY_MAX_CHARS
+  const hiddenChars = text.length - TOOL_RESULT_DISPLAY_MAX_CHARS
   return `${text.slice(
     0,
-    FS_READ_BROWSER_DISPLAY_MAX_CHARS,
+    TOOL_RESULT_DISPLAY_MAX_CHARS,
   )}\n\n[Display shortened by ${hiddenChars} characters. The assistant received the full tool result.]`
 }
 
@@ -1494,7 +1473,7 @@ function ToolCallItem({
               : {}
           const resultDisplayText =
             response.status === ToolCallResponseStatus.Success
-              ? getToolResultDisplayText({ request, response })
+              ? getToolResultDisplayText({ response })
               : ''
 
           return (

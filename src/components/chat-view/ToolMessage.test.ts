@@ -43,6 +43,7 @@ import type { ToolLabels } from './ToolMessage'
 import ToolMessage, {
   areToolCallItemPropsEqual,
   getHeadlineDisplayInfo,
+  getToolResultDisplayText,
 } from './ToolMessage'
 
 describe('ToolMessage rendering', () => {
@@ -278,6 +279,36 @@ describe('ToolMessage rendering', () => {
         } satisfies ToolCallResponse,
       }),
     ).toBe(false)
+  })
+})
+
+describe('getToolResultDisplayText', () => {
+  it('returns text unchanged when it fits within the display budget', () => {
+    const text = 'small fs_read output'
+    expect(
+      getToolResultDisplayText({
+        response: {
+          status: ToolCallResponseStatus.Success,
+          data: { type: 'text', text },
+        },
+      }),
+    ).toBe(text)
+  })
+
+  it('truncates oversized text regardless of the tool name', () => {
+    const text = 'a'.repeat(20_000)
+    const displayed = getToolResultDisplayText({
+      response: {
+        status: ToolCallResponseStatus.Success,
+        data: { type: 'text', text },
+      },
+    })
+
+    expect(displayed.startsWith('a'.repeat(12_000))).toBe(true)
+    expect(displayed).toContain(
+      '[Display shortened by 8000 characters. The assistant received the full tool result.]',
+    )
+    expect(displayed.length).toBeLessThan(text.length)
   })
 })
 
