@@ -2133,17 +2133,21 @@ export const en: TranslationKeys = {
   configTransfer: {
     export: {
       title: 'Export settings',
-      description: 'Select the settings to export',
+      description:
+        'Select the settings to export. The file will be saved to {path}',
       selectAll: 'Select all',
       selectNone: 'Select none',
       sensitive: 'Contains credentials',
       redactedOption:
         'Redact credentials (replace API keys / passwords / headers / env vars with random strings)',
+      confirmUnredactedTitle: 'Confirm export',
+      confirmUnredacted:
+        'This unredacted export will save API keys / passwords / headers / env vars and other sensitive data to a file in the current vault. Continue?',
       submit: 'Export',
       cancel: 'Cancel',
       noticeAtLeastOne: 'Please select at least one item',
       noticeReadFailed: 'Failed to read current settings',
-      noticeSuccess: 'Settings exported as {fileName}',
+      noticeSuccess: 'Settings exported to {path}',
       noticeFailed: 'Failed to export settings — check console for details',
     },
     import: {

@@ -1989,17 +1989,20 @@ export const zh: TranslationKeys = {
   configTransfer: {
     export: {
       title: '导出配置',
-      description: '选择要导出的配置项',
+      description: '选择要导出的配置项，文件将保存到 {path}',
       selectAll: '全选',
       selectNone: '全不选',
       sensitive: '含凭证',
       redactedOption:
         '脱敏导出（替换 API Key / 密码 / Header / 环境变量等凭证为随机字符串）',
+      confirmUnredactedTitle: '确认导出',
+      confirmUnredacted:
+        '未脱敏导出会把 API Key / 密码 / Header / 环境变量等敏感信息保存到当前库内文件。确定继续吗？',
       submit: '导出',
       cancel: '取消',
       noticeAtLeastOne: '请至少选择一项配置',
       noticeReadFailed: '无法读取当前配置数据',
-      noticeSuccess: '配置已导出为 {fileName}',
+      noticeSuccess: '配置已导出到 {path}',
       noticeFailed: '配置导出失败，请检查控制台日志',
     },
     import: {

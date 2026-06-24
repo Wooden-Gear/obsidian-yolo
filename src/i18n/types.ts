@@ -1838,6 +1838,8 @@ export type TranslationKeys = {
       selectNone: string
       sensitive: string
       redactedOption: string
+      confirmUnredactedTitle: string
+      confirmUnredacted: string
       submit: string
       cancel: string
       noticeAtLeastOne: string
