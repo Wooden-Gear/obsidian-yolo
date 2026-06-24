@@ -677,7 +677,10 @@ const summarizeFsReadPaths = (paths: string[]): string => {
     return paths.join(', ')
   }
 
-  const visiblePaths = paths.slice(0, FS_READ_VISIBLE_PATH_LIMIT_BEFORE_OMISSION)
+  const visiblePaths = paths.slice(
+    0,
+    FS_READ_VISIBLE_PATH_LIMIT_BEFORE_OMISSION,
+  )
   const hiddenCount = paths.length - visiblePaths.length
   return `${visiblePaths.join(', ')} +${hiddenCount}`
 }
