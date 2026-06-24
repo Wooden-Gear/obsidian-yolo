@@ -340,6 +340,16 @@
   min-height: 0;
 }
 
+body.is-mobile
+  .workspace-leaf-content[data-type='yolo-chat-view']
+  > .view-content.yolo-chat-view-content--keyboard-managed {
+  padding-bottom: 0;
+}
+
+body.is-mobile .yolo-chat-container--mobile-keyboard-managed {
+  height: var(--yolo-chat-mobile-viewport-height, 100%);
+}
+
 .yolo-chat-container--sidebar {
   --yolo-chat-sidebar-inline-padding: calc(var(--size-4-6) / 2);
 }
