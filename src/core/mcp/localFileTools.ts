@@ -840,7 +840,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_edit',
       description:
-        'Apply a single targeted text edit within an existing file. Prefer this tool when modifying content in an existing file. Two ways to locate the edit, choose exactly one: for an exact-text edit, provide oldText (the text to find, which must match the file exactly once) and newText; for a line-range edit, provide startLine and endLine (1-based inclusive) and newText. Do not provide both oldText and startLine/endLine. To make several edits in the same file, emit multiple fs_edit calls — the system automatically merges edits targeting the same file into one atomic review and write, so earlier edits cannot invalidate later ones.',
+        'Apply one targeted text edit to an existing file. You must provide path, newText, and exactly one locator: oldText for exact-text replacement, or startLine+endLine for line-range replacement. Do not call fs_edit with only path and newText. Do not provide both oldText and startLine/endLine. Use fs_write to create a new file, fill an empty file, or overwrite full file content. To make several edits in the same file, emit multiple fs_edit calls — the system automatically merges edits targeting the same file into one atomic review and write, so earlier edits cannot invalidate later ones.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -848,14 +848,15 @@ export function getLocalFileTools(options?: {
             type: 'string',
             description: 'Vault-relative file path.',
           },
+          newText: {
+            type: 'string',
+            description:
+              'Replacement text. This is not a standalone write request; it is only valid together with oldText or startLine+endLine.',
+          },
           oldText: {
             type: 'string',
             description:
               'Exact-text mode: the existing text to find and replace. Must match the file exactly once. Do not combine with startLine/endLine.',
-          },
-          newText: {
-            type: 'string',
-            description: 'Replacement text. Required in both modes.',
           },
           startLine: {
             type: 'integer',
