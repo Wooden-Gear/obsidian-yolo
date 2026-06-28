@@ -89,6 +89,14 @@ export const serializeMentionable = (
         data: mentionable.data,
         pageCount: mentionable.pageCount,
       }
+    case 'office':
+      return {
+        type: 'office',
+        name: mentionable.name,
+        kind: mentionable.kind,
+        rawData: mentionable.rawData,
+        extractedText: mentionable.extractedText,
+      }
     case 'model':
       return {
         type: 'model',
@@ -237,6 +245,25 @@ export const deserializeMentionable = (
           pageCount: mentionable.pageCount,
         }
       }
+      case 'office': {
+        if (
+          typeof mentionable.name !== 'string' ||
+          (mentionable.kind !== 'docx' &&
+            mentionable.kind !== 'pptx' &&
+            mentionable.kind !== 'xlsx') ||
+          typeof mentionable.rawData !== 'string' ||
+          typeof mentionable.extractedText !== 'string'
+        ) {
+          return null
+        }
+        return {
+          type: 'office',
+          name: mentionable.name,
+          kind: mentionable.kind,
+          rawData: mentionable.rawData,
+          extractedText: mentionable.extractedText,
+        }
+      }
       case 'model': {
         return {
           type: 'model',
@@ -280,6 +307,8 @@ export function getMentionableKey(mentionable: SerializedMentionable): string {
       const payload = mentionable.rawData ?? mentionable.data ?? ''
       return `pdf:${mentionable.name}:${payload.length}:${payload.slice(-32)}`
     }
+    case 'office':
+      return `office:${mentionable.name}:${mentionable.kind}:${mentionable.rawData.length}:${mentionable.rawData.slice(-32)}`
     case 'model':
       return `model:${mentionable.modelId}`
   }
@@ -395,6 +424,8 @@ export function getMentionableName(
     case 'image':
       return mentionable.name
     case 'pdf':
+      return mentionable.name
+    case 'office':
       return mentionable.name
     case 'model':
       return mentionable.name

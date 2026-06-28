@@ -10,6 +10,7 @@ import {
   MentionableFolder,
   MentionableImage,
   MentionableModel,
+  MentionableOffice,
   MentionablePDF,
   MentionableUrl,
   MentionableWebSelection,
@@ -405,6 +406,42 @@ function PdfBadge({
   )
 }
 
+function OfficeBadge({
+  mentionable,
+  onDelete,
+  onClick,
+  isFocused,
+  showDeleteButton,
+}: {
+  mentionable: MentionableOffice
+  onDelete: () => void
+  onClick: () => void
+  isFocused: boolean
+  showDeleteButton?: boolean
+}) {
+  const Icon = getMentionableIcon(mentionable)
+  return (
+    <BadgeBase
+      onDelete={onDelete}
+      onClick={onClick}
+      isFocused={isFocused}
+      showExpandButton={false}
+      showDeleteButton={showDeleteButton}
+      title={mentionable.name}
+    >
+      <div className="yolo-chat-user-input-file-badge-name">
+        {Icon && (
+          <Icon
+            size={12}
+            className="yolo-chat-user-input-file-badge-name-icon"
+          />
+        )}
+        <span>{mentionable.name}</span>
+      </div>
+    </BadgeBase>
+  )
+}
+
 function ModelBadge({
   mentionable,
   onDelete,
@@ -537,6 +574,16 @@ export default function MentionableBadge({
     case 'pdf':
       return (
         <PdfBadge
+          mentionable={mentionable}
+          onDelete={onDelete}
+          onClick={onClick}
+          isFocused={isFocused}
+          showDeleteButton={showDeleteButton}
+        />
+      )
+    case 'office':
+      return (
+        <OfficeBadge
           mentionable={mentionable}
           onDelete={onDelete}
           onClick={onClick}

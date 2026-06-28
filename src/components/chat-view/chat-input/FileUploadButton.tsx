@@ -26,7 +26,7 @@ export function FileUploadButton({
     >
       <input
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/*,application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx"
         multiple
         onChange={handleFileChange}
         hidden

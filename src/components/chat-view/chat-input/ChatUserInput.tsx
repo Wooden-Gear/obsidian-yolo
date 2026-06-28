@@ -37,6 +37,7 @@ import { ChatModel } from '../../../types/chat-model.types'
 import {
   Mentionable,
   MentionableImage,
+  MentionableOffice,
   MentionablePDF,
   SerializedMentionable,
 } from '../../../types/mentionable'
@@ -52,6 +53,7 @@ import {
 } from '../../../utils/chat/mentionable'
 import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
+import { fileToMentionableOffice } from '../../../utils/llm/office'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
 import ContextUsagePopover from '../ContextUsagePopover'
 import ContextUsageRing from '../ContextUsageRing'
@@ -947,9 +949,59 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       [mentionableUnitLabels, mentionables, setMentionables],
     )
 
+    const handleCreateOfficeMentionables = useCallback(
+      (mentionableOffices: MentionableOffice[]) => {
+        const newMentionableOffices = mentionableOffices.filter(
+          (m) =>
+            !mentionables.some(
+              (mentionable) =>
+                getMentionableKey(serializeMentionable(mentionable)) ===
+                getMentionableKey(serializeMentionable(m)),
+            ),
+        )
+        if (newMentionableOffices.length === 0) return
+        const editor = editorRef.current
+        if (editor) {
+          editor.update(() => {
+            const nodesToInsert: LexicalNode[] = []
+            newMentionableOffices.forEach((mentionable) => {
+              nodesToInsert.push(
+                $createMentionNode(
+                  getMentionableName(mentionable, {
+                    unitLabels: mentionableUnitLabels,
+                  }),
+                  serializeMentionable(mentionable),
+                ),
+              )
+              nodesToInsert.push($createTextNode(' '))
+            })
+            const selection = $getSelection()
+            if (selection && $isRangeSelection(selection)) {
+              selection.insertNodes(nodesToInsert)
+              return
+            }
+
+            const root = $getRoot()
+            let paragraphNode = root.getFirstChild()
+            if (!paragraphNode || !$isParagraphNode(paragraphNode)) {
+              const created = $createParagraphNode()
+              root.append(created)
+              paragraphNode = created
+            }
+            const paragraph = paragraphNode as ParagraphNode
+            nodesToInsert.forEach((node) => {
+              paragraph.append(node)
+            })
+          })
+        }
+        setMentionables([...mentionables, ...newMentionableOffices])
+      },
+      [mentionableUnitLabels, mentionables, setMentionables],
+    )
+
     const handleUploadFiles = useCallback(
       (files: File[]) => {
-        const { imageFiles, pdfFiles, unsupportedFiles } =
+        const { imageFiles, pdfFiles, officeFiles, unsupportedFiles } =
           classifyUploadFiles(files)
         if (unsupportedFiles.length > 0) {
           new Notice(
@@ -1012,12 +1064,48 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             }
           })
         }
+        if (officeFiles.length > 0) {
+          void Promise.allSettled(
+            officeFiles.map((file) => fileToMentionableOffice(file)),
+          ).then((results) => {
+            const successes: MentionableOffice[] = []
+            results.forEach((result, idx) => {
+              if (result.status === 'fulfilled') {
+                successes.push(result.value)
+              } else {
+                const name = officeFiles[idx]?.name ?? 'Office document'
+                console.error(
+                  `Failed to extract Office document ${name}`,
+                  result.reason,
+                )
+                new Notice(
+                  t(
+                    'chat.readOfficeFailed',
+                    'Failed to read Office document "{name}": {error}',
+                  )
+                    .replace('{name}', name)
+                    .replace(
+                      '{error}',
+                      result.reason instanceof Error
+                        ? result.reason.message
+                        : 'unknown error',
+                    ),
+                )
+              }
+            })
+            if (successes.length > 0) {
+              handleCreateOfficeMentionables(successes)
+            }
+          })
+        }
       },
       [
         app,
         handleCreateImageMentionables,
+        handleCreateOfficeMentionables,
         handleCreatePdfMentionables,
         settings,
+        t,
       ],
     )
 

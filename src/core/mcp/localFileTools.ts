@@ -37,6 +37,10 @@ import {
   chatModelSupportsVision,
 } from '../../utils/llm/model-modalities'
 import {
+  type OfficeDocumentKind,
+  parseOfficeDocument,
+} from '../../utils/office'
+import {
   PDF_INDEX_MAX_BYTES,
   PDF_INDEX_MAX_PAGES,
   extractPdfText,
@@ -132,6 +136,7 @@ export { recoverLikelyEscapedBackslashSequences }
 const LOCAL_FILE_TOOL_SERVER = 'yolo_local'
 export const TERMINAL_COMMAND_TOOL_NAME = 'terminal_command'
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024
+const OFFICE_READ_MAX_BYTES = 10 * 1024 * 1024
 // fs_edit 读全文做替换的绝对内存防御上限。MAX_FILE_SIZE_BYTES 是"快照阈值"
 // （超过则跳过 undo/review 快照），本常量是"绝对拒绝上限"（超过才真正拒绝编辑）。
 const MAX_EDIT_FILE_SIZE_BYTES = 16 * 1024 * 1024
@@ -246,6 +251,16 @@ type FsReadOperation =
     }
 type ContextPruneMode = 'selected' | 'all'
 type FsFileOpAction = 'write' | 'delete' | 'create_dir' | 'move'
+
+function getOfficeDocumentKindFromExtension(
+  extension: string | undefined,
+): OfficeDocumentKind | null {
+  const normalized = extension?.toLowerCase()
+  if (normalized === 'docx' || normalized === 'pptx' || normalized === 'xlsx') {
+    return normalized
+  }
+  return null
+}
 
 type LocalToolCallResultMetadata = {
   editSummary?: ToolEditSummary
@@ -743,7 +758,7 @@ export function getLocalFileTools(options?: {
     {
       name: 'fs_read',
       description:
-        'Read vault files, skill instructions, or open Obsidian web pages. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes. Open web pages use browser://<page_id> copied exactly from <browser_context>. browser:// does not open URLs or fetch internet content; use web_search or web_scrape when available, and tell the user if those tools are unavailable. Do not call browser:// paths when <browser_context> is absent.',
+        'Read vault files, skill instructions, or open Obsidian web pages. Lines are 1-based. For PDFs, output is <page N> tags; lines mode uses page numbers. Office files (.docx/.pptx/.xlsx) are parsed to markdown text. Prefer lines for targeted reads. Skill paths from <available_skills> may use builtin:// prefixes. Open web pages use browser://<page_id> copied exactly from <browser_context>. browser:// does not open URLs or fetch internet content; use web_search or web_scrape when available, and tell the user if those tools are unavailable. Do not call browser:// paths when <browser_context> is absent.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -3697,6 +3712,54 @@ export async function callLocalFileTool({
                   ? { effectiveModality: 'text' as const }
                   : {}),
             })
+            continue
+          }
+
+          const officeKind = getOfficeDocumentKindFromExtension(file.extension)
+          if (officeKind) {
+            if (file.stat.size > OFFICE_READ_MAX_BYTES) {
+              results.push({
+                path,
+                ok: false,
+                error: `Office document too large (${file.stat.size} bytes).`,
+              })
+              continue
+            }
+
+            try {
+              const rawBuf = await app.vault.readBinary(file)
+              const parsed = await parseOfficeDocument(rawBuf, officeKind)
+              const content = parsed.markdown
+              const lines = content.length === 0 ? [] : content.split('\n')
+              const sliced = sliceLinesForFsReadOperation(lines, operation)
+
+              results.push({
+                path,
+                ok: true,
+                totalLines: sliced.totalLines,
+                returnedRange:
+                  operation.type === 'lines'
+                    ? {
+                        startLine: sliced.returnedStartLine,
+                        endLine: sliced.returnedEndLine,
+                      }
+                    : undefined,
+                hasMoreBelow: sliced.hasMoreBelow,
+                nextStartLine: sliced.nextStartLine,
+                content: sliced.outputContent,
+              })
+            } catch (error) {
+              results.push({
+                path,
+                ok: false,
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : typeof error === 'string'
+                      ? error
+                      : JSON.stringify(error),
+              })
+            }
             continue
           }
 

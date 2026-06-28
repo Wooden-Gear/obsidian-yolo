@@ -50,6 +50,7 @@ import type {
   MentionableFile,
   MentionableFolder,
   MentionableImage,
+  MentionableOffice,
   MentionablePDF,
   MentionableWebSelection,
 } from '../../types/mentionable'
@@ -319,6 +320,10 @@ function renderAttachedPdfBlock({
         ? ' (truncated)'
         : ''
   return `## Attached PDFs\n### ${name}${meta}\n\n${text}\n\n`
+}
+
+function renderAttachedOfficeBlock(document: MentionableOffice): string {
+  return `<document name="${escapeXmlAttr(document.name)}" type="${document.kind}">\n${document.extractedText}\n</document>\n\n`
 }
 
 /**
@@ -1032,6 +1037,9 @@ export class RequestContextBuilder {
     const pdfs = message.mentionables.filter(
       (m): m is MentionablePDF => m.type === 'pdf',
     )
+    const offices = message.mentionables.filter(
+      (m): m is MentionableOffice => m.type === 'office',
+    )
     const webSelections = message.mentionables.filter(
       (m): m is MentionableWebSelection => m.type === 'web-selection',
     )
@@ -1052,6 +1060,7 @@ export class RequestContextBuilder {
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
     const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
+    const officePrompt = offices.map(renderAttachedOfficeBlock).join('')
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1060,7 +1069,7 @@ export class RequestContextBuilder {
     const selectedSkillsPrompt = await this.buildSelectedSkillsPrompt(
       message.selectedSkills,
     )
-    const textContent = `${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
+    const textContent = `${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
     if (imageParts.length === 0 && pdfDocumentParts.length === 0) {
       return withTimeContext(textContent)
     }
@@ -1084,6 +1093,7 @@ export class RequestContextBuilder {
           mentionable.type === 'folder' ||
           mentionable.type === 'url' ||
           mentionable.type === 'web-selection' ||
+          mentionable.type === 'office' ||
           mentionable.type === 'assistant-quote',
       )
     )
@@ -1427,6 +1437,9 @@ ${message.annotations
     const pdfs = mentionables.filter(
       (m): m is MentionablePDF => m.type === 'pdf',
     )
+    const offices = mentionables.filter(
+      (m): m is MentionableOffice => m.type === 'office',
+    )
     const webSelections = mentionables.filter(
       (m): m is MentionableWebSelection => m.type === 'web-selection',
     )
@@ -1447,6 +1460,7 @@ ${message.annotations
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
     const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
+    const officePrompt = offices.map(renderAttachedOfficeBlock).join('')
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1493,7 +1507,7 @@ ${message.annotations
       ...pdfDocumentParts,
       {
         type: 'text',
-        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
+        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
       },
     ]
   }

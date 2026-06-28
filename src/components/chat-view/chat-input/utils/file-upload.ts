@@ -1,12 +1,14 @@
 export type ClassifiedUploadFiles = {
   imageFiles: File[]
   pdfFiles: File[]
+  officeFiles: File[]
   unsupportedFiles: File[]
 }
 
 export function classifyUploadFiles(files: File[]): ClassifiedUploadFiles {
   const imageFiles: File[] = []
   const pdfFiles: File[] = []
+  const officeFiles: File[] = []
   const unsupportedFiles: File[] = []
 
   for (const file of files) {
@@ -14,12 +16,14 @@ export function classifyUploadFiles(files: File[]): ClassifiedUploadFiles {
       imageFiles.push(file)
     } else if (isPdfFile(file)) {
       pdfFiles.push(file)
+    } else if (isOfficeFile(file)) {
+      officeFiles.push(file)
     } else {
       unsupportedFiles.push(file)
     }
   }
 
-  return { imageFiles, pdfFiles, unsupportedFiles }
+  return { imageFiles, pdfFiles, officeFiles, unsupportedFiles }
 }
 
 export function getFilesFromClipboardData(clipboardData: DataTransfer): File[] {
@@ -53,5 +57,12 @@ function dedupeFiles(files: File[]): File[] {
 function isPdfFile(file: File): boolean {
   return (
     file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+  )
+}
+
+function isOfficeFile(file: File): boolean {
+  const name = file.name.toLowerCase()
+  return (
+    name.endsWith('.docx') || name.endsWith('.pptx') || name.endsWith('.xlsx')
   )
 }

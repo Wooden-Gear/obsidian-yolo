@@ -1481,6 +1481,7 @@ export const it: TranslationKeys = {
     unsupportedFileType: 'Tipo di file non supportato: {names}',
     processImagesFailed: 'Impossibile elaborare le immagini caricate',
     readPdfFailed: 'Impossibile leggere il PDF "{name}": {error}',
+    readOfficeFailed: 'Failed to read Office document "{name}": {error}',
     addContext: 'Aggiungi contesto',
     applyChanges: 'Applica modifiche',
     copyMessage: 'Copia messaggio',
