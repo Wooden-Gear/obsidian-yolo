@@ -1,7 +1,10 @@
+import { getTextAttachmentKind } from '../../../../utils/llm/text-attachment'
+
 export type ClassifiedUploadFiles = {
   imageFiles: File[]
   pdfFiles: File[]
   officeFiles: File[]
+  textAttachmentFiles: File[]
   unsupportedFiles: File[]
 }
 
@@ -9,6 +12,7 @@ export function classifyUploadFiles(files: File[]): ClassifiedUploadFiles {
   const imageFiles: File[] = []
   const pdfFiles: File[] = []
   const officeFiles: File[] = []
+  const textAttachmentFiles: File[] = []
   const unsupportedFiles: File[] = []
 
   for (const file of files) {
@@ -18,12 +22,20 @@ export function classifyUploadFiles(files: File[]): ClassifiedUploadFiles {
       pdfFiles.push(file)
     } else if (isOfficeFile(file)) {
       officeFiles.push(file)
+    } else if (isTextAttachmentFile(file)) {
+      textAttachmentFiles.push(file)
     } else {
       unsupportedFiles.push(file)
     }
   }
 
-  return { imageFiles, pdfFiles, officeFiles, unsupportedFiles }
+  return {
+    imageFiles,
+    pdfFiles,
+    officeFiles,
+    textAttachmentFiles,
+    unsupportedFiles,
+  }
 }
 
 export function getFilesFromClipboardData(clipboardData: DataTransfer): File[] {
@@ -65,4 +77,8 @@ function isOfficeFile(file: File): boolean {
   return (
     name.endsWith('.docx') || name.endsWith('.pptx') || name.endsWith('.xlsx')
   )
+}
+
+function isTextAttachmentFile(file: File): boolean {
+  return getTextAttachmentKind(file) !== null
 }

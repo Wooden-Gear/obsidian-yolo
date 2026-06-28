@@ -92,6 +92,22 @@ export type MentionableOffice = {
   rawData: string
   extractedText: string
 }
+export type TextAttachmentKind =
+  | 'txt'
+  | 'md'
+  | 'csv'
+  | 'tsv'
+  | 'json'
+  | 'yaml'
+  | 'yml'
+  | 'xml'
+  | 'log'
+export type MentionableTextAttachment = {
+  type: 'text-attachment'
+  name: string
+  kind: TextAttachmentKind
+  content: string
+}
 export type MentionableModel = {
   type: 'model'
   modelId: string
@@ -108,6 +124,7 @@ export type Mentionable =
   | MentionableImage
   | MentionablePDF
   | MentionableOffice
+  | MentionableTextAttachment
   | MentionableModel
 export type SerializedMentionableFile = {
   type: 'file'
@@ -143,6 +160,7 @@ export type SerializedMentionableWebSelection = MentionableWebSelection
 export type SerializedMentionableImage = MentionableImage
 export type SerializedMentionablePDF = MentionablePDF
 export type SerializedMentionableOffice = MentionableOffice
+export type SerializedMentionableTextAttachment = MentionableTextAttachment
 export type SerializedMentionableModel = MentionableModel
 export type SerializedMentionable =
   | SerializedMentionableFile
@@ -154,4 +172,5 @@ export type SerializedMentionable =
   | SerializedMentionableImage
   | SerializedMentionablePDF
   | SerializedMentionableOffice
+  | SerializedMentionableTextAttachment
   | SerializedMentionableModel

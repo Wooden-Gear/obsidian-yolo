@@ -52,6 +52,7 @@ import type {
   MentionableImage,
   MentionableOffice,
   MentionablePDF,
+  MentionableTextAttachment,
   MentionableWebSelection,
 } from '../../types/mentionable'
 import type { ToolCallRequest } from '../../types/tool-call.types'
@@ -310,7 +311,20 @@ function renderAttachedDocumentBlock({
   truncated,
 }: {
   name: string
-  kind: 'pdf' | 'docx' | 'pptx' | 'xlsx'
+  kind:
+    | 'pdf'
+    | 'docx'
+    | 'pptx'
+    | 'xlsx'
+    | 'txt'
+    | 'md'
+    | 'csv'
+    | 'tsv'
+    | 'json'
+    | 'yaml'
+    | 'yml'
+    | 'xml'
+    | 'log'
   text: string
   pageCount?: number
   /** Set when the fallback extractor itself had to truncate (FALLBACK_MAX_PAGES). */
@@ -1041,6 +1055,9 @@ export class RequestContextBuilder {
     const offices = message.mentionables.filter(
       (m): m is MentionableOffice => m.type === 'office',
     )
+    const textAttachments = message.mentionables.filter(
+      (m): m is MentionableTextAttachment => m.type === 'text-attachment',
+    )
     const webSelections = message.mentionables.filter(
       (m): m is MentionableWebSelection => m.type === 'web-selection',
     )
@@ -1070,6 +1087,15 @@ export class RequestContextBuilder {
         }),
       )
       .join('')
+    const textAttachmentPrompt = textAttachments
+      .map((doc) =>
+        renderAttachedDocumentBlock({
+          name: doc.name,
+          kind: doc.kind,
+          text: doc.content,
+        }),
+      )
+      .join('')
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1078,7 +1104,7 @@ export class RequestContextBuilder {
     const selectedSkillsPrompt = await this.buildSelectedSkillsPrompt(
       message.selectedSkills,
     )
-    const textContent = `${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
+    const textContent = `${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${textAttachmentPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`
     if (imageParts.length === 0 && pdfDocumentParts.length === 0) {
       return withTimeContext(textContent)
     }
@@ -1103,6 +1129,7 @@ export class RequestContextBuilder {
           mentionable.type === 'url' ||
           mentionable.type === 'web-selection' ||
           mentionable.type === 'office' ||
+          mentionable.type === 'text-attachment' ||
           mentionable.type === 'assistant-quote',
       )
     )
@@ -1449,6 +1476,9 @@ ${message.annotations
     const offices = mentionables.filter(
       (m): m is MentionableOffice => m.type === 'office',
     )
+    const textAttachments = mentionables.filter(
+      (m): m is MentionableTextAttachment => m.type === 'text-attachment',
+    )
     const webSelections = mentionables.filter(
       (m): m is MentionableWebSelection => m.type === 'web-selection',
     )
@@ -1475,6 +1505,15 @@ ${message.annotations
           name: doc.name,
           kind: doc.kind,
           text: doc.extractedText,
+        }),
+      )
+      .join('')
+    const textAttachmentPrompt = textAttachments
+      .map((doc) =>
+        renderAttachedDocumentBlock({
+          name: doc.name,
+          kind: doc.kind,
+          text: doc.content,
         }),
       )
       .join('')
@@ -1524,7 +1563,7 @@ ${message.annotations
       ...pdfDocumentParts,
       {
         type: 'text',
-        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
+        text: `${filePrompt}${blockPrompt}${assistantQuotePrompt}${webSelectionPrompt}${officePrompt}${textAttachmentPrompt}${legacyPdfFallbackText}${selectedSkillsPrompt}\n\n${query}\n\n`,
       },
     ]
   }

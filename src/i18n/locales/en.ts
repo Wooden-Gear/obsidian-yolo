@@ -1605,6 +1605,7 @@ export const en: TranslationKeys = {
     processImagesFailed: 'Failed to process uploaded images',
     readPdfFailed: 'Failed to read PDF "{name}": {error}',
     readOfficeFailed: 'Failed to read Office document "{name}": {error}',
+    readTextAttachmentFailed: 'Failed to read text file "{name}": {error}',
     addContext: 'Add context',
     applyChanges: 'Apply changes',
     copyMessage: 'Copy message',

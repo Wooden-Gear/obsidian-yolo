@@ -1367,6 +1367,7 @@ export type TranslationKeys = {
     processImagesFailed?: string
     readPdfFailed?: string
     readOfficeFailed?: string
+    readTextAttachmentFailed?: string
     addContext: string
     applyChanges: string
     copyMessage: string

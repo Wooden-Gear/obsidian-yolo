@@ -36,6 +36,8 @@ export const getMentionableIcon = (mentionable: Mentionable) => {
       if (mentionable.kind === 'xlsx') return FileSpreadsheet
       if (mentionable.kind === 'pptx') return Presentation
       return FileText
+    case 'text-attachment':
+      return FileText
     case 'model':
       return Cpu
     default:

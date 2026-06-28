@@ -1502,6 +1502,7 @@ export const zh: TranslationKeys = {
     processImagesFailed: '处理上传图片失败',
     readPdfFailed: '读取 PDF「{name}」失败：{error}',
     readOfficeFailed: '读取 Office 文档「{name}」失败：{error}',
+    readTextAttachmentFailed: '读取文本文件「{name}」失败：{error}',
     addContext: '添加上下文',
     applyChanges: '应用更改',
     copyMessage: '复制消息',

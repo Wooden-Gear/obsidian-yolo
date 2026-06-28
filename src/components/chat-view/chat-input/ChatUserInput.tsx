@@ -39,6 +39,7 @@ import {
   MentionableImage,
   MentionableOffice,
   MentionablePDF,
+  MentionableTextAttachment,
   SerializedMentionable,
 } from '../../../types/mentionable'
 import {
@@ -55,6 +56,7 @@ import { fileToMentionableImage } from '../../../utils/llm/image'
 import { chatModelSupportsVision } from '../../../utils/llm/model-modalities'
 import { fileToMentionableOffice } from '../../../utils/llm/office'
 import { fileToMentionablePDF } from '../../../utils/llm/pdf'
+import { fileToMentionableTextAttachment } from '../../../utils/llm/text-attachment'
 import ContextUsagePopover from '../ContextUsagePopover'
 import ContextUsageRing from '../ContextUsageRing'
 import { useSnippetEntries } from '../hooks/useSnippetEntries'
@@ -999,10 +1001,65 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       [mentionableUnitLabels, mentionables, setMentionables],
     )
 
+    const handleCreateTextAttachmentMentionables = useCallback(
+      (mentionableTextAttachments: MentionableTextAttachment[]) => {
+        const newMentionables = mentionableTextAttachments.filter(
+          (m) =>
+            !mentionables.some(
+              (mentionable) =>
+                getMentionableKey(serializeMentionable(mentionable)) ===
+                getMentionableKey(serializeMentionable(m)),
+            ),
+        )
+        if (newMentionables.length === 0) return
+        const editor = editorRef.current
+        if (editor) {
+          editor.update(() => {
+            const nodesToInsert: LexicalNode[] = []
+            newMentionables.forEach((mentionable) => {
+              nodesToInsert.push(
+                $createMentionNode(
+                  getMentionableName(mentionable, {
+                    unitLabels: mentionableUnitLabels,
+                  }),
+                  serializeMentionable(mentionable),
+                ),
+              )
+              nodesToInsert.push($createTextNode(' '))
+            })
+            const selection = $getSelection()
+            if (selection && $isRangeSelection(selection)) {
+              selection.insertNodes(nodesToInsert)
+              return
+            }
+
+            const root = $getRoot()
+            let paragraphNode = root.getFirstChild()
+            if (!paragraphNode || !$isParagraphNode(paragraphNode)) {
+              const created = $createParagraphNode()
+              root.append(created)
+              paragraphNode = created
+            }
+            const paragraph = paragraphNode as ParagraphNode
+            nodesToInsert.forEach((node) => {
+              paragraph.append(node)
+            })
+          })
+        }
+        setMentionables([...mentionables, ...newMentionables])
+      },
+      [mentionableUnitLabels, mentionables, setMentionables],
+    )
+
     const handleUploadFiles = useCallback(
       (files: File[]) => {
-        const { imageFiles, pdfFiles, officeFiles, unsupportedFiles } =
-          classifyUploadFiles(files)
+        const {
+          imageFiles,
+          pdfFiles,
+          officeFiles,
+          textAttachmentFiles,
+          unsupportedFiles,
+        } = classifyUploadFiles(files)
         if (unsupportedFiles.length > 0) {
           new Notice(
             t(
@@ -1098,12 +1155,49 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
             }
           })
         }
+        if (textAttachmentFiles.length > 0) {
+          void Promise.allSettled(
+            textAttachmentFiles.map((file) =>
+              fileToMentionableTextAttachment(file),
+            ),
+          ).then((results) => {
+            const successes: MentionableTextAttachment[] = []
+            results.forEach((result, idx) => {
+              if (result.status === 'fulfilled') {
+                successes.push(result.value)
+              } else {
+                const name = textAttachmentFiles[idx]?.name ?? 'text file'
+                console.error(
+                  `Failed to read text attachment ${name}`,
+                  result.reason,
+                )
+                new Notice(
+                  t(
+                    'chat.readTextAttachmentFailed',
+                    'Failed to read text file "{name}": {error}',
+                  )
+                    .replace('{name}', name)
+                    .replace(
+                      '{error}',
+                      result.reason instanceof Error
+                        ? result.reason.message
+                        : 'unknown error',
+                    ),
+                )
+              }
+            })
+            if (successes.length > 0) {
+              handleCreateTextAttachmentMentionables(successes)
+            }
+          })
+        }
       },
       [
         app,
         handleCreateImageMentionables,
         handleCreateOfficeMentionables,
         handleCreatePdfMentionables,
+        handleCreateTextAttachmentMentionables,
         settings,
         t,
       ],

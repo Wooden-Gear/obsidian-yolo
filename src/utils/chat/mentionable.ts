@@ -2,6 +2,7 @@ import { App } from 'obsidian'
 
 import type {
   Mentionable,
+  MentionableTextAttachment,
   SerializedMentionable,
 } from '../../types/mentionable'
 
@@ -96,6 +97,13 @@ export const serializeMentionable = (
         kind: mentionable.kind,
         rawData: mentionable.rawData,
         extractedText: mentionable.extractedText,
+      }
+    case 'text-attachment':
+      return {
+        type: 'text-attachment',
+        name: mentionable.name,
+        kind: mentionable.kind,
+        content: mentionable.content,
       }
     case 'model':
       return {
@@ -264,6 +272,33 @@ export const deserializeMentionable = (
           extractedText: mentionable.extractedText,
         }
       }
+      case 'text-attachment': {
+        const allowedKinds: ReadonlyArray<MentionableTextAttachment['kind']> = [
+          'txt',
+          'md',
+          'csv',
+          'tsv',
+          'json',
+          'yaml',
+          'yml',
+          'xml',
+          'log',
+        ]
+        if (
+          typeof mentionable.name !== 'string' ||
+          typeof mentionable.kind !== 'string' ||
+          !allowedKinds.includes(mentionable.kind) ||
+          typeof mentionable.content !== 'string'
+        ) {
+          return null
+        }
+        return {
+          type: 'text-attachment',
+          name: mentionable.name,
+          kind: mentionable.kind,
+          content: mentionable.content,
+        }
+      }
       case 'model': {
         return {
           type: 'model',
@@ -309,6 +344,8 @@ export function getMentionableKey(mentionable: SerializedMentionable): string {
     }
     case 'office':
       return `office:${mentionable.name}:${mentionable.kind}:${mentionable.rawData.length}:${mentionable.rawData.slice(-32)}`
+    case 'text-attachment':
+      return `text-attachment:${mentionable.name}:${mentionable.kind}:${mentionable.content.length}:${getBlockContentHash(mentionable.content)}`
     case 'model':
       return `model:${mentionable.modelId}`
   }
@@ -426,6 +463,8 @@ export function getMentionableName(
     case 'pdf':
       return mentionable.name
     case 'office':
+      return mentionable.name
+    case 'text-attachment':
       return mentionable.name
     case 'model':
       return mentionable.name
