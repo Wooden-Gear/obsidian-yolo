@@ -23,6 +23,7 @@ describe('classifyUploadFiles', () => {
     expect(classifyUploadFiles([image, typedPdf, extensionPdf, text])).toEqual({
       imageFiles: [image],
       pdfFiles: [typedPdf, extensionPdf],
+      officeFiles: [],
       unsupportedFiles: [text],
     })
   })
