@@ -296,34 +296,34 @@ export function stripUnsupportedImages(
 }
 
 /**
- * Render the canonical `## Attached PDFs` text block for a single PDF. Used
- * both for legacy text-only mentionables (their persisted `data`) and for the
- * non-native-model fallback path (`prepareDocumentsForModel`). One template,
- * one place to evolve.
+ * Render the canonical `<document>` block for an attached document mentionable
+ * (PDF text fallback or Office docs). Native PDF modality goes through the
+ * `document` content part path and skips this helper. All attached documents
+ * are tagged `source="user-attachment"` so the model knows the content is
+ * user-uploaded and is not addressable by `fs_read`.
  */
-function renderAttachedPdfBlock({
+function renderAttachedDocumentBlock({
   name,
+  kind,
   text,
   pageCount,
   truncated,
 }: {
   name: string
+  kind: 'pdf' | 'docx' | 'pptx' | 'xlsx'
   text: string
   pageCount?: number
   /** Set when the fallback extractor itself had to truncate (FALLBACK_MAX_PAGES). */
   truncated?: boolean
 }): string {
-  const meta =
-    pageCount !== undefined
-      ? ` (${pageCount} pages${truncated ? ', truncated' : ''})`
-      : truncated
-        ? ' (truncated)'
-        : ''
-  return `## Attached PDFs\n### ${name}${meta}\n\n${text}\n\n`
-}
-
-function renderAttachedOfficeBlock(document: MentionableOffice): string {
-  return `<document name="${escapeXmlAttr(document.name)}" type="${document.kind}">\n${document.extractedText}\n</document>\n\n`
+  const attrs = [
+    `name="${escapeXmlAttr(name)}"`,
+    `type="${kind}"`,
+    'source="user-attachment"',
+  ]
+  if (pageCount !== undefined) attrs.push(`pages="${pageCount}"`)
+  if (truncated) attrs.push('truncated="true"')
+  return `<document ${attrs.join(' ')}>\n${text}\n</document>\n\n`
 }
 
 /**
@@ -374,8 +374,9 @@ export async function prepareDocumentsForModel(
           .join('\n\n')
         transformed.push({
           type: 'text',
-          text: renderAttachedPdfBlock({
+          text: renderAttachedDocumentBlock({
             name: part.name,
+            kind: 'pdf',
             text,
             pageCount: part.pageCount ?? pages.length,
           }),
@@ -1060,7 +1061,15 @@ export class RequestContextBuilder {
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
     const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
-    const officePrompt = offices.map(renderAttachedOfficeBlock).join('')
+    const officePrompt = offices
+      .map((doc) =>
+        renderAttachedDocumentBlock({
+          name: doc.name,
+          kind: doc.kind,
+          text: doc.extractedText,
+        }),
+      )
+      .join('')
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1460,7 +1469,15 @@ ${message.annotations
       .join('')
     const assistantQuotePrompt = this.buildAssistantQuotePrompt(assistantQuotes)
     const webSelectionPrompt = this.buildWebSelectionPrompt(webSelections)
-    const officePrompt = offices.map(renderAttachedOfficeBlock).join('')
+    const officePrompt = offices
+      .map((doc) =>
+        renderAttachedDocumentBlock({
+          name: doc.name,
+          kind: doc.kind,
+          text: doc.extractedText,
+        }),
+      )
+      .join('')
     const {
       documentParts: pdfDocumentParts,
       legacyText: legacyPdfFallbackText,
@@ -1549,9 +1566,9 @@ ${quotes
    *   • `documentParts`: native `document` content parts for new uploads that
    *     carry raw bytes. Pass-through for adapters that advertise the `pdf`
    *     modality; `prepareDocumentsForModel` converts to text otherwise.
-   *   • `legacyText`: a `## Attached PDFs` block for legacy mentionables that
-   *     only have the pre-extracted `data` text (serialized before native PDF
-   *     support landed). Empty string when there are no legacy items.
+   *   • `legacyText`: an `<document type="pdf">` block for legacy mentionables
+   *     that only have the pre-extracted `data` text (serialized before native
+   *     PDF support landed). Empty string when there are no legacy items.
    */
   private buildPdfAttachments(pdfs: MentionablePDF[]): {
     documentParts: ContentPart[]
@@ -1571,8 +1588,9 @@ ${quotes
         })
       } else if (pdf.data) {
         legacyBlocks.push(
-          renderAttachedPdfBlock({
+          renderAttachedDocumentBlock({
             name: pdf.name,
+            kind: 'pdf',
             text: pdf.data,
             pageCount: pdf.pageCount,
           }),
@@ -1582,7 +1600,7 @@ ${quotes
 
     return {
       documentParts,
-      // Already includes the `## Attached PDFs` header per block; join into one.
+      // Each block is a self-contained `<document>` element; join into one.
       legacyText: legacyBlocks.join(''),
     }
   }
