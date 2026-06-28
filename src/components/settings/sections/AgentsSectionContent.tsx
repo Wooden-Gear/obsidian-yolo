@@ -114,7 +114,6 @@ type AgentToolView = {
 }
 
 type SkillRowView = LiteSkillEntry & {
-  globallyDisabled: boolean
   enabled: boolean
   loadMode: AssistantSkillLoadMode
 }
@@ -1077,21 +1076,20 @@ export function AgentsSectionContent({
   )
 
   const skillRows = useMemo(() => {
-    return skillEntries.map((skill) => {
-      const globallyDisabled = disabledSkillNameSet.has(skill.name)
-      const policy = resolveAssistantSkillPolicy({
-        assistant: draftAgent,
-        skillName: skill.name,
-        defaultLoadMode: skill.mode,
+    return skillEntries
+      .filter((skill) => !disabledSkillNameSet.has(skill.name))
+      .map((skill) => {
+        const policy = resolveAssistantSkillPolicy({
+          assistant: draftAgent,
+          skillName: skill.name,
+          defaultLoadMode: skill.mode,
+        })
+        return {
+          ...skill,
+          enabled: policy.enabled,
+          loadMode: policy.loadMode,
+        }
       })
-      const enabled = policy.enabled && !globallyDisabled
-      return {
-        ...skill,
-        globallyDisabled,
-        enabled,
-        loadMode: policy.loadMode,
-      }
-    })
   }, [disabledSkillNameSet, draftAgent, skillEntries])
 
   // Same agent-scoped pattern as estimatedToolContextTokens above.
@@ -1988,7 +1986,6 @@ export function AgentsSectionContent({
                 {skillRows.length > 0 ? (
                   <div className="yolo-agent-tool-list">
                     {skillRows.map((skill) => {
-                      const disabledByGlobal = skill.globallyDisabled
                       return (
                         <div key={skill.name} className="yolo-agent-tool-row">
                           <div className="yolo-agent-tool-main">
@@ -2023,29 +2020,18 @@ export function AgentsSectionContent({
                               <span className="yolo-agent-chip">
                                 {skill.path}
                               </span>
-                              {disabledByGlobal && (
-                                <span className="yolo-agent-chip">
-                                  {t(
-                                    'settings.agent.skillDisabledGlobally',
-                                    'Disabled globally',
-                                  )}
-                                </span>
-                              )}
                             </div>
                           </div>
                           <div className="yolo-agent-skill-controls">
                             <ObsidianToggle
                               value={skill.enabled}
-                              onChange={(value) => {
-                                if (disabledByGlobal) {
-                                  return
-                                }
+                              onChange={(value) =>
                                 setSkillEnabled(skill.name, value)
-                              }}
+                              }
                             />
                             <select
                               value={skill.loadMode}
-                              disabled={!skill.enabled || disabledByGlobal}
+                              disabled={!skill.enabled}
                               onChange={(event) =>
                                 setSkillLoadMode(
                                   skill.name,
