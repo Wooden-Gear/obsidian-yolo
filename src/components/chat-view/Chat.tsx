@@ -2800,22 +2800,52 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   }
 
   const handleAssistantMessageEditSave = useCallback(
-    (messageId: string, content: string) => {
+    (groupAnchorMessageId: string, replacementMessages: ChatMessage[]) => {
       setChatMessages((prevChatHistory) => {
-        const nextMessages = prevChatHistory.map((message) =>
-          message.role === 'assistant' && message.id === messageId
-            ? {
-                ...message,
-                content,
-              }
-            : message,
+        const groupedMessages = groupAssistantAndToolMessages(
+          prevChatHistory,
+          assistantGroupBoundaryMessageIds,
         )
+        const targetGroup = groupedMessages.find(
+          (item): item is AssistantToolMessageGroup =>
+            Array.isArray(item) &&
+            item.some((message) => message.id === groupAnchorMessageId),
+        )
+        if (!targetGroup) {
+          return prevChatHistory
+        }
+
+        const anchorMessage = targetGroup.find(
+          (message) => message.id === groupAnchorMessageId,
+        )
+        const anchorBranchId = anchorMessage?.metadata?.branchId
+        const targetMessages = anchorBranchId
+          ? targetGroup.filter(
+              (message) => message.metadata?.branchId === anchorBranchId,
+            )
+          : targetGroup
+        const targetIds = new Set(targetMessages.map((message) => message.id))
+        const targetIndexes = prevChatHistory
+          .map((message, index) => (targetIds.has(message.id) ? index : null))
+          .filter((index): index is number => index !== null)
+        const startIndex = targetIndexes[0]
+        const endIndex = targetIndexes.at(-1)
+        if (startIndex === undefined || endIndex === undefined) {
+          return prevChatHistory
+        }
+
+        const nextMessages = [
+          ...prevChatHistory.slice(0, startIndex),
+          ...replacementMessages,
+          ...prevChatHistory.slice(endIndex + 1),
+        ]
+        chatMessagesStateRef.current = nextMessages
         void persistConversation(nextMessages)
         return nextMessages
       })
       setEditingAssistantMessageId(null)
     },
-    [persistConversation],
+    [assistantGroupBoundaryMessageIds, persistConversation],
   )
 
   const handleAssistantMessageEditCancel = useCallback(() => {
