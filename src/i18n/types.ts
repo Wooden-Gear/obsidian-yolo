@@ -1362,6 +1362,7 @@ export type TranslationKeys = {
     selectModel: string
     uploadImage: string
     uploadFile?: string
+    dropFilesHint?: string
     imageUnsupportedByModel?: string
     unsupportedFileType?: string
     processImagesFailed?: string

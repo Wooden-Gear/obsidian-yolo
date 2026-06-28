@@ -12,9 +12,11 @@ import {
   type ParagraphNode,
   SerializedEditorState,
 } from 'lexical'
+import { FilePlus2 } from 'lucide-react'
 import { Notice } from 'obsidian'
 import {
   type CSSProperties,
+  type DragEvent as ReactDragEvent,
   type MouseEvent as ReactMouseEvent,
   forwardRef,
   useCallback,
@@ -166,6 +168,11 @@ const DEFAULT_INPUT_HEIGHT = 80
 const MIN_INPUT_HEIGHT = 80
 const MAX_INPUT_HEIGHT = 520
 
+function isFileDragEvent(event: ReactDragEvent<HTMLDivElement>) {
+  const types = Array.from(event.dataTransfer.types ?? [])
+  return types.includes('Files')
+}
+
 const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
   (
     {
@@ -251,6 +258,8 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
     const resizedHeightRef = useRef<number | null>(rememberedInputHeight)
     const dragStartYRef = useRef(0)
     const dragStartHeightRef = useRef(DEFAULT_INPUT_HEIGHT)
+    const fileDragDepthRef = useRef(0)
+    const [isFileDragActive, setIsFileDragActive] = useState(false)
 
     const effectiveMentionables = useMemo(
       () => displayMentionables ?? mentionables,
@@ -1418,6 +1427,58 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
       [compact, enableResize, persistResizedHeight],
     )
 
+    const clearFileDragState = useCallback(() => {
+      fileDragDepthRef.current = 0
+      setIsFileDragActive(false)
+    }, [])
+
+    const handleContainerDragEnter = useCallback(
+      (event: ReactDragEvent<HTMLDivElement>) => {
+        if (compact || !isFileDragEvent(event)) {
+          return
+        }
+
+        fileDragDepthRef.current += 1
+        setIsFileDragActive(true)
+      },
+      [compact],
+    )
+
+    const handleContainerDragOver = useCallback(
+      (event: ReactDragEvent<HTMLDivElement>) => {
+        if (compact || !isFileDragEvent(event)) {
+          return
+        }
+
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+      },
+      [compact],
+    )
+
+    const handleContainerDragLeave = useCallback(
+      (event: ReactDragEvent<HTMLDivElement>) => {
+        if (compact || !isFileDragEvent(event)) {
+          return
+        }
+
+        fileDragDepthRef.current = Math.max(0, fileDragDepthRef.current - 1)
+        if (fileDragDepthRef.current === 0) {
+          setIsFileDragActive(false)
+        }
+      },
+      [compact],
+    )
+
+    const handleContainerDropCapture = useCallback(
+      (event: ReactDragEvent<HTMLDivElement>) => {
+        if (isFileDragEvent(event)) {
+          clearFileDragState()
+        }
+      },
+      [clearFileDragState],
+    )
+
     const handleContainerMouseDown = useCallback(
       (event: ReactMouseEvent<HTMLDivElement>) => {
         if (compact) {
@@ -1576,6 +1637,7 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
           className="yolo-chat-user-input-container"
           ref={containerRef}
           data-resizable={enableResize && !compact ? 'true' : 'false'}
+          data-file-drag-active={isFileDragActive ? 'true' : 'false'}
           onClick={compact ? onToggleCompact : undefined}
           onKeyDown={
             compact
@@ -1588,10 +1650,20 @@ const ChatUserInput = forwardRef<ChatUserInputRef, ChatUserInputProps>(
               : undefined
           }
           onMouseDown={handleContainerMouseDown}
+          onDragEnter={handleContainerDragEnter}
+          onDragOver={handleContainerDragOver}
+          onDragLeave={handleContainerDragLeave}
+          onDropCapture={handleContainerDropCapture}
           role={compact ? 'button' : 'presentation'}
           tabIndex={compact ? 0 : undefined}
           style={containerStyle}
         >
+          {isFileDragActive && (
+            <div className="yolo-chat-user-input-drop-hint" aria-hidden="true">
+              <FilePlus2 size={24} />
+              <span>{t('chat.dropFilesHint', '松开以添加文件')}</span>
+            </div>
+          )}
           <div
             className="yolo-chat-user-input-editor"
             onMouseDown={handleEditorBackgroundMouseDown}
