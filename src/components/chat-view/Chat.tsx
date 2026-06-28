@@ -139,6 +139,7 @@ import {
 } from './chatRetry'
 import Composer from './Composer'
 import { useActiveViewState } from './hooks/useActiveViewState'
+import { getInputOverlayReserveHeight } from './inputOverlayReserve'
 import { syncRenderedLatexSelection } from './latex-copy'
 import MessageNavigator from './MessageNavigator'
 import type { MessageNavigatorAnchor } from './MessageNavigator'
@@ -1669,9 +1670,8 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
   // Measure the overlay above the input box so the timeline can reserve
   // equivalent scrollable space at its bottom — keeps the last assistant
   // message's metadata bar reachable instead of hidden behind the overlay.
-  // The overlay element is always rendered; height collapses to 0 when no
-  // todo/queued content is present. The gap between overlay bottom and the
-  // input top (CSS `bottom: calc(100% + var(--size-2-1))`) is included.
+  // Reserve only while the overlay has renderable children; otherwise a stale
+  // measurement can leave an invisible spacer between the footer and input.
   useLayoutEffect(() => {
     if (!inputOverlayElement) {
       // Element detached (e.g. switched to composer view). Reset budget so
@@ -1680,49 +1680,50 @@ const Chat = forwardRef<ChatRef, ChatProps>((props, ref) => {
       return
     }
 
+    const ownerWindow = inputOverlayElement.ownerDocument.defaultView ?? window
     let animationFrameId: number | null = null
 
-    const computeOverlayBudget = (): number => {
-      // offsetHeight already snaps to the integer pixel; 0 when empty.
-      const height = inputOverlayElement.offsetHeight
-      if (height <= 0) {
-        return 0
-      }
-      const gap = parseFloat(
-        getComputedStyle(inputOverlayElement).getPropertyValue('--size-2-1'),
-      )
-      const gapPx = Number.isFinite(gap) && gap > 0 ? gap : 4
-      return Math.ceil(height + gapPx)
-    }
-
     const publishHeight = () => {
-      const nextHeight = computeOverlayBudget()
+      const nextHeight = getInputOverlayReserveHeight(inputOverlayElement)
       setInputOverlayHeight((previous) =>
         previous === nextHeight ? previous : nextHeight,
       )
     }
 
-    publishHeight()
-
-    if (typeof ResizeObserver === 'undefined') {
-      return
-    }
-
-    const observer = new ResizeObserver(() => {
+    const schedulePublishHeight = () => {
       if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId)
+        ownerWindow.cancelAnimationFrame(animationFrameId)
       }
-      animationFrameId = requestAnimationFrame(() => {
+      animationFrameId = ownerWindow.requestAnimationFrame(() => {
         animationFrameId = null
         publishHeight()
       })
+    }
+
+    publishHeight()
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(schedulePublishHeight)
+    resizeObserver?.observe(inputOverlayElement)
+
+    const mutationObserver =
+      typeof MutationObserver === 'undefined'
+        ? null
+        : new MutationObserver(schedulePublishHeight)
+    mutationObserver?.observe(inputOverlayElement, {
+      attributes: true,
+      attributeFilter: ['class', 'hidden', 'style'],
+      childList: true,
+      subtree: true,
     })
-    observer.observe(inputOverlayElement)
 
     return () => {
-      observer.disconnect()
+      resizeObserver?.disconnect()
+      mutationObserver?.disconnect()
       if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId)
+        ownerWindow.cancelAnimationFrame(animationFrameId)
       }
     }
   }, [inputOverlayElement])
