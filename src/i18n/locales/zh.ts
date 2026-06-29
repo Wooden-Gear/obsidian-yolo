@@ -2093,6 +2093,7 @@ export const zh: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     viewHistory: '查看历史更新',
+    skipVersion: '当前版本不提示',
     historyTitle: '历史更新日志',
     historyLoading: '正在加载更新日志…',
     historyError: '加载更新日志失败，请稍后重试。',

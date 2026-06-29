@@ -1927,6 +1927,7 @@ export type TranslationKeys = {
     languageEnglish: string
     languageChinese: string
     viewHistory?: string
+    skipVersion?: string
     historyTitle?: string
     historyLoading?: string
     historyError?: string

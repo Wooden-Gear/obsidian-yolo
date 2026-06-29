@@ -2041,6 +2041,7 @@ export const it: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     viewHistory: 'Visualizza cronologia aggiornamenti',
+    skipVersion: 'Non ricordarmelo per questa versione',
     historyTitle: 'Cronologia aggiornamenti',
     historyLoading: 'Caricamento cronologia aggiornamenti...',
     historyError:

@@ -2246,6 +2246,7 @@ export const en: TranslationKeys = {
     languageEnglish: 'EN',
     languageChinese: '中文',
     viewHistory: 'View update history',
+    skipVersion: "Don't remind me for this version",
     historyTitle: 'Release history',
     historyLoading: 'Loading release history...',
     historyError: 'Failed to load release history. Please try again later.',

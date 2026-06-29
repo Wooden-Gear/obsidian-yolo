@@ -3013,6 +3013,26 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     return this.settings.softDismissedUpdateVersion === version
   }
 
+  isUpdateVersionMuted(version: string): boolean {
+    const muted = normalizePluginVersion(this.settings.mutedUpdateVersion)
+    if (!muted) {
+      return false
+    }
+    return muted === normalizePluginVersion(version)
+  }
+
+  async muteUpdateVersion(version: string): Promise<void> {
+    const normalized = normalizePluginVersion(version)
+    await this.setSettings({
+      ...this.settings,
+      mutedUpdateVersion: normalized,
+    })
+    if (this.isUpdateVersionMuted(normalized)) {
+      this.updateCheckResult = null
+      this.notifyUpdateCheckListeners()
+    }
+  }
+
   async dismissUpdateVersion(version: string): Promise<void> {
     await this.setSettings({
       ...this.settings,
@@ -3035,6 +3055,9 @@ ${validationResult.error.issues.map((v) => v.message).join('\n')}`)
     void (async () => {
       const fetched = await checkForUpdate(this.manifest.version)
       if (fetched?.hasUpdate) {
+        if (this.isUpdateVersionMuted(fetched.latestVersion)) {
+          return
+        }
         this.updateCheckResult = fetched
         this.notifyUpdateCheckListeners()
         await this.refreshPluginUpdateStaging(fetched.latestVersion)
