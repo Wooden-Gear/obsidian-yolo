@@ -1,31 +1,31 @@
-## 1.5.12.9 Diff Review, Office Attachments & Fixes 🛠️
-
-### 📝 Diff Review
-
-- AI rewrite review is easier to read: large edits now show whole deleted lines and whole added lines side by side, instead of overlapping strikethrough and highlight clutter.
+## 1.5.12.10 Chat Attachments & Agent Editing ✨
 
 ### 📎 Attachments
 
-- Office documents (Word, Excel, PowerPoint) can now be added as chat attachments and read by Agent, with the same prompt format as PDF attachments.
+- Plain text files (txt, md, csv, json, yaml, etc.) can now be dragged directly into the chat composer as attachments.
 
-### 🛠️ Fixes
+### 💬 Chat & Agent
 
-- Fixed ChatGPT OAuth failing to load the Codex model list by using the three-segment version format the Codex API expects. Thanks @bartolli (PR #421).
-- Fixed the chat view occasionally leaving a large blank area and hiding model replies while scrolling after the input hint above the composer disappears.
+- Agent messages with tool calls can now be edited as a full conversation turn, not just the final text reply.
+
+### 🛠️ Fixes & UX
+
+- Fixed Agent skill configuration showing skills disabled in global capabilities — they no longer appear in individual Agent skill lists.
+- Improved drag-and-drop feedback on the chat input: external files now show a clear drop-ready state when dragged over the composer.
 
 ---
 
-## 1.5.12.9 审阅视图、Office 附件与修复 🛠️
-
-### 📝 审阅视图
-
-- 优化 AI 改写的审阅视图：大段改动不再出现删除线与高亮交错的混乱排版，改为「整行旧内容标删除、整行新内容标新增」的清晰对照，更易阅读。
+## 1.5.12.10 聊天附件与 Agent 编辑 ✨
 
 ### 📎 附件
 
-- 支持将 Office 文档（Word、Excel、PowerPoint）作为附件上下文添加给模型，Agent 可读取解析此类文件，并与 PDF 附件采用统一的 prompt 注入格式。
+- 支持将 txt、md、csv、json、yaml 等纯文本文件直接拖入聊天输入框作为附件。
 
-### 🛠️ 修复
+### 💬 对话与 Agent
 
-- 修复 ChatGPT OAuth 下 Codex 模型列表无法加载的问题，插件现在会使用 Codex 接口要求的三段式版本号请求模型目录。感谢 @bartolli (PR #421)。
-- 修复聊天窗口偶发出现大片空白、滚动时遮挡模型回复的问题，输入框上方提示消失后不再残留不可见占位。
+- 优化带有 tool call 的 Agent 消息编辑体验，现在支持编辑整轮 AI 对话内容。
+
+### 🛠️ 修复与体验
+
+- 修复 Agent 技能配置与全局能力不一致的问题：在全局能力中禁用的技能，现在不会再出现在单个 Agent 的技能配置列表中。
+- 优化输入框文件拖拽反馈，为聊天输入框增加外部文件拖入时的可投放状态。
